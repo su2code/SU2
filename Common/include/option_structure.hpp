@@ -1777,6 +1777,63 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
 ("SU2", SU2_REF)
 ("CUSTOM", CUSTOM_REF);
 
+/*!
+ * \brief types of screen output fields
+ */
+enum ENUM_SCREEN_OUTPUT {
+  SOUT_INTITER = 0,    /*!< \brief Internal iteration. */
+  SOUT_EXTITER = 1,    /*!< \brief External iteration. */
+  SOUT_TIME = 2,       /*!< \brief Time taken by the iteration. */
+  SOUT_PHYSTIME = 2,   /*!< \brief Physical time of the iteration. */
+  SOUT_RHO = 10,       /*!< \brief Density output. */
+  SOUT_RHOU1 = 11,     /*!< \brief Momentum-x output. */
+  SOUT_RHOU2 = 12,     /*!< \brief Momentum-y output. */
+  SOUT_RHOU3 = 13,     /*!< \brief Momentum-z output. */
+  SOUT_RHOE = 14,      /*!< \brief Rho-E output. */
+  SOUT_PRESS = 15,     /*!< \brief Pressure output. */
+  SOUT_CL = 20,        /*!< \brief Lift coefficient output. */
+  SOUT_CD = 21,        /*!< \brief Drag coefficient output. */
+  SOUT_CM = 22,        /*!< \brief Moment coefficient output. */
+  SOUT_SA = 30,        /*!< \brief Spalart-Allmaras Nu. */
+  SOUT_K = 31,         /*!< \brief k-w Kinetic energy. */
+  SOUT_W = 32,         /*!< \brief k-w Rate of dissipation. */
+  SOUT_TEMP = 40,      /*!< \brief Temperature. */
+  SOUT_UTOL = 50,       /*!< \brief Elasticity displacement norm. */
+  SOUT_RTOL = 51,       /*!< \brief Elasticity residual norm. */
+  SOUT_ETOL = 52,       /*!< \brief Elasticity energy norm. */
+  SOUT_VMS = 53,        /*!< \brief Elasticity Maximum Von Mises stress. */
+  SOUT_DISPX = 54,        /*!< \brief Norm of the displacement vector - x component. */
+  SOUT_DISPY = 55,        /*!< \brief Norm of the displacement vector - y component. */
+  SOUT_DISPZ = 56         /*!< \brief Norm of the displacement vector - z component. */
+};
+
+static const map<string, ENUM_SCREEN_OUTPUT> Screen_Output_Map = CCreateMap<string, ENUM_SCREEN_OUTPUT>
+("INT_ITER", SOUT_INTITER)
+("EXT_ITER", SOUT_EXTITER)
+("TIME", SOUT_TIME)
+("PHYSICAL_TIME", SOUT_PHYSTIME)
+("DENSITY", SOUT_RHO)
+("MOMENTUM-X", SOUT_RHOU1)
+("MOMENTUM-Y", SOUT_RHOU2)
+("MOMENTUM-Z", SOUT_RHOU3)
+("RHO-E", SOUT_RHOE)
+("PRESSURE", SOUT_PRESS)
+("LIFT", SOUT_CL)
+("DRAG", SOUT_CD)
+("MOMENT", SOUT_CM)
+("SA-NU", SOUT_SA)
+("K-W_KINETIC", SOUT_K)
+("K-W_DISSIPATION", SOUT_W)
+("TEMPERATURE", SOUT_TEMP)
+("UTOL", SOUT_UTOL)
+("RTOL", SOUT_RTOL)
+("ETOL", SOUT_ETOL)
+("DISPX", SOUT_DISPX)
+("DISPY", SOUT_DISPY)
+("DISPZ", SOUT_DISPZ)
+("VMS", SOUT_VMS);
+
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {

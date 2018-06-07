@@ -37,44 +37,57 @@
 
 #include "../include/output_structure.hpp"
 
-CFEAOutput::CFEAOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
-
-  char buffer[50];
-
-  // Retrieve the history filename
-  string history_filename = config->GetConv_FileName();
-
-  // Append the zone ID
-  if(config->GetnZone() > 1){
-    history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-  }
-  strcpy (char_histfile, history_filename.data());
-
-  // Append the restart iteration: if dynamic problem and restart
-  if (config->GetWrt_Dynamic() && config->GetRestart()) {
-    long iExtIter = config->GetDyn_RestartIter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-    strcat(char_histfile, buffer);
-  }
-
-  // Add the correct file extension depending on the file format
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-  strcat(char_histfile, buffer);
+CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
   // Open the history file using only the master node
   if (rank == MASTER_NODE){
+
+    unsigned short nDim = geometry->GetnDim();
+
+    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+
+    char buffer[50], char_histfile[200];
+
+    // Retrieve the history filename
+    string history_filename = config->GetConv_FileName();
+
+    // Append the zone ID
+    if(config->GetnZone() > 1){
+      history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
+    }
+    strcpy (char_histfile, history_filename.data());
+
+    // Append the restart iteration: if dynamic problem and restart
+    if (config->GetWrt_Dynamic() && config->GetRestart()) {
+      long iExtIter = config->GetDyn_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(char_histfile, buffer);
+    }
+
+    // Add the correct file extension depending on the file format
+    if ((config->GetOutput_FileFormat() == TECPLOT) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+    strcat(char_histfile, buffer);
+
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
     SetConvHistory_Header(config, val_iZone, INST_0);
+
+    /*--- Initialize number of variables ---*/
+    if (linear_analysis) nVar_FEM = nDim;
+    if (nonlinear_analysis) nVar_FEM = 3;
+
+    /*--- Allocate memory for the residual ---*/
+    residual_fem        = new su2double[nVar_FEM];
   }
 
 }
@@ -83,6 +96,8 @@ CFEAOutput::~CFEAOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
+
+    if (residual_fem != NULL) delete [] residual_fem;
   }
 
 
@@ -167,15 +182,6 @@ void CFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     /*------------------------------------------------------------------------------------------------------*/
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
     /*------------------------------------------------------------------------------------------------------*/
-
-    /*--- Initialize number of variables ---*/
-    unsigned short nVar_FEM = 0;
-    if (linear_analysis) nVar_FEM = nDim;
-    if (nonlinear_analysis) nVar_FEM = 3;
-
-    /*--- Allocate memory for the residual ---*/
-    su2double *residual_fem          = NULL;
-    residual_fem        = new su2double[nVar_FEM];
 
     /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
     su2double Total_VMStress   = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
@@ -296,9 +302,6 @@ void CFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
     cout << endl;
 
     cout.unsetf(ios::fixed);
-
-
-    delete [] residual_fem;
 
   }
 }
