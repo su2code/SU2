@@ -101,6 +101,8 @@ private:
 #ifdef HAVE_MKL
   void * MatrixMatrixProductJitter;	 		/*!< \brief Jitter handle for MKL JIT based GEMM. */
   dgemm_jit_kernel_t MatrixMatrixProductKernel;		/*!< \brief MKL JIT based GEMM kernel. */
+  void * MatrixVectorProductJitter;	 		/*!< \brief Jitter handle for MKL JIT based GEMV. */
+  dgemm_jit_kernel_t MatrixVectorProductKernel;		/*!< \brief MKL JIT based GEMV kernel. */
 #endif
   
 public:
