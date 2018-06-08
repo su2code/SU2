@@ -792,10 +792,18 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
-  
+ 
+#if 1
+
+  memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
+
+#else
+ 
   for (iVar = 0; iVar < (short)nVar; iVar++)
     for (jVar = 0; jVar < (short)nVar; jVar++)
       block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+
+#endif
   
   /*--- Gauss elimination ---*/
 
@@ -1153,19 +1161,39 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     << "nPoint and nBlk values incompatible." << endl;
     throw(-1);
   }
-  
-  prod = su2double(0.0); // set all entries of prod to zero
-  for (row_i = 0; row_i < nPointDomain; row_i++) {
-    prod_begin = row_i*nVar; // offset to beginning of block row_i
-    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-      vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
-      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
-      for (iVar = 0; iVar < nVar; iVar++) {
-        for (jVar = 0; jVar < nVar; jVar++) {
-          prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
+
+  if (nVar == 5)
+  {
+    prod = su2double(0.0); // set all entries of prod to zero
+    for (row_i = 0; row_i < nPointDomain; row_i++) {
+      prod_begin = row_i*5; // offset to beginning of block row_i
+      for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+        vec_begin = col_ind[index]*5; // offset to beginning of block col_ind[index]
+        mat_begin = (index*25); // offset to beginning of matrix block[row_i][col_ind[indx]]
+        for (iVar = 0; iVar < 5; iVar++) {
+          for (jVar = 0; jVar < 5; jVar++) {
+            prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*5+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
+          }
         }
       }
     }
+
+  } else {
+   
+    prod = su2double(0.0); // set all entries of prod to zero
+    for (row_i = 0; row_i < nPointDomain; row_i++) {
+      prod_begin = row_i*nVar; // offset to beginning of block row_i
+      for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+        vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
+        mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
+          }
+        }
+      }
+    }
+
   }
   
   /*--- MPI Parallelization ---*/
