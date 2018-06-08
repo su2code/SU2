@@ -795,6 +795,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
  
 #if 1
 
+  // If source and dest overlap higher level problems occur. Memcpy should be OK and faster.
   memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
 
 #else
