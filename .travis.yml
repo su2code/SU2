@@ -70,8 +70,15 @@ jobs:
     include:
         - stage: doxygen
           python: 2.7
+          before_install: 
+              - echo 'No before install script.'
+          install:
+              - echo 'No install script'
+          before_script:
+              - echo 'No before_script script.'
           script:
               - sh travis_scripts/doxygen/script.sh
+          
 
 stages:
     - test
