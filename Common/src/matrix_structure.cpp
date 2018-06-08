@@ -792,18 +792,12 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
  
-#if 1
-
-  // If source and dest overlap higher level problems occur. Memcpy should be OK and faster.
+  // If source and dest overlap higher level problems occur. Memcpy is safe and faster.
   memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
 
-#else
- 
-  for (iVar = 0; iVar < (short)nVar; iVar++)
-    for (jVar = 0; jVar < (short)nVar; jVar++)
-      block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
-
-#endif
+  //for (iVar = 0; iVar < (short)nVar; iVar++)
+  //  for (jVar = 0; jVar < (short)nVar; jVar++)
+  //    block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
   
   /*--- Gauss elimination ---*/
 
@@ -811,9 +805,9 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     rhs[0] /= block[0];
   }
   else {
-    
+
     /*--- Transform system in Upper Matrix ---*/
-    
+ 
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
@@ -824,7 +818,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     }
     
     /*--- Backwards substitution ---*/
-    
+
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
@@ -833,6 +827,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
       if (iVar == 0) break;
     }
+
   }
   
 }
