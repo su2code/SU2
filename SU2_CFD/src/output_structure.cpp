@@ -12158,7 +12158,6 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
         DeallocateInletCoordinates(config[iZone], geometry[iZone][MESH_0]);
       }
       config[iZone]->SetWrt_InletFile(false);
-
     }
 
     /*--- This switch statement will become a call to a virtual function
@@ -18422,13 +18421,15 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
   node_file.close();
 
   /*--- Print a message to inform the user about the template file. ---*/
-
-  cout << endl;
-  cout << "  Created a template inlet profile file with node coordinates" << endl;
-  cout << "  and solver variables at `inlet_example.dat`." << endl;
-  cout << "  You can use this file as a guide for making your own inlet" << endl;
-  cout << "  specification." << endl << endl;
   
+  stringstream err;
+  err << endl;
+  err << "  Created a template inlet profile file with node coordinates" << endl;
+  err << "  and solver variables at `inlet_example.dat`." << endl;
+  err << "  You can use this file as a guide for making your own inlet" << endl;
+  err << "  specification." << endl << endl;
+  SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
+
 }
 
 void COutput::DeallocateInletCoordinates(CConfig *config, CGeometry *geometry) {
