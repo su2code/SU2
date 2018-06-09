@@ -792,7 +792,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
  
-  // If source and dest overlap higher level problems occur. Memcpy is safe and faster.
+  // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
   memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
 
   //for (iVar = 0; iVar < (short)nVar; iVar++)
@@ -806,8 +806,19 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   }
   else {
 
-    /*--- Transform system in Upper Matrix ---*/
+#ifdef HAVE_MKL
+
+  lapack_int * ipiv = new lapack_int [ nVar ];
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
  
+  delete [] ipiv; 
+  return;
+
+#endif
+
+    /*--- Transform system in Upper Matrix ---*/
+
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
