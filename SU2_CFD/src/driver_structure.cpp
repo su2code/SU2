@@ -3455,7 +3455,11 @@ void CDriver::Output(unsigned long ExtIter) {
        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
       
       ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
+       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+      
+      /*--- No inlet profile file found. Print template. ---*/
+      
+      (config_container[ZONE_0]->GetWrt_InletFile())
       
       ) {
     
