@@ -33,6 +33,7 @@
 #pragma once
 
 #include "./geometry_structure.hpp"
+#include "./wall_model.hpp"
 
 using namespace std;
 
@@ -498,7 +499,7 @@ public:
                                                                 element for the wall function treatment. */
   vector<unsigned short> intPerWallFunctionDonor;   /*!< \brief The integration points per donor element
                                                                 for the wall function treatment. */
-  vector<vector< su2double> > matWallFunctionDonor; /*!< \brief Matrices, which store the interpolation coefficients
+  vector<vector<su2double> > matWallFunctionDonor;  /*!< \brief Matrices, which store the interpolation coefficients
                                                                 for the donors of the integration points.*/
 
   /*!
@@ -561,6 +562,8 @@ public:
 
   vector<CSurfaceElementFEM> surfElem; /*!< \brief Vector of the local surface elements. */
 
+  CWallModel *wallModel;     /*!< \brief Wall model for LES. */
+
   /*!
    * \brief Constructor of the class. Set the default value for some
             member variables.
@@ -568,7 +571,7 @@ public:
   CBoundaryFEM(void);
 
   /*!
-   * \brief Destructor of the class. Nothing to be done.
+   * \brief Destructor of the class.
    */
   ~CBoundaryFEM(void);
 };

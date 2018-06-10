@@ -98,9 +98,9 @@ inline CSurfaceElementFEM& CSurfaceElementFEM::operator=(const CSurfaceElementFE
 
 inline bool CSurfaceElementFEM::operator< (const CSurfaceElementFEM &other) const { return volElemID < other.volElemID; }
 
-inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC = false; }
+inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC = false;  wallModel = NULL;}
 
-inline CBoundaryFEM::~CBoundaryFEM(void) { }
+inline CBoundaryFEM::~CBoundaryFEM(void) { if( wallModel ) delete wallModel; }
 
 inline CMeshFEM::CMeshFEM(void) { }
 

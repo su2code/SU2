@@ -178,6 +178,11 @@ CDriver::CDriver(char* confFile,
           geometry_container[iZone][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
           break;
         }
+
+        default: {
+          SU2_MPI::Error("Unknown FEM flow solver.", CURRENT_FUNCTION);
+          break;
+        }
       }
     }
     else {
