@@ -6272,9 +6272,30 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
         if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
 
-          /* Retrieve the floating point information for this boundary marker.
-             The exchange location is the first element of this array. */
-          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+          /* An LES wall model is used for this boundary marker. Determine
+             which wall model and allocate the memory for the member variable. */
+          switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
+            case EQUILIBRIUM_WALL_MODEL: {
+              if(rank == MASTER_NODE)
+                cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
+
+              boundaries[iMarker].wallModel = new CWallModel1DEQ;
+              break;
+            }
+
+            default: {
+              SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
+            }
+          }
+
+          /* Retrieve the integer and floating point information for this
+             boundary marker. The exchange location is the first element of
+             the floating point array. */
+          const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
+          const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+
+          /* Initialize the wall model. */
+          boundaries[iMarker].wallModel->Initialize(intInfo, doubleInfo);
 
           /* Easier storage of the surface elements and loop over them. */
           vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
