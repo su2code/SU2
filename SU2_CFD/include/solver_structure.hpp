@@ -3595,6 +3595,7 @@ public:
    * \return Value of the inlet density.
    */
   virtual su2double GetLiqVolFractionIn(unsigned short inMarkerTP, unsigned short valSpan);
+  virtual su2double GetLiqMassFractionIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -3602,6 +3603,11 @@ public:
    * \return Value of the inlet density.
    */
   virtual su2double GetLiqVolFractionOut(unsigned short inMarkerTP, unsigned short valSpan);
+  virtual su2double GetLiqMassFractionOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+
+  virtual su2double GetVap_LiqDeltaEntropyIn(unsigned short inMarkerTP, unsigned short valSpan);
+  virtual su2double GetVap_LiqDeltaEntropyOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief A virtual member.
@@ -4019,7 +4025,9 @@ protected:
              **ExtAverageKine,
              **ExtAverageOmega,
              **AverageMom0,
-             **AverageLiqVolFraction;
+             **AverageLiqVolFraction,
+			 **AverageVap_LiqDeltaEntropy,
+			 **AverageLiqMassFraction;
 
   su2double  **DensityIn,
              **PressureIn,
@@ -4036,7 +4044,11 @@ protected:
              **Mom0In,
              **LiqVolFractionIn,
              **Mom0Out,
-             **LiqVolFractionOut;
+             **LiqVolFractionOut,
+             **Vap_LiqDeltaEntropyIn,
+             **LiqMassFractionIn,
+             **Vap_LiqDeltaEntropyOut,
+             **LiqMassFractionOut;;
   
   complex<su2double> ***CkInflow,
                      ***CkOutflow1,
@@ -6191,6 +6203,7 @@ public:
    * \return Value of the droplet number.
    */
   su2double GetLiqVolFractionIn(unsigned short inMarkerTP, unsigned short valSpan);
+  su2double GetLiqMassFractionIn(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Provide the averaged droplet number at the outflow boundary.
@@ -6198,6 +6211,12 @@ public:
    * \return Value of the droplet number.
    */
   su2double GetLiqVolFractionOut(unsigned short inMarkerTP, unsigned short valSpan);
+  su2double GetLiqMassFractionOut(unsigned short inMarkerTP, unsigned short valSpan);
+
+  /*!
+   * \brief Provide entropy difference at saturation between vapor and liquid (positive).*/
+  su2double GetVap_LiqDeltaEntropyIn(unsigned short inMarkerTP, unsigned short valSpan);
+  su2double GetVap_LiqDeltaEntropyOut(unsigned short inMarkerTP, unsigned short valSpan);
 
   /*!
    * \brief Set inlet density.

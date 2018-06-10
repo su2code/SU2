@@ -968,13 +968,27 @@ inline su2double CSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned short 
 
 inline su2double CSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
+
+
+
 inline su2double CSolver::GetMom0In(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
 inline su2double CSolver::GetMom0Out(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
 inline su2double CSolver::GetLiqVolFractionIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
 
+inline su2double CSolver::GetLiqMassFractionIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
 inline su2double CSolver::GetLiqVolFractionOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetLiqMassFractionOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetVap_LiqDeltaEntropyIn(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+inline su2double CSolver::GetVap_LiqDeltaEntropyOut(unsigned short inMarkerTP, unsigned short valSpan){return 0;}
+
+
+
 
 inline void CSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){ }
 
@@ -1399,13 +1413,28 @@ inline su2double CEulerSolver::GetOmegaOut(unsigned short inMarkerTP, unsigned s
 
 inline su2double CEulerSolver::GetNuOut(unsigned short inMarkerTP, unsigned short valSpan){return NuOut[inMarkerTP][valSpan];}
 
+
+
 inline su2double CEulerSolver::GetMom0In(unsigned short inMarkerTP, unsigned short valSpan){return Mom0In[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetMom0Out(unsigned short inMarkerTP, unsigned short valSpan){return Mom0Out[inMarkerTP][valSpan];}
 
+inline su2double CEulerSolver::GetLiqMassFractionIn(unsigned short inMarkerTP, unsigned short valSpan){return LiqMassFractionIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetLiqMassFractionOut(unsigned short inMarkerTP, unsigned short valSpan){return LiqMassFractionOut[inMarkerTP][valSpan];}
+
 inline su2double CEulerSolver::GetLiqVolFractionIn(unsigned short inMarkerTP, unsigned short valSpan){return LiqVolFractionIn[inMarkerTP][valSpan];}
 
 inline su2double CEulerSolver::GetLiqVolFractionOut(unsigned short inMarkerTP, unsigned short valSpan){return LiqVolFractionOut[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetVap_LiqDeltaEntropyIn(unsigned short inMarkerTP, unsigned short valSpan){return Vap_LiqDeltaEntropyIn[inMarkerTP][valSpan];}
+
+inline su2double CEulerSolver::GetVap_LiqDeltaEntropyOut(unsigned short inMarkerTP, unsigned short valSpan){return Vap_LiqDeltaEntropyOut[inMarkerTP][valSpan];}
+
+
+
+
+
 
 inline void CEulerSolver::SetDensityIn(su2double value, unsigned short inMarkerTP, unsigned short valSpan){DensityIn[inMarkerTP][valSpan] = value;}
 

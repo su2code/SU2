@@ -308,7 +308,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ExtAverageOmega                   = NULL;
   AverageMom0                       = NULL;
   AverageLiqVolFraction             = NULL;
-
+  AverageVap_LiqDeltaEntropy        = NULL;
+  AverageLiqMassFraction            = NULL;
 
   /*--- Initialize primitive quantities for turboperformace ---*/
 
@@ -328,6 +329,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   LiqVolFractionIn              = NULL;
   Mom0Out                       = NULL;
   LiqVolFractionOut             = NULL;
+  Vap_LiqDeltaEntropyIn         = NULL;
+  LiqMassFractionIn             = NULL;
+  Vap_LiqDeltaEntropyOut        = NULL;
+  LiqMassFractionOut            = NULL;
 
 
   /*--- Initialize quantities for Giles BC---*/
@@ -1254,6 +1259,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   AverageOmega                          = new su2double* [nMarker];
   AverageMom0                           = new su2double* [nMarker];
   AverageLiqVolFraction                 = new su2double* [nMarker];
+  AverageVap_LiqDeltaEntropy            = new su2double* [nMarker];
+  AverageLiqMassFraction                = new su2double* [nMarker];
   ExtAverageNu                          = new su2double* [nMarker];
   ExtAverageKine                        = new su2double* [nMarker];
   ExtAverageOmega                       = new su2double* [nMarker];
@@ -1277,6 +1284,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     AverageOmega[iMarker]                   = new su2double [nSpanWiseSections + 1];
     AverageMom0[iMarker]                    = new su2double [nSpanWiseSections + 1];
     AverageLiqVolFraction[iMarker]          = new su2double [nSpanWiseSections + 1];
+    AverageVap_LiqDeltaEntropy[iMarker]     = new su2double [nSpanWiseSections + 1];
+    AverageLiqMassFraction[iMarker]         = new su2double [nSpanWiseSections + 1];
     ExtAverageNu[iMarker]                   = new su2double [nSpanWiseSections + 1];
     ExtAverageKine[iMarker]                 = new su2double [nSpanWiseSections + 1];
     ExtAverageOmega[iMarker]                = new su2double [nSpanWiseSections + 1];
@@ -1300,6 +1309,8 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       AverageOmega[iMarker][iSpan]              = 0.0;
       AverageMom0[iMarker][iSpan]               = 0.0;
       AverageLiqVolFraction[iMarker][iSpan]     = 0.0;
+      AverageVap_LiqDeltaEntropy[iMarker][iSpan]= 0.0;
+      AverageLiqMassFraction[iMarker][iSpan]    = 0.0;
       ExtAverageNu[iMarker][iSpan]              = 0.0;
       ExtAverageKine[iMarker][iSpan]            = 0.0;
       ExtAverageOmega[iMarker][iSpan]           = 0.0;
@@ -1339,6 +1350,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
   Mom0Out                       = new su2double*[nMarkerTurboPerf];
   LiqVolFractionIn              = new su2double*[nMarkerTurboPerf];
   LiqVolFractionOut             = new su2double*[nMarkerTurboPerf];
+  Vap_LiqDeltaEntropyIn         = new su2double*[nMarkerTurboPerf];
+  LiqMassFractionIn             = new su2double*[nMarkerTurboPerf];
+  Vap_LiqDeltaEntropyOut        = new su2double*[nMarkerTurboPerf];
+  LiqMassFractionOut            = new su2double*[nMarkerTurboPerf];
 
   for (iMarker = 0; iMarker < nMarkerTurboPerf; iMarker++){
     DensityIn[iMarker]          = new su2double [nSpanMax + 1];
@@ -1357,6 +1372,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
     Mom0Out[iMarker]            = new su2double [nSpanMax + 1];
     LiqVolFractionIn[iMarker]   = new su2double [nSpanMax + 1];
     LiqVolFractionOut[iMarker]  = new su2double [nSpanMax + 1];
+    Vap_LiqDeltaEntropyIn[iMarker]  = new su2double [nSpanMax + 1];
+    LiqMassFractionIn[iMarker]  = new su2double [nSpanMax + 1];
+    Vap_LiqDeltaEntropyOut[iMarker]  = new su2double [nSpanMax + 1];
+    LiqMassFractionOut[iMarker]  = new su2double [nSpanMax + 1];
 
 
     for (iSpan = 0; iSpan < nSpanMax + 1; iSpan++){
@@ -1376,6 +1395,10 @@ void CEulerSolver::InitTurboContainers(CGeometry *geometry, CConfig *config){
       Mom0Out[iMarker][iSpan]            = 0.0;
       LiqVolFractionIn[iMarker][iSpan]   = 0.0;
       LiqVolFractionOut[iMarker][iSpan]  = 0.0;
+      Vap_LiqDeltaEntropyIn[iMarker][iSpan]  = 0.0;
+      LiqMassFractionIn[iMarker][iSpan]  = 0.0;
+      Vap_LiqDeltaEntropyOut[iMarker][iSpan]  = 0.0;
+      LiqMassFractionOut[iMarker][iSpan]  = 0.0;
 
       for (iDim = 0; iDim < nDim; iDim++){
         TurboVelocityIn  [iMarker][iSpan][iDim]   = 0.0;
@@ -15626,8 +15649,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double TotalDensity, TotalPressure, *TotalVelocity, *AverageTurboNormal, *TotalFluxes;
   su2double TotalNu, TotalOmega, TotalKine, TotalMassNu, TotalMassOmega, TotalMassKine, TotalAreaNu, TotalAreaOmega, TotalAreaKine;
   su2double TotalMom0, TotalLiqVolFraction, TotalAreaMom0, TotalAreaLiqVolFraction, TotalMassMom0, TotalMassLiqVolFraction;
+  su2double TotalVap_LiqDeltaEntropy, TotalLiqMassFraction, TotalAreaVap_LiqDeltaEntropy, TotalAreaLiqMassFraction, TotalMassVap_LiqDeltaEntropy, TotalMassLiqMassFraction;
   su2double Nu, Kine, Omega;
-  su2double y, rho_v, rho_m, Mom0, LiqVolFraction;
+  su2double y, rho_v, rho_m, Mom0, LiqVolFraction, LiqMassFraction, Vap_LiqDeltaEntropy;
   su2double MachTest, soundSpeed;
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS) ||
 		  (config->GetKind_Solver() == TWO_PHASE_RANS) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
@@ -15656,7 +15680,9 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double avgDensity, *avgVelocity, avgPressure, avgKine, avgOmega, avgNu, avgAreaDensity, *avgAreaVelocity, avgAreaPressure,
   avgAreaKine, avgAreaOmega, avgAreaNu, avgMassDensity, *avgMassVelocity, avgMassPressure, avgMassKine, avgMassOmega, avgMassNu,
   avgMixDensity, *avgMixVelocity, *avgMixTurboVelocity, avgMixPressure, avgMixKine, avgMixOmega, avgMixNu,
-  avgMom0, avgLiqVolFraction, avgAreaMom0, avgAreaLiqVolFraction, avgMassMom0, avgMassLiqVolFraction, avgMixMom0, avgMixLiqVolFraction;
+  avgMom0, avgLiqVolFraction, avgLiqMassFraction, avgVap_LiqDeltaEntropy, avgAreaMom0, avgAreaLiqVolFraction,
+  avgAreaLiqMassFraction, avgAreaVap_LiqDeltaEntropy, avgMassMom0, avgMassLiqVolFraction,
+  avgMassLiqMassFraction, avgMassVap_LiqDeltaEntropy, avgMixMom0, avgMixLiqVolFraction, avgMixLiqMassFraction, avgMixVap_LiqDeltaEntropy;
 
   avgVelocity         = new su2double[nDim];
   avgAreaVelocity     = new su2double[nDim];
@@ -15670,6 +15696,7 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
   su2double *MyTotalVelocity = NULL, *MyTotalAreaVelocity = NULL, *MyTotalMassVelocity = NULL;
   su2double MyTotalNu, MyTotalKine, MyTotalOmega, MyTotalAreaNu, MyTotalAreaKine, MyTotalAreaOmega, MyTotalMassNu, MyTotalMassKine, MyTotalMassOmega;
   su2double MyTotalMom0, MyTotalLiqVolFraction, MyTotalAreaMom0, MyTotalAreaLiqVolFraction, MyTotalMassMom0, MyTotalMassLiqVolFraction;
+  su2double MyTotalLiqMassFraction, MyTotalVap_LiqDeltaEntropy, MyTotalAreaLiqMassFraction, MyTotalAreaVap_LiqDeltaEntropy, MyTotalMassLiqMassFraction, MyTotalMassVap_LiqDeltaEntropy;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 #endif
@@ -15707,12 +15734,20 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     TotalAreaLiqVolFraction = 0.0;
     TotalMassMom0           = 0.0;
     TotalMassLiqVolFraction = 0.0;
+    TotalLiqMassFraction    = 0.0;
+    TotalVap_LiqDeltaEntropy        = 0.0;
+    TotalAreaLiqMassFraction= 0.0;
+    TotalAreaVap_LiqDeltaEntropy    = 0.0;
+    TotalMassLiqMassFraction= 0.0;
+    TotalMassVap_LiqDeltaEntropy    = 0.0;
 
     Nu              = 0.0;
     Omega           = 0.0;
     Kine            = 0.0;
     Mom0            = 0.0;
     LiqVolFraction  = 0.0;
+    LiqMassFraction = 0.0;
+    Vap_LiqDeltaEntropy     = 0.0;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++){
       for (iMarkerTP=1; iMarkerTP < config->GetnMarker_Turbomachinery()+1; iMarkerTP++){
@@ -15815,23 +15850,37 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   //    deltaH_ev = Enthalpy - node[iPoint]->GetPrimitive(nDim+?);
                   //	s_gen = liquid_mass_rate*volume*deltaH_ev*(dt_subcooling/(vapor_temp*liquid_temp));
 
-                  Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
-                  LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
-     //             LiqVolFraction *=  solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
-
-                  y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
                   rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
 
-                  //Mom0 = Mom0/rho_m;
+                  Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
+                  LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
+
+                  LiqMassFraction  =  LiqVolFraction*solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1);
+                  LiqMassFraction /= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
+
+                  // you must introduce entropy in the liquid properties
+                  // this is a check to see if entropy can be calculated
+
+                  su2double TempPressure = log(Pressure*config->GetPressure_Ref()/1e5);
+
+                  Vap_LiqDeltaEntropy = -0.0358*pow(TempPressure, 4) - 0.0422*pow(TempPressure, 3) +0.0106*pow(TempPressure, 2)
+                                -1.4787*TempPressure +6.0249;
+                  Vap_LiqDeltaEntropy *= 1000/ (config->GetEnergy_Ref()/config->GetTemperature_Ref());
 
                   TotalMom0 += Mom0;
                   TotalLiqVolFraction += LiqVolFraction;
+                  TotalVap_LiqDeltaEntropy += Vap_LiqDeltaEntropy;
+                  TotalLiqMassFraction += LiqMassFraction;
 
                   TotalAreaMom0  += Area*Mom0;
                   TotalAreaLiqVolFraction  += Area*LiqVolFraction;
+                  TotalAreaVap_LiqDeltaEntropy  += Area*Vap_LiqDeltaEntropy;
+                  TotalAreaLiqMassFraction  += Area*LiqMassFraction;
 
                   TotalMassMom0  += Area*(Density*TurboVelocity[0] )*Mom0;
                   TotalMassLiqVolFraction  += Area*(Density*TurboVelocity[0] )*LiqVolFraction;
+                  TotalMassVap_LiqDeltaEntropy  += Area*(Density*TurboVelocity[0] )*Vap_LiqDeltaEntropy;
+                  TotalMassLiqMassFraction  += Area*(Density*TurboVelocity[0] )*LiqMassFraction;
 
                 }
               }
@@ -15924,21 +15973,33 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
 
                     Mom0 = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(0);
                     LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
- //                   LiqVolFraction *= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(0);
 
-                    y = solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidFraction();
-                    rho_m = solver[TWO_PHASE_SOL]->node[iPoint]->GetMixtureDensity();
+                    LiqMassFraction  =  LiqVolFraction*solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1);
+                    LiqMassFraction /= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
 
-                    Mom0 = Mom0/rho_m;
+                    // you must introduce entropy in the liquid properties
+                    // this is a check to see if entropy can be calculated
+
+                    su2double TempPressure = log(Pressure*config->GetPressure_Ref()/1e5);
+
+                    Vap_LiqDeltaEntropy = -0.0358*pow(TempPressure, 4) - 0.0422*pow(TempPressure, 3) +0.0106*pow(TempPressure, 2)
+                                  -1.4787*TempPressure +6.0249;
+                    Vap_LiqDeltaEntropy *= 1000/ (config->GetEnergy_Ref()/config->GetTemperature_Ref());
 
                     TotalMom0 += Mom0;
                     TotalLiqVolFraction += LiqVolFraction;
+                    TotalVap_LiqDeltaEntropy += Vap_LiqDeltaEntropy;
+                    TotalLiqMassFraction += LiqMassFraction;
 
                     TotalAreaMom0  += Area*Mom0;
                     TotalAreaLiqVolFraction  += Area*LiqVolFraction;
+                    TotalAreaVap_LiqDeltaEntropy  += Area*Vap_LiqDeltaEntropy;
+                    TotalAreaLiqMassFraction  += Area*LiqMassFraction;
 
                     TotalMassMom0  += Area*(Density*TurboVelocity[0] )*Mom0;
                     TotalMassLiqVolFraction  += Area*(Density*TurboVelocity[0] )*LiqVolFraction;
+                    TotalMassVap_LiqDeltaEntropy  += Area*(Density*TurboVelocity[0] )*Vap_LiqDeltaEntropy;
+                    TotalMassLiqMassFraction  += Area*(Density*TurboVelocity[0] )*LiqMassFraction;
 
                   }
                 }
@@ -15977,6 +16038,13 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     MyTotalAreaLiqVolFraction      = TotalAreaLiqVolFraction;             TotalAreaLiqVolFraction        = 0;
     MyTotalMassMom0                = TotalMassMom0;                       TotalMassMom0                  = 0;
     MyTotalMassLiqVolFraction      = TotalMassLiqVolFraction;             TotalMassLiqVolFraction        = 0;
+    MyTotalVap_LiqDeltaEntropy             = TotalVap_LiqDeltaEntropy;                    TotalVap_LiqDeltaEntropy               = 0;
+    MyTotalLiqMassFraction         = TotalLiqMassFraction;                TotalLiqMassFraction           = 0;
+    MyTotalAreaVap_LiqDeltaEntropy         = TotalAreaVap_LiqDeltaEntropy;                TotalAreaVap_LiqDeltaEntropy           = 0;
+    MyTotalAreaLiqMassFraction     = TotalAreaLiqMassFraction;             TotalAreaLiqMassFraction       = 0;
+    MyTotalMassVap_LiqDeltaEntropy         = TotalMassVap_LiqDeltaEntropy;                TotalMassVap_LiqDeltaEntropy           = 0;
+    MyTotalMassLiqMassFraction     = TotalMassLiqMassFraction;            TotalMassLiqMassFraction       = 0;
+
 
 
 
@@ -16002,6 +16070,13 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
     SU2_MPI::Allreduce(&MyTotalAreaLiqVolFraction, &TotalAreaLiqVolFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassMom0, &TotalMassMom0, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&MyTotalMassLiqVolFraction, &TotalMassLiqVolFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+    SU2_MPI::Allreduce(&MyTotalVap_LiqDeltaEntropy, &TotalVap_LiqDeltaEntropy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalLiqMassFraction, &TotalLiqMassFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaVap_LiqDeltaEntropy, &TotalAreaVap_LiqDeltaEntropy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalAreaLiqMassFraction, &TotalAreaLiqMassFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassVap_LiqDeltaEntropy, &TotalMassVap_LiqDeltaEntropy, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyTotalMassLiqMassFraction, &TotalMassLiqMassFraction, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 
     MyTotalFluxes          = new su2double[nVar];
@@ -16061,6 +16136,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             avgNu             = TotalNu/nVert;
             avgMom0           = TotalMom0/nVert;
             avgLiqVolFraction = TotalLiqVolFraction/nVert;
+            avgVap_LiqDeltaEntropy    = TotalVap_LiqDeltaEntropy/nVert;
+            avgLiqMassFraction= TotalLiqMassFraction/nVert;
 
             /*--- compute area average ---*/
             avgAreaDensity       = TotalAreaDensity / TotalArea;
@@ -16071,6 +16148,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
             avgAreaNu            = TotalAreaNu / TotalArea;
             avgAreaMom0          = TotalAreaMom0 / TotalArea;
             avgAreaLiqVolFraction= TotalAreaLiqVolFraction / TotalArea;
+            avgAreaVap_LiqDeltaEntropy   = TotalAreaVap_LiqDeltaEntropy / TotalArea;
+            avgAreaLiqMassFraction= TotalAreaLiqMassFraction / TotalArea;
 
             /*--- compute mass-flow average ---*/
             if (abs(MachTest)< config->GetAverageMachLimit()) {
@@ -16082,6 +16161,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               avgMassNu             = avgAreaNu;
               avgMassMom0           = avgAreaMom0;
               avgMassLiqVolFraction = avgAreaLiqVolFraction;
+              avgMassVap_LiqDeltaEntropy    = avgAreaVap_LiqDeltaEntropy;
+              avgMassLiqMassFraction = avgAreaLiqMassFraction;
             }else{
               avgMassDensity     = TotalMassDensity / TotalFluxes[0];
               avgMassPressure    = TotalMassPressure / TotalFluxes[0];
@@ -16091,6 +16172,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               avgMassNu             = TotalMassNu / TotalFluxes[0];
               avgMassMom0           = TotalMassMom0 / TotalFluxes[0];
               avgMassLiqVolFraction = TotalMassLiqVolFraction / TotalFluxes[0];
+              avgMassVap_LiqDeltaEntropy    = TotalMassVap_LiqDeltaEntropy / TotalFluxes[0];
+              avgMassLiqMassFraction = TotalMassLiqMassFraction / TotalFluxes[0];
             }
             /*--- compute mixed-out average ---*/
             for (iVar = 0; iVar<nVar; iVar++){
@@ -16110,6 +16193,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               avgMixNu             = avgAreaNu;
               avgMixMom0           = avgAreaMom0;
               avgMixLiqVolFraction = avgAreaLiqVolFraction;
+              avgMixVap_LiqDeltaEntropy           = avgAreaVap_LiqDeltaEntropy;
+              avgMixLiqMassFraction = avgAreaLiqMassFraction;
             }else {
               MixedOut_Average (config, val_init_pressure, AverageFlux[iMarker][iSpan], AverageTurboNormal, avgMixPressure, avgMixDensity);
               avgMixTurboVelocity[0]         = ( AverageFlux[iMarker][iSpan][1] - avgMixPressure) / AverageFlux[iMarker][iSpan][0];
@@ -16128,6 +16213,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               avgMixNu             = avgMassNu;
               avgMixMom0           = avgMassMom0;
               avgMixLiqVolFraction = avgMassLiqVolFraction;
+              avgMixVap_LiqDeltaEntropy           = avgMassVap_LiqDeltaEntropy;
+              avgMixLiqMassFraction = avgMassLiqMassFraction;
             }
 
             /*--- Store averaged value for the selected average method ---*/
@@ -16141,6 +16228,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageNu[iMarker][iSpan]             = avgNu;
               AverageMom0[iMarker][iSpan]           = avgMom0;
               AverageLiqVolFraction[iMarker][iSpan] = avgLiqVolFraction;
+              AverageVap_LiqDeltaEntropy[iMarker][iSpan]    = avgVap_LiqDeltaEntropy;
+              AverageLiqMassFraction[iMarker][iSpan]= avgLiqMassFraction;
               break;
 
             case AREA:
@@ -16152,6 +16241,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageNu[iMarker][iSpan]             = avgAreaNu;
               AverageMom0[iMarker][iSpan]           = avgAreaMom0;
               AverageLiqVolFraction[iMarker][iSpan] = avgAreaLiqVolFraction;
+              AverageVap_LiqDeltaEntropy[iMarker][iSpan]           = avgAreaVap_LiqDeltaEntropy;
+              AverageLiqMassFraction[iMarker][iSpan] = avgAreaLiqMassFraction;
               break;
 
             case MASSFLUX:
@@ -16163,6 +16254,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageNu[iMarker][iSpan]             = avgMassNu;
               AverageMom0[iMarker][iSpan]           = avgMassMom0;
               AverageLiqVolFraction[iMarker][iSpan] = avgMassLiqVolFraction;
+              AverageVap_LiqDeltaEntropy[iMarker][iSpan]           = avgMassVap_LiqDeltaEntropy;
+              AverageLiqMassFraction[iMarker][iSpan] = avgMassLiqMassFraction;
               break;
 
             case MIXEDOUT:
@@ -16174,6 +16267,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
               AverageNu[iMarker][iSpan]             = avgMixNu;
               AverageMom0[iMarker][iSpan]           = avgMixMom0;
               AverageLiqVolFraction[iMarker][iSpan] = avgMixLiqVolFraction;
+              AverageVap_LiqDeltaEntropy[iMarker][iSpan]    = avgMixVap_LiqDeltaEntropy;
+              AverageLiqMassFraction[iMarker][iSpan] = avgMixLiqMassFraction;
               break;
 
             default:
@@ -16227,6 +16322,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuIn[iMarkerTP - 1][iSpan]             = avgNu;
                 Mom0In[iMarkerTP - 1][iSpan]           = avgMom0;
                 LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgLiqVolFraction;
+                Vap_LiqDeltaEntropyIn[iMarkerTP - 1][iSpan]    = avgVap_LiqDeltaEntropy;
+                LiqMassFractionIn[iMarkerTP - 1][iSpan] = avgLiqMassFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgDensity;
@@ -16237,6 +16334,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuOut[iMarkerTP - 1][iSpan]             = avgNu;
                 Mom0Out[iMarkerTP - 1][iSpan]           = avgMom0;
                 LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgLiqVolFraction;
+                Vap_LiqDeltaEntropyOut[iMarkerTP - 1][iSpan]    = avgVap_LiqDeltaEntropy;
+                LiqMassFractionOut[iMarkerTP - 1][iSpan]= avgLiqMassFraction;
               }
 
               break;
@@ -16250,6 +16349,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuIn[iMarkerTP - 1][iSpan]             = avgAreaNu;
                 Mom0In[iMarkerTP - 1][iSpan]           = avgAreaMom0;
                 LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgAreaLiqVolFraction;
+                Vap_LiqDeltaEntropyIn[iMarkerTP - 1][iSpan]           = avgAreaVap_LiqDeltaEntropy;
+                LiqMassFractionIn[iMarkerTP - 1][iSpan] = avgAreaLiqMassFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgAreaDensity;
@@ -16260,6 +16361,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuOut[iMarkerTP - 1][iSpan]             = avgAreaNu/TotalArea;
                 Mom0Out[iMarkerTP - 1][iSpan]           = avgAreaMom0;
                 LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgAreaLiqVolFraction;
+                Vap_LiqDeltaEntropyOut[iMarkerTP - 1][iSpan]           = avgAreaVap_LiqDeltaEntropy;
+                LiqMassFractionOut[iMarkerTP - 1][iSpan] = avgAreaLiqMassFraction;
               }
               break;
 
@@ -16273,6 +16376,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuIn[iMarkerTP - 1][iSpan]             = avgMassNu;
                 Mom0In[iMarkerTP - 1][iSpan]           = avgMassMom0;
                 LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgMassLiqVolFraction;
+                Vap_LiqDeltaEntropyIn[iMarkerTP - 1][iSpan]           = avgMassVap_LiqDeltaEntropy;
+                LiqMassFractionIn[iMarkerTP - 1][iSpan] = avgMassLiqMassFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgMassDensity;
@@ -16283,6 +16388,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuOut[iMarkerTP - 1][iSpan]             = avgMassNu;
                 Mom0Out[iMarkerTP - 1][iSpan]           = avgMassMom0;
                 LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgMassLiqVolFraction;
+                Vap_LiqDeltaEntropyOut[iMarkerTP - 1][iSpan]           = avgMassVap_LiqDeltaEntropy;
+                LiqMassFractionOut[iMarkerTP - 1][iSpan] = avgMassLiqMassFraction;
               }
 
               break;
@@ -16297,6 +16404,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuIn[iMarkerTP - 1][iSpan]             = avgMixNu;
                 Mom0In[iMarkerTP - 1][iSpan]           = avgMixMom0;
                 LiqVolFractionIn[iMarkerTP - 1][iSpan] = avgMixLiqVolFraction;
+                Vap_LiqDeltaEntropyIn[iMarkerTP - 1][iSpan]           = avgMixVap_LiqDeltaEntropy;
+                LiqMassFractionIn[iMarkerTP - 1][iSpan] = avgMixLiqMassFraction;
               }
               else{
                 DensityOut[iMarkerTP - 1][iSpan]  = avgMixDensity;
@@ -16307,6 +16416,8 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                 NuOut[iMarkerTP - 1][iSpan]             = avgMixNu;
                 Mom0Out[iMarkerTP - 1][iSpan]           = avgMixMom0;
                 LiqVolFractionOut[iMarkerTP - 1][iSpan] = avgMixLiqVolFraction;
+                Vap_LiqDeltaEntropyOut[iMarkerTP - 1][iSpan]    = avgMixVap_LiqDeltaEntropy;
+                LiqMassFractionOut[iMarkerTP - 1][iSpan]= avgMixLiqMassFraction;
               }
               break;
 
@@ -16460,6 +16571,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
   su2double     densityIn, pressureIn, normalVelocityIn, tangVelocityIn, radialVelocityIn;
   su2double     densityOut, pressureOut, normalVelocityOut, tangVelocityOut, radialVelocityOut;
   su2double     kineIn, omegaIn, nuIn, kineOut, omegaOut, nuOut, mom0In, liqVolFractionIn, mom0Out, liqVolFractionOut;
+  su2double     vap_liqDeltaEntropyIn, liqMassFractionIn, vap_liqDeltaEntropyOut, liqMassFractionOut;
   //TODO (turbo) implement interpolation so that Inflow and Outflow spanwise section can be different
 
   for (iSpan= 0; iSpan < nSpanWiseSections + 1 ; iSpan++){
@@ -16470,8 +16582,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
     int *TotMarkerTP = NULL;
 
-    n1          = 10;
-    n2          = 10;
+    n1          = 12;
+    n2          = 12;
     n1t         = n1*size;
     n2t         = n2*size;
     TurbPerfIn  = new su2double[n1];
@@ -16504,6 +16616,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     liqVolFractionIn     = -1.0;
     mom0Out              = -1.0;
     liqVolFractionOut    = -1.0;
+    vap_liqDeltaEntropyIn        = -1.0;
+    liqMassFractionIn    = -1.0;
+    vap_liqDeltaEntropyOut       = -1.0;
+    liqMassFractionOut   = -1.0;
 
 
     markerTP             = -1;
@@ -16525,6 +16641,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             nuIn                = NuIn[iMarkerTP -1][iSpan];
             mom0In              = Mom0In[iMarkerTP -1][iSpan];
             liqVolFractionIn    = LiqVolFractionIn[iMarkerTP -1][iSpan];
+            vap_liqDeltaEntropyIn       = Vap_LiqDeltaEntropyIn[iMarkerTP -1][iSpan];
+            liqMassFractionIn   = LiqMassFractionIn[iMarkerTP -1][iSpan];
 
 
 #ifdef HAVE_MPI
@@ -16538,6 +16656,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfIn[7]  = nuIn;
             TurbPerfIn[8]  = mom0In;
             TurbPerfIn[9]  = liqVolFractionIn;
+            TurbPerfIn[10]  = vap_liqDeltaEntropyIn;
+            TurbPerfIn[11]  = liqMassFractionIn;
 #endif
           }
 
@@ -16555,6 +16675,9 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             nuOut                = NuOut[iMarkerTP -1][iSpan];
             mom0Out              = Mom0Out[iMarkerTP -1][iSpan];
             liqVolFractionOut    = LiqVolFractionOut[iMarkerTP -1][iSpan];
+            vap_liqDeltaEntropyOut       = Vap_LiqDeltaEntropyOut[iMarkerTP -1][iSpan];
+            liqMassFractionOut   = LiqMassFractionOut[iMarkerTP -1][iSpan];
+
 
 
 
@@ -16569,6 +16692,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
             TurbPerfOut[7]  = nuOut;
             TurbPerfOut[8]  = mom0Out;
             TurbPerfOut[9]  = liqVolFractionOut;
+            TurbPerfOut[10]  = vap_liqDeltaEntropyOut;
+            TurbPerfOut[11]  = liqMassFractionOut;
 #endif
           }
         }
@@ -16618,6 +16743,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           mom0In           = TotTurbPerfIn[n1*i+8];
           liqVolFractionIn = 0.0;
           liqVolFractionIn = TotTurbPerfIn[n1*i+9];
+          vap_liqDeltaEntropyIn           = 0.0;
+          vap_liqDeltaEntropyIn           = TotTurbPerfIn[n1*i+10];
+          liqMassFractionIn = 0.0;
+          liqMassFractionIn = TotTurbPerfIn[n1*i+11];
 
           markerTP         = -1;
           markerTP         = TotMarkerTP[i];
@@ -16644,6 +16773,10 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
           mom0Out           = TotTurbPerfOut[n1*i+8];
           liqVolFractionOut = 0.0;
           liqVolFractionOut = TotTurbPerfOut[n1*i+9];
+          vap_liqDeltaEntropyOut           = 0.0;
+          vap_liqDeltaEntropyOut           = TotTurbPerfOut[n1*i+10];
+          liqMassFractionOut = 0.0;
+          liqMassFractionOut = TotTurbPerfOut[n1*i+11];
         }
       }
 
@@ -16665,6 +16798,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       NuIn[markerTP -1][iSpan]                   = nuIn;
       Mom0In[markerTP -1][iSpan]                 = mom0In;
       LiqVolFractionIn[markerTP -1][iSpan]       = liqVolFractionIn;
+      Vap_LiqDeltaEntropyIn[markerTP -1][iSpan]          = vap_liqDeltaEntropyIn;
+      LiqMassFractionIn[markerTP -1][iSpan]      = liqMassFractionIn;
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
       PressureOut[markerTP -1][iSpan]            = pressureOut;
@@ -16677,6 +16812,8 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
       NuOut[markerTP -1][iSpan]                  = nuOut;
       Mom0Out[markerTP -1][iSpan]                = mom0Out;
       LiqVolFractionOut[markerTP -1][iSpan]      = liqVolFractionOut;
+      Vap_LiqDeltaEntropyOut[markerTP -1][iSpan]         = vap_liqDeltaEntropyOut;
+      LiqMassFractionOut[markerTP -1][iSpan]     = liqMassFractionOut;
 
     }
   }
@@ -16800,6 +16937,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   AverageOmega                      = NULL;
   AverageMom0                       = NULL;
   AverageLiqVolFraction             = NULL;
+  AverageVap_LiqDeltaEntropy        = NULL;
+  AverageLiqMassFraction            = NULL;
   ExtAverageNu                      = NULL;
   ExtAverageKine                    = NULL;
   ExtAverageOmega                   = NULL;

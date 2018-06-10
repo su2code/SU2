@@ -5027,10 +5027,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           /*--- Adjoint two phase residuals ---*/
 
           if (two_phase) {
-            if (!frozen_visc) {
               for (iVar = 0; iVar < nVar_Adj2phase; iVar++)
                 residual_adjtwophase[iVar] = solver_container[val_iZone][FinestMesh][ADJTWO_PHASE_SOL]->GetRes_RMS(iVar);
-            }
           }
           
         }
@@ -5361,8 +5359,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
               /*--- Adjoint two phase residuals ---*/
               if (two_phase)
-                if (!frozen_visc)
-                  SPRINTF (adj_2phase_resid, ", %12.10f, %12.10f", log10(max(residual_adjtwophase[0], 1e-40)), log10(max(residual_adjtwophase[3],1e-40)));
+
+                  SPRINTF (adj_2phase_resid, ", %14.8e, %14.8e", log10(residual_adjtwophase[0]),
+                		  log10(residual_adjtwophase[3]));
             
             break;
             
