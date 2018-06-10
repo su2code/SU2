@@ -5160,10 +5160,6 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
 
   bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
 
-  /*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
-
-  unsigned short SolContainer_Position_fea = config_container[targetZone]->GetContainerPosition(RUNTIME_FEA_SYS);
-
   /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
   unsigned long ExtIter = config_container[targetZone]->GetExtIter();
   config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
