@@ -19795,7 +19795,11 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Apply roll to cut the nacelle ---*/
 
-    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Angle = MinAngle + iPlane*dAngle*PI_NUMBER/180.0;
+    
+    if (Angle <= 0) Angle = 1E-6;
+    if (Angle >= 360) Angle = 359.999999;
+
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);
