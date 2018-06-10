@@ -909,7 +909,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker, bool inlet_surface);
+                          CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief A virtual member.
@@ -1493,7 +1493,7 @@ public:
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  virtual void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  virtual void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief A virtual member.
@@ -2245,7 +2245,7 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_NetCThrust(void);
+  virtual su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief A virtual member.
@@ -4388,7 +4388,7 @@ protected:
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_SolidCD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_NetThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_ReverseFlow, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_IDC,        /*!< \brief Total IDC coefficient for all the boundaries. */
@@ -4400,8 +4400,6 @@ protected:
   Total_ByPassProp_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Adiab_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
@@ -4935,7 +4933,7 @@ public:
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
     */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -5584,7 +5582,7 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_NetCThrust(void);
+  su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5788,7 +5786,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -9384,7 +9382,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Set the solution using the Freestream values.
@@ -10126,7 +10124,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.
