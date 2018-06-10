@@ -146,7 +146,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../include/adt_structure.hpp \
-	../include/adt_structure.inl ../src/cgns_elements.cpp \
+	../include/adt_structure.inl ../include/wall_model.hpp \
+	../include/wall_model.inl ../src/cgns_elements.cpp \
 	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
@@ -164,7 +165,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
 	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
 	../src/element_structure.cpp ../src/element_linear.cpp \
-	../src/interpolation_structure.cpp ../src/adt_structure.cpp
+	../src/interpolation_structure.cpp ../src/adt_structure.cpp \
+	../src/wall_model.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/libSU2_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-config_structure.$(OBJEXT) \
@@ -192,7 +194,8 @@ am__objects_1 = ../src/libSU2_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-element_structure.$(OBJEXT) \
 	../src/libSU2_a-element_linear.$(OBJEXT) \
 	../src/libSU2_a-interpolation_structure.$(OBJEXT) \
-	../src/libSU2_a-adt_structure.$(OBJEXT)
+	../src/libSU2_a-adt_structure.$(OBJEXT) \
+	../src/libSU2_a-wall_model.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am_libSU2_a_OBJECTS = $(am__objects_1)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
 libSU2_AD_a_AR = $(AR) $(ARFLAGS)
@@ -237,7 +240,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../include/adt_structure.hpp \
-	../include/adt_structure.inl ../src/cgns_elements.cpp \
+	../include/adt_structure.inl ../include/wall_model.hpp \
+	../include/wall_model.inl ../src/cgns_elements.cpp \
 	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
@@ -255,7 +259,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
 	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
 	../src/element_structure.cpp ../src/element_linear.cpp \
-	../src/interpolation_structure.cpp ../src/adt_structure.cpp
+	../src/interpolation_structure.cpp ../src/adt_structure.cpp \
+	../src/wall_model.cpp
 am__objects_2 = ../src/libSU2_AD_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-config_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-dense_matrix_product.$(OBJEXT) \
@@ -282,7 +287,8 @@ am__objects_2 = ../src/libSU2_AD_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-element_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-element_linear.$(OBJEXT) \
 	../src/libSU2_AD_a-interpolation_structure.$(OBJEXT) \
-	../src/libSU2_AD_a-adt_structure.$(OBJEXT)
+	../src/libSU2_AD_a-adt_structure.$(OBJEXT) \
+	../src/libSU2_AD_a-wall_model.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am_libSU2_AD_a_OBJECTS = $(am__objects_2)
 libSU2_AD_a_OBJECTS = $(am_libSU2_AD_a_OBJECTS)
 libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
@@ -328,7 +334,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/gauss_structure.hpp ../include/gauss_structure.inl \
 	../include/element_structure.hpp \
 	../include/element_structure.inl ../include/adt_structure.hpp \
-	../include/adt_structure.inl ../src/cgns_elements.cpp \
+	../include/adt_structure.inl ../include/wall_model.hpp \
+	../include/wall_model.inl ../src/cgns_elements.cpp \
 	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
@@ -346,7 +353,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/linear_solvers_structure_b.cpp ../src/ad_structure.cpp \
 	../src/gauss_jacobi_quadrature.cpp ../src/gauss_structure.cpp \
 	../src/element_structure.cpp ../src/element_linear.cpp \
-	../src/interpolation_structure.cpp ../src/adt_structure.cpp
+	../src/interpolation_structure.cpp ../src/adt_structure.cpp \
+	../src/wall_model.cpp
 am__objects_3 = ../src/libSU2_DIRECTDIFF_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-dense_matrix_product.$(OBJEXT) \
@@ -373,7 +381,8 @@ am__objects_3 = ../src/libSU2_DIRECTDIFF_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-element_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-element_linear.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-interpolation_structure.$(OBJEXT) \
-	../src/libSU2_DIRECTDIFF_a-adt_structure.$(OBJEXT)
+	../src/libSU2_DIRECTDIFF_a-adt_structure.$(OBJEXT) \
+	../src/libSU2_DIRECTDIFF_a-wall_model.$(OBJEXT)
 @BUILD_DIRECTDIFF_TRUE@am_libSU2_DIRECTDIFF_a_OBJECTS =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__objects_3)
 libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
@@ -635,6 +644,8 @@ lib_sources = \
   ../include/element_structure.inl \
   ../include/adt_structure.hpp \
   ../include/adt_structure.inl \
+  ../include/wall_model.hpp \
+  ../include/wall_model.inl \
   ../src/cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/dense_matrix_product.cpp \
@@ -661,7 +672,8 @@ lib_sources = \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
-  ../src/adt_structure.cpp
+  ../src/adt_structure.cpp \
+  ../src/wall_model.cpp
 
 
 # always link to built dependencies from ./externals
@@ -790,6 +802,8 @@ clean-noinstLIBRARIES:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-adt_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-wall_model.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
 	$(AM_V_AR)$(libSU2_a_AR) libSU2.a $(libSU2_a_OBJECTS) $(libSU2_a_LIBADD)
@@ -847,6 +861,8 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 ../src/libSU2_AD_a-interpolation_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-adt_structure.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_AD_a-wall_model.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_AD_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_AD.a
@@ -906,6 +922,8 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-adt_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_DIRECTDIFF_a-wall_model.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPENDENCIES) $(EXTRA_libSU2_DIRECTDIFF_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_DIRECTDIFF.a
 	$(AM_V_AR)$(libSU2_DIRECTDIFF_a_AR) libSU2_DIRECTDIFF.a $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_LIBADD)
@@ -945,6 +963,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-primal_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-wall_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-ad_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-adt_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-cgns_elements.Po@am__quote@
@@ -972,6 +991,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-ad_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-adt_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-cgns_elements.Po@am__quote@
@@ -999,6 +1019,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-wall_model.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1394,6 +1415,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-adt_structure.obj `if test -f '../src/adt_structure.cpp'; then $(CYGPATH_W) '../src/adt_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/adt_structure.cpp'; fi`
 
+../src/libSU2_a-wall_model.o: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-wall_model.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-wall_model.Tpo -c -o ../src/libSU2_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_a-wall_model.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+
+../src/libSU2_a-wall_model.obj: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-wall_model.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-wall_model.Tpo -c -o ../src/libSU2_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_a-wall_model.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+
 ../src/libSU2_AD_a-cgns_elements.o: ../src/cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-cgns_elements.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-cgns_elements.Tpo -c -o ../src/libSU2_AD_a-cgns_elements.o `test -f '../src/cgns_elements.cpp' || echo '$(srcdir)/'`../src/cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-cgns_elements.Tpo ../src/$(DEPDIR)/libSU2_AD_a-cgns_elements.Po
@@ -1772,6 +1807,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-adt_structure.obj `if test -f '../src/adt_structure.cpp'; then $(CYGPATH_W) '../src/adt_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/adt_structure.cpp'; fi`
 
+../src/libSU2_AD_a-wall_model.o: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-wall_model.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Tpo -c -o ../src/libSU2_AD_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_AD_a-wall_model.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+
+../src/libSU2_AD_a-wall_model.obj: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-wall_model.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Tpo -c -o ../src/libSU2_AD_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_AD_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_AD_a-wall_model.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+
 ../src/libSU2_DIRECTDIFF_a-cgns_elements.o: ../src/cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-cgns_elements.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-cgns_elements.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-cgns_elements.o `test -f '../src/cgns_elements.cpp' || echo '$(srcdir)/'`../src/cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-cgns_elements.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-cgns_elements.Po
@@ -2149,6 +2198,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/adt_structure.cpp' object='../src/libSU2_DIRECTDIFF_a-adt_structure.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-adt_structure.obj `if test -f '../src/adt_structure.cpp'; then $(CYGPATH_W) '../src/adt_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/adt_structure.cpp'; fi`
+
+../src/libSU2_DIRECTDIFF_a-wall_model.o: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-wall_model.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_DIRECTDIFF_a-wall_model.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-wall_model.o `test -f '../src/wall_model.cpp' || echo '$(srcdir)/'`../src/wall_model.cpp
+
+../src/libSU2_DIRECTDIFF_a-wall_model.obj: ../src/wall_model.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-wall_model.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_DIRECTDIFF_a-wall_model.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \

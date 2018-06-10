@@ -14236,8 +14236,9 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray, resFaces,
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -14306,8 +14307,9 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray, resFaces,
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -14790,8 +14792,9 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray, resFaces,
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -14854,8 +14857,9 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray, resFaces,
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -14929,13 +14933,16 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
           is negated or it is set to zero. Some experiments are needed to see
           which formulation gives better results. ---*/
     for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned long  lll    = l + ll;
       const unsigned short llNVar = ll*nVar;
 
       for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Easier storage of the left and right solution for this integration point. */
-        const su2double *UL = solIntL + NPad*i + llNVar;
-              su2double *UR = solIntR + NPad*i + llNVar;
+        /* Easier storage of the grid velocity and the left and right solution
+           for this integration point. */
+        const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
+        const su2double *UL      = solIntL + NPad*i + llNVar;
+              su2double *UR      = solIntR + NPad*i + llNVar;
 
         /* Set the right state. The initial value of the total energy is the
            energy of the left state. Also compute the difference in kinetic
@@ -14945,11 +14952,13 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
 
         su2double DensityInv = 1.0/UL[0];
         su2double diffKin    = 0.0;
-        for(unsigned short iDim=1; iDim<=nDim; ++iDim) {
-          UR[iDim] = -factWallVel*UL[iDim];
-          const su2double velL = DensityInv*UL[iDim];
-          const su2double velR = DensityInv*UR[iDim];
-          diffKin += velL*velL - velR*velR;
+        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+          const su2double velL = DensityInv*UL[iDim+1];
+          const su2double dV   = factWallVel*(velL-gridVel[iDim]);
+          const su2double velR = gridVel[iDim] - dV;
+
+          UR[iDim+1] = UR[0]*velR;
+          diffKin   += velL*velL - velR*velR;
         }
 
         /* As only the internal energy of UR is equal to UL, the difference
@@ -14961,8 +14970,10 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    Wall_HeatFlux, true, &surfElem[l], solIntL,
-                                    solIntR, workArray, resFaces, indResFaces);
+                                    Wall_HeatFlux, true, 0.0, false,
+                                    &surfElem[l], solIntL, solIntR,
+                                    workArray, resFaces, indResFaces,
+                                    boundaries[val_marker].wallModel);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -15041,13 +15052,16 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
           is negated or it is set to zero. Some experiments are needed to see
           which formulation gives better results. ---*/
     for(unsigned short ll=0; ll<llEnd; ++ll) {
+      const unsigned long  lll    = l + ll;
       const unsigned short llNVar = ll*nVar;
 
       for(unsigned short i=0; i<nInt; ++i) {
 
-        /* Easier storage of the left and right solution for this integration point. */
-        const su2double *UL = solIntL + NPad*i + llNVar;
-              su2double *UR = solIntR + NPad*i + llNVar;
+         /* Easier storage of the grid velocity and the left and right solution
+           for this integration point. */
+        const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
+        const su2double *UL      = solIntL + NPad*i + llNVar;
+              su2double *UR      = solIntR + NPad*i + llNVar;
 
         /* Set the right state for the density and the momentum variables of the
            right state. Compute twice the possible kinetic energy. */
@@ -15055,9 +15069,12 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
         su2double DensityInv = 1.0/UL[0];
         su2double kinEner    = 0.0;
         for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-          UR[iDim+1] = -factWallVel*UL[iDim+1];
-          const su2double velR = DensityInv*UR[iDim];
-          kinEner += velR*velR;
+          const su2double velL = DensityInv*UL[iDim+1];
+          const su2double dV   = factWallVel*(velL-gridVel[iDim]);
+          const su2double velR = gridVel[iDim] - dV;
+
+          UR[iDim+1] = UR[0]*velR;
+          kinEner   += velR*velR;
         }
 
         /* Compute the total energy of the right state. */
@@ -15068,8 +15085,10 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, TWall, true,
+                                    &surfElem[l], solIntL, solIntR,
+                                    workArray, resFaces, indResFaces,
+                                    boundaries[val_marker].wallModel);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -15132,8 +15151,9 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray,
+                                    resFaces, indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -15248,8 +15268,9 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
     /* The remainder of the boundary treatment is the same for all
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
-                                    0.0, false, &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces);
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, workArray,
+                                    resFaces, indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -15264,15 +15285,15 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                                        const unsigned short     NPad,
                                        const su2double          Wall_HeatFlux,
                                        const bool               HeatFlux_Prescribed,
+                                       const su2double          Wall_Temperature,
+                                       const bool               Temperature_Prescribed,
                                        const CSurfaceElementFEM *surfElem,
                                        const su2double          *solIntL,
                                        const su2double          *solIntR,
                                              su2double          *workArray,
                                              su2double          *resFaces,
-                                             unsigned long      &indResFaces) {
-
-  /* Initialization of the variable for the timer function. */
-  double tick = 0.0;
+                                             unsigned long      &indResFaces,
+                                             CWallModel         *wallModel) {
 
   /*--- Get the information from the standard element, which is the same
         for all the faces in the chunks considered. ---*/
@@ -15281,9 +15302,6 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
   const unsigned short nDOFsElem = standardBoundaryFacesSol[ind].GetNDOFsElem();
   const su2double *derBasisElem  = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
-  /* Easier storage of the number of bytes to copy in the memcpy calls. */
-  const unsigned long nBytes = nVar*sizeof(su2double);
-
   /*--- Set the pointers for the local arrays. ---*/
   su2double *viscosityInt = workArray;
   su2double *kOverCvInt   = viscosityInt + nFaceSimul*nInt;
@@ -15291,10 +15309,56 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
   su2double *fluxes       = gradSolInt   + NPad*nInt*nDim;
   su2double *viscFluxes   = fluxes       + NPad*max(nInt*nDim, (int) nDOFsElem);
 
-  /* Set the pointer solElem to fluxes, just for readability. It is a temporary
-     storage of the solution of the elements, such that the gradients can be
-     computed efficiently. */
-  su2double *solElem = fluxes;
+  /* Compute the viscous fluxes in the integration points of the faces that
+     are treated simulaneously. Make a distinction between a wall function
+     treatment and a standard computation of the viscous fluxes. */
+  if( wallModel ) {
+    WallTreatmentViscousFluxes(config, nFaceSimul, NPad, nInt, Wall_HeatFlux,
+                               HeatFlux_Prescribed, Wall_Temperature,
+                               Temperature_Prescribed, surfElem,
+                               gradSolInt, viscFluxes, viscosityInt,
+                               kOverCvInt, wallModel);
+  }
+  else {
+    ComputeViscousFluxesBoundaryFaces(config, nFaceSimul, NPad, nInt, nDOFsElem,
+                                      Wall_HeatFlux, HeatFlux_Prescribed,
+                                      derBasisElem, surfElem, solIntL,
+                                      fluxes, gradSolInt, viscFluxes,
+                                      viscosityInt, kOverCvInt);
+  }
+
+  /* The remainder of the boundary condition treatment is the same for all
+     types of boundary conditions, including the symmetry plane and the
+     wall function treatment. The function ResidualViscousBoundaryFace will
+     carry out this task. */
+
+  ResidualViscousBoundaryFace(config, conv_numerics, nFaceSimul, NPad, surfElem,
+                              solIntL, solIntR, gradSolInt, fluxes, viscFluxes,
+                              viscosityInt, kOverCvInt, resFaces, indResFaces);
+}
+
+void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
+                                       CConfig                  *config,
+                                       const unsigned short     nFaceSimul,
+                                       const unsigned short     NPad,
+                                       const unsigned short     nInt,
+                                       const unsigned short     nDOFsElem,
+                                       const su2double          Wall_HeatFlux,
+                                       const bool               HeatFlux_Prescribed,
+                                       const su2double          *derBasisElem,
+                                       const CSurfaceElementFEM *surfElem,
+                                       const su2double          *solIntL,
+                                             su2double          *solElem,
+                                             su2double          *gradSolInt,
+                                             su2double          *viscFluxes,
+                                             su2double          *viscosityInt,
+                                             su2double          *kOverCvInt) {
+
+  /* Initialization of the variable for the timer function. */
+  double tick = 0.0;
+
+  /* Easier storage of the number of bytes to copy in the memcpy calls. */
+  const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 1: Compute the gradients of the conservative variables in the  ---*/
@@ -15329,7 +15393,7 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
      carry out the matrix product. */
   config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt);
-  config->GEMM_Tock(tick, "ViscousBoundaryFacesBCTreatment", nInt*nDim, NPad, nDOFsElem);
+  config->GEMM_Tock(tick, "ComputeViscousFluxesBoundaryFaces", nInt*nDim, NPad, nDOFsElem);
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Compute the viscous normal fluxes in the integration points ---*/
@@ -15351,17 +15415,129 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                           surfElem[l].wallDistance.data(),
                           viscFluxes, viscosityInt, kOverCvInt);
   }
+}
 
-  /*---------------------------------------------------------------------------*/
-  /*--- Step 3: The remainder of the boundary condition treatment is the    ---*/
-  /*---         same for all types of boundary conditions, including the    ---*/
-  /*---         symmetry plane. The function ResidualViscousBoundaryFace    ---*/
-  /*---         will carry out this task.                                   ---*/
-  /*---------------------------------------------------------------------------*/
+void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
+                                  CConfig                  *config,
+                                  const unsigned short     nFaceSimul,
+                                  const unsigned short     NPad,
+                                  const unsigned short     nInt,
+                                  const su2double          Wall_HeatFlux,
+                                  const bool               HeatFlux_Prescribed,
+                                  const su2double          Wall_Temperature,
+                                  const bool               Temperature_Prescribed,
+                                  const CSurfaceElementFEM *surfElem,
+                                        su2double          *workArray,
+                                        su2double          *viscFluxes,
+                                        su2double          *viscosityInt,
+                                        su2double          *kOverCvInt,
+                                        CWallModel         *wallModel) {
 
-  ResidualViscousBoundaryFace(config, conv_numerics, nFaceSimul, NPad, surfElem,
-                              solIntL, solIntR, gradSolInt, fluxes, viscFluxes,
-                              viscosityInt, kOverCvInt, resFaces, indResFaces);
+  /* Initialization of the variable for the timer function. */
+  double tick = 0.0;
+
+  /* Loop over the simultaneously treated faces. */
+  for(unsigned short l=0; l<nFaceSimul; ++l) {
+    const unsigned short llNVar = l*nVar;
+
+    /* Loop over the donors for this boundary face. */
+    for(unsigned long j=0; j<surfElem[l].donorsWallFunction.size(); ++j) {
+
+      /* Easier storage of the element ID of the donor and set the pointer
+         where the solution of this element starts. Note that by construction
+         the time level of the donor element is the same as the time level
+         of the boundary face. */
+      const unsigned long donorID    = surfElem[l].donorsWallFunction[j];
+      const unsigned short timeLevel = volElem[donorID].timeLevel;
+      const unsigned short nDOFsElem = volElem[donorID].nDOFsSol;
+      const su2double *solDOFsElem   = VecWorkSolDOFs[timeLevel].data()
+                                     + nVar*volElem[donorID].offsetDOFsSolThisTimeLevel;
+
+      /* Determine the number of integration points for this donor and
+         interpolate the solution for the corresponding exchange points. */
+      const unsigned short nIntThisDonor = surfElem[l].nIntPerWallFunctionDonor[j+1]
+                                         - surfElem[l].nIntPerWallFunctionDonor[j];
+
+      config->GEMM_Tick(&tick);
+      DenseMatrixProduct(nIntThisDonor, nVar, nDOFsElem,
+                         surfElem[l].matWallFunctionDonor[j].data(), solDOFsElem,
+                         workArray);
+      config->GEMM_Tock(tick, "WallTreatmentViscousFluxes", nIntThisDonor, nVar, nDOFsElem);
+
+      /* Loop over the integration points for this donor element. */
+      for(unsigned short i=surfElem[l].nIntPerWallFunctionDonor[j];
+                         i<surfElem[l].nIntPerWallFunctionDonor[j+1]; ++i) {
+
+        /* Easier storage of the actual integration point. */
+        const unsigned short ii = surfElem[l].intPerWallFunctionDonor[i];
+
+        /* Determine the normal and the wall velocity for this integration point. */
+        const su2double *normals = surfElem[l].metricNormalsFace.data() + ii*(nDim+1);
+        const su2double *gridVel = surfElem[l].gridVelocities.data() + ii*nDim;
+
+        /* Determine the velocities and pressure in the exchange point. */
+        const su2double *solInt = workArray
+                                + nVar*(i-surfElem[l].nIntPerWallFunctionDonor[j]);
+
+        su2double rhoInv = 1.0/solInt[0];
+        su2double vel[]  = {0.0, 0.0, 0.0};
+        for(unsigned short k=0; k<nDim; ++k) vel[k] = rhoInv*solInt[k+1];
+ 
+        su2double vel2Mag = vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2];
+        su2double eInt    = rhoInv*solInt[nVar-1] - 0.5*vel2Mag;
+
+        FluidModel->SetTDState_rhoe(solInt[0], eInt);
+        const su2double Pressure = FluidModel->GetPressure();
+
+        /* Subtract the prescribed wall velocity, i.e. grid velocity
+           from the velocity in the exchange point. */
+        for(unsigned short k=0; k<nDim; ++k) vel[k] -= gridVel[k];
+
+        /* Determine the tangential velocity by subtracting the normal
+           velocity component. */
+        su2double velNorm = 0.0;
+        for(unsigned short k=0; k<nDim; ++k) velNorm += normals[k]*vel[k];
+        for(unsigned short k=0; k<nDim; ++k) vel[k]  -= normals[k]*velNorm;
+
+        /* Determine the magnitude of the tangential velocity as well
+           as its direction (unit vector). */
+        su2double velTan = sqrt(vel[0]*vel[0] + vel[1]*vel[1] + vel[2]*vel[2]);
+        velTan = max(velTan,1.e-25);
+
+        su2double dirTan[] = {0.0, 0.0, 0.0};
+        for(unsigned short k=0; k<nDim; ++k) dirTan[k] = vel[k]/velTan;
+
+        /* Compute the wall shear stress and heat flux vector using
+           the wall model. */
+        su2double tauWall, qWall, ViscosityWall, kOverCvWall;
+        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, Pressure,
+                                              Wall_HeatFlux, HeatFlux_Prescribed,
+                                              Wall_Temperature, Temperature_Prescribed,
+                                              tauWall, qWall, ViscosityWall, kOverCvWall);
+
+        /* Determine the position where the viscous fluxes, viscosity and
+           thermal conductivity must be stored. */
+        su2double *normalFlux = viscFluxes + NPad*ii + llNVar;
+
+        const unsigned short ind = l*nInt + ii;
+        viscosityInt[ind] = ViscosityWall;
+        kOverCvInt[ind]   = kOverCvWall;
+
+        /* Compute the magnitude of the prescribed velocity. */
+        su2double velTanPrescribed = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          velTanPrescribed += gridVel[k]*gridVel[k];
+        velTanPrescribed = sqrt(velTanPrescribed);
+
+        /* Compute the viscous normal flux. Note that the unscaled normals
+           must be used, hence the multiplication with normals[nDim]. */
+        normalFlux[0] = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          normalFlux[k+1] = normals[nDim]*tauWall*dirTan[k];
+        normalFlux[nVar-1] = normals[nDim]*(tauWall*velTanPrescribed - qWall);
+      }
+    }
+  }
 }
 
 void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
