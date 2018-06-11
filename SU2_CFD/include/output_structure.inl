@@ -46,7 +46,21 @@ inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short
 inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
 
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
+ 
+inline void COutput::SetHistoryFile_Header(CConfig *config) { }
 
-inline void COutput::SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
- bool DualTime_Iteration, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void COutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool COutput::WriteScreen_Header(CConfig *config) { }
+
+inline void COutput::SetScreen_Header(CConfig *config) { }
+
+inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void COutput::SetScreen_Output(CConfig *config) { }
+
+inline void COutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
 

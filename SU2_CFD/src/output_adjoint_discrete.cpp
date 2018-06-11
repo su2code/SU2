@@ -2008,3 +2008,20 @@ void CDiscAdjFlowOutput::SetConvHistory_Body(CGeometry ****geometry,
 
   }
 }
+
+inline void CDiscAdjFlowOutput::SetHistoryFile_Header(CConfig *config) { }
+
+inline bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CDiscAdjFlowOutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) { }
+
+inline void CDiscAdjFlowOutput::SetScreen_Header(CConfig *config) { }
+
+inline bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CDiscAdjFlowOutput::SetScreen_Output(CConfig *config) { }
+
+inline void CDiscAdjFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }

@@ -1357,3 +1357,21 @@ void CIncFlowOutput::SetConvHistory_Body(CGeometry ****geometry,
 
   }
 }
+
+inline void CIncFlowOutput::SetHistoryFile_Header(CConfig *config) { }
+
+inline bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CIncFlowOutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool CIncFlowOutput::WriteScreen_Header(CConfig *config) { }
+
+inline void CIncFlowOutput::SetScreen_Header(CConfig *config) { }
+
+inline bool CIncFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CIncFlowOutput::SetScreen_Output(CConfig *config) { }
+
+inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+

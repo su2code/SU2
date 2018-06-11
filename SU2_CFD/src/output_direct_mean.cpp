@@ -1837,3 +1837,19 @@ void CFlowOutput::SetConvHistory_Body(CGeometry ****geometry,
 
 }
 
+inline void CFlowOutput::SetHistoryFile_Header(CConfig *config) { }
+
+inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CFlowOutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool CFlowOutput::WriteScreen_Header(CConfig *config) { }
+
+inline void CFlowOutput::SetScreen_Header(CConfig *config) { }
+
+inline bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CFlowOutput::SetScreen_Output(CConfig *config) { }
+
+inline void CFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }

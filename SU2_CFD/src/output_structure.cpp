@@ -4262,6 +4262,42 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
+void COutput::SetConvHistory_Body(CGeometry ****geometry,
+                                     CSolver *****solver_container,
+                                     CConfig **config,
+                                     CIntegration ****integration,
+                                     bool DualTime_Iteration,
+                                     su2double timeused,
+                                     unsigned short val_iZone,
+                                     unsigned short val_iInst) {
+
+  /*--- Output using only the master node ---*/
+
+  if (rank == MASTER_NODE) {
+
+    bool write_header, write_history, write_screen;
+
+    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
+
+    LoadOutput_Data(geometry, solver_container, config, integration, DualTime_Iteration,
+                    timeused, val_iZone, val_iInst);
+
+    /*--- Write the history file ---------------------------------------------------------------------------*/
+    write_history = WriteHistoryFile_Output(config[val_iZone], DualTime_Iteration);
+    SetHistoryFile_Output(config[val_iZone]);
+
+    /*--- Write the screen header---------------------------------------------------------------------------*/
+    write_header = WriteScreen_Header(config[val_iZone]);
+    if (write_header) SetScreen_Header(config[val_iZone]);
+
+    /*--- Write the screen output---------------------------------------------------------------------------*/
+    write_screen = WriteScreen_Output(config[val_iZone], DualTime_Iteration);
+    SetScreen_Output(config[val_iZone]);
+
+  }
+
+}
+
 void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone) {
   
   su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];

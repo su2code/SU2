@@ -1784,7 +1784,7 @@ enum ENUM_SCREEN_OUTPUT {
   SOUT_INTITER = 0,    /*!< \brief Internal iteration. */
   SOUT_EXTITER = 1,    /*!< \brief External iteration. */
   SOUT_TIME = 2,       /*!< \brief Time taken by the iteration. */
-  SOUT_PHYSTIME = 2,   /*!< \brief Physical time of the iteration. */
+  SOUT_PHYSTIME = 3,   /*!< \brief Physical time of the iteration. */
   SOUT_RHO = 10,       /*!< \brief Density output. */
   SOUT_RHOU1 = 11,     /*!< \brief Momentum-x output. */
   SOUT_RHOU2 = 12,     /*!< \brief Momentum-y output. */
@@ -1831,7 +1831,46 @@ static const map<string, ENUM_SCREEN_OUTPUT> Screen_Output_Map = CCreateMap<stri
 ("DISPX", SOUT_DISPX)
 ("DISPY", SOUT_DISPY)
 ("DISPZ", SOUT_DISPZ)
-("VMS", SOUT_VMS);
+("VON_MISES_STRESS", SOUT_VMS);
+
+/*!
+ * \brief types of screen output fields
+ */
+enum ENUM_HISTFILE_OUTPUT {
+  HOUT_INTITER = 0,    /*!< \brief Internal iteration. */
+  HOUT_EXTITER = 1,    /*!< \brief External iteration. */
+  HOUT_TIME = 2,       /*!< \brief Time taken by the iteration. */
+  HOUT_PHYSTIME = 3,   /*!< \brief Physical time of the iteration. */
+  HOUT_RESIDUALS = 4,       /*!< \brief Residuals output. */
+  HOUT_LINSOL_ITER = 5,     /*!< \brief Linear solver iteration. */
+  HOUT_CUSTOM_OF = 6,       /*!< \brief Custom objective function. */
+  HOUT_AEROCOEFF = 10,      /*!< \brief Aerodynamic coefficients. */
+  HOUT_FORCECOEFF = 11,     /*!< \brief Force coefficients(projection in X, Y, Z) . */
+  HOUT_AOA = 12,            /*!< \brief Angle of attack. */
+  HOUT_EFF = 13,            /*!< \brief Efficiency. */
+  HOUT_CFL = 14,            /*!< \brief CFL Number. */
+  HOUT_LOAD_RAMP = 50,      /*!< \brief Load coefficient transfered as a ramp. */
+  HOUT_LOAD_INCREMENT = 51,       /*!< \brief Load increment (non-linear elasticity). */
+  HOUT_VMS = 53        /*!< \brief Elasticity Maximum Von Mises stress. */
+};
+
+static const map<string, ENUM_HISTFILE_OUTPUT> HistFile_Output_Map = CCreateMap<string, ENUM_HISTFILE_OUTPUT>
+("INT_ITER", HOUT_INTITER)
+("EXT_ITER", HOUT_EXTITER)
+("TIME", HOUT_TIME)
+("PHYSICAL_TIME", HOUT_PHYSTIME)
+("RESIDUALS", HOUT_RESIDUALS)
+("LINEAR_SOLVER_ITER", HOUT_LINSOL_ITER)
+("CUSTOM_OF", HOUT_CUSTOM_OF)
+("AEROCOEFF", HOUT_AEROCOEFF)
+("FORCECOEFF", HOUT_FORCECOEFF)
+("AOA", HOUT_AOA)
+("EFFICIENCY", HOUT_EFF)
+("CFL_NUMBER", HOUT_CFL)
+("LOAD_RAMP", HOUT_LOAD_RAMP)
+("LOAD_INCREMENT", HOUT_LOAD_INCREMENT)
+("VON_MISES_STRESS", HOUT_VMS);
+
 
 
 /* END_CONFIG_ENUMS */

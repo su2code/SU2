@@ -1867,3 +1867,7 @@ inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; 
 inline unsigned short CConfig::GetnScreenOutput(void) { return nScreenOutput; }
 
 inline unsigned short CConfig::GetScreenOutput_Field(unsigned short iField) { return Kind_ScreenOutput[iField]; }
+
+inline unsigned short CConfig::GetnHistoryOutput(void) { return nHistoryOutput; }
+
+inline unsigned short CConfig::GetHistoryOutput_Field(unsigned short iField) { return Kind_HistoryOutput[iField]; }

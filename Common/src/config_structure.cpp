@@ -2102,8 +2102,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*--- options that are used for the output ---*/
   /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
 
-  /* DESCRIPTION: Type of mesh motion */
+  /* DESCRIPTION: Type of screen output */
   addEnumListOption("SCREEN_OUTPUT", nScreenOutput, Kind_ScreenOutput, Screen_Output_Map);
+  /* DESCRIPTION: Type of output printed to the history file */
+  addEnumListOption("HISTORY_OUTPUT", nHistoryOutput, Kind_HistoryOutput, HistFile_Output_Map);
 
   /* END_CONFIG_OPTIONS */
 
