@@ -230,6 +230,9 @@ private:
   nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
                              (note that using parallel computation this number can be different
                              from nMarker_All). */
+  bool Inlet_From_File; /*!< \brief True if the inlet profile is to be loaded from a file. */
+  string Inlet_Filename; /*!< \brief Filename specifying an inlet profile. */
+  su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
@@ -725,6 +728,7 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
@@ -3056,6 +3060,18 @@ public:
   bool GetWrt_Halo(void);
 
   /*!
+   * \brief Get information about writing a template inlet profile file.
+   * \return <code>TRUE</code> means that a template inlet profile file will be written.
+   */
+  bool GetWrt_InletFile(void);
+
+  /*!
+   * \brief Set information about writing a template inlet profile file.
+   * \param[in] val_wrt_inletfile - flag for whether to write a template inlet profile file.
+   */
+  void SetWrt_InletFile(bool val_wrt_inletfile);
+
+  /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
    * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
    */
@@ -4341,6 +4357,24 @@ public:
    * \return Kind of inlet boundary condition.
    */
   unsigned short GetKind_Inlet(void);
+  
+  /*!
+   * \brief Check if the inlet profile(s) are specified in an input file
+   * \return True if an input file is to be used for the inlet profile(s)
+   */
+  bool GetInlet_Profile_From_File(void);
+
+  /*!
+   * \brief Get name of the input file for the specified inlet profile.
+   * \return Name of the input file for the specified inlet profile.
+   */
+  string GetInlet_FileName(void);
+
+  /*!
+   * \brief Get the tolerance used for matching two points on a specified inlet
+   * \return Tolerance used for matching a point to a specified inlet
+   */
+  su2double GetInlet_Profile_Matching_Tolerance(void);
   
   /*!
    * \brief Get the type of incompressible inlet from the list.

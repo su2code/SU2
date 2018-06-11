@@ -81,7 +81,14 @@ CSolver::CSolver(void) {
   Restart_Data       = NULL;
   node               = NULL;
   nOutputVariables   = 0;
-  
+
+  /*--- Inlet profile data structures. ---*/
+
+  nRowCum_InletFile = NULL;
+  nRow_InletFile    = NULL;
+  nCol_InletFile    = NULL;
+  Inlet_Data        = NULL;
+
 }
 
 CSolver::~CSolver(void) {
@@ -193,6 +200,11 @@ CSolver::~CSolver(void) {
 
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
+
+  if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile; nRowCum_InletFile = NULL;
+  if (nRow_InletFile    != NULL) delete [] nRow_InletFile;    nRow_InletFile    = NULL;
+  if (nCol_InletFile    != NULL) delete [] nCol_InletFile;    nCol_InletFile    = NULL;
+  if (Inlet_Data        != NULL) delete [] Inlet_Data;        Inlet_Data        = NULL;
 
 }
 
@@ -2900,6 +2912,381 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
   if ((config->GetDiscard_InFiles() == false) && (!adjoint || (adjoint && config->GetRestart())))
     config->SetExtIter_OffSet(ExtIter_);
 
+}
+
+void CSolver::Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string val_filename) {
+
+  ifstream inlet_file;
+  string text_line;
+  unsigned long iVar, iMarker, iChar, iRow;
+  int counter = 0;
+  string::size_type position;
+
+  /*--- Open the inlet profile file (we have already error checked) ---*/
+
+  inlet_file.open(val_filename.data(), ios::in);
+
+  /*--- Identify the markers and data set in the inlet profile file ---*/
+
+  while (getline (inlet_file, text_line)) {
+
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+      text_line.erase (0,6); nMarker_InletFile = atoi(text_line.c_str());
+
+      nRow_InletFile    = new unsigned long[nMarker_InletFile];
+      nRowCum_InletFile = new unsigned long[nMarker_InletFile+1];
+      nCol_InletFile    = new unsigned long[nMarker_InletFile];
+
+      for (iMarker = 0 ; iMarker < nMarker_InletFile; iMarker++) {
+
+        getline (inlet_file, text_line);
+        text_line.erase (0,11);
+        for (iChar = 0; iChar < 20; iChar++) {
+          position = text_line.find( " ", 0 );  if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\r", 0 ); if (position != string::npos) text_line.erase (position,1);
+          position = text_line.find( "\n", 0 ); if (position != string::npos) text_line.erase (position,1);
+        }
+        Marker_Tags_InletFile.push_back(text_line.c_str());
+
+        getline (inlet_file, text_line);
+        text_line.erase (0,5); nRow_InletFile[iMarker] = atoi(text_line.c_str());
+
+        getline (inlet_file, text_line);
+        text_line.erase (0,5); nCol_InletFile[iMarker] = atoi(text_line.c_str());
+
+        /*--- Skip the data. This is read in the next loop. ---*/
+
+        for (iRow = 0; iRow < nRow_InletFile[iMarker]; iRow++) getline (inlet_file, text_line);
+
+      }
+    } else {
+      SU2_MPI::Error("While opening inlet file, no \"NMARK=\" specification was found", CURRENT_FUNCTION);
+    }
+  }
+
+  inlet_file.close();
+
+  /*--- Compute array bounds and offsets. Allocate data structure. ---*/
+
+  maxCol_InletFile = 0; nRowCum_InletFile[0] = 0;
+  for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+    if (nCol_InletFile[iMarker] > maxCol_InletFile)
+      maxCol_InletFile = nCol_InletFile[iMarker];
+
+    /*--- Put nRow into cumulative storage format. ---*/
+
+    nRowCum_InletFile[iMarker+1] = nRowCum_InletFile[iMarker] + nRow_InletFile[iMarker];
+    
+  }
+
+  Inlet_Data = new passivedouble[nRowCum_InletFile[nMarker_InletFile]*maxCol_InletFile];
+
+  for (unsigned long iPoint = 0; iPoint < nRowCum_InletFile[nMarker_InletFile]*maxCol_InletFile; iPoint++)
+    Inlet_Data[iPoint] = 0.0;
+
+  /*--- Read all lines in the inlet profile file and extract data. ---*/
+
+  inlet_file.open(val_filename.data(), ios::in);
+
+  counter = 0;
+  while (getline (inlet_file, text_line)) {
+
+    position = text_line.find ("NMARK=",0);
+    if (position != string::npos) {
+
+      for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+
+        /*--- Skip the tag, nRow, and nCol lines. ---*/
+
+        getline (inlet_file, text_line);
+        getline (inlet_file, text_line);
+        getline (inlet_file, text_line);
+
+        /*--- Now read the data for each row and store. ---*/
+
+        for (iRow = 0; iRow < nRow_InletFile[iMarker]; iRow++) {
+
+          getline (inlet_file, text_line);
+
+          istringstream point_line(text_line);
+
+          /*--- Store the values (starting with node coordinates) --*/
+
+          for (iVar = 0; iVar < nCol_InletFile[iMarker]; iVar++)
+            point_line >> Inlet_Data[counter*maxCol_InletFile + iVar];
+
+          /*--- Increment our local row counter. ---*/
+
+          counter++;
+
+        }
+      }
+    }
+  }
+  
+  inlet_file.close();
+  
+}
+
+void CSolver::LoadInletProfile(CGeometry **geometry,
+                               CSolver ***solver,
+                               CConfig *config,
+                               int val_iter,
+                               unsigned short val_kind_solver,
+                               unsigned short val_kind_marker) {
+
+  /*-- First, set the solver and marker kind for the particular problem at
+   hand. Note that, in the future, these routines can be used for any solver
+   and potentially any marker type (beyond inlets). ---*/
+
+  unsigned short KIND_SOLVER = val_kind_solver;
+  unsigned short KIND_MARKER = val_kind_marker;
+
+  /*--- Local variables ---*/
+
+  unsigned short iDim, iVar, iMesh, iMarker, jMarker;
+  unsigned long iPoint, iVertex, index, iChildren, Point_Fine, iRow;
+  su2double Area_Children, Area_Parent, *Coord, dist, min_dist;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  string UnstExt, text_line;
+  ifstream restart_file;
+
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  string Marker_Tag;
+  string profile_filename = config->GetInlet_FileName();
+  ifstream inlet_file;
+
+  su2double *Inlet_Values = NULL;
+  su2double *Inlet_Fine   = NULL;
+  su2double *Normal       = new su2double[nDim];
+
+  unsigned long Marker_Counter = 0;
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+    profile_filename = config->GetMultizone_FileName(profile_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+
+  if (dual_time || time_stepping)
+    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+
+  /*--- Open the file and check for problems. If a file can not be found,
+   then a warning will be printed, but the calculation will continue
+   using the uniform inlet values. A template inlet file will be written
+   at a later point using COutput. ---*/
+
+  inlet_file.open(profile_filename.data(), ios::in);
+
+  if (!inlet_file.fail()) {
+
+    /*--- Close the file and start the loading. ---*/
+
+    inlet_file.close();
+
+    /*--- Read the profile data from an ASCII file. ---*/
+
+    Read_InletFile_ASCII(geometry[MESH_0], config, profile_filename);
+
+    /*--- Load data from the restart into correct containers. ---*/
+
+    Marker_Counter = 0;
+
+    Inlet_Values = new su2double[maxCol_InletFile];
+    Inlet_Fine   = new su2double[maxCol_InletFile];
+
+    unsigned short global_failure = 0, local_failure = 0;
+    ostringstream error_msg;
+
+    const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+
+        /*--- Get tag in order to identify the correct inlet data. ---*/
+
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+
+        for (jMarker = 0; jMarker < nMarker_InletFile; jMarker++) {
+
+          /*--- If we have found the matching marker string, continue. ---*/
+
+          if (Marker_Tags_InletFile[jMarker] == Marker_Tag) {
+
+            /*--- Increment our counter for marker matches. ---*/
+
+            Marker_Counter++;
+
+            /*--- Loop through the nodes on this marker. ---*/
+
+            for (iVertex = 0; iVertex < geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
+
+              iPoint   = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+              Coord    = geometry[MESH_0]->node[iPoint]->GetCoord();
+              min_dist = 1e16;
+
+              /*--- Find the distance to the closest point in our inlet profile data. ---*/
+
+              for (iRow = nRowCum_InletFile[jMarker]; iRow < nRowCum_InletFile[jMarker+1]; iRow++) {
+
+                /*--- Get the coords for this data point. ---*/
+
+                index = iRow*maxCol_InletFile;
+
+                dist = 0.0;
+                for (unsigned short iDim = 0; iDim < nDim; iDim++)
+                  dist += pow(Inlet_Data[index+iDim] - Coord[iDim], 2);
+                dist = sqrt(dist);
+
+                /*--- Check is this is the closest point and store data if so. ---*/
+
+                if (dist < min_dist) {
+                  min_dist = dist;
+                  for (iVar = 0; iVar < maxCol_InletFile; iVar++)
+                    Inlet_Values[iVar] = Inlet_Data[index+iVar];
+                }
+
+              }
+
+              /*--- If the diff is less than the tolerance, match the two.
+               We could modify this to simply use the nearest neighbor, or
+               eventually add something more elaborate here for interpolation. ---*/
+
+              if (min_dist < tolerance) {
+
+                solver[MESH_0][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
+
+              } else {
+
+                unsigned long GlobalIndex = geometry[MESH_0]->node[iPoint]->GetGlobalIndex();
+                cout << "WARNING: Did not find a match between the points in the inlet file" << endl;
+                cout << "and point " << GlobalIndex;
+                cout << std::scientific;
+                cout << " at location: [" << Coord[0] << ", " << Coord[1];
+                if (nDim ==3) error_msg << ", " << Coord[2];
+                cout << "]" << endl;
+                cout << "Distance to closest point: " << min_dist << endl;
+                cout << "Current tolerance:         " << tolerance << endl;
+                cout << endl;
+                cout << "You can widen the tolerance for point matching by changing the value" << endl;
+                cout << "of the option INLET_MATCHING_TOLERANCE in your *.cfg file." << endl;
+                local_failure++;
+                break;
+
+              }
+            }
+          }
+        }
+      }
+
+      if (local_failure > 0) break;
+    }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
+                       MPI_SUM, MPI_COMM_WORLD);
+#else
+    global_failure = local_failure;
+#endif
+
+    if (global_failure > 0) {
+      SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
+    }
+
+    /*--- Copy the inlet data down to the coarse levels if multigrid is active.
+     Here, we use a face area-averaging to restrict the values. ---*/
+
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
+
+          /*--- Loop through the nodes on this marker. ---*/
+
+          for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
+
+            /*--- Get the coarse mesh point and compute the boundary area. ---*/
+
+            iPoint = geometry[iMesh]->vertex[iMarker][iVertex]->GetNode();
+            geometry[iMesh]->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area_Parent = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area_Parent += Normal[iDim]*Normal[iDim];
+            Area_Parent = sqrt(Area_Parent);
+
+            /*--- Reset the values for the coarse point. ---*/
+
+            for (iVar = 0; iVar < maxCol_InletFile; iVar++) Inlet_Values[iVar] = 0.0;
+
+            /*-- Loop through the children and extract the inlet values
+             from those nodes that lie on the boundary as well as their
+             boundary area. We build a face area-averaged value for the
+             coarse point values from the fine grid points. Note that
+             children from the interior volume will not be included in
+             the averaging. ---*/
+
+            for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+              Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+              for (iVar = 0; iVar < maxCol_InletFile; iVar++) Inlet_Fine[iVar] = 0.0;
+              Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine, Point_Fine, KIND_MARKER, geometry[iMesh-1], config);
+              for (iVar = 0; iVar < maxCol_InletFile; iVar++) {
+                Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
+              }
+            }
+
+            /*--- Set the boundary area-averaged inlet values for the coarse point. ---*/
+
+            solver[iMesh][KIND_SOLVER]->SetInletAtVertex(Inlet_Values, iMarker, iVertex);
+
+          }
+        }
+      }
+    }
+
+    /*--- Delete the class memory that is used to load the inlets. ---*/
+
+    Marker_Tags_InletFile.clear();
+
+    if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile; nRowCum_InletFile = NULL;
+    if (nRow_InletFile    != NULL) delete [] nRow_InletFile;    nRow_InletFile    = NULL;
+    if (nCol_InletFile    != NULL) delete [] nCol_InletFile;    nCol_InletFile    = NULL;
+    if (Inlet_Data        != NULL) delete [] Inlet_Data;        Inlet_Data        = NULL;
+
+  } else {
+
+    if (rank == MASTER_NODE) {
+      cout << endl;
+      cout << "WARNING: Could not find the input file for the inlet profile." << endl;
+      cout << "Looked for: " << profile_filename << "." << endl;
+      cout << "A template inlet profile file will be written, and the " << endl;
+      cout << "calculation will continue with uniform inlets." << endl << endl;
+    }
+
+    /*--- Set the bit to write a template inlet profile file. ---*/
+
+    config->SetWrt_InletFile(true);
+
+    /*--- Set the mean flow inlets to uniform. ---*/
+
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          solver[iMesh][KIND_SOLVER]->SetUniformInlet(config, iMarker);
+      }
+    }
+
+  }
+
+  /*--- Deallocated local data. ---*/
+
+  if (Inlet_Values != NULL) delete [] Inlet_Values;
+  if (Inlet_Fine   != NULL) delete [] Inlet_Fine;
+  delete [] Normal;
+  
 }
 
 CBaselineSolver::CBaselineSolver(void) : CSolver() { }
