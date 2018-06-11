@@ -320,3 +320,21 @@ void CHeatOutput::SetConvHistory_Body(CGeometry ****geometry,
 
   }
 }
+
+inline void CHeatOutput::SetHistoryFile_Header(CConfig *config) { }
+
+inline bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CHeatOutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool CHeatOutput::WriteScreen_Header(CConfig *config) { }
+
+inline void CHeatOutput::SetScreen_Header(CConfig *config) { }
+
+inline bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CHeatOutput::SetScreen_Output(CConfig *config) { }
+
+inline void CHeatOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+

@@ -996,8 +996,10 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
-  unsigned short *Kind_ScreenOutput;    /*!< \brief Kind of the screen output. */
-  unsigned short nScreenOutput;         /*!< \brief Number of screen output variables (max: 6). */
+  unsigned short *Kind_ScreenOutput,    /*!< \brief Kind of the screen output. */
+  *Kind_HistoryOutput;                  /*!< \brief Kind of the output printed to the history file. */
+  unsigned short nScreenOutput,         /*!< \brief Number of screen output variables (max: 6). */
+  nHistoryOutput;                       /*!< \brief Number of variables printed to the history file. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8366,6 +8368,17 @@ public:
   * \brief Get the screen output field iField
   */
   unsigned short GetScreenOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnHistoryOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  unsigned short GetHistoryOutput_Field(unsigned short iField);
+
 
 };
 

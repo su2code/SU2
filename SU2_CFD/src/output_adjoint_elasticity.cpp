@@ -260,3 +260,21 @@ void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
 
   }
 }
+
+inline void CDiscAdjFEAOutput::SetHistoryFile_Header(CConfig *config) { }
+
+inline bool CDiscAdjFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CDiscAdjFEAOutput::SetHistoryFile_Output(CConfig *config) { }
+
+inline bool CDiscAdjFEAOutput::WriteScreen_Header(CConfig *config) { }
+
+inline void CDiscAdjFEAOutput::SetScreen_Header(CConfig *config) { }
+
+inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+
+inline void CDiscAdjFEAOutput::SetScreen_Output(CConfig *config) { }
+
+inline void CDiscAdjFEAOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+

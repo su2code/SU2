@@ -855,6 +855,55 @@ public:
    */
   void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
 
+  /*!
+   * \brief Load the output data to the containers in each subclass
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetScreen_Output(CConfig *config);
+
 };
 
 /*! \class CFlowOutput
@@ -870,8 +919,6 @@ private:
   ofstream HistFile;
 
 public:
-
-
 
   /*!
    * \brief Constructor of the class
@@ -904,6 +951,55 @@ public:
    */
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
 
 };
 
@@ -953,6 +1049,55 @@ public:
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
+
 };
 
 /*! \class CFEAOutput
@@ -968,6 +1113,13 @@ protected:
   ofstream HistFile;
   su2double *residual_fem;
   unsigned short nVar_FEM;
+
+  su2double Total_VMStress;
+  su2double Total_ForceCoeff;
+  su2double Total_IncLoad;
+  su2double Time_Used;
+  unsigned long LinSolvIter;
+  unsigned long iExtIter, iIntIter;
 
 public:
 
@@ -990,18 +1142,53 @@ public:
   void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
+   * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
 
 };
 
@@ -1051,6 +1238,55 @@ public:
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
+
 };
 
 /*! \class CAdjFlowOutput
@@ -1098,6 +1334,55 @@ public:
    */
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
 
 };
 
@@ -1147,6 +1432,55 @@ public:
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
+
 };
 
 /*! \class CDiscAdjFEAOutput
@@ -1194,6 +1528,55 @@ public:
    */
   void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
 
 };
 
