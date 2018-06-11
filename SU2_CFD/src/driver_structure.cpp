@@ -1064,7 +1064,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
 
   /*--- Set up any necessary inlet profiles ---*/
 
-  Inlet_Preprocessing(solver_container, geometry, config);
+  Inlet_Preprocessing(solver_container[val_iInst], geometry[val_iInst], config);
 
 }
 
