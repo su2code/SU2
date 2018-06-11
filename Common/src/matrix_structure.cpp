@@ -126,7 +126,9 @@ CSysMatrix::~CSysMatrix(void) {
   if (FzVector != NULL)   delete [] FzVector;
 
 #ifdef HAVE_MKL
-  if( rank == MASTER_NODE ) mkl_jit_destroy( MatrixMatrixProductJitter );
+  if( rank == MASTER_NODE ) {
+    mkl_finalize();
+  }
 #endif
   
 }
@@ -223,8 +225,11 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
   MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitter, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
-  MatrixVectorProductKernel = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitter );
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
  
 #endif
  
@@ -550,7 +555,7 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 
 #ifdef HAVE_MKL
   // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup. 
-  MatrixVectorProductKernel( MatrixVectorProductJitter, vector, matrix, product ); 
+  MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product ); 
   return;
 #endif
  
@@ -1168,46 +1173,25 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     throw(-1);
   }
 
-  if (nVar == 5)
-  {
-    prod = su2double(0.0); // set all entries of prod to zero
-    for (row_i = 0; row_i < nPointDomain; row_i++) {
-      prod_begin = row_i*5; // offset to beginning of block row_i
-      for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-        vec_begin = col_ind[index]*5; // offset to beginning of block col_ind[index]
-        mat_begin = (index*25); // offset to beginning of matrix block[row_i][col_ind[indx]]
-        for (iVar = 0; iVar < 5; iVar++) {
-          for (jVar = 0; jVar < 5; jVar++) {
-            prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*5+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
-          }
-        }
-      }
-    }
-
-  } else {
-  
-#ifndef HAVE_MKL 
-    // If calling MKL kernel setting to 0 is redundant.
-    prod = su2double(0.0); // set all entries of prod to zero
-#endif
-    for (row_i = 0; row_i < nPointDomain; row_i++) {
-      prod_begin = row_i*nVar; // offset to beginning of block row_i
-      for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
-        vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
-        mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+  // If calling MKL kernel setting to 0 is redundant.
+  prod = su2double(0.0); // set all entries of prod to zero
+  for (row_i = 0; row_i < nPointDomain; row_i++) {
+    prod_begin = row_i*nVar; // offset to beginning of block row_i
+    for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
+      vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
+      mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
 #ifdef HAVE_MKL
-        MatrixVectorProductKernel( MatrixVectorProductJitter, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
+      MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
 #else
-        for (iVar = 0; iVar < nVar; iVar++) {
-          for (jVar = 0; jVar < nVar; jVar++) {
-            prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
-          }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        for (jVar = 0; jVar < nVar; jVar++) {
+          prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
         }
-#endif
       }
+#endif
     }
-
   }
+
   
   /*--- MPI Parallelization ---*/
   SendReceive_Solution(prod, geometry, config);
