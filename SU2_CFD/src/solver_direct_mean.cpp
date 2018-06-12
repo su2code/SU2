@@ -558,35 +558,26 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         Inlet_Ttotal[iMarker][iVertex] = 0;
       }
-    } else {
-      Inlet_Ttotal[iMarker] = NULL;
-    }
   }
 
   /*--- Store the value of the Total Temperature at the inlet BC ---*/
 
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         Inlet_Ptotal[iMarker][iVertex] = 0;
       }
-    } else {
-      Inlet_Ptotal[iMarker] = NULL;
-    }
   }
 
   /*--- Store the value of the Flow direction at the inlet BC ---*/
 
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
       Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
@@ -594,14 +585,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
           Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
         }
       }
-    } else {
-      Inlet_FlowDir[iMarker] = NULL;
-    }
   }
-
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
 
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
@@ -8670,33 +8654,145 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
 
 }
 
-void CEulerSolver::SetInlet(CConfig *config) {
+void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
+                                    unsigned short iMarker,
+                                    unsigned long iVertex) {
 
+  /*--- Alias positions within inlet file for readability ---*/
+
+  unsigned short T_position       = nDim;
+  unsigned short P_position       = nDim+1;
+  unsigned short FlowDir_position = nDim+2;
+
+  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
+
+  su2double norm = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    norm += pow(val_inlet[FlowDir_position + iDim], 2);
+  }
+  norm = sqrt(norm);
+
+  /*--- The tolerance here needs to be loose.  When adding a very
+   * small number (1e-10 or smaller) to a number close to 1.0, floating
+   * point roundoff errors can occur. ---*/
+
+  if (abs(norm - 1.0) > 1e-6) {
+    ostringstream error_msg;
+    error_msg << "ERROR: Found these values in columns ";
+    error_msg << FlowDir_position << " - ";
+    error_msg << FlowDir_position + nDim - 1 << endl;
+    error_msg << std::scientific;
+    error_msg << "  [" << val_inlet[FlowDir_position];
+    error_msg << ", " << val_inlet[FlowDir_position + 1];
+    if (nDim == 3) error_msg << ", " << val_inlet[FlowDir_position + 2];
+    error_msg << "]" << endl;
+    error_msg << "  These values should be components of a unit vector for direction," << endl;
+    error_msg << "  but their magnitude is: " << norm << endl;
+    SU2_MPI::Error(error_msg.str(), CURRENT_FUNCTION);
+  }
+
+  /*--- Store the values in our inlet data structures. ---*/
+
+  Inlet_Ttotal[iMarker][iVertex] = val_inlet[T_position];
+  Inlet_Ptotal[iMarker][iVertex] = val_inlet[P_position];
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    Inlet_FlowDir[iMarker][iVertex][iDim] =  val_inlet[FlowDir_position + iDim];
+  }
+
+}
+
+su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
+                                         unsigned long val_inlet_point,
+                                         unsigned short val_kind_marker,
+                                         CGeometry *geometry,
+                                         CConfig *config) {
+  
+  /*--- Local variables ---*/
+  
   unsigned short iMarker, iDim;
-  unsigned long iVertex;
-  string Marker_Tag;
-
-  /* --- Initialize quantities for inlet boundary
-   * This routine does not check if the inlet boundaries are set to custom
-   * values (available through the py wrapper). This is intentional; the
-   * default values for these custom BCs are initialized with the default
-   * values specified in the config (avoiding non physical values) --- */
-  for(iMarker=0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      su2double p_total = config->GetInlet_Ptotal(Marker_Tag);
-      su2double t_total = config->GetInlet_Ttotal(Marker_Tag);
-      su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
-
-      for(iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_Ttotal[iMarker][iVertex] = t_total;
-        Inlet_Ptotal[iMarker][iVertex] = p_total;
-        for (iDim = 0; iDim < nDim; iDim++)
-          Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+  
+  /*--- Alias positions within inlet file for readability ---*/
+  
+  unsigned short T_position       = nDim;
+  unsigned short P_position       = nDim+1;
+  unsigned short FlowDir_position = nDim+2;
+  
+  if (val_kind_marker == INLET_FLOW) {
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (iPoint == val_inlet_point) {
+            
+            /*-- Compute boundary face area for this vertex. ---*/
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+            
+            /*--- Access and store the inlet variables for this vertex. ---*/
+            
+            val_inlet[T_position] = Inlet_Ttotal[iMarker][iVertex];
+            val_inlet[P_position] = Inlet_Ptotal[iMarker][iVertex];
+            for (iDim = 0; iDim < nDim; iDim++) {
+              val_inlet[FlowDir_position + iDim] = Inlet_FlowDir[iMarker][iVertex][iDim];
+            }
+            
+            /*--- Exit once we find the point. ---*/
+            
+            return Area;
+            
+          }
+        }
       }
     }
   }
+  
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
+}
 
+void CEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+  
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    
+    string Marker_Tag   = config->GetMarker_All_TagBound(iMarker);
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    
+    for (unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = t_total;
+      Inlet_Ptotal[iMarker][iVertex] = p_total;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = flow_dir[iDim];
+    }
+    
+  } else {
+    
+    /*--- For now, non-inlets just get set to zero. In the future, we
+     can do more customization for other boundary types here. ---*/
+    
+    for (unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = 0.0;
+      Inlet_Ptotal[iMarker][iVertex] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+    }
+  }
+  
 }
 
 void CEulerSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config){
@@ -11209,7 +11305,6 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double Gas_Constant       = config->GetGas_ConstantND();
   unsigned short Kind_Inlet = config->GetKind_Inlet();
   string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
-  bool gravity = (config->GetGravityForce());
   bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   su2double *Normal = new su2double[nDim];
@@ -11263,11 +11358,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
           /*--- Retrieve the specified total conditions for this inlet. ---*/
 
-          if (gravity) P_Total = config->GetInlet_Ptotal(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
-          else P_Total  = config->GetInlet_Ptotal(Marker_Tag);
-          T_Total  = config->GetInlet_Ttotal(Marker_Tag);
-          Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-
+          P_Total  = Inlet_Ptotal[val_marker][iVertex];
+          T_Total  = Inlet_Ttotal[val_marker][iVertex];
+          Flow_Dir = Inlet_FlowDir[val_marker][iVertex];
+          
           /*--- Non-dim. the inputs if necessary. ---*/
 
           P_Total /= config->GetPressure_Ref();
@@ -15461,13 +15555,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_Ttotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        Inlet_Ttotal[iMarker][iVertex] = 0;
-      }
-    } else {
-      Inlet_Ttotal[iMarker] = NULL;
+    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = 0;
     }
   }
   
@@ -15475,13 +15565,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_Ptotal = new su2double* [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        Inlet_Ptotal[iMarker][iVertex] = 0;
-      }
-    } else {
-      Inlet_Ptotal[iMarker] = NULL;
+    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ptotal[iMarker][iVertex] = 0;
     }
   }
   
@@ -15489,22 +15575,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   
   Inlet_FlowDir = new su2double** [nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
-      Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
-        for (iDim = 0; iDim < nDim; iDim++) {
-          Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
-        }
+    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
       }
-    } else {
-      Inlet_FlowDir[iMarker] = NULL;
     }
   }
-
-  /*--- Set up inlet profiles, if necessary ---*/
-
-  SetInlet(config);
 
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   

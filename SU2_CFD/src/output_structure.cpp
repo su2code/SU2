@@ -96,7 +96,15 @@ COutput::COutput(CConfig *config) {
   Local_Data_Copy    = NULL;
   Parallel_Data      = NULL;
   Parallel_Surf_Data = NULL;
-  
+
+  /*--- Inlet profile data structures. ---*/
+
+  nRow_InletFile    = NULL;
+  nRowCum_InletFile = NULL;
+  InletCoords       = NULL;
+
+  Marker_Tags_InletFile.clear();
+
   /*--- Initialize CGNS write flag ---*/
   
   wrote_base_file = false;
@@ -12139,7 +12147,19 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
         break;
       default: break;
     }
-    
+
+    /*--- Write a template inlet profile file if requested. ---*/
+
+    if (config[iZone]->GetWrt_InletFile()) {
+      MergeInletCoordinates(config[iZone], geometry[iZone][MESH_0]);
+
+      if (rank == MASTER_NODE) {
+        Write_InletFile_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0]);
+        DeallocateInletCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      }
+      config[iZone]->SetWrt_InletFile(false);
+    }
+
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
      the local data for that particular problem alone. ---*/
@@ -18039,6 +18059,400 @@ void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometr
   }
   if (Parallel_Surf_Data != NULL) delete [] Parallel_Surf_Data;
   
+}
+
+void COutput::MergeInletCoordinates(CConfig *config, CGeometry *geometry) {
+
+  /*--- Local variables needed on all processors ---*/
+
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint, jPoint, kPoint;
+
+  int iProcessor, nProcessor = size;
+
+  unsigned long iVertex, iMarker;
+  unsigned long Buffer_Send_nPoin[1], *Buffer_Recv_nPoin = NULL;
+  unsigned long nLocalPoint = 0, MaxLocalPoint = 0;
+
+  unsigned long index, iChar;
+
+  char str_buf[MAX_STRING_SIZE];
+  vector<string> Marker_Tags;
+  vector<string>::iterator it;
+
+  unsigned long *nRowCum_Counter = NULL;
+
+  if (rank == MASTER_NODE) Buffer_Recv_nPoin = new unsigned long[nProcessor];
+
+  /*--- Search all boundaries on the present rank to count the number
+   of nodes found on inlet markers. ---*/
+
+  nLocalPoint = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Only communicate owned nodes to avoid duplicates. ---*/
+
+        if (geometry->node[iPoint]->GetDomain())
+          nLocalPoint++;
+
+      }
+    }
+  }
+  Buffer_Send_nPoin[0] = nLocalPoint;
+
+  /*--- Communicate the total number of nodes on this domain. ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(&Buffer_Send_nPoin, 1, MPI_UNSIGNED_LONG,
+                  Buffer_Recv_nPoin, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&nLocalPoint, &MaxLocalPoint, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+#else
+  Buffer_Recv_nPoin[0] = Buffer_Send_nPoin[0];
+  MaxLocalPoint        = nLocalPoint;
+#endif
+
+  /*--- Send and Recv buffers. ---*/
+
+  su2double *Buffer_Send_X = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_X = NULL;
+
+  su2double *Buffer_Send_Y = new su2double[MaxLocalPoint];
+  su2double *Buffer_Recv_Y = NULL;
+
+  su2double *Buffer_Send_Z = NULL, *Buffer_Recv_Z = NULL;
+  if (nDim == 3) Buffer_Send_Z = new su2double[MaxLocalPoint];
+
+  char *Buffer_Send_Str = new char[MaxLocalPoint*MAX_STRING_SIZE];
+  char *Buffer_Recv_Str = NULL;
+
+  /*--- Prepare the receive buffers in the master node only. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    Buffer_Recv_X = new su2double[nProcessor*MaxLocalPoint];
+    Buffer_Recv_Y = new su2double[nProcessor*MaxLocalPoint];
+    if (nDim == 3) Buffer_Recv_Z = new su2double[nProcessor*MaxLocalPoint];
+    Buffer_Recv_Str = new char[nProcessor*MaxLocalPoint*MAX_STRING_SIZE];
+
+    /*--- Sum total number of nodes to be written and allocate arrays ---*/
+
+    unsigned long nGlobal_InletPoint = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      nGlobal_InletPoint += Buffer_Recv_nPoin[iProcessor];
+    }
+    InletCoords = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      InletCoords[iDim] = new su2double[nGlobal_InletPoint];
+    }
+  }
+
+  /*--- Main communication routine. Loop over each coordinate and perform
+   the MPI comm. Temporary 1-D buffers are used to send the coordinates at
+   all nodes on each partition to the master node. These are then unpacked
+   by the master and sorted by marker tag in one large n-dim. array. ---*/
+
+  /*--- Loop over this partition to collect the coords of the local points. ---*/
+
+  su2double *Coords_Local; jPoint = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        /*--- Only communicate owned nodes to avoid duplicates. ---*/
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          /*--- Retrieve local coordinates at this node. ---*/
+
+          Coords_Local = geometry->node[iPoint]->GetCoord();
+
+          /*--- Load local coords into the temporary send buffer. ---*/
+
+          Buffer_Send_X[jPoint] = Coords_Local[0];
+          Buffer_Send_Y[jPoint] = Coords_Local[1];
+          if (nDim == 3) Buffer_Send_Z[jPoint] = Coords_Local[2];
+
+          /*--- If US system, the output should be in inches ---*/
+
+          if (config->GetSystemMeasurements() == US) {
+            Buffer_Send_X[jPoint] *= 12.0;
+            Buffer_Send_Y[jPoint] *= 12.0;
+            if (nDim == 3) Buffer_Send_Z[jPoint] *= 12.0;
+          }
+
+          /*--- Store the marker tag for this particular node. ---*/
+
+          SPRINTF(&Buffer_Send_Str[jPoint*MAX_STRING_SIZE], "%s",
+                  config->GetMarker_All_TagBound(iMarker).c_str());
+
+          /*--- Increment jPoint as the counter. We need this because iPoint
+           may include halo nodes that we skip over during this loop. ---*/
+          
+          jPoint++;
+          
+        }
+      }
+    }
+  }
+
+  /*--- Gather the coordinate data on the master node using MPI. ---*/
+
+#ifdef HAVE_MPI
+  SU2_MPI::Gather(Buffer_Send_X, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_X, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Y, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Y, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  if (nDim == 3) {
+    SU2_MPI::Gather(Buffer_Send_Z, MaxLocalPoint, MPI_DOUBLE, Buffer_Recv_Z, MaxLocalPoint, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  }
+  SU2_MPI::Gather(Buffer_Send_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, Buffer_Recv_Str, MaxLocalPoint*MAX_STRING_SIZE, MPI_CHAR, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  for (iPoint = 0; iPoint < MaxLocalPoint; iPoint++) {
+    Buffer_Recv_X[iPoint] = Buffer_Send_X[iPoint];
+    Buffer_Recv_Y[iPoint] = Buffer_Send_Y[iPoint];
+    if (nDim == 3) Buffer_Recv_Z[iPoint] = Buffer_Send_Z[iPoint];
+    index = iPoint*MAX_STRING_SIZE;
+    for (iChar = 0; iChar < MAX_STRING_SIZE; iChar++) {
+      Buffer_Recv_Str[index + iChar] = Buffer_Send_Str[index + iChar];
+    }
+  }
+#endif
+
+  /*--- The master node unpacks and sorts this variable by marker tag. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    Marker_Tags_InletFile.clear();
+
+    /*--- First, parse the marker tags to count how many total inlet markers
+     we have now on the master. ---*/
+
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
+        index = (iProcessor*MaxLocalPoint + iPoint)*MAX_STRING_SIZE;
+        for (iChar = 0; iChar < MAX_STRING_SIZE; iChar++) {
+          str_buf[iChar] = Buffer_Recv_Str[index + iChar];
+        }
+        Marker_Tags.push_back(str_buf);
+        Marker_Tags_InletFile.push_back(str_buf);
+      }
+    }
+
+    /*--- Sort and remove the duplicate inlet marker strings. ---*/
+
+    sort(Marker_Tags_InletFile.begin(), Marker_Tags_InletFile.end());
+    Marker_Tags_InletFile.erase(unique(Marker_Tags_InletFile.begin(),
+                                       Marker_Tags_InletFile.end()),
+                                Marker_Tags_InletFile.end());
+
+    /*--- Store the unique number of markers for writing later. ---*/
+
+    nMarker_InletFile = Marker_Tags_InletFile.size();
+
+    /*--- Count the number of rows (nodes) per marker. ---*/
+
+    nRow_InletFile = new unsigned long[nMarker_InletFile];
+    for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+      nRow_InletFile[iMarker] = 0;
+    }
+
+    /*--- Now count the number of points per marker. ---*/
+
+    jPoint = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
+        for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+          if (Marker_Tags_InletFile[iMarker] == Marker_Tags[jPoint]) {
+            nRow_InletFile[iMarker]++;
+          }
+        }
+        jPoint++;
+      }
+    }
+
+    /*--- Now put the number of points per marker into cumulative storage.
+     We will also create an extra counter to make sorting easier. ---*/
+
+    nRowCum_InletFile = new unsigned long[nMarker_InletFile+1];
+    nRowCum_Counter   = new unsigned long[nMarker_InletFile+1];
+
+    nRowCum_InletFile[0] = 0; nRowCum_Counter[0] = 0;
+    for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+      nRowCum_InletFile[iMarker+1] = nRowCum_InletFile[iMarker] + nRow_InletFile[iMarker];
+      nRowCum_Counter[iMarker+1]   = nRowCum_Counter[iMarker]   + nRow_InletFile[iMarker];
+    }
+
+    /*--- Load up the coordinates, sorted into chunks per marker. ---*/
+
+    jPoint = 0; kPoint = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+      for (iPoint = 0; iPoint < Buffer_Recv_nPoin[iProcessor]; iPoint++) {
+        for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+          if (Marker_Tags_InletFile[iMarker] == Marker_Tags[kPoint]) {
+
+            /*--- Find our current index for this marker and store coords. ---*/
+
+            index = nRowCum_Counter[iMarker];
+            InletCoords[0][index] = Buffer_Recv_X[jPoint];
+            InletCoords[1][index] = Buffer_Recv_Y[jPoint];
+            if (nDim == 3) InletCoords[2][index] = Buffer_Recv_Z[jPoint];
+
+            /*--- Increment the counter for this marker. ---*/
+
+            nRowCum_Counter[iMarker]++;
+
+          }
+        }
+
+        /*--- Increment point counter for marker tags and data. ---*/
+
+        kPoint++;
+        jPoint++;
+        
+      }
+
+      /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
+
+      jPoint = (iProcessor+1)*MaxLocalPoint;
+
+    }
+  }
+
+  /*--- Immediately release the temporary data buffers. ---*/
+
+  delete [] Buffer_Send_X;
+  delete [] Buffer_Send_Y;
+  if (Buffer_Send_Z != NULL) delete [] Buffer_Send_Z;
+  delete [] Buffer_Send_Str;
+  if (rank == MASTER_NODE) {
+    delete [] Buffer_Recv_X;
+    delete [] Buffer_Recv_Y;
+    if (Buffer_Recv_Z != NULL)  delete [] Buffer_Recv_Z;
+    delete [] Buffer_Recv_nPoin;
+    delete [] Buffer_Recv_Str;
+    delete [] nRowCum_Counter;
+  }
+
+}
+
+void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver) {
+
+  unsigned short iMarker, iDim, iVar;
+  unsigned long iPoint;
+  su2double turb_val[2] = {0.0,0.0};
+
+  const unsigned short nDim = geometry->GetnDim();
+
+  bool turbulent = (config->GetKind_Solver() == RANS ||
+                    config->GetKind_Solver() == ADJ_RANS ||
+                    config->GetKind_Solver() == DISC_ADJ_RANS);
+
+  unsigned short nVar_Turb = 0;
+  if (turbulent)
+    switch (config->GetKind_Turb_Model()) {
+      case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+        nVar_Turb = 1;
+        turb_val[0] = solver[TURB_SOL]->GetNuTilde_Inf();
+        break;
+      case SST:
+        nVar_Turb = 2;
+        turb_val[0] = solver[TURB_SOL]->GetTke_Inf();
+        turb_val[1] = solver[TURB_SOL]->GetOmega_Inf();
+        break;
+      default:
+        SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
+        break;
+    }
+
+  /*--- Count the number of columns that we have for this flow case.
+   Here, we have nDim entries for node coordinates, 2 entries for the total
+   conditions or mass flow, another nDim for the direction vector, and
+   finally entries for the number of turbulence variables. ---*/
+
+  unsigned short nCol_InletFile = nDim + 2 + nDim + nVar_Turb;
+
+  /*--- Write the inlet profile file. Note that we have already merged
+   all of the information for the markers and coordinates previously
+   in the MergeInletCoordinates() routine. ---*/
+
+  ofstream node_file("inlet_example.dat");
+
+  node_file << "NMARK= " << nMarker_InletFile << endl;
+
+  for (iMarker = 0; iMarker < nMarker_InletFile; iMarker++) {
+
+    /*--- Access the default data for this marker. ---*/
+
+    string Marker_Tag   = Marker_Tags_InletFile[iMarker];
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+
+    /*--- Header information for this marker. ---*/
+
+    node_file << "MARKER_TAG= " << Marker_Tag              << endl;
+    node_file << "NROW="        << nRow_InletFile[iMarker] << endl;
+    node_file << "NCOL="        << nCol_InletFile          << endl;
+
+    node_file << setprecision(15);
+    node_file << std::scientific;
+
+    /*--- Loop over the data structure and write the coords and vars to file. ---*/
+
+    for (iPoint = nRowCum_InletFile[iMarker]; iPoint < nRowCum_InletFile[iMarker+1]; iPoint++) {
+
+      for (iDim = 0; iDim < nDim; iDim++) {
+        node_file << InletCoords[iDim][iPoint] << "\t";
+      }
+      node_file << t_total << "\t" << p_total;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        node_file << "\t" << flow_dir[iDim];
+      }
+      for (iVar = 0; iVar < nVar_Turb; iVar++) {
+        node_file << "\t" << turb_val[iVar];
+      }
+      node_file << endl;
+    }
+
+  }
+  node_file.close();
+
+  /*--- Print a message to inform the user about the template file. ---*/
+  
+  stringstream err;
+  err << endl;
+  err << "  Created a template inlet profile file with node coordinates" << endl;
+  err << "  and solver variables at `inlet_example.dat`." << endl;
+  err << "  You can use this file as a guide for making your own inlet" << endl;
+  err << "  specification." << endl << endl;
+  SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
+
+}
+
+void COutput::DeallocateInletCoordinates(CConfig *config, CGeometry *geometry) {
+
+  unsigned short iDim, nDim = geometry->GetnDim();
+
+  /*--- The master node alone owns all data found in this routine. ---*/
+
+  if (rank == MASTER_NODE) {
+
+    /*--- Deallocate memory for inlet coordinate data ---*/
+
+    if (nRow_InletFile != NULL)    delete [] nRow_InletFile;
+    if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile;
+
+    Marker_Tags_InletFile.clear();
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (InletCoords[iDim] != NULL) delete [] InletCoords[iDim];
+    }
+    if (InletCoords != NULL) delete [] InletCoords;
+  }
+
 }
 
 void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output) {
