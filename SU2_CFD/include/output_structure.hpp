@@ -928,6 +928,24 @@ private:
   char char_histfile[200];
 
   ofstream HistFile;
+  
+  unsigned short nVar, nDim;
+  
+  su2double *ResRMS,
+            *ResMax,
+            CD_Total,
+            CL_Total,
+            CMx_Total,
+            CMy_Total,
+            CMz_Total,
+            AoA,
+            CFx_Total,
+            CFy_Total,
+            CFz_Total,
+            CEff_Total,
+            Time_Used;
+  
+  unsigned long LinSolvIter, iExtIter, iIntIter;
 
 public:
 
@@ -943,33 +961,19 @@ public:
   virtual ~CFlowOutput(void);
 
   /*!
-   * \brief Write the header of the history file.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
   void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
+  /*!
+   * \brief Write the header of the history file.
+   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+  
   /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
