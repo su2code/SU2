@@ -869,6 +869,17 @@ public:
   virtual void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
   
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                           CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
@@ -2678,6 +2689,16 @@ public:
    * \brief A virtual member.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \param[in] val_value - Value of the Jacobian entry.
+   */
+  virtual void SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
   
@@ -2690,6 +2711,16 @@ public:
    * \return Value of the pressure coefficient.
    */
   virtual su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \return Value of the Jacobian entry.
+   */
+  virtual su2double GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j);
   
   /*!
    * \brief A virtual member.
@@ -4318,6 +4349,7 @@ protected:
   **YPlus,    /*!< \brief Yplus for each boundary and vertex. */
   ***CharacPrimVar,    /*!< \brief Value of the characteristic variables at each boundary. */
   ***DonorPrimVar,    /*!< \brief Value of the donor variables at each boundary. */
+  ****DonorJacobian,    /*!< \brief Value of the donor Jacobian at each boundary. */
   *ForceInviscid,    /*!< \brief Inviscid force for each boundary. */
   *MomentInviscid,  /*!< \brief Inviscid moment for each boundary. */
   *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
@@ -4955,6 +4987,17 @@ public:
    */
   void BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                              CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
   
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
@@ -6089,12 +6132,32 @@ public:
   void SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value);
   
   /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \param[in] val_value - Value of the Jacobian entry.
+   */
+  void SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value);
+  
+  /*!
    * \brief Value of the characteristic variables at the boundaries.
    * \param[in] val_marker - Surface marker where the coefficient is computed.
    * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
    * \return Value of the pressure coefficient.
    */
   su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \return Value of the Jacobian entry.
+   */
+  su2double GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j);
   
   /*!
    * \brief Value of the characteristic global index at the boundaries.

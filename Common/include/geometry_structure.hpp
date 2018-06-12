@@ -522,6 +522,12 @@ public:
 	 */
 	virtual void MatchInterface(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void MatchPeriodic(CConfig *config);
+  
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
@@ -1721,6 +1727,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void MatchInterface(CConfig *config);
+  
+  /*!
+   * \brief Mach the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void MatchPeriodic(CConfig *config);
 
 	/*! 
 	 * \brief Mach the interface boundary condition.
@@ -2412,6 +2424,12 @@ public:
 	 */
 	void MatchInterface(CConfig *config);
 
+  /*!
+   * \brief Mach the periodic boundary conditions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void MatchPeriodic(CConfig *config);
+  
 	/*! 
 	 * \brief Set boundary vertex structure of the agglomerated control volume.
 	 * \param[in] config - Definition of the particular problem.

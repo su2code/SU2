@@ -261,6 +261,8 @@ inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
 inline void CGeometry::MatchInterface(CConfig *config) { }
 
+inline void CGeometry::MatchPeriodic(CConfig *config) { }
+
 inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, unsigned short val_iZone, unsigned short val_nZone) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
