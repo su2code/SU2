@@ -64,3 +64,24 @@ inline void COutput::SetScreen_Output(CConfig *config) { }
 inline void COutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
 
+inline void COutput::PrintScreenFixed(stringstream& stream, su2double val) {
+  stream.precision(6); stream.setf(ios::fixed, ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(ios::fixed);
+}
+
+inline void COutput::PrintScreenScientific(stringstream& stream, su2double val) {
+  stream.precision(4); stream.setf(ios::scientific, ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(ios::scientific);  
+}
+
+inline void COutput::PrintScreenInteger(stringstream& stream, unsigned long val) {
+  stream.width(field_width);
+  stream << std::right << val;
+}
+
+inline void COutput::PrintScreenHeaderString(stringstream& stream, string header) {
+  if (header.size() > field_width-1) header.resize(field_width-1);
+  stream << std::right << std::setw(field_width) << header; 
+}
