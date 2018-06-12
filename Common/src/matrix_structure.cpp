@@ -124,6 +124,12 @@ CSysMatrix::~CSysMatrix(void) {
   if (LFBlock != NULL)    delete [] LFBlock;
   if (LyVector != NULL)   delete [] LyVector;
   if (FzVector != NULL)   delete [] FzVector;
+
+#ifdef HAVE_MKL
+  if( rank == MASTER_NODE ) {
+    mkl_finalize();
+  }
+#endif
   
 }
 
@@ -212,7 +218,21 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
   
   SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
-  
+
+#ifdef HAVE_MKL
+  /*--- Create MKL JIT kernel ---*/
+
+  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+ 
+#endif
+ 
   /*--- Initialization matrix to zero ---*/
   
   SetValZero();
@@ -530,9 +550,15 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
 }
 
 void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
-  
+
   unsigned short iVar, jVar;
-  
+
+#ifdef HAVE_MKL
+  // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup. 
+  MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product ); 
+  return;
+#endif
+ 
   for (iVar = 0; iVar < nVar; iVar++) {
     product[iVar] = 0.0;
     for (jVar = 0; jVar < nVar; jVar++) {
@@ -543,7 +569,12 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 }
 
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
-  
+
+#ifdef HAVE_MKL
+  MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+  return;
+#endif
+
   unsigned short iVar, jVar, kVar;
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -554,7 +585,6 @@ void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, s
       }
     }
   }
-  
 }
 
 void CSysMatrix::AddVal2Diag(unsigned long block_i, su2double val_matrix) {
@@ -766,10 +796,13 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
-  
-  for (iVar = 0; iVar < (short)nVar; iVar++)
-    for (jVar = 0; jVar < (short)nVar; jVar++)
-      block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+ 
+  // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
+  memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
+
+  //for (iVar = 0; iVar < (short)nVar; iVar++)
+  //  for (jVar = 0; jVar < (short)nVar; jVar++)
+  //    block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
   
   /*--- Gauss elimination ---*/
 
@@ -777,9 +810,20 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     rhs[0] /= block[0];
   }
   else {
-    
+
+#ifdef HAVE_MKL
+
+  lapack_int * ipiv = new lapack_int [ nVar ];
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
+ 
+  delete [] ipiv; 
+  return;
+
+#endif
+
     /*--- Transform system in Upper Matrix ---*/
-    
+
     for (iVar = 1; iVar < (short)nVar; iVar++) {
       for (jVar = 0; jVar < iVar; jVar++) {
         weight = block[iVar*nVar+jVar] / block[jVar*nVar+jVar];
@@ -790,7 +834,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     }
     
     /*--- Backwards substitution ---*/
-    
+
     rhs[nVar-1] = rhs[nVar-1] / block[nVar*nVar-1];
     for (iVar = (short)nVar-2; iVar >= 0; iVar--) {
       aux = 0.0;
@@ -799,6 +843,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
       rhs[iVar] = (rhs[iVar]-aux) / block[iVar*nVar+iVar];
       if (iVar == 0) break;
     }
+
   }
   
 }
@@ -1127,20 +1172,26 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     << "nPoint and nBlk values incompatible." << endl;
     throw(-1);
   }
-  
+
+  // If calling MKL kernel setting to 0 is redundant.
   prod = su2double(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
       vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+#ifdef HAVE_MKL
+      MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
+#else
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
         }
       }
+#endif
     }
   }
+
   
   /*--- MPI Parallelization ---*/
   SendReceive_Solution(prod, geometry, config);
@@ -1496,7 +1547,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
   }
   
   /*--- Transform system in Upper Matrix ---*/
-  
+ 
   for (iPoint = 1; iPoint < (long)nPointDomain; iPoint++) {
     
     /*--- For each row (unknown), loop over all entries in A on this row
