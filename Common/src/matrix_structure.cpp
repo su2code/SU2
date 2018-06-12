@@ -1173,7 +1173,6 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     throw(-1);
   }
 
-  // If calling MKL kernel setting to 0 is redundant.
   prod = su2double(0.0); // set all entries of prod to zero
   for (row_i = 0; row_i < nPointDomain; row_i++) {
     prod_begin = row_i*nVar; // offset to beginning of block row_i
