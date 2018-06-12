@@ -1459,7 +1459,7 @@ inline void CFlowOutput::SetScreen_Header(CConfig *config) {
     case SOUT_CFX:     PrintScreenHeaderString(out,"CFx[Total]"); break;
     case SOUT_CFY:     PrintScreenHeaderString(out,"CFy[Total]"); break;
     case SOUT_CFZ:     PrintScreenHeaderString(out,"CFz[Total]"); break;  
-    case SOUT_CEFF:    PrintScreenHeaderString(out,"CFz[Total]"); break;    
+    case SOUT_CEFF:    PrintScreenHeaderString(out,"CEff[Total]"); break;    
     }
   }
   
