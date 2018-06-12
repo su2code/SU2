@@ -41,6 +41,8 @@ COutput::COutput(CConfig *config) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+  
+  field_width = 12;
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
