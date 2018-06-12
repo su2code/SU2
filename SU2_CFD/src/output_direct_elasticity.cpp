@@ -195,6 +195,9 @@ bool CFEAOutput::WriteScreen_Header(CConfig *config){
 
 void CFEAOutput::SetScreen_Header(CConfig *config){
 
+  
+  stringstream out;
+  
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
@@ -210,27 +213,28 @@ void CFEAOutput::SetScreen_Header(CConfig *config){
   // Evaluate the requested output
   for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
     switch (config->GetScreenOutput_Field(iField)){
-    case SOUT_INTITER: cout <<  " IntIter"; break;
-    case SOUT_EXTITER: cout <<  " ExtIter"; break;
+    case SOUT_INTITER: PrintScreenHeaderString(out,"IntIter");    break;
+    case SOUT_EXTITER: PrintScreenHeaderString(out,"ExtIter");    break;
     case SOUT_UTOL:
-      if (absolute) cout << "   Res[UTOL-A]";
-      else cout << "     Res[UTOL]";
+      if (absolute) PrintScreenHeaderString(out,"Res[UTOL-A]");
+      else PrintScreenHeaderString(out, "Res[UTOL]");
       break;
     case SOUT_RTOL:
-      if (absolute) cout << "   Res[RTOL-A]";
-      else cout << "     Res[RTOL]";
+      if (absolute) PrintScreenHeaderString(out,"Res[RTOL-A]");
+      else PrintScreenHeaderString(out, "Res[RTOL]");
       break;
     case SOUT_ETOL:
-      if (absolute) cout << "   Res[ETOL-A]";
-      else cout << "     Res[ETOL]";
+      if (absolute) PrintScreenHeaderString(out,"Res[ETOL-A]");
+      else PrintScreenHeaderString(out, "Res[ETOL]");
       break;
-    case SOUT_DISPX: cout << "   Res[Displx]"; break;
-    case SOUT_DISPY: cout << "   Res[Disply]"; break;
-    case SOUT_DISPZ: cout << "   Res[Displz]"; break;
-    case SOUT_VMS: cout << "      VMS(Max)"; break;
+    case SOUT_DISPX: PrintScreenHeaderString(out,"Res[Displx]"); break;
+    case SOUT_DISPY: PrintScreenHeaderString(out,"Res[Disply]"); break; 
+    case SOUT_DISPZ: PrintScreenHeaderString(out,"Res[Displz]"); break; 
+    case SOUT_VMS:   PrintScreenHeaderString(out,"VMS(max)"); break; 
     }
   }
   // Insert line break
+  cout << out.str();
   cout << endl;
 
 }
@@ -243,52 +247,25 @@ bool CFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime){
 
 void CFEAOutput::SetScreen_Output(CConfig *config){
 
+  stringstream out;  
+  
   // Evaluate the requested output
   for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
     switch (config->GetScreenOutput_Field(iField)){
-    case SOUT_INTITER:
-      cout.width(8);
-      cout << iIntIter;
-      break;
-    case SOUT_EXTITER:
-      cout.width(8);
-      cout << iExtIter;
-      break;
-    case SOUT_UTOL:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      cout << log10(residual_fem[0]);
-      break;
-    case SOUT_RTOL:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      cout << log10(residual_fem[1]);
-      break;
-    case SOUT_ETOL:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      cout << log10(residual_fem[2]);
-      break;
-    case SOUT_DISPX:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      cout << log10(residual_fem[0]);
-      break;
-    case SOUT_DISPY:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      cout << log10(residual_fem[1]);
-      break;
-    case SOUT_DISPZ:
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield); cout.width(14);
-      if (nVar_FEM == 3)
-        cout << log10(residual_fem[2]);
-      else
-        cout << "              ";
-      break;
-    case SOUT_VMS:
-      cout.precision(4); cout.setf(ios::scientific, ios::floatfield); cout.width(14);
-      cout << Total_VMStress;
-      break;
+    case SOUT_INTITER: PrintScreenInteger(out,iIntIter); break;
+    case SOUT_EXTITER: PrintScreenInteger(out,iExtIter); break;
+    case SOUT_UTOL:    PrintScreenFixed(out,log10(residual_fem[0])); break;
+    case SOUT_RTOL:    PrintScreenFixed(out,log10(residual_fem[1])); break;
+    case SOUT_ETOL:    PrintScreenFixed(out,log10(residual_fem[2])); break;
+    case SOUT_DISPX:   PrintScreenFixed(out,log10(residual_fem[0])); break;
+    case SOUT_DISPY:   PrintScreenFixed(out,log10(residual_fem[1])); break;
+    case SOUT_DISPZ:   if (nVar_FEM == 3) PrintScreenFixed(out,log10(residual_fem[2])); else PrintScreenFixed(out,0.0); break;
+    case SOUT_VMS:     PrintScreenScientific(out,Total_VMStress);
     }
   }
+  
+  cout << out.str();
   cout << endl;
-  cout.unsetf(ios::fixed);
 
 }
 
