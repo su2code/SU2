@@ -38,47 +38,64 @@
 
 #include "../include/output_structure.hpp"
 
-//CFlowOutput::CFlowOutput(CConfig *config, unsigned short val_iZone) : COutput(config) {
-//
-//  char buffer[50];
-//
-//  // Retrieve the history filename
-//  string history_filename = config->GetConv_FileName();
-//
-//  // Append the zone ID
-//  if(config->GetnZone() > 1){
-//    history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-//  }
-//  strcpy (char_histfile, history_filename.data());
-//
-//  // Append the restart iteration: if dynamic problem and restart
-//  if (config->GetWrt_Unsteady() && config->GetRestart()) {
-//    long iExtIter = config->GetDyn_RestartIter();
-//    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-//    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-//    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-//    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-//    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-//    strcat(char_histfile, buffer);
-//  }
-//
-//  // Add the correct file extension depending on the file format
-//  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-//      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-//  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-//           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-//  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-//  strcat(char_histfile, buffer);
-//
-//  // Open the history file using only the master node
-//  if (rank == MASTER_NODE){
-//    cout << "History filename: " << char_histfile << endl;
-//    HistFile.open(char_histfile, ios::out);
-//    HistFile.precision(15);
-//    SetConvHistory_Header(config, val_iZone, INST_0);
-//  }
-//
-//}
+CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+
+  // Open the history file using only the master node
+  if (rank == MASTER_NODE){
+
+    nDim = geometry->GetnDim();
+
+    bool turbulent = config->GetKind_Turb_Model() != NONE;
+    
+    char buffer[50], char_histfile[200];
+
+    // Retrieve the history filename
+    string history_filename = config->GetConv_FileName();
+
+    // Append the zone ID
+    if(config->GetnZone() > 1){
+      history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
+    }
+    strcpy (char_histfile, history_filename.data());
+
+    // Append the restart iteration: if dynamic problem and restart
+    if (config->GetWrt_Dynamic() && config->GetRestart()) {
+      long iExtIter = config->GetDyn_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(char_histfile, buffer);
+    }
+
+    // Add the correct file extension depending on the file format
+    if ((config->GetOutput_FileFormat() == TECPLOT) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+    strcat(char_histfile, buffer);
+
+    cout << "History filename: " << char_histfile << endl;
+    HistFile.open(char_histfile, ios::out);
+    HistFile.precision(15);
+    SetConvHistory_Header(config, val_iZone, INST_0);
+
+    /*--- Initialize number of variables ---*/
+    nVar = nDim + 2;
+ 
+    ResRMS = new su2double[nVar];
+    ResMax = new su2double[nVar];
+    
+    LinSolvIter = 0;
+    Time_Used = 0.0;
+
+    iExtIter = 0;
+    iIntIter = 0;
+  }
+
+}
 //
 //CFlowOutput::~CFlowOutput(void) {
 //
@@ -1363,47 +1380,6 @@
 //}
 
 
-CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-
-  char buffer[50];
-
-  // Retrieve the history filename
-  string history_filename = config->GetConv_FileName();
-
-  // Append the zone ID
-  if(config->GetnZone() > 1){
-    history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-  }
-  strcpy (char_histfile, history_filename.data());
-
-  // Append the restart iteration: if dynamic problem and restart
-  if (config->GetWrt_Dynamic() && config->GetRestart()) {
-    long iExtIter = config->GetDyn_RestartIter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-    strcat(char_histfile, buffer);
-  }
-
-  // Add the correct file extension depending on the file format
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-  strcat(char_histfile, buffer);
-
-  // Open the history file using only the master node
-  if (rank == MASTER_NODE){
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetConvHistory_Header(config, val_iZone, INST_0);
-  }
-
-}
 
 CFlowOutput::~CFlowOutput(void) {
 
@@ -1413,114 +1389,7 @@ CFlowOutput::~CFlowOutput(void) {
 
 
 }
-
 void CFlowOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-
-  char cstr[200], buffer[50], turb_resid[1000];
-  unsigned short iMarker_Monitoring;
-  string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
-
-  bool rotating_frame = config->GetRotating_Frame();
-  bool aeroelastic = config->GetAeroelastic_Simulation();
-  bool equiv_area = config->GetEquivArea();
-  bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
-  bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
-  bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
-      (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool inv_design = (config->GetInvDesign_Cp() || config->GetInvDesign_HeatFlux());
-
-  bool output_surface = (config->GetnMarker_Analyze() != 0);
-  bool output_comboObj = (config->GetnObj() > 1);
-  bool output_per_surface = config->GetWrt_Surface();
-  bool turbo = config->GetBoolTurbomachinery();
-  unsigned short direct_diff = config->GetDirectDiff();
-
-  bool thermal = false; /* Flag for whether to print heat flux values */
-  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
-
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES) {
-    thermal = true;
-  }
-
-  /*--- Begin of the header ---*/
-
-  char begin[]= "\"Iteration\"";
-
-  /*--- Header for the coefficients ---*/
-
-  char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
-  char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
-  char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
-  char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
-  char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
-  char surface_outputs[]= ",\"Avg_MassFlow\",\"Avg_Mach\",\"Avg_Temp\",\"Avg_Press\",\"Avg_Density\",\"Avg_Enthalpy\",\"Avg_NormalVel\",\"Uniformity\",\"Secondary_Strength\",\"Momentum_Distortion\",\"Secondary_Over_Uniformity\",\"Avg_TotalTemp\",\"Avg_TotalPress\",\"Pressure_Drop\"";
-  char Cp_inverse_design[]= ",\"Cp_Diff\"";
-  char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
-  char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
-  char d_thermal_coeff[] = ",\"D(HeatFlux_Total)\",\"D(HeatFlux_Maximum)\"";
-  char d_engine[] = ",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
-  char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
-  char heat_resid[]= ",\"Res_Heat\"";
-  /*--- Find the markers being monitored and create a header for them ---*/
-
-  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-    Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
-    monitoring_coeff += ",\"CL_"  + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CD_"  + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CSF_" + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CL/CD_" + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CFx_"    + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CFy_"    + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CFz_"    + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
-    monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
-    aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
-    aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
-  }
-
-  if (turbo){
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
-
-      stringstream tag;
-      tag << iMarker_Monitoring + 1;
-
-      turbo_coeff += ",\"TotalPressureLoss_" + tag.str() + "\"";
-      turbo_coeff += ",\"KineticEnergyLoss_" + tag.str() + "\"";
-      turbo_coeff += ",\"EntropyGen_" + tag.str() + "\"";
-      turbo_coeff += ",\"EulerianWork_" + tag.str() + "\"";
-      turbo_coeff += ",\"PressureRatio_" + tag.str() + "\"";
-      turbo_coeff += ",\"FlowAngleIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"FlowAngleOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"AbsFlowAngleIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"AbsFlowAngleOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"MassFlowIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"MassFlowOut_" + tag.str() + "\"";
-      turbo_coeff += ",\"MachIn_" + tag.str() + "\"";
-      turbo_coeff += ",\"MachOut_" + tag.str() + "\"";
-      // different from zero only in multi-zone computation
-      turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
-      turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
-
-    }
-  }
-
-  char combo_obj[] = ",\"ComboObj\"";
-
-  /*--- Header for the residuals ---*/
-
-  char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
-  char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
-  switch (config->GetKind_Turb_Model()) {
-  case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
-    SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
-    break;
-  case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
-  }
-
-  /*--- End of the header ---*/
-
-  char end[]= ",\"Linear_Solver_Iterations\",\"CFL_Number\",\"Time(min)\"\n";
 
   if ((config->GetOutput_FileFormat() == TECPLOT) ||
       (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
@@ -1531,33 +1400,7 @@ void CFlowOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZon
   }
 
   /*--- Write the header, case depending ---*/
-
-  HistFile << begin;
-  if (!turbo) HistFile << flow_coeff;
-  if (turbo) HistFile << turbo_coeff;
-  if (thermal && !turbo) HistFile << heat_coeff;
-  if (equiv_area) HistFile << equivalent_area_coeff;
-  if (engine || actuator_disk) HistFile << engine_coeff;
-  if (inv_design) {
-    HistFile << Cp_inverse_design;
-    if (thermal && !turbo) HistFile << Heat_inverse_design;
-  }
-  if (rotating_frame && !turbo) HistFile << rotating_frame_coeff;
-
-  HistFile << flow_resid;
-  if (turbulent) HistFile << turb_resid;
-  if (weakly_coupled_heat) HistFile << heat_resid;
-  if (aeroelastic) HistFile << aeroelastic_coeff;
-  if (output_per_surface) HistFile << monitoring_coeff;
-  if (output_surface) HistFile << surface_outputs;
-  if (direct_diff != NO_DERIVATIVE) {
-    if (!turbo) HistFile << d_flow_coeff;
-    else        HistFile << d_turbo_coeff;
-    if (engine || actuator_disk) HistFile << d_engine;
-    if (thermal) HistFile << d_thermal_coeff;
-  }
-  if (output_comboObj) HistFile << combo_obj;
-  HistFile << end;
+  SetHistoryFile_Header(config);
 
   if (config->GetOutput_FileFormat() == TECPLOT ||
       config->GetOutput_FileFormat() == TECPLOT_BINARY ||
@@ -1568,288 +1411,126 @@ void CFlowOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZon
 
 }
 
-
-void CFlowOutput::SetConvHistory_Body(CGeometry ****geometry,
-                                     CSolver *****solver_container,
-                                     CConfig **config,
-                                     CIntegration ****integration,
-                                     bool DualTime_Iteration,
-                                     su2double timeused,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) {
-
-  bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
-
-  bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
-  bool weakly_coupled_heat = config[val_iZone]->GetWeakly_Coupled_Heat();
-
-  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
-  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
-  unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-
-  bool Unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                   (config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
-  su2double dummy = 0.0;
-
-  /*--- Output using only the master node ---*/
-
-  if (rank == MASTER_NODE) {
-
-    unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
-
-    su2double timeiter = timeused/su2double(iExtIter+1);
-
-    unsigned short iVar;
-    unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
-
-    bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
-    bool turbulent = (config[val_iZone]->GetKind_Solver() == RANS);
-    bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat()));
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    /*--- Initialize number of variables ---*/
-    unsigned short nVar_Flow = 0, nVar_Turb = 0, nVar_Trans = 0, nVar_Heat = 0;
-    nVar_Flow = nDim+2;
-    if (turbulent) {
-      switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
-        case SST:    nVar_Turb = 2; break;
-      }
-    }
-    if (transition) nVar_Trans = 2;
-    if (heat) nVar_Heat = 1;
-
-
-    /*--- Allocate memory for the residual ---*/
-    su2double *residual_flow         = NULL,
-    *residual_turbulent    = NULL,
-    *residual_transition   = NULL,
-    *residual_heat         = NULL;
-
-    residual_flow       = new su2double[nVar_Flow];
-    residual_turbulent  = new su2double[nVar_Turb];
-    residual_transition = new su2double[nVar_Trans];
-    residual_heat       = new su2double[nVar_Heat];
-
-    /*--- Flow coefficients -- As of now, this is the Von Mises Stress ---*/
-    su2double Total_CL             = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CL(),
-        Total_CD             = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CD(),
-        Total_CSF            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CSF(),
-        Total_CEff           = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CEff(),
-        Total_CMx            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMx(),
-        Total_CMy            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMy(),
-        Total_CMz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMz(),
-        Total_CFx            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFx(),
-        Total_CFy            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFy(),
-        Total_CFz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFz(),
-        Total_ComboObj       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj(),
-        Total_AoA            = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset(),
-        Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
-
-    unsigned long LinSolvIter  = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetIterLinSolver();
-
-    /*--- Residuals: ---*/
-
-    for (iVar = 0; iVar < nVar_Flow; iVar++)
-      residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
-
-    /*--- Turbulent residual ---*/
-    if (turbulent) {
-      for (iVar = 0; iVar < nVar_Turb; iVar++)
-        residual_turbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
-    }
-
-    /*--- Turbulent residual ---*/
-    if (weakly_coupled_heat) {
-      for (iVar = 0; iVar < nVar_Heat; iVar++) {
-        residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
-      }
-    }
-
-    bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the history file ---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    // Load data to buffers
-    char begin[1000], direct_coeff[1000], flow_coeff[1000], flow_resid[1000], turb_resid[1000], end[1000];
-
-    /*--- Write the begining of the history file ---*/
-    SPRINTF(begin, "%12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
-
-    /*--- Initial variables ---*/
-    SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
-        Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
-        Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
-
-    /*--- Flow residual ---*/
-    if (nDim == 2) {
-      if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-      if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-    }
-    else {
-      if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
-      if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]));
-    }
-
-    /*--- Turbulent residual ---*/
-    if (turbulent) {
-      switch(nVar_Turb) {
-        case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_turbulent[0])); break;
-        case 2: SPRINTF (turb_resid, ", %12.10f, %12.10f", log10(residual_turbulent[0]), log10(residual_turbulent[1])); break;
-      }
-    }
-    /*--- Write the end of the history file ---*/
-    SPRINTF (end, ", %12.10f, %12.10f, %12.10f\n", su2double(LinSolvIter), config[val_iZone]->GetCFL(MESH_0), timeused/60.0);
-
-    // Write to history file
-
-    HistFile << begin << direct_coeff << flow_resid;
-    if (turbulent) HistFile << turb_resid;
-    HistFile << end;
-    HistFile.flush();
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the screen header---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    bool write_header;
-    if (Unsteady) write_header = (iIntIter == 0);
-    else write_header = (((iExtIter % (config[val_iZone]->GetWrt_Con_Freq()*40)) == 0));
-
-    if (write_header) {
-
-      /*--- Unsteady local time stepping summary ---*/
-      if (Unsteady){
-        cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
-
-        for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-          cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMin_Delta_Time() <<
-          ". Max. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
-          ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
-
-        cout << "-------------------------------------------------------------------------" << endl;
-      }
-
-      /*--- Visualize the maximum residual ---*/
-       unsigned long iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-       su2double *Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
-
-       cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
-
-       cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
-
-       if (config[val_iZone]->GetSystemMeasurements() == SI) {
-         cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
-         if (nDim == 3) cout << ", " << Coord[2];
-         cout <<   ")." << endl;
-       }
-       else {
-         cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
-         if (nDim == 3) cout << ", " << Coord[2]*12.0;
-         cout <<   ")." << endl;
-       }
-
-       if (turbulent){
-         cout << "Maximum Omega " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetOmega_Max() ;
-         cout << ", maximum Strain Rate " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
-       }
-
-       /*--- Print out the number of non-physical points and reconstructions ---*/
-
-       if (config[val_iZone]->GetNonphysical_Points() > 0)
-         cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
-       if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
-         cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
-
-       cout << "-------------------------------------------------------------------------" << endl;
-
-       /*--- Print out the current iteration ---*/
-       if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
-       else cout << endl << " IntIter" << " ExtIter";
-
-       /*--- Print the residuals (we should be able to choose this in the config) ---*/
-       cout << "      Res[Rho]";
-
-       switch (config[val_iZone]->GetKind_Turb_Model()) {
-         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
-         case SST:       cout << "     Res[kine]" << "     Res[omega]"; break;
-         default: cout << "      Res[RhoE]"; break;
-       }
-
-       cout << "   CLift(Total)"   << "   CDrag(Total)";
-
-       cout << endl;
-
-    }
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the screen output---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    if (Unsteady) {
-      cout.width(8); cout << iIntIter;
-      cout.width(8); cout << iExtIter;
-    } else {
-      cout.width(5); cout << iExtIter + ExtIter_OffSet;
-      cout.width(11); cout << timeiter;
-    }
-
-    cout.precision(6);
-    cout.setf(ios::fixed, ios::floatfield);
-    /*--- Res[Rho] ---*/
-    cout.width(13); cout << log10(residual_flow[0]);
-
-    if (turbulent){
-      switch(nVar_Turb) {
-      case 1:
-        cout.width(14); cout << log10(residual_turbulent[0]);
-        break;
-      case 2:
-        cout.width(14); cout << log10(residual_turbulent[0]);
-        cout.width(15); cout << log10(residual_turbulent[1]);
-        break;
-      }
-    }
-    else{
-      /*--- Res[RhoE] ---*/
-      if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
-      else { cout.width(14); cout << log10(residual_flow[4]); }
-    }
-    cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL));
-    cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
-
-    cout << endl;
-    cout.unsetf(ios::fixed);
-
-    delete [] residual_flow;
-    delete [] residual_turbulent;
-    delete [] residual_transition;
-    delete [] residual_heat;
-
-  }
-
-}
-
 inline void CFlowOutput::SetHistoryFile_Header(CConfig *config) { }
 
-inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
 
 inline void CFlowOutput::SetHistoryFile_Output(CConfig *config) { }
 
-inline bool CFlowOutput::WriteScreen_Header(CConfig *config) { }
+inline bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
+  bool write_header;
+  write_header = (((iExtIter % (config->GetWrt_Con_Freq()*40)) == 0));
+  
+  return write_header;
+}
 
-inline void CFlowOutput::SetScreen_Header(CConfig *config) { }
+inline void CFlowOutput::SetScreen_Header(CConfig *config) { 
+  
+  stringstream out;
+  
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
 
-inline bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+  bool absolute = (config->GetResidual_Criteria_FEM() == RESFEM_ABSOLUTE);
 
-inline void CFlowOutput::SetScreen_Output(CConfig *config) { }
+  if (dynamic && nonlinear_analysis) {
+    cout << endl << "Simulation time: " << config->GetCurrent_DynTime() << ". Time step: " << config->GetDelta_DynTime() << ".";
+  }
+
+  // Insert line break
+  cout << endl;
+  // Evaluate the requested output
+  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
+    switch (config->GetScreenOutput_Field(iField)){
+    case SOUT_INTITER: PrintScreenHeaderString(out,"IntIter");    break;
+    case SOUT_EXTITER: PrintScreenHeaderString(out,"ExtIter");    break;
+    case SOUT_RHO:     PrintScreenHeaderString(out,"Res[Rho]");   break;
+    case SOUT_RHOU1:   PrintScreenHeaderString(out,"Res[RhoU]");  break;
+    case SOUT_RHOU2:   PrintScreenHeaderString(out,"Res[RhoV]");  break;
+    case SOUT_RHOU3:   PrintScreenHeaderString(out,"Res[RhoW]");  break;
+    case SOUT_RHOE:    PrintScreenHeaderString(out,"Res[RhoE]");  break;
+    case SOUT_CD:      PrintScreenHeaderString(out,"CD[Total]");  break;
+    case SOUT_CL:      PrintScreenHeaderString(out,"CL[Total]");  break;
+    case SOUT_CMX:     PrintScreenHeaderString(out,"CMx[Total]"); break;
+    case SOUT_CMY:     PrintScreenHeaderString(out,"CMy[Total]"); break;
+    case SOUT_CMZ:     PrintScreenHeaderString(out,"CMz[Total]"); break;      
+    case SOUT_AOA:     PrintScreenHeaderString(out,"AoA");        break;
+    case SOUT_CFX:     PrintScreenHeaderString(out,"CFx[Total]"); break;
+    case SOUT_CFY:     PrintScreenHeaderString(out,"CFy[Total]"); break;
+    case SOUT_CFZ:     PrintScreenHeaderString(out,"CFz[Total]"); break;  
+    case SOUT_CEFF:    PrintScreenHeaderString(out,"CFz[Total]"); break;    
+    }
+  }
+  
+  // Insert line break
+  cout << out.str();
+  cout << endl;
+
+}
+
+inline bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  return true;
+}
+
+inline void CFlowOutput::SetScreen_Output(CConfig *config) {
+  
+  
+  stringstream out;
+  
+  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
+    switch (config->GetScreenOutput_Field(iField)){
+    case SOUT_INTITER: PrintScreenInteger(out, iIntIter); break;
+    case SOUT_EXTITER: PrintScreenInteger(out,iExtIter); break;
+    case SOUT_RHO:     PrintScreenFixed(out,log10(ResRMS[0])); break;
+    case SOUT_RHOU1:   PrintScreenFixed(out,log10(ResRMS[1])); break;
+    case SOUT_RHOU2:   PrintScreenFixed(out,log10(ResRMS[2])); break;
+    case SOUT_RHOU3:   if (nDim == 3) PrintScreenFixed(out,log10(ResRMS[3]));
+                       else PrintScreenFixed(out,0.0); break;
+    case SOUT_RHOE:    if (nDim == 3) PrintScreenFixed(out,log10(ResRMS[4]));
+                       else PrintScreenFixed(out,log10(ResRMS[3])); break;
+    case SOUT_CD:      PrintScreenScientific(out,CD_Total);   break;
+    case SOUT_CL:      PrintScreenScientific(out,CL_Total);   break;
+    case SOUT_CMX:     PrintScreenScientific(out,CMx_Total);  break;
+    case SOUT_CMY:     PrintScreenScientific(out,CMy_Total);  break;
+    case SOUT_CMZ:     PrintScreenScientific(out,CMz_Total);  break;
+    case SOUT_CFX:     PrintScreenScientific(out,CFx_Total);  break;
+    case SOUT_CFY:     PrintScreenScientific(out,CFy_Total);  break;
+    case SOUT_CFZ:     PrintScreenScientific(out,CFz_Total);  break;
+    case SOUT_AOA:     PrintScreenScientific(out,AoA);        break;
+    case SOUT_CEFF:    PrintScreenScientific(out,CEff_Total); break;
+    }
+  }
+    
+  // Insert line break
+  cout << out.str();
+  cout << endl;
+}
 
 inline void CFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+  unsigned short iVar;
+  
+  for (iVar = 0; iVar < nVar; iVar++){
+    ResRMS[iVar] = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(iVar);
+    ResMax[iVar] = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_Max(iVar);
+  }
+  
+  CD_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CD();
+  CL_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CL();
+  CMx_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CMx();
+  CMy_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CMy();
+  CMz_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CMz();
+  CFx_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CFx();
+  CFy_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CFy();
+  CFz_Total = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CFz();
+  AoA = config[val_iZone]->GetAoA();
+  CEff_Total = CD_Total/CL_Total;
+  Time_Used = timeused;
+  
+  LinSolvIter = config[val_iZone]->GetLinear_Solver_Iter();
+  iExtIter = config[val_iZone]->GetExtIter();
+  iIntIter = config[val_iZone]->GetIntIter();
+  
+  
+}
