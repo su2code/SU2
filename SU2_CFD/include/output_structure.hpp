@@ -191,12 +191,15 @@ protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
 
+  
+  unsigned short field_width;
+  
 public:
 
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *congig);
+  COutput(CConfig *config);
 
   /*! 
    * \brief Destructor of the class. 
@@ -904,6 +907,14 @@ public:
    */
   virtual void SetScreen_Output(CConfig *config);
 
+  void PrintScreenFixed(stringstream &stream, su2double val);
+
+  void PrintScreenScientific(stringstream &stream, su2double val);
+  
+  void PrintScreenInteger(stringstream &stream, unsigned long val);
+  
+  void PrintScreenHeaderString(stringstream &stream, string header);
+  
 };
 
 /*! \class CFlowOutput
