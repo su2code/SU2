@@ -1781,30 +1781,37 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
  * \brief types of screen output fields
  */
 enum ENUM_SCREEN_OUTPUT {
-  SOUT_INTITER = 0,    /*!< \brief Internal iteration. */
-  SOUT_EXTITER = 1,    /*!< \brief External iteration. */
-  SOUT_TIME = 2,       /*!< \brief Time taken by the iteration. */
-  SOUT_PHYSTIME = 3,   /*!< \brief Physical time of the iteration. */
-  SOUT_RHO = 10,       /*!< \brief Density output. */
-  SOUT_RHOU1 = 11,     /*!< \brief Momentum-x output. */
-  SOUT_RHOU2 = 12,     /*!< \brief Momentum-y output. */
-  SOUT_RHOU3 = 13,     /*!< \brief Momentum-z output. */
-  SOUT_RHOE = 14,      /*!< \brief Rho-E output. */
-  SOUT_PRESS = 15,     /*!< \brief Pressure output. */
-  SOUT_CL = 20,        /*!< \brief Lift coefficient output. */
-  SOUT_CD = 21,        /*!< \brief Drag coefficient output. */
-  SOUT_CM = 22,        /*!< \brief Moment coefficient output. */
-  SOUT_SA = 30,        /*!< \brief Spalart-Allmaras Nu. */
-  SOUT_K = 31,         /*!< \brief k-w Kinetic energy. */
-  SOUT_W = 32,         /*!< \brief k-w Rate of dissipation. */
-  SOUT_TEMP = 40,      /*!< \brief Temperature. */
-  SOUT_UTOL = 50,       /*!< \brief Elasticity displacement norm. */
-  SOUT_RTOL = 51,       /*!< \brief Elasticity residual norm. */
-  SOUT_ETOL = 52,       /*!< \brief Elasticity energy norm. */
-  SOUT_VMS = 53,        /*!< \brief Elasticity Maximum Von Mises stress. */
-  SOUT_DISPX = 54,        /*!< \brief Norm of the displacement vector - x component. */
-  SOUT_DISPY = 55,        /*!< \brief Norm of the displacement vector - y component. */
-  SOUT_DISPZ = 56         /*!< \brief Norm of the displacement vector - z component. */
+  SOUT_INTITER,    /*!< \brief Internal iteration. */
+  SOUT_EXTITER,    /*!< \brief External iteration. */
+  SOUT_TIME,       /*!< \brief Time taken by the iteration. */
+  SOUT_PHYSTIME,   /*!< \brief Physical time of the iteration. */
+  SOUT_RHO,       /*!< \brief Density output. */
+  SOUT_RHOU1,     /*!< \brief Momentum-x output. */
+  SOUT_RHOU2,     /*!< \brief Momentum-y output. */
+  SOUT_RHOU3,     /*!< \brief Momentum-z output. */
+  SOUT_RHOE,      /*!< \brief Rho-E output. */
+  SOUT_PRESS,     /*!< \brief Pressure output. */
+  SOUT_CL,        /*!< \brief Lift coefficient output. */
+  SOUT_CD,        /*!< \brief Drag coefficient output. */
+  SOUT_CMX,       /*!< \brief Moment X coefficient output. */
+  SOUT_CMY,       /*!< \brief Moment Y coefficient output. */
+  SOUT_CMZ,        /*!< \brief Moment Z coefficient output. */
+  SOUT_CFX,        /*!< \brief Force X coefficient output. */
+  SOUT_CFY,        /*!< \brief Force Y coefficient output. */
+  SOUT_CFZ,        /*!< \brief Force Z coefficient output. */
+  SOUT_CEFF,       /*!< \brief Efficiency coefficient output. */
+  SOUT_AOA,       /*!< \brief Angle of attack output. */
+  SOUT_SA,        /*!< \brief Spalart-Allmaras Nu. */
+  SOUT_K,         /*!< \brief k-w Kinetic energy. */
+  SOUT_W,         /*!< \brief k-w Rate of dissipation. */
+  SOUT_TEMP,      /*!< \brief Temperature. */
+  SOUT_UTOL,       /*!< \brief Elasticity displacement norm. */
+  SOUT_RTOL,       /*!< \brief Elasticity residual norm. */
+  SOUT_ETOL,       /*!< \brief Elasticity energy norm. */
+  SOUT_VMS,        /*!< \brief Elasticity Maximum Von Mises stress. */
+  SOUT_DISPX,        /*!< \brief Norm of the displacement vector - x component. */
+  SOUT_DISPY,       /*!< \brief Norm of the displacement vector - y component. */
+  SOUT_DISPZ        /*!< \brief Norm of the displacement vector - z component. */
 };
 
 static const map<string, ENUM_SCREEN_OUTPUT> Screen_Output_Map = CCreateMap<string, ENUM_SCREEN_OUTPUT>
@@ -1820,7 +1827,14 @@ static const map<string, ENUM_SCREEN_OUTPUT> Screen_Output_Map = CCreateMap<stri
 ("PRESSURE", SOUT_PRESS)
 ("LIFT", SOUT_CL)
 ("DRAG", SOUT_CD)
-("MOMENT", SOUT_CM)
+("MOMENT-X", SOUT_CMX)
+("MOMENT-Y", SOUT_CMY)
+("MOMENT-Z", SOUT_CMZ)
+("FORCE-X", SOUT_CFX)
+("FORCE-Y", SOUT_CFY)
+("FORCE-Z", SOUT_CFZ)
+("AOA", SOUT_AOA)
+("EFFICIENCY", SOUT_CEFF)
 ("SA-NU", SOUT_SA)
 ("K-W_KINETIC", SOUT_K)
 ("K-W_DISSIPATION", SOUT_W)
