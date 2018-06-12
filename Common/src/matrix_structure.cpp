@@ -610,6 +610,23 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
+void CSysMatrix::SetPointImplicit(unsigned long i) {
+  
+  unsigned long block_i = i/nVar;
+  unsigned long row = i - block_i*nVar;
+  unsigned long index, iVar;
+  
+  /*--- Delete all other row entries for this point, but keep the
+   values along the block diagonal, i.e., make it point implicit. ---*/
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      if (col_ind[index] != block_i)
+      matrix[index*nVar*nVar+row*nVar+iVar] = 0.0;
+    }
+  }
+  
+}
 
 su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   

@@ -514,9 +514,13 @@ inline su2double *CSolver::GetDonorPrimVar(unsigned short val_marker, unsigned l
 
 inline void CSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
 
+inline void CSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { }
+
 inline void CSolver::SetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { }
 
 inline su2double CSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return 0; }
+
+inline su2double CSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return 0; }
 
 inline su2double *CSolver::GetDonorAdjVar(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -716,6 +720,9 @@ inline void CSolver::BC_Interface_Boundary(CGeometry *geometry, CSolver **solver
 
 inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                            CConfig *config, unsigned short val_marker) { }
+
+inline void CSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                                 CNumerics *numerics, CConfig *config, unsigned short val_periodic_index) { }
 
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                       CConfig *config, unsigned short val_marker) { }
@@ -1160,7 +1167,11 @@ inline su2double *CEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsig
 
 inline void CEulerSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorPrimVar[val_marker][val_vertex][val_var] = val_value; }
 
+inline void CEulerSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j] = val_value; }
+
 inline su2double CEulerSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorPrimVar[val_marker][val_vertex][val_var]; }
+
+inline su2double CEulerSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j]; }
 
 inline unsigned long CEulerSolver::GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
 

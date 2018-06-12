@@ -3009,8 +3009,7 @@ void CAdjEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
     
     if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
         config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY) {
+        config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY) {
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
