@@ -48,6 +48,10 @@
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
 
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
+
 using namespace std;
 
 const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
@@ -93,7 +97,16 @@ private:
   **yVector, **zVector, **rVector, *LFBlock,
   *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
   unsigned long max_nElem;
-  
+
+#ifdef HAVE_MKL
+  void * MatrixMatrixProductJitter;                   		/*!< \brief Jitter handle for MKL JIT based GEMM. */
+  dgemm_jit_kernel_t MatrixMatrixProductKernel;               	/*!< \brief MKL JIT based GEMM kernel. */
+  void * MatrixVectorProductJitterBetaZero;           		/*!< \brief Jitter handle for MKL JIT based GEMV. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaZero;       	/*!< \brief MKL JIT based GEMV kernel. */
+  void * MatrixVectorProductJitterBetaOne;            		/*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;        	/*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+#endif
+
 public:
   
   /*!
