@@ -1706,24 +1706,15 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
     case CONSTANT_DENSITY:
 
-      FluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp(), config->GetSpecific_Heat_Cv());
+      FluidModel = new CConstantDensity(Density_FreeStream, config->GetSpecific_Heat_Cp());
       FluidModel->SetTDState_T(Temperature_FreeStream);
-      break;
-
-    case INC_STANDARD_AIR:
-
-      config->SetGas_Constant(287.058);
-      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGas(1.4, config->GetGas_Constant(), Pressure_Thermodynamic);
-      FluidModel->SetTDState_T(Temperature_FreeStream);
-      Pressure_Thermodynamic = FluidModel->GetPressure();
-      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
 
     case INC_IDEAL_GAS:
 
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
       Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
-      FluidModel = new CIncIdealGas(config->GetGamma(), config->GetGas_Constant(), Pressure_Thermodynamic);
+      FluidModel = new CIncIdealGas(config->GetSpecific_Heat_Cp(), config->GetGas_Constant(), Pressure_Thermodynamic);
       FluidModel->SetTDState_T(Temperature_FreeStream);
       Pressure_Thermodynamic = FluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
@@ -1815,7 +1806,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
     Mach = ModVel_FreeStream / sqrt(config->GetBulk_Modulus()/Density_FreeStream);
   } else {
-    Mach = ModVel_FreeStream / FluidModel->GetSoundSpeed();   
+    Mach = 0.0;
   }
   config->SetMach(Mach);
 
@@ -1832,7 +1823,10 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Temperature_FreeStreamND = Temperature_FreeStream/config->GetTemperature_Ref(); config->SetTemperature_FreeStreamND(Temperature_FreeStreamND);
   Gas_ConstantND      = config->GetGas_Constant()/Gas_Constant_Ref;    config->SetGas_ConstantND(Gas_ConstantND);
   Specific_Heat_CpND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CpND(Specific_Heat_CpND);
-  Specific_Heat_CvND  = config->GetSpecific_Heat_Cv()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+  
+  /*--- We assume that Cp = Cv for our incompressible fluids. ---*/
+  Specific_Heat_CvND  = config->GetSpecific_Heat_Cp()/Gas_Constant_Ref; config->SetSpecific_Heat_CvND(Specific_Heat_CvND);
+  
   Thermal_Expansion_CoeffND = config->GetThermal_Expansion_Coeff()*config->GetTemperature_Ref(); config->SetThermal_Expansion_CoeffND(Thermal_Expansion_CoeffND);
 
   ModVel_FreeStreamND = 0.0;
@@ -1860,17 +1854,12 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   switch (config->GetKind_FluidModel()) {
       
     case CONSTANT_DENSITY:
-      FluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND, Specific_Heat_CvND);
+      FluidModel = new CConstantDensity(Density_FreeStreamND, Specific_Heat_CpND);
       FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
 
-    case INC_STANDARD_AIR:
-      FluidModel = new CIncIdealGas(1.4, Gas_ConstantND, Pressure_ThermodynamicND);
-      FluidModel->SetTDState_T(Temperature_FreeStreamND);
-      break;
-      
     case INC_IDEAL_GAS:
-      FluidModel = new CIncIdealGas(config->GetGamma(), Gas_ConstantND, Pressure_ThermodynamicND);
+      FluidModel = new CIncIdealGas(Specific_Heat_CpND, Gas_ConstantND, Pressure_ThermodynamicND);
       FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
       
@@ -1979,31 +1968,18 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
         cout << "Fluid Model: CONSTANT_DENSITY "<< endl;
         if (energy) {
           cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-          cout << "Specific heat at constant volume (Cv): " << config->GetSpecific_Heat_Cv() << " N.m/kg.K." << endl;
         }
         if (boussinesq) cout << "Thermal expansion coefficient: " << config->GetThermal_Expansion_Coeff() << " K^-1." << endl;
         cout << "Thermodynamic pressure not required." << endl;
-        break;
-
-      case INC_STANDARD_AIR:
-        cout << "Fluid Model: INC_STANDARD_AIR "<< endl;
-        cout << "Variable density incompressible flow using ideal gas law (air)." << endl;
-        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        cout << "Specific gas constant: 287.058 N.m/kg.K." << endl;
-        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-        cout << "Specific Heat Ratio: 1.4" << endl;
-        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
         break;
         
       case INC_IDEAL_GAS:
         cout << "Fluid Model: INC_IDEAL_GAS "<< endl;
         cout << "Variable density incompressible flow using ideal gas law." << endl;
         cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+        cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
+        cout << "Molecular weight : "<< config->GetMolecular_Weight() << " g/mol" << endl;
         cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
-        cout << "Specific Heat Ratio: "<< config->GetGamma() << endl;
         cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
         if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
@@ -2174,7 +2150,6 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     } else {
       if (energy) {
         cout << "Specific heat at constant pressure (non-dim): " << config->GetSpecific_Heat_CpND() << endl;
-        cout << "Specific heat at constant volume (non-dim): " << config->GetSpecific_Heat_CvND() << endl;
         if (boussinesq) cout << "Thermal expansion coefficient (non-dim.): " << config->GetThermal_Expansion_CoeffND() << " K^-1." << endl;
       }
     }
@@ -5291,7 +5266,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
-  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area, P_Total;
+  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area;
   su2double *V_inlet, *V_domain;
   su2double UnitNormal[3] = {0.0,0.0,0.0}, UnitFlowDir[3] = {0.0,0.0,0.0};
   
@@ -5368,33 +5343,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
         /*--- Store the velocity in the primitive variable vector. ---*/
 
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
-
-        break;
-
-        /*--- Stagnation pressure has been specified at the inlet. ---*/
-
-        case PRESSURE_INLET:
-
-        /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
-
-        P_Total = config->GetInlet_Ptotal(Marker_Tag)/config->GetPressure_Ref();
-
-        /*--- Update the new velocity magnitude using the total pressure. ---*/
-
-        Vel_Mag = sqrt((P_Total-node[iPoint]->GetPressure())/(0.5*node[iPoint]->GetDensity()));
-
-        /*--- If requested, use the local boundary normal (negative),
-        instead of the prescribed flow direction in the config. ---*/
-
-        if (config->GetInc_Inlet_UseNormal()) {
-          for (iDim = 0; iDim < nDim; iDim++)
-            UnitFlowDir[iDim] = -UnitNormal[iDim];
-        }
-
-        /*--- Store the velocity in the primitive variable vector. ---*/
-        
         for (iDim = 0; iDim < nDim; iDim++)
           V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
 
@@ -6291,7 +6239,7 @@ void CIncEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, bgs_sol;
+  su2double residual;
 
   /*--- Set Residuals to zero ---*/
 
