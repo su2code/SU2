@@ -852,6 +852,41 @@ void CBoom_AugBurgers::AtmosISA(su2double& h0, su2double& T, su2double& a, su2do
 
 }
 
+void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T_inf, su2double& h){
+
+  su2double T01 = 273.16,  // Reference temperature (Humidity)
+            Pr  = 101325.; // Reference pressure (Absorption)
+  su2double logPsat_Pr = -6.8346*pow(T01/T_inf,1.261) + 4.6151;  // ISO standard for saturation vapor pressure
+  // su2double logPsat_Pr = 10.79586*(1. - T01/T_inf) - 5.02808 * log10(T_inf/T01) + 1.50474E-4*(1. - pow(10.,-8.29692*(T_inf/T01 - 1.))) - 4.2873E-4*(1. - pow(10.,-4.76955*(T_inf/T01 - 1.))) - 2.2195983;
+
+  su2double hr_prof[2][61] = {{0, 304.8, 609.6, 914.4, 1219.2,  1524,  1828.8,  2133.6,  2438.4,  2743.2,  3048,
+                               3352.8,  3657.6,  3962.4,  4267.2,  4572,  4876.8,  5181.6,  5486.4,  5791.2,  6096,  
+                               6400.8,  6705.6,  7010.4,  7315.2,  7620,  7924.8,  8229.6,  8534.4,  8839.2,  9144,  
+                               9448.8,  9753.6,  10058.4, 10363.2, 10668, 10972.8, 11277.6, 11582.4, 11887.2, 12192, 
+                               12496.8, 12801.6, 13106.4, 13411.2, 13716, 14020.8, 14325.6, 14630.4, 14935.2, 15240, 
+                               15544.8, 16154.4, 16459.2, 16764, 17068.8, 17373.6, 17678.4, 17983.2, 18288, 18592.8},
+                              {59.62, 60.48, 62.03, 63.83, 65.57, 67.06, 68.2,  68.97, 69.41, 69.62, 69.72, 69.83, 
+                               70.05, 70.46, 71.12, 72.04, 73.19, 74.48, 75.77, 76.9,  77.61, 77.66, 76.77, 74.75, 
+                               71.47, 66.96, 61.38, 55.07, 48.44, 41.95, 36.01, 30.95, 27.01, 24.38, 23.31, 24.29, 
+                               28.6,  25.61, 22.1,  19.04, 16.42, 14.2,  12.34, 10.8,  9.53,  8.49,  7.64,  6.95,  
+                               6.4, 5.97,  5.63,  5.38,  5.08,  5.02,  5.01,  5.03,  5.09,  5.18,  5.28,  5.4, 5.5}};
+  su2double hr = 5.5;  // Interpolate relative humidity from profile (hr_prof is the default profile for sBOOM)
+  if(z0 < 1.0E-8){
+    hr = 59.62;
+  }
+  else{
+    for(unsigned short i = 0; i < 60; i++){
+      if(hr_prof[0][i] <= z0 && hr_prof[0][i+1] >= z0){
+        hr = hr_prof[1][i] + (z0-hr_prof[0][i])*(hr_prof[1][i+1]-hr_prof[1][i])/(hr_prof[0][i+1]-hr_prof[0][i]);
+        break;
+      }
+    }
+  }
+
+  h = hr * Pr/p_inf * pow(10.,logPsat_Pr);             // Absolute humidity (percent)
+
+}
+
 void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
   unsigned long iIter = 0;
@@ -969,9 +1004,6 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
       max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
     }
-    // xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
-    xbar = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau); // rho0*c0^3/(beta*max(dp/dt))
-
   }
   else{
     c0_old = c0;
@@ -1007,47 +1039,29 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
       max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
     }
-    // xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
-    xbar = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau);
   }
 
+  /*---Humidity---*/
+  su2double h;
+  HumidityISO(ray_z, p_inf, T_inf, h);
+  c0 *= (1+0.0016*h); // Humidity correction to speed of sound
+
   /*---Compute other coefficients needed for solution of ABE---*/
+// xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
+  xbar      = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau);
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
   kappa     = kappa0*pow(T_inf/T0,1.5)*(T0+Ta*exp(-Tb/T0))/(T_inf+Ta*exp(-Tb/T_inf));
   delta     = mu/rho0*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
   alpha0_tv = delta*pow(w0,2)/(2.*pow(c0,3));
   Gamma     = 1./(alpha0_tv*xbar);
 
-  su2double logPsat_Pr = -6.8346*pow(T01/T_inf,1.261) + 4.6151;  // ISO standard for saturation vapor pressure
-  // su2double logPsat_Pr = 10.79586*(1. - T01/T_inf) - 5.02808 * log10(T_inf/T01) + 1.50474E-4*(1. - pow(10.,-8.29692*(T_inf/T01 - 1.))) - 4.2873E-4*(1. - pow(10.,-4.76955*(T_inf/T01 - 1.))) - 2.2195983;
-  su2double hr_prof[2][61] = {{0, 304.8, 609.6, 914.4, 1219.2,  1524,  1828.8,  2133.6,  2438.4,  2743.2,  3048,
-                               3352.8,  3657.6,  3962.4,  4267.2,  4572,  4876.8,  5181.6,  5486.4,  5791.2,  6096,  
-                               6400.8,  6705.6,  7010.4,  7315.2,  7620,  7924.8,  8229.6,  8534.4,  8839.2,  9144,  
-                               9448.8,  9753.6,  10058.4, 10363.2, 10668, 10972.8, 11277.6, 11582.4, 11887.2, 12192, 
-                               12496.8, 12801.6, 13106.4, 13411.2, 13716, 14020.8, 14325.6, 14630.4, 14935.2, 15240, 
-                               15544.8, 16154.4, 16459.2, 16764, 17068.8, 17373.6, 17678.4, 17983.2, 18288, 18592.8},
-                              {59.62, 60.48, 62.03, 63.83, 65.57, 67.06, 68.2,  68.97, 69.41, 69.62, 69.72, 69.83, 
-                               70.05, 70.46, 71.12, 72.04, 73.19, 74.48, 75.77, 76.9,  77.61, 77.66, 76.77, 74.75, 
-                               71.47, 66.96, 61.38, 55.07, 48.44, 41.95, 36.01, 30.95, 27.01, 24.38, 23.31, 24.29, 
-                               28.6,  25.61, 22.1,  19.04, 16.42, 14.2,  12.34, 10.8,  9.53,  8.49,  7.64,  6.95,  
-                               6.4, 5.97,  5.63,  5.38,  5.08,  5.02,  5.01,  5.03,  5.09,  5.18,  5.28,  5.4, 5.5}};
-  su2double hr = 5.5;  // Interpolate relative humidity from profile (hr_prof is the default profile for sBOOM)
-  for(unsigned short i = 0; i < 60; i++){
-    if(hr_prof[0][i] <= ray_z && hr_prof[0][i+1] >= ray_z){
-      hr = hr_prof[1][i] + (ray_z-hr_prof[0][i])*(hr_prof[1][i+1]-hr_prof[1][i])/(hr_prof[0][i+1]-hr_prof[0][i]);
-      break;
-    }
-  }
-
-  su2double h = hr * Pr/p_inf * pow(10.,logPsat_Pr);             // Absolute humidity (percent)
-
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
 
-  m_nu_O2 = c0*A_nu_O2/M_PI;
-  m_nu_N2 = c0*A_nu_N2/M_PI;
-  // m_nu_O2 = 2.*c0*A_nu_O2;
-  // m_nu_N2 = 2.*c0*A_nu_N2;
+  // m_nu_O2 = c0*A_nu_O2/M_PI;
+  // m_nu_N2 = c0*A_nu_N2/M_PI;
+  m_nu_O2 = 2.*c0*A_nu_O2;
+  m_nu_N2 = 2.*c0*A_nu_N2;
 
   su2double f_nu_O2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
   su2double f_nu_N2 = p_inf/Pr * sqrt(Tr/T_inf) * (9. + 280.*h*exp(-4.170*(pow(Tr/T_inf, 1./3.) - 1.)));
@@ -1057,10 +1071,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   // tau_nu_O2 = 1./(f_nu_O2);
   // tau_nu_N2 = 1./(f_nu_N2);
 
-  // theta_nu_O2 = w0*tau_nu_O2;
-  // theta_nu_N2 = w0*tau_nu_N2;
-  theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
-  theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
+  theta_nu_O2 = w0*tau_nu_O2;
+  theta_nu_N2 = w0*tau_nu_N2;
+  // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
+  // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
 
   // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
   // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
@@ -1375,8 +1389,10 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   // dsigma_A = abs(0.05*ray_A/dA_dsigma);
 
   /*---Restrict dsigma based on stratification---*/
-  su2double Tp1, cp1, pp1, rhop1;
+  su2double Tp1, cp1, pp1, rhop1, hp1;
   AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
+  HumidityISO(z_new, pp1, Tp1, hp1);
+  cp1 *= (1+0.0016*hp1);
 
   su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-6);
   dsigma_rc = abs(0.02*rho0*c0/drhoc_dsigma);
@@ -1636,8 +1652,10 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
   ray_A = A_new;
 
   /*---Snell's law for wave normals---*/
-  su2double Tp1, cp1, pp1, rhop1;
+  su2double Tp1, cp1, pp1, rhop1, hp1;
   AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
+  HumidityISO(z_new, pp1, Tp1, hp1);
+  cp1 *= (1+0.0016*hp1);
   ray_theta[0] = acos(cp1*cos(ray_theta[0])/c0);
   ray_theta[1] = acos(cp1*cos(ray_theta[1])/c0);
 
@@ -1648,8 +1666,10 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
 void CBoom_AugBurgers::Stratification(unsigned short iPhi){
 
   /*---Compute atmospheric properties at sigma+dsigma---*/
-  su2double Tp1, cp1, pp1, rhop1, z_new = ray_z - dz;
+  su2double Tp1, cp1, pp1, rhop1, z_new = ray_z - dz, hp1;
   AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
+  HumidityISO(z_new, pp1, Tp1, hp1);
+  cp1 *= (1+0.0016*hp1);
 
   /*---Compute change in pressure from exact solution to stratification eqn---*/
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){

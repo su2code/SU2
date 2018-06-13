@@ -130,6 +130,7 @@ public:
 
   void AtmosISA(su2double& h0, su2double& T, su2double& a, su2double& p,
                 su2double& rho, su2double& g);
+  void HumidityISO(su2double& z0, su2double& p_inf, su2double& T_inf, su2double& h);
 
   void PropagateSignal(unsigned short iPhi);
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
