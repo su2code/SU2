@@ -124,6 +124,10 @@ CSysMatrix::~CSysMatrix(void) {
   if (LFBlock != NULL)    delete [] LFBlock;
   if (LyVector != NULL)   delete [] LyVector;
   if (FzVector != NULL)   delete [] FzVector;
+
+#ifdef HAVE_MKL
+  if ( rank == MASTER_NODE ) mkl_finalize();
+#endif
   
 }
 
@@ -212,6 +216,22 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Set the indices in the in the sparce matrix structure, and memory allocation ---*/
   
   SetIndexes(nPoint, nPointDomain, nVar, nEqn, row_ptr, col_ind, nnz, config);
+
+  /*--- Generate MKL Kernels ---*/
+  
+#ifdef HAVE_MKL
+  /*--- Create MKL JIT kernel ---*/
+
+  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+
+  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+
+#endif
   
   /*--- Initialization matrix to zero ---*/
   
@@ -530,6 +550,12 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
 }
 
 void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
+
+#ifdef HAVE_MKL
+  // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
+  MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product );
+  return;
+#endif
   
   unsigned short iVar, jVar;
   
@@ -543,6 +569,11 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 }
 
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
+
+#ifdef HAVE_MKL
+  MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+  return;
+#endif
   
   unsigned short iVar, jVar, kVar;
 
@@ -766,10 +797,14 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   
   /*--- Copy block matrix, note that the original matrix
    is modified by the algorithm---*/
-  
-  for (iVar = 0; iVar < (short)nVar; iVar++)
-    for (jVar = 0; jVar < (short)nVar; jVar++)
-      block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
+
+
+  // If source and dest overlap higher level problems occur, so memcpy is safe. And it is faster.
+  memcpy( block, Block, (nVar * nVar * sizeof(su2double)) );
+
+  //for (iVar = 0; iVar < (short)nVar; iVar++)
+  //  for (jVar = 0; jVar < (short)nVar; jVar++)
+  //    block[iVar*nVar+jVar] = Block[iVar*nVar+jVar];
   
   /*--- Gauss elimination ---*/
 
@@ -777,6 +812,18 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
     rhs[0] /= block[0];
   }
   else {
+
+#ifdef HAVE_MKL
+
+  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+  lapack_int * ipiv = new lapack_int [ nVar ];
+  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
+
+  delete [] ipiv;
+  return;
+
+#endif
     
     /*--- Transform system in Upper Matrix ---*/
     
@@ -1134,11 +1181,15 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
       vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
+#ifdef HAVE_MKL
+      MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
+#else
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
         }
       }
+#endif
     }
   }
   
