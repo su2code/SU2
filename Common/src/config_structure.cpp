@@ -669,7 +669,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SPECIFIC_HEAT_CP_SOLID", Specific_Heat_Cp_Solid, 896.0);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
-
+  /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
+  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+  
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
   /* DESCRIPTION: Critical Temperature, default value for AIR */
@@ -756,8 +758,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
   addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
- /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
     /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
 
@@ -2326,11 +2326,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   unsigned short iZone, iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
-                    (Kind_FluidModel == INC_STANDARD_AIR) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
-  bool standard_air = ((Kind_FluidModel == STANDARD_AIR) || 
-                      (Kind_FluidModel == INC_STANDARD_AIR));
+  bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
@@ -3695,21 +3693,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_DensityModel == VARIABLE) {
-    if (Kind_FluidModel != INC_STANDARD_AIR && Kind_FluidModel != INC_IDEAL_GAS) {
-      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_STANDARD_AIR or INC_IDEAL_GAS).", CURRENT_FUNCTION);
+    if (Kind_FluidModel != INC_IDEAL_GAS) {
+      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS).", CURRENT_FUNCTION);
     }
   }
 
   if (Kind_Regime != INCOMPRESSIBLE) {
-    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_STANDARD_AIR) || (Kind_FluidModel == INC_IDEAL_GAS)) {
-      SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_STANDARD_AIR/INC_IDEAL_GAS are for incompressible only.", CURRENT_FUNCTION);
+    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_IDEAL_GAS)) {
+      SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_IDEAL_GAS are for incompressible only.", CURRENT_FUNCTION);
     }
   }
 
   if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER) && (Kind_Solver != ADJ_EULER) && (Kind_Solver != DISC_ADJ_EULER)) {
     if (Kind_ViscosityModel == SUTHERLAND) {
-      if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
-        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_STANDARD_AIR\n or FLUID_MODEL= INC_IDEAL_GAS for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
+      if ((Kind_FluidModel != INC_IDEAL_GAS)) {
+        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
   }
@@ -3728,24 +3726,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Check that the incompressible inlets are correctly specified. ---*/
-
-  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Inlet != 0)) {
-    if (nMarker_Inlet != nInc_Inlet) {
-      SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
-    }
-    for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
-      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET)) {
-        SU2_MPI::Error("Undefined incompressible inlet type. VELOCITY_INLET only currently possible.", CURRENT_FUNCTION);
-      }
-    }
-  }
-
   /*--- If Kind_Inc_Inlet has not been specified, take a default --*/
 
   if (Kind_Inc_Inlet == NULL) {
-    Kind_Inc_Inlet = new unsigned short[1];
-    Kind_Inc_Inlet[0] = VELOCITY_INLET;
+    if (nMarker_Inlet != 0) {
+      Kind_Inc_Inlet = new unsigned short[nMarker_Inlet];
+      for (unsigned short iInlet = 0; iInlet < nMarker_Inlet; iInlet++) {
+        Kind_Inc_Inlet[iInlet] = VELOCITY_INLET;
+      }
+    } else {
+      Kind_Inc_Inlet = new unsigned short[1];
+      Kind_Inc_Inlet[0] = VELOCITY_INLET;
+    }
   }
 
   /*--- Grid motion is not yet supported with the incompressible solver. ---*/

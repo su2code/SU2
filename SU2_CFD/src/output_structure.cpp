@@ -7212,34 +7212,21 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
           Breakdown_file << "Fluid Model: CONSTANT_DENSITY "<< "\n";
           if (energy) {
             Breakdown_file << "Specific heat at constant pressure (Cp): " << config[val_iZone]->GetSpecific_Heat_Cp() << " N.m/kg.K." << "\n";
-            Breakdown_file << "Specific heat at constant volume (Cv): " << config[val_iZone]->GetSpecific_Heat_Cv() << " N.m/kg.K." << "\n";
           }
           if (boussinesq) Breakdown_file << "Thermal expansion coefficient: " << config[val_iZone]->GetThermal_Expansion_Coeff() << " K^-1." << "\n";
           Breakdown_file << "Thermodynamic pressure not required." << "\n";
           break;
 
-        case INC_STANDARD_AIR:
-          Breakdown_file << "Fluid Model: INC_STANDARD_AIR "<< "\n";
-          Breakdown_file << "Variable density incompressible flow using ideal gas law (air)." << "\n";
-          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << "\n";
-          Breakdown_file << "Specific gas constant: 287.058 N.m/kg.K." << "\n";
-          Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND()<< "\n";
-          Breakdown_file << "Specific Heat Ratio: 1.4" << "\n";
-          Breakdown_file << "Thermodynamic pressure: " << config[val_iZone]->GetPressure_Thermodynamic();
-          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
-          break;
-
         case INC_IDEAL_GAS:
-          Breakdown_file << "Fluid Model: INC_IDEAL_GAS "<< "\n";
-          Breakdown_file << "Variable density incompressible flow using ideal gas law." << "\n";
-          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << "\n";
-          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << "\n";
-          Breakdown_file << "Specific gas constant (non-dim): " << config[val_iZone]->GetGas_ConstantND()<< "\n";
-          Breakdown_file << "Specific Heat Ratio: "<< config[val_iZone]->GetGamma() << "\n";
+          Breakdown_file << "Fluid Model: INC_IDEAL_GAS "<< endl;
+          Breakdown_file << "Variable density incompressible flow using ideal gas law." << endl;
+          Breakdown_file << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+          Breakdown_file << "Specific heat at constant pressure (Cp): " << config[val_iZone]->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
+          Breakdown_file << "Molecular weight : "<< config[val_iZone]->GetMolecular_Weight() << " g/mol" << endl;
+          Breakdown_file << "Specific gas constant: " << config[val_iZone]->GetGas_Constant() << " N.m/kg.K." << endl;
           Breakdown_file << "Thermodynamic pressure: " << config[val_iZone]->GetPressure_Thermodynamic();
-          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << "\n";
-          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << "\n";
+          if (config[val_iZone]->GetSystemMeasurements() == SI) Breakdown_file << " Pa." << endl;
+          else if (config[val_iZone]->GetSystemMeasurements() == US) Breakdown_file << " psf." << endl;
           break;
 
       }
@@ -7407,7 +7394,6 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       } else {
         if (energy) {
           Breakdown_file << "Specific heat at constant pressure (non-dim): " << config[val_iZone]->GetSpecific_Heat_CpND() << "\n";
-          Breakdown_file << "Specific heat at constant volume (non-dim): " << config[val_iZone]->GetSpecific_Heat_CvND() << "\n";
           if (boussinesq) Breakdown_file << "Thermal expansion coefficient (non-dim.): " << config[val_iZone]->GetThermal_Expansion_CoeffND() << " K^-1." << "\n";
         }
       }

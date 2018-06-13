@@ -743,6 +743,7 @@ private:
   Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,     /*!< \brief Specific gas constant. */
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
+  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
@@ -1565,6 +1566,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGas_ConstantND(void);
+  
+  /*!
+   * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
+   * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
+   */
+  su2double GetMolecular_Weight(void);
   
   /*!
    * \brief Get the value of specific heat at constant pressure.
