@@ -902,8 +902,8 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
    //  Attenuation(iPhi);
   	// Nonlinearity(iPhi);
     Preprocessing(iPhi, iIter);
-    Attenuation(iPhi);
-    Nonlinearity(iPhi);
+    // Attenuation(iPhi);
+    // Nonlinearity(iPhi);
     // if(flt_h - ray_z > 100.){
       Relaxation(iPhi, iIter);
     // }
@@ -966,13 +966,11 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     M_a = p_peak/(rho0*pow(c0,2));
     cout << "Acoustic Mach number: " << M_a << endl;
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_U);
+      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_U/flt_M);
   	}
-    w0 = 2.*M_PI*flt_U/scale_L; // Characteristic time governed by length of signal
-    // w0 = 2.*M_PI*flt_U/(signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0]); // Characteristic time governed by length of signal
+    // w0 = 2.*M_PI*flt_U/scale_L; // Characteristic time governed by length of signal
+    w0 = 2.*M_PI*flt_U/(flt_M*scale_L); // Characteristic time governed by length of signal
     c0_old = c0;
-    // p0 = 2.*p_peak;
-    // p0 = 142.5*6894.76;
     // p0 = Pr;
     // p0 = 50;
     p0 = 101328.2042877057; // From sBOOM output
@@ -1071,21 +1069,23 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   // tau_nu_O2 = 1./(f_nu_O2);
   // tau_nu_N2 = 1./(f_nu_N2);
 
-  theta_nu_O2 = w0*tau_nu_O2;
-  theta_nu_N2 = w0*tau_nu_N2;
-  // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
-  // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
+  // theta_nu_O2 = w0*tau_nu_O2;
+  // theta_nu_N2 = w0*tau_nu_N2;
+  theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
+  theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
 
-  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
-  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
-  C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(c0);
-  C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(c0);
+  C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
+  C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
+  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(c0);
+  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(c0);
+  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*rho0*pow(c0,2)/(beta*p_inf);
+  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*rho0*pow(c0,2)/(beta*p_inf);
 
   if(iIter == 0){
     // dsigma = 0.02*dtau;
     // dsigma_old = 0.2*dtau;
     dsigma = 0.001;
-    dsigma_old = 0.005;
+    dsigma_old = 0.0015;
     su2double uwind = 0., vwind = 0.;
     su2double ds = xbar*dsigma;
     su2double dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
@@ -1409,7 +1409,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   dsigma = min(dsigma, dsigma_rc);
   dsigma = min(dsigma, dsigma_c);
   dsigma = min(dsigma, dsigma_old);
-  dsigma_old = 10.*dsigma;
+  dsigma_old = 1.5*dsigma;
 
   /*---Check for intersection with ground plane---*/
   ds = xbar*dsigma;
