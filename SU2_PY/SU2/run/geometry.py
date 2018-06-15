@@ -35,10 +35,10 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import copy
 
 from .. import io  as su2io
-from interface import GEO       as SU2_GEO
+from .interface import GEO       as SU2_GEO
 from ..util import ordered_bunch
 
 # ----------------------------------------------------------------------

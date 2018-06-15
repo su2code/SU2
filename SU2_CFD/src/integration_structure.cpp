@@ -34,6 +34,8 @@
 #include "../include/integration_structure.hpp"
 
 CIntegration::CIntegration(CConfig *config) {
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
   Cauchy_Value = 0;
   Cauchy_Func = 0;
   Old_Func = 0;
@@ -102,7 +104,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 
   /*--- Weak boundary conditions ---*/
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
@@ -141,7 +142,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       		solver_container[MainSolver]->BC_TurboRiemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	else{
-      		solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
+          solver_container[MainSolver]->BC_Riemann(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
       	}
       	break;
       case FAR_FIELD:
@@ -169,11 +170,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Neumann(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case LOAD_DIR_BOUNDARY:
-    solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Dir_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
       case LOAD_SINE_BOUNDARY:
-    solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
-    break;
+        solver_container[MainSolver]->BC_Sine_Load(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
+        break;
     }
   }
 
@@ -280,6 +281,9 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
         case PRESSURE_BOUNDARY:
           solver_container[MainSolver]->BC_Pressure(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
           break;
+        case DAMPER_BOUNDARY:
+          solver_container[MainSolver]->BC_Damper(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+        break;
       }
     }
 
@@ -389,8 +393,11 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
       switch (config->GetMarker_All_KindBC(iMarker)) {
         case CLAMPED_BOUNDARY:
-      solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
-      break;
+          solver_container[MainSolver]->BC_Clamped(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
+        case DISP_DIR_BOUNDARY:
+          solver_container[MainSolver]->BC_DispDir(geometry, solver_container, numerics[FEA_TERM], config, iMarker);
+          break;
         case DISPLACEMENT_BOUNDARY:
           solver_container[MainSolver]->BC_Normal_Displacement(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
           break;
@@ -435,8 +442,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
                                           su2double monitor, unsigned short iMesh) {
   
   unsigned short iCounter;
-  int rank = MASTER_NODE;
-  
+
   /*--- Initialize some variables for controlling the output frequency. ---*/
   
   bool DualTime_Iteration = false;
@@ -451,12 +457,6 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
   bool In_DualTime_3 = (Unsteady && !DualTime_Iteration && (iExtIter % config->GetWrt_Con_Freq() == 0));
   
   if ((In_NoDualTime || In_DualTime_0 || In_DualTime_1) && (In_NoDualTime || In_DualTime_2 || In_DualTime_3)) {
-    
-#ifdef HAVE_MPI
-    int size;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
     
     bool Already_Converged = Convergence;
     
@@ -556,15 +556,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     /*--- Stop the simulation in case a nan appears, do not save the solution ---*/
     
     if (monitor != monitor) {
-      if (rank == MASTER_NODE)
-      cout << "\n !!! Error: SU2 has diverged. Now exiting... !!! \n" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_DIVERGENCE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
+      SU2_MPI::Error("SU2 has diverged (NaN detected).", CURRENT_FUNCTION);
     }
     
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
@@ -604,10 +596,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     unsigned long iProcessor, owner, *owner_all = NULL;
     
     string Marker_Tag, Monitoring_Tag;
-  int rank, nProcessor;
-    
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    int nProcessor = size;
 
     /*--- Only if mater node allocate memory ---*/
     
@@ -739,13 +728,6 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
   
-#ifdef HAVE_MPI
-  int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
-  
   bool Already_Converged = Convergence;
   
   Reference_UTOL = config->GetResidual_FEM_UTOL();
@@ -801,15 +783,60 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 }
 
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+
+  su2double val_I, Max_Val_I;
+
+  bool Already_Converged = Convergence;
+
+  Max_Val_I = config->GetCriteria_FEM_ADJ();
+  val_I     = log10(solver->Get_val_I());
+
+  //  cout << "Reference - UTOL: " << Reference_UTOL << " ETOL: " << Reference_ETOL << " RTOL: " << Reference_RTOL << endl;
+  //  cout << "Residual - UTOL: " << Residual_UTOL << " ETOL: " << Residual_ETOL << " RTOL: " << Residual_RTOL << endl;
+
+  if (val_I <= Max_Val_I){
+    Convergence = true;
+  }
+
+  if (Already_Converged) Convergence = true;
+
+
+  /*--- Apply the same convergence criteria to all the processors ---*/
+
+#ifdef HAVE_MPI
+
+  unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
+  sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
+  rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
+
+  /*--- Convergence criteria ---*/
+
+  sbuf_conv[0] = Convergence;
+  SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+
+  /*-- Compute global convergence criteria in the master node --*/
+
+  sbuf_conv[0] = 0;
+  if (rank == MASTER_NODE) {
+    if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
+    else sbuf_conv[0] = 0;
+  }
+
+  SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+
+  if (sbuf_conv[0] == 1) { Convergence = true; }
+  else { Convergence = false; }
+
+  delete [] sbuf_conv;
+  delete [] rbuf_conv;
+
+#endif
+
+}
+
 
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
-  
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  int size;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &size);
-#endif
   
   su2double FEA_check[2] = {0.0, 0.0};
   su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;

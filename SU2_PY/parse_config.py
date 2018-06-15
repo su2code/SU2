@@ -31,6 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 import os,sys,xlwt
 
 # note: requires xlwt for spreadsheet output
@@ -53,13 +56,13 @@ class config_option:
     self.option_description = description
 
   def print_data(self):
-    print 'Option Name: %s '%        self.option_name
-    print 'Option Type: %s '%        self.option_type
-    print 'Option Category: %s '%    self.option_category
-    print 'Option values: ',         self.option_values
-    print 'Option default: %s'%      self.option_default
-    print 'Option description: %s '% self.option_description
-    print ''
+    print('Option Name: %s '%        self.option_name)
+    print('Option Type: %s '%        self.option_type)
+    print('Option Category: %s '%    self.option_category)
+    print('Option values: ',         self.option_values)
+    print('Option default: %s'%      self.option_default)
+    print('Option description: %s '% self.option_description)
+    print('')
 
 def parse_config(config_cpp, config_hpp):
 
@@ -116,7 +119,7 @@ def parse_config(config_cpp, config_hpp):
     # Check for a category description
     if line.find('CONFIG_CATEGORY')>-1:
       present_category = line.split(':')[1].strip().strip('*/').strip()
-      print present_category
+      print(present_category)
 
     # Check for an option type
     for option_type in option_types:
@@ -131,12 +134,12 @@ def parse_config(config_cpp, config_hpp):
             enum_mapname = line.split(',')[2].strip()
             values = enum_options[enum_mapname]
           except KeyError:
-            print "KeyError, key=%s"%enum_mapname 
-            print "enum_options: ",enum_options
+            print("KeyError, key=%s"%enum_mapname)
+            print("enum_options: ",enum_options)
             sys.exit(1)
           except TypeError:
-            print "TypeError, key=%s"%enum_mapname 
-            print "enum_options: ",enum_options
+            print("TypeError, key=%s"%enum_mapname)
+            print("enum_options: ",enum_options)
             sys.exit(1)
         elif option_type=='AddMathProblem':
           values = ['DIRECT','CONTINUOUS_ADJOINT','LINEARIZED']
@@ -150,7 +153,7 @@ def parse_config(config_cpp, config_hpp):
           values = ['List']
         elif option_type == 'AddConvectOption':
           values = scheme_list
-          print "Convect Option: ", name
+          print("Convect Option: ", name)
         elif option_type == 'AddEnumListOption':
           values = ['Enum list'] 
         elif option_type == 'AddDVParamOption':

@@ -42,12 +42,10 @@ SWIG_SRC = ${abs_top_srcdir}/SU2_PY/pySU2/pySU2.i
 SWIG_WRAP_REAL = SU2_APIPYTHON_wrap
 SWIG_SO_REAL = _pysu2.${SO_EXT}
 
-PYTHON_INCLUDE = -I/usr/include/python2.7
+PYTHON_SITE_PACKAGES=$(shell python -c "import site; print(site.getsitepackages()[0])")
 #NUMPY_INCLUDE = /usr/lib/python2.7/dist-packages/numpy/core/include
 MPI4PY_INCLUDE = ${HOME}/.local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/site-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
-                 -I/usr/local/lib/python2.7/dist-packages/mpi4py/include \
+                 -I${PYTHON_SITE_PACKAGES}/mpi4py/include \
                  -I/Library/Python/2.7/site-packages/mpi4py/include
 
 SWIG = swig
@@ -57,7 +55,8 @@ pySU2_INCLUDE = -I${abs_top_srcdir}/Common/include \
 
 PY_INCLUDE = ${PYTHON_INCLUDE} -I${MPI4PY_INCLUDE}
 
-PY_LIB = -lpython2.7 \
+PY_LIB = ${PYTHON_LIBS} \
+         -L${PYTHON_EXEC_PREFIX}/lib \
          -L/usr/lib \
          -L/usr/lib/x86_64-linux-gnu
          

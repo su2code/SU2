@@ -31,6 +31,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import division, print_function, absolute_import
 
 import os, math
 from numpy import pi
@@ -97,7 +98,7 @@ def process_surface_adjoint( config_filename       ,
     # read config file
     config_data = libSU2.Get_ConfigParams(config_filename)
     surface_filename = config_data['SURFACE_ADJ_FILENAME'] + '.csv'
-    print surface_filename
+    print(surface_filename)
     mesh_filename    = config_data['MESH_FILENAME']
     gradient         = config_data['OBJECTIVE_FUNCTION']
     

@@ -31,10 +31,11 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 # imports
-import numpy as np
 from optparse import OptionParser
-import os, sys, shutil, copy
 import SU2
 
 # Command Line Options
@@ -67,7 +68,7 @@ moment_y_alpha= SU2.eval.func('D_MOMENT_Z_D_ALPHA',config,state)
 
 grad_moment_y_alpha= SU2.eval.grad('D_MOMENT_Z_D_ALPHA','CONTINUOUS_ADJOINT',config,state)
 
-print 'D_DRAG_D_ALPHA     =' , drag_alpha
-print 'D_MOMENT_Y_D_ALPHA =' , moment_y_alpha
+print('D_DRAG_D_ALPHA     =' , drag_alpha)
+print('D_MOMENT_Y_D_ALPHA =' , moment_y_alpha)
 
-print 'DD_MOMENT_Y_D_ALPHA_D_X =', grad_moment_y_alpha
+print('DD_MOMENT_Y_D_ALPHA_D_X =', grad_moment_y_alpha)

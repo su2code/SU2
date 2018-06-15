@@ -39,7 +39,7 @@ import os, sys, shutil, copy
 
 from .. import io   as su2io
 from .. import util as su2util
-from interface import DOT as SU2_DOT
+from .interface import DOT as SU2_DOT
 
 
 # ----------------------------------------------------------------------

@@ -43,11 +43,6 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   char *cstr;
   string text_line;
   
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-  
   bool restart = (config->GetRestart() || config->GetRestart_Flow());
   
   cout << "Entered constructor for CTransLMSolver -AA\n";
@@ -170,8 +165,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     strcpy (cstr, mesh_filename.c_str());
     restart_file.open(cstr, ios::in);
     if (restart_file.fail()) {
-      cout << "There is no turbulent restart file!!" << endl;
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("There is no turbulent restart file.", CURRENT_FUNCTION);
     }
     
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {

@@ -51,6 +51,7 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
+  bool fsi = config->GetFSI_Simulation();
   /*--- Initialize arrays to NULL ---*/
 
   Solution_Direct = NULL;
@@ -87,9 +88,54 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
       DualTime_Derivative_n[iVar] = 0.0;
     }
   }
+
+  Geometry_Direct       = NULL;
+  Solution_Geometry     = NULL;
+  Solution_Geometry_Old = NULL;
+  Cross_Term_Derivative = NULL;
+  Solution_BGS            = NULL;
+  Solution_BGS_k          = NULL;
+  Solution_Geometry_BGS_k = NULL;
+  Geometry_CrossTerm_Derivative = NULL;
+  Geometry_CrossTerm_Derivative_Flow = NULL;
+  if (fsi){
+    Solution_Geometry       = new su2double[nDim];
+    Geometry_Direct         = new su2double[nDim];
+    Solution_Geometry_Old   = new su2double[nDim];
+    Geometry_CrossTerm_Derivative = new su2double[nDim];
+    Geometry_CrossTerm_Derivative_Flow = new su2double[nDim];
+    Cross_Term_Derivative   = new su2double[nVar];
+    Solution_BGS            = new su2double[nVar];
+    Solution_BGS_k          = new su2double[nVar];
+    Solution_Geometry_BGS_k = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Geometry_Direct[iDim]       = 0.0;
+      Solution_Geometry[iDim]     = 1e-16;
+      Solution_Geometry_Old[iDim] = 0.0;
+      Solution_Geometry_BGS_k[iDim] = 0.0;
+      Geometry_CrossTerm_Derivative[iDim] = 0.0;
+      Geometry_CrossTerm_Derivative_Flow[iDim] = 0.0;
+    }
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Cross_Term_Derivative[iVar] = 0.0;
+      Solution_BGS[iVar]          = 0.0;
+      Solution_BGS_k[iVar]        = 0.0;
+    }
+  }
+
 }
 
 CDiscAdjVariable::~CDiscAdjVariable() {
+
+  if (Geometry_Direct       != NULL) delete [] Geometry_Direct;
+  if (Solution_Geometry     != NULL) delete [] Solution_Geometry;
+  if (Solution_Geometry_Old != NULL) delete [] Solution_Geometry_Old;
+  if (Cross_Term_Derivative != NULL) delete [] Cross_Term_Derivative;
+  if (Geometry_CrossTerm_Derivative != NULL) delete [] Geometry_CrossTerm_Derivative;
+  if (Geometry_CrossTerm_Derivative_Flow != NULL) delete [] Geometry_CrossTerm_Derivative_Flow;
+  if (Solution_BGS          != NULL) delete [] Solution_BGS;
+  if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
+  if (Solution_Geometry_BGS_k != NULL) delete [] Solution_Geometry_BGS_k;
 
   if (Solution_Direct != NULL) delete [] Solution_Direct;
   if (Sensitivity     != NULL) delete [] Sensitivity;

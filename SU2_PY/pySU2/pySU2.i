@@ -52,11 +52,42 @@ threads="1"
 %import "../../Common/include/datatypes/primitive_structure.hpp"
 %import "../../Common/include/mpi_structure.hpp"
 %include "std_string.i"
+%include "std_vector.i"
+%include "std_map.i"
 %include "typemaps.i"
 //%include "numpy.i"
-#ifdef HAVE_MPI			//Need mpi4py only for a parallel build of the wrapper.
+#ifdef HAVE_MPI                    //Need mpi4py only for a parallel build of the wrapper.
   %include "mpi4py/mpi4py.i"
   %mpi4py_typemap(Comm, MPI_Comm)
 #endif
+
+namespace std {
+   %template() vector<int>;
+   %template() vector<double>;
+   %template() vector<string>;
+   %template() map<string, int>;
+   %template() map<string, string>;
+}
+
 // ----------- API CLASSES ----------------
+
+//Constants definitions
+/*!
+ * \brief different software components of SU2
+ */
+enum SU2_COMPONENT {
+  SU2_CFD = 1,	/*!< \brief Running the SU2_CFD software. */
+  SU2_DEF = 2,	/*!< \brief Running the SU2_DEF software. */
+  SU2_DOT = 3,	/*!< \brief Running the SU2_DOT software. */
+  SU2_MSH = 4,	/*!< \brief Running the SU2_MSH software. */
+  SU2_GEO = 5,	/*!< \brief Running the SU2_GEO software. */
+  SU2_SOL = 6 	/*!< \brief Running the SU2_SOL software. */
+};
+
+const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
+const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
+const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+
+// CDriver class
 %include "../../SU2_CFD/include/driver_structure.hpp"

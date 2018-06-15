@@ -156,10 +156,10 @@ class State(ordered_bunch):
     
     def __str__(self):
         output = 'STATE:'
-        for k1,v1 in self.iteritems():
+        for k1, v1 in self.items():
             output += '\n    %s:' % k1
             if isinstance(v1,dict):
-                for k2,v2 in v1.iteritems():
+                for k2, v2 in v1.items():
                     output += '\n        %s: %s' % (k2,v2)
             else:
                 output += '\n        %s' % v1
@@ -174,7 +174,7 @@ class State(ordered_bunch):
         pull = []; link = []
         
         # choose files to pull and link
-        for key,value in self.FILES.iteritems():
+        for key, value in self.FILES.items():
             
             # link big files
             if key == 'MESH':
@@ -236,7 +236,7 @@ class State(ordered_bunch):
         special_cases = get_specialCases(config)
         
         def register_file(label,filename):
-            if not files.has_key(label):
+            if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
                   names = expand_zones(filename, config)
                   found = False
@@ -249,13 +249,12 @@ class State(ordered_bunch):
 
                   if found:
                     files[label] = filename
-                    print 'Found: %s' % filename
-                  
+                    print('Found: %s' % filename)
 
                 else:
                   if os.path.exists(filename):
                       files[label] = filename
-                      print 'Found: %s' % filename
+                      print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
@@ -273,7 +272,7 @@ class State(ordered_bunch):
         
         # adjoint solutions
         if restart:
-            for obj,suff in adj_map.iteritems():
+            for obj, suff in adj_map.items():
                 ADJ_LABEL = 'ADJOINT_' + obj
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)

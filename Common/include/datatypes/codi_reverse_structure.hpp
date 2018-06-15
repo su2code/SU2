@@ -35,8 +35,24 @@
 #include "codi.hpp"
 #include "tools/dataStore.hpp"
 
-#ifdef CODI_INDEX_TAPE
-typedef codi::RealReverseIndex su2double;
+#ifndef CODI_INDEX_TAPE
+#  define CODI_INDEX_TAPE 0
+#endif
+
+#ifndef CODI_PRIMAL_TAPE
+#  define CODI_PRIMAL_TAPE 0
+#endif
+
+#ifndef CODI_PRIMAL_INDEX_TAPE
+#  define CODI_PRIMAL_INDEX_TAPE 0
+#endif
+
+#if CODI_INDEX_TAPE
+  typedef codi::RealReverseIndex su2double;
+#elif CODI_PRIMAL_TAPE
+  typedef codi::RealReversePrimal su2double;
+#elif CODI_PRIMAL_INDEX_TAPE
+  typedef codi::RealReversePrimalIndex su2double;
 #else
-typedef codi::RealReverse su2double;
+  typedef codi::RealReverse su2double;
 #endif

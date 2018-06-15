@@ -31,6 +31,9 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 
+# make print(*args) function available in PY2.6+, does'nt work on PY < 2.6
+from __future__ import print_function
+
 import sys
 from TestCase import TestCase    
 
@@ -106,7 +109,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.713355, -1.751925, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.727423, -2.272530, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -121,7 +124,7 @@ def main():
     discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
     discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
     discadj_incomp_turb_NACA0012.test_iter = 100
-    discadj_incomp_turb_NACA0012.test_vals = [-3.627937, -1.624867, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012.test_vals = [-3.645810, -1.625922, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_turb_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_turb_NACA0012.timeout   = 1600
     discadj_incomp_turb_NACA0012.tol       = 0.00001
@@ -158,6 +161,36 @@ def main():
     discadj_trans_stator.tol       = 0.00001
     test_list.append(discadj_trans_stator)
     
+    ###################################
+    ### Structural Adjoint          ###
+    ###################################
+   
+    # Turbulent Cylinder
+    discadj_fea           = TestCase('discadj_fea')
+    discadj_fea.cfg_dir   = "disc_adj_fea"
+    discadj_fea.cfg_file  = "configAD_fem.cfg" 
+    discadj_fea.test_iter = 9
+    discadj_fea.test_vals = [-4.872191, -5.131614, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.su2_exec  = "parallel_computation.py -f"
+    discadj_fea.timeout   = 1600
+    discadj_fea.tol       = 0.00001
+    test_list.append(discadj_fea) 
+    
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+   
+    # Structural model
+    discadj_fsi           = TestCase('discadj_fsi')
+    discadj_fsi.cfg_dir   = "disc_adj_fsi"
+    discadj_fsi.cfg_file  = "configAD_fsi.cfg" 
+    discadj_fsi.test_iter = 3000
+    discadj_fsi.test_vals = [0.958848,-0.157183,0.658415,1.302076] #last 4 columns
+    discadj_fsi.su2_exec  = "parallel_computation.py -f"
+    discadj_fsi.timeout   = 1600
+    discadj_fsi.tol       = 0.00001
+    test_list.append(discadj_fsi)   
+    
     ######################################
     ### RUN TESTS                      ###
     ######################################
@@ -165,13 +198,14 @@ def main():
     pass_list = [ test.run_test() for test in test_list ]
 
     # Tests summary
-    print '=================================================================='
-    print 'Summary of the parallel tests'
+    print('==================================================================')
+    print('Summary of the parallel tests')
+    print('python version:', sys.version)
     for i, test in enumerate(test_list):
         if (pass_list[i]):
-            print '  passed - %s'%test.tag
+            print('  passed - %s'%test.tag)
         else:
-            print '* FAILED - %s'%test.tag
+            print('* FAILED - %s'%test.tag)
 
     if all(pass_list):
         sys.exit(0)

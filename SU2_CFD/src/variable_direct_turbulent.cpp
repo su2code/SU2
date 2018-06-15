@@ -57,8 +57,9 @@ CTurbVariable::CTurbVariable(unsigned short val_nDim, unsigned short val_nvar, C
       HB_Source[iVar] = 0.0;
   }
   
-  /*--- Allocate space for the limiter ---*/
-  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
@@ -97,7 +98,55 @@ CTurbSAVariable::CTurbSAVariable(su2double val_nu_tilde, su2double val_muT, unsi
     Solution_time_n[0]  = val_nu_tilde;
     Solution_time_n1[0] = val_nu_tilde;
   }
+  
+  DES_LengthScale = 0.0;
 
+}
+
+void CTurbSAVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity){
+  
+  su2double Strain[3][3] = {{0,0,0}, {0,0,0}, {0,0,0}}, Omega, StrainDotVort[3], numVecVort[3];
+  su2double numerator, trace0, trace1, denominator;
+
+  AD::StartPreacc();
+  AD::SetPreaccIn(PrimGrad_Flow, nDim+1, nDim);
+  AD::SetPreaccIn(Vorticity, 3);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(muT);  
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(LaminarViscosity);
+  
+  Strain[0][0] = PrimGrad_Flow[1][0];
+  Strain[1][0] = 0.5*(PrimGrad_Flow[2][0] + PrimGrad_Flow[1][1]);
+  Strain[0][1] = 0.5*(PrimGrad_Flow[1][1] + PrimGrad_Flow[2][0]);
+  Strain[1][1] = PrimGrad_Flow[2][1];
+  if (nDim == 3){
+    Strain[0][2] = 0.5*(PrimGrad_Flow[3][0] + PrimGrad_Flow[1][2]);
+    Strain[1][2] = 0.5*(PrimGrad_Flow[3][1] + PrimGrad_Flow[2][2]);
+    Strain[2][0] = 0.5*(PrimGrad_Flow[1][2] + PrimGrad_Flow[3][0]);
+    Strain[2][1] = 0.5*(PrimGrad_Flow[2][2] + PrimGrad_Flow[3][1]);
+    Strain[2][2] = PrimGrad_Flow[3][2];
+  }
+  
+  Omega = sqrt(Vorticity[0]*Vorticity[0] + Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);  
+  
+  StrainDotVort[0] = Strain[0][0]*Vorticity[0]+Strain[0][1]*Vorticity[1]+Strain[0][2]*Vorticity[2];
+  StrainDotVort[1] = Strain[1][0]*Vorticity[0]+Strain[1][1]*Vorticity[1]+Strain[1][2]*Vorticity[2];
+  StrainDotVort[2] = Strain[2][0]*Vorticity[0]+Strain[2][1]*Vorticity[1]+Strain[2][2]*Vorticity[2];
+  
+  numVecVort[0] = StrainDotVort[1]*Vorticity[2] - StrainDotVort[2]*Vorticity[1];
+  numVecVort[1] = StrainDotVort[2]*Vorticity[0] - StrainDotVort[0]*Vorticity[2];
+  numVecVort[2] = StrainDotVort[0]*Vorticity[1] - StrainDotVort[1]*Vorticity[0];
+  
+  numerator = sqrt(6.0) * sqrt(numVecVort[0]*numVecVort[0] + numVecVort[1]*numVecVort[1] + numVecVort[2]*numVecVort[2]);
+  trace0 = 3.0*(pow(Strain[0][0],2.0) + pow(Strain[1][1],2.0) + pow(Strain[2][2],2.0));
+  trace1 = pow(Strain[0][0] + Strain[1][1] + Strain[2][2],2.0);
+  denominator = pow(Omega, 2.0) * sqrt(trace0-trace1);
+  
+  Vortex_Tilting = (numerator/denominator) * max(1.0,0.2*LaminarViscosity/muT); 
+  
+  AD::SetPreaccOut(Vortex_Tilting);
+  AD::EndPreacc();
 }
 
 CTurbSAVariable::~CTurbSAVariable(void) {

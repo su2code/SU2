@@ -38,6 +38,8 @@ namespace AD{
 
   typedef codi::DataStore CheckpointHandler;
 
+  typedef su2double::TapeType Tape;
+
   /*--- Stores the indices of the input variables (they might be overwritten) ---*/
 
   extern std::vector<su2double::GradientData> inputValues;
@@ -53,6 +55,8 @@ namespace AD{
   extern bool Status;
 
   extern bool PreaccActive;
+
+  extern bool PreaccEnabled;
 
   extern su2double::TapeType::Position StartPosition, EndPosition;
 
@@ -115,7 +119,7 @@ namespace AD{
   }
 
   inline void StartPreacc() {
-    if (globalTape.isActive()) {
+    if (globalTape.isActive() && PreaccEnabled) {
       StartPosition = globalTape.getPosition();
       PreaccActive = true;
     }

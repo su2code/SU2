@@ -60,7 +60,6 @@ using namespace std;
 class CSysVector {
   
 private:
-  
 	unsigned long nElm; /*!< \brief total number of elements (or number elements on this processor) */
 	unsigned long nElmDomain; /*!< \brief total number of elements (or number elements on this processor without Ghost cells) */
 #ifdef HAVE_MPI

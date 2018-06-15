@@ -35,11 +35,11 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import copy
 
 from .. import io  as su2io
-from merge     import merge     as su2merge
-from interface import CFD       as SU2_CFD
+from .merge     import merge     as su2merge
+from .interface import CFD       as SU2_CFD
 
 # ----------------------------------------------------------------------
 #  Direct Simulation

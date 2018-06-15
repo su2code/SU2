@@ -35,11 +35,10 @@
 #  Imports
 # -------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import sys
 
 from .. import eval as su2eval
 from numpy import array, zeros
-from numpy.linalg import norm
 
 
 # -------------------------------------------------------------------

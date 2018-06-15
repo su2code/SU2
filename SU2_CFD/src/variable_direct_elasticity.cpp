@@ -62,6 +62,8 @@ CFEM_ElasVariable::CFEM_ElasVariable(void) : CVariable() {
   
   Prestretch              = NULL;   // Prestretch geometry
   
+  Reference_Geometry    = NULL;   // Reference geometry for optimization purposes
+  
 }
 
 CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -72,6 +74,10 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   bool incremental_load = config->GetIncrementalLoad();
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   bool prestretch_fem = config->GetPrestretch();    // Structure is prestretched
+
+  bool discrete_adjoint = config->GetDiscrete_Adjoint();
+  
+  bool refgeom = config->GetRefGeom();        // Reference geometry needs to be stored
   
   VonMises_Stress = 0.0;
   
@@ -129,6 +135,13 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
   if (incremental_load && nonlinear_analysis) {
     Solution_Old       =  new su2double [nVar];
   }
+  /*--- If we are running a discrete adjoint iteration, we need this vector for cross-dependencies ---*/
+  else if (discrete_adjoint && fsi_analysis) {
+    Solution_Old      =  new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++){
+      Solution_Old[iVar] = val_fea[iVar];
+    }
+  }
   
   /*--- If we are going to use a generalized alpha integration method, we need a way to store the old residuals ---*/
   Residual_Ext_Surf_n = NULL;
@@ -150,6 +163,9 @@ CFEM_ElasVariable::CFEM_ElasVariable(su2double *val_fea, unsigned short val_nDim
     Residual_Ext_Surf[iVar] = 0.0;
     if (body_forces) Residual_Ext_Body[iVar] = 0.0;
   }
+  
+  Reference_Geometry = NULL;
+  if (refgeom)  Reference_Geometry = new su2double [nVar];
   
   Prestretch = NULL;
   if (prestretch_fem)  Prestretch = new su2double [nVar];
@@ -179,6 +195,8 @@ CFEM_ElasVariable::~CFEM_ElasVariable(void) {
   if (Solution_Pred       != NULL) delete [] Solution_Pred;
   if (Solution_Pred_Old     != NULL) delete [] Solution_Pred_Old;
   
+  if (Reference_Geometry    != NULL) delete [] Reference_Geometry;
+
   if (Prestretch            != NULL) delete [] Prestretch;
   
 }

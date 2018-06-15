@@ -151,7 +151,7 @@ def server( config_filename   , design_filename   ,
                 raise
             except Exception,err:
                 sys.stdout.write( 'RUN FAILED \n\n' )
-                print traceback.format_exc()
+                print(traceback.format_exc())
                 sys.stdout.write( '\n' )
             #: try SDS.py
             

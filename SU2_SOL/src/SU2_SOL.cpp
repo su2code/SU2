@@ -52,14 +52,15 @@ int main(int argc, char *argv[]) {
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
-	SU2_MPI::Init(&argc,&argv);
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-	MPI_Comm_rank(MPICommunicator,&rank);
-  MPI_Comm_size(MPICommunicator,&size);
+  SU2_MPI::Init(&argc,&argv);
+  SU2_MPI::Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
 #endif
   
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
 	/*--- Pointer to different structures that will be used throughout the entire code ---*/
   
 	COutput *output                = NULL;
@@ -588,7 +589,7 @@ for (iZone = 0; iZone < nZone; iZone++) {
   /*--- Finalize MPI parallelization ---*/
   
 #ifdef HAVE_MPI
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

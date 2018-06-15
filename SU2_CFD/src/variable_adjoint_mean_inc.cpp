@@ -75,15 +75,16 @@ CAdjIncEulerVariable::CAdjIncEulerVariable(su2double val_psirho, su2double *val_
   /*--- Allocate undivided laplacian (centered) and limiter (upwind)---*/
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
     Undivided_Laplacian = new su2double [nVar];
-  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
-    Limiter = new su2double [nVar];
-    Solution_Max = new su2double [nVar];
-    Solution_Min = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Limiter[iVar] = 0.0;
-      Solution_Max[iVar] = 0.0;
-      Solution_Min[iVar] = 0.0;
-    }
+  
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  Limiter = new su2double [nVar];
+  Solution_Max = new su2double [nVar];
+  Solution_Min = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Limiter[iVar] = 0.0;
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
   }
   
   /*--- Allocate and initialize solution ---*/
@@ -153,17 +154,17 @@ CAdjIncEulerVariable::CAdjIncEulerVariable(su2double *val_solution, unsigned sho
   if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED)
     Undivided_Laplacian = new su2double [nVar];
   
-  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_UPWIND) {
-    Limiter = new su2double [nVar];
-    Solution_Max = new su2double [nVar];
-    Solution_Min = new su2double [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Limiter[iVar] = 0.0;
-      Solution_Max[iVar] = 0.0;
-      Solution_Min[iVar] = 0.0;
-    }
+  /*--- Always allocate the slope limiter,
+   and the auxiliar variables (check the logic - JST with 2nd order Turb model - ) ---*/
+  Limiter = new su2double [nVar];
+  Solution_Max = new su2double [nVar];
+  Solution_Min = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Limiter[iVar] = 0.0;
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
   }
-  
+
   /*--- Solution initialization ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Solution[iVar] = val_solution[iVar];
