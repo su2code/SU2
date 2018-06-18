@@ -2103,9 +2103,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
 
   /* DESCRIPTION: Type of screen output */
-  addEnumListOption("SCREEN_OUTPUT", nScreenOutput, Kind_ScreenOutput, Screen_Output_Map);
+  addStringListOption("SCREEN_OUTPUT", nScreenOutput, ScreenOutput);
   /* DESCRIPTION: Type of output printed to the history file */
-  addEnumListOption("HISTORY_OUTPUT", nHistoryOutput, Kind_HistoryOutput, HistFile_Output_Map);
+  addStringListOption("HISTORY_OUTPUT", nHistoryOutput, HistoryOutput);
 
   /* END_CONFIG_OPTIONS */
 
