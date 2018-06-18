@@ -1850,11 +1850,49 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
     /* total list can become rather lengthy.                                  */
     /*------------------------------------------------------------------------*/
 
+    /*--- Determine whether or not the predictor solution must be interpolated
+          for the time levels on this rank. Make a distinction between owned
+          and halo elements. Also determine whether or not boundary conditions
+          are present and whether or not these depend on halo data. ---*/
+    const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
+    vector<bool> interpolOwnedElem(nTimeLevels, false);
+    vector<bool> interpolHaloElem(nTimeLevels, false);
+    vector<bool> BCPresent(nTimeLevels, false);
+    vector<bool> BCDependOnHalos(nTimeLevels, false);
+
+    for(unsigned short level=0; level<nTimeLevels; ++level) {
+
+      /* First check the boundary conditions. */
+      for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); iMarker++) {
+
+        const unsigned long surfElemBeg = boundaries[iMarker].nSurfElem[level];
+        const unsigned long surfElemEnd = boundaries[iMarker].nSurfElem[level+1];
+        if(surfElemEnd > surfElemBeg) {
+          BCPresent[level] = true;
+          if( boundaries[iMarker].haloInfoNeededForBC ) BCDependOnHalos[level] = true;
+        }
+      }
+
+      /* Determine whether or not the owned elements must be interpolated. */
+      if(nVolElemOwnedPerTimeLevel[level+1] > nVolElemOwnedPerTimeLevel[level])
+        interpolOwnedElem[level] = true;
+      if(nMatchingInternalFacesLocalElem[level+1] > nMatchingInternalFacesLocalElem[level])
+       interpolOwnedElem[level] = true;
+      if(nMatchingInternalFacesWithHaloElem[level+1] > nMatchingInternalFacesWithHaloElem[level]) 
+        interpolOwnedElem[level] = true;
+      if( BCPresent[level] )
+        interpolOwnedElem[level] = true;
+
+      /* Determine whether or not the halo elements must be interpolated. */
+      if(nMatchingInternalFacesWithHaloElem[level+1] > nMatchingInternalFacesWithHaloElem[level])
+        interpolHaloElem[level] = true;
+      if( BCDependOnHalos[level] )
+        interpolHaloElem[level] = true;
+    }
+
     /* Determine the number of subtime steps and abbreviate the number of
        time integration points a bit easier.  */
-    const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
-    const unsigned int nSubTimeSteps = pow(2,nTimeLevels-1);
-
+    const unsigned int   nSubTimeSteps          = pow(2,nTimeLevels-1);
     const unsigned short nTimeIntegrationPoints = config->GetnTimeIntegrationADER_DG();
 
     /* Define the two dimensional vector to store the latest index for a
@@ -1896,7 +1934,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
           prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][0];
 
         /* Make sure that any previous communication has been completed. */
-        prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][0];
+        prevInd[1] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][0];
 
         /* Create the task. */
         indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][0] = tasksList.size();
@@ -1932,7 +1970,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             prevInd[0] = indexInList[CTaskDefinition::ADER_TIME_INTERPOLATE_HALO_ELEMENTS][nL];
 
           /* Make sure that any previous communication has been completed. */
-          prevInd[1] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][nL];
+          prevInd[1] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][nL];
 
           /* Create the actual task. */
           indexInList[CTaskDefinition::INITIATE_MPI_COMMUNICATION][nL] = tasksList.size();
@@ -2027,17 +2065,20 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
         /* Loop over the time levels to be treated. */
         for(unsigned short level=0; level<=timeLevel; ++level) {
 
-          /* The solution of the owned elements of the current time level and
-             the adjacent owned elements of the next time level must be
-             interpolated to the integration point intPoint. Check if these
-             elements are present. */
+          /* Easier storage of the number of owned elements for this level
+             and the number of owned elements of the adjacent time level
+             that are needed for the computation of the surface integral. */
+          unsigned long nOwnedElem = nVolElemOwnedPerTimeLevel[level+1]
+                                   - nVolElemOwnedPerTimeLevel[level];
+
           unsigned long nAdjOwnedElem = 0;
           if(level < (nTimeLevels-1))
             nAdjOwnedElem = ownedElemAdjLowTimeLevel[level+1].size();
 
-          unsigned long nOwnedElem = nVolElemOwnedPerTimeLevel[level+1]
-                                   - nVolElemOwnedPerTimeLevel[level];
-          if(nAdjOwnedElem || nOwnedElem) {
+          /* Check if the solution of the owned elements of the current time
+             level and the adjacent owned elements of the next time level must
+             be interpolated to the integration point intPoint. */
+          if( interpolOwnedElem[level] ) {
 
             /* Determine the tasks that should have been completed before this
                task can be carried out. This depends on the time integration
@@ -2101,13 +2142,14 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
              the adjacent halo elements of the next time level must be
              interpolated to the integration point intPoint. Check if these
              elements are present. */
-          unsigned long nAdjHaloElem = 0;
-          if(level < (nTimeLevels-1))
-            nAdjHaloElem = haloElemAdjLowTimeLevel[level+1].size();
+          if( interpolHaloElem[level] ) {
 
-          unsigned long nHaloElem = nVolElemHaloPerTimeLevel[level+1]
-                                  - nVolElemHaloPerTimeLevel[level];
-          if(nAdjHaloElem || nHaloElem) {
+            unsigned long nAdjHaloElem = 0;
+            if(level < (nTimeLevels-1))
+              nAdjHaloElem = haloElemAdjLowTimeLevel[level+1].size();
+
+            unsigned long nHaloElem = nVolElemHaloPerTimeLevel[level+1]
+                                    - nVolElemHaloPerTimeLevel[level];
 
             /* Determine the tasks that should have been completed before this
                task can be carried out. This depends on the time integration
@@ -2156,6 +2198,19 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
                                                 level, prevInd[0]));
           }
 
+          /* Check whether there are boundary conditions that involve halo elements. */
+          if( BCDependOnHalos[level] ) {
+
+            /* Create the dependency list for this task. */
+            prevInd[0] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_OWNED_ELEMENTS][level];
+            prevInd[1] = indexInList[CTaskDefinition::SHOCK_CAPTURING_VISCOSITY_HALO_ELEMENTS][level];
+
+            /* Create the task for the boundary conditions that involve halo elements. */
+            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level] = tasksList.size();
+            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO,
+                                                level, prevInd[0], prevInd[1]));
+          }
+
           /* Compute the surface residuals for this time level that involve
              halo elements, if present. Afterwards, accumulate the space time
              residuals for the halo elements. */
@@ -2177,11 +2232,6 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
             /* Create the task for the surface residual. */
             indexInList[CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS][level] = tasksList.size();
             tasksList.push_back(CTaskDefinition(CTaskDefinition::SURFACE_RESIDUAL_HALO_ELEMENTS,
-                                                level, prevInd[0], prevInd[1], prevInd[2]));
-
-            /* Create the task for the boundary conditions that involve halo elements. */
-            indexInList[CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO][level] = tasksList.size();
-            tasksList.push_back(CTaskDefinition(CTaskDefinition::BOUNDARY_CONDITIONS_DEPEND_ON_HALO,
                                                 level, prevInd[0], prevInd[1], prevInd[2]));
 
             /* Create the task to accumulate the surface residuals of the halo
@@ -2217,7 +2267,7 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
               else
                 prevInd[1] = -1;
 
-              prevInd[2] = indexInList[CTaskDefinition::COMPLETE_REVERSE_MPI_COMMUNICATION][level];
+              prevInd[2] = indexInList[CTaskDefinition::COMPLETE_MPI_COMMUNICATION][level];
 
               /* Create the task. */
               indexInList[CTaskDefinition::INITIATE_REVERSE_MPI_COMMUNICATION][level] = tasksList.size();
@@ -2390,10 +2440,10 @@ void CFEM_DG_EulerSolver::SetUpTaskList(CConfig *config) {
 #ifdef HAVE_MPI
       SU2_MPI::Barrier(MPI_COMM_WORLD);
 #endif
-    } */
+    }
 
-//  cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed";
-//  exit(1);
+    cout << "CFEM_DG_EulerSolver::SetUpTaskList: ADER tasklist printed" << endl;
+    exit(1); */
 
     // END EXTRA FOR DEBUGGING.
   }
