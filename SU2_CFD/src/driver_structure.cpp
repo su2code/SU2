@@ -3260,7 +3260,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        output[ZONE_0]->SetConvHistory_Body(geometry_container, solver_container,
+        output[iZone]->SetConvHistory_Body(geometry_container, solver_container,
             config_container, integration_container, false, UsedTime, iZone, iInst);
     }
   }
