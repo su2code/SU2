@@ -996,8 +996,8 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
-  unsigned short *Kind_ScreenOutput,    /*!< \brief Kind of the screen output. */
-  *Kind_HistoryOutput;                  /*!< \brief Kind of the output printed to the history file. */
+  string *ScreenOutput,    /*!< \brief Kind of the screen output. */
+  *HistoryOutput;                  /*!< \brief Kind of the output printed to the history file. */
   unsigned short nScreenOutput,         /*!< \brief Number of screen output variables (max: 6). */
   nHistoryOutput;                       /*!< \brief Number of variables printed to the history file. */
 
@@ -8367,7 +8367,7 @@ public:
   /*
   * \brief Get the screen output field iField
   */
-  unsigned short GetScreenOutput_Field(unsigned short iField);
+  string GetScreenOutput_Field(unsigned short iField);
 
   /*!
    * \brief Get the number of history output variables requested
@@ -8377,7 +8377,7 @@ public:
   /*
   * \brief Get the history output field iField
   */
-  unsigned short GetHistoryOutput_Field(unsigned short iField);
+  string GetHistoryOutput_Field(unsigned short iField);
 
 
 };
