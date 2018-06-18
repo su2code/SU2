@@ -76,11 +76,12 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
         (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
     else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
+    SetOutputFields(config);
 
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
-    SetConvHistory_Header(config, val_iZone, INST_0);
+    SetHistoryFile_Header(config);
 
     /*--- Initialize number of variables ---*/
     if (linear_analysis) nVar_FEM = nDim;
@@ -112,28 +113,6 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
-    HistFile << "TITLE = \"SU2 Simulation\"" << endl;
-    HistFile << "VARIABLES = ";
-  }
-
-  /*--- Write the header, case depending ---*/
-  SetHistoryFile_Header(config);
-
-  if (config->GetOutput_FileFormat() == TECPLOT ||
-      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
-      config->GetOutput_FileFormat() == FIELDVIEW ||
-      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
-    HistFile << "ZONE T= \"Convergence history\"" << endl;
-  }
-
-}
-
 void CFEAOutput::LoadOutput_Data(CGeometry ****geometry,
                                      CSolver *****solver_container,
                                      CConfig **config,
@@ -153,224 +132,86 @@ void CFEAOutput::LoadOutput_Data(CGeometry ****geometry,
   unsigned short iVar;
   unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
 
-  iExtIter = config[val_iZone]->GetExtIter();
-  iIntIter = config[val_iZone]->GetIntIter();
-
-  Time_Used = timeused;
-
-  /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
-  Total_VMStress   = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
-  Total_ForceCoeff = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetForceCoeff();
-  Total_IncLoad    = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetLoad_Increment();
-  LinSolvIter  = (unsigned long) solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetIterLinSolver();
-
+  SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());
+  SetOutputFieldValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  
+  SetOutputFieldValue("PHYS_TIME", timeused);
+  
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
   /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
 
-  if (linear_analysis) {
-    for (iVar = 0; iVar < nVar_FEM; iVar++) {
-      residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(iVar);
+  
+  if (linear_analysis){
+    SetOutputFieldValue("UTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)));
+    SetOutputFieldValue("RTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(1)));
+    if (nVar_FEM == 3){
+      SetOutputFieldValue("ETOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(2)));    
+    }
+    SetOutputFieldValue("DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)));
+    SetOutputFieldValue("DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(1)));
+    if (nVar_FEM == 3){
+      SetOutputFieldValue("DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(2)));    
+    }
+  } else if (nonlinear_analysis){
+    SetOutputFieldValue("UTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(0)));
+    SetOutputFieldValue("RTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(1)));
+    if (nVar_FEM == 3){
+      SetOutputFieldValue("ETOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(2)));    
+    }
+    SetOutputFieldValue("DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(0)));
+    SetOutputFieldValue("DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(1)));
+    if (nVar_FEM == 3){
+      SetOutputFieldValue("DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(2)));    
     }
   }
-  else if (nonlinear_analysis) {
-    for (iVar = 0; iVar < nVar_FEM; iVar++) {
-      residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(iVar);
-    }
-  }
-
+  
+  SetOutputFieldValue("VMS", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA());
+  SetOutputFieldValue("LOAD_INCREMENT", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetLoad_Increment());
+  SetOutputFieldValue("LOAD_RAMP", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetForceCoeff());
+  
 }
 
-bool CFEAOutput::WriteScreen_Header(CConfig *config){
+void CFEAOutput::SetOutputFields(CConfig *config){
+  
+  // Iteration numbers
+  AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
+  AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  
+  // Misc.
+  AddOutputField("PHYS_TIME", "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  
+  // Residuals
+  AddOutputField("UTOL",   "Res_FEM[0]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("RTOL",   "Res_FEM[1]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("ETOL",   "Res_FEM[2]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_X", "Res_FEM[0]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_Y", "Res_FEM[1]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_Z", "Res_FEM[2]", FORMAT_FIXED,  "RESIDUALS");
+  
+  
+  AddOutputField("VMS", "VonMises_Stress", FORMAT_FIXED, "VMS");
+  AddOutputField("LOAD_INCREMENT", "Load_Increment", FORMAT_FIXED, "LOAD_INCREMENT");
+  AddOutputField("LOAD_RAMP", "Load_Ramp", FORMAT_FIXED, "LOAD_RAMP");
+  
+}
 
+inline bool CFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
+
+inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {  
+  
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
 
   bool write_header;
-  if (nonlinear_analysis) write_header = (iIntIter == 0);
-  else write_header = (((iExtIter % (config->GetWrt_Con_Freq()*40)) == 0));
+  if (nonlinear_analysis) write_header = (config->GetIntIter() == 0);
+  else write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
 
   return write_header;
-
-}
-
-void CFEAOutput::SetScreen_Header(CConfig *config){
-
   
-  stringstream out;
-  
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
-
-  bool absolute = (config->GetResidual_Criteria_FEM() == RESFEM_ABSOLUTE);
-
-  if (dynamic && nonlinear_analysis) {
-    cout << endl << "Simulation time: " << config->GetCurrent_DynTime() << ". Time step: " << config->GetDelta_DynTime() << ".";
-  }
-
-  // Insert line break
-  cout << endl;
-  // Evaluate the requested output
-  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
-    switch (config->GetScreenOutput_Field(iField)){
-    case SOUT_INTITER: PrintScreenHeaderString(out,"IntIter");    break;
-    case SOUT_EXTITER: PrintScreenHeaderString(out,"ExtIter");    break;
-    case SOUT_UTOL:
-      if (absolute) PrintScreenHeaderString(out,"Res[UTOL-A]");
-      else PrintScreenHeaderString(out, "Res[UTOL]");
-      break;
-    case SOUT_RTOL:
-      if (absolute) PrintScreenHeaderString(out,"Res[RTOL-A]");
-      else PrintScreenHeaderString(out, "Res[RTOL]");
-      break;
-    case SOUT_ETOL:
-      if (absolute) PrintScreenHeaderString(out,"Res[ETOL-A]");
-      else PrintScreenHeaderString(out, "Res[ETOL]");
-      break;
-    case SOUT_DISPX: PrintScreenHeaderString(out,"Res[Displx]"); break;
-    case SOUT_DISPY: PrintScreenHeaderString(out,"Res[Disply]"); break; 
-    case SOUT_DISPZ: PrintScreenHeaderString(out,"Res[Displz]"); break; 
-    case SOUT_VMS:   PrintScreenHeaderString(out,"VMS(max)"); break; 
-    }
-  }
-  // Insert line break
-  cout << out.str();
-  cout << endl;
-
 }
-
-bool CFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime){
-
+inline bool CFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   return true;
-
-}
-
-void CFEAOutput::SetScreen_Output(CConfig *config){
-
-  stringstream out;  
-  
-  // Evaluate the requested output
-  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
-    switch (config->GetScreenOutput_Field(iField)){
-    case SOUT_INTITER: PrintScreenInteger(out,iIntIter); break;
-    case SOUT_EXTITER: PrintScreenInteger(out,iExtIter); break;
-    case SOUT_UTOL:    PrintScreenFixed(out,log10(residual_fem[0])); break;
-    case SOUT_RTOL:    PrintScreenFixed(out,log10(residual_fem[1])); break;
-    case SOUT_ETOL:    PrintScreenFixed(out,log10(residual_fem[2])); break;
-    case SOUT_DISPX:   PrintScreenFixed(out,log10(residual_fem[0])); break;
-    case SOUT_DISPY:   PrintScreenFixed(out,log10(residual_fem[1])); break;
-    case SOUT_DISPZ:   if (nVar_FEM == 3) PrintScreenFixed(out,log10(residual_fem[2])); else PrintScreenFixed(out,0.0); break;
-    case SOUT_VMS:     PrintScreenScientific(out,Total_VMStress);
-    }
-  }
-  
-  cout << out.str();
-  cout << endl;
-
-}
-
-void CFEAOutput::SetHistoryFile_Header(CConfig *config){
-
-  // This buffer should be long enough
-  char fem_header[1000]="";
-
-  // Evaluate the requested output
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    switch (config->GetHistoryOutput_Field(iField)){
-    case HOUT_INTITER:
-      SPRINTF (fem_header + strlen(fem_header), "\"Int_Iter\"");
-      break;
-    case HOUT_EXTITER:
-      SPRINTF (fem_header + strlen(fem_header), "\"Ext_Iter\"");
-      break;
-    case HOUT_PHYSTIME:
-      SPRINTF (fem_header + strlen(fem_header), "\"Time(min)\"");
-      break;
-    case HOUT_RESIDUALS:
-      if (nVar_FEM == 2)
-        SPRINTF (fem_header + strlen(fem_header), "\"Res_FEM[0]\",\"Res_FEM[1]\"");
-      else
-        SPRINTF (fem_header + strlen(fem_header), "\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"");
-      break;
-    case HOUT_LINSOL_ITER:
-      SPRINTF (fem_header + strlen(fem_header), "\"Linear_Solver_Iterations\"");
-      break;
-    case HOUT_LOAD_RAMP:
-      SPRINTF (fem_header + strlen(fem_header), "\"Load_Ramp\"");
-      break;
-    case HOUT_LOAD_INCREMENT:
-      SPRINTF (fem_header + strlen(fem_header), "\"Load_Increment\"");
-      break;
-    case HOUT_VMS:
-      SPRINTF (fem_header + strlen(fem_header), "\"VonMises_Stress\"");
-      break;
-    }
-    // Print a comma in all fields but the last one
-    if (iField < (config->GetnHistoryOutput() - 1))
-      SPRINTF (fem_header + strlen(fem_header), ", ");
-  }
-  SPRINTF (fem_header + strlen(fem_header), "\n");
-
-  HistFile << fem_header;
-  HistFile.flush();
-
-}
-
-bool CFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime){
-
-  return true;
-
-}
-
-void CFEAOutput::SetHistoryFile_Output(CConfig *config){
-
-
-  unsigned long ExtIter_OffSet = config->GetExtIter_OffSet();
-  bool incload              = config->GetIncrementalLoad();
-
-  // This buffer should be long enough
-  char fem_output[1000]="";
-
-  // Evaluate the requested output
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    switch (config->GetHistoryOutput_Field(iField)){
-    case HOUT_INTITER:
-      SPRINTF (fem_output + strlen(fem_output), "%8d", SU2_TYPE::Int(iIntIter));
-      break;
-    case HOUT_EXTITER:
-      SPRINTF (fem_output + strlen(fem_output), "%8d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
-      break;
-    case HOUT_PHYSTIME:
-      SPRINTF (fem_output + strlen(fem_output), "%12.10f", Time_Used/60.0);
-      break;
-    case HOUT_RESIDUALS:
-      if (nVar_FEM == 2)
-        SPRINTF (fem_output + strlen(fem_output), "%14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]));
-      else
-        SPRINTF (fem_output + strlen(fem_output), "%14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
-      break;
-    case HOUT_LINSOL_ITER:
-      SPRINTF (fem_output + strlen(fem_output), "%lu", LinSolvIter);
-      break;
-    case HOUT_LOAD_RAMP:
-      SPRINTF (fem_output + strlen(fem_output), "%14.8e", Total_ForceCoeff);
-      break;
-    case HOUT_LOAD_INCREMENT:
-      SPRINTF (fem_output + strlen(fem_output), "%14.8e", Total_IncLoad);
-      break;
-    case HOUT_VMS:
-      SPRINTF (fem_output + strlen(fem_output), "%14.8e", Total_VMStress);
-      break;
-    }
-    // Print a comma in all fields but the last one
-    if (iField < (config->GetnHistoryOutput() - 1))
-      SPRINTF (fem_output + strlen(fem_output), ", ");
-  }
-  SPRINTF (fem_output + strlen(fem_output), "\n");
-
-  HistFile << fem_output;
-  HistFile.flush();
-
 }
 
 
