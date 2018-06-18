@@ -43,6 +43,8 @@ COutput::COutput(CConfig *config) {
   size = SU2_MPI::GetSize();
   
   field_width = 12;
+  
+  HistorySep = ",";
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
@@ -16527,5 +16529,123 @@ void COutput::SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry,
   delete [] Surface_VelocityIdeal;
   delete [] Surface_MassFlow_Abs;
   
+}
+
+void COutput::SetHistoryFile_Header(CConfig *config) { 
+
+  
+  if ((config->GetOutput_FileFormat() == TECPLOT) ||
+      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW) ||
+      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
+    HistFile << "TITLE = \"SU2 Simulation\"" << endl;
+    HistFile << "VARIABLES = ";
+  }
+  
+  string currentField;
+   
+  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
+    currentField = config->GetHistoryOutput_Field(iField);      
+    for(std::map<string, OutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
+      if (currentField == iter->second.HistoryOutputGroup){
+        AddHistoryHeaderString(iter->second.FieldName);
+      }
+    }
+  }
+  
+  stringstream out;
+  for (unsigned short iHeader = 0; iHeader < HistoryHeader.size(); iHeader++){
+    out << "\"" << HistoryHeader[iHeader] << "\"";
+    if (iHeader !=  HistoryHeader.size() - 1) out << HistorySep;
+  }
+  
+  out << endl;
+  HistFile << out.str();
+  HistFile.flush();
+
+  if (config->GetOutput_FileFormat() == TECPLOT ||
+      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
+      config->GetOutput_FileFormat() == FIELDVIEW ||
+      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
+    HistFile << "ZONE T= \"Convergence history\"" << endl;
+  }
+  
+}
+
+
+void COutput::SetHistoryFile_Output(CConfig *config) { 
+  
+  stringstream out;
+  string currentField;
+  
+  HistoryValues.clear();
+  
+  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
+    currentField = config->GetHistoryOutput_Field(iField);      
+    for(std::map<string, OutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
+      if (currentField == iter->second.HistoryOutputGroup){
+        AddHistoryValue(iter->second.Value);
+      }
+    }
+  }
+  
+  for (unsigned short iValue = 0; iValue < HistoryValues.size(); iValue++){
+    out << std::setprecision(10) << HistoryValues[iValue];
+    if (iValue !=  HistoryValues.size() - 1) out << HistorySep;
+    out << " ";
+  }
+  out << endl;
+  HistFile << out.str();
+  HistFile.flush();
+}
+
+void COutput::SetScreen_Header(CConfig *config) { 
+  
+  stringstream out;
+  string currentField;
+  // Insert line break
+  out << endl;
+  // Evaluate the requested output
+  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
+    currentField = config->GetScreenOutput_Field(iField);  
+    if (Output_Fields.count(currentField) > 0){
+      PrintScreenHeaderString(out, Output_Fields[currentField].FieldName);
+    } else {
+//      SU2_MPI::Error(string("Requested screen output field not found: ") + currentField, CURRENT_FUNCTION);
+    }
+  }
+  
+  // Insert line break
+  out << endl;
+  cout << out.str();
+  
+}
+
+
+void COutput::SetScreen_Output(CConfig *config) {
+  
+  stringstream out;
+  string currentField;
+  
+  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
+    currentField = config->GetScreenOutput_Field(iField); 
+    if (Output_Fields.count(currentField) > 0){  
+      switch (Output_Fields[currentField].ScreenFormat) {
+      case FORMAT_INTEGER:
+        PrintScreenInteger(out, Output_Fields[currentField].Value);
+        break;
+      case FORMAT_FIXED:
+        PrintScreenFixed(out, Output_Fields[currentField].Value);
+        break;
+      case FORMAT_SCIENTIFIC:
+        PrintScreenScientific(out, Output_Fields[currentField].Value);
+        break;      
+      }
+    }
+  }
+    
+  // Insert line break
+  cout << out.str();
+  cout << endl;
 }
 

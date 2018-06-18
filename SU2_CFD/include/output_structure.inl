@@ -45,21 +45,15 @@ inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short
 
 inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
 
+inline void COutput::SetOutputFields(CConfig *config){}
+
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
  
-inline void COutput::SetHistoryFile_Header(CConfig *config) { }
-
 inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
-
-inline void COutput::SetHistoryFile_Output(CConfig *config) { }
 
 inline bool COutput::WriteScreen_Header(CConfig *config) { }
 
-inline void COutput::SetScreen_Header(CConfig *config) { }
-
 inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
-
-inline void COutput::SetScreen_Output(CConfig *config) { }
 
 inline void COutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
@@ -84,4 +78,24 @@ inline void COutput::PrintScreenInteger(stringstream& stream, unsigned long val)
 inline void COutput::PrintScreenHeaderString(stringstream& stream, string header) {
   if (header.size() > field_width-1) header.resize(field_width-1);
   stream << std::right << std::setw(field_width) << header; 
+}
+
+inline void COutput::AddHistoryValue(su2double val) { 
+  HistoryValues.push_back(val);
+}
+
+inline void COutput::AddHistoryHeaderString(string header) {
+  HistoryHeader.push_back(header); 
+}
+
+inline void COutput::PrintHistorySep(stringstream& stream){
+  stream << HistorySep;
+}
+
+inline void COutput::AddOutputField(string name, string field_name, unsigned short format, string groupname ){
+  Output_Fields[name] = OutputField(field_name, format, groupname);
+}
+
+inline void COutput::SetOutputFieldValue(string name, su2double value){
+  Output_Fields[name].Value = value;
 }
