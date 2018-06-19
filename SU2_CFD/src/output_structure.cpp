@@ -16552,6 +16552,16 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
       }
     }
   }
+  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
+    currentField = config->GetHistoryOutput_Field(iField);      
+    for(std::map<string, vector<OutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
+      for (unsigned short iMarker = 0; iMarker < iter->second.size(); iMarker++){
+        if (currentField == iter->second[iMarker].HistoryOutputGroup){
+          AddHistoryHeaderString(iter->second[iMarker].FieldName);
+        }
+      }
+    }
+  }
   
   stringstream out;
   for (unsigned short iHeader = 0; iHeader < HistoryHeader.size(); iHeader++){
@@ -16589,6 +16599,17 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
     }
   }
   
+  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
+    currentField = config->GetHistoryOutput_Field(iField);      
+    for(std::map<string, vector<OutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
+      for (unsigned short iMarker = 0; iMarker < iter->second.size(); iMarker++){
+        if (currentField == iter->second[iMarker].HistoryOutputGroup){
+          AddHistoryValue(iter->second[iMarker].Value);
+        }
+      }
+    }
+  }
+  
   for (unsigned short iValue = 0; iValue < HistoryValues.size(); iValue++){
     out << std::setprecision(10) << HistoryValues[iValue];
     if (iValue !=  HistoryValues.size() - 1) out << HistorySep;
@@ -16613,7 +16634,11 @@ void COutput::SetScreen_Header(CConfig *config) {
     } else {
 //      SU2_MPI::Error(string("Requested screen output field not found: ") + currentField, CURRENT_FUNCTION);
     }
+    if (OutputPerSurface_Fields.count(currentField) > 0){
+      PrintScreenHeaderString(out, OutputPerSurface_Fields[currentField][0].FieldName);      
+    }
   }
+  
   
   // Insert line break
   out << endl;
@@ -16642,6 +16667,19 @@ void COutput::SetScreen_Output(CConfig *config) {
         break;      
       }
     }
+    if (OutputPerSurface_Fields.count(currentField) > 0){
+      switch (OutputPerSurface_Fields[currentField][0].ScreenFormat) {
+      case FORMAT_INTEGER:
+        PrintScreenInteger(out, OutputPerSurface_Fields[currentField][0].Value);
+        break;
+      case FORMAT_FIXED:
+        PrintScreenFixed(out, OutputPerSurface_Fields[currentField][0].Value);
+        break;
+      case FORMAT_SCIENTIFIC:
+        PrintScreenScientific(out, OutputPerSurface_Fields[currentField][0].Value);
+        break;   
+      }
+    }    
   }
     
   // Insert line break

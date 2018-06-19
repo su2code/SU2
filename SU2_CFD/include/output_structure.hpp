@@ -222,6 +222,8 @@ protected:
   };
   
   std::map<string, OutputField > Output_Fields;
+  std::map<string, vector<OutputField> > OutputPerSurface_Fields;
+
   
   char char_histfile[200];
 
@@ -960,6 +962,10 @@ public:
   void AddOutputField(string name, string field_name, unsigned short format, string groupname );
   
   void SetOutputFieldValue(string name, su2double value);
+  
+  void AddOutputPerSurfaceField(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
+  
+  void SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker);
   
 };
 

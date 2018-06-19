@@ -96,6 +96,16 @@ inline void COutput::AddOutputField(string name, string field_name, unsigned sho
   Output_Fields[name] = OutputField(field_name, format, groupname);
 }
 
+inline void COutput::AddOutputPerSurfaceField(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
+  for (unsigned short i = 0; i < marker_names.size(); i++){
+    OutputPerSurface_Fields[name].push_back(OutputField(field_name+"("+marker_names[i]+")", format, groupname));
+  }
+}
+
 inline void COutput::SetOutputFieldValue(string name, su2double value){
   Output_Fields[name].Value = value;
+}
+
+inline void COutput::SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker){
+  OutputPerSurface_Fields[name][iMarker].Value = value;
 }
