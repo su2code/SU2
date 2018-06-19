@@ -167,6 +167,17 @@ def main():
     poiseuille.tol       = 0.001
     test_list.append(poiseuille)
 
+    # 2D Poiseuille flow (inlet profile file)
+    poiseuille_profile           = TestCase('poiseuille_profile')
+    poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
+    poiseuille_profile.test_iter = 10
+    poiseuille_profile.test_vals = [-12.493694, -7.685711, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.su2_exec  = "parallel_computation.py -f"
+    poiseuille_profile.timeout   = 1600
+    poiseuille_profile.tol       = 0.00001
+    test_list.append(poiseuille_profile)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -779,7 +790,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.962470, -4634.558027] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -8.084846, -5343.960719] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
@@ -1029,6 +1040,19 @@ def main():
     
     pass_list.append(naca0012_def.run_def())
     test_list.append(naca0012_def)
+    
+    # Inviscid NACA0012 based on SURFACE_FILE input (surface_bump.dat)
+    naca0012_def_file            = TestCase('naca0012_def_file')
+    naca0012_def_file.cfg_dir   = "deformation/naca0012"
+    naca0012_def_file.cfg_file  = "surface_file_NACA0012.cfg"
+    naca0012_def_file.test_iter = 10
+    naca0012_def_file.test_vals = [0.0035688] #residual
+    naca0012_def_file.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca0012_def_file.timeout   = 1600
+    naca0012_def_file.tol       = 1e-8
+    
+    pass_list.append(naca0012_def_file.run_def())
+    test_list.append(naca0012_def_file)
 
     # RAE2822 (mixed tris + quads)
     rae2822_def            = TestCase('rae2822_def')

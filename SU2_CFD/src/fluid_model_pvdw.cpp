@@ -161,7 +161,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     fmid= log(xmid-b) - s/Gas_Constant + log((h+ 2*a/xmid)/Gas_Constant/(1/Gamma_Minus_One+ xmid/(xmid-b)))/Gamma_Minus_One;
@@ -249,7 +249,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     T = (P+xmid*xmid*a)*((1-xmid*b)/(xmid*Gas_Constant));
