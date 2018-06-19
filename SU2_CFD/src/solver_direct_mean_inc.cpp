@@ -5442,7 +5442,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long Point_Normal;
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area;
   su2double *V_inlet, *V_domain;
-  su2double UnitNormal[3] = {0.0,0.0,0.0}, UnitFlowDir[3] = {0.0,0.0,0.0};
+  su2double UnitFlowDir[3] = {0.0,0.0,0.0};
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -5481,9 +5481,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
-      
-      for (iDim = 0; iDim < nDim; iDim++)
-        UnitNormal[iDim] = Normal[iDim]/Area;
     
       /*--- Both types of inlets may use the prescribed flow direction.
        Ensure that the flow direction is a unit vector. ---*/
