@@ -33,6 +33,7 @@
  */
 
 #include "../include/wall_model.hpp"
+#include <lapacke.h>
 
 void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
                                 const su2double      *doubleInfo){
@@ -76,6 +77,259 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                                       su2double &ViscosityWall,
                                                       su2double &kOverCvWall) {
 
-  cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Not implemented yet" << endl;
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  /*--- Set up vectors ---*/
+  std::vector<su2double> y(numPoints,0.0);
+  std::vector<su2double> u(numPoints,0.0);
+  std::vector<su2double> T(numPoints,0.0);
+  std::vector<su2double> rho(numPoints,0.0);
+  std::vector<su2double> mu(numPoints,0.0);
+  std::vector<su2double> muTurb(numPoints,0.0);
+  std::vector<su2double> muTurb_new(numPoints,0.0);
+  std::vector<su2double> nu(numPoints,0.0);
+
+  std::vector<su2double> lower(numPoints-1,0.0);
+  std::vector<su2double> upper(numPoints-1,0.0);
+  std::vector<su2double> diagonal(numPoints,0.0);
+  std::vector<su2double> rhs(numPoints,0.0);
+
+  // Set some constants, assuming air at standard conditions
+  // TO DO: Get these values from solver or config classes
+  su2double C_1 = 1.458e-6;
+  su2double S = 110.4;
+  su2double R = 287.058;
+  su2double kappa = 0.41;
+  su2double A = 17;
+  su2double gamma = 1.4;
+  su2double Pr_lam = 0.7;
+  su2double Pr_turb = 0.9;
+  su2double c_p = (gamma*R)/(gamma-1);
+  su2double c_v = R/(gamma-1);
+
+  // Set tau wall to zero
+  tauWall = 0.0;
+
+  // Set exchange temperature based on pressure and density
+  su2double tExchange = pExchange/(rhoExchange*R);
+
+  // Set booleans for run control
+  bool converged = false;
+  bool initCondExists = false;
+
+  // Set the exchange height equal to the top (last) wall model grid point
+  su2double exchangeHeight = coorGridPoints[numPoints-1];
+
+  unsigned short j = 0;
+  while( converged == false ){
+
+    // Make sure the tri-diagonal system data is zero'd
+    lower.assign(numPoints-1,0.0);
+    upper.assign(numPoints-1,0.0);
+    diagonal.assign(numPoints,0.0);
+    rhs.assign(numPoints,0.0);
+
+    /*--- Set initial condition if it doesn't already exist ---*/
+    if( initCondExists == false ){
+      for(unsigned short i = 0; i<numPoints; i++){
+        // Set y coordinates
+        y[i] = coorGridPoints[i];
+
+        // Set linear velocity profile
+        u[i] = y[i] * velExchange/exchangeHeight;
+
+        // Set constant temperature profile
+        T[i] = tExchange;
+
+        // Set density profile
+        rho[i] = pExchange / (R*T[i]);
+
+        // Set the viscosity profile, based on Sutherland's law
+        mu[i] = C_1 * std::pow(T[i],1.5) / (T[i] + S);
+        nu[i] = mu[i]/rho[i];
+      }
+      // Set the initial friction length based on wall shear with linear
+      // velocity profile
+      tauWall = mu[0] * (u[1]-u[0])/y[1];
+      su2double u_tau = std::sqrt(tauWall/rho[0]);
+      su2double l_tau = nu[0] / u_tau;
+      for(unsigned short i = 0; i<numPoints; i++){
+        /*--- Set the turbulent viscosity ---*/
+        su2double y_plus = y[i]/l_tau;
+        su2double D = std::pow(1-std::exp((-y_plus)/A),2.0);
+        muTurb[i] = kappa * rhoExchange * y[i] * u_tau * D;
+        //muTurb[i] = 0.0;
+      }
+      initCondExists = true;
+    }
+
+//    // Debugging output
+//    for(unsigned short i=0; i<numPoints; i++){
+//      std::cout << u[i] << ", ";
+//    }
+//    std::cout << std::endl;
+
+    /*--- Solve the differential equation
+     * d/dy[ (mu + mu_turb) * du/dy) = 0
+     * Re-write as
+     * d^2u/dy^2 + g(y)*du/dy = 0
+     * where g(y) = f'(y) / f(y)
+     * f(y) = (mu + mu_turb) ---*/
+
+    for(unsigned short i=1; i<numPoints-1; i++)
+    {
+      // For equally spaced points, these are the same
+      su2double dy_minus = (y[i] - y[i-1]);
+      su2double dy_plus = (y[i+1] - y[i]);
+
+      su2double f_minus = mu[i-1] + muTurb[i-1];
+      su2double f = mu[i] + muTurb[i];
+      su2double f_plus = mu[i+1] + muTurb[i+1];
+
+      su2double f_prime = (f_plus - f_minus) / (dy_minus + dy_plus);
+
+      su2double g = f_prime/f;
+
+      lower[i-1] = (1/(dy_minus*dy_plus) - g/(dy_minus+dy_plus));
+      upper[i] = (1/(dy_plus*dy_plus) + g/(dy_minus+dy_plus));
+      diagonal[i] = -2.0/(dy_minus*dy_plus);
+      rhs[i] = 0.0;
+    }
+
+    /*--- Set boundary conditions in matrix and rhs ---*/
+    diagonal[0] = 1.0;
+    rhs[0] = 0.0;
+    diagonal[numPoints-1] = 1.0;
+    rhs[numPoints-1] = velExchange;
+
+    // Solve the matrix problem to get the velocity field
+    //********LAPACK CALL*******
+    int info = 0;
+    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+
+    u = rhs;
+
+
+    lower.assign(numPoints-1,0.0);
+    upper.assign(numPoints-1,0.0);
+    diagonal.assign(numPoints,0.0);
+    rhs.assign(numPoints,0.0);
+
+    // Set up energy equation matrix and rhs
+    for(unsigned short i=1; i<numPoints-1; i++)
+    {
+      su2double dy_minus = (y[i] - y[i-1]);
+      su2double dy_plus = (y[i+1] - y[i]);
+
+      su2double f_minus = c_p * (mu[i-1]/Pr_lam + muTurb[i-1]/Pr_turb);
+      su2double f = c_p * (mu[i]/Pr_lam + muTurb[i]/Pr_turb);
+      su2double f_plus = c_p * (mu[i+1]/Pr_lam + muTurb[i+1]/Pr_turb);
+
+      su2double f_prime = (f_plus - f_minus) / (dy_minus + dy_plus);
+
+      su2double g = f_prime/f;
+
+      lower[i-1] = (1/(dy_minus*dy_plus) - g/(dy_minus+dy_plus));
+      upper[i] = (1/(dy_plus*dy_plus) + g/(dy_minus+dy_plus));
+      diagonal[i] = -2.0/(dy_minus*dy_plus);
+
+      su2double u_prime = (u[i+1] - u[i-1])/(dy_minus+dy_plus);
+      su2double u_prime_prime = (u[i-1] - 2*u[i] + u[i+1])/(dy_minus*dy_plus);
+
+      su2double rhs_1 = -f_prime * u[i] * u_prime;
+      su2double rhs_2 = -f * u_prime * u_prime;
+      su2double rhs_3 = -f * u[i] * u_prime_prime;
+      rhs[i] = rhs_1 + rhs_2 + rhs_3;
+    }
+
+    // Set up energy boundary conditions
+    if(Temperature_Prescribed == true)
+    {
+      // Temperature specified at wall
+      diagonal[0] = 1.0;
+      rhs[0] = Wall_Temperature;
+
+      // Temperature specified by exchange
+      diagonal[numPoints-1] = 1.0;
+      rhs[numPoints-1] = tExchange;
+    }
+    else if(HeatFlux_Prescribed == true)
+    {
+      // Heat flux
+      su2double f_zero = c_p * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
+      diagonal[0] = -f_zero/(y[1]-y[0]);
+      su2double f_one = c_p * (mu[1]/Pr_lam + muTurb[1]/Pr_turb);
+      upper[0] = f_one/(y[1]-y[0]);
+      rhs[0] = Wall_HeatFlux;
+
+      // Temperature specified by exchange
+      diagonal[numPoints-1] = 1.0;
+      rhs[numPoints-1] = tExchange;
+    }
+
+    // Solve the matrix problem to get the temperature field
+    // *******LAPACK CALL********
+    info = 0;
+    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+
+    T = rhs;
+
+    // Update solution with new u and T profiles
+    for(unsigned short i=0; i<numPoints; i++){
+      rho[i] = pExchange / (R*T[i]);
+      mu[i] = C_1 * std::pow(T[i],1.5)/(T[i] + S);
+      nu[i] = mu[i]/rho[i];
+    }
+
+    tauWall = mu[0] * ( (u[1] - u[0])/(y[1] - y[0]) );
+    su2double u_tau = std::sqrt(tauWall/rho[0]);
+    su2double l_tau = nu[0]/u_tau;
+
+    for(unsigned short i=0; i<numPoints; i++){
+      su2double y_plus = y[i]/l_tau;
+      su2double D = std::pow((1 - std::exp(-y_plus/A)),2.0);
+      muTurb_new[i] = kappa * u_tau * rho[i] * y[i] * D;
+    }
+
+    // Calculate norms and residual
+    su2double norm_diff_mu_turb = 0.0;
+    su2double norm_mu_turb = 0.0;
+    for(unsigned short i=0; i<numPoints; i++){
+      norm_diff_mu_turb = norm_diff_mu_turb + std::abs(muTurb_new[i] - muTurb[i]);
+      norm_mu_turb = norm_mu_turb + std::abs(muTurb[i]);
+    }
+
+    su2double residual = norm_diff_mu_turb/norm_mu_turb;
+
+    muTurb = muTurb_new;
+
+    if(residual < 0.00000001){
+      converged = true;
+      tauWall = (mu[0] + muTurb[0]) * ( (u[1] - u[0])/(y[1] - y[0]) );
+      qWall = c_p * (mu[0]/Pr_lam + muTurb[0]/Pr_turb) * ( (T[1] - T[0]) / (y[1] - y[0]));
+      ViscosityWall = mu[0] + muTurb[0];
+      kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
+
+      // Debugging output
+      std::cout << "tauWall = " << tauWall << std::endl;
+      std::cout << "qWall = " << qWall << std::endl;
+      std::cout << "ViscosityWall = " << ViscosityWall << std::endl;
+      std::cout << "kOverCvWall = " << kOverCvWall << std::endl;
+      std::cout << "y, u, T, mu, muTurb, rho" << std::endl;
+      for(unsigned short i=0; i<numPoints; i++){
+        std::cout << y[i] << ", ";
+        std::cout << u[i] << ", ";
+        std::cout << T[i] << ", ";
+        std::cout << mu[i] << ", ";
+        std::cout << muTurb[i] << ", ";
+        std::cout << rho[i] << ", ";
+        std::cout << std::endl;
+      }
+    }
+    else if(j == 50){
+      cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Wall Model did not converge" << endl;
+      SU2_MPI::Error("Did not converge", CURRENT_FUNCTION);
+    }
+
+    j++;
+  }
+  std::cout << "-------------------------------------------" << std::endl;
 }
