@@ -12745,8 +12745,8 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
   su2double Vel_normal_outlet_, Vel_outlet_;
   
-  su2double Temperature_out, Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
-  Mach_out, Temperature_in, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
+  su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
+  Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
   Mach_in, PressureAdj, TemperatureAdj;
   
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -12796,12 +12796,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         V_inlet  = GetCharacPrimVar(val_marker, iVertex);
         V_outlet = GetDonorPrimVar(val_marker, iVertex);
         
-        Temperature_out = V_outlet[0];
+        //Temperature_out = V_outlet[0];
         Pressure_out    = V_outlet[nDim+1];
         Density_out     = V_outlet[nDim+2];
         SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
         
-        Temperature_in = V_inlet[0];
+        //Temperature_in = V_inlet[0];
         Pressure_in    = V_inlet[nDim+1];
         Density_in     = V_inlet[nDim+2];
         SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
@@ -12835,12 +12835,12 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         V_outlet = GetCharacPrimVar(val_marker, iVertex);
         V_inlet  = GetDonorPrimVar(val_marker, iVertex);
         
-        Temperature_out = V_outlet[0];
+        //Temperature_out = V_outlet[0];
         Pressure_out    = V_outlet[nDim+1];
         Density_out     = V_outlet[nDim+2];
         SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
         
-        Temperature_in = V_inlet[0];
+        //Temperature_in = V_inlet[0];
         Pressure_in    = V_inlet[nDim+1];
         Density_in     = V_inlet[nDim+2];
         SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
