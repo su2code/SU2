@@ -277,7 +277,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     T = T_v_h(xmid, h);
@@ -415,7 +415,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     T = T_P_rho(P,1.0/xmid);
