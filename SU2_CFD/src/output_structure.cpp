@@ -46,6 +46,47 @@ COutput::COutput(CConfig *config) {
   
   HistorySep = ",";
 
+  
+  if (rank == MASTER_NODE){
+   
+    char buffer[50];
+    
+    // Retrieve the history filename
+    string history_filename = config->GetConv_FileName();
+    
+    // Append the zone ID
+    if(config->GetnZone() > 1){
+      history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
+    }
+    strcpy (char_histfile, history_filename.data());
+    
+    // Append the restart iteration: if dynamic problem and restart
+    if (config->GetWrt_Unsteady() && config->GetRestart()) {
+      long iExtIter = config->GetDyn_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(char_histfile, buffer);
+    }
+    
+    // Add the correct file extension depending on the file format
+    if ((config->GetOutput_FileFormat() == TECPLOT) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+    strcat(char_histfile, buffer);
+    SetOutputFields(config);
+    // Open the history file using only the master node
+    
+    cout << "History filename: " << char_histfile << endl;
+    HistFile.open(char_histfile, ios::out);
+    HistFile.precision(15);
+    SetHistoryFile_Header(config);    
+  }
+  
   unsigned short iDim, iZone, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
@@ -4274,6 +4315,7 @@ void COutput::SetConvHistory_Body(CGeometry ****geometry,
                                      su2double timeused,
                                      unsigned short val_iZone,
                                      unsigned short val_iInst) {
+
 
   /*--- Output using only the master node ---*/
 
@@ -16657,7 +16699,7 @@ void COutput::SetScreen_Output(CConfig *config) {
     if (Output_Fields.count(currentField) > 0){  
       switch (Output_Fields[currentField].ScreenFormat) {
       case FORMAT_INTEGER:
-        PrintScreenInteger(out, Output_Fields[currentField].Value);
+        PrintScreenInteger(out, SU2_TYPE::Int(Output_Fields[currentField].Value));
         break;
       case FORMAT_FIXED:
         PrintScreenFixed(out, Output_Fields[currentField].Value);
@@ -16670,7 +16712,7 @@ void COutput::SetScreen_Output(CConfig *config) {
     if (OutputPerSurface_Fields.count(currentField) > 0){
       switch (OutputPerSurface_Fields[currentField][0].ScreenFormat) {
       case FORMAT_INTEGER:
-        PrintScreenInteger(out, OutputPerSurface_Fields[currentField][0].Value);
+        PrintScreenInteger(out, SU2_TYPE::Int(OutputPerSurface_Fields[currentField][0].Value));
         break;
       case FORMAT_FIXED:
         PrintScreenFixed(out, OutputPerSurface_Fields[currentField][0].Value);

@@ -39,67 +39,14 @@
 
 CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
-  // Open the history file using only the master node
-  if (rank == MASTER_NODE){
-
-    unsigned short nDim = geometry->GetnDim();
-
-    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-
-    char buffer[50], char_histfile[200];
-
-    // Retrieve the history filename
-    string history_filename = config->GetConv_FileName();
-
-    // Append the zone ID
-    if(config->GetnZone() > 1){
-      history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-    }
-    strcpy (char_histfile, history_filename.data());
-
-    // Append the restart iteration: if dynamic problem and restart
-    if (config->GetWrt_Dynamic() && config->GetRestart()) {
-      long iExtIter = config->GetDyn_RestartIter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(char_histfile, buffer);
-    }
-
-    // Add the correct file extension depending on the file format
-    if ((config->GetOutput_FileFormat() == TECPLOT) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-    strcat(char_histfile, buffer);
-    SetOutputFields(config);
-
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetHistoryFile_Header(config);
-
-    /*--- Initialize number of variables ---*/
-    if (linear_analysis) nVar_FEM = nDim;
-    if (nonlinear_analysis) nVar_FEM = 3;
-
-    /*--- Allocate memory for the residual ---*/
-    residual_fem        = new su2double[nVar_FEM];
-
-    /*--- Initialize  ---*/
-    Total_VMStress = 0.0;
-    Total_ForceCoeff = 0.0;
-    Total_IncLoad = 0.0;
-    LinSolvIter = 0.0;
-    Time_Used = 0.0;
-
-    iExtIter = 0;
-    iIntIter = 0;
-  }
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  
+  /*--- Initialize number of variables ---*/
+  if (linear_analysis) nVar_FEM = nDim;
+  if (nonlinear_analysis) nVar_FEM = 3;
+  
+  nDim = geometry->GetnDim();
 
 }
 
@@ -179,7 +126,7 @@ void CFEAOutput::SetOutputFields(CConfig *config){
   AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
   
   // Misc.
-  AddOutputField("PHYS_TIME", "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddOutputField("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
   AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
@@ -191,9 +138,9 @@ void CFEAOutput::SetOutputFields(CConfig *config){
   AddOutputField("DISP_Z", "Res_FEM[2]", FORMAT_FIXED,  "RESIDUALS");
   
   
-  AddOutputField("VMS", "VonMises_Stress", FORMAT_FIXED, "VMS");
-  AddOutputField("LOAD_INCREMENT", "Load_Increment", FORMAT_FIXED, "LOAD_INCREMENT");
-  AddOutputField("LOAD_RAMP", "Load_Ramp", FORMAT_FIXED, "LOAD_RAMP");
+  AddOutputField("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
+  AddOutputField("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
+  AddOutputField("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
   
 }
 

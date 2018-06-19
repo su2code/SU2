@@ -39,49 +39,9 @@
 #include "../include/output_structure.hpp"
 
 CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
- 
-  if (rank == MASTER_NODE){
-   
-    char buffer[50];
-    
-    // Retrieve the history filename
-    string history_filename = config->GetConv_FileName();
-    
-    nDim = geometry->GetnDim();
-    
-    // Append the zone ID
-    if(config->GetnZone() > 1){
-      history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-    }
-    strcpy (char_histfile, history_filename.data());
-    
-    // Append the restart iteration: if dynamic problem and restart
-    if (config->GetWrt_Unsteady() && config->GetRestart()) {
-      long iExtIter = config->GetDyn_RestartIter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(char_histfile, buffer);
-    }
-    
-    // Add the correct file extension depending on the file format
-    if ((config->GetOutput_FileFormat() == TECPLOT) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-    strcat(char_histfile, buffer);
-    SetOutputFields(config);
-    // Open the history file using only the master node
-    
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetHistoryFile_Header(config);    
-  }
 
+  nDim = geometry->GetnDim();
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {
@@ -101,21 +61,21 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
   
   // Residuals
-  AddOutputField("PRESSURE",   "Res[P]",  FORMAT_FIXED,   "RESIDUALS");
+  AddOutputField("PRESSURE",   "Res[P]", FORMAT_FIXED,   "RESIDUALS");
   AddOutputField("VELOCITY-X", "Res[U]", FORMAT_FIXED,   "RESIDUALS");
   AddOutputField("VELOCITY-Y", "Res[V]", FORMAT_FIXED,   "RESIDUALS");
   AddOutputField("VELOCITY-Z", "Res[W]", FORMAT_FIXED,   "RESIDUALS");
   
   // Aerodynamic coefficients
-  AddOutputField("DRAG",       "CD(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("LIFT",       "CL(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("SIDEFORCE",  "CSF(Total)",FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("MOMENT-X",  "CMx(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("MOMENT-Y",  "CMy(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("MOMENT-Z",  "CMz(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddOutputField("FORCE-X",  "CFx(Total)", FORMAT_SCIENTIFIC,  "AERO_COEFF");
-  AddOutputField("FORCE-Y",  "CFy(Total)", FORMAT_SCIENTIFIC,  "AERO_COEFF");
-  AddOutputField("FORCE-Z",  "CFz(Total)", FORMAT_SCIENTIFIC,  "AERO_COEFF");
+  AddOutputField("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddOutputField("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
   AddOutputField("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
   
   vector<string> Marker_Monitoring;
@@ -137,29 +97,29 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
   
   
   // Misc.
-  AddOutputField("AOA",      "AoA", FORMAT_SCIENTIFIC, "AOA");
-  AddOutputField("PHYS_TIME", "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
-  AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  AddOutputField("AOA",         "AoA",                      FORMAT_SCIENTIFIC, "AOA");
+  AddOutputField("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
   
   // Surface output
   vector<string> Marker_Analyze;
-  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Monitoring(); iMarker_Analyze++){
+  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
     Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
-  }
-  AddOutputPerSurfaceField("AVG_MASSFLOW", "Avg_Massflow", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_MACH", "Avg_Mach", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_TEMP", "Avg_Temp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_PRESS","Avg_Press", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_DENSITY","Avg_Density", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_ENTHALPY", "Avg_Enthalpy", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_NORMALVEL", "Avg_NormalVel", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("UNIFORMITY", "Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("SECONDARY_STRENGTH", "Secondary_Strength", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("MOMENTUM_DISTORTION", "Momentum_Distortion", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("SECONDARY_OVER_UNFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_TOTALTEMP", "Avg_TotalTemp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("AVG_TOTALPRESS", "Avg_TotalPress", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("PRESSURE_DROP", "Pressure_Drop", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  }  
+  AddOutputPerSurfaceField("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
 
   
 }
@@ -227,6 +187,17 @@ inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver ****
     SetOutputPerSurfaceFieldValue("AVG_TEMP",     config[val_iZone]->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
     SetOutputPerSurfaceFieldValue("AVG_PRESS",    config[val_iZone]->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
     SetOutputPerSurfaceFieldValue("AVG_DENSITY",  config[val_iZone]->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_ENTHALPY",  config[val_iZone]->GetSurface_Enthalpy(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_NORMALVEL",  config[val_iZone]->GetSurface_NormalVelocity(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("UNIFORMITY",  config[val_iZone]->GetSurface_Uniformity(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("SECONDARY_STRENGTH",  config[val_iZone]->GetSurface_SecondaryStrength(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("MOMENTUM_DISTORTION",  config[val_iZone]->GetSurface_MomentumDistortion(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("SECONDARY_OVER_UNIFORMITY",  config[val_iZone]->GetSurface_SecondOverUniform(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_TOTALTEMP",  config[val_iZone]->GetSurface_TotalTemperature(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_TOTALPRESS",  config[val_iZone]->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("PRESSURE_DROP",  config[val_iZone]->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
+    
+    
   }
   
 
