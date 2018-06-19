@@ -850,7 +850,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   unsigned long iPoint, iDim;
   unsigned long nPointDomain, nDim;
   su2double *dispPred, *dispPred_Old;
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();

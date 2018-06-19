@@ -2146,7 +2146,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
@@ -2192,8 +2192,8 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
       Vn = 0.0; ReverseFlow = false;
       for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
       
-      if ((inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
-      if ((!inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
+      if ((val_inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
+      if ((!val_inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
       
       /*--- Do not anything if there is a
        reverse flow, Euler b.c. for the direct problem ---*/
@@ -2202,7 +2202,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         /*--- Allocate the value at the infinity ---*/
         
-        if (inlet_surface) {
+        if (val_inlet_surface) {
           V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
           V_outlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
           conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2221,22 +2221,22 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         Solution_i[0] = node[iPoint]->GetSolution(0);
         
-        //      if (inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
+        //      if (val_inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
         //      else Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_inlet [nDim+9]);
         
         //      /*--- Inflow analysis (interior extrapolation) ---*/
-        //      if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+        //      if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
         //        Solution_j[0] = 2.0*node[iPoint]->GetSolution(0) - node[iPoint_Normal]->GetSolution(0);
         //      }
         
         //      /*--- Outflow analysis ---*/
         //      else {
-        //        if (inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
+        //        if (val_inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
         //        else { Solution_j[0] = Factor_nu_ActDisk*V_inlet [nDim+9]; }
         //      }
         
         /*--- Inflow analysis (interior extrapolation) ---*/
-        if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+        if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
           Solution_j[0] = node[iPoint]->GetSolution(0);
         }
         
@@ -2268,7 +2268,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 //
 //        /*--- Conservative variables w/o reconstruction ---*/
 //
-//        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        if (val_inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
 //        else visc_numerics->SetPrimitive(V_domain, V_outlet);
 //
 //        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/

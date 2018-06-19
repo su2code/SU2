@@ -816,7 +816,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
   addUnsignedLongOption("ITER_DCL_DALPHA", Iter_dCL_dAlpha, 500);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 2.0);
+  addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 1.0);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_BCTHRUST", Update_BCThrust, 5);
 
@@ -2493,6 +2493,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
+  /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
+  
+  if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
+    Discard_InFiles = false;
+
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
@@ -3498,11 +3503,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
-  Stations_Bounds[0] += EPS;
-  Stations_Bounds[1] += EPS;
-
-  for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
-    LocationStations[iSections] += EPS;
+  if (Geo_Description == NACELLE) {
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      if (LocationStations[iSections] == 0) LocationStations[iSections] = 1E-6;
+      if (LocationStations[iSections] == 360) LocationStations[iSections] = 359.999999;
+    }
+  }
+  else {
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      LocationStations[iSections] += EPS;
+    }
+    Stations_Bounds[0] += EPS;
+    Stations_Bounds[1] += EPS;
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
@@ -3544,10 +3556,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
         LocationStations[iSections] = LocationStations[iSections]/12.0;
       }
+      Stations_Bounds[0] = Stations_Bounds[0]/12.0;
+      Stations_Bounds[1] = Stations_Bounds[1]/12.0;
     }
-
-    Stations_Bounds[0] = Stations_Bounds[0]/12.0;
-    Stations_Bounds[1] = Stations_Bounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -4582,16 +4593,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
       else { cout << "The reference area is " << RefArea;
-        if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
+        if (SystemMeasurements == US) cout << " ft^2." << endl; else cout << " m^2." << endl;
       }
-      
+
       if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
       else { cout << "The semi-span length area is " << SemiSpan;
-        if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+        if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
       }
-      
+
       cout << "The reference length is " << RefLength;
-      if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+      if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
 
       if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
         cout << "Surface(s) where the force coefficients are evaluated and \n";

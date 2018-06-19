@@ -704,7 +704,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Total_CT      = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
   Total_CpDiff  = 0.0;    Total_HeatFluxDiff = 0.0;    Total_Custom_ObjFunc=0.0;
-  Total_NetCThrust = 0.0; Total_NetCThrust_Prev = 0.0; Total_BCThrust_Prev = 0.0;
+  Total_NetThrust = 0.0;
   Total_Power = 0.0;      AoA_Prev           = 0.0;
   Total_CL_Prev = 0.0;    Total_CD_Prev      = 0.0;
   Total_CMx_Prev      = 0.0; Total_CMy_Prev      = 0.0; Total_CMz_Prev      = 0.0;
@@ -7672,16 +7672,16 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
 
           /*--- Set the solid surface drag ---*/
           
-          su2double SolidSurf_Drag = DmT - Force;
-          su2double SolidSurf_CD = SolidSurf_Drag / Factor;
+          su2double Solid_Drag = DmT - Force;
+          su2double Solid_CD = Solid_Drag / Factor;
 
-          SetTotal_SolidCD(SolidSurf_CD);
+          SetTotal_SolidCD(Solid_CD);
           
           /*--- Set the net thrust value---*/
           
           su2double CT = NetThrust / Factor;
 
-          SetTotal_NetCThrust(CT);
+          SetTotal_NetThrust(CT);
           
           /*--- Set the total power ---*/
           
@@ -7845,7 +7845,7 @@ void CEulerSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, uns
             
             if (config->GetSystemMeasurements() == SI) cout << "Solid surfaces Drag (N): ";
             else if (config->GetSystemMeasurements() == US) cout << "Solid surfaces Drag (lbf): ";
-            cout << setprecision(1) << SolidSurf_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << SolidSurf_CD << "." << endl;
+            cout << setprecision(1) << Solid_Drag * Ref << ". Solid surfaces CD: " << setprecision(5) << Solid_CD << "." << endl;
 
             if (config->GetSystemMeasurements() == SI) cout << setprecision(1) <<"Net Thrust (N): ";
             else if (config->GetSystemMeasurements() == US) cout << setprecision(1) << "Net Thrust (lbf): ";
@@ -8137,37 +8137,31 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           
           if (Kind_ActDisk == NET_THRUST) {
             
-            if (config->GetMach() < 0.5) {
-              Target_NetThrust    = fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
-            }
-            else {
-              Target_NetThrust    = fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
-            }
+            if (config->GetMach() < 0.5) Target_NetThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+            else Target_NetThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
             NetThrust    = config->GetActDisk_NetThrust(Marker_Tag);
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_NetThrust - NetThrust);
 
             if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
             if (iMesh == MESH_0) {
               config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
               BCThrust_Init = BCThrust*Ref;
               config->SetInitial_BCThrust(BCThrust_Init);
             }
+            
           }
           
           if (Kind_ActDisk == BC_THRUST) {
             
-            if (config->GetMach() < 0.5) {
-              Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
-            }
-            else {
-              Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
-            }
-            
+            if (config->GetMach() < 0.5) Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+            else Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
             Force        = -config->GetActDisk_Force(Marker_Tag);
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Force - Force);
+            
             if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
             
@@ -8181,39 +8175,34 @@ void CEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_con
           
           if (Kind_ActDisk == POWER) {
             
-            if (config->GetMach() < 0.5) {
-              Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / (Ref * config->GetVelocity_Ref() /  550.0));
-            }
-            else {
-              Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / (Ref * config->GetVelocity_Ref() /  550.0));
-            }
-            
+            if (config->GetMach() < 0.5) Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / (Ref * config->GetVelocity_Ref() /  550.0));
+            else Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / (Ref * config->GetVelocity_Ref() /  550.0));
             Power        = config->GetActDisk_Power(Marker_Tag);
             BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Power - Power);
+            
             if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
             if (iMesh == MESH_0) {
               config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
               BCThrust_Init = BCThrust*Ref;
               config->SetInitial_BCThrust(BCThrust_Init);
             }
+            
           }
           
           if (Kind_ActDisk == DRAG_MINUS_THRUST) {
             
-            if (config->GetMach() < 0.5) {
-              Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 0)) * Factor;
-            }
-            else {
-              Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 1)) * Factor;
-            }
-            
+            if (config->GetMach() < 0.5) Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 0)) * Factor;
+            else Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 1)) * Factor;
             DragMinusThrust = GetTotal_CD() * Factor;
             BCThrust_old    = config->GetActDisk_BCThrust_Old(Marker_Tag);
             BCThrust_inc    = -(1.0/dNetThrust_dBCThrust)*(Target_DragMinusThrust - DragMinusThrust);
+            
             if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
             else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
             if (iMesh == MESH_0) {
               config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
               BCThrust_Init = BCThrust*Ref;
@@ -12816,7 +12805,7 @@ void CEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_conta
 }
 
 void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                              CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                              CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
   unsigned short iDim;
   unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
@@ -12829,6 +12818,10 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   su2double Vel_normal_outlet[3], Vel_tangent_outlet[3], Vel_outlet[3];
   su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
   su2double Vel_normal_outlet_, Vel_outlet_;
+  
+  su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
+  Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
+  Mach_in, PressureAdj, TemperatureAdj;
   
   bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   su2double Gas_Constant  = config->GetGas_ConstantND();
@@ -12844,15 +12837,6 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
-    if (inlet_surface) {
-      V_inlet = GetCharacPrimVar(val_marker, iVertex);
-      V_outlet = GetDonorPrimVar(val_marker, iVertex);
-    }
-    else {
-      V_outlet = GetCharacPrimVar(val_marker, iVertex);
-      V_inlet = GetDonorPrimVar(val_marker, iVertex);
-    }
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
@@ -12882,18 +12866,87 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       Target_Press_Jump = GetActDisk_DeltaP(val_marker, iVertex);
       Target_Temp_Jump = GetActDisk_DeltaT(val_marker, iVertex);
       
-      if (inlet_surface) {
-        if (ratio) { P_static = V_outlet[nDim+1]/Target_Press_Jump; T_static = V_outlet[0]/Target_Temp_Jump; }
-        else { P_static = V_outlet[nDim+1] - Target_Press_Jump; T_static = V_outlet[0] - Target_Temp_Jump; }
+      if (val_inlet_surface) {
+        V_inlet  = GetCharacPrimVar(val_marker, iVertex);
+        V_outlet = GetDonorPrimVar(val_marker, iVertex);
+        
+        //Temperature_out = V_outlet[0];
+        Pressure_out    = V_outlet[nDim+1];
+        Density_out     = V_outlet[nDim+2];
+        SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
+        
+        //Temperature_in = V_inlet[0];
+        Pressure_in    = V_inlet[nDim+1];
+        Density_in     = V_inlet[nDim+2];
+        SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
+        
+        Velocity2_out = 0.0; Velocity2_in = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2_out += V_outlet[iDim+1]*V_outlet[iDim+1];
+          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
+        }
+        
+        PressureAdj = 1.0; TemperatureAdj = 1.0;
+        if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
+          
+          Mach_out = sqrt(Velocity2_out)/SoundSpeed_out;
+          Mach_in  = sqrt(Velocity2_in)/SoundSpeed_in;
+          
+          PressureAdj    = pow( 1.0 + Mach_out * Mach_out * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0)) /
+          pow( 1.0 + Mach_in * Mach_in * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+          TemperatureAdj = (1.0 + Mach_out * Mach_out * 0.5 * (Gamma - 1.0)) /
+          (1.0 + Mach_in * Mach_in * 0.5 * (Gamma - 1.0));
+          
+        }
+        
+        if (ratio) {
+          P_static = V_outlet[nDim+1] / (Target_Press_Jump/PressureAdj);
+          T_static = V_outlet[0] / (Target_Temp_Jump/TemperatureAdj);
+        }
+        else       { P_static = V_outlet[nDim+1] - Target_Press_Jump; T_static = V_outlet[0] - Target_Temp_Jump; }
       }
       else {
-        if (ratio) { P_static = V_inlet[nDim+1]*Target_Press_Jump; T_static = V_inlet[0]*Target_Temp_Jump; }
-        else { P_static = V_inlet[nDim+1] + Target_Press_Jump; T_static = V_inlet[0] + Target_Temp_Jump; }
+        V_outlet = GetCharacPrimVar(val_marker, iVertex);
+        V_inlet  = GetDonorPrimVar(val_marker, iVertex);
+        
+        //Temperature_out = V_outlet[0];
+        Pressure_out    = V_outlet[nDim+1];
+        Density_out     = V_outlet[nDim+2];
+        SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
+        
+        //Temperature_in = V_inlet[0];
+        Pressure_in    = V_inlet[nDim+1];
+        Density_in     = V_inlet[nDim+2];
+        SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
+        
+        Velocity2_out = 0.0; Velocity2_in = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2_out += V_outlet[iDim+1]*V_outlet[iDim+1];
+          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
+        }
+        
+        PressureAdj = 1.0; TemperatureAdj = 1.0;
+        if ((Velocity2_out > 0.0) && (Velocity2_in > 0.0)) {
+          
+          Mach_out = sqrt(Velocity2_out)/SoundSpeed_out;
+          Mach_in  = sqrt(Velocity2_in)/SoundSpeed_in;
+          
+          PressureAdj    = pow( 1.0 + Mach_out * Mach_out * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0)) /
+          pow( 1.0 + Mach_in * Mach_in * 0.5 * (Gamma - 1.0), Gamma / (Gamma - 1.0));
+          TemperatureAdj = (1.0 + Mach_out * Mach_out * 0.5 * (Gamma - 1.0)) /
+          (1.0 + Mach_in * Mach_in * 0.5 * (Gamma - 1.0));
+        }
+        
+        if (ratio) {
+          P_static = V_inlet[nDim+1] * (Target_Press_Jump/PressureAdj);
+          T_static = V_inlet[0] * (Target_Temp_Jump/TemperatureAdj);
+        }
+        else       { P_static = V_inlet[nDim+1] + Target_Press_Jump; T_static = V_inlet[0] + Target_Temp_Jump; }
       }
       
       /*--- Subsonic inlet ---*/
       
-      if (inlet_surface) {
+      if (val_inlet_surface) {
         
         /*--- Build the fictitious intlet state based on characteristics.
          Retrieve the specified back pressure for this inlet ---*/
@@ -13117,7 +13170,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //
 //        /*--- Set laminar and eddy viscosity at the infinity ---*/
 //
-//        if (inlet_surface) {
+//        if (val_inlet_surface) {
 //          V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
 //          V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
 //        }
@@ -13133,7 +13186,7 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
 //
 //        /*--- Primitive variables, and gradient ---*/
 //
-//        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        if (val_inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
 //        else visc_numerics->SetPrimitive(V_domain, V_outlet);
 //
 //        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
@@ -13781,7 +13834,7 @@ void CEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, bgs_sol;
+  su2double residual;
 
   /*--- Set Residuals to zero ---*/
 
@@ -15773,12 +15826,13 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Total_CEff       = 0.0;    Total_CEquivArea   = 0.0;    Total_CNearFieldOF = 0.0;
   Total_CFx        = 0.0;    Total_CFy          = 0.0;    Total_CFz          = 0.0;
   Total_CT         = 0.0;    Total_CQ           = 0.0;    Total_CMerit       = 0.0;
-  Total_MaxHeat    = 0.0;   Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
-  Total_CpDiff     = 0.0;   Total_HeatFluxDiff = 0.0;    Total_BCThrust_Prev = 0.0;
-  Total_NetCThrust = 0.0;   Total_NetCThrust_Prev = 0.0; Total_CL_Prev = 0.0;
-  Total_Power      = 0.0;   AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
-  Total_CMx_Prev   = 0.0;   Total_CMy_Prev      = 0.0;   Total_CMz_Prev      = 0.0;
-  Total_AeroCD     = 0.0;   Total_SolidCD     = 0.0;   Total_IDR   = 0.0; Total_IDC           = 0.0;
+  Total_MaxHeat    = 0.0;    Total_Heat         = 0.0;    Total_ComboObj     = 0.0;
+  Total_CpDiff     = 0.0;    Total_HeatFluxDiff = 0.0;
+  Total_NetThrust = 0.0;     Total_CL_Prev      = 0.0;
+  Total_Power      = 0.0;    AoA_Prev           = 0.0;    Total_CD_Prev      = 0.0;
+  Total_CMx_Prev   = 0.0;    Total_CMy_Prev     = 0.0;    Total_CMz_Prev     = 0.0;
+  Total_AeroCD     = 0.0;    Total_SolidCD      = 0.0;    Total_IDR          = 0.0;
+  Total_IDC           = 0.0;
   Total_Custom_ObjFunc = 0.0;
   
   /*--- Read farfield conditions from config ---*/
