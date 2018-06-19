@@ -3292,11 +3292,38 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
           
           ParamCoord = FFDBox->GetParametricCoord_Iterative(iPoint, CartCoord, ParamCoordGuess, config);
           
+          /*--- Compute the cartesian coordinates using the parametric coordinates
+           to check that everything is correct ---*/
+          
+          CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
+          
+          /*--- Compute max difference between original value and the recomputed value ---*/
+          
+          Diff = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
+          Diff = sqrt(Diff);
+          my_MaxDiff = max(my_MaxDiff, Diff);
+          
           /*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox, using the input tolerance  ---*/
           
           if (((ParamCoord[0] >= - config->GetFFD_Tol()) && (ParamCoord[0] <= 1.0 + config->GetFFD_Tol())) &&
               ((ParamCoord[1] >= - config->GetFFD_Tol()) && (ParamCoord[1] <= 1.0 + config->GetFFD_Tol())) &&
               ((ParamCoord[2] >= - config->GetFFD_Tol()) && (ParamCoord[2] <= 1.0 + config->GetFFD_Tol()))) {
+            
+            
+            /*--- Rectification of the initial tolerance (we have detected situations
+             where 0.0 and 1.0 doesn't work properly ---*/
+            
+            su2double lower_limit = config->GetFFD_Tol();
+            su2double upper_limit = 1.0-config->GetFFD_Tol();
+            
+            if (ParamCoord[0] < lower_limit) ParamCoord[0] = lower_limit;
+            if (ParamCoord[1] < lower_limit) ParamCoord[1] = lower_limit;
+            if (ParamCoord[2] < lower_limit) ParamCoord[2] = lower_limit;
+            if (ParamCoord[0] > upper_limit) ParamCoord[0] = upper_limit;
+            if (ParamCoord[1] > upper_limit) ParamCoord[1] = upper_limit;
+            if (ParamCoord[2] > upper_limit) ParamCoord[2] = upper_limit;
             
             /*--- Set the value of the parametric coordinate ---*/
             
@@ -3306,40 +3333,19 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             FFDBox->Set_ParametricCoord(ParamCoord);
             FFDBox->Set_CartesianCoord(CartCoord);
             
-            /*--- Compute the cartesian coordinates using the parametric coordinates
-             to check that everithing is right ---*/
-            
-            CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
-            
-            /*--- Compute max difference between original value and the recomputed value ---*/
-            
-            Diff = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
-            Diff = sqrt(Diff);
-            my_MaxDiff = max(my_MaxDiff, Diff);
-            
             ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
+            
+            if (Diff >= config->GetFFD_Tol()) {
+              cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<" vs "<< config->GetFFD_Tol() <<"." << endl;
+            }
             
           }
           else {
             
-            /*--- Compute the cartesian coordinates using the parametric coordinates
-             to check that everithing is right ---*/
-            
-            CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
-
-            /*--- Compute max difference between original value and the recomputed value ---*/
-            
-            Diff = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
-            Diff = sqrt(Diff);
-            my_MaxDiff = max(my_MaxDiff, Diff);
-            
             if (Diff >= config->GetFFD_Tol()) {
               cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
-              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<" vs "<< config->GetFFD_Tol() <<"." << endl;
             }
             
           }
@@ -3348,7 +3354,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
       }
     }
   }
-		
+
 #ifdef HAVE_MPI
   SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3882,7 +3888,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 			FFDBox->Set_ParametricCoord(ParamCoord, iSurfacePoints);
 			
 			/*--- Compute the cartesian coordinates using the parametric coordinates 
-			 to check that everithing is right ---*/
+			 to check that everything is correct ---*/
       
 			CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
 			
@@ -8660,22 +8666,22 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
 su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *ParamCoordGuess, CConfig *config) {
   
   su2double *IndepTerm, SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0};
-	unsigned short iDim, jDim, RandonCounter;
-	unsigned long iter;
+  unsigned short iDim, jDim, RandonCounter;
+  unsigned long iter;
   
-  su2double tol = config->GetFFD_Tol();
+  su2double tol = config->GetFFD_Tol()*1E-3;
   unsigned short it_max = config->GetnFFD_Iter();
   unsigned short Random_Trials = 500;
-  
+
 	/*--- Allocate the Hessian ---*/
   
-	Hessian = new su2double* [nDim];
+  Hessian = new su2double* [nDim];
   IndepTerm = new su2double [nDim];
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Hessian[iDim] = new su2double[nDim];
-		ParamCoord[iDim] = ParamCoordGuess[iDim];
-		IndepTerm [iDim] = 0.0;
-	}
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Hessian[iDim] = new su2double[nDim];
+    ParamCoord[iDim] = ParamCoordGuess[iDim];
+    IndepTerm [iDim] = 0.0;
+  }
 	
 	RandonCounter = 0; MinNormError = 1E6;
 	

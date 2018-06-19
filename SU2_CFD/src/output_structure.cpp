@@ -4351,7 +4351,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
-  char engine_coeff[]= ",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
+  char engine_coeff[]= ",\"NetThrust\",\"Power\",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char wave_coeff[]= ",\"CWave\"";
   char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
@@ -4364,7 +4364,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
   char d_flow_coeff[] = ",\"D(CL)\",\"D(CD)\",\"D(CSF)\",\"D(CMx)\",\"D(CMy)\",\"D(CMz)\",\"D(CFx)\",\"D(CFy)\",\"D(CFz)\",\"D(CL/CD)\",\"D(Custom_ObjFunc)\"";
   char d_thermal_coeff[] = ",\"D(HeatFlux_Total)\",\"D(HeatFlux_Maximum)\"";
-  char d_engine[] = ",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
+  char d_engine[] = ",\"D(NetThrust)\",\"D(Power)\",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
   char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
 
   /*--- Find the markers being monitored and create a header for them ---*/
@@ -4721,8 +4721,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double Total_CL = 0.0, Total_CD = 0.0, Total_CSF = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
     Total_CEquivArea = 0.0, Total_CNearFieldOF = 0.0, Total_CFx = 0.0, Total_CFy = 0.0, Total_CFz = 0.0, Total_CMerit = 0.0,
     Total_CT = 0.0, Total_CQ = 0.0, Total_CWave = 0.0, Total_CHeat = 0.0,
-    Total_Heat = 0.0, Total_MaxHeat = 0.0, Avg_TotalTemp = 0.0, Total_CFEM = 0.0, Total_Custom_ObjFunc = 0.0,
-    Total_ComboObj = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
+    Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_Custom_ObjFunc = 0.0,
+    Total_ComboObj = 0.0, Total_NetThrust = 0.0, Total_Power = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
     Total_AoA = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0, Surface_Uniformity = 0.0, Surface_SecondaryStrength = 0.0,Surface_MomentumDistortion = 0.0, Surface_SecondOverUniform = 0.0, Surface_PressureDrop = 0.0;
 
@@ -4740,7 +4740,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- Initialize variables to store information from all domains (direct differentiation) ---*/
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
-        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_AeroCD = 0.0, D_Total_SolidCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0, D_Total_Custom_ObjFunc = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0,
+        D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_NetThrust = 0.0, D_Total_Power = 0.0, D_Total_AeroCD = 0.0, D_Total_SolidCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0, D_Total_Custom_ObjFunc = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0,
         D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0, D_TotalStaticEfficiency = 0.0,
         D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0;
     
@@ -4854,14 +4854,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_Custom_ObjFunc = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (thermal) {
-          Total_Heat     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
-          Total_MaxHeat  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-          Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AvgTemperature();
+          Total_Heat         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
+          Total_MaxHeat      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
+          Total_Temperature  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AvgTemperature();
 
           if(weakly_coupled_heat) {
-            Total_Heat     = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-            Total_MaxHeat  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-            Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+            Total_Heat         = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+            Total_MaxHeat      = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+            Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
           }
         }
 
@@ -4885,10 +4885,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           if (engine || actuator_disk) {
-            D_Total_AeroCD   = SU2_TYPE::GetDerivative(Total_AeroCD);
-            D_Total_SolidCD  = SU2_TYPE::GetDerivative(Total_SolidCD);
-            D_Total_IDR      = SU2_TYPE::GetDerivative(Total_IDR);
-            D_Total_IDC      = SU2_TYPE::GetDerivative(Total_IDC);
+            D_Total_NetThrust = SU2_TYPE::GetDerivative(Total_NetThrust);
+            D_Total_Power     = SU2_TYPE::GetDerivative(Total_Power);
+            D_Total_AeroCD    = SU2_TYPE::GetDerivative(Total_AeroCD);
+            D_Total_SolidCD   = SU2_TYPE::GetDerivative(Total_SolidCD);
+            D_Total_IDR       = SU2_TYPE::GetDerivative(Total_IDR);
+            D_Total_IDC       = SU2_TYPE::GetDerivative(Total_IDC);
           }
           
         }
@@ -4902,10 +4904,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         if (engine || actuator_disk) {
-          Total_AeroCD  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
-          Total_SolidCD = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
-          Total_IDR     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDR();
-          Total_IDC     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
+          Total_NetThrust = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_NetThrust();
+          Total_Power     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Power();
+          Total_AeroCD    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
+          Total_SolidCD   = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
+          Total_IDR       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDR();
+          Total_IDC       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
         }
         
         if (rotating_frame) {
@@ -5079,9 +5083,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- Heat coefficients  ---*/
 
-        Total_Heat     = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-        Total_MaxHeat  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-        Avg_TotalTemp  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+        Total_Heat         = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+        Total_MaxHeat      = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+        Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
 
         /*--- Heat Residuals ---*/
 
@@ -5124,7 +5128,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
-        Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        //Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -5203,9 +5207,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
-            if (thermal || heat) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Avg_TotalTemp);
+            if (thermal || heat) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Total_Temperature);
             if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
-            if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e", Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
+            if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_NetThrust, Total_Power, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
             if (rotating_frame) SPRINTF (rotating_frame_coeff, ", %14.8e, %14.8e, %14.8e", Total_CMerit, Total_CT, Total_CQ);
             if (inv_design) {
               SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
@@ -5221,9 +5225,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF (d_direct_coeff, ", %12.10f, %12.10f, %12.10f, %12.10f, %12.10f", D_TotalPressure_Loss, D_FlowAngle_Out,
                          D_TotalTotalEfficiency, D_TotalStaticEfficiency, D_EntropyGen);
               if (engine || actuator_disk)
-              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
+              SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                        D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
-                       D_Total_CFz, D_Total_CEff, D_Total_Custom_ObjFunc, D_Total_AeroCD, D_Total_SolidCD, D_Total_IDR, D_Total_IDC);
+                       D_Total_CFz, D_Total_CEff, D_Total_Custom_ObjFunc, D_Total_NetThrust, D_Total_Power, D_Total_AeroCD, D_Total_SolidCD, D_Total_IDR, D_Total_IDC);
               if (thermal)
                 SPRINTF (d_direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                          D_Total_CL, D_Total_CD, D_Total_CSF, D_Total_CMx, D_Total_CMy, D_Total_CMz, D_Total_CFx, D_Total_CFy,
@@ -5415,7 +5419,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           case HEAT_EQUATION_FVM:
 
-            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Avg_TotalTemp);
+            SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e", Total_Heat, Total_MaxHeat, Total_Temperature);
             SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
 
             break;
@@ -6394,20 +6398,18 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   }
 
   switch( config[val_iZone]->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES : case RANS:
-      if (energy) {
-        nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
-        RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-      }
-      else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      else RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
-      break;
-    case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
-      break;
-    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-      RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-      break;
+  case EULER : case NAVIER_STOKES : case RANS:
+    nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
+    if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
+    else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    else RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    break;
+  case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+    break;
+  case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    break;
   }
   
 }
@@ -10994,7 +10996,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
           SurfFlow_file << "Mach " << config->GetMach() << ", Reynolds " << config->GetReynolds() << ", <greek>a</greek> "
           << config->GetAoA() << "deg, <greek>b</greek> " << config->GetAoS() << "deg." << "\\" << "\\n";
           SurfFlow_file.precision(1);
-          SurfFlow_file << fixed << "NetC<sub>T</sub> " << solver->GetTotal_NetCThrust()*10000 << "cts., Power " << solver->GetTotal_Power() <<  "HP";
+          SurfFlow_file << fixed << "Net Thrust " << solver->GetTotal_NetThrust() << "lbs, Power " << solver->GetTotal_Power() <<  "HP";
           SurfFlow_file.precision(4);
           SurfFlow_file << ", MassFlow " << config->GetSurface_MassFlow(iMarker_Analyze) << ",\\" << "\\n";
           SurfFlow_file << "IDC " << config->GetSurface_IDC(iMarker_Analyze)*100 << "%, IDCM " << config->GetSurface_IDC_Mach(iMarker_Analyze)*100 << "%, IDR " << config->GetSurface_IDR(iMarker_Analyze)*100 << "%,\\" << "\\n";
@@ -11088,12 +11090,10 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
   if ((rank == MASTER_NODE) && (header)){
 
     char cstr[200], buffer[50], turb_resid[1000];
-    unsigned short iMarker_Monitoring;
     string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
 
     bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
-    bool disc_adj = config[ZONE_FLOW]->GetDiscrete_Adjoint();
 
     unsigned short direct_diff = config[ZONE_FLOW]->GetDirectDiff();
 
@@ -11129,8 +11129,6 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
 
     char flow_coeff[]= ",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CL/CD\"";
     char fem_coeff[]= ",\"VM_Stress\"";
-    char Heat_inverse_design[]= ",\"HeatFlux_Diff\"";
-    bool struct_of=false;
     char of_1[] = ",\"TgtGeom\"";
     char of_2[] = ",\"TgtNode\"";
 
@@ -11247,13 +11245,10 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
 
       bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
 
-      bool flow = (config[ZONE_FLOW]->GetKind_Solver() == EULER) || (config[ZONE_FLOW]->GetKind_Solver() == NAVIER_STOKES) ||
-      (config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_EULER) ||
-      (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES) || (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+
       bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
       bool incompressible = (config[ZONE_FLOW]->GetKind_Regime() == INCOMPRESSIBLE);
-      bool turbulent = ((config[ZONE_FLOW]->GetKind_Solver() == RANS) || (config[ZONE_FLOW]->GetKind_Solver() == ADJ_RANS) ||
-                        (config[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS));
+
 
       bool fem = ((config[ZONE_STRUCT]->GetKind_Solver() == FEM_ELASTICITY) ||
               (config[ZONE_STRUCT]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -11269,8 +11264,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
 
       char begin[1000], direct_coeff[1000],
       fsi_resid[1000], fsi_coeffs[1000],
-      flow_resid[1000], adj_flow_resid[1000],
-      adj_fem_resid[1000], fem_resid[1000],
+      flow_resid[1000], fem_resid[1000],
       objective_function[1000], end[1000];
 
       su2double *residual_flow         = NULL;
@@ -11300,7 +11294,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
       /*--- Initialize variables to store information from all domains (direct solution) ---*/
 
       su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
-                Total_CFEM = 0.0, Total_OF = 0.0;
+                Total_OF = 0.0;
 
       Total_CL       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
       Total_CD       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
