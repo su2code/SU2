@@ -420,6 +420,7 @@ private:
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
+  string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -729,11 +730,13 @@ private:
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
+  Wrt_Crd_Sol,                /*!< \brief Write a binary file with the grid coordinates only. */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
@@ -741,9 +744,10 @@ private:
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
-  ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
+  Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,     /*!< \brief Specific gas constant. */
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
+  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
@@ -843,7 +847,6 @@ private:
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
-  string Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
   su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
   *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
@@ -1005,7 +1008,9 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
-  su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
+  su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
+  su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1550,10 +1555,10 @@ public:
   su2double GetBulk_Modulus(void);
   
   /*!
-   * \brief Get the artificial compresibility factor.
-   * \return Value of the artificial compresibility factor.
+   * \brief Get the epsilon^2 multiplier for Beta in the incompressible preconditioner.
+   * \return Value of the epsilon^2 multiplier for Beta in the incompressible preconditioner.
    */
-  su2double GetArtComp_Factor(void);
+  su2double GetBeta_Factor(void);
   
   /*!
    * \brief Get the value of specific gas constant.
@@ -1566,6 +1571,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGas_ConstantND(void);
+  
+  /*!
+   * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
+   * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
+   */
+  su2double GetMolecular_Weight(void);
   
   /*!
    * \brief Get the value of specific heat at constant pressure.
@@ -2831,6 +2842,12 @@ public:
   unsigned short GetnMarker_Monitoring(void);
   
   /*!
+   * \brief Get the total number of DV markers.
+   * \return Total number of DV markers.
+   */
+  unsigned short GetnMarker_DV(void);
+  
+  /*!
    * \brief Get the total number of moving markers.
    * \return Total number of moving markers.
    */
@@ -3043,6 +3060,12 @@ public:
   bool GetWrt_Csv_Sol(void);
   
   /*!
+   * \brief Get information about writing a binary coordinates file.
+   * \return <code>TRUE</code> means that a binary coordinates file will be written.
+   */
+  bool GetWrt_Crd_Sol(void);
+  
+  /*!
    * \brief Get information about writing residuals to volume solution file.
    * \return <code>TRUE</code> means that residuals will be written to the solution file.
    */
@@ -3072,6 +3095,12 @@ public:
    */
   bool GetWrt_Halo(void);
 
+  /*!
+   * \brief Get information about writing the performance summary at the end of a calculation.
+   * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
+   */
+  bool GetWrt_Performance(void);
+  
   /*!
    * \brief Get information about writing a template inlet profile file.
    * \return <code>TRUE</code> means that a template inlet profile file will be written.
@@ -7686,7 +7715,7 @@ public:
    * \brief Get name of the arbitrary mesh motion input file.
    * \return File name of the arbitrary mesh motion input file.
    */
-  string GetMotion_FileName(void);
+  string GetDV_Filename(void);
   
   /*!
    * \brief Set the config options.
@@ -8377,16 +8406,28 @@ public:
   bool GetAD_Mode(void);
 
   /*!
-   * \brief Set the maximum Beta parameter (artificial compressibility) in the domain.
-   * \param[in] Value of the max Beta parameter (artificial compressibility).
+   * \brief Set the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \param[in] Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  void SetMax_Beta(su2double val_maxBeta);
+  void SetMax_Vel2(su2double val_max_vel2);
 
   /*!
-   * \brief Get the maximum Beta parameter (artificial compressibility) in the domain.
-   * \return Value of the max Beta parameter (artificial compressibility) in the domain.
+   * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \return Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  su2double GetMax_Beta(void);
+  su2double GetMax_Vel2(void);
+  
+  /*!
+   * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
+   * \param[in] Sum of the bandwidth for writing binary restarts.
+   */
+  void SetRestart_Bandwidth_Agg(su2double val_restart_bandwidth_sum);
+  
+  /*!
+   * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
+   * \return Sum of the bandwidth for writing binary restarts.
+   */
+  su2double GetRestart_Bandwidth_Agg(void);
 
   /*!
    * \brief Get the frequency for writing the surface solution file in Dual Time.
