@@ -8556,7 +8556,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long iElem_Bound = 0, iPoint = 0, ielem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex;
+  vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
   unsigned long i;
   long local_index;
   vector<unsigned long>::iterator it;
@@ -8586,7 +8586,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Initialize counters for local/global points & elements ---*/
   
 #ifdef HAVE_MPI
-  unsigned long LocalIndex, j;
+  unsigned long j;
 #endif
   
   /*--- Actuator disk preprocesing ---*/
@@ -9301,7 +9301,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           else {
             ostringstream strsX, strsY, strsZ;
             unsigned long BackActDisk_Index = node_count;
-            unsigned long LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
+            LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
             strsX.precision(20); strsY.precision(20); strsZ.precision(20);
             su2double CoordX = CoordXActDisk[LocalIndex]; strsX << scientific << CoordX;
             su2double CoordY = CoordYActDisk[LocalIndex]; strsY << scientific << CoordY;
@@ -19795,7 +19795,11 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Apply roll to cut the nacelle ---*/
 
-    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Angle = MinAngle + iPlane*dAngle*PI_NUMBER/180.0;
+    
+    if (Angle <= 0) Angle = 1E-6;
+    if (Angle >= 360) Angle = 359.999999;
+
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);

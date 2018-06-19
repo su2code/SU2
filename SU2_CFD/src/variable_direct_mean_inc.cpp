@@ -41,16 +41,11 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   
   /*--- Array initialization ---*/
   
-  Primitive = NULL;
-  
+  Primitive          = NULL;
   Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
+  Limiter_Primitive  = NULL;
 
   Grad_AuxVar = NULL;
-
-  WindGust    = NULL;
-  WindGustDer = NULL;
 
   nPrimVar     = 0;
   nPrimVarGrad = 0;
@@ -70,23 +65,17 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   
   bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                        (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust     = config->GetWind_Gust();
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
   bool fsi          = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
-  Primitive = NULL;
-  
+  Primitive          = NULL;
   Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
+  Limiter_Primitive  = NULL;
 
   Grad_AuxVar = NULL;
-  
-  WindGust    = NULL;
-  WindGustDer = NULL;
   
   nPrimVar     = 0;
   nPrimVarGrad = 0;
@@ -165,13 +154,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     Solution[nDim+1] = val_temperature;
     Solution_Old[nDim+1] = val_temperature;
   }
-    
-  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-  
-  if (windgust) {
-    WindGust = new su2double [nDim];
-    WindGustDer = new su2double [nDim+1];
-  }
 
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
   
@@ -191,7 +173,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   /*--- If axisymmetric and viscous, we need an auxiliary gradient. ---*/
 
   if (axisymmetric && viscous)
-    Grad_AuxVar = new su2double [nDim];
+    Grad_AuxVar = new su2double[nDim];
 
   Solution_BGS_k = NULL;
   if (fsi){
@@ -209,23 +191,17 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   
   bool dual_time    = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                       (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool windgust     = config->GetWind_Gust();
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
   bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
-  Primitive = NULL;
-  
+  Primitive          = NULL;
   Gradient_Primitive = NULL;
-  
-  Limiter_Primitive = NULL;
+  Limiter_Primitive  = NULL;
 
   Grad_AuxVar = NULL;
-  
-  WindGust    = NULL;
-  WindGustDer = NULL;
   
   nPrimVar     = 0;
   nPrimVarGrad = 0;
@@ -297,13 +273,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
       Solution_time_n1[iVar] = val_solution[iVar];
     }
   }
-    
-  /*--- Allocate vector for wind gust and wind gust derivative field ---*/
-  
-  if (windgust) {
-    WindGust = new su2double [nDim];
-    WindGustDer = new su2double [nDim+1];
-  }
   
   /*--- Incompressible flow, primitive variables nDim+9, (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) ---*/
 
@@ -340,8 +309,6 @@ CIncEulerVariable::~CIncEulerVariable(void) {
 
   if (Primitive         != NULL) delete [] Primitive;
   if (Limiter_Primitive != NULL) delete [] Limiter_Primitive;
-  if (WindGust          != NULL) delete [] WindGust;
-  if (WindGustDer       != NULL) delete [] WindGustDer;
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
@@ -375,12 +342,15 @@ su2double CIncEulerVariable::GetProjVel(su2double *val_vector) {
   return ProjVel;
 }
 
-
 bool CIncEulerVariable::SetPrimVar(CFluidModel *FluidModel) {
       
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
 
+  /*--- Store the density from the previous iteration. ---*/
+  
+  Density_Old = FluidModel->GetDensity();
+  
   /*--- Set the value of the pressure ---*/
 
   SetPressure();
@@ -443,24 +413,12 @@ CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, 
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CIncEulerVariable(val_pressure, val_velocity, val_temperature, val_nDim, val_nvar, config) {
   
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-  Prandtl_Turb    = config->GetPrandtl_Turb();
-  
   DES_LengthScale = 0.0;
-  
+
 }
 
 CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
-  
-  Temperature_Ref = config->GetTemperature_Ref();
-  Viscosity_Ref   = config->GetViscosity_Ref();
-  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-  Prandtl_Lam     = config->GetPrandtl_Lam();
-  Prandtl_Turb    = config->GetPrandtl_Turb();
   
   DES_LengthScale = 0.0;
   
@@ -528,6 +486,10 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
 
+  /*--- Store the density from the previous iteration. ---*/
+  
+  Density_Old = FluidModel->GetDensity();
+  
   /*--- Set the value of the pressure ---*/
   
   SetPressure();

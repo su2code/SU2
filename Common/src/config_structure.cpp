@@ -560,6 +560,8 @@ void CConfig::SetPointersNull(void) {
   ZoneSpecific_Problem = false;
 
   nSpanMaxAllZones = 1;
+
+  Wrt_InletFile = false;
   
 }
 
@@ -669,7 +671,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SPECIFIC_HEAT_CP_SOLID", Specific_Heat_Cp_Solid, 896.0);
   /*!\brief THERMAL_EXPANSION_COEFF  \n DESCRIPTION: Thermal expansion coefficient (0.00347 K^-1 (air), used for Boussinesq approximation for liquids/non-ideal gases) \ingroup Config*/
   addDoubleOption("THERMAL_EXPANSION_COEFF", Thermal_Expansion_Coeff, 0.00347);
-
+  /*!\brief MOLECULAR_WEIGHT \n DESCRIPTION: Molecular weight for an incompressible ideal gas (28.96 g/mol (air) default) \ingroup Config*/
+  addDoubleOption("MOLECULAR_WEIGHT", Molecular_Weight, 28.96);
+  
   /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
 
   /* DESCRIPTION: Critical Temperature, default value for AIR */
@@ -720,8 +724,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("PRANDTL_TURB", Prandtl_Turb, 0.90);
   /*!\brief BULK_MODULUS \n DESCRIPTION: Value of the Bulk Modulus  \n DEFAULT 1.42E5 \ingroup Config*/
   addDoubleOption("BULK_MODULUS", Bulk_Modulus, 1.42E5);
-  /* DESCRIPTION: Artifical compressibility factor  */
-  addDoubleOption("ARTCOMP_FACTOR", ArtComp_Factor, 4.1);
+  /* DESCRIPTION: Epsilon^2 multipier in Beta calculation for incompressible preconditioner.  */
+  addDoubleOption("BETA_FACTOR", Beta_Factor, 4.1);
   /*!\brief MACH_NUMBER  \n DESCRIPTION:  Mach number (non-dimensional, based on the free-stream values). 0.0 by default \ingroup Config*/
   addDoubleOption("MACH_NUMBER", Mach, 0.0);
   /*!\brief INIT_OPTION \n DESCRIPTION: Init option to choose between Reynolds or thermodynamics quantities for initializing the solution \n OPTIONS: see \link InitOption_Map \endlink \n DEFAULT REYNOLDS \ingroup Config*/
@@ -756,8 +760,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("INC_TEMPERATURE_INIT", Inc_Temperature_Init, 288.15);
   /*!\brief INC_NONDIM \n DESCRIPTION: Non-dimensionalization scheme for incompressible flows. \ingroup Config*/
   addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
- /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
-  addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
     /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
 
@@ -815,7 +817,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Number of iterations to evaluate dCL_dAlpha . */
   addUnsignedLongOption("ITER_DCL_DALPHA", Iter_dCL_dAlpha, 500);
   /* DESCRIPTION: Damping factor for fixed CL mode. */
-  addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 2.0);
+  addDoubleOption("DNETTHRUST_DBCTHRUST", dNetThrust_dBCThrust, 1.0);
   /* DESCRIPTION: Number of times Alpha is updated in a fix CL problem. */
   addUnsignedLongOption("UPDATE_BCTHRUST", Update_BCThrust, 5);
 
@@ -914,7 +916,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
-
+  addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
+  /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
+  addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
+  /*!\brief INLET_MATCHING_TOLERANCE
+   * \n DESCRIPTION: If a file is provided to specify the inlet profile,
+   * this tolerance will be used to match the coordinates in the input file to
+   * the points on the grid. \n DEFAULT: 1E-6 \ingroup Config*/
+  addDoubleOption("INLET_MATCHING_TOLERANCE", Inlet_Matching_Tol, 1e-6);
   /*!\brief MARKER_INLET  \n DESCRIPTION: Inlet boundary marker(s) with the following formats,
    Total Conditions: (inlet marker, total temp, total pressure, flow_direction_x,
    flow_direction_y, flow_direction_z, ... ) where flow_direction is
@@ -1518,6 +1527,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief WRT_CSV_SOL
    *  \n DESCRIPTION: Write a surface CSV solution file  \ingroup Config*/
   addBoolOption("WRT_CSV_SOL", Wrt_Csv_Sol, true);
+  /*!\brief WRT_CSV_SOL
+   *  \n DESCRIPTION: Write a binary coordinates file  \ingroup Config*/
+  addBoolOption("WRT_CRD_SOL", Wrt_Crd_Sol, false);
   /*!\brief WRT_SURFACE
    *  \n DESCRIPTION: Output solution at each surface  \ingroup Config*/
   addBoolOption("WRT_SURFACE", Wrt_Surface, false);
@@ -1532,6 +1544,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_SHARPEDGES", Wrt_SharpEdges, false);
   /* DESCRIPTION: Output the rind layers in the solution files  \ingroup Config*/
   addBoolOption("WRT_HALO", Wrt_Halo, false);
+  /* DESCRIPTION: Output the performance summary to the console at the end of SU2_CFD  \ingroup Config*/
+  addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
@@ -1605,8 +1619,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("PLUNGING_AMPL_Z", nPlunging_Ampl_Z, Plunging_Ampl_Z);
   /* DESCRIPTION: Value to move motion origins (1 or 0) */
   addUShortListOption("MOVE_MOTION_ORIGIN", nMoveMotion_Origin, MoveMotion_Origin);
-  /* DESCRIPTION:  */
-  addStringOption("MOTION_FILENAME", Motion_Filename, string("mesh_motion.dat"));
 
   /*!\par CONFIG_CATEGORY: Grid adaptation \ingroup Config*/
   /*--- Options related to grid adaptation ---*/
@@ -1715,6 +1727,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	addDVParamOption("DV_PARAM", nDV, ParamDV, FFDTag, Design_Variable);
   /* DESCRIPTION: New value of the shape deformation */
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
+  /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
+  addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -2180,6 +2194,7 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("SPATIAL_ORDER_ADJTURB")) newString.append("SPATIAL_ORDER_ADJTURB is now the boolean MUSCL_ADJTURB and the appropriate SLOPE_LIMITER_ADJTURB.\n");
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
+          if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
           errorString.append(newString);
           err_count++;
         continue;
@@ -2320,11 +2335,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   unsigned short iZone, iCFL, iMarker;
   bool ideal_gas = ((Kind_FluidModel == STANDARD_AIR) ||
                     (Kind_FluidModel == IDEAL_GAS) ||
-                    (Kind_FluidModel == INC_STANDARD_AIR) ||
                     (Kind_FluidModel == INC_IDEAL_GAS) ||
                     (Kind_FluidModel == CONSTANT_DENSITY));
-  bool standard_air = ((Kind_FluidModel == STANDARD_AIR) || 
-                      (Kind_FluidModel == INC_STANDARD_AIR));
+  bool standard_air = ((Kind_FluidModel == STANDARD_AIR));
   
 #ifndef HAVE_TECIO
   if (Output_FileFormat == TECPLOT_BINARY) {
@@ -2464,6 +2477,11 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
   
+  /*--- The that Discard_InFiles is false, owerwise the gradient could be wrong ---*/
+  
+  if ((ContinuousAdjoint || DiscreteAdjoint) && Fixed_CL_Mode && !Eval_dOF_dCX)
+    Discard_InFiles = false;
+
   /*--- Deactivate the multigrid in the adjoint problem ---*/
   
   if ((ContinuousAdjoint && !MG_AdjointFlow) ||
@@ -3469,11 +3487,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- To avoid boundary intersections, let's add a small constant to the planes. ---*/
 
-  Stations_Bounds[0] += EPS;
-  Stations_Bounds[1] += EPS;
-
-  for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
-    LocationStations[iSections] += EPS;
+  if (Geo_Description == NACELLE) {
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      if (LocationStations[iSections] == 0) LocationStations[iSections] = 1E-6;
+      if (LocationStations[iSections] == 360) LocationStations[iSections] = 359.999999;
+    }
+  }
+  else {
+    for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
+      LocationStations[iSections] += EPS;
+    }
+    Stations_Bounds[0] += EPS;
+    Stations_Bounds[1] += EPS;
   }
 
   /*--- Length based parameter for slope limiters uses a default value of
@@ -3515,10 +3540,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       for (unsigned short iSections = 0; iSections < nLocationStations; iSections++) {
         LocationStations[iSections] = LocationStations[iSections]/12.0;
       }
+      Stations_Bounds[0] = Stations_Bounds[0]/12.0;
+      Stations_Bounds[1] = Stations_Bounds[1]/12.0;
     }
-
-    Stations_Bounds[0] = Stations_Bounds[0]/12.0;
-    Stations_Bounds[1] = Stations_Bounds[1]/12.0;
     
     SubsonicEngine_Cyl[0] = SubsonicEngine_Cyl[0]/12.0;
     SubsonicEngine_Cyl[1] = SubsonicEngine_Cyl[1]/12.0;
@@ -3689,21 +3713,21 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_DensityModel == VARIABLE) {
-    if (Kind_FluidModel != INC_STANDARD_AIR && Kind_FluidModel != INC_IDEAL_GAS) {
-      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_STANDARD_AIR or INC_IDEAL_GAS).", CURRENT_FUNCTION);
+    if (Kind_FluidModel != INC_IDEAL_GAS) {
+      SU2_MPI::Error("Variable density incompressible solver limited to ideal gases.\n Check the fluid model options (use INC_IDEAL_GAS).", CURRENT_FUNCTION);
     }
   }
 
   if (Kind_Regime != INCOMPRESSIBLE) {
-    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_STANDARD_AIR) || (Kind_FluidModel == INC_IDEAL_GAS)) {
-      SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_STANDARD_AIR/INC_IDEAL_GAS are for incompressible only.", CURRENT_FUNCTION);
+    if ((Kind_FluidModel == CONSTANT_DENSITY) || (Kind_FluidModel == INC_IDEAL_GAS)) {
+      SU2_MPI::Error("Fluid model not compatible with compressible flows.\n CONSTANT_DENSITY/INC_IDEAL_GAS are for incompressible only.", CURRENT_FUNCTION);
     }
   }
 
   if ((Kind_Regime == INCOMPRESSIBLE) && (Kind_Solver != EULER) && (Kind_Solver != ADJ_EULER) && (Kind_Solver != DISC_ADJ_EULER)) {
     if (Kind_ViscosityModel == SUTHERLAND) {
-      if ((Kind_FluidModel != INC_STANDARD_AIR) && (Kind_FluidModel != INC_IDEAL_GAS)) {
-        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_STANDARD_AIR\n or FLUID_MODEL= INC_IDEAL_GAS for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
+      if ((Kind_FluidModel != INC_IDEAL_GAS)) {
+        SU2_MPI::Error("Sutherland's law only valid for ideal gases in incompressible flows.\n Must use VISCOSITY_MODEL=CONSTANT_VISCOSITY and set viscosity with\n MU_CONSTANT, or use DENSITY_MODEL= VARIABLE with FLUID_MODEL= INC_IDEAL_GAS for VISCOSITY_MODEL=SUTHERLAND.\n NOTE: FREESTREAM_VISCOSITY is no longer used for incompressible flows!", CURRENT_FUNCTION);
       }
     }
   }
@@ -3722,24 +3746,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
-  /*--- Check that the incompressible inlets are correctly specified. ---*/
-
-  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Inlet != 0)) {
-    if (nMarker_Inlet != nInc_Inlet) {
-      SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
-    }
-    for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
-      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET)) {
-        SU2_MPI::Error("Undefined incompressible inlet type. VELOCITY_INLET only currently possible.", CURRENT_FUNCTION);
-      }
-    }
-  }
-
   /*--- If Kind_Inc_Inlet has not been specified, take a default --*/
 
   if (Kind_Inc_Inlet == NULL) {
-    Kind_Inc_Inlet = new unsigned short[1];
-    Kind_Inc_Inlet[0] = VELOCITY_INLET;
+    if (nMarker_Inlet != 0) {
+      Kind_Inc_Inlet = new unsigned short[nMarker_Inlet];
+      for (unsigned short iInlet = 0; iInlet < nMarker_Inlet; iInlet++) {
+        Kind_Inc_Inlet[iInlet] = VELOCITY_INLET;
+      }
+    } else {
+      Kind_Inc_Inlet = new unsigned short[1];
+      Kind_Inc_Inlet[0] = VELOCITY_INLET;
+    }
   }
 
   /*--- Grid motion is not yet supported with the incompressible solver. ---*/
@@ -4321,7 +4339,21 @@ void CConfig::SetMarkers(unsigned short val_software) {
       if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
         Marker_CfgFile_DV[iMarker_CfgFile] = YES;
   }
-
+  
+  /*--- Add an extra check for DV_MARKER to make sure that any given marker
+   name is recognized as an existing boundary in the problem. ---*/
+  
+  unsigned short markerCount = 0;
+  for (iMarker_DV = 0; iMarker_DV < nMarker_DV; iMarker_DV++) {
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_DV[iMarker_DV])
+        markerCount++;
+    }
+  }
+  if ((nMarker_DV > 0) && (markerCount != nMarker_DV)) {
+    SU2_MPI::Error("DV_MARKER contains marker names that do not exist in the lists of BCs in the config file.", CURRENT_FUNCTION);
+  }
+  
   for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
     Marker_CfgFile_Moving[iMarker_CfgFile] = NO;
     for (iMarker_Moving = 0; iMarker_Moving < nMarker_Moving; iMarker_Moving++)
@@ -4545,16 +4577,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       if (RefArea == 0.0) cout << "The reference area will be computed using y(2D) or z(3D) projection." << endl;
       else { cout << "The reference area is " << RefArea;
-        if (SystemMeasurements == US) cout << " in^2." << endl; else cout << " m^2." << endl;
+        if (SystemMeasurements == US) cout << " ft^2." << endl; else cout << " m^2." << endl;
       }
-      
+
       if (SemiSpan == 0.0) cout << "The semi-span will be computed using the max y(3D) value." << endl;
       else { cout << "The semi-span length area is " << SemiSpan;
-        if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+        if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
       }
-      
+
       cout << "The reference length is " << RefLength;
-      if (SystemMeasurements == US) cout << " in." << endl; else cout << " m." << endl;
+      if (SystemMeasurements == US) cout << " ft." << endl; else cout << " m." << endl;
 
       if ((nRefOriginMoment_X > 1) || (nRefOriginMoment_Y > 1) || (nRefOriginMoment_Z > 1)) {
         cout << "Surface(s) where the force coefficients are evaluated and \n";
@@ -4711,6 +4743,9 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       if ((Design_Variable[iDV] != NO_DEFORMATION) &&
           (Design_Variable[iDV] != FFD_SETTING) &&
+          (Design_Variable[iDV] != SCALE_GRID) &&
+          (Design_Variable[iDV] != TRANSLATE_GRID) &&
+          (Design_Variable[iDV] != ROTATE_GRID) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
         
         if (iDV == 0)
@@ -4810,6 +4845,21 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       
       else if (Design_Variable[iDV] == NO_DEFORMATION) {
         cout << "No deformation of the numerical grid. Just output .su2 file." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == SCALE_GRID) {
+        nParamDV = 0;
+        cout << "Scaling of the volume grid by a constant factor." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == TRANSLATE_GRID) {
+        nParamDV = 3;
+        cout << "Rigid translation of the volume grid." << endl;
+      }
+      
+      else if (Design_Variable[iDV] == ROTATE_GRID) {
+        nParamDV = 6;
+        cout << "Rigid rotation of the volume grid." << endl;
       }
 
       else if (Design_Variable[iDV] == FFD_SETTING) {
@@ -4925,10 +4975,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       }
 
       if (Kind_ConvNumScheme_Flow == SPACE_UPWIND) {
-        if (Kind_Upwind_Flow == ROE) {
-          if (Kind_Regime == INCOMPRESSIBLE) cout << "Flux difference splitting scheme for the flow inviscid terms."<< endl;
-          else cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
-        }
+        if (Kind_Upwind_Flow == ROE)   cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == TURKEL) cout << "Roe-Turkel solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == HLLC)  cout << "HLLC solver for the flow inviscid terms."<< endl;
@@ -4939,7 +4986,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == LMROE) cout << "Rieper Low Mach ROE solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == SLAU) cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
-
+        if (Kind_Upwind_Flow == FDS)   cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
+          
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
             case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
