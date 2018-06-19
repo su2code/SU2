@@ -865,6 +865,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual su2double GetDensity_Old(void);
+  
+  /*!
+   * \brief A virtual member.
    * \return Value of the flow density.
    */
   virtual su2double GetDensity(unsigned short val_iSpecies);
@@ -3602,9 +3608,6 @@ public:
 class CIncEulerVariable : public CVariable {
 protected:
   su2double Velocity2;      /*!< \brief Square of the velocity vector. */
-  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
-  su2double *WindGust;           /*! < \brief Wind gust value */
-  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
   
   /*--- Primitive variable definition ---*/
   
@@ -3613,7 +3616,12 @@ protected:
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- Old solution container for BGS iterations ---*/
+  
   su2double* Solution_BGS_k;
+  
+  /*--- Old density for variable density turbulent flows (SST). ---*/
+  
+  su2double Density_Old;
 
 public:
   
@@ -3789,6 +3797,12 @@ public:
   su2double GetDensity(void);
   
   /*!
+   * \brief Get the density of the flow from the previous iteration.
+   * \return Old value of the density of the flow.
+   */
+  su2double GetDensity_Old(void);
+  
+  /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
@@ -3813,30 +3827,6 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   void SetVelocity_Old(su2double *val_velocity);
-
-  /*!
-   * \brief Get the value of the wind gust
-   * \return Value of the wind gust
-   */
-  su2double* GetWindGust();
-  
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] Value of the wind gust
-   */
-  void SetWindGust(su2double* val_WindGust);
-  
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \return Value of the derivatives of the wind gust
-   */
-  su2double* GetWindGustDer();
-  
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] Value of the derivatives of the wind gust
-   */
-  void SetWindGustDer(su2double* val_WindGust);
   
   /*!
    * \brief Set all the primitive variables for incompressible flows.
@@ -4102,11 +4092,6 @@ public:
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
-  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
-  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
-  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
-  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
-  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   
