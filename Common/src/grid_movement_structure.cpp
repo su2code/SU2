@@ -2791,6 +2791,13 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         }
       }
       
+      /*--- Check that the user has specified a non-zero number of surfaces to move with DV_MARKER. ---*/
+      
+      if (config->GetnMarker_DV() == 0) {
+        SU2_MPI::Error(string("No markers are specified in DV_MARKER, so no deformation will occur.\n") +
+                       string("List markers to be deformed in DV_MARKER."), CURRENT_FUNCTION);
+      }
+    
       /*--- Output original FFD FFDBox ---*/
       
        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
@@ -2992,38 +2999,40 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Check whether a surface file exists for input ---*/
     ofstream Surface_File;
-    string filename = config->GetMotion_FileName();
+    string filename = config->GetDV_Filename();
     Surface_File.open(filename.c_str(), ios::in);
     
     /*--- A surface file does not exist, so write a new one for the
      markers that are specified as part of the motion. ---*/
     if (Surface_File.fail()) {
       
-      if (rank == MASTER_NODE)
-        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
-      
-      Surface_File.open(filename.c_str(), ios::out);
-      Surface_File.precision(15);
-      unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
-            Coords = geometry->node[jPoint]->GetCoord();
-            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-            if (geometry->GetnDim() == 2) Surface_File << endl;
-            else Surface_File << "\t" << Coords[2] << endl;
+      if (rank == MASTER_NODE && size == SINGLE_NODE) {
+        cout << "No surface positions file found. Writing a template file: " << filename << "." << endl;
+        
+        Surface_File.open(filename.c_str(), ios::out);
+        Surface_File.precision(15);
+        unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_DV(iMarker) == YES) {
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
+              Coords = geometry->node[jPoint]->GetCoord();
+              Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
+              if (geometry->GetnDim() == 2) Surface_File << endl;
+              else Surface_File << "\t" << Coords[2] << endl;
+            }
           }
         }
+        Surface_File.close();
+        
+      } else {
+        SU2_MPI::Error("No surface positions file found and template writing not yet supported in parallel.\n To generate a template surface positions file, run SU2_DEF again in serial.", CURRENT_FUNCTION);
       }
-      Surface_File.close();
-      
-      /*--- A surface file exists, so read in the coordinates ---*/
-      
     }
     
     else {
+      /*--- A surface file exists, so read in the coordinates ---*/
       Surface_File.close();
       if (rank == MASTER_NODE) cout << "Updating the surface coordinates from the input file." << endl;
       SetExternal_Deformation(geometry, config, ZONE_0, 0);
@@ -6441,15 +6450,15 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   unsigned long iVertex;
   unsigned short iMarker;
   char buffer[50];
-  string motion_filename, UnstExt, text_line;
-  ifstream motion_file;
+  string DV_Filename, UnstExt, text_line;
+  ifstream surface_positions;
   bool unsteady = config->GetUnsteady_Simulation();
   bool adjoint = config->GetContinuous_Adjoint();
   
 	/*--- Load stuff from config ---*/
   
 	nDim = geometry->GetnDim();
-  motion_filename = config->GetMotion_FileName();
+  DV_Filename = config->GetDV_Filename();
   
   /*--- Set the extension for the correct unsteady mesh motion file ---*/
   
@@ -6459,27 +6468,27 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnExtIter() - 1;
       flowIter  = nFlowIter - iter;
-      unsigned short lastindex = motion_filename.find_last_of(".");
-      motion_filename = motion_filename.substr(0, lastindex);
+      unsigned short lastindex = DV_Filename.find_last_of(".");
+      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
       if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
-      motion_filename.append(UnstExt);
+      DV_Filename.append(UnstExt);
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      unsigned short lastindex = motion_filename.find_last_of(".");
-      motion_filename = motion_filename.substr(0, lastindex);
+      unsigned short lastindex = DV_Filename.find_last_of(".");
+      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
       if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
-      motion_filename.append(UnstExt);
+      DV_Filename.append(UnstExt);
     }
     
     if (rank == MASTER_NODE)
@@ -6488,20 +6497,23 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
   /*--- Open the motion file ---*/
 
-  motion_file.open(motion_filename.data(), ios::in);
+  surface_positions.open(DV_Filename.data(), ios::in);
+  
   /*--- Throw error if there is no file ---*/
-  if (motion_file.fail()) {
-    SU2_MPI::Error(string("There is no mesh motion file ") + motion_filename, CURRENT_FUNCTION);
+  
+  if (surface_positions.fail()) {
+    SU2_MPI::Error(string("There is no surface positions file ") + DV_Filename, CURRENT_FUNCTION);
   }
   
   /*--- Read in and store the new mesh node locations ---*/ 
   
-  while (getline(motion_file, text_line)) {
+  while (getline(surface_positions, text_line)) {
     istringstream point_line(text_line);
     if (nDim == 2) point_line >> iPoint >> NewCoord[0] >> NewCoord[1];
     if (nDim == 3) point_line >> iPoint >> NewCoord[0] >> NewCoord[1] >> NewCoord[2];
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Moving(iMarker) == YES) {
+      if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
+          (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
@@ -6513,8 +6525,10 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
       }
     }
   }
-  /*--- Close the restart file ---*/
-  motion_file.close();
+  
+  /*--- Close the surface positions file ---*/
+  
+  surface_positions.close();
   
   /*--- If rotating as well, prepare the rotation matrix ---*/
   
@@ -6581,7 +6595,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Loop through to find only moving surface markers ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
+    if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
+        (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
       
       /*--- Loop over all surface points for this marker ---*/
       
