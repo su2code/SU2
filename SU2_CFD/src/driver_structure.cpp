@@ -1052,7 +1052,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
         solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
-      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][val_iInst][FLOW_SOL]->GetnVar();
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (ns) {
       if (compressible) {
@@ -1061,7 +1061,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       if (incompressible) {
         solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
-      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][val_iInst][FLOW_SOL]->GetnVar();
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (turbulent) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
@@ -1075,7 +1075,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][TURB_SOL]->Postprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel);
         solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
-      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][val_iInst][TURB_SOL]->GetnVar();
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TURB_SOL]->GetnVar();
       if (transition) {
         solver_container[val_iInst][iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TRANS_SOL]->GetnVar();
