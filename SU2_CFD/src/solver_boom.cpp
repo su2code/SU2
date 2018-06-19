@@ -288,7 +288,9 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
   /*--- Search on boundaries ---*/  
   for(iMarker = 0; iMarker < nMarker; iMarker++){
     /*--- Only look at farfield boundary (or send/recv for parallel computations) ---*/
-    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD || config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE){
+    if(config->GetMarker_All_KindBC(iMarker) == FAR_FIELD   || 
+      config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE ||
+      config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE){
       for(iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++){
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         Coord = geometry->node[iPoint]->GetCoord();
