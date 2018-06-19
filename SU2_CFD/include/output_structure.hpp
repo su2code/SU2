@@ -191,6 +191,7 @@ protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
 
+  unsigned short nDim;
   
   // TODO: COMMENT NEW STUFF
   unsigned short field_width;
@@ -1295,11 +1296,9 @@ public:
 class CDiscAdjFlowOutput : public COutput {
 private:
 
-  char char_histfile[200];
 
 public:
 
-  ofstream HistFile;
 
   /*!
    * \brief Constructor of the class
@@ -1313,27 +1312,6 @@ public:
   virtual ~CDiscAdjFlowOutput(void);
 
   /*!
-   * \brief Write the header of the history file.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
@@ -1341,6 +1319,8 @@ public:
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 
+  void SetOutputFields(CConfig *config);
+  
   /*!
    * \brief Determines if the history file output.
    * \param[in] config - Definition of the particular problem.
