@@ -650,6 +650,14 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Critical Density, default value for MDM */
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
+  /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
+  /* DESCRIPTION: Critical Density, default value for MDM */
+   addDoubleOption("POWER_LAW_FACTOR", PowerLaw_Factor, 0.0);
+
+  /*--- Options related to VAN der WAALS MODEL and PENG ROBINSON ---*/
+  /* DESCRIPTION: Critical Density, default value for MDM */
+   addBoolOption("POLYTROPIC_GAS", Polytropic, true);
+   
    /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);

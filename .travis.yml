@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - giulio.gori@hotmail.it
   
 branches:
     only:
-        - develop
+        - feature_calibration
 
 python:
     - 2.7

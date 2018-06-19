@@ -3528,6 +3528,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool free_stream_temp   = (config->GetKind_FreeStreamOption() == TEMPERATURE_FS);
   bool reynolds_init      = (config->GetKind_InitOption() == REYNOLDS);
   bool aeroelastic        = config->GetAeroelastic_Simulation();
+  bool polytropic            = config->GetPolytropic();
   
   /*--- Set temperature via the flutter speed index ---*/
   if (aeroelastic) {
@@ -3604,7 +3605,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
     case PR_GAS:
 
-      FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+      if(!polytropic)
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                     config->GetTemperature_Critical(), config->GetAcentric_Factor(), config->GetPowerLaw_Factor());
+      else
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
                                      config->GetTemperature_Critical(), config->GetAcentric_Factor());
       if (free_stream_temp) {
         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
@@ -3806,8 +3811,12 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       break;
       
     case PR_GAS:
-      FluidModel = new CPengRobinson(Gamma, Gas_ConstantND, config->GetPressure_Critical() /config->GetPressure_Ref(),
-                                     config->GetTemperature_Critical()/config->GetTemperature_Ref(), config->GetAcentric_Factor());
+      if(!polytropic)
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                     config->GetTemperature_Critical(), config->GetAcentric_Factor(), config->GetPowerLaw_Factor());
+      else
+        FluidModel = new CPengRobinson(Gamma, config->GetGas_Constant(), config->GetPressure_Critical(),
+                                     config->GetTemperature_Critical(), config->GetAcentric_Factor());
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       

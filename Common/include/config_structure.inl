@@ -269,6 +269,8 @@ inline bool CConfig::GetContinuous_Adjoint(void) { return ContinuousAdjoint; }
 
 inline bool CConfig::GetViscous(void) { return Viscous; }
 
+inline bool CConfig::GetPolytropic(void) { return Polytropic; }
+
 inline unsigned long CConfig::GetnExtIter(void) { return nExtIter; }
 
 inline unsigned short CConfig::GetnTimeInstances(void) { return nTimeInstances; }
@@ -768,6 +770,8 @@ inline su2double CConfig::GetPressure_Critical(void) { return Pressure_Critical;
 inline su2double CConfig::GetTemperature_Critical(void) { return Temperature_Critical; }
 
 inline su2double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
+
+inline su2double CConfig::GetPowerLaw_Factor(void) { return PowerLaw_Factor; }
 
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 

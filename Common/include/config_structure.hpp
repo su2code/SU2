@@ -120,6 +120,7 @@ private:
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
+  Polytropic,                /*!< \brief Flag to know if the code is solving a non-polytropic problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
   InvDesign_Cp,				/*!< \brief Flag to know if the code is going to compute and plot the inverse design. */
@@ -734,6 +735,7 @@ private:
   Pressure_Critical,   /*!< \brief Critical Pressure for real fluid model.  */
   Density_Critical,   /*!< \brief Critical Density for real fluid model.  */
   Acentric_Factor,   /*!< \brief Acentric Factor for real fluid model.  */
+  PowerLaw_Factor,   /*!< \brief Exponential Factor for the non-polytropic power law fluid model.  */
   Mu_Constant,     /*!< \brief Constant viscosity for ConstantViscosity model.  */
   Mu_ConstantND,   /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
   Kt_Constant,     /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
@@ -3338,10 +3340,16 @@ public:
   su2double GetTemperature_Critical(void);
   
   /*!
-   * \brief Get the value of the critical pressure.
-   * \return Critical pressure.
+   * \brief Get the value of the acentric factor.
+   * \return Acentric Factor.
    */
   su2double GetAcentric_Factor(void);
+
+  /*!
+   * \brief Get the value of the exponential factor for the non-polytropic gas power law.
+   * \return Exponential factor n.
+   */
+  su2double GetPowerLaw_Factor(void);
   
   /*!
    * \brief Get the value of the viscosity model.
@@ -5564,6 +5572,12 @@ public:
    * \return true if Viscous
    */
   bool GetViscous(void);
+
+  /*!
+   * \brief Determines if problem is polytropic (default YES)
+   * \return true if Polytropic
+   */
+  bool GetPolytropic(void);
   
   /*!
    * \brief Provides the index of the solution in the container.

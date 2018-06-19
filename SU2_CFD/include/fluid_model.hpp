@@ -70,6 +70,7 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
        Pressure,         /*!< \brief Pressure. */
        SoundSpeed2,       /*!< \brief SpeedSound. */
        Temperature,      /*!< \brief Temperature. */
+       Pn,      /*!< \brief Non Polytropic Power Law Factor. */
        dPdrho_e,         /*!< \brief DpDd_e. */
        dPde_rho,         /*!< \brief DpDe_d. */
        dTdrho_e,         /*!< \brief DTDd_e. */
@@ -507,7 +508,9 @@ protected:
         b,             /*!< \brief model parameter. */
         k,             /*!< \brief model parameter (computed with acentric factor). */
         Zed,             /*!< \brief compressibility factor. */
-        TstarCrit;        /*!< \brief Critical temperature. */
+        TstarCrit,        /*!< \brief Critical temperature. */
+        Gcr,           /*!< \brief Heat specific ratio at critical temperature. */
+        Gcr_Minus_One;           /*!< \brief Heat specific ratio at critical temperature. */
 
 private:
 
@@ -534,7 +537,12 @@ public:
      * \brief Constructor of the class.
      */
     CPengRobinson(void);
-
+    
+    /*!
+     * \brief Constructor of the class.
+     */
+    CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w, su2double n);
+    
     /*!
      * \brief Constructor of the class.
      */

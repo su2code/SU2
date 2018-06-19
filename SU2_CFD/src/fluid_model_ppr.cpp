@@ -37,11 +37,30 @@
 
 #include "./../include/fluid_model.hpp"
 
+#define NTRY 200
+#define ITMAX 200
+
 CPengRobinson::CPengRobinson() : CIdealGas() {
   a= 0.0;
   b =0.0;
   k = 0.0;
   TstarCrit = 0.0;
+}
+
+CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w, su2double n) : CIdealGas(gamma, R) {
+    // Non politropica
+    a = 0.45724*Gas_Constant*Gas_Constant*Tstar*Tstar/Pstar;
+    b = 0.0778*Gas_Constant*Tstar/Pstar;
+    TstarCrit = Tstar;
+    Zed=1.0;
+    
+    k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
+    
+    Pn = n;
+    Gcr = gamma;
+    Gcr_Minus_One = Gcr - 1.0;
+  
+    //cout << "Qua" << endl;
 }
 
 CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2double Tstar, su2double w) : CIdealGas(gamma, R) {
@@ -52,6 +71,10 @@ CPengRobinson::CPengRobinson(su2double gamma, su2double R, su2double Pstar, su2d
   Zed=1.0;
 
   k = 0.37464 + 1.54226 * w - 0.26992 * w*w;
+  
+  Pn = 0;
+  Gcr = gamma;
+  Gcr_Minus_One = Gcr - 1.0;
 }
 
 CPengRobinson::~CPengRobinson(void) { }
@@ -63,7 +86,10 @@ su2double CPengRobinson::alpha2(su2double T) {
 }
 
 su2double CPengRobinson::T_v_h(su2double v, su2double h) {
-  su2double fv, A, B, C, T, d, atanh;
+  su2double fv, A, B, C, D, T, d, atanh;
+  su2double x1, x2, fx1, fx2, xmid, fmid, rtb, f, dx;
+  su2double toll = 1e-6, FACTOR=0.1;
+  unsigned long count;
   su2double sqrt2=sqrt(2.0);
 
   d = (v*v+2*b*v-b*b);
@@ -78,7 +104,78 @@ su2double CPengRobinson::T_v_h(su2double v, su2double h) {
 
   T = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
 
-  return T*T;
+  
+  
+
+cout << T << endl;
+  A = Gas_Constant*( 1 / (Gcr_Minus_One*pow(TstarCrit, Pn)));// pow(T, 2*Pn+1)
+  B = Gas_Constant*(v/(v-b)) - a*v*k*k / (TstarCrit * d); //T^2
+  C = a*k*(k+1)/sqrt(TstarCrit) *( fv/(b*sqrt2) + 2*v/d ); //T
+  D = h + a*(1+k)*(1+k)*(fv/(b*sqrt2) + v/d);
+  x1 = T;
+ cout << T << "  " << A*pow(x1, (Pn+1)) + B * x1 + C * sqrt(x1) - D << endl;
+ 
+    x1 = T*0.999;
+    x2 = T*1.0011;
+    fx1 = A*pow(x1, (Pn+1)) + B * x1 + C * sqrt(x1) - D;
+    fx2 = A*pow(x2, (Pn+1)) + B * x2 + C * sqrt(x2) - D;
+    cout << x1 << "  " << x2 << endl;
+ cout << fx1 << "  " << fx2 << endl;
+  // zbrac algorithm NR
+
+  for (int j = 0; j < NTRY; j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        fx1 = A*pow(x1, (Pn+1)) + B * x1 + C * sqrt(x1) - D;
+      }
+      else {
+        x2 -= FACTOR*(x1-x2);
+        fx2 = A*pow(x2, (Pn+1)) + B * x2 + C * sqrt(x2) - D;
+      }
+    }
+  }
+
+cout << x1 << "  " << x2 << endl;
+  // rtbis algorithm NR
+
+  count = 0;
+  f = fx1;
+  fmid = fx2;
+  if ( f * fmid >= 0.0 ) {
+    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+    SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? ( dx = x2-x1, x1 ) : ( dx = x1-x2, x2 );
+  do{
+    xmid = rtb + (dx *= 0.5);
+    fmid = A*pow(xmid, (Pn+1)) + B * xmid + C * sqrt(xmid) - D;
+    if (fmid <= 0.0)
+      rtb = xmid;
+    count++;
+    //cout << abs(fmid) << "  " << xmid << endl;getchar();
+  }
+  while(fabs(fmid) > toll && count < ITMAX );
+
+  if(count == ITMAX){
+    cout <<"Too many bisections in rtbis A" << endl;
+    }
+
+if (fabs(rtb - T) > 1e-3){
+cout << rtb << " P " << T << endl;getchar();
+}
+
+  T = rtb*rtb;
+//cout << Temperature << endl;
+
+
+
+////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+////////
+
+  return T;
 }
 
 su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
@@ -94,6 +191,12 @@ su2double CPengRobinson::T_P_rho(su2double P, su2double rho) {
 
   T = ( -B + sqrt(B*B - 4*A*C) ) / (2*A);
   T *= T;
+  
+////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+////////
+
   return T;
 }
 
@@ -101,6 +204,9 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     su2double DpDd_T, DpDT_d, DeDd_T, Cv;
     su2double A, B, C, sqrt2, fv, a2T, rho2, atanh;
+    su2double toll = 1e-6, FACTOR=0.1;
+    unsigned long count = 0;
+    su2double x1, x2, fx1, fx2, rtb, fmid, f, xmid, dx;
 
     Density = rho;
     StaticEnergy = e;
@@ -121,6 +227,84 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     Temperature = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
     Temperature *= Temperature;
+su2double T2;
+T2 = Temperature;
+
+    atanh = (log(1.0+( rho * b * sqrt2/(1 + rho*b))) - log(1.0-( rho * b * sqrt2/(1 + rho*b))))/2.0;
+ 
+    fv = a*atanh/(b*sqrt2);
+
+    A = Gas_Constant / Gamma_Minus_One;
+    B = k*(k+1)*fv/sqrt(TstarCrit);
+    C = (k+1)*(k+1)*fv + e;
+
+    Temperature = ( -B + sqrt(B*B + 4*A*C) ) / (2*A); /// Only positive root considered
+    Temperature *= Temperature;
+    //cout << endl;
+ 
+//cout << Temperature << endl;
+    A = 1;
+    B = ( fv * k * (k+1) * Gcr_Minus_One * pow(TstarCrit, Pn) ) / (Gas_Constant * sqrt(TstarCrit) );
+    C = Gcr_Minus_One * pow(TstarCrit, Pn) * ( e + fv * (k+1) * (k+1) ) / Gas_Constant;
+ //cout << Temperature << "  " << pow(Temperature, (Pn+1)) + B * sqrt(Temperature) - C << endl;
+    x1 = Temperature*0.999;
+    x2 = Temperature*1.0011;
+    fx1 = pow(x1, (Pn+1)) + B * sqrt(x1) - C;
+    fx2 = pow(x2, (Pn+1)) + B * sqrt(x2) - C;
+    //cout << x1 << "  " << x2 << endl;
+ //cout << fx1 << "  " << fx2 << endl;
+  // zbrac algorithm NR
+
+  for (int j = 0; j < NTRY; j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        fx1 = pow(x1, (Pn+1)) + B * sqrt(x1) - C;
+      }
+      else {
+        x2 -= FACTOR*(x1-x2);
+        fx2 = pow(x2, (Pn+1)) + B * sqrt(x2) - C;
+      }
+    }
+  }
+
+//cout << x1 << "  " << x2 << endl;
+  // rtbis algorithm NR
+
+  count = 0;
+  f = fx1;
+  fmid = fx2;
+  if ( f * fmid >= 0.0 ) {
+    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+    SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? ( dx = x2-x1, x1 ) : ( dx = x1-x2, x2 );
+  do{
+    xmid = rtb + (dx *= 0.5);
+    fmid = pow(xmid, (Pn+1)) + B * sqrt(xmid) - C;
+    if (fmid <= 0.0)
+      rtb = xmid;
+    count++;
+    //cout << abs(fmid) << "  " << xmid << endl;getchar();
+  }
+  while(fabs(fmid) > toll && count < ITMAX );
+
+  if(count == ITMAX){
+    cout <<"Too many bisections in rtbis A" << endl;
+    }
+ 
+  Temperature = rtb;
+//cout << Temperature << endl;
+
+//if (fabs(T2 - Temperature) > 1e-3){
+//cout << T2 << " P " << Temperature << endl;getchar();
+//}
+
+//////////
+    Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/Temperature, Pn);
+    Gamma = Gamma_Minus_One + 1;
+    //cout << Gcr << "  " << Gamma << endl;getchar();
+//////////
 
     a2T = alpha2(Temperature);
 
@@ -129,13 +313,13 @@ void CPengRobinson::SetTDState_rhoe (su2double rho, su2double e ) {
 
     Pressure = Temperature*Gas_Constant / B - a*a2T / A;
 
-    Entropy = Gas_Constant / Gamma_Minus_One*log(Temperature) + Gas_Constant*log(B) - a*sqrt(a2T) *k*fv/(b*sqrt2*sqrt(Temperature*TstarCrit));
+    Entropy = Gas_Constant / Gamma_Minus_One*log(Temperature) + Gas_Constant*log(B) - sqrt(a2T) *k*fv/(sqrt(Temperature*TstarCrit));
 
     DpDd_T =  ( Temperature*Gas_Constant /(B*B    ) - 2*a*a2T*(1/rho + b) /( A*A ) ) /(rho2);
 
     DpDT_d = Gas_Constant /B + a*k / A * sqrt( a2T/(Temperature*TstarCrit) );
 
-    Cv = Gas_Constant/Gamma_Minus_One + ( a*k*(k+1)*fv ) / ( 2*b*sqrt(2*Temperature*TstarCrit) );
+    Cv = Gas_Constant/Gamma_Minus_One + ( k*(k+1)*fv ) / ( 2*sqrt(Temperature*TstarCrit) );
 
     dPde_rho = DpDT_d/Cv;
 
@@ -167,6 +351,11 @@ void CPengRobinson::SetTDState_PT (su2double P, su2double T ) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(P); AD::SetPreaccIn(T);
+  
+  //////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+  //////////
 
   A= a*alpha2(T)*P/(T*Gas_Constant)/(T*Gas_Constant);
   B= b*P/(T*Gas_Constant);
@@ -219,15 +408,78 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
   su2double x1, x2, xmid, dx, fx1, fx2, fmid, rtb;
   su2double toll = 1e-9, FACTOR=0.2;
   su2double cons_s, cons_h;
-  unsigned short countrtb=0, NTRY=100, ITMAX=100;
+  unsigned short countrtb=0, count;
 
+  su2double Temperature;
+
+// h = Gamma*R/(Gamma_Minus_One
+    Temperature = h*Gamma_Minus_One/Gas_Constant/Gamma;
+//cout << Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/Temperature, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/Temperature, Pn) ) * Temperature - h << endl;
+    x1 = Temperature*0.999;
+    x2 = Temperature*1.0011;
+    fx1 = Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/x1, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/x1, Pn) ) * x1 - h;
+    fx2 = Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/x2, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/x2, Pn) ) * x2 - h;
+ //   cout << x1 << "  " << x2 << endl;
+ //cout << fx1 << "  " << fx2 << endl;
+  // zbrac algorithm NR
+
+  for (int j = 0; j < NTRY; j++) {
+    if (fx1*fx2 > 0.0) {
+      if (fabs(fx1) < fabs(fx2)) {
+        x1 += FACTOR*(x1-x2);
+        fx1 = Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/x1, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/x1, Pn) ) * x1 - h;
+      }
+      else {
+        x2 -= FACTOR*(x1-x2);
+        fx2 = Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/x2, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/x2, Pn) ) * x2 - h;
+      }
+    }
+  }
+
+//cout << x1 << "  " << x2 << endl;
+  // rtbis algorithm NR
+
+  count = 0;
+  f = fx1;
+  fmid = fx2;
+  if ( f * fmid >= 0.0 ) {
+    cout<< "Root must be bracketed for bisection in rtbis"<< endl;
+    SetTDState_rhoT(Density, Temperature);
+  }
+  rtb = f < 0.0 ? ( dx = x2-x1, x1 ) : ( dx = x1-x2, x2 );
+  do{
+    xmid = rtb + (dx *= 0.5);
+    fmid = Gas_Constant*( Gcr_Minus_One*pow(TstarCrit/xmid, Pn) + 1 ) / ( Gcr_Minus_One*pow(TstarCrit/xmid, Pn) ) * xmid - h;
+    if (fmid <= 0.0)
+      rtb = xmid;
+    count++;
+    //cout << abs(fmid) << "  " << xmid << endl;getchar();
+  }
+  while(fabs(fmid) > 1e-6 && count < ITMAX );
+
+  if(count == ITMAX){
+    cout <<"Too many bisections in rtbis B" << endl;
+    }
+ 
+  T = rtb;
+
+//if (fabs(T - Temperature) > 1e-3){
+//cout << T << " Q " << Temperature << endl;getchar();
+//}
+
+  Temperature = T;
+
+
+  //////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+  //////////
+  
   A = Gas_Constant / Gamma_Minus_One;
-  T = h*Gamma_Minus_One/Gas_Constant/Gamma;
   v = exp(-1/Gamma_Minus_One*log(T) + s/Gas_Constant);
 
-
-    x1 = 0.2*v;
-    x2 = 0.35*v;
+  x1 = 0.2*v;
+  x2 = 0.35*v;
 
 
 
@@ -286,7 +538,7 @@ void CPengRobinson::SetTDState_hs (su2double h, su2double s ) {
 
 	v = xmid;
 	if (countrtb==ITMAX) {
-		cout <<"Too many bisections in rtbis" << endl;
+		cout <<"Too many bisections in rtbis C" << endl;
 		cout << countrtb <<endl;
 
 	}
@@ -332,6 +584,11 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
     ad = a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * atanh ;
 
     StaticEnergy = T * Gas_Constant / Gamma_Minus_One - ad;
+    
+    //////////
+    Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+    Gamma = Gamma_Minus_One + 1;
+    //////////
 
     AD::SetPreaccOut(StaticEnergy);
     AD::EndPreacc();
@@ -340,6 +597,11 @@ void CPengRobinson::SetEnergy_Prho (su2double P, su2double rho) {
 void CPengRobinson::SetTDState_rhoT (su2double rho, su2double T) {
   su2double fv, e, atanh;
 
+  //////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+  //////////
+  
   atanh = (log(1.0+( rho * b * sqrt(2.0)/(1 + rho*b))) - log(1.0-( rho * b * sqrt(2.0)/(1 + rho*b))))/2.0;
   fv = atanh;
   e = T*Gas_Constant/Gamma_Minus_One - a*(k+1)*sqrt( alpha2(T) ) / ( b*sqrt(2.0) ) * fv;
@@ -351,12 +613,17 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
 	su2double T, rho, v, cons_P, cons_s, fv, A, atanh;
 	su2double x1,x2, fx1, fx2,f, fmid, rtb, dx, xmid, sqrt2=sqrt(2.0);
 	su2double toll = 1e-5, FACTOR=0.2;
-	unsigned short count=0, NTRY=100, ITMAX=100;
+	unsigned short count=0;
 
   A = Gas_Constant / Gamma_Minus_One;
   T   = exp(Gamma_Minus_One/Gamma* (s/Gas_Constant +log(P) -log(Gas_Constant)) );
   v = (T*Gas_Constant)/P;
 
+  //////////
+  Gamma_Minus_One = Gcr_Minus_One*pow(TstarCrit/T, Pn);
+  Gamma = Gamma_Minus_One + 1;
+  //////////
+  
   if(Zed<0.9999) {
     x1 = Zed*v;
     x2 = v;
@@ -424,7 +691,7 @@ void CPengRobinson::SetTDState_Ps (su2double P, su2double s) {
     }while(abs(fmid) > toll && count<ITMAX);
 
     if(count==ITMAX) {
-      cout <<"Too many bisections in rtbis" << endl;
+      cout <<"Too many bisections in rtbis D" << endl;
 		}
 
 	rho = 1.0/xmid;
