@@ -43,10 +43,11 @@ CConstantDensity::CConstantDensity() : CFluidModel() {
   Cv      = 0.0;
 }
 
-CConstantDensity::CConstantDensity(su2double val_Density, su2double val_Cp, su2double val_Cv) : CFluidModel() {
+CConstantDensity::CConstantDensity(su2double val_Density,
+                                   su2double val_Cp) : CFluidModel() {
   Density = val_Density;
   Cp      = val_Cp;
-  Cv      = val_Cv;
+  Cv      = val_Cp;
 }
 
 CConstantDensity::~CConstantDensity(void) { }
@@ -54,55 +55,46 @@ CConstantDensity::~CConstantDensity(void) { }
 void CConstantDensity::SetTDState_T (su2double val_Temperature) {
   
   /*--- Density is constant and thermodynamic pressure is
-    not required for incompressible, constant density flows,
-    but the energy equation can still be computed as a 
-    decoupled equation. Hence, we update the value. ---*/
-
+   not required for incompressible, constant density flows,
+   but the energy equation can still be computed as a
+   decoupled equation. Hence, we update the value.
+   Note Cp = Cv (gamma = 1). ---*/
+  
   Temperature = val_Temperature;
-
+  
 }
 
 CIncIdealGas::CIncIdealGas() : CFluidModel() {
   Pressure        = 0.0;
   Gamma           = 0.0;
-  Gamma_Minus_One = 0.0;
   Gas_Constant    = 0.0;
   Cp              = 0.0;
   Cv              = 0.0;
 }
 
-CIncIdealGas::CIncIdealGas(su2double val_Gamma, su2double val_Gas_Constant, su2double val_Pressure) : CFluidModel() {
+CIncIdealGas::CIncIdealGas(su2double val_Cp,
+                           su2double val_gas_constant,
+                           su2double val_operating_pressure) : CFluidModel() {
 
   /*--- In the incompressible ideal gas model, the thermodynamic pressure
     is decoupled from the governing equations and held constant. The 
     density is therefore only a function of temperature variations. ---*/
 
-  Gamma        = val_Gamma;
-  Gas_Constant = val_Gas_Constant;
-  Pressure     = val_Pressure;
-
-  /*--- Derived gas quantities from input. ---*/
-
-  Gamma_Minus_One = Gamma - 1.0;
-  Cp              = Gas_Constant*Gamma/Gamma_Minus_One;
-  Cv              = Cp/Gamma;
+  Gas_Constant = val_gas_constant;
+  Pressure     = val_operating_pressure;
+  Gamma        = 1.0;
+  Cp           = val_Cp;
+  Cv           = Cp;
 
 }
 
 CIncIdealGas::~CIncIdealGas(void) { }
 
-void CIncIdealGas::SetTDState_T(su2double val_Temperature) {
+void CIncIdealGas::SetTDState_T(su2double val_temperature) {
 
  /*--- The EoS only depends upon temperature. ---*/
 
-  Temperature  = val_Temperature;
+  Temperature  = val_temperature;
   Density      = Pressure/(Temperature*Gas_Constant);
-  StaticEnergy = Temperature*Gas_Constant/Gamma_Minus_One;
-  SoundSpeed2  = Gamma*Pressure/Density;
-  Entropy      = (1.0/Gamma_Minus_One*log(Temperature) + log(1.0/Density))*Gas_Constant;
-  dPdrho_e     = Gamma_Minus_One*StaticEnergy;
-  dPde_rho     = Gamma_Minus_One*Density;
-  dTdrho_e     = 0.0;
-  dTde_rho     = Gamma_Minus_One/Gas_Constant;
 
 }

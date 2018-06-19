@@ -60,12 +60,13 @@ CDriver::CDriver(char* confFile,
   size = SU2_MPI::GetSize();
 
   /*--- Start timer to track preprocessing for benchmarking. ---*/
+  
 #ifndef HAVE_MPI
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
   StartTime = MPI_Wtime();
 #endif
-
+  
   /*--- Create pointers to all of the classes that may be used throughout
    the SU2_CFD code. In general, the pointers are instantiated down a
    hierarchy over all zones, multigrid levels, equation sets, and equation
@@ -552,7 +553,29 @@ CDriver::CDriver(char* confFile,
   }
 
   /*--- Preprocessing time is reported now, but not included in the next compute portion. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  
+  /*--- Compute/print the total time for performance benchmarking. ---*/
+  
+  UsedTime = StopTime-StartTime;
+  UsedTimePreproc    = UsedTime;
+  UsedTimeCompute    = 0.0;
+  UsedTimeOutput     = 0.0;
+  IterCount          = 0;
+  OutputCount        = 0;
+  MDOFs              = 0.0;
+  MDOFsDomain        = 0.0;
+  for (iZone = 0; iZone < nZone; iZone++) {
+    MDOFs       += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+  }
 
+  /*--- Reset timer for compute/output performance benchmarking. ---*/
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
@@ -578,6 +601,9 @@ void CDriver::Postprocessing() {
   double tick = 0.0;
   config_container[ZONE_0]->Tick(&tick);
 
+  bool isBinary = config_container[ZONE_0]->GetWrt_Binary_Restart();
+  bool wrt_perf = config_container[ZONE_0]->GetWrt_Performance();
+  
     /*--- Output some information to the console. ---*/
 
   if (rank == MASTER_NODE) {
@@ -718,20 +744,56 @@ void CDriver::Postprocessing() {
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
-  /*--- Print the time for the compute portion for performance benchmarking.
-   Note that the StopTime was computed in the Monitor() routine, so that
-   we do not include solution output time in the reported value. ---*/
 
+  /*--- Stop the timer and output the final performance summary. ---*/
+  
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
   UsedTime = StopTime-StartTime;
-  UsedTimeCompute = UsedTime;
-
-  if (rank == MASTER_NODE) {
-    cout << "\nPreprocessing phase completed in " << fixed << UsedTimePreproc << " seconds on "<< size;
-    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
-  }
-  if (rank == MASTER_NODE) {
-    cout << "Compute phase completed in " << fixed << UsedTimeCompute << " seconds on "<< size;
-    if (size == 1) cout << " core." << endl; else cout << " cores." << endl;
+  UsedTimeCompute += UsedTime;
+  
+  if ((rank == MASTER_NODE) && (wrt_perf)) {
+    su2double TotalTime = UsedTimePreproc + UsedTimeCompute + UsedTimeOutput;
+    cout.precision(6);
+    cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
+    cout << "Simulation totals:" << endl;
+    cout << setw(25) << "Cores:" << setw(12) << size;
+    cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
+    cout << setw(25) << "DOFs/core:" << setw(12) << 1.0e6*MDOFsDomain/(su2double)size;
+    cout << setw(20) << "Ghost DOFs/core:" << setw(12) << 1.0e6*(MDOFs-MDOFsDomain)/(su2double)size << endl;
+    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0);
+    cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
+    cout << endl;
+    cout << "Preprocessing phase:" << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimePreproc;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimePreproc * 100.0) / (TotalTime)) << endl;
+    cout << endl;
+    cout << "Compute phase:" << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeCompute;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount;
+    if (IterCount != 0) {
+      cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
+      cout << setw(25) << "Core-s/iter/MDOFs:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/MDOFsDomain;
+      cout << setw(20) << "MDOFs/s:" << setw(12)<< MDOFsDomain*(su2double)IterCount/UsedTimeCompute << endl;
+    } else cout << endl;
+    cout << endl;
+    cout << "Output phase:" << endl;
+    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeOutput;
+    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Output count:" << setw(12)<< OutputCount;
+    if (OutputCount != 0) {
+      cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
+      if (isBinary) {
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount;
+        cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
+      }
+    } else cout << endl;
+    cout << "-------------------------------------------------------------------------" << endl;
+    cout << endl;
   }
 
   /*--- Exit the solver cleanly ---*/
@@ -968,6 +1030,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
   
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
   /*--- Initialize some useful booleans ---*/
 
   euler            = false;  ns              = false;  turbulent     = false;
@@ -1048,6 +1114,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
 
     if (template_solver) {
       solver_container[iMGlevel][TEMPLATE_SOL] = new CTemplateSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TEMPLATE_SOL]->GetnVar();
     }
 
     /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
@@ -1061,6 +1128,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (ns) {
       if (compressible) {
@@ -1069,6 +1137,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         solver_container[iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FLOW_SOL]->GetnVar();
     }
     if (turbulent) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
@@ -1082,8 +1151,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][TURB_SOL]->Postprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel);
         solver_container[iMGlevel][FLOW_SOL]->Preprocessing(geometry[iMGlevel], solver_container[iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TURB_SOL]->GetnVar();
       if (transition) {
         solver_container[iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[iMGlevel], config, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][TRANS_SOL]->GetnVar();
       }
     }
     if (fem_euler) {
@@ -1108,18 +1179,23 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
     }
     if (poisson) {
       solver_container[iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][POISSON_SOL]->GetnVar();
     }
     if (wave) {
       solver_container[iMGlevel][WAVE_SOL] = new CWaveSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][WAVE_SOL]->GetnVar();
     }
     if (heat) {
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][HEAT_SOL]->GetnVar();
     }
     if (heat_fvm) {
       solver_container[iMGlevel][HEAT_SOL] = new CHeatSolverFVM(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][HEAT_SOL]->GetnVar();
     }
     if (fem) {
       solver_container[iMGlevel][FEA_SOL] = new CFEASolver(geometry[iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][FEA_SOL]->GetnVar();
     }
 
     /*--- Allocate solution for adjoint problem ---*/
@@ -1131,6 +1207,7 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
     }
     if (adj_ns) {
       if (compressible) {
@@ -1139,19 +1216,25 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
       if (incompressible) {
         SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
       }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
     }
     if (adj_turb) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJTURB_SOL]->GetnVar();
     }
 
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
-      if (disc_adj_turb)
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFLOW_SOL]->GetnVar();
+      if (disc_adj_turb) {
         solver_container[iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJTURB_SOL]->GetnVar();
+      }
     }
-
+    
     if (disc_adj_fem) {
       solver_container[iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[iMGlevel], config, solver_container[iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[iMGlevel][ADJFEA_SOL]->GetnVar();
     }
   }
   
@@ -1899,20 +1982,20 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           
         }
         if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
+          /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Centered_Flow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
-            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config); break;
-            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTArtComp_Flow(nDim, nVar_Flow, config); break;
-            default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
+            case LAX : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentLaxInc_Flow(nDim, nVar_Flow, config); break;
+            case JST : numerics_container[MESH_0][FLOW_SOL][CONV_TERM] = new CCentJSTInc_Flow(nDim, nVar_Flow, config); break;
+            default : SU2_MPI::Error("Centered scheme not implemented.\n Currently, only JST and LAX-FRIEDRICH are available for incompressible flows.", CURRENT_FUNCTION); break;
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxArtComp_Flow(nDim, nVar_Flow, config);
-
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLaxInc_Flow(nDim, nVar_Flow, config);
+          
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
-
+            numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
+          
         }
         break;
       case SPACE_UPWIND :
@@ -2014,19 +2097,19 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
           /*--- Incompressible flow, use artificial compressibility method ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
-            case ROE:
+            case FDS:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwArtComp_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
+                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwFDSInc_Flow(nDim, nVar_Flow, config);
               }
               break;
-            default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
+            default : SU2_MPI::Error("Upwind scheme not implemented.\n Currently, only FDS is available for incompressible flows.", CURRENT_FUNCTION); break;
           }
         }
         break;
 
       default :
-        SU2_MPI::Error("Convective scheme not implemented (euler and ns).", CURRENT_FUNCTION);
+        SU2_MPI::Error("Convective scheme not implemented (Euler and Navier-Stokes).", CURRENT_FUNCTION);
         break;
     }
 
@@ -2057,14 +2140,14 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       }
     }
     if (incompressible) {
-      /*--- Incompressible flow, use artificial compressibility method ---*/
-      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedArtComp_Flow(nDim, nVar_Flow, config);
+      /*--- Incompressible flow, use preconditioning method ---*/
+      numerics_container[MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedInc_Flow(nDim, nVar_Flow, config);
       for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
-
+        numerics_container[iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+      
       /*--- Definition of the boundary condition method ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradArtComp_Flow(nDim, nVar_Flow, config);
+        numerics_container[iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -2707,11 +2790,9 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
         }
         if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
+          /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Centered_Flow()) {
-
             case LAX : case JST : delete numerics_container[MESH_0][FLOW_SOL][CONV_TERM]; break;
-
           }
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[iMGlevel][FLOW_SOL][CONV_TERM];
@@ -2738,7 +2819,7 @@ void CDriver::Numerics_Postprocessing(CNumerics ****numerics_container,
 
         }
         if (incompressible) {
-          /*--- Incompressible flow, use artificial compressibility method ---*/
+          /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Upwind_Flow()) {
             case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -3766,10 +3847,10 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 #else
   StopTime = MPI_Wtime();
 #endif
-
-  UsedTime = (StopTime - StartTime);
-
-
+  IterCount++;
+  UsedTime = (StopTime - StartTime) + UsedTimeCompute;
+  
+  
   /*--- Check if there is any change in the runtime parameters ---*/
 
   CConfig *runtime = NULL;
@@ -3881,6 +3962,19 @@ void CDriver::Output(unsigned long ExtIter) {
   
   if (output_files) {
     
+    /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+    
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- Execute the routine for writing restart, volume solution,
@@ -3890,7 +3984,22 @@ void CDriver::Output(unsigned long ExtIter) {
     
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-
+    
+    /*--- Store output time and restart the timer for the compute phase. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeOutput += StopTime-StartTime;
+    OutputCount++;
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+    
   }
 
   /*--- Export Surface Solution File for Unsteady Simulations ---*/
@@ -4212,7 +4321,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 #else
   StopTime = MPI_Wtime();
 #endif
-
+  IterCount++;
   UsedTime = (StopTime - StartTime);
 
 
@@ -4603,6 +4712,8 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjFluidDriver::SetObjFunction(){
 
+  bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+
   ObjFunc = 0.0;
 
   for (iZone = 0; iZone < nZone; iZone++){
@@ -4620,7 +4731,7 @@ void CDiscAdjFluidDriver::SetObjFunction(){
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
           output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone], false);
         
-        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+        if ((config_container[ZONE_0]->GetnMarker_Analyze() != 0) && compressible)
           output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
         
         if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
@@ -5704,10 +5815,6 @@ void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short tar
 
   bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
 
-  /*--- Load transfer --  This will have to be modified for non-matching meshes ---*/
-
-  unsigned short SolContainer_Position_fea = config_container[targetZone]->GetContainerPosition(RUNTIME_FEA_SYS);
-
   /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
   unsigned long ExtIter = config_container[targetZone]->GetExtIter();
   config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
@@ -5790,10 +5897,10 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
                  nVar_Struct = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetnVar();
   unsigned short iRes;
 
-  bool flow_converged_absolute = false,
-        flow_converged_relative = false,
-        struct_converged_absolute = false,
-        struct_converged_relative = false;
+//  bool flow_converged_absolute = false,
+//        flow_converged_relative = false,
+//        struct_converged_absolute = false,
+//        struct_converged_relative = false;
 
   bool Convergence = false;
 
@@ -5840,11 +5947,11 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
   }
 
   /*--- Check convergence ---*/
-  flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
-  flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
-
-  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
-  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
+//  flow_converged_absolute = ((residual_flow[0] < flow_criteria) && (residual_flow[nVar_Flow-1] < flow_criteria));
+//  flow_converged_relative = ((residual_flow_rel[0] > flow_criteria_rel) && (residual_flow_rel[nVar_Flow-1] > flow_criteria_rel));
+//
+//  struct_converged_absolute = ((residual_struct[0] < structure_criteria) && (residual_struct[nVar_Flow-1] < structure_criteria));
+//  struct_converged_relative = ((residual_struct_rel[0] > structure_criteria_rel) && (residual_struct_rel[nVar_Flow-1] > structure_criteria_rel));
 
 //  Convergence = ((flow_converged_absolute && struct_converged_absolute) ||
 //                 (flow_converged_absolute && struct_converged_relative) ||
