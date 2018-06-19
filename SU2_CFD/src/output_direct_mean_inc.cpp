@@ -118,26 +118,49 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("FORCE-Z",  "CFz(Total)", FORMAT_SCIENTIFIC,  "AERO_COEFF");
   AddOutputField("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
   
+  vector<string> Marker_Monitoring;
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
+    Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
+  }
+  
+  // Aerodynamic coefficients (per surface)  
+  AddOutputPerSurfaceField("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddOutputPerSurfaceField("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  
+  
   // Misc.
   AddOutputField("AOA",      "AoA", FORMAT_SCIENTIFIC, "AOA");
   AddOutputField("PHYS_TIME", "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
   AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Surface output
-  AddOutputField("AVG_MASSFLOW", "Avg_Massflow", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_MACH", "Avg_Mach", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_TEMP", "Avg_Temp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_PRESS","Avg_Press", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_DENSITY","Avg_Density", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_ENTHALPY", "Avg_Enthalpy", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_NORMALVEL", "Avg_NormalVel", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("UNIFORMITY", "Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("SECONDARY_STRENGTH", "Secondary_Strength", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("MOMENTUM_DISTORTION", "Momentum_Distortion", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("SECONDARY_OVER_UNFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_TOTALTEMP", "Avg_TotalTemp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("AVG_TOTALPRESS", "Avg_TotalPress", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
-  AddOutputField("PRESSURE_DROP", "Pressure_Drop", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT");
+  vector<string> Marker_Analyze;
+  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Monitoring(); iMarker_Analyze++){
+    Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
+  }
+  AddOutputPerSurfaceField("AVG_MASSFLOW", "Avg_Massflow", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_MACH", "Avg_Mach", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TEMP", "Avg_Temp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_PRESS","Avg_Press", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_DENSITY","Avg_Density", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_ENTHALPY", "Avg_Enthalpy", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_NORMALVEL", "Avg_NormalVel", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("UNIFORMITY", "Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("SECONDARY_STRENGTH", "Secondary_Strength", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("MOMENTUM_DISTORTION", "Momentum_Distortion", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("SECONDARY_OVER_UNFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TOTALTEMP", "Avg_TotalTemp", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("AVG_TOTALPRESS", "Avg_TotalPress", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("PRESSURE_DROP", "Pressure_Drop", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+
   
 }
 inline bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
@@ -181,5 +204,31 @@ inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver ****
   SetOutputFieldValue("TIME", timeused);
   SetOutputFieldValue("LINSOL_ITER", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIterLinSolver());
   
+  
+  for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    SetOutputPerSurfaceFieldValue("DRAG_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
+    SetOutputPerSurfaceFieldValue("LIFT_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3)
+      SetOutputPerSurfaceFieldValue("SIDEFORCE_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
+    SetOutputPerSurfaceFieldValue("MOMENT-X_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
+    SetOutputPerSurfaceFieldValue("MOMENT-Y_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3)
+      SetOutputPerSurfaceFieldValue("MOMENT-Z_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
+    SetOutputPerSurfaceFieldValue("FORCE-X_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
+    SetOutputPerSurfaceFieldValue("FORCE-Y_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3)
+      SetOutputPerSurfaceFieldValue("FORCE-Z_ON_SURFACE", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);    
+  }
+  
+  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[val_iZone]->GetnMarker_Analyze(); iMarker_Analyze++){
+    
+    SetOutputPerSurfaceFieldValue("AVG_MASSFLOW", config[val_iZone]->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_MACH",     config[val_iZone]->GetSurface_Mach(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_TEMP",     config[val_iZone]->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_PRESS",    config[val_iZone]->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
+    SetOutputPerSurfaceFieldValue("AVG_DENSITY",  config[val_iZone]->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
+  }
+  
+
 }
 
