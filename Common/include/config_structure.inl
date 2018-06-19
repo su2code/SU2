@@ -1895,3 +1895,6 @@ inline bool CConfig::GetQCR(void) {return QCR;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline su2double* CConfig::GetSST_Coeff(void) { return ksst_coeff_Vector; }
+

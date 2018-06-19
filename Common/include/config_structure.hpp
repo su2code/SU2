@@ -1003,9 +1003,11 @@ private:
   su2double MonitorOutletPressure; /*!< \brief Monitor outlet pressure if Ramp outlet pressure is activated. */
   su2double *default_body_force;        /*!< \brief Default body force vector for the COption class. */
   su2double *default_nacelle_location;        /*!< \brief Location of the nacelle. */
+  su2double *default_ksst_coeff;        /*!< \brief KSST Menter's shear turbulence model default coefficients. */
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
+  su2double *ksst_coeff_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5683,6 +5685,12 @@ public:
    * \return A pointer to the body force vector.
    */
   su2double* GetBody_Force_Vector(void);
+  
+  /*!
+   * \brief Get a pointer to the ksst Menter's shear turbulence model coefficients vector.
+   * \return A pointer to the ksst Menter's shear turbulence model coefficients vector.
+   */
+  su2double* GetSST_Coeff(void);
 
   /*!
    * \brief Get information about the rotational frame.

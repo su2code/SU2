@@ -3352,7 +3352,10 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
   
   /*--- Initialize value for model constants ---*/
+  
   constants = new su2double[10];
+  
+  /*
   constants[0] = 0.85;   //sigma_k1
   constants[1] = 1.0;    //sigma_k2
   constants[2] = 0.5;    //sigma_om1
@@ -3363,6 +3366,18 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   constants[7] = 0.31;   //a1
   constants[8] = constants[4]/constants[6] - constants[2]*0.41*0.41/sqrt(constants[6]);  //alfa_1
   constants[9] = constants[5]/constants[6] - constants[3]*0.41*0.41/sqrt(constants[6]);  //alfa_2
+  */
+  
+  constants[0] = config->GetSST_Coeff()[0]; //sigma_k1
+  constants[1] = config->GetSST_Coeff()[1]; //sigma_k2
+  constants[2] = config->GetSST_Coeff()[2]; //sigma_om1
+  constants[3] = config->GetSST_Coeff()[3]; //sigma_om2
+  constants[4] = config->GetSST_Coeff()[4]; //beta_1
+  constants[5] = config->GetSST_Coeff()[5]; //beta_2
+  constants[6] = config->GetSST_Coeff()[6]; //betaStar
+  constants[7] = config->GetSST_Coeff()[7]; //a1
+  constants[8] = config->GetSST_Coeff()[8]; //alfa_1
+  constants[9] = config->GetSST_Coeff()[9]; //alfa_2
   
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];

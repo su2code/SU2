@@ -505,6 +505,7 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
+  default_ksst_coeff         = NULL;
 
   Riemann_FlowDir       = NULL;
   Giles_FlowDir         = NULL;
@@ -603,6 +604,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  default_ksst_coeff         = new su2double[10];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -627,6 +629,19 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
 
+  /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify SST turbulence model coefficients \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
+  default_ksst_coeff[0] = 0.85;   //sigma_k1
+  default_ksst_coeff[1] = 1.0;    //sigma_k2
+  default_ksst_coeff[2] = 0.5;    //sigma_om1
+  default_ksst_coeff[3] = 0.856;  //sigma_om2
+  default_ksst_coeff[4] = 0.075;  //beta_1
+  default_ksst_coeff[5] = 0.0828; //beta_2
+  default_ksst_coeff[6] = 0.09;   //betaStar
+  default_ksst_coeff[7] = 0.31;   //a1
+  default_ksst_coeff[8] = default_ksst_coeff[4]/default_ksst_coeff[6] - default_ksst_coeff[2]*0.41*0.41/sqrt(default_ksst_coeff[6]);  //alfa_1
+  default_ksst_coeff[9] = default_ksst_coeff[5]/default_ksst_coeff[6] - default_ksst_coeff[3]*0.41*0.41/sqrt(default_ksst_coeff[6]);  //alfa_2
+  addDoubleArrayOption("KSST_TURB_COEFF", 10, ksst_coeff_Vector, default_ksst_coeff);
+  
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
@@ -6603,7 +6618,8 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
-
+  if (default_ksst_coeff           != NULL) delete [] default_ksst_coeff;
+  
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
   if (TagFFDBox != NULL) delete [] TagFFDBox;
