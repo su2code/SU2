@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -6768,7 +6768,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     
     Breakdown_file << "\n" <<"-------------------------------------------------------------------------" << "\n";
     Breakdown_file <<"|    ___ _   _ ___                                                      |" << "\n";
-    Breakdown_file <<"|   / __| | | |_  )   Release 6.0.1  \"Falcon\"                           |" << "\n";
+    Breakdown_file <<"|   / __| | | |_  )   Release 6.1.0  \"Falcon\"                           |" << "\n";
     Breakdown_file <<"|   \\__ \\ |_| |/ /                                                      |" << "\n";
     Breakdown_file <<"|   |___/\\___//___|   Suite (Computational Fluid Dynamics Code)         |" << "\n";
     Breakdown_file << "|                                                                       |" << "\n";
