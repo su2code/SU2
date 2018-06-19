@@ -779,7 +779,7 @@ public:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[out] val_Proj_Flux - Pointer to the projected flux.
    */
-  void GetInviscidArtCompProjFlux(su2double *val_density, su2double *val_velocity,
+  void GetInviscidIncProjFlux(su2double *val_density, su2double *val_velocity,
                                   su2double *val_pressure, su2double *val_betainc2,
                                   su2double *val_enthalpy,
                                   su2double *val_normal, su2double *val_Proj_Flux);
@@ -832,7 +832,7 @@ public:
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    */
   
-  void GetViscousArtCompProjFlux(su2double *val_primvar,
+  void GetViscousIncProjFlux(su2double *val_primvar,
                                  su2double **val_gradprimvar,
                                  su2double *val_normal,
                                  su2double val_laminar_viscosity,
@@ -853,7 +853,7 @@ public:
                           su2double **val_Proj_Jac_tensor);
   
   /*!
-   * \brief Compute the projection of the inviscid Jacobian matrices (artificial compresibility).
+   * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
    * \param[in] val_betainc2 - Value of the artificial compresibility factor.
@@ -861,7 +861,7 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidArtCompProjJac(su2double *val_density, su2double *val_velocity,
+  void GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity,
                                  su2double *val_betainc2, su2double *val_normal,
                                  su2double val_scale,
                                  su2double **val_Proj_Jac_tensor);
@@ -878,7 +878,7 @@ public:
    * \param[in] val_scale - Scale of the projection.
    * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
    */
-  void GetInviscidArtCompProjJac(su2double *val_density,
+  void GetInviscidIncProjJac(su2double *val_density,
                                  su2double *val_velocity,
                                  su2double *val_betainc2,
                                  su2double *val_cp,
@@ -1003,7 +1003,7 @@ public:
    * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
-  void GetViscousArtCompProjJacs(su2double val_laminar_viscosity,
+  void GetViscousIncProjJacs(su2double val_laminar_viscosity,
                                  su2double val_eddy_viscosity, su2double val_dist_ij,
                                  su2double *val_normal, su2double val_dS,
                                  su2double **val_Proj_Jac_Tensor_i,
@@ -1914,12 +1914,12 @@ public:
 };
 
 /*!
- * \class CUpwArtComp_Flow
- * \brief Class for solving an upwind method for the incompressible flow equations.
+ * \class CUpwFDSInc_Flow
+ * \brief Class for solving a Flux Difference Splitting (FDS) upwind method for the incompressible flow equations.
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
  */
-class CUpwArtComp_Flow : public CNumerics {
+class CUpwFDSInc_Flow : public CNumerics {
 private:
   bool implicit, /*!< \brief Implicit calculation. */
   grid_movement, /*!< \brief Modification for grid movement. */
@@ -1945,12 +1945,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwArtComp_Flow(void);
+  ~CUpwFDSInc_Flow(void);
   
   /*!
    * \brief Compute the upwind flux between two nodes i and j.
@@ -2707,12 +2707,12 @@ public:
 };
 
 /*!
- * \class CCentJSTArtComp_Flow
- * \brief Class for centered scheme - JST (artificial compressibility).
+ * \class CCentJSTInc_Flow
+ * \brief Class for centered scheme - modified JST with incompressible preconditioning.
  * \ingroup ConvDiscr
- * \author F. Palacios
+ * \author F. Palacios, T. Economon
  */
-class CCentJSTArtComp_Flow : public CNumerics {
+class CCentJSTInc_Flow : public CNumerics {
   
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
@@ -2742,12 +2742,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentJSTArtComp_Flow(void);
+  ~CCentJSTInc_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a JST method.
@@ -2909,12 +2909,12 @@ public:
 };
 
 /*!
- * \class CCentLaxArtComp_Flow
- * \brief Class for computing the Lax-Friedrich centered scheme (artificial compressibility).
+ * \class CCentLaxInc_Flow
+ * \brief Class for computing the Lax-Friedrich centered scheme (modified with incompressible preconditioning).
  * \ingroup ConvDiscr
  * \author F. Palacios, T. Economon
  */
-class CCentLaxArtComp_Flow : public CNumerics {
+class CCentLaxInc_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar; /*!< \brief Iteration on dimension and variables. */
   su2double *Diff_V, /*!< \brief Difference of primitive variables. */
@@ -2943,12 +2943,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CCentLaxArtComp_Flow(void);
+  ~CCentLaxInc_Flow(void);
   
   /*!
    * \brief Compute the flow residual using a Lax method.
@@ -3110,12 +3110,12 @@ public:
 };
 
 /*!
- * \class CAvgGradArtComp_Flow
+ * \class CAvgGradInc_Flow
  * \brief Class for computing viscous term using an average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, F. Palacios, T. Economon
  */
-class CAvgGradArtComp_Flow : public CNumerics {
+class CAvgGradInc_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
   su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
@@ -3137,12 +3137,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradArtComp_Flow(void);
+  ~CAvgGradInc_Flow(void);
   /*!
    * \brief Compute the viscous flow residual using an average of gradients.
    * \param[out] val_residual - Pointer to the total residual.
@@ -3501,12 +3501,12 @@ public:
 };
 
 /*!
- * \class CAvgGradCorrectedArtComp_Flow
- * \brief Class for computing viscous term using an average of gradients with correction (artificial compresibility).
+ * \class CAvgGradCorrectedInc_Flow
+ * \brief Class for computing viscous term using an average of gradients with correction (incompressible).
  * \ingroup ViscDiscr
  * \author F. Palacios, T. Economon
  */
-class CAvgGradCorrectedArtComp_Flow : public CNumerics {
+class CAvgGradCorrectedInc_Flow : public CNumerics {
 private:
   unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
   su2double *Mean_PrimVar;           /*!< \brief Mean primitive variables. */
@@ -3529,12 +3529,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradCorrectedArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGradCorrectedInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradCorrectedArtComp_Flow(void);
+  ~CAvgGradCorrectedInc_Flow(void);
   
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
@@ -4961,8 +4961,6 @@ public:
  * \author F. Palacios
  */
 class CSourceGravity : public CNumerics {
-  su2double Froude;
-  bool compressible, incompressible;
   
 public:
   
@@ -4994,7 +4992,6 @@ public:
  */
 class CSourceBodyForce : public CNumerics {
   su2double *Body_Force_Vector;
-  bool compressible;
 
 public:
 
