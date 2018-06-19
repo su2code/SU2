@@ -308,20 +308,20 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
       ViscosityWall = mu[0] + muTurb[0];
       kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
 
-      // Debugging output
-      std::cout << "tauWall = " << tauWall << std::endl;
-      std::cout << "qWall = " << qWall << std::endl;
-      std::cout << "ViscosityWall = " << ViscosityWall << std::endl;
-      std::cout << "kOverCvWall = " << kOverCvWall << std::endl;
-      std::cout << "y, u, T, mu, muTurb, rho" << std::endl;
-      for(unsigned short i=0; i<numPoints; i++){
-        std::cout << y[i] << ", ";
-        std::cout << u[i] << ", ";
-        std::cout << T[i] << ", ";
-        std::cout << mu[i] << ", ";
-        std::cout << muTurb[i] << ", ";
-        std::cout << rho[i] << ", ";
-        std::cout << std::endl;
+//      // Debugging output
+//      std::cout << "tauWall = " << tauWall << std::endl;
+//      std::cout << "qWall = " << qWall << std::endl;
+//      std::cout << "ViscosityWall = " << ViscosityWall << std::endl;
+//      std::cout << "kOverCvWall = " << kOverCvWall << std::endl;
+//      std::cout << "y, u, T, mu, muTurb, rho" << std::endl;
+//      for(unsigned short i=0; i<numPoints; i++){
+//        std::cout << y[i] << ", ";
+//        std::cout << u[i] << ", ";
+//        std::cout << T[i] << ", ";
+//        std::cout << mu[i] << ", ";
+//        std::cout << muTurb[i] << ", ";
+//        std::cout << rho[i] << ", ";
+//        std::cout << std::endl;
       }
     }
     else if(j == 50){
