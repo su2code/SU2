@@ -103,9 +103,17 @@ inline void COutput::AddOutputPerSurfaceField(string name, string field_name, un
 }
 
 inline void COutput::SetOutputFieldValue(string name, su2double value){
-  Output_Fields[name].Value = value;
+  if (Output_Fields.count(name) > 0){
+    Output_Fields[name].Value = value;
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+  }
 }
 
 inline void COutput::SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker){
-  OutputPerSurface_Fields[name][iMarker].Value = value;
+  if (OutputPerSurface_Fields.count(name) > 0){
+    OutputPerSurface_Fields[name][iMarker].Value = value;
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+  }
 }

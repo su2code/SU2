@@ -123,7 +123,9 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
 
   
 }
-inline bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
+inline bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+  return true;
+}
 
 inline bool CIncFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header;

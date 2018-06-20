@@ -968,6 +968,7 @@ public:
   
   void SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker);
   
+  void Preprocess_Historyfile(CConfig *config);  
 };
 
 /*! \class CFlowOutput

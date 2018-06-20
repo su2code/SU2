@@ -43,50 +43,7 @@ COutput::COutput(CConfig *config) {
   size = SU2_MPI::GetSize();
   
   field_width = 12;
-  
-  HistorySep = ",";
 
-  
-  if (rank == MASTER_NODE){
-   
-    char buffer[50];
-    
-    // Retrieve the history filename
-    string history_filename = config->GetConv_FileName();
-    
-    // Append the zone ID
-    if(config->GetnZone() > 1){
-      history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
-    }
-    strcpy (char_histfile, history_filename.data());
-    
-    // Append the restart iteration: if dynamic problem and restart
-    if (config->GetWrt_Unsteady() && config->GetRestart()) {
-      long iExtIter = config->GetDyn_RestartIter();
-      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-      strcat(char_histfile, buffer);
-    }
-    
-    // Add the correct file extension depending on the file format
-    if ((config->GetOutput_FileFormat() == TECPLOT) ||
-        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-    strcat(char_histfile, buffer);
-    SetOutputFields(config);
-    // Open the history file using only the master node
-    
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetHistoryFile_Header(config);    
-  }
-  
   unsigned short iDim, iZone, iSpan, iMarker;
   
   /*--- Initialize point and connectivity counters to zero. ---*/
@@ -16729,3 +16686,48 @@ void COutput::SetScreen_Output(CConfig *config) {
   cout << endl;
 }
 
+void COutput::Preprocess_Historyfile(CConfig *config){
+  
+  if (rank == MASTER_NODE){
+   
+    HistorySep = ",";
+      
+    char buffer[50];
+    
+    // Retrieve the history filename
+    string history_filename = config->GetConv_FileName();
+    
+    // Append the zone ID
+    if(config->GetnZone() > 1){
+      history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
+    }
+    strcpy (char_histfile, history_filename.data());
+    
+    // Append the restart iteration: if dynamic problem and restart
+    if (config->GetWrt_Unsteady() && config->GetRestart()) {
+      long iExtIter = config->GetDyn_RestartIter();
+      if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
+      if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
+      if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
+      strcat(char_histfile, buffer);
+    }
+    
+    // Add the correct file extension depending on the file format
+    if ((config->GetOutput_FileFormat() == TECPLOT) ||
+        (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
+    else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
+             (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
+    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+    strcat(char_histfile, buffer);
+    SetOutputFields(config);
+    // Open the history file using only the master node
+    
+    cout << "History filename: " << char_histfile << endl;
+    HistFile.open(char_histfile, ios::out);
+    HistFile.precision(15);
+    SetHistoryFile_Header(config);    
+  }
+  
+}
