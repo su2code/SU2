@@ -180,7 +180,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
       /*---Check for duplicate points---*/
       signal.len[iPhi] = nPanel[iPhi];
       for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
-        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-12){
+        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-6){
           for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
             signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
             signal.p_prime[iPhi][jPanel-1] = signal.p_prime[iPhi][jPanel];
