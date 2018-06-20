@@ -2,7 +2,7 @@
  * \file fluid_model.hpp
  * \brief Headers of the main thermodynamic subroutines of the SU2 solvers.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -638,32 +638,32 @@ public:
  * \author: T. Economon
  */
 class CConstantDensity : public CFluidModel {
-
+  
 protected:
-
+  
 public:
-
+  
   /*!
-  * \brief Constructor of the class.
-  */
+   * \brief Constructor of the class.
+   */
   CConstantDensity(void);
-
+  
   /*!
-  * \brief Constructor of the class.
-  */
-  CConstantDensity(su2double val_Density, su2double val_Cp, su2double val_Cv);
-
+   * \brief Constructor of the class.
+   */
+  CConstantDensity(su2double val_Density, su2double val_Cp);
+  
   /*!
-  * \brief Destructor of the class.
-  */
+   * \brief Destructor of the class.
+   */
   virtual ~CConstantDensity(void);
-
+  
   /*!
-  * \brief Set the Dimensionless State using Temperature.
-  * \param[in] T - Temperature value at the point.
-  */
+   * \brief Set the Dimensionless State using Temperature.
+   * \param[in] T - Temperature value at the point.
+   */
   void SetTDState_T(su2double val_Temperature);
-
+  
 };
 
 /*!
@@ -674,9 +674,8 @@ public:
 class CIncIdealGas : public CFluidModel {
   
 protected:
-  su2double Gamma,             /*!< \brief Heat Capacity Ratio. */
-  Gamma_Minus_One,     /*!< \brief Heat Capacity Ratio Minus One. */
-  Gas_Constant;        /*!< \brief Gas Constant. */
+  su2double Gas_Constant,  /*!< \brief Gas Constant. */
+  Gamma;                   /*!< \brief Heat Capacity Ratio. */
   
 public:
   
@@ -688,7 +687,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CIncIdealGas(su2double val_Gamma, su2double val_Gas_Constant, su2double val_Pressure);
+  CIncIdealGas(su2double val_Cp, su2double val_gas_constant, su2double val_operating_pressure);
   
   /*!
    * \brief Destructor of the class.

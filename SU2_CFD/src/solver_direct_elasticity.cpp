@@ -2,7 +2,7 @@
  * \file solver_direct_elasticity.cpp
  * \brief Main subroutines for solving direct FEM elasticity problems.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -2795,9 +2795,7 @@ void CFEASolver::BC_Normal_Load(CGeometry *geometry, CSolver **solver_container,
   su2double CurrentTime=config->GetCurrent_DynTime();
   su2double ModAmpl = 1.0;
   
-  bool Ramp_Load = config->GetRamp_Load();
   su2double Ramp_Time = config->GetRamp_Time();
-  su2double Transfer_Time = 0.0;
 
   ModAmpl = Compute_LoadCoefficient(CurrentTime, Ramp_Time, config);
 
@@ -3273,7 +3271,6 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
 
   su2double LoadCoeff = 1.0;
 
-  bool apply_coeff = false;
   bool Ramp_Load = config->GetRamp_Load();
   bool Sine_Load = config->GetSine_Load();
   bool Ramp_And_Release = config->GetRampAndRelease_Load();
@@ -4198,7 +4195,6 @@ void CFEASolver::SetAitken_Relaxation(CGeometry **fea_geometry,
   unsigned short RelaxMethod_FSI;
   su2double *dispPred, *dispCalc;
   su2double WAitken;
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   
   RelaxMethod_FSI = fea_config->GetRelaxation_Method_FSI();
   
@@ -4635,7 +4631,7 @@ void CFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
-  su2double residual, bgs_sol;
+  su2double residual;
 
   /*--- Set Residuals to zero ---*/
 

@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for physics of the information transfer between zones
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -84,7 +84,6 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
 
   su2double ModAmpl = 0.0;
   su2double CurrentTime = struct_config->GetCurrent_DynTime();
-  su2double Transfer_Time = 0.0;
 
   bool Ramp_Load = struct_config->GetRamp_Load();
   su2double Ramp_Time = struct_config->GetRamp_Time();

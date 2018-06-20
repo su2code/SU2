@@ -3,7 +3,7 @@
 ## \file parallel_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -790,7 +790,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.962470, -4634.558027] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -8.084846, -5343.960719] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001

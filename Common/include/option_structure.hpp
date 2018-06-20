@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -505,10 +505,8 @@ enum ENUM_FLUIDMODEL {
 	VW_GAS = 2,
 	PR_GAS = 3,
   CONSTANT_DENSITY = 4,
-  INC_STANDARD_AIR = 5,
-  INC_IDEAL_GAS = 6,
-  INC_IDEAL_GAS_POLY = 7
-
+  INC_IDEAL_GAS = 5,
+  INC_IDEAL_GAS_POLY = 6
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
@@ -517,7 +515,6 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS)
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
-("INC_STANDARD_AIR", INC_STANDARD_AIR)
 ("INC_IDEAL_GAS", INC_IDEAL_GAS)
 ("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY);
 

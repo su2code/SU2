@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -801,7 +801,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.992570, -1948.623994] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.814182, -3975.414972] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
