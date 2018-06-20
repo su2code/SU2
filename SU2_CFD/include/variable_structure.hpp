@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -2506,7 +2506,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
