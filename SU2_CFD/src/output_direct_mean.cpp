@@ -120,7 +120,7 @@ inline void CFlowOutput::SetOutputFields(CConfig *config){
   AddOutputPerSurfaceField("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
   AddOutputPerSurfaceField("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
   AddOutputPerSurfaceField("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddOutputPerSurfaceField("SECONDARY_OVER_UNFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddOutputPerSurfaceField("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
   AddOutputPerSurfaceField("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
   AddOutputPerSurfaceField("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
   AddOutputPerSurfaceField("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
@@ -212,7 +212,9 @@ inline void CFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****so
   }
 }
 
-inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true;}
+inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+ return true;
+}
 
 inline bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header;

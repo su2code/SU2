@@ -3004,6 +3004,8 @@ void CDriver::Output_Preprocessing(){
       output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
     }
+    
+    output[iZone]->Preprocess_Historyfile(config_container[iZone]);
 
   }
 

@@ -38,46 +38,9 @@
 #include "../include/output_structure.hpp"
 
 CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-
-  char buffer[50];
-
-  // Retrieve the history filename
-  string history_filename = config->GetConv_FileName();
-
-  // Append the zone ID
-  if(config->GetnZone() > 1){
-    history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-  }
-  strcpy (char_histfile, history_filename.data());
-
-  // Append the restart iteration: if dynamic problem and restart
-  if (config->GetWrt_Unsteady() && config->GetRestart()) {
-    long iExtIter = config->GetDyn_RestartIter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-    strcat(char_histfile, buffer);
-  }
-
-  // Add the correct file extension depending on the file format
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-  strcat(char_histfile, buffer);
-  SetOutputFields(config);
-
-  // Open the history file using only the master node
-  if (rank == MASTER_NODE){
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetHistoryFile_Header(config);
-  }
-
+  
+  nDim = geometry->GetnDim();
+ 
 }
 
 CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
@@ -134,7 +97,9 @@ inline void CDiscAdjFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver 
 
 }
 
-inline bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
+inline bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+  return true;
+}
 
 inline bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) {return true;  }
 
