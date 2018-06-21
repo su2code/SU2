@@ -454,6 +454,18 @@ public:
   virtual su2double GetRes_FEM(unsigned short val_var);
   
   /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  virtual void SetMassFluxConvergence(bool val_convergence);
+  
+  
+    /*!
+   * \brief Get the convergence of mass flux for current internal iteration.
+   * \return Value of the residual for the variable in the position <i>val_var</i>.
+   */
+  virtual bool GetMassFluxConvergence();
+  
+  /*!
    * \brief Get the maximal residual, this is useful for the convergence history.
    * \param[in] val_var - Index of the variable.
    * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
@@ -8076,6 +8088,8 @@ protected:
   unsigned long AoA_Counter;
   
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
+  
+  bool MassConvergence;
 
 public:
   
@@ -8106,6 +8120,15 @@ public:
    * \param[in] Output - boolean to determine whether to print output.
    */
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh);
   
   
    /*!
@@ -8155,6 +8178,28 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Compute the undivided laplacian for the solution, except the energy equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Parallelization of Undivided Laplacian.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
+    
+  /*!
+   * \brief Compute a pressure sensor switch.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the fluid solver nondimensionalization.
@@ -8163,7 +8208,80 @@ public:
    */
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
   
-   /*!
+    /*!
+   * \brief Compute the density at the infinity.
+   * \return Value of the density at the infinity.
+   */
+  su2double GetDensity_Inf(void);
+  
+  /*!
+   * \brief Compute 2-norm of the velocity at the infinity.
+   * \return Value of the 2-norm of the velocity at the infinity.
+   */
+  su2double GetModVelocity_Inf(void);
+  
+  /*!
+   * \brief Compute the pressure at the infinity.
+   * \return Value of the pressure at the infinity.
+   */
+  su2double GetPressure_Inf(void);
+  
+  /*!
+   * \brief Compute the density multiply by velocity at the infinity.
+   * \param[in] val_dim - Index of the velocity vector.
+   * \return Value of the density multiply by the velocity at the infinity.
+   */
+  su2double GetDensity_Velocity_Inf(unsigned short val_dim);
+  
+  /*!
+   * \brief Get the velocity at the infinity.
+   * \param[in] val_dim - Index of the velocity vector.
+   * \return Value of the velocity at the infinity.
+   */
+  su2double GetVelocity_Inf(unsigned short val_dim);
+  
+  /*!
+   * \brief Get the velocity at the infinity.
+   * \return Value of the velocity at the infinity.
+   */
+  su2double *GetVelocity_Inf(void);
+  
+    /*!
+   * \brief Set the initial condition for the Euler Equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container, CConfig *config, unsigned long ExtIter);
+  
+  /*!
+   * \brief Set the freestream pressure.
+   * \param[in] Value of freestream pressure.
+   */
+  void SetPressure_Inf(su2double p_inf);
+  
+  /*!
+   * \brief Set the freestream temperature.
+   * \param[in] Value of freestream temperature.
+   */
+  void SetTemperature_Inf(su2double t_inf);
+  
+  /*!
+   * \brief Set the solution using the Freestream values.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetFreeStream_Solution(CConfig *config);
+    
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
    * \brief Compute the time step for solving the Euler equations.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -8299,6 +8417,20 @@ public:
    * 
    */
   void SetPoissonSourceTerm(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Set the convergence of mass flux for current internal iteration.
+   */
+  void SetMassFluxConvergence(bool val_convergence);
+  
+  
+  /*!
+   * \brief Get the convergence of mass flux for current internal iteration.
+   * \return Value of the residual for the variable in the position <i>val_var</i>.
+   */
+  bool GetMassFluxConvergence();
+  
+  
   
 };
 
@@ -11664,6 +11796,54 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_Neumann(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
+                             unsigned short val_marker);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                            unsigned short val_marker);
+  
+  /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                unsigned short val_marker);  
+                
+    /*!
+   * \brief Impose the inlet boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
+                unsigned short val_marker);  
+  
   
   /*!
    * \brief Set residuals to zero.
