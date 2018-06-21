@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -56,6 +56,10 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  Physical_Constants = NULL;
+  Donor_Variable     = NULL;
+  Target_Variable    = NULL;
 
   unsigned short iVar;
   

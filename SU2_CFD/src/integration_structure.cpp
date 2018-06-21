@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -199,7 +199,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         solver_container[MainSolver]->BC_Custom(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         break;
       case CHT_WALL_INTERFACE: 
-        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && config->GetKind_Regime() == COMPRESSIBLE)) {
+        if ((MainSolver == HEAT_SOL) || (MainSolver == FLOW_SOL && ((config->GetKind_Regime() == COMPRESSIBLE) || config->GetEnergy_Equation()))) {
           solver_container[MainSolver]->BC_ConjugateHeat_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iMarker);
         }
         else {
@@ -851,7 +851,6 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   unsigned long iPoint, iDim;
   unsigned long nPointDomain, nDim;
   su2double *dispPred, *dispPred_Old;
-  su2double CurrentTime=fea_config->GetCurrent_DynTime();
   su2double deltaU, deltaURad, deltaURes, deltaURes_recv = 0.0;
   
   magResidualFSI_criteria = -1*fea_config->GetOrderMagResidualFSI();
