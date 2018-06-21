@@ -61,7 +61,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ***geometry,
                        (config[iZone]->GetKind_Solver() == RANS)                          ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_EULER)                ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)        ||
-                       (config[iZone]->GetKind_Solver() == POISSON_EQUATION)        	  ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
@@ -144,7 +143,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
   
   /*--- Do a presmoothing on the grid iMesh to be restricted to the grid iMesh+1 ---*/
   
-  
   for (iPreSmooth = 0; iPreSmooth < config[iZone]->GetMG_PreSmooth(iMesh); iPreSmooth++) {
     
     switch (config[iZone]->GetKind_TimeIntScheme()) {
@@ -174,8 +172,8 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
         solver_container[iZone][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, Iteration);
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
-
-        if (RunTime_EqSystem!=POISSON_EQUATION) Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
+        
+        Adjoint_Setup(geometry, solver_container, config, RunTime_EqSystem, Iteration, iZone);
         
       }
       
@@ -194,17 +192,16 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     }
     
   }
-
+  
   /*--- Compute Forcing Term $P_(k+1) = I^(k+1)_k(P_k+F_k(u_k))-F_(k+1)(I^(k+1)_k u_k)$ and update solution for multigrid ---*/
   
   if ( (iMesh < config[iZone]->GetnMGLevels() && ((Iteration >= config[iZone]->GetnStartUpIter()) || startup_multigrid)) ) {
     /*--- Compute $r_k = P_k + F_k(u_k)$ ---*/
     
     solver_container[iZone][iMesh][SolContainer_Position]->Preprocessing(geometry[iZone][iMesh], solver_container[iZone][iMesh], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem, false);
-
     Space_Integration(geometry[iZone][iMesh], solver_container[iZone][iMesh], numerics_container[iZone][iMesh][SolContainer_Position], config[iZone], iMesh, NO_RK_ITER, RunTime_EqSystem);
     SetResidual_Term(geometry[iZone][iMesh], solver_container[iZone][iMesh][SolContainer_Position]);
-
+    
     /*--- Compute $r_(k+1) = F_(k+1)(I^(k+1)_k u_k)$ ---*/
     
     SetRestricted_Solution(RunTime_EqSystem, solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone]);
@@ -214,7 +211,7 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ***geometry,
     /*--- Compute $P_(k+1) = I^(k+1)_k(r_k) - r_(k+1) ---*/
     
     SetForcing_Term(solver_container[iZone][iMesh][SolContainer_Position], solver_container[iZone][iMesh+1][SolContainer_Position], geometry[iZone][iMesh], geometry[iZone][iMesh+1], config[iZone], iMesh+1);
-
+    
     /*--- Recursive call to MultiGrid_Cycle ---*/
     
     for (unsigned short imu = 0; imu <= RecursiveParam; imu++) {
@@ -302,7 +299,7 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
     if ((Boundary == HEAT_FLUX             ) ||
         (Boundary == ISOTHERMAL            ) ||
         (Boundary == CHT_WALL_INTERFACE    )) {
-
+      
       for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
         
         Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
@@ -311,20 +308,6 @@ void CMultiGridIntegration::GetProlongated_Correction(unsigned short RunTime_EqS
          Note that Solution_Old stores the correction not the actual value ---*/
         
         sol_coarse->node[Point_Coarse]->SetVelSolutionOldZero();
-        
-      }
-      
-    }
-    if (Boundary == DIRICHLET) {
-      
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- For dirichlet boundary condtions, set the correction to zero.
-         Note that Solution_Old stores the correction not the actual value ---*/
-        
-        sol_coarse->node[Point_Coarse]->SetSolutionOldVal(0,0.0);
         
       }
       
@@ -553,12 +536,6 @@ void CMultiGridIntegration::SetForcing_Term(CSolver *sol_fine, CSolver *sol_coar
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }
     }
-    if (config->GetMarker_All_KindBC(iMarker) == DIRICHLET) {
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->node[Point_Coarse]->SetVal_ResTruncError_Zero(0);
-      }
-    }
   }
   
   for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
@@ -607,12 +584,6 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
         sol_coarse->node[Point_Coarse]->SetVel_ResTruncError_Zero();
       }
     }
-    if (config->GetMarker_All_KindBC(iMarker) == DIRICHLET) {
-      for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-        Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-        sol_coarse->node[Point_Coarse]->SetVal_ResTruncError_Zero(0);
-      }
-    }
   }
   
   delete [] Residual;
@@ -621,7 +592,7 @@ void CMultiGridIntegration::SetRestricted_Residual(CSolver *sol_fine, CSolver *s
 void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long iVertex, Point_Fine, Point_Coarse;
   unsigned short iMarker, iVar, iChildren, iDim;
-  su2double Area_Parent, Area_Children, *Solution_Fine, *Grid_Vel, Vector[3],dirichlet_val;
+  su2double Area_Parent, Area_Children, *Solution_Fine, *Grid_Vel, Vector[3];
   
   const unsigned short SolContainer_Position = config->GetContainerPosition(RunTime_EqSystem);
   const unsigned short nVar = sol_coarse->GetnVar();
@@ -685,14 +656,8 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
         
       }
     }
-    if(config->GetMarker_All_KindBC(iMarker) == DIRICHLET) {
-		for (iVertex = 0; iVertex < geo_coarse->nVertex[iMarker]; iVertex++) {
-			Point_Coarse = geo_coarse->vertex[iMarker][iVertex]->GetNode();
-			dirichlet_val = sol_coarse->GetDirichlet_BC(geo_coarse,config,Point_Coarse);
-			sol_coarse->node[Point_Coarse]->SetSolutionVal(0,dirichlet_val);
-		} 
-	}
   }
+  
   /*--- MPI the new interpolated solution ---*/
   
   sol_coarse->Set_MPI_Solution(geo_coarse, config);
@@ -800,18 +765,6 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
       }
       
       break;
-      
-      
-     case RUNTIME_POISSON_SYS:
-      
-          
-      /*--- Evaluate convergence monitor ---*/
-     
-      if (config->GetConvCriteria() == RESIDUAL) {
-        *monitor = log10(solver_container[FinestMesh][POISSON_SOL]->GetRes_RMS(0));
-      }
-      
-      break;
           
   }
   
@@ -832,7 +785,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
 
   /*--- Preprocessing ---*/
   
-  solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
+    solver_container[iZone][FinestMesh][SolContainer_Position]->Preprocessing(geometry[iZone][FinestMesh], solver_container[iZone][FinestMesh], config[iZone], FinestMesh, 0, RunTime_EqSystem, false);
   
   /*--- Set the old solution ---*/
   
@@ -862,7 +815,8 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ***geometry, CSolver
     case RUNTIME_WAVE_SYS:    monitor = log10(solver_container[iZone][FinestMesh][WAVE_SOL]->GetRes_RMS(0));    break;
     case RUNTIME_FEA_SYS:     monitor = log10(solver_container[iZone][FinestMesh][FEA_SOL]->GetRes_RMS(0));     break;
     case RUNTIME_HEAT_SYS:    monitor = log10(solver_container[iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));    break;
-    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); break;
+    case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); 
+    break;
   }
   
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {

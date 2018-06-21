@@ -168,10 +168,11 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) ---*/
   
   Primitive = new su2double [nPrimVar];
+  
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
   
   /*--- Assign a value for pressure here ---*/
-  Primitive[0] = config->GetPressure_Ref();
+  Primitive[0] = val_pressure;
 
   /*--- Incompressible flow, gradients primitive variables nDim+2, (P, vx, vy, vz, rho)
         We need P, and rho for running the adjoint problem ---*/
@@ -349,9 +350,8 @@ su2double CPBIncEulerVariable::GetProjVel(su2double *val_vector) {
   return ProjVel;
 }*/
 
-/*--- This function is actually declared as (Density_inf, turb_ke, *config), 
- * used here as the functions cannot be overloaded as double,double,*config ---*/
-bool CPBIncEulerVariable::SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config) {
+
+bool CPBIncEulerVariable::SetPrimVar(su2double Density_Inf,  CConfig *config) {
 
   
   /*--- Set the value of the density ---*/
@@ -362,9 +362,7 @@ bool CPBIncEulerVariable::SetPrimVar(su2double Density_Inf, su2double pressure_v
   
   SetVelocity();
   
-  /*--- Set the value of the pressure ---*/
-  
-  SetPressure_val(pressure_val);
+  /*--- The value of pressure is initialized in constructor. Subsequently it will be set in CorrectPressure routine ---*/
 
   
   return true;

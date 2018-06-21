@@ -1369,11 +1369,93 @@ void CNumerics::GetPArtCompMatrix_inv(su2double *val_density, su2double *val_vel
 
 //---------------------------------------------------------------------------------------------------
 void CNumerics::GetPPBMatrix(su2double *val_density, su2double *val_velocity, su2double *val_normal, 
-                                 su2double **val_invp_tensor) { }
+                                 su2double **val_p_tensor) { 
+									 
+  su2double a, a2, Projvel, area2, sx, sy, sz = 0.0, u, v, w = 0.0, factor = 0.0;
+
+  sx = val_normal[0]; sy = val_normal[1]; u = val_velocity[0]; v = val_velocity[1];
+    if (nDim == 3) { sz = val_normal[2]; w = val_velocity[2]; }
+  
+  Projvel = u*sx + v*sy; area2 = sx*sx + sy*sy;
+    if (nDim == 3) { Projvel += w*sz; area2 += sz*sz; }
+  
+  a2 = Projvel*Projvel; 
+  a = sqrt(a2);
+  
+  factor = 1.0;//(2.0*((*val_betainc2)/(*val_density))*a2);
+
+    if (nDim == 2) {
+
+    val_p_tensor[0][0] = -v*sy/(u*sx);
+    val_p_tensor[0][1] = 1.0;
+        
+    val_p_tensor[1][0] = 1.0;
+    val_p_tensor[1][1] = 1.0;
+  }
+  else {
+
+
+    val_p_tensor[0][0] = -w*sz/(u*sx);
+    val_p_tensor[1][1] = 0.0;
+    val_p_tensor[1][2] = 1.0;
+
+    val_p_tensor[1][0] = -v*sy/(u*sx);
+    val_p_tensor[1][1] = 1.0;
+    val_p_tensor[1][2] = 0.0;
+
+    val_p_tensor[2][0] = 1.0;
+    val_p_tensor[2][1] = 0.0;
+    val_p_tensor[2][2] = 1.0;
+  }
+
+									 
+									 
+									 
+}
 
 
 void CNumerics::GetPPBMatrix_inv(su2double *val_density, su2double *val_velocity, su2double *val_normal, 
-                                 su2double **val_invp_tensor) { }
+                                 su2double **val_invp_tensor) { 
+su2double a, a2, Projvel, area2, sx, sy, sz = 0.0, u, v, w = 0.0, factor = 0.0;
+
+  sx = val_normal[0]; sy = val_normal[1]; u = val_velocity[0]; v = val_velocity[1];
+    if (nDim == 3) { sz = val_normal[2]; w = val_velocity[2]; }
+  
+  Projvel = u*sx + v*sy; area2 = sx*sx + sy*sy;
+    if (nDim == 3) { Projvel += w*sz; area2 += sz*sz; }
+  
+  a2 = Projvel*Projvel; 
+  a = sqrt(a2);
+  
+  factor = 1.0;
+
+    if (nDim == 2) {
+
+    val_invp_tensor[0][0] = -(u*sx)/Projvel;
+    val_invp_tensor[0][1] = (u*sx)/Projvel;
+        
+    val_invp_tensor[1][0] = (u*sx)/Projvel;
+    val_invp_tensor[1][1] = (v*sy)/Projvel;
+  }
+  else {
+
+
+    val_invp_tensor[0][0] = -(u*sx)/Projvel;
+    val_invp_tensor[1][1] = -(v*sy)/Projvel;
+    val_invp_tensor[1][2] = (v*sy+u*sx)/Projvel;
+
+    val_invp_tensor[1][0] = -(u*sx)/Projvel;
+    val_invp_tensor[1][1] = (u*sx+w*sz)/Projvel;
+    val_invp_tensor[1][2] = (w*sz)/Projvel;
+
+    val_invp_tensor[2][0] = (u*sx)/Projvel;
+    val_invp_tensor[2][1] = (v*sy)/Projvel;
+    val_invp_tensor[2][2] = (w*sz)/Projvel;
+  }
+									 
+									 
+									 
+}
 //---------------------------------------------------------------------------------------------------
 
 

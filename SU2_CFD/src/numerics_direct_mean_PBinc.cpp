@@ -105,7 +105,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
   DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
-  BetaInc2_i =    V_i[nDim+2];  BetaInc2_j = V_j[nDim+2];
+ 
   
   ProjVelocity = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
@@ -119,8 +119,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
   MeanPressure = 0.5*(Pressure_i + Pressure_j);
-  MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
-  MeanSoundSpeed = sqrt(ProjVelocity*ProjVelocity + (MeanBetaInc2/MeanDensity) * Area * Area);
+  
   
   /*--- Compute ProjFlux_i ---*/
   
@@ -138,14 +137,12 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   if (nDim == 2) {
     Lambda[0] = ProjVelocity;
-    Lambda[1] = ProjVelocity;// + MeanSoundSpeed;
-    Lambda[2] = ProjVelocity;//- MeanSoundSpeed;
+    Lambda[1] = 2.0*ProjVelocity;
   }
   if (nDim == 3) {
     Lambda[0] = ProjVelocity;
     Lambda[1] = ProjVelocity;
-    Lambda[2] = ProjVelocity;// + MeanSoundSpeed;
-    Lambda[3] = ProjVelocity;// - MeanSoundSpeed;
+    Lambda[2] = 2.0*ProjVelocity;
   }
   
   /*--- Absolute value of the eigenvalues ---*/
@@ -166,9 +163,9 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
   
   /*--- Diference variables iPoint and jPoint ---*/
   
-  Diff_U[0] = Pressure_j - Pressure_i;
+  //Diff_U[0] = Pressure_j - Pressure_i;
   for (iDim = 0; iDim < nDim; iDim++)
-    Diff_U[iDim+1] = Velocity_j[iDim]*DensityInc_i - Velocity_i[iDim]*DensityInc_j;
+    Diff_U[iDim] = Velocity_j[iDim]*DensityInc_i - Velocity_i[iDim]*DensityInc_j;
   
   /*--- Compute |Proj_ModJac_Tensor| = P x |Lambda| x inverse P ---*/
   
@@ -225,7 +222,7 @@ CCentJSTPB_Flow::~CCentJSTPB_Flow(void) {
 void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
                                            su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  su2double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+  su2double U_i[3] = {0.0,0.0,0.0}, U_j[3] = {0.0,0.0,0.0};
 
   /*--- Primitive variables at point i and j ---*/
   
@@ -244,16 +241,15 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
   
   /*--- Recompute conservative variables ---*/
   
-  U_i[0] = Pressure_i; U_j[0] = Pressure_j;
+  //U_i[0] = Pressure_i; U_j[0] = Pressure_j;
   for (iDim = 0; iDim < nDim; iDim++) {
-    U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
+    U_i[iDim] = DensityInc_i*Velocity_i[iDim]; U_j[iDim] = DensityInc_j*Velocity_j[iDim];
   }
   
   /*--- Compute mean values of the variables ---*/
   
   MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
   MeanPressure = 0.5*(Pressure_i + Pressure_j);
-  MeanBetaInc2 = 0.5*(BetaInc2_i + BetaInc2_j);
   
   /*--- Get projected flux tensor ---*/
   
@@ -288,8 +284,8 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
   }
   Area = sqrt(Area);
     
-  Local_Lambda_i = fabs(ProjVelocity_i);//+SoundSpeed_i;
-  Local_Lambda_j = fabs(ProjVelocity_j);//+SoundSpeed_j;
+  Local_Lambda_i = fabs(2.0*ProjVelocity_i);
+  Local_Lambda_j = fabs(2.0*ProjVelocity_j);
   MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
@@ -352,7 +348,7 @@ CCentLaxPB_Flow::~CCentLaxPB_Flow(void) {
 void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                                            CConfig *config) {
   
-  su2double U_i[4] = {0.0,0.0,0.0,0.0}, U_j[4] = {0.0,0.0,0.0,0.0};
+  su2double U_i[3] = {0.0,0.0,0.0}, U_j[3] = {0.0,0.0,0.0};
 
   /*--- Conservative variables at point i and j ---*/
   
@@ -368,9 +364,9 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   
   /*--- Recompute conservative variables ---*/
 
-  U_i[0] = Pressure_i; U_j[0] = Pressure_j;
+  //U_i[0] = Pressure_i; U_j[0] = Pressure_j;
   for (iDim = 0; iDim < nDim; iDim++) {
-    U_i[iDim+1] = DensityInc_i*Velocity_i[iDim]; U_j[iDim+1] = DensityInc_j*Velocity_j[iDim];
+    U_i[iDim] = DensityInc_i*Velocity_i[iDim]; U_j[iDim] = DensityInc_j*Velocity_j[iDim];
   }
   
   /*--- Compute mean values of the variables ---*/
@@ -416,8 +412,8 @@ void CCentLaxPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   //SoundSpeed_i = sqrt(ProjVelocity_i*ProjVelocity_i + (BetaInc2_i/DensityInc_i)*Area*Area);
   //SoundSpeed_j = sqrt(ProjVelocity_j*ProjVelocity_j + (BetaInc2_j/DensityInc_j)*Area*Area);
 
-  Local_Lambda_i = fabs(ProjVelocity_i);
-  Local_Lambda_j = fabs(ProjVelocity_j);
+  Local_Lambda_i = fabs(2.0*ProjVelocity_i);
+  Local_Lambda_j = fabs(2.0*ProjVelocity_j);
   MeanLambda = 0.5*(Local_Lambda_i + Local_Lambda_j);
   
   Phi_i = pow(Lambda_i/(4.0*MeanLambda), Param_p);
