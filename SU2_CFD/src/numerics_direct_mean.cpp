@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
