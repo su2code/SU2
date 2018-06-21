@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity.cpp
  * \brief This file contains the routines for setting the tangent matrix and residual of a FEM linear elastic structural problem.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -275,8 +275,8 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
    */
   su2double g_force[3] = {0.0,0.0,0.0};
 
-  if (nDim == 2) g_force[1] = -1*STANDART_GRAVITY;
-  else if (nDim == 3) g_force[2] = -1*STANDART_GRAVITY;
+  if (nDim == 2) g_force[1] = -1*STANDARD_GRAVITY;
+  else if (nDim == 3) g_force[2] = -1*STANDARD_GRAVITY;
 
   element->clearElement();       /*--- Restarts the element: avoids adding over previous results in other elements and sets initial values to 0--*/
   element->ComputeGrad_Linear();    /*--- Need to compute the gradients to obtain the Jacobian ---*/

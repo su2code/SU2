@@ -2,7 +2,7 @@
  * \file iteration_structure.cpp
  * \brief Main subroutines used by SU2_CFD
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -1001,16 +1001,18 @@ void CHeatIteration::Iterate(COutput *output,
                              CFreeFormDefBox*** FFDBox,
                              unsigned short val_iZone) {
   
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  unsigned long IntIter, ExtIter;
+  bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   
-  /*--- Set the value of the internal iteration ---*/
+  ExtIter = config_container[val_iZone]->GetExtIter();
   
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
+  /* --- Setting up iteration values depending on if this is a
+   steady or an unsteady simulaiton */
+
+  if ( !unsteady ) IntIter = ExtIter;
+  else IntIter = config_container[val_iZone]->GetIntIter();
   
-  /*--- Heat equation ---*/
+  /*--- Update global parameters ---*/
 
   switch( config_container[val_iZone]->GetKind_Solver()) {
 
@@ -1025,18 +1027,11 @@ void CHeatIteration::Iterate(COutput *output,
   integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
   
-  /*--- Dual time stepping strategy ---*/
-  
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
-      config_container[val_iZone]->SetIntIter(IntIter);
-      integration_container[val_iZone][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                       config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone);
-      if (integration_container[val_iZone][HEAT_SOL]->GetConvergence()) break;
-    }
+  /*--- Write the convergence history ---*/
+
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
+
+    output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
   }
 }
 
@@ -1065,8 +1060,10 @@ void CHeatIteration::Update(COutput *output,
       integration_container[val_iZone][HEAT_SOL]->SetConvergence(false);
     }
     
-    Physical_dt = config_container[val_iZone]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
-    if (Physical_t >=  config_container[val_iZone]->GetTotal_UnstTime()) integration_container[val_iZone][HEAT_SOL]->SetConvergence(true);
+    Physical_dt = config_container[val_iZone]->GetDelta_UnstTime();
+    Physical_t  = (ExtIter+1)*Physical_dt;
+    if (Physical_t >=  config_container[val_iZone]->GetTotal_UnstTime())
+      integration_container[val_iZone][HEAT_SOL]->SetConvergence(true);
   }
 }
 void CHeatIteration::Monitor()     { }
@@ -1164,23 +1161,14 @@ void CFEAIteration::Iterate(COutput *output,
   unsigned long IntIter = 0; config_container[val_iZone]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
 
-  bool fsi = config_container[val_iZone]->GetFSI_Simulation();
-
   unsigned long iIncrement;
   unsigned long nIncrements = config_container[val_iZone]->GetNumberIncrements();
 
   bool nonlinear = (config_container[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   bool linear = (config_container[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Geometrically non-linear problems
 
-  bool initial_calc = config_container[val_iZone]->GetExtIter() == 0;        // Checks if it is the first calculation.
-  bool first_iter = config_container[val_iZone]->GetIntIter() == 0;        // Checks if it is the first iteration
-  bool restart = config_container[val_iZone]->GetRestart();                        // Restart analysis
-  bool initial_calc_restart = (SU2_TYPE::Int(config_container[val_iZone]->GetExtIter()) == config_container[val_iZone]->GetDyn_RestartIter()); // Initial calculation for restart
-
   bool disc_adj_fem = false;
   if (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM) disc_adj_fem = true;
-
-  su2double CurrentTime = config_container[val_iZone]->GetCurrent_DynTime();
 
   bool write_output = true;
 

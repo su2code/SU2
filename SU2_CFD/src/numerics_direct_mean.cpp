@@ -2,7 +2,7 @@
  * \file numerics_direct_mean.cpp
  * \brief This file contains the numerical methods for compressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -4965,9 +4965,6 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
 
 CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
-  compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
 }
 
 CSourceGravity::~CSourceGravity(void) { }
@@ -4978,21 +4975,8 @@ void CSourceGravity::ComputeResidual(su2double *val_residual, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = 0.0;
   
-  if (compressible) {
-    
-    /*--- Evaluate the source term  ---*/
-    val_residual[nDim] = Volume * U_i[0] * STANDART_GRAVITY;
-    
-  }
-  if (incompressible) {
-    
-    /*--- Compute the Froude number  ---*/
-    Froude = config->GetFroude();
-    
-    /*--- Evaluate the source term  ---*/
-    val_residual[nDim] = Volume * DensityInc_i / (Froude * Froude);
-    
-  }
+  /*--- Evaluate the source term  ---*/
+  val_residual[nDim] = Volume * U_i[0] * STANDARD_GRAVITY;
   
 }
 
@@ -5004,10 +4988,6 @@ CSourceBodyForce::CSourceBodyForce(unsigned short val_nDim, unsigned short val_n
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Body_Force_Vector[iDim] = config->GetBody_Force_Vector()[iDim];
 
-  /*--- Check for compressibility ---*/
-
-  compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-
 }
 
 CSourceBodyForce::~CSourceBodyForce(void) {
@@ -5017,29 +4997,25 @@ CSourceBodyForce::~CSourceBodyForce(void) {
 }
 
 void CSourceBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
-
+  
   unsigned short iDim;
   su2double Force_Ref = config->GetForce_Ref();
-
-  if (compressible) {
-
-    /*--- Zero the continuity contribution ---*/
-
-    val_residual[0] = 0.0;
-
-    /*--- Momentum contribution ---*/
-
-    for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
-
-    /*--- Energy contribution ---*/
-
-    val_residual[nDim+1] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
-
-  }
-
+  
+  /*--- Zero the continuity contribution ---*/
+  
+  val_residual[0] = 0.0;
+  
+  /*--- Momentum contribution ---*/
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[iDim+1] = -Volume * U_i[0] * Body_Force_Vector[iDim] / Force_Ref;
+  
+  /*--- Energy contribution ---*/
+  
+  val_residual[nDim+1] = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[nDim+1] += -Volume * U_i[iDim+1] * Body_Force_Vector[iDim] / Force_Ref;
+  
 }
 
 CSourceRotatingFrame_Flow::CSourceRotatingFrame_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -5057,7 +5033,6 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
   su2double Omega[3] = {0,0,0}, Momentum[3] = {0,0,0};
   
   bool implicit     = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   
   /*--- Retrieve the angular velocity vector from config. ---*/
   
@@ -5076,13 +5051,13 @@ void CSourceRotatingFrame_Flow::ComputeResidual(su2double *val_residual, su2doub
     val_residual[0] = 0.0;
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
-    if (compressible) val_residual[3] = 0.0;
+    val_residual[3] = 0.0;
   } else {
     val_residual[0] = 0.0;
     val_residual[1] = (Omega[1]*Momentum[2] - Omega[2]*Momentum[1])*Volume;
     val_residual[2] = (Omega[2]*Momentum[0] - Omega[0]*Momentum[2])*Volume;
     val_residual[3] = (Omega[0]*Momentum[1] - Omega[1]*Momentum[0])*Volume;
-    if (compressible) val_residual[4] = 0.0;
+    val_residual[4] = 0.0;
   }
   
   /*--- Calculate the source term Jacobian ---*/
@@ -5120,35 +5095,25 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
   su2double yinv, Pressure_i, Enthalpy_i, Velocity_i, sq_vel;
   unsigned short iDim, iVar, jVar;
   
-  bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   if (Coord_i[1] > EPS) {
     
     yinv = 1.0/Coord_i[1];
     
-    if (compressible) {
-      sq_vel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Velocity_i = U_i[iDim+1] / U_i[0];
-        sq_vel += Velocity_i *Velocity_i;
-      }
-      
-      Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
-      Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
-      
-      val_residual[0] = yinv*Volume*U_i[2];
-      val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
-      val_residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
-      val_residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
+    sq_vel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Velocity_i = U_i[iDim+1] / U_i[0];
+      sq_vel += Velocity_i *Velocity_i;
     }
     
-    if (incompressible) {
-      val_residual[0] = yinv*Volume*U_i[2]*BetaInc2_i;
-      val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/DensityInc_i;
-      val_residual[2] = yinv*Volume*U_i[2]*U_i[2]/DensityInc_i;
-    }
+    Pressure_i = (Gamma-1.0)*U_i[0]*(U_i[nDim+1]/U_i[0]-0.5*sq_vel);
+    Enthalpy_i = (U_i[nDim+1] + Pressure_i) / U_i[0];
+    
+    val_residual[0] = yinv*Volume*U_i[2];
+    val_residual[1] = yinv*Volume*U_i[1]*U_i[2]/U_i[0];
+    val_residual[2] = yinv*Volume*(U_i[2]*U_i[2]/U_i[0]);
+    val_residual[3] = yinv*Volume*Enthalpy_i*U_i[2];
     
     if (implicit) {
       Jacobian_i[0][0] = 0.0;
@@ -5172,17 +5137,18 @@ void CSourceAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2doubl
       Jacobian_i[3][3] = Gamma*U_i[2]/U_i[0];
       
       for (iVar=0; iVar < nVar; iVar++)
-      for (jVar=0; jVar < nVar; jVar++)
-      Jacobian_i[iVar][jVar] *= yinv*Volume;
+        for (jVar=0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] *= yinv*Volume;
       
     }
+    
   }
   
   else {
-
+    
     for (iVar=0; iVar < nVar; iVar++)
       val_residual[iVar] = 0.0;
-
+    
     if (implicit) {
       for (iVar=0; iVar < nVar; iVar++) {
         for (jVar=0; jVar < nVar; jVar++)

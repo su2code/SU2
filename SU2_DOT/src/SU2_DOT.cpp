@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -45,6 +45,7 @@ int main(int argc, char *argv[]) {
   
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
+  bool periodic = false;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -83,8 +84,8 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_DEF);
 
-  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
   
@@ -127,10 +128,15 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
-    
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    /*--- Until we finish the new periodic BC implementation, use the old
+     partitioning routines for cases with periodic BCs. The old routines 
+     will be entirely removed eventually in favor of the new methods. ---*/
+
+    if (periodic) {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    } else {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+    }
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -277,6 +283,9 @@ int main(int argc, char *argv[]) {
      delete [] Gradient;
 
    }
+
+  delete config;
+  config = NULL;
 
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
