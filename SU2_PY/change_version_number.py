@@ -3,7 +3,7 @@
 ## \file change_version_number.py
 #  \brief Python script for updating the version number of the SU2 suite.
 #  \author A. Aranake
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -41,8 +41,8 @@ from __future__ import print_function
 # Run the script from the base directory (ie $SU2HOME). Grep will search directories recursively for matches in version number
 import os,sys
 
-oldvers = '6.0.0 "Falcon"'
-newvers = '6.0.1 "Falcon"'
+oldvers = '6.0.1 "Falcon"'
+newvers = '6.1.0 "Falcon"'
 
 if sys.version_info[0] > 2:
   # In PY3, raw_input is replaced with input.
