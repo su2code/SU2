@@ -1544,10 +1544,10 @@ public:
   void CreateBasis(su2double *val_Normal);
   
   
-  void SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
-                          const su2double Dissipation_i, const su2double Dissipation_j,
+  void SetRoe_Dissipation(const su2double Dissipation_i,
+                          const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,
-                          su2double& Dissipation_ij, CConfig *config);
+                          su2double& Dissipation_ij,CConfig *config);
   
 };
 

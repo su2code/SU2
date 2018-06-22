@@ -2694,18 +2694,16 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   }
 }
 
-void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
-                                      const su2double Dissipation_i, const su2double Dissipation_j,
-                                      const su2double Sensor_i, const su2double Sensor_j,
-                                      su2double& Dissipation_ij, CConfig *config){
+void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
+                                   const su2double Dissipation_j,
+                                   const su2double Sensor_i,
+                                   const su2double Sensor_j,
+                                   su2double& Dissipation_ij,
+                                   CConfig *config) {
   unsigned short iDim;
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
   
-  su2double Ducros_ij, Delta, Aaux, phi1, phi2;
-  static const su2double ch1 = 3.0, ch2 = 1.0, phi_max = 1.0;
-  static const su2double Const_DES = 5.0;
-  
-  su2double phi_hybrid_i, phi_hybrid_j;
+  su2double Ducros_ij, phi1, phi2;
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
 
@@ -2724,24 +2722,13 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
     }
   }
   else if (roe_low_diss == NTS || roe_low_diss == NTS_DUCROS){
-
-    Delta = 0.0;
-    for (iDim=0;iDim<nDim;++iDim)
-        Delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
-    Delta=sqrt(Delta);
-
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_i)) - 0.5, 0.0);
-    phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
-    
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_j)) - 0.5, 0.0);
-    phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
     
     if (roe_low_diss == NTS){
-      Dissipation_ij = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
+      Dissipation_ij = max(0.5*(Dissipation_i+Dissipation_j),0.05);
     } else if (roe_low_diss == NTS_DUCROS){
       
       phi1 = 0.5*(Sensor_i+Sensor_j);
-      phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
+      phi2 = 0.5*(Dissipation_i+Dissipation_j);
       
       Dissipation_ij = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
       
