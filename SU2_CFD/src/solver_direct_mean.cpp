@@ -3528,7 +3528,6 @@ void CEulerSolver::SetTranspiration(CGeometry *geometry, CConfig *config) {
 
       if(nDim == 2){
         /*--- Linear interpolation in x ---*/
-        b[0] = y0; b[1] = -y0+y1; b[2] = -y0+y3; b[3] = y0-y1+y2-y3;
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {
