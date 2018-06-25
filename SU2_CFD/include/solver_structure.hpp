@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -125,6 +125,14 @@ protected:
   int Restart_ExtIter;     /*!< \brief Auxiliary structure for holding the external iteration offset from a restart. */
   passivedouble *Restart_Data; /*!< \brief Auxiliary structure for holding the data values from a restart. */
   unsigned short nOutputVariables;  /*!< \brief Number of variables to write. */
+
+  unsigned long nMarker_InletFile;       /*!< \brief Auxiliary structure for holding the number of markers in an inlet profile file. */
+  vector<string> Marker_Tags_InletFile;       /*!< \brief Auxiliary structure for holding the string names of the markers in an inlet profile file. */
+  unsigned long *nRow_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows for a particular marker in an inlet profile file. */
+  unsigned long *nRowCum_InletFile;       /*!< \brief Auxiliary structure for holding the number of rows in cumulative storage format for a particular marker in an inlet profile file. */
+  unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
+  unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
+  passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
 public:
   
@@ -486,6 +494,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_AuxVar_Gradient(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
@@ -909,7 +924,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker, bool inlet_surface);
+                          CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief A virtual member.
@@ -1493,7 +1508,7 @@ public:
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  virtual void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  virtual void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief A virtual member.
@@ -2245,7 +2260,7 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_NetCThrust(void);
+  virtual su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief A virtual member.
@@ -2827,8 +2842,32 @@ public:
   /*!
    * \brief A virtual member
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  virtual void SetInlet(CConfig *config);
+  virtual void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  virtual void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief A virtual member
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  virtual su2double GetInletAtVertex(su2double *val_inlet,
+                                     unsigned long val_inlet_point,
+                                     unsigned short val_kind_marker,
+                                     CGeometry *geometry,
+                                     CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -3045,13 +3084,25 @@ public:
    * \return Value of the viscosity at the infinity.
    */
   virtual su2double GetViscosity_Inf(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of nu tilde at the far-field.
+   */
+  virtual su2double GetNuTilde_Inf(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the turbulent kinetic energy.
    */
   virtual su2double GetTke_Inf(void);
-  
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of the turbulent frequency.
+   */
+  virtual su2double GetOmega_Inf(void);
+
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
@@ -3370,6 +3421,30 @@ public:
    * \param[in] val_filename - String name of the restart file.
    */
   void Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bool adjoint_run, string val_filename);
+
+  /*!
+   * \brief Read a native SU2 inlet file in ASCII format.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_filename - String name of the restart file.
+   */
+  void Read_InletFile_ASCII(CGeometry *geometry, CConfig *config, string val_filename);
+
+  /*!
+   * \brief Load a inlet profile data from file into a particular solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_kind_solver - Solver container position.
+   * \param[in] val_kind_marker - Kind of marker to apply the profiles.
+   */
+  void LoadInletProfile(CGeometry **geometry,
+                        CSolver ***solver,
+                        CConfig *config,
+                        int val_iter,
+                        unsigned short val_kind_solver,
+                        unsigned short val_kind_marker);
 
   /*!
    * \brief A virtual member.
@@ -4386,7 +4461,7 @@ protected:
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_SolidCD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_NetThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_ReverseFlow, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_IDC,        /*!< \brief Total IDC coefficient for all the boundaries. */
@@ -4398,8 +4473,6 @@ protected:
   Total_ByPassProp_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Adiab_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
@@ -4933,7 +5006,7 @@ public:
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
     */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -5582,7 +5655,7 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_NetCThrust(void);
+  su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5786,7 +5859,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -6193,10 +6266,38 @@ public:
   void SetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_flowdir);
 
   /*!
-   * \brief Setup the inlet per the config file and stores the result
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
    * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
    */
-  void SetInlet(CConfig *config);
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -6659,14 +6760,11 @@ public:
 
 };
 
-  
-
 /*!
  * \class CIncEulerSolver
  * \brief Main class for defining the incompressible Euler flow solver.
  * \ingroup Euler_Equations
  * \author F. Palacios, T. Economon, T. Albring
- * \version 4.2.0 "Cardinal"
  */
 class CIncEulerSolver : public CSolver {
 protected:
@@ -6741,6 +6839,9 @@ protected:
   *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
   *MomentMomentum,  /*!< \brief Inviscid moment for each boundary. */
   InverseDesign;  /*!< \brief Inverse design functional for each boundary. */
+  su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
+  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
+  ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
   
   su2double
   AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
@@ -6906,13 +7007,6 @@ public:
    */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
-  //  /*!
-  //   * \brief Impose the send-receive boundary condition.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
-  
   /*!
    * \brief Set the fluid solver nondimensionalization.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -6925,7 +7019,6 @@ public:
    * \return Value of the pressure at the infinity.
    */
   CFluidModel* GetFluidModel(void);
-  
   
   /*!
    * \brief Compute the density at the infinity.
@@ -7990,7 +8083,7 @@ public:
   void SetFreeStream_Solution(CConfig *config);
 
   /*!
-   * \brief Update the artificial compressibility parameter.
+   * \brief Update the Beta parameter for the incompressible preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -8005,6 +8098,65 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetPreconditioner(CConfig *config, unsigned long iPoint);
+  
+  /*!
+   * \brief Value of the total temperature at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total temperature is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total temperature is evaluated.
+   * \return Value of the total temperature
+   */
+  su2double GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the total pressure at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the total pressure is evaluated.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the total pressure is evaluated.
+   * \return Value of the total pressure
+   */
+  su2double GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief A component of the unit vector representing the flow direction at an inlet boundary.
+   * \param[in] val_marker - Surface marker where the flow direction is evaluated
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the flow direction is evaluated
+   * \param[in] val_dim - The component of the flow direction unit vector to be evaluated
+   * \return Component of a unit vector representing the flow direction.
+   */
+  su2double GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim);
+  
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+  
+  /*!
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
+   */
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+  
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
 
 };
 
@@ -9382,7 +9534,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Set the solution using the Freestream values.
@@ -9397,12 +9549,46 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
-  
+
   /*!
-   * \brief Setup the inlet per the config file and stores the result
-   * \param[in] config - Definition of the particular problem.
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInlet(CConfig *config);
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
+
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief Get the value of nu tilde at the far-field.
+   * \return Value of nu tilde at the far-field.
+   */
+  su2double GetNuTilde_Inf(void);
 
 };
 
@@ -9588,13 +9774,52 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetFreeStream_Solution(CConfig *config);
-  
+
   /*!
-   * \brief Setup the inlet per the config file and stores the result
-   * \param[in] config - Definition of the particular problem.
+   * \brief Store of a set of provided inlet profile values at a vertex.
+   * \param[in] val_inlet - vector containing the inlet values for the current vertex.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   * \param[in] iVertex - Vertex of the marker <i>iMarker</i> where the inlet is being set.
    */
-  void SetInlet(CConfig *config);
-  
+  void SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex);
+
+  /*!
+   * \brief Get the set of value imposed at an inlet.
+   * \param[in] val_inlet - vector returning the inlet values for the current vertex.
+   * \param[in] val_inlet_point - Node index where the inlet is being set.
+   * \param[in] val_kind_marker - Enumerated type for the particular inlet type.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param config - Definition of the particular problem.
+   * \return Value of the face area at the vertex.
+   */
+  su2double GetInletAtVertex(su2double *val_inlet,
+                             unsigned long val_inlet_point,
+                             unsigned short val_kind_marker,
+                             CGeometry *geometry,
+                             CConfig *config);
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
+
+  /*!
+   * \brief Get the value of the turbulent kinetic energy.
+   * \return Value of the turbulent kinetic energy.
+   */
+  su2double GetTke_Inf(void);
+
+  /*!
+   * \brief Get the value of the turbulent frequency.
+   * \return Value of the turbulent frequency.
+   */
+  su2double GetOmega_Inf(void);
+
 };
 
 /*!
@@ -10124,7 +10349,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.
@@ -10906,7 +11131,6 @@ public:
 /*! \class CHeatSolverFVM
  *  \brief Main class for defining the finite-volume heat solver.
  *  \author O. Burghardt
- *  \version 6.0.1 "Falcon"
  *  \date January 19, 2018.
  */
 class CHeatSolverFVM : public CSolver {
