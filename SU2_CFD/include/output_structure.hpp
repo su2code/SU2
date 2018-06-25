@@ -999,6 +999,7 @@ private:
   
   unsigned long LinSolvIter, iExtIter, iIntIter;
 
+  unsigned short turb_model;
 
 public:
 
@@ -1053,6 +1054,8 @@ private:
   char char_histfile[200];
 
   unsigned short nDim;
+  unsigned short turb_model;
+ 
 public:
 
   /*!
