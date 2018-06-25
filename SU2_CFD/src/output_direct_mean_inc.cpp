@@ -42,6 +42,8 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned sh
 
   nDim = geometry->GetnDim();
   
+  turb_model = config->GetKind_Turb_Model();
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {
@@ -65,6 +67,16 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("VELOCITY-X", "Res[U]", FORMAT_FIXED,   "RESIDUALS");
   AddOutputField("VELOCITY-Y", "Res[V]", FORMAT_FIXED,   "RESIDUALS");
   AddOutputField("VELOCITY-Z", "Res[W]", FORMAT_FIXED,   "RESIDUALS");
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddOutputField("NU_TILDE", "Res[nu]", FORMAT_FIXED, "RESIDUALS");
+    break;  
+  case SST:
+    AddOutputField("KINETIC_ENERGY", "Res[k]", FORMAT_FIXED, "RESIDUALS");
+    AddOutputField("DISSIPATION",    "Res[w]", FORMAT_FIXED, "RESIDUALS");
+    break;
+  }
   
   // Aerodynamic coefficients
   AddOutputField("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
@@ -148,6 +160,16 @@ inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver ****
   SetOutputFieldValue("VELOCITY-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(2)));
   if (nDim == 3) SetOutputFieldValue("VELOCITY-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(3)));
  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetOutputFieldValue("NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(0)));
+    break;  
+  case SST:
+    SetOutputFieldValue("KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(0)));
+    SetOutputFieldValue("DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(1)));
+    break;
+  }
+  
   SetOutputFieldValue("DRAG", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CD());
   SetOutputFieldValue("LIFT", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CL());
   if (nDim == 3)
