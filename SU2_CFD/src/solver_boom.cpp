@@ -906,9 +906,9 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
     Preprocessing(iPhi, iIter);
     // Attenuation(iPhi);
     // Nonlinearity(iPhi);
-    // if(flt_h - ray_z > 100.){
+    if(flt_h - ray_z > 100.){
       Relaxation(iPhi, iIter);
-    // }
+    }
     Spreading(iPhi);
     Stratification(iPhi);
     ray_z -= dz;
@@ -1047,8 +1047,9 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   c0 *= (1+0.0016*h); // Humidity correction to speed of sound
 
   /*---Compute other coefficients needed for solution of ABE---*/
-// xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
-  xbar      = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau);
+  xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
+  // xbar = rho0*pow(c0,3)/(beta*w0*p0);
+  // xbar      = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau);
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
   kappa     = kappa0*pow(T_inf/T0,1.5)*(T0+Ta*exp(-Tb/T0))/(T_inf+Ta*exp(-Tb/T_inf));
   delta     = mu/rho0*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
@@ -1058,30 +1059,36 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
 
-  // m_nu_O2 = c0*A_nu_O2/M_PI;
-  // m_nu_N2 = c0*A_nu_N2/M_PI;
-  m_nu_O2 = 2.*c0*A_nu_O2;
-  m_nu_N2 = 2.*c0*A_nu_N2;
+  m_nu_O2 = c0*A_nu_O2/M_PI;
+  m_nu_N2 = c0*A_nu_N2/M_PI;
+  // m_nu_O2 = 2.*c0*A_nu_O2;
+  // m_nu_N2 = 2.*c0*A_nu_N2;
+
+  // m_nu_O2 = exp(-m_nu_O2); // Convert from [Np] to [-]
+  // m_nu_N2 = exp(-m_nu_N2);
 
   su2double f_nu_O2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
   su2double f_nu_N2 = p_inf/Pr * sqrt(Tr/T_inf) * (9. + 280.*h*exp(-4.170*(pow(Tr/T_inf, 1./3.) - 1.)));
 
-  tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
-  tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
-  // tau_nu_O2 = 1./(f_nu_O2);
-  // tau_nu_N2 = 1./(f_nu_N2);
+  // tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
+  // tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
+  tau_nu_O2 = 1./(f_nu_O2);
+  tau_nu_N2 = 1./(f_nu_N2);
 
-  // theta_nu_O2 = w0*tau_nu_O2;
-  // theta_nu_N2 = w0*tau_nu_N2;
-  theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
-  theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
+  theta_nu_O2 = w0*tau_nu_O2;
+  theta_nu_N2 = w0*tau_nu_N2;
+  // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
+  // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
 
-  C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
-  C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
-  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(c0);
-  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(c0);
-  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*rho0*pow(c0,2)/(beta*p_inf);
-  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*rho0*pow(c0,2)/(beta*p_inf);
+  // C_nu_O2 = m_nu_O2*theta_nu_O2*w0*xbar/(2*c0);
+  // C_nu_N2 = m_nu_N2*theta_nu_N2*w0*xbar/(2*c0);
+  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
+  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
+  C_nu_O2 = m_nu_O2*tau_nu_O2*w0*rho0*pow(c0,2)/(beta*p_peak);
+  C_nu_N2 = m_nu_N2*tau_nu_N2*w0*rho0*pow(c0,2)/(beta*p_peak);
+
+  C_nu_O2 = exp(-C_nu_O2); // Convert from [Np] to [-]
+  C_nu_N2 = exp(-C_nu_N2);
 
   if(iIter == 0){
     // dsigma = 0.02*dtau;
@@ -1102,7 +1109,8 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
 
   if(iIter%2000 == 0){
-    cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", rho = " << rho0 << ", T = " << T_inf << ", c = " << c0 << ", A = " << ray_A << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
+    cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", C_nu_O2 = " << C_nu_O2 << ", C_nu_N2 = " << C_nu_N2;
+    cout << ", theta_nu_O2 = " << theta_nu_O2 << ", theta_nu_N2 = " << theta_nu_N2 << ", Gamma = " << Gamma << ", xbar = " << xbar << endl;
   }
 
 }
@@ -1175,8 +1183,8 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   }
 
   /*---Store new signal---*/
-  su2double dp_dx_end = -ptmp[len_new-1]/(5.*scale_L);
-  unsigned long len_recompress = ceil(5.*scale_L/dx_min);
+  su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
+  unsigned long len_recompress = ceil(2.*scale_L/dx_min);
   signal.len[iPhi] = ceil(len_new+len_recompress*2.5);
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
@@ -1405,8 +1413,10 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   /*---Pick minimum dsigma---*/
   dsigma = dsigma_non;
   dsigma = min(dsigma, dsigma_tv);
-  dsigma = min(dsigma, dsigma_relO);
-  dsigma = min(dsigma, dsigma_relN);
+  if(flt_h - ray_z > 100.){
+    dsigma = min(dsigma, dsigma_relO);
+    dsigma = min(dsigma, dsigma_relN);
+  }
   dsigma = min(dsigma, dsigma_A);
   dsigma = min(dsigma, dsigma_rc);
   dsigma = min(dsigma, dsigma_c);
