@@ -3673,9 +3673,14 @@ CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
 
 void CTurbomachineryDriver::Run() {
 
+ unsigned long IntIter, nIntIter;
+ bool unsteady;
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
+
+	unsteady = (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
 
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Preprocess(output, integration_container, geometry_container,
@@ -3688,12 +3693,20 @@ void CTurbomachineryDriver::Run() {
     if(mixingplane)SetMixingPlane(iZone);
   }
 
+  if (unsteady)
+    nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
+  else
+    nIntIter = 1;
+
+  for (IntIter = 0; IntIter < nIntIter; IntIter++) {
+
   for (iZone = 0; iZone < nZone; iZone++) {
+	config_container[iZone]->SetIntIter(IntIter);
     iteration_container[iZone]->Iterate(output, integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, iZone);
   }
-
+  }
   for (iZone = 0; iZone < nZone; iZone++) {
     iteration_container[iZone]->Postprocess(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,

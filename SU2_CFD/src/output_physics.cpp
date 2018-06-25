@@ -348,7 +348,11 @@ void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTim
 
 }
 
-
+void COutput::ComputeAvgTurboPerformance(CConfig *config, unsigned short nTimeInstances, unsigned short iGeomZone) {
+	  unsigned short iTimeInstance, nStages;
+	  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
+	  nStages    = SU2_TYPE::Int(nBladesRow/2);
+}
 
 
 
