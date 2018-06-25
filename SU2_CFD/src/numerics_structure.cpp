@@ -2,7 +2,7 @@
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -275,7 +275,7 @@ void CNumerics::GetInviscidProjFlux(su2double *val_density,
 
 }
 
-void CNumerics::GetInviscidArtCompProjFlux(su2double *val_density,
+void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
                                            su2double *val_velocity,
                                            su2double *val_pressure,
                                            su2double *val_betainc2,
@@ -383,7 +383,7 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_entha
   AD_END_PASSIVE
 }
 
-void CNumerics::GetInviscidArtCompProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_dRhodT, su2double *val_normal,
+void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_dRhodT, su2double *val_normal,
     su2double val_scale, su2double **val_Proj_Jac_Tensor) {
   AD_BEGIN_PASSIVE
   unsigned short iDim;
@@ -1871,7 +1871,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 
 }
 
-void CNumerics::GetViscousArtCompProjFlux(su2double *val_primvar,
+void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
                                           su2double **val_gradprimvar,
                                           su2double *val_normal,
                                           su2double val_laminar_viscosity,
@@ -2570,7 +2570,7 @@ void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2doubl
   }
 }
 
-void CNumerics::GetViscousArtCompProjJacs(su2double val_laminar_viscosity,
+void CNumerics::GetViscousIncProjJacs(su2double val_laminar_viscosity,
                                           su2double val_eddy_viscosity, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
                                           su2double **val_Proj_Jac_Tensor_i, su2double **val_Proj_Jac_Tensor_j) {
   unsigned short iDim, iVar, jVar;

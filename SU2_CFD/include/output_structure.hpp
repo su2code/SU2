@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -187,6 +187,14 @@ protected:
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut;
+
+  unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
+  vector<string> Marker_Tags_InletFile;   /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
+  unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
+  unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
+  su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
+
+protected:
 
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
@@ -572,6 +580,14 @@ public:
    * \param[in] val_iZone - iZone index.
    */
   void SetSU2_MeshBinary(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates to a binary file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -881,6 +897,28 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Merge the node coordinates of all inlet boundaries from all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void MergeInletCoordinates(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write a template inlet profile file for all inlets for flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Solver container.
+   */
+  void Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver);
+
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing inlet boundary coordinates.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
   
   /*! 
    * \brief Create and write a CSV file with a slice of data.
