@@ -548,8 +548,8 @@ CDriver::CDriver(char* confFile,
   MDOFs              = 0.0;
   MDOFsDomain        = 0.0;
   for (iZone = 0; iZone < nZone; iZone++) {
-    MDOFs       += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][iInst][MESH_0]->GetGlobal_nPoint()/(1.0e6);
-    MDOFsDomain += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][iInst][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
+    MDOFs       += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPoint()/(1.0e6);
+    MDOFsDomain += (su2double)DOFsPerPoint*(su2double)geometry_container[iZone][INST_0][MESH_0]->GetGlobal_nPointDomain()/(1.0e6);
   }
 
   /*--- Reset timer for compute/output performance benchmarking. ---*/
