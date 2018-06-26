@@ -894,6 +894,7 @@ public:
    */
   void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
 
+  void ComputeAvgTurboPerformance(CConfig *config, unsigned short nTimeInstances, unsigned short iGeomZone);
 };
 
 #include "output_structure.inl"
