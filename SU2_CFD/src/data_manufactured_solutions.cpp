@@ -92,9 +92,9 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
   const su2double fourThird = 4.0/3.0;
   const su2double x = coor[0];
   const su2double y = coor[1];
-  
+
   const su2double t1 = rho_x * a_rhox;
-  const su2double t2 = 1.0 / L;
+  const su2double t2 = 0.1e1 / L;
   const su2double t3 = t2 * Pi;
   const su2double t4 = a_rhox * Pi;
   const su2double t5 = x * t2;
@@ -103,7 +103,7 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
   const su2double t10 = a_rhoxy * rho_xy;
   const su2double t11 = Pi * t10;
   const su2double t12 = L * L;
-  const su2double t13 = 1.0 / t12;
+  const su2double t13 = 0.1e1 / t12;
   const su2double t14 = y * t13;
   const su2double t16 = x * t13;
   const su2double t17 = y * t16;
@@ -129,11 +129,10 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
   const su2double t43 = t42 * rho_y;
   const su2double t44 = cos(t18);
   const su2double t46 = t44 * rho_xy + rho_0 + t39 + t43;
-  const su2double t47 = u_x * a_ux;
   const su2double t48 = cos(t24);
   const su2double t52 = u_xy * a_uxy * Pi;
   const su2double t53 = sin(t33);
-  const su2double t56 = -t53 * t14 * t52 + t48 * t3 * t47;
+  const su2double t56 = t48 * t3 * u_x * a_ux - t53 * t14 * t52;
   const su2double t57 = t56 * t46;
   const su2double t58 = rho_y * a_rhoy;
   const su2double t59 = sin(t41);
@@ -148,11 +147,10 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
   const su2double t74 = t17 * a_vxy * Pi;
   const su2double t75 = cos(t74);
   const su2double t77 = t75 * v_xy + t68 + t72 + v_0;
-  const su2double t79 = v_y * a_vy;
   const su2double t80 = cos(t70);
   const su2double t84 = v_xy * a_vxy * Pi;
   const su2double t85 = sin(t74);
-  const su2double t88 = -t85 * t16 * t84 + t80 * t3 * t79;
+  const su2double t88 = t80 * t3 * v_y * a_vy - t85 * t16 * t84;
   const su2double t91 = t36 * t36;
   const su2double t93 = t36 * t46;
   const su2double t98 = t5 * a_Px * Pi;
@@ -164,124 +162,137 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
   const su2double t106 = cos(t105);
   const su2double t107 = t106 * t14;
   const su2double t108 = t107 * t103;
-  const su2double t109 = mu * Pi;
-  const su2double t110 = a_ux * a_ux;
-  const su2double t113 = a_uxy * a_uxy;
-  const su2double t115 = t13 * Pi * t113;
-  const su2double t116 = y * y;
-  const su2double t121 = t13 * (-u_xy * t34 * t116 * t115 - t26 * Pi * t110);
-  const su2double t126 = u_y * a_uy;
-  const su2double t127 = sin(t29);
-  const su2double t132 = -t127 * t3 * t126 - t53 * t16 * t52;
-  const su2double t136 = a_uy * a_uy;
-  const su2double t139 = x * x;
-  const su2double t146 = a_vxy * a_vxy;
-  const su2double t148 = t13 * Pi * t146;
-  const su2double t150 = v_xy * y;
-  const su2double t153 = a_vxy * t85;
-  const su2double t159 = (-t13 * (u_xy * t34 * t139 * t115 + t31 * Pi * t136) * Pi - t13 * (t150 * t75 * x * t148 + v_xy * t153) * Pi) * mu;
-  const su2double t163 = v_x * a_vx;
-  const su2double t164 = sin(t66);
-  const su2double t169 = -t85 * t14 * t84 - t164 * t3 * t163;
-  const su2double t172 = u_xy * x;
-  const su2double t175 = a_uxy * t53;
-  const su2double t180 = a_vx * a_vx;
-  const su2double t190 = (-t13 * (t172 * t34 * y * t115 + u_xy * t175) * Pi - t13 * (v_xy * t75 * t116 * t148 + t68 * Pi * t180) * Pi) * mu;
-  const su2double t191 = t77 * t77;
-  const su2double t198 = t28 * a_Py * Pi;
-  const su2double t199 = cos(t198);
-  const su2double t201 = t199 * t3 * P_y * a_Py;
-  const su2double t202 = t106 * t16;
-  const su2double t203 = t202 * t103;
-  const su2double t204 = a_vy * a_vy;
-  const su2double t211 = t13 * (-v_xy * t75 * t139 * t148 - t72 * Pi * t204);
-  const su2double t215 = -t101 + t108;
-  const su2double t217 = 1.0/(Gam - 1.0);
-  const su2double t219 = t91 + t191;
-  const su2double t229 = cos(t98);
-  const su2double t230 = t229 * P_x;
-  const su2double t231 = sin(t198);
-  const su2double t232 = t231 * P_y;
-  const su2double t233 = sin(t105);
-  const su2double t234 = t233 * P_xy;
-  const su2double t235 = P_0 + t230 + t232 + t234;
-  const su2double t239 = t217 * t235 + t219 * t46 / 2.0 + P_0 + t230 + t232 + t234;
-  const su2double t241 = a_Px * a_Px;
-  const su2double t242 = Pi * t241;
-  const su2double t244 = a_Pxy * a_Pxy;
-  const su2double t246 = P_xy * t116 * t244;
-  const su2double t247 = t13 * Pi;
-  const su2double t248 = t233 * t247;
-  const su2double t254 = P_x * t99;
-  const su2double t256 = a_Pxy * y;
-  const su2double t257 = t106 * P_xy;
-  const su2double t260 = (t254 * L * a_Px - t257 * t256) * rho_xy;
-  const su2double t263 = t19 * y * t247;
-  const su2double t268 = a_rhoxy * a_rhoxy;
-  const su2double t269 = t268 * rho_xy;
-  const su2double t273 = t44 * t13 * Pi * t235;
-  const su2double t281 = t39 + t43 + rho_0;
-  const su2double t284 = t233 * t13 * Pi * t281;
-  const su2double t286 = a_rhox * a_rhox;
-  const su2double t287 = t286 * rho_x;
-  const su2double t292 = P_xy * t7;
-  const su2double t302 = t230 + t232 + P_0;
-  const su2double t304 = t38 * t3;
-  const su2double t307 = t39 + rho_0;
-  const su2double t315 = t44 * t44;
-  const su2double t316 = rho_xy * rho_xy;
-  const su2double t318 = t281 * rho_xy;
-  const su2double t321 = t42 * t42;
-  const su2double t322 = rho_y * rho_y;
-  const su2double t324 = t307 * rho_y;
-  const su2double t327 = t7 * t7;
-  const su2double t328 = rho_x * rho_x;
-  const su2double t333 = rho_0 * rho_0;
-  const su2double t334 = 2.0 * rho_x * rho_0 * t38 + t316 * t315 + 2.0 * t44 * t318 + t322 * t321 + 2.0 * t42 * t324 - t328 * t327 + t328 + t333;
-  const su2double t336 = 1.0 / RGas;
-  const su2double t338 = k * t336 / t334;
-  const su2double t345 = t106 * t281 * P_xy;
-  const su2double t362 = t334 * t334;
-  const su2double t364 = t336 / t362;
-  const su2double t366 = a_rhoxy * t316 * t44;
-  const su2double t373 = a_rhoxy * t318;
-  const su2double t417 = (-t13 * (t126 * t127 * L + t172 * t175) * Pi - t13 * (t163 * t164 * L + t150 * t153) * Pi) * mu;
-  const su2double t419 = t201 + t203;
-  const su2double t431 = a_Py * a_Py;
-  const su2double t435 = P_xy * t139 * t244;
-  const su2double t441 = P_y * t199;
-  const su2double t443 = a_Pxy * x;
-  const su2double t446 = (t441 * L * a_Py + t257 * t443) * rho_xy;
-  const su2double t449 = t19 * x * t247;
-  const su2double t463 = a_rhoy * a_rhoy;
-  const su2double t464 = t463 * rho_y;
-  const su2double t469 = P_xy * t59;
-  const su2double t475 = t231 * t2;
-  const su2double t550 = t36 * (t217 * t215 + t219 * t22 / 2.0 + (t169 * t77 + t56 * t36) * t46 - t101 + t108)
-                       + t56 * t239 + t338 * t13 * Pi * (t44 * (t230 * t242 + t248 * t246) * rho_xy - t263 * a_rhoxy * t260
-                       - t19 * t215 * y * t10 - t273 * t116 * t269 - t106 * t7 * t2 * t4 * P_xy * rho_x * t256 + t284 * t246
-                       + (t42 * P_x * t229 * t2 * Pi * rho_y * t241 - t234 * t38 * t2 * Pi * t287 + t107 * t104 * t292 * t1
-                       + t307 * t230 * t2 * t242 - t304 * t302 * t287) * L) - 2.0 * (t44 * t7 * t3 * rho_xy * rho_x * a_rhox
-                       + t42 * t7 * t3 * rho_y * rho_x * a_rhox + rho_x * rho_0 * t7 * t2 * t4 + t304 * a_rhox * t328 * t7
-                       - t263 * t366 - t263 * t373) * k * t364 * t13 * Pi * (t44 * t260 - t19 * t235 * y * t10 - t345 * t256
-                       + (t307 * P_x * t99 * a_Px + t42 * t254 * a_Px * rho_y + t233 * t292 * t1 + t7 * t302 * t1) * L)
-                       - fourThird * t36 * t121 * t109 - fourThird * t56 * t13 * (t47 * t48 * L - u_xy * y * t175) * t109
-                       - t77 * t190 - t169 * t417 + t77 * (t217 * t419 + t219 * t64 / 2.0 + (t132 * t36 + t88 * t77) * t46 + t201 + t203)
-                       + t88 * t239 - t338 * t13 * Pi * (t44 * (-t232 * Pi * t431 - t248 * t435) * rho_xy - t449 * a_rhoxy * t446
-                       + t19 * t419 * x * t10 + t273 * t139 * t269 - t106 * t59 * t2 * t40 * P_xy * rho_y * t443 - t284 * t435
-                       + (-P_y * t38 * t475 * Pi * rho_x * t431 - t42 * P_y * t475 * Pi * rho_y * t431 - P_y * t475 * Pi * rho_0 * t431
-                       + t234 * t42 * t2 * Pi * t464 + t202 * t104 * t469 * t58 + t42 * t3 * t302 * t464) * L)
-                       + 2.0 * (-t44 * t59 * t3 * rho_xy * rho_y * a_rhoy - t60 * a_rhoy * t322 * t42 - t60 * a_rhoy * t324 - t449 * t366
-                       - t449 * t373) * k * t364 * t13 * Pi * (t44 * t446 + t19 * t235 * x * t10 + t345 * t443
-                       + (P_y * t38 * t199 * a_Py * rho_x + t42 * t441 * a_Py * rho_y + t441 * a_Py * rho_0 + t233 * t469 * t58
-                       + t59 * t302 * t58) * L) - t36 * t159 - t132 * t417 - fourThird * t77 * t211 * t109
-                       - fourThird * t88 * t13 * (t79 * t80 * L - v_xy * x * t153) * t109;
+  const su2double t109 = a_uxy * a_uxy;
+  const su2double t111 = t13 * Pi * t109;
+  const su2double t112 = y * y;
+  const su2double t116 = a_vxy * a_vxy;
+  const su2double t118 = t13 * Pi * t116;
+  const su2double t120 = v_xy * x;
+  const su2double t122 = t120 * t75 * y * t118;
+  const su2double t124 = a_vxy * t85;
+  const su2double t125 = v_xy * t124;
+  const su2double t127 = a_ux * a_ux;
+  const su2double t131 = (-u_xy * t34 * t112 * t111 + t122 / 0.2e1 + t125 / 0.2e1 - t26 * Pi * t127) * Pi;
+  const su2double t132 = t13 * mu;
+  const su2double t137 = u_y * a_uy;
+  const su2double t138 = sin(t29);
+  const su2double t143 = -t138 * t3 * t137 - t53 * t16 * t52;
+  const su2double t147 = a_uy * a_uy;
+  const su2double t150 = x * x;
+  const su2double t161 = (-t13 * (u_xy * t34 * t150 * t111 + t31 * Pi * t147) * Pi - t13 * (t122 + t125) * Pi) * mu;
+  const su2double t165 = v_x * a_vx;
+  const su2double t166 = sin(t66);
+  const su2double t171 = -t85 * t14 * t84 - t166 * t3 * t165;
+  const su2double t174 = u_xy * x;
+  const su2double t176 = t174 * t34 * y * t111;
+  const su2double t177 = a_uxy * t53;
+  const su2double t178 = u_xy * t177;
+  const su2double t182 = a_vx * a_vx;
+  const su2double t192 = (-t13 * (t176 + t178) * Pi - t13 * (v_xy * t75 * t112 * t118 + t68 * Pi * t182) * Pi) * mu;
+  const su2double t193 = t77 * t77;
+  const su2double t200 = t28 * a_Py * Pi;
+  const su2double t201 = cos(t200);
+  const su2double t203 = t201 * t3 * P_y * a_Py;
+  const su2double t204 = t106 * t16;
+  const su2double t205 = t204 * t103;
+  const su2double t210 = a_vy * a_vy;
+  const su2double t215 = (0.2e1 * v_xy * t75 * t150 * t118 + 0.2e1 * t72 * Pi * t210 - t176 - t178) * Pi;
+  const su2double t219 = -t101 + t108;
+  const su2double t221 = 1 / (Gam - 1);
+  const su2double t223 = t91 + t193;
+  const su2double t233 = cos(t98);
+  const su2double t234 = t233 * P_x;
+  const su2double t235 = sin(t200);
+  const su2double t236 = t235 * P_y;
+  const su2double t237 = sin(t105);
+  const su2double t238 = t237 * P_xy;
+  const su2double t239 = P_0 + t234 + t236 + t238;
+  const su2double t243 =  t221 * t239 + t223 * t46 / 0.2e1 + P_0 + t234 + t236 + t238;
+  const su2double t245 = a_Px * a_Px;
+  const su2double t246 = Pi * t245;
+  const su2double t248 = a_Pxy * a_Pxy;
+  const su2double t250 = P_xy * t112 * t248;
+  const su2double t251 = t13 * Pi;
+  const su2double t252 = t237 * t251;
+  const su2double t258 = P_x * t99;
+  const su2double t260 = a_Pxy * y;
+  const su2double t261 = t106 * P_xy;
+  const su2double t264 = (t258 * L * a_Px - t261 * t260) * rho_xy;
+  const su2double t267 = t19 * y * t251;
+  const su2double t272 = a_rhoxy * a_rhoxy;
+  const su2double t273 = t272 * rho_xy;
+  const su2double t277 = t44 * t13 * Pi * t239;
+  const su2double t285 = t39 + t43 + rho_0;
+  const su2double t288 = t237 * t13 * Pi * t285;
+  const su2double t290 = a_rhox * a_rhox;
+  const su2double t291 = t290 * rho_x;
+  const su2double t296 = P_xy * t7;
+  const su2double t306 = t234 + t236 + P_0;
+  const su2double t308 = t38 * t3;
+  const su2double t311 = t39 + rho_0;
+  const su2double t318 = t44 * t44;
+  const su2double t319 = rho_xy * rho_xy;
+  const su2double t321 = t285 * rho_xy;
+  const su2double t324 = t42 * t42;
+  const su2double t325 = rho_y * rho_y;
+  const su2double t327 = t311 * rho_y;
+  const su2double t330 = t7 * t7;
+  const su2double t331 = rho_x * rho_x;
+  const su2double t336 = rho_0 * rho_0;
+  const su2double t337 = 0.2e1 * rho_x * rho_0 * t38 + t319 * t318 + 0.2e1 * t44 * t321 + t325 * t324 + 0.2e1 * t42 * t327 - t331 * t330 + t331 + t336;
+  const su2double t338 = 0.1e1 / t337;
+  const su2double t340 = 0.1e1 / RGas;
+  const su2double t341 = t340 * t13;
+  const su2double t349 = t106 * t285 * P_xy;
+  const su2double t365 = t337 * t337;
+  const su2double t366 = 0.1e1 / t365;
+  const su2double t369 = a_rhoxy * t319 * t44;
+  const su2double t376 = a_rhoxy * t321;
+  const su2double t398 = u_xy * y * t177;
+  const su2double t399 = t120 * t124;
+  const su2double t402 = a_ux * u_x * t48;
+  const su2double t404 = a_vy * v_y * t80;
+  const su2double t428 = (-t13 * (t137 * t138 * L + t174 * t177) * Pi - t13 * (t165 * t166 * L + v_xy * y * t124) * Pi) * mu;
+  const su2double t430 = t203 + t205;
+  const su2double t442 = a_Py * a_Py;
+  const su2double t446 = P_xy * t150 * t248;
+  const su2double t452 = P_y * t201;
+  const su2double t454 = a_Pxy * x;
+  const su2double t457 = (t452 * L * a_Py + t261 * t454) * rho_xy;
+  const su2double t460 = t19 * x * t251;
+  const su2double t474 = a_rhoy * a_rhoy;
+  const su2double t475 = t474 * rho_y;
+  const su2double t480 = P_xy * t59;
+  const su2double t486 = t235 * t2;
+  const su2double t564 = t36 * ( t221 * t219 + t223 * t22 / 0.2e1 + (t171 * t77 + t56 * t36) * t46 - t101 + t108) + t56 * t243
+                       + k * t341 * t338 * (t44 * (t234 * t246 + t252 * t250) * rho_xy - t267 * a_rhoxy * t264
+                       - t19 * t219 * y * t10 - t277 * t112 * t273 - t106 * t7 * t2 * t4 * P_xy * rho_x * t260 + t288 * t250 
+                       + (t42 * P_x * t233 * t2 * Pi * rho_y * t245 - t238 * t38 * t2 * Pi * t291 
+                       + t107 * t104 * t296 * t1 + t311 * t234 * t2 * t246 - t308 * t306 * t291) * L) * Pi 
+                       - 0.2e1 * (t44 * t7 * t3 * rho_xy * rho_x * a_rhox + t42 * t7 * t3 * rho_y * rho_x * a_rhox 
+                       + rho_x * rho_0 * t7 * t2 * t4 + t308 * a_rhox * t331 * t7 - t267 * t369 - t267 * t376) * k * t341 * t366 
+                       * (t44 * t264 - t19 * t239 * y * t10 - t349 * t260 + (t311 * P_x * t99 * a_Px + t42 * t258 * a_Px * rho_y 
+                       + t237 * t296 * t1 + t7 * t306 * t1) * L) * Pi - fourThird * t36 * t132 * t131 
+                       - fourThird * t56 * t132 * (-t398 + t399 / 0.2e1 + (t402 - t404 / 0.2e1) * L) * Pi 
+                       - t77 * t192 - t171 * t428 + t77 * ( t221 * t430 + t223 * t64 / 0.2e1 + (t143 * t36 + t88 * t77) * t46 + t203 + t205)
+                       + t88 * t243 - k * t340 * t338 * t13 * (t44 * (-t236 * Pi * t442 - t252 * t446) * rho_xy 
+                       - t460 * a_rhoxy * t457 + t19 * t430 * x * t10 + t277 * t150 * t273 - t106 * t59 * t2 * t40 * P_xy * rho_y * t454 
+                       - t288 * t446 + (-P_y * t38 * t486 * Pi * rho_x * t442 - t42 * P_y * t486 * Pi * rho_y * t442
+                       - P_y * t486 * Pi * rho_0 * t442 + t238 * t42 * t2 * Pi * t475 + t204 * t104 * t480 * t58 
+                       + t42 * t3 * t306 * t475) * L) * Pi + 0.2e1 * (-t44 * t59 * t3 * rho_xy * rho_y * a_rhoy 
+                       - t60 * a_rhoy * t325 * t42 - t60 * a_rhoy * t327 - t460 * t369 - t460 * t376) * k * t340 * t366 * t13 
+                       * (t44 * t457 + t19 * t239 * x * t10 + t349 * t454 + (P_y * t38 * t201 * a_Py * rho_x + t42 * t452 * a_Py * rho_y 
+                       + t452 * a_Py * rho_0 + t237 * t480 * t58 + t59 * t306 * t58) * L) * Pi - t36 * t161 
+                       - t143 * t428 + 0.2e1 / 0.3e1 * t77 * t132 * t215 + 0.2e1 / 0.3e1 * t88 * t132 * (-t398 + 0.2e1 * t399 
+                       + (t402 - 0.2e1 * t404) * L) * Pi;
 
-  source[0] = t88 * t46 + t77 * t64 + t37 + t57;
-  source[1] = t91 * t22 + 2.0 * t56 * t93 - t101 + t108 - fourThird * t121 * t109 + t77 * t36 * t64 + t77 * t132 * t46 + t88 * t93 - t159;
-  source[2] = t77 * t37 + t77 * t57 + t169 * t93 - t190 + t191 * t64 + 2.0 * t88 * t77 * t46 + t201 + t203 - fourThird * t211 * t109;
-  source[3] = 0.0;
-  source[nDim+1] = t550;
+  source[0]      = t88 * t46 + t77 * t64 + t37 + t57;
+  source[1]      = t91 * t22 + 0.2e1 * t56 * t93 - t101 + t108 - fourThird * t132 * t131 + t77 * t36 * t64 + t77 * t143 * t46 + t88 * t93 - t161;
+  source[2]      = t77 * t37 + t77 * t57 + t171 * t93 - t192 + t193 * t64 + 0.2e1 * t88 * t77 * t46 + t203 + t205 + 0.2e1 / 0.3e1 * t132 * t215;
+  source[3]      = 0.0;
+  source[nDim+1] = t564;
+
+
 }
 
 #else
