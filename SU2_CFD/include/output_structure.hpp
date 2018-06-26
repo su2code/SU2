@@ -192,6 +192,8 @@ class COutput {
   su2double TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
+  vector<double> WorkDone_PC;
+
 protected:
 
   int rank, 	/*!< \brief MPI Rank. */
