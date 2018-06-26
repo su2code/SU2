@@ -358,16 +358,19 @@ void COutput::ComputeAvgTurboPerformance(CConfig *config) {
 	for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
 		for(unsigned short iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
 			for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP); iSpan++){
-				//cout<<"At Compute Avg Turbo Performance: iSpan: "<<iSpan<<" iMarker "<<iMarkerTP<<" "<<EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
+				cout<<"At Compute Avg Turbo Performance: iSpan: "<<iSpan<<" iMarker "<<iMarkerTP<<" "<<EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
 				WorkDone_iTime.push_back(EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
 			}
 		}
 	}
 
 	/* Loop over the last cycle time-steps to average over time */
-	for (vector<su2double>::iterator iEW = WorkDone_iTime.end(); iEW >= (WorkDone_iTime.end()-steps_per_cycle); --iEW){
-		//cout<<*iEW<<endl;
+	//int i=0;
+	//cout<<endl;
+	for (vector<su2double>::iterator iEW = WorkDone_iTime.end()-1; iEW >= (WorkDone_iTime.end()-steps_per_cycle); iEW--){
+		//cout<<"Index :: "<<i<<":: Value :: "<<*iEW<<endl;
 		WorkDonePerCycle +=*iEW;
+		//i++;
 	}
 	WorkDonePerCycle /= steps_per_cycle;
 	//cout<<"Work Done per Cycle is: "<<WorkDonePerCycle<<endl;

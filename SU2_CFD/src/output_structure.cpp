@@ -300,7 +300,7 @@ COutput::COutput(CConfig *config) {
     EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
     TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
 
-    steps_per_cycle=100.0; /* Hard coded steps per cycle to calculate workdone per cycle Need to be corrected */
+    steps_per_cycle=200.0; /* Hard coded steps per cycle to calculate workdone per cycle Need to be corrected */
     for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
     	WorkDone_iTime.push_back(0.0);
   }
@@ -4409,6 +4409,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       // different from zero only in multi-zone computation
       turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
       turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDonePerCyc_" + tag.str() + "\"";
 
     }
   }
@@ -5324,6 +5325,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+
+				SPRINTF(surface_coeff, ", %12.10f", WorkDonePerCycle);
 								strcat(turbo_coeff, surface_coeff);
 
               }
