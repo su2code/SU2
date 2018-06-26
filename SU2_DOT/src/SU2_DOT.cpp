@@ -864,10 +864,6 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
                 my_Gradient[0] += 1. - (x - x0)/(x1-x0) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
                 my_Gradient[1] +=      (x - x0)/(x1-x0) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               }
-              else{
-                eps = 0.0;
-              }
-              node[iPoint]->SetTranspiration(eps/config->GetVelocity_Ref());
             }
           }
         }
