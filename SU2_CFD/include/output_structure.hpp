@@ -192,8 +192,9 @@ class COutput {
   su2double TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
-  su2double steps_per_cycle;
-  vector<double> WorkDone_PC;
+  unsigned short steps_per_cycle;
+  vector<su2double> WorkDone_iTime;
+  su2double WorkDonePerCycle;
 
 protected:
 

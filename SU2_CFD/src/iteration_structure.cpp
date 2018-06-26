@@ -367,7 +367,7 @@ void CIteration::SetGrid_Movement(CGeometry ***geometry_container,
     		cout << endl<< "--------------------- Surface grid deformation (ZONE "<< val_iZone << ") -----------------" << endl;
     	}
     	surface_movement[val_iZone]->Surface_Pitching(geometry_container[val_iZone][MESH_0],config_container[val_iZone],ExtIter,val_iZone);
-    	surface_movement[val_iZone]->Surface_Plunging(geometry_container[val_iZone][MESH_0],config_container[val_iZone],ExtIter,val_iZone);
+    	//surface_movement[val_iZone]->Surface_Plunging(geometry_container[val_iZone][MESH_0],config_container[val_iZone],ExtIter,val_iZone);
     	grid_movement[val_iZone]->SetVolume_Deformation(geometry_container[val_iZone][MESH_0],config_container[val_iZone], true,false);
     	geometry_container[val_iZone][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
     	//grid_movement[val_iZone]->UpdateMultiGrid(geometry_container[val_iZone], config_container[val_iZone]);
