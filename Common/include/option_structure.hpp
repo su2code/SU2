@@ -603,7 +603,8 @@ enum ENUM_GRIDMOVEMENT {
   STEADY_TRANSLATION = 11,    /*!< \brief Simulation in a steadily translating frame. */
   GUST = 12, /*!< \brief Simulation on a static mesh with a gust. */
   MOVING_HTP = 13,    /*!< \brief Simulation with moving HTP (rotation). */
-  FLUID_STRUCTURE_STATIC = 14 /*!< \brief Fluid structure deformation with no grid velocity. */
+  FLUID_STRUCTURE_STATIC = 14, /*!< \brief Fluid structure deformation with no grid velocity. */
+  TURBO_VIBRATION = 15 /*!< \brief Fluid structure deformation with no grid velocity. */
 };
 
 static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string, ENUM_GRIDMOVEMENT>
@@ -621,7 +622,8 @@ static const map<string, ENUM_GRIDMOVEMENT> GridMovement_Map = CCreateMap<string
 ("AEROELASTIC_RIGID_MOTION", AEROELASTIC_RIGID_MOTION)
 ("STEADY_TRANSLATION", STEADY_TRANSLATION)
 ("GUST", GUST)
-("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC);
+("FLUID_STRUCTURE_STATIC", FLUID_STRUCTURE_STATIC)
+("TURBO_VIBRATION", TURBO_VIBRATION);
 
 /*!
  * \brief type of wind gusts

@@ -1,2 +1,2 @@
 export CXXFLAGS="-g -O3"
-./preconfigure.py --with-Eigen-include=/home/nitish/Softwares/EIGEN --prefix=/home/nitish/Softwares/SU2_HBZ_TV/SU2 --enable-mpi  --with-cc=/usr/bin/mpicc  --with-cxx=/usr/bin/mpicxx --enable-autodiff
+./preconfigure.py --with-Eigen-include=/home/nitish/Softwares/EIGEN --prefix=/home/nitish/Softwares/SU2_HBZ_TV/SU2 --enable-mpi  --with-cc=/usr/bin/mpicc.openmpi  --with-cxx=/usr/bin/mpicxx.openmpi --enable-autodiff

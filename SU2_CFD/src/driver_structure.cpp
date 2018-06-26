@@ -3715,6 +3715,10 @@ void CTurbomachineryDriver::Run() {
 
   if (rank == MASTER_NODE){
     SetTurboPerformance(ZONE_0);
+
+  if(unsteady)
+    SetTurboAvgPerformance(ZONE_0);
+
   }
 
 
@@ -3895,6 +3899,12 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
   return StopCalc;
 
+}
+
+void CTurbomachineryDriver::SetTurboAvgPerformance(unsigned short targetZone){
+
+	/* Compute time-accurate unsteady flow properties in turbomachines*/
+	output->ComputeAvgTurboPerformance(config_container[targetZone]);
 }
 
 CDiscAdjFluidDriver::CDiscAdjFluidDriver(char* confFile,

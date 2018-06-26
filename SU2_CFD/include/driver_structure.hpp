@@ -852,7 +852,10 @@ public:
    */
   bool Monitor(unsigned long ExtIter);
 
-
+  /*!
+     * \brief Compute unsteady performance terms averaged over time.
+     */
+  void SetTurboAvgPerformance(unsigned short targetZone);
 
 };
 

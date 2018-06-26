@@ -300,6 +300,9 @@ COutput::COutput(CConfig *config) {
     EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
     TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
 
+    steps_per_cycle=25.0; /* Hard coded steps per cycle to calculate workdone per cycle Need to be corrected */
+    for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
+    	WorkDone_PC.push_back(0.0);
   }
 }
 

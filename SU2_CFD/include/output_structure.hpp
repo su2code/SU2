@@ -192,6 +192,7 @@ class COutput {
   su2double TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
+  su2double steps_per_cycle;
   vector<double> WorkDone_PC;
 
 protected:
@@ -896,7 +897,7 @@ public:
    */
   void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
 
-  void ComputeAvgTurboPerformance(CConfig *config, unsigned short nTimeInstances, unsigned short iGeomZone);
+  void ComputeAvgTurboPerformance(CConfig *config);
 };
 
 #include "output_structure.inl"
