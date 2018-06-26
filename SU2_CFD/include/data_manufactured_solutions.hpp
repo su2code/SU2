@@ -77,6 +77,9 @@ void SourceTermManufacturedSolution(const unsigned short nDim,
 #ifdef MANUFACTURED_VISCOUS_UNIT_QUAD
 
 /*--- Constants, which describe this manufactured solution. ---*/
+/*--- This is a viscous solution on the unit quad, where    ---*/
+/*--- the primitive variables vary as a combination of      ---*/
+/*--- sine and cosine functions.                            ---*/
 const su2double L       =      1.0;
 const su2double a_Px    =      1.0;
 const su2double a_Pxy   =      0.75;

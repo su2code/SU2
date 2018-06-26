@@ -277,8 +277,12 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
     // Solve the matrix problem to get the temperature field
     // *******LAPACK CALL********
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
     info = 0;
     info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+#else
+    SU2_MPI::Error("Not compiled with LAPACK support", CURRENT_FUNCTION);
+#endif
 
     T = rhs;
 
