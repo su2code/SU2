@@ -352,6 +352,8 @@ void COutput::ComputeAvgTurboPerformance(CConfig *config, unsigned short nTimeIn
 	  unsigned short iTimeInstance, nStages;
 	  unsigned short nBladesRow = config->GetnMarker_Turbomachinery();
 	  nStages    = SU2_TYPE::Int(nBladesRow/2);
+
+	  WorkDone_PC.push_back(0.0);
 }
 
 
