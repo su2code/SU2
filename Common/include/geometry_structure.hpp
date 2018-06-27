@@ -1738,6 +1738,11 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 */
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
 
+  /*!
+   * \brief Set the maximum cell-center to cell-center distance for CVs.
+   */
+  void SetMaxLength(void);
+
 	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot 

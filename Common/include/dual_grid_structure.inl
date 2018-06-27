@@ -80,6 +80,8 @@ inline unsigned long CPoint::GetPoint(unsigned short val_point) { return Point[v
 
 inline su2double CPoint::GetVolume (void) { return Volume[0]; }
 
+inline su2double CPoint::GetMaxLength(void) {return MaxLength;}
+
 inline bool CPoint::GetMove (void) { return Move; }
 
 inline bool CPoint::GetBoundary(void) { return Boundary; }
@@ -97,6 +99,8 @@ inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
 inline void CPoint::AddVolume (su2double val_Volume) { Volume[0] += val_Volume; }
 
 inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
+
+inline void CPoint::SetMaxLength (su2double val_max_length) { MaxLength = val_max_length; }
 
 inline void CPoint::SetMove(bool val_move) { Move = val_move; }
 
