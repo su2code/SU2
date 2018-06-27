@@ -365,16 +365,10 @@ void COutput::ComputeAvgTurboPerformance(CConfig *config) {
 	}
 
 	/* Loop over the last cycle time-steps to average over time */
-	//int i=0;
-	//cout<<endl;
 	for (vector<su2double>::iterator iEW = WorkDone_iTime.end()-1; iEW >= (WorkDone_iTime.end()-steps_per_cycle); iEW--){
-		//cout<<"Index :: "<<i<<":: Value :: "<<*iEW<<endl;
 		WorkDonePerCycle +=*iEW;
-		//i++;
 	}
 	WorkDonePerCycle /= steps_per_cycle;
-	//cout<<"Work Done per Cycle is: "<<WorkDonePerCycle<<endl;
-
 }
 
 
