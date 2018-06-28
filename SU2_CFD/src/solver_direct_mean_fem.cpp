@@ -12873,7 +12873,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
           const su2double vel = sol[k]*rhoInv;
           kinEner += 0.5*vel*vel;
         }
-        const double StaticEnergy = sol[nVar-1]*rhoInv - kinEner;
+        const su2double StaticEnergy = sol[nVar-1]*rhoInv - kinEner;
 
         FluidModel->SetTDState_rhoe(sol[0], StaticEnergy);
         const su2double ViscosityLam        = FluidModel->GetLaminarViscosity();

@@ -84,19 +84,19 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                                       su2double &kOverCvWall) {
 
   /*--- Set up vectors ---*/
-  std::vector<su2double> y(numPoints,0.0);
-  std::vector<su2double> u(numPoints,0.0);
-  std::vector<su2double> T(numPoints,0.0);
-  std::vector<su2double> rho(numPoints,0.0);
-  std::vector<su2double> mu(numPoints,0.0);
-  std::vector<su2double> muTurb(numPoints,0.0);
-  std::vector<su2double> muTurb_new(numPoints,0.0);
-  std::vector<su2double> nu(numPoints,0.0);
+  vector<su2double> y(numPoints,0.0);
+  vector<su2double> u(numPoints,0.0);
+  vector<su2double> T(numPoints,0.0);
+  vector<su2double> rho(numPoints,0.0);
+  vector<su2double> mu(numPoints,0.0);
+  vector<su2double> muTurb(numPoints,0.0);
+  vector<su2double> muTurb_new(numPoints,0.0);
+  vector<su2double> nu(numPoints,0.0);
 
-  std::vector<su2double> lower(numPoints-1,0.0);
-  std::vector<su2double> upper(numPoints-1,0.0);
-  std::vector<su2double> diagonal(numPoints,0.0);
-  std::vector<su2double> rhs(numPoints,0.0);
+  vector<su2double> lower(numPoints-1,0.0);
+  vector<su2double> upper(numPoints-1,0.0);
+  vector<su2double> diagonal(numPoints,0.0);
+  vector<su2double> rhs(numPoints,0.0);
 
   // Set some constants, assuming air at standard conditions
   // TO DO: Get these values from solver or config classes
@@ -149,18 +149,18 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
         rho[i] = pExchange / (R*T[i]);
 
         // Set the viscosity profile, based on Sutherland's law
-        mu[i] = C_1 * std::pow(T[i],1.5) / (T[i] + S);
+        mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S);
         nu[i] = mu[i]/rho[i];
       }
       // Set the initial friction length based on wall shear with linear
       // velocity profile
       tauWall = mu[0] * (u[1]-u[0])/y[1];
-      su2double u_tau = std::sqrt(tauWall/rho[0]);
+      su2double u_tau = sqrt(tauWall/rho[0]);
       su2double l_tau = nu[0] / u_tau;
       for(unsigned short i = 0; i<numPoints; i++){
         /*--- Set the turbulent viscosity ---*/
         su2double y_plus = y[i]/l_tau;
-        su2double D = std::pow(1-std::exp((-y_plus)/A),2.0);
+        su2double D = pow(1-exp((-y_plus)/A),2.0);
         muTurb[i] = kappa * rhoExchange * y[i] * u_tau * D;
         //muTurb[i] = 0.0;
       }
@@ -169,9 +169,9 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
 //    // Debugging output
 //    for(unsigned short i=0; i<numPoints; i++){
-//      std::cout << u[i] << ", ";
+//      cout << u[i] << ", ";
 //    }
-//    std::cout << std::endl;
+//    cout << endl;
 
     /*--- Solve the differential equation
      * d/dy[ (mu + mu_turb) * du/dy) = 0
@@ -289,17 +289,17 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     // Update solution with new u and T profiles
     for(unsigned short i=0; i<numPoints; i++){
       rho[i] = pExchange / (R*T[i]);
-      mu[i] = C_1 * std::pow(T[i],1.5)/(T[i] + S);
+      mu[i] = C_1 * pow(T[i],1.5)/(T[i] + S);
       nu[i] = mu[i]/rho[i];
     }
 
     tauWall = mu[0] * ( (u[1] - u[0])/(y[1] - y[0]) );
-    su2double u_tau = std::sqrt(tauWall/rho[0]);
+    su2double u_tau = sqrt(tauWall/rho[0]);
     su2double l_tau = nu[0]/u_tau;
 
     for(unsigned short i=0; i<numPoints; i++){
       su2double y_plus = y[i]/l_tau;
-      su2double D = std::pow((1 - std::exp(-y_plus/A)),2.0);
+      su2double D = pow((1 - exp(-y_plus/A)),2.0);
       muTurb_new[i] = kappa * u_tau * rho[i] * y[i] * D;
     }
 
@@ -307,8 +307,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     su2double norm_diff_mu_turb = 0.0;
     su2double norm_mu_turb = 0.0;
     for(unsigned short i=0; i<numPoints; i++){
-      norm_diff_mu_turb = norm_diff_mu_turb + std::abs(muTurb_new[i] - muTurb[i]);
-      norm_mu_turb = norm_mu_turb + std::abs(muTurb[i]);
+      norm_diff_mu_turb = norm_diff_mu_turb + abs(muTurb_new[i] - muTurb[i]);
+      norm_mu_turb = norm_mu_turb + abs(muTurb[i]);
     }
 
     su2double residual = norm_diff_mu_turb/norm_mu_turb;
@@ -323,19 +323,19 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
       kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
 
 //      // Debugging output
-//      std::cout << "tauWall = " << tauWall << std::endl;
-//      std::cout << "qWall = " << qWall << std::endl;
-//      std::cout << "ViscosityWall = " << ViscosityWall << std::endl;
-//      std::cout << "kOverCvWall = " << kOverCvWall << std::endl;
-//      std::cout << "y, u, T, mu, muTurb, rho" << std::endl;
+//      cout << "tauWall = " << tauWall << endl;
+//      cout << "qWall = " << qWall << endl;
+//      cout << "ViscosityWall = " << ViscosityWall << endl;
+//      cout << "kOverCvWall = " << kOverCvWall << endl;
+//      cout << "y, u, T, mu, muTurb, rho" << endl;
 //      for(unsigned short i=0; i<numPoints; i++){
-//        std::cout << y[i] << ", ";
-//        std::cout << u[i] << ", ";
-//        std::cout << T[i] << ", ";
-//        std::cout << mu[i] << ", ";
-//        std::cout << muTurb[i] << ", ";
-//        std::cout << rho[i] << ", ";
-//        std::cout << std::endl;
+//        cout << y[i] << ", ";
+//        cout << u[i] << ", ";
+//        cout << T[i] << ", ";
+//        cout << mu[i] << ", ";
+//        cout << muTurb[i] << ", ";
+//        cout << rho[i] << ", ";
+//        cout << endl;
     }
     else if(j == 50){
       cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Wall Model did not converge" << endl;
@@ -344,5 +344,5 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
     j++;
   }
-  std::cout << "-------------------------------------------" << std::endl;
+  cout << "-------------------------------------------" << endl;
 }
