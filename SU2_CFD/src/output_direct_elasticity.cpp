@@ -55,7 +55,6 @@ CFEAOutput::~CFEAOutput(void) {
   if (rank == MASTER_NODE){
     HistFile.close();
 
-    if (residual_fem != NULL) delete [] residual_fem;
   }
 
 }

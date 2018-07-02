@@ -41,6 +41,8 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   
   nDim = geometry->GetnDim();
  
+  turb_model = config->GetKind_Turb_Model();
+  
 }
 
 CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
@@ -62,7 +64,16 @@ void CDiscAdjFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("ADJOINT_MOMENTUM-Y", "Res[A_RhoV]", FORMAT_FIXED, "RESIDUALS");
   AddOutputField("ADJOINT_MOMENTUM-Z", "Res[A_RhoW]", FORMAT_FIXED, "RESIDUALS");
   AddOutputField("ADJOINT_ENERGY",     "Res[A_E]",    FORMAT_FIXED, "RESIDUALS");
-  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddOutputField("ADJOINT_NU_TILDE", "Res[A_nu]", FORMAT_FIXED, "RESIDUALS");
+    break;  
+  case SST:
+    AddOutputField("ADJOINT_KINETIC_ENERGY", "Res[A_k]", FORMAT_FIXED, "RESIDUALS");
+    AddOutputField("ADJOINT_DISSIPATION",    "Res[A_w]", FORMAT_FIXED, "RESIDUALS");
+    break;
+  default: break;
+  }
   AddOutputField("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
   AddOutputField("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
   AddOutputField("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
@@ -87,6 +98,16 @@ inline void CDiscAdjFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver 
     SetOutputFieldValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(4)));
   } else {
     SetOutputFieldValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));    
+  }
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetOutputFieldValue("ADJOINT_NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
+    break;  
+  case SST:
+    SetOutputFieldValue("ADJOINT_KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
+    SetOutputFieldValue("ADJOINT_DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(1)));
+    break;
+  default: break;
   }
   SetOutputFieldValue("SENS_GEO", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo());
   SetOutputFieldValue("SENS_AOA", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA());

@@ -50,9 +50,7 @@ CFlowOutput::~CFlowOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
-    
-    delete [] ResRMS;
-    delete [] ResMax;
+
   }
 
 
@@ -82,6 +80,7 @@ inline void CFlowOutput::SetOutputFields(CConfig *config){
     AddOutputField("KINETIC_ENERGY", "Res[k]", FORMAT_FIXED, "RESIDUALS");
     AddOutputField("DISSIPATION",    "Res[w]", FORMAT_FIXED, "RESIDUALS");
     break;
+  default: break;
   }
   
   // Aerodynamic coefficients
@@ -182,6 +181,7 @@ inline void CFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****so
     SetOutputFieldValue("KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(0)));
     SetOutputFieldValue("DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(1)));
     break;
+  default: break;
   }
   
   SetOutputFieldValue("DRAG", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CD());

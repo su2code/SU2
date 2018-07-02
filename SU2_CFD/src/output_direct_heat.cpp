@@ -78,7 +78,7 @@ inline void CHeatOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****so
   SetOutputFieldValue("TEMPERATURE",  solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature());
   SetOutputFieldValue("HEAT", log10(solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetRes_RMS(0)));
   
-  SetOutputFieldValue("TIME", timeused);
+  SetOutputFieldValue("PHYS_TIME", timeused);
   SetOutputFieldValue("LINSOL_ITER", solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetIterLinSolver());
   
 }
