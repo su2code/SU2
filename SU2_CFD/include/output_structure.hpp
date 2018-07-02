@@ -1016,26 +1016,8 @@ public:
  */
 class CFlowOutput : public COutput {
 private:
-
-
   
   unsigned short nVar, nDim;
-  
-  su2double *ResRMS,
-            *ResMax,
-            CD_Total,
-            CL_Total,
-            CMx_Total,
-            CMy_Total,
-            CMz_Total,
-            AoA,
-            CFx_Total,
-            CFy_Total,
-            CFz_Total,
-            CEff_Total,
-            Time_Used;
-  
-  unsigned long LinSolvIter, iExtIter, iIntIter;
 
   unsigned short turb_model;
 
@@ -1093,6 +1075,7 @@ private:
 
   unsigned short nDim;
   unsigned short turb_model;
+  bool heat, weakly_coupled_heat;
  
 public:
 
@@ -1147,15 +1130,7 @@ private:
 
 protected:
 
-  su2double *residual_fem;
   unsigned short nVar_FEM;
-
-  su2double Total_VMStress;
-  su2double Total_ForceCoeff;
-  su2double Total_IncLoad;
-  su2double Time_Used;
-  unsigned long LinSolvIter;
-  unsigned long iExtIter, iIntIter;
 
 public:
 
@@ -1264,7 +1239,7 @@ public:
 class CAdjFlowOutput : public COutput {
 private:
 
-  char char_histfile[200];
+  unsigned short nDim, turb_model;
 
 public:
 
@@ -1282,32 +1257,13 @@ public:
   virtual ~CAdjFlowOutput(void);
 
   /*!
-   * \brief Write the header of the history file.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] integration - Generic subroutines for space integration, time integration, and monitoring.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] timeused - Current number of clock tick in the computation (related with total time).
-   * \param[in] val_nZone - iZone index.
-   */
-  void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*!
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
   void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void SetOutputFields(CConfig *config);
 
   /*!
    * \brief Determines if the history file output.
@@ -1338,7 +1294,8 @@ public:
 class CDiscAdjFlowOutput : public COutput {
 private:
 
-
+  unsigned short nDim, turb_model;
+  
 public:
 
 

@@ -44,6 +44,10 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned sh
   
   turb_model = config->GetKind_Turb_Model();
   
+  heat = config->GetEnergy_Equation();
+  
+  weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {
@@ -76,6 +80,13 @@ void CIncFlowOutput::SetOutputFields(CConfig *config){
     AddOutputField("KINETIC_ENERGY", "Res[k]", FORMAT_FIXED, "RESIDUALS");
     AddOutputField("DISSIPATION",    "Res[w]", FORMAT_FIXED, "RESIDUALS");
     break;
+  }
+  
+  if (heat || weakly_coupled_heat){
+    AddOutputField("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
+    AddOutputField("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT");
+    AddOutputField("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
+    AddOutputField("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
   }
   
   // Aerodynamic coefficients
@@ -169,7 +180,20 @@ inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver ****
     SetOutputFieldValue("DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->GetRes_RMS(1)));
     break;
   }
-  
+  if (weakly_coupled_heat){
+    SetOutputFieldValue("HEATFLUX",     solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_HeatFlux());
+    SetOutputFieldValue("HEATFLUX_MAX", solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_MaxHeatFlux());
+    SetOutputFieldValue("TEMPERATURE",  solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature());
+    SetOutputFieldValue("HEAT",         log10(solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetRes_RMS(0)));
+  }
+  if (heat){
+    SetOutputFieldValue("HEATFLUX",     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_HeatFlux());
+    SetOutputFieldValue("HEATFLUX_MAX", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_MaxHeatFlux());
+    SetOutputFieldValue("TEMPERATURE",  solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_AvgTemperature());
+    if (nDim == 3) SetOutputFieldValue("HEAT",         log10(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(4)));
+    else           SetOutputFieldValue("HEAT",         log10(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(3)));
+
+  }
   SetOutputFieldValue("DRAG", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CD());
   SetOutputFieldValue("LIFT", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetTotal_CL());
   if (nDim == 3)
@@ -185,7 +209,7 @@ inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver ****
   
   SetOutputFieldValue("AOA", config[val_iZone]->GetAoA());
   SetOutputFieldValue("EFFICIENCY", Output_Fields["DRAG"].Value/Output_Fields["LIFT"].Value);
-  SetOutputFieldValue("TIME", timeused);
+  SetOutputFieldValue("PHYS_TIME", timeused);
   SetOutputFieldValue("LINSOL_ITER", solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetIterLinSolver());
   
   
