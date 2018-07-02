@@ -4410,6 +4410,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
       turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
       turbo_coeff += ",\"WorkDonePerCyc_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDone_" + tag.str() + "\"";
 
     }
   }
@@ -5329,6 +5330,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 				SPRINTF(surface_coeff, ", %12.10f", WorkDonePerCycle);
 								strcat(turbo_coeff, surface_coeff);
+
+				SPRINTF(surface_coeff, ", %12.10f", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring));
+								strcat(turbo_coeff, surface_coeff);
+								cout<<"solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring)"<<solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring)<<" "<<iMarker_Monitoring<<endl;
 
               }
             }

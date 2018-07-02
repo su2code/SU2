@@ -69,6 +69,8 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
+  WorkDone = NULL;
+
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
@@ -259,7 +261,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
-
+  WorkDone = NULL;
   /*--- Rotorcraft simulation array initialization ---*/
 
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
@@ -698,6 +700,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CMx            = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy            = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz            = new su2double[config->GetnMarker_Monitoring()];
+  WorkDone            = new su2double[config->GetnMarker_Monitoring()];
 
   /*--- Rotorcraft coefficients ---*/
   
@@ -966,6 +969,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (CQ_Inv != NULL)            delete [] CQ_Inv;
   if (CEquivArea_Inv != NULL)    delete [] CEquivArea_Inv;
   if (CNearFieldOF_Inv != NULL)  delete [] CNearFieldOF_Inv;
+  if (WorkDone != NULL)      delete [] WorkDone;
   
   if (CEff_Mnt != NULL)          delete [] CEff_Mnt;
   if (CMerit_Mnt != NULL)        delete [] CMerit_Mnt;
@@ -5572,6 +5576,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CFx[iMarker_Monitoring]            = 0.0; Surface_CFy[iMarker_Monitoring]            = 0.0;
     Surface_CFz[iMarker_Monitoring]            = 0.0; Surface_CMx[iMarker_Monitoring]            = 0.0;
     Surface_CMy[iMarker_Monitoring]            = 0.0; Surface_CMz[iMarker_Monitoring]            = 0.0;
+    WorkDone[iMarker_Monitoring]				=	0.0;
   }
   
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
@@ -5655,6 +5660,24 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
             ForceInviscid[iDim] += Force[iDim];
           }
           
+          for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        	  Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        	  Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        	  if (Marker_Tag == Monitoring_Tag)
+        	  {
+        		  su2double AreaLocal=0.0, LocalGenForce;
+        		  su2double *Grid_Vel;
+        		  Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        		  for (iDim = 0; iDim < nDim; iDim++)
+        			  AreaLocal += Normal[iDim]*Normal[iDim];
+        		  //AreaLocal = sqrt(AreaLocal);
+        		  LocalGenForce = -(Pressure) * ((Normal[0]*Grid_Vel[0])+(Normal[1]*Grid_Vel[1])) * (AreaLocal) * 0.05;
+        		  SetWorkDone(ForceInviscid[1]*Grid_Vel[1],iMarker_Monitoring);
+        	  }
+          }
+          //cout<<"Work Done :: "<<GetWorkDone(iMarker)<<"::"<<iMarker<<endl;
+          //cout<<"config->GetnMarker_Monitoring() "<<config->GetnMarker_Monitoring()<<endl;
+
           /*--- Moment with respect to the reference axis ---*/
           
           if (nDim == 3) {
@@ -15450,6 +15473,11 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
   delete [] PStaticImposed;
 
 }
+
+
+void CEulerSolver::SetWorkDone(su2double W, unsigned short val_marker) { WorkDone[val_marker] += W; }
+
+su2double CEulerSolver::GetWorkDone(unsigned short val_marker) { return WorkDone[val_marker]; }
 
 CNSSolver::CNSSolver(void) : CEulerSolver() {
   

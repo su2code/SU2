@@ -1,0 +1,21 @@
+**********************************************************************
+https://github.com/CGNS/CGNS/releases, 
+the source files for CGNS v3.3.0 are bundled and build directly into SU2
+
+From the CGNS webpage:
+
+All CGNS software is free. The distribution and use of the CGNS software is covered by the following license:
+
+This software is provided "as-is", without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+
+Permission is granted to anyone to use this software for any purpose, including commercial applications, and to alter it and redistribute it freely, subject to the following restrictions:
+
+1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
+2. Altered source versions must be plainly marked as such, and must not be misrepresented as being the original software.
+3. This notice may not be removed or altered from any source distribution.
+This license is borrowed from the zlib/libpng License, and supercedes the GNU Lesser General Public License (LGPL) which previously governed the use and distribution of the software.
+
+We encourage anyone to freely use the CGNS logo when distributing or documenting CGNS related information. The logo adds prestige and credibility to web sites, publications, displays, announcements, and activities. However, the use of the logo in such a way as to imply approval, endorsement, or responsibility of the CGNS committee is prohibited without written permission.
+
+--Thomas D. Economon, Wed Aug 17 2016
+*********************************************************************

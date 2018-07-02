@@ -4210,6 +4210,10 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
+  virtual void SetWorkDone(su2double F, unsigned short inMarkerTP);
+
+  virtual su2double GetWorkDone(unsigned short inMarkerTP);
+
 };
 
 /*!
@@ -4481,7 +4485,8 @@ protected:
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
-  *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
+  *Surface_MaxHF_Visc,         /*!< \brief Maximum heat flux for each monitored surface. */
+  *WorkDone;         /*!< \brief Maximum heat flux for each monitored surface. */
   
   su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
   *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
@@ -6750,6 +6755,10 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  void SetWorkDone(su2double W, unsigned short val_marker);
+
+  su2double GetWorkDone(unsigned short val_marker);
 
 
 };

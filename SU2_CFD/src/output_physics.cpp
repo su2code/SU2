@@ -112,15 +112,18 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       TotalEnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]    = EnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] + 0.5*absVel2;
       FluidModel->SetTDState_hs(TotalEnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan], EntropyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
       TotalPressureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]    = FluidModel->GetPressure();
+      cout<<"Total Pressure IN "<<TotalPressureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
       TotalTemperatureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] = FluidModel->GetTemperature();
 
       /*--- Retrieve Inflow relative quantities ---*/
       for (iDim = 0; iDim < nDim; iDim++){
         relVel[iDim] = TurboVelocityIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan][iDim];
       }
-
-      relVel[1] = solver_container->GetRelTangVelocityIn(iMarkerTP, iSpan);
-      tangVel = TurboVelocityIn[iMarkerTP][iSpan][1] - relVel[1];
+      cout<<"relVel2 :"<<relVel[0]<<" "<<relVel[1]<<endl;
+      //relVel[1] = solver_container->GetRelTangVelocityIn(iMarkerTP, iSpan);
+      cout<<"relVel2 :"<<relVel[0]<<" "<<relVel[1]<<endl;
+      tangVel = 0;//geometry->TangGridVelIn[iMarkerTP][iSpan];
+      cout<<"tangVel IN : "<<tangVel<<" TurboVelocityIn[iMarkerTP][iSpan][1] "<< TurboVelocityIn[iMarkerTP][iSpan][1] <<endl;
       tangVel2 = tangVel*tangVel;
 
       relVel2 = 0.0;
@@ -132,6 +135,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       RothalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]  = EnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] + 0.5*relVel2 - 0.5*tangVel2;
       FluidModel->SetTDState_hs(RothalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan], EntropyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
       relPressureIn   = FluidModel->GetPressure();
+      cout<<"Enthalpy IN :"<<EnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]<<endl;
 
       /*--- Compute kinematic relative Inflow quantities ---*/
       FlowAngleIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]   = atan(relVel[1]/relVel[0]);
@@ -201,7 +205,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       }
       relVel[1] = solver_container->GetRelTangVelocityOut(iMarkerTP, iSpan);
 
-      tangVel  = TurboVelocityOut[iMarkerTP][iSpan][1] - relVel[1];
+      tangVel  = 0;//TurboVelocityOut[iMarkerTP][iSpan][1] - relVel[1];
+      cout<<"tangVel out : "<<tangVel<<" relVel[1]"<< relVel[1]<<endl;
       tangVel2 = tangVel*tangVel;
 
       relVel2 = 0.0;
@@ -253,6 +258,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       EntropyGen[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] = (EntropyOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] - EntropyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan])/VelSpout2_T;
       EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]       = TotalEnthalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] - TotalEnthalpyOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
       TotalPressureLoss[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
+      cout<<"TotalPressureLoss[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]"<<relPressureIn<<" "<<relPressureOut<<endl;
+      cout<<"Rothalpy  Out "<<RothalpyOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]<<endl;
+      cout<<"Rothalpy In "<<RothalpyIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]<<endl;
+
       KineticEnergyLoss[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]  = 2*(EnthalpyOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
       PressureRatio[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]      = TotalPressureOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]/TotalPressureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
 
@@ -303,7 +312,10 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     MassFlowIn[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]             = MassFlowIn[nMarkerTurboPerf*iTimeInstance][config->GetnSpan_iZones(0)];
     MassFlowOut[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]            = MassFlowOut[nMarkerTurboPerf*iTimeInstance + nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
 
-    EntropyGen[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]     = 0.0;
+    EntropyGen[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]    	 	= 0.0;
+    TotalPressureLoss[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]     = 0.0;
+    KineticEnergyLoss[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]     = 0.0;
+
     for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){
       EntropyGen[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]  += EntropyGen[iBlade][config->GetnSpan_iZones(iBlade)];
       TotalPressureLoss[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]   += TotalPressureLoss[iBlade][config->GetnSpan_iZones(iBlade)];
@@ -358,7 +370,7 @@ void COutput::ComputeAvgTurboPerformance(CConfig *config) {
 	for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
 		for(unsigned short iMarkerTP = 0; iMarkerTP < nMarkerTP; iMarkerTP++ ){
 			for(iSpan = 0; iSpan < config->GetnSpan_iZones(iMarkerTP); iSpan++){
-				cout<<"At Compute Avg Turbo Performance: iSpan: "<<iSpan<<" iMarker "<<iMarkerTP<<" "<<EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
+				//cout<<"At Compute Avg Turbo Performance: iSpan: "<<iSpan<<" iMarker "<<iMarkerTP<<" "<<EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
 				WorkDone_iTime.push_back(EulerianWork[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
 			}
 		}
