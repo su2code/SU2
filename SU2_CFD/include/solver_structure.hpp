@@ -3908,6 +3908,23 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                             CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void InitTurboContainers(CGeometry *geometry, CConfig *config);
@@ -8613,6 +8630,14 @@ public:
    */
   void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+ 
 };
 
 /*!
@@ -9054,7 +9079,7 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-  
+
 };
 
 /*!
@@ -9334,11 +9359,10 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9592,6 +9616,17 @@ public:
    */
   su2double GetNuTilde_Inf(void);
 
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 };
 
 /*!

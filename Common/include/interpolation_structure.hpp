@@ -56,7 +56,6 @@ using namespace std;
  * \brief Main class for defining the interpolator, it requires
  * a child class for each particular interpolation method
  * \author H. Kline
- * \version 3.2.9 "eagle"
  */
 class CInterpolator {
 protected:
