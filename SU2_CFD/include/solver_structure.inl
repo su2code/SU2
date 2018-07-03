@@ -1031,6 +1031,11 @@ inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
 
+inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
+inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
+
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->SetSolution_New();

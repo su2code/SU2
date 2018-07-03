@@ -620,7 +620,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
@@ -2340,6 +2339,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions ---*/
+
+  Wall_Functions = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+        Wall_Functions = true;
+      
+      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
+        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+
+        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+    }
+  }
+  
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
