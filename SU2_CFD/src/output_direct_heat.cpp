@@ -52,7 +52,6 @@ CHeatOutput::~CHeatOutput(void) {
 }
 
 
-
 inline bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) {
   return true;
 }
