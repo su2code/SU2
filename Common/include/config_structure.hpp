@@ -921,6 +921,7 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  bool Wall_Functions;         /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
@@ -8400,6 +8401,11 @@ public:
    */
   inline unsigned short GetKindInterpolation(void);
   
+  /*!
+   * \brief Get information about whether to use wall functions.
+   * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
+   */
+  bool GetWall_Functions(void);
   /*!
    * \brief Get the AD support.
    */
