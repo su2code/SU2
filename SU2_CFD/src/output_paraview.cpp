@@ -41,6 +41,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
+  unsigned short iInst = config->GetiInst();
     
   unsigned long iPoint, iElem, iNode;
   unsigned long iExtIter = config->GetExtIter();
@@ -125,11 +126,11 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   }
     
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(iInst) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 10) && (SU2_TYPE::Int(iInst) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 100) && (SU2_TYPE::Int(iInst) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 1000) && (SU2_TYPE::Int(iInst) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iInst));
+    if (SU2_TYPE::Int(iInst) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iInst));
         
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
@@ -1841,7 +1842,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 }
 
-void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol) {
 
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
@@ -1919,11 +1920,11 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iInst) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 10) && (SU2_TYPE::Int(val_iInst) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 100) && (SU2_TYPE::Int(val_iInst) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 1000) && (SU2_TYPE::Int(val_iInst) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iInst));
+    if (SU2_TYPE::Int(val_iInst) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iInst));
 
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
