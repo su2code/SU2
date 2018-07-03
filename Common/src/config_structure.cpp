@@ -183,12 +183,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-  	nZone = config->GetnTimeInstances();
-  }
-
   return (unsigned short) nZone;
 }
 
@@ -6702,6 +6696,32 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
     return multizone_filename;
 }
 
