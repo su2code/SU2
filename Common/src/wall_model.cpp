@@ -344,5 +344,4 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
     j++;
   }
-  cout << "-------------------------------------------" << endl;
 }
