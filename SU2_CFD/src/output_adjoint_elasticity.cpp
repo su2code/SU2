@@ -38,44 +38,15 @@
 #include "../include/output_structure.hpp"
 
 CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
-
-  char buffer[50];
-
-  // Retrieve the history filename
-  string history_filename = config->GetConv_FileName();
-
-  // Append the zone ID
-  if(config->GetnZone() > 1){
-    history_filename = config->GetMultizone_HistoryFileName(history_filename, val_iZone);
-  }
-  strcpy (char_histfile, history_filename.data());
-
-  // Append the restart iteration: if dynamic problem and restart
-  if (config->GetWrt_Dynamic() && config->GetRestart()) {
-    long iExtIter = config->GetDyn_RestartIter();
-    if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
-    if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d", SU2_TYPE::Int(iExtIter));
-    if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d", SU2_TYPE::Int(iExtIter));
-    strcat(char_histfile, buffer);
-  }
-
-  // Add the correct file extension depending on the file format
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
-  else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-           (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
-  strcat(char_histfile, buffer);
-
-  // Open the history file using only the master node
-  if (rank == MASTER_NODE){
-    cout << "History filename: " << char_histfile << endl;
-    HistFile.open(char_histfile, ios::out);
-    HistFile.precision(15);
-    SetConvHistory_Header(config, val_iZone, INST_0);
-  }
+ 
+  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  
+  /*--- Initialize number of variables ---*/
+  if (linear_analysis) nVar_FEM = nDim;
+  if (nonlinear_analysis) nVar_FEM = 3;
+  
+  nDim = geometry->GetnDim();
 
 }
 
@@ -88,185 +59,61 @@ CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {
 
 }
 
-void CDiscAdjFEAOutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
+inline bool CDiscAdjFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
 
-  /*--- Begin of the header ---*/
-  char begin[]= "\"Iteration\"";
+inline bool CDiscAdjFEAOutput::WriteScreen_Header(CConfig *config) { return true; }
 
-  /*--- Header for the coefficients ---*/
-  char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
-  char fem_incload[]= ",\"IncLoad\"";
+inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
 
-  /*--- Header for the residuals ---*/
-  char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
+void CDiscAdjFEAOutput::SetOutputFields(CConfig *config){
+  
+  // Iteration numbers
+  AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
+  AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  
+  // Residuals
+  AddOutputField("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS");
+  AddOutputField("ADJOINT_DISP_Y", "Res[Uy_adj]", FORMAT_FIXED,   "RESIDUALS");
+  AddOutputField("ADJOINT_DISP_Z", "Res[Uz_adj]", FORMAT_FIXED,   "RESIDUALS");
+  
+  //Sensitivities
+  AddOutputField("SENS_E", "Sens[E]",  FORMAT_FIXED, "SENSITIVITY");
+  AddOutputField("SENS_NU","Sens[Nu]", FORMAT_FIXED, "SENSITIVITY");
 
-  /*--- End of the header ---*/
-  char endfea[]= ",\"Linear_Solver_Iterations\",\"Time(min)\"\n";
-
-  if ((config->GetOutput_FileFormat() == TECPLOT) ||
-      (config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW) ||
-      (config->GetOutput_FileFormat() == FIELDVIEW_BINARY)) {
-    HistFile << "TITLE = \"SU2 Simulation\"" << endl;
-    HistFile << "VARIABLES = ";
-  }
-
-  /*--- Write the header, case depending ---*/
-  HistFile << begin << fem_coeff;
-  HistFile << fem_resid << endfea;
-
-  if (config->GetOutput_FileFormat() == TECPLOT ||
-      config->GetOutput_FileFormat() == TECPLOT_BINARY ||
-      config->GetOutput_FileFormat() == FIELDVIEW ||
-      config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
-    HistFile << "ZONE T= \"Convergence history\"" << endl;
-  }
-
+  
 }
-
-
-void CDiscAdjFEAOutput::SetConvHistory_Body(CGeometry ****geometry,
-                                     CSolver *****solver_container,
-                                     CConfig **config,
-                                     CIntegration ****integration,
-                                     bool DualTime_Iteration,
-                                     su2double timeused,
-                                     unsigned short val_iZone,
-                                     unsigned short val_iInst) {
-
-
-  bool fluid_structure      = (config[val_iZone]->GetFSI_Simulation());
-  bool fea                  = ((config[val_iZone]->GetKind_Solver()== FEM_ELASTICITY)||(config[val_iZone]->GetKind_Solver()== DISC_ADJ_FEM));
-  unsigned long iIntIter    = config[val_iZone]->GetIntIter();
-  unsigned long iExtIter    = config[val_iZone]->GetExtIter();
-  unsigned short nZone      = config[val_iZone]->GetnZone();
-  bool incload              = config[val_iZone]->GetIncrementalLoad();
-  bool output_files         = true;
-
-  /*--- Output using only the master node ---*/
-
-  if (rank == MASTER_NODE) {
-
-    unsigned long ExtIter_OffSet = config[val_iZone]->GetExtIter_OffSet();
-
-    su2double timeiter = timeused/su2double(iExtIter+1);
-
-    unsigned short iVar;
-    unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
-
-    bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    /*--- Initialize number of variables ---*/
-    unsigned short nVar_FEM = nDim;
-
-    /*--- Allocate memory for the residual ---*/
-    su2double *residual_fem          = NULL;
-    residual_fem        = new su2double[nVar_FEM];
-
-    /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
-    su2double Total_CFEM = solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA();
-    su2double Total_SensE = 0.0, Total_SensNu = 0.0;
-
-    /*--- Residuals: ---*/
-    /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
-    /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
-
-    for (iVar = 0; iVar < nVar_FEM; iVar++) {
-      residual_fem[iVar] = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(iVar);
-    }
-
-    bool dynamic = (config[val_iZone]->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the history file ---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    // Load data to buffers
-    char begin_fem[1000], fem_coeff[1000], fem_resid[1000], end_fem[1000];
-
-    SPRINTF (begin_fem, "%12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet));
-
-    /*--- Initial variables ---*/
-
-    /*--- FEM residual ---*/
-    if (nVar_FEM == 2)
-      SPRINTF (fem_resid, ", %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]));
-    else
-      SPRINTF (fem_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_fem[0]), log10 (residual_fem[1]), log10 (residual_fem[2]));
-
-    // Write to history file
-
-    HistFile << begin_fem << fem_resid << end_fem;
-    HistFile.flush();
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the screen header---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    bool write_header = (iIntIter == 0);
-
-    if (write_header) {
-
-      cout << endl << " IntIter" << " ExtIter";
-
-      if (nDim == 2) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
-      if (nDim == 3) cout << "    Res[Ux_adj]" << "    Res[Uy_adj]" << "    Res[Uz_adj]" << "       Sens[E]" << "      Sens[Nu]"<<  endl;
-
-    }
-
-    /*------------------------------------------------------------------------------------------------------*/
-    /*--- Write the screen output---------------------------------------------------------------------------*/
-    /*------------------------------------------------------------------------------------------------------*/
-
-    cout.precision(6);
-    cout.setf(ios::fixed, ios::floatfield);
-
-    cout.width(15); cout << log10(residual_fem[0]);
-    cout.width(15); cout << log10(residual_fem[1]);
-    if (nDim == 3) { cout.width(15); cout << log10(residual_fem[2]); }
-
-    cout.precision(4);
-    cout.setf(ios::scientific, ios::floatfield);
-
-
-    if (config[val_iZone]->GetnElasticityMod() == 1){
-      cout.width(14); cout << solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-      cout.width(14); cout << solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
-    }
-    else{
-      Total_SensE = 0.0; Total_SensNu = 0.0;
-      for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
-          Total_SensE += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
-              *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-          Total_SensNu += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-              *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
-      }
-      Total_SensE = sqrt(Total_SensE);
-      Total_SensNu = sqrt(Total_SensNu);
-      cout.width(14); cout << Total_SensE;
-      cout.width(14); cout << Total_SensNu;
-    }
-
-    cout << endl;
-
-    cout.unsetf(ios::fixed);
-
-
-    delete [] residual_fem;
-
-  }
-}
-
-inline bool CDiscAdjFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
-
-inline bool CDiscAdjFEAOutput::WriteScreen_Header(CConfig *config) { }
-
-inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
 
 inline void CDiscAdjFEAOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
-      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
+  
+  SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());
+  SetOutputFieldValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  
+  SetOutputFieldValue("PHYS_TIME", timeused);
+  
+  SetOutputFieldValue("ADJOINT_DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(0)));
+  SetOutputFieldValue("ADJOINT_DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(1)));
+  if (nVar_FEM == 3){
+    SetOutputFieldValue("ADJOINT_DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetRes_RMS(2)));    
+  }
+  su2double Total_SensE = 0.0; su2double Total_SensNu = 0.0;  
+  if (config[val_iZone]->GetnElasticityMod() == 1){
+    Total_SensE = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+    Total_SensNu = solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+  }
+  else{
+    for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
+        Total_SensE += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+            *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+        Total_SensNu += solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+            *solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+    }
+    Total_SensE = sqrt(Total_SensE);
+    Total_SensNu = sqrt(Total_SensNu);
+
+  }
+  SetOutputFieldValue("SENS_E", Total_SensE);
+  SetOutputFieldValue("SENS_NU", Total_SensNu);
+  
+}
 
