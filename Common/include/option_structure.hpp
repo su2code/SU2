@@ -1063,7 +1063,8 @@ enum ENUM_OBJECTIVE {
   PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   NOISE = 58,
-  BOOM = 59
+  BOOM_LOUD = 78,
+  BOOM_ENERGY = 79
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1104,7 +1105,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("ENTROPY_GENERATION",  ENTROPY_GENERATION)
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("NOISE", NOISE)
-("BOOM", BOOM);
+("BOOM_LOUD", BOOM_LOUD)
+("BOOM_ENERGY", BOOM_ENERGY);
 
 /*!
  * \brief different sonic boom modes

@@ -22,6 +22,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
 #endif
 
+  Kind_Boom_Cost = config->GetKind_ObjFunc();
+
   /*---Make sure to read in hard-coded values in the future!---*/
 
   nDim = geometry->GetnDim();
@@ -927,7 +929,8 @@ int rank = 0;
   }
 
   WriteGroundPressure(iPhi);
-  PerceivedLoudness(iPhi);
+  if(Kind_Boom_Cost==BOOM_LOUD) PerceivedLoudness(iPhi);
+  else AcousticEnergy(iPhi);
 
 }
 
@@ -2063,6 +2066,26 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band){
   }
   else{
     PLdB[iPhi] = 0.;
+  }
+
+}
+
+void CBoom_AugBurgers::AcousticEnergy(unsigned short iPhi){
+
+  PLdB[iPhi] = 0.;
+
+  for(int j = 1; j < signal.len[iPhi]; j++){
+    if(signal.P[j]*signal.P[j-1] < 0.0){ // if sign change, do double triangular integration
+      /*--- Find root of line segment ---*/
+      su2double tau0 = signal.tau[j-1] + (-signal.P[j-1])
+                    *(signal.tau[j]-signal.tau[iPhi][j-1])/(signal.P[j]-signal.P[j-1]);
+      PLdB[iPhi] += (0.5*(signal.P[iPhi][j-1]*signal.final_p[iPhi][j-1])*(tau0-signal.tau[j-1])
+                      + 0.5*(signal.P[j]*signal.P[j])*(signal.tau[j]-tau0))*p0*p0/w0;
+    }
+    else{ // otherwise, do trapezoidal integration
+      PLdB[iPhi] += 0.5*(signal.P[j]*signal.P[j]+signal.P[j-1]*signal.P[j-1])
+                    *(signal.tau[j]-signal.tau[j-1])*p0*p0/w0;
+    }
   }
 
 }

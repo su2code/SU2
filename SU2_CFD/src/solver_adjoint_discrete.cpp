@@ -149,7 +149,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
  }
  }
 
-  if(config->GetKind_ObjFunc()==BOOM){
+  if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
     string  text_line;
     ifstream Boom_AdjointFile;
     char filename [64];
@@ -183,7 +183,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
  }
 
  /*--- Now that dJ/dU is allocated, extract sensitivities ---*/
- if(config->GetKind_ObjFunc()==BOOM && iMesh == MESH_0){
+ if((config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY) && iMesh == MESH_0){
    ExtractBoomSensitivity(geometry, config);
  }
 

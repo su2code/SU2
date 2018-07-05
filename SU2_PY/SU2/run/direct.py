@@ -112,7 +112,7 @@ def direct ( config ):
       noise = noise_file.readline().split(",")[1]
       aerodynamics['NOISE'] = float(noise)
 
-    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM':
+    if config.get('OBJECTIVE_FUNCTION',"") == 'BOOM_LOUD' or config.get('OBJECTIVE_FUNCTION',"") == 'BOOM_LOUD':
       ##su2mergesol(konfig)
       boom_file = open('boomSU2')
       boom = boom_file.readline().split()[1]

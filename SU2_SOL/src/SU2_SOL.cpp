@@ -159,7 +159,9 @@ int main(int argc, char *argv[]) {
 
 
 
-if((config_container[ZONE_0]->GetBoom_flag() != NONE) || config_container[ZONE_0]->GetKind_ObjFunc()==BOOM){
+if((config_container[ZONE_0]->GetBoom_flag() != NONE) || 
+  config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD || 
+  config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
   if (rank == MASTER_NODE)
           cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
@@ -491,7 +493,9 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
           cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
 
-        if ((config_container[ZONE_0]->GetBoom_flag() != NONE) || config_container[ZONE_0]->GetKind_ObjFunc()==BOOM){
+        if ((config_container[ZONE_0]->GetBoom_flag() != NONE) || 
+          config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+          config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
           if (config_container[ZONE_0]->GetAD_Mode()){
 
             if (rank == MASTER_NODE)

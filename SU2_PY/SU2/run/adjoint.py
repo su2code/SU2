@@ -91,7 +91,7 @@ def adjoint( config ):
        konfig['RESTART_SOL'] = "NO"
        konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
 
-    if konfig['OBJECTIVE_FUNCTION'] == 'BOOM':
+    if konfig['OBJECTIVE_FUNCTION'] == 'BOOM_LOUD' or konfig['OBJECTIVE_FUNCTION'] == 'BOOM_ENERGY':
        konfig['RESTART_SOL'] = "YES"
        konfig['MATH_PROBLEM'] = "DIRECT"
        konfig['AUTO_DIFF'] = "YES"
