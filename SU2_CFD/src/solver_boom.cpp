@@ -2079,7 +2079,7 @@ void CBoom_AugBurgers::AcousticEnergy(unsigned short iPhi){
       /*--- Find root of line segment ---*/
       su2double tau0 = signal.tau[j-1] + (-signal.P[j-1])
                     *(signal.tau[j]-signal.tau[iPhi][j-1])/(signal.P[j]-signal.P[j-1]);
-      PLdB[iPhi] += (0.5*(signal.P[iPhi][j-1]*signal.final_p[iPhi][j-1])*(tau0-signal.tau[j-1])
+      PLdB[iPhi] += (0.5*(signal.P[iPhi][j-1]*signal.P[iPhi][j-1])*(tau0-signal.tau[j-1])
                       + 0.5*(signal.P[j]*signal.P[j])*(signal.tau[j]-tau0))*p0*p0/w0;
     }
     else{ // otherwise, do trapezoidal integration
