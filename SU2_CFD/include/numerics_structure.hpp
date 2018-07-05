@@ -5,7 +5,7 @@
  *        <i>numerics_convective.cpp</i>, <i>numerics_viscous.cpp</i>, and
  *        <i>numerics_source.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -800,6 +800,7 @@ public:
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
                           su2double val_eddy_viscosity,
+                          su2double val_tau_wall,
                           bool val_qcr);
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
@@ -1543,7 +1544,23 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  /*!
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
+   */
+  virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
   
+  /*!
+   * \brief
+   * \param[in] Coord_i -
+   * \param[in] Coord_j -
+   * \param[in] Dissipation_i -
+   * \param[in] Dissipation_j -
+   * \param[in] Dissipation_ij -
+   * \param[in] Sensor_i -
+   * \param[in] Sensor_j -
+   */
   void SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
                           const su2double Dissipation_i, const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,
@@ -2549,7 +2566,7 @@ public:
  * \brief Class for doing a scalar upwind solver for the heat convection equation.
  * \ingroup ConvDiscr
  * \author O. Burghardt.
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CUpwSca_Heat : public CNumerics {
 private:
@@ -2796,7 +2813,7 @@ public:
  * \brief Class for scalar centered scheme.
  * \ingroup ConvDiscr
  * \author O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CCentSca_Heat : public CNumerics {
 
@@ -3007,7 +3024,9 @@ private:
   Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij;            /*!< \brief Length of the edge and face. */
+  dist_ij,           /*!< \brief Length of the edge and face. */
+  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
   bool implicit; /*!< \brief Implicit calculus. */
   
 public:
@@ -3033,6 +3052,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+  
 };
 
 /*!
@@ -3040,7 +3067,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author M.Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 
 class CGeneralAvgGrad_Flow : public CNumerics {
@@ -3388,7 +3414,9 @@ private:
   Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
   Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2;           /*!< \brief Length of the edge and face. */
+  dist_ij_2,           /*!< \brief Length of the edge and face. */
+  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
+  Mean_TauWall;     /*!< \brief Mean wall shear stress (wall functions). */
   bool implicit;      /*!< \brief Implicit calculus. */
   
 public:
@@ -3414,6 +3442,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 };
 
 
@@ -3422,7 +3458,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author M. Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 class CGeneralAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3763,7 +3798,7 @@ public:
  * \brief Class for computing viscous term using average of gradients without correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CAvgGrad_Heat : public CNumerics {
 private:
@@ -3804,7 +3839,7 @@ public:
  * \brief Class for computing viscous term using average of gradients with correction (heat equation).
  * \ingroup ViscDiscr
  * \author O. Burghardt.
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CAvgGradCorrected_Heat : public CNumerics {
 private:
