@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -443,11 +443,13 @@ inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[
 
 inline su2double CConfig::GetBulk_Modulus(void) { return Bulk_Modulus; }
 
-inline su2double CConfig::GetArtComp_Factor(void) { return ArtComp_Factor; }
+inline su2double CConfig::GetBeta_Factor(void) { return Beta_Factor; }
 
 inline su2double CConfig::GetGas_Constant(void) { return Gas_Constant; }
 
 inline su2double CConfig::GetGas_ConstantND(void) { return Gas_ConstantND; }
+
+inline su2double CConfig::GetMolecular_Weight(void) { return Molecular_Weight; }
 
 inline su2double CConfig::GetSpecific_Heat_Cp(void) { return Specific_Heat_Cp; }
 
@@ -1129,6 +1131,12 @@ inline unsigned short CConfig::GetKind_ConvNumScheme_Heat(void) {	return Kind_Co
 
 inline unsigned short CConfig::GetKind_Inlet(void) { return Kind_Inlet; }
 
+inline bool CConfig::GetInlet_Profile_From_File(void) { return Inlet_From_File; }
+
+inline string CConfig::GetInlet_FileName(void) { return Inlet_Filename; }
+
+inline su2double CConfig::GetInlet_Profile_Matching_Tolerance(void) { return Inlet_Matching_Tol; }
+
 inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
@@ -1363,6 +1371,8 @@ inline unsigned short CConfig::GetnMarker_InterfaceBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_Fluid_InterfaceBound(void) { return nMarker_Fluid_InterfaceBound; }
 
 inline unsigned short CConfig::GetnMarker_Monitoring(void) { return nMarker_Monitoring; }
+
+inline unsigned short CConfig::GetnMarker_DV(void) { return nMarker_DV; }
 
 inline unsigned short CConfig::GetnMarker_Moving(void) { return nMarker_Moving; }
 
@@ -1604,7 +1614,7 @@ inline su2double CConfig::GetCyclic_Pitch(void) { return Cyclic_Pitch; }
 
 inline su2double CConfig::GetCollective_Pitch(void) { return Collective_Pitch; }
 
-inline string CConfig::GetMotion_FileName(void) { return Motion_Filename; }
+inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
@@ -1613,6 +1623,8 @@ inline bool CConfig::GetWrt_Vol_Sol(void) { return Wrt_Vol_Sol; }
 inline bool CConfig::GetWrt_Srf_Sol(void) { return Wrt_Srf_Sol; }
 
 inline bool CConfig::GetWrt_Csv_Sol(void) { return Wrt_Csv_Sol; }
+
+inline bool CConfig::GetWrt_Crd_Sol(void) { return Wrt_Crd_Sol; }
 
 inline bool CConfig::GetWrt_Residuals(void) { return Wrt_Residuals; }
 
@@ -1623,6 +1635,12 @@ inline bool CConfig::GetWrt_Surface(void) { return Wrt_Surface; }
 inline bool CConfig::GetWrt_SharpEdges(void) { return Wrt_SharpEdges; }
 
 inline bool CConfig::GetWrt_Halo(void) { return Wrt_Halo; }
+
+inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
+
+inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
+
+inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
@@ -1696,6 +1714,8 @@ inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = 
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
+inline bool CConfig::GetWall_Functions(void) { return Wall_Functions; }
+
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
@@ -1767,6 +1787,10 @@ inline su2double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }
 inline su2double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
 
 inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
+
+inline unsigned short CConfig::GetiInst(void) { return iInst; }
+
+inline void CConfig::SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
@@ -1856,9 +1880,13 @@ inline unsigned short CConfig::GetFFD_Blending(void){return FFD_Blending;}
 
 inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
-inline void CConfig::SetMax_Beta(su2double val_Max_Beta) { Max_Beta = val_Max_Beta; }
+inline void CConfig::SetMax_Vel2(su2double val_max_vel2) { Max_Vel2 = val_max_vel2; }
 
-inline su2double CConfig::GetMax_Beta(void) { return Max_Beta; }
+inline su2double CConfig::GetMax_Vel2(void) { return Max_Vel2; }
+
+inline void CConfig::SetRestart_Bandwidth_Agg(su2double val_restart_bandwidth_sum) { Restart_Bandwidth_Agg = val_restart_bandwidth_sum; }
+
+inline su2double CConfig::GetRestart_Bandwidth_Agg(void) { return Restart_Bandwidth_Agg; }
 
 inline unsigned long CConfig::GetWrt_Surf_Freq_DualTime(void) { return Wrt_Surf_Freq_DualTime; }
 
