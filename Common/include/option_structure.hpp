@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -128,9 +128,12 @@ const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when a
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
-const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the second grid domain. */
+const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+
+const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -503,8 +506,7 @@ enum ENUM_FLUIDMODEL {
 	VW_GAS = 2,
 	PR_GAS = 3,
   CONSTANT_DENSITY = 4,
-  INC_STANDARD_AIR = 5,
-  INC_IDEAL_GAS = 6 
+  INC_IDEAL_GAS = 6
 
 };
 
@@ -514,7 +516,6 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS)
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
-("INC_STANDARD_AIR", INC_STANDARD_AIR)
 ("INC_IDEAL_GAS", INC_IDEAL_GAS);
 
 /*!
