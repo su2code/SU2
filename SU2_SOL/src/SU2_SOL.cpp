@@ -2,7 +2,7 @@
  * \file SU2_SOL.cpp
  * \brief Main file for the solution export/conversion code (SU2_SOL).
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -41,7 +41,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short iZone, nZone = SINGLE_ZONE, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   ofstream ConvHist_file;
   char config_file_name[MAX_STRING_SIZE];
@@ -64,10 +64,11 @@ int main(int argc, char *argv[]) {
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
-  COutput *output                = NULL;
-  CGeometry **geometry_container = NULL;
-  CSolver **solver_container     = NULL;
-  CConfig **config_container     = NULL;
+  COutput *output                 = NULL;
+  CGeometry ***geometry_container = NULL;
+  CSolver ***solver_container     = NULL;
+  CConfig **config_container      = NULL;
+  unsigned short *nInst           = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -83,14 +84,16 @@ int main(int argc, char *argv[]) {
 
   /*--- Definition of the containers per zones ---*/
 
-  solver_container = new CSolver*[nZone];
+  solver_container = new CSolver**[nZone];
   config_container = new CConfig*[nZone];
-  geometry_container = new CGeometry*[nZone];
+  geometry_container = new CGeometry**[nZone];
+  nInst = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
     solver_container[iZone]       = NULL;
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
+    nInst[iZone]                  = 1;
   }
 
   /*--- Loop over all zones to initialize the various classes. In most
@@ -116,75 +119,97 @@ int main(int argc, char *argv[]) {
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_NS)    ||
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_RANS));
 
-    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+    /*--- Read the number of instances for each zone ---*/
 
-    CGeometry *geometry_aux = NULL;
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
 
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+    geometry_container[iZone] = new CGeometry*[nInst[iZone]];
+    solver_container[iZone] = new CSolver*[nInst[iZone]];
 
-    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+      /*--- Allocate solver. ---*/
+      solver_container[iZone][iInst] = NULL;
 
-    if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
-    else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      config_container[iZone]->SetiInst(iInst);
 
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines 
-     will be entirely removed eventually in favor of the new methods. ---*/
+      /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
 
-    if( fem_solver ) {
-      switch( config_container[iZone]->GetKind_FEM_Flow() ) {
-        case DG: {
-          geometry_container[iZone] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
-          break;
+      CGeometry *geometry_aux = NULL;
+
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+
+      /*--- Allocate the memory of the current domain, and
+     divide the grid between the nodes ---*/
+
+      geometry_container[iZone][iInst] = NULL;
+
+      /*--- Until we finish the new periodic BC implementation, use the old
+       partitioning routines for cases with periodic BCs. The old routines 
+       will be entirely removed eventually in favor of the new methods. ---*/
+
+      if( fem_solver ) {
+        switch( config_container[iZone]->GetKind_FEM_Flow() ) {
+          case DG: {
+            geometry_container[iZone][iInst] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+            break;
+          }
         }
       }
-    }
-    else {
-      if (periodic) {
-        geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-      } else {
-        geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+      else {
+        if (periodic) {
+          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+        } else {
+          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+        }
       }
-    }
 
-    /*--- Deallocate the memory of geometry_aux ---*/
+      /*--- Deallocate the memory of geometry_aux ---*/
 
-    delete geometry_aux;
+      delete geometry_aux;
 
-    /*--- Add the Send/Receive boundaries ---*/
+      /*--- Add the Send/Receive boundaries ---*/
 
-    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+      geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
 
-    /*--- Add the Send/Receive boundaries ---*/
+      /*--- Add the Send/Receive boundaries ---*/
 
-    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+      geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
 
-    /*--- Create the vertex structure (required for MPI) ---*/
+      /*--- Create the vertex structure (required for MPI) ---*/
 
-    if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
-    geometry_container[iZone]->SetVertex(config_container[iZone]);
+      if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
+      geometry_container[iZone][iInst]->SetVertex(config_container[iZone]);
 
-    /*--- Store the global to local mapping after preprocessing. ---*/
+      /*--- Store the global to local mapping after preprocessing. ---*/
 
-    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-    geometry_container[iZone]->SetGlobal_to_Local_Point();
+      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+      geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
 
-    if (fem_solver) {
+      /* Test for a fem solver, because some more work must be done. */
 
-      /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
-       define all virtual functions in the base class CGeometry. ---*/
-      CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone]);
+      if (fem_solver) {
 
-      /*--- Determine the standard elements for the volume elements. ---*/
-      if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
-      DGMesh->CreateStandardVolumeElements(config_container[iZone]);
+        /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+         define all virtual functions in the base class CGeometry. ---*/
+        CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone][iInst]);
 
-      /*--- Create the face information needed to compute the contour integral
-       for the elements in the Discontinuous Galerkin formulation. ---*/
-      if (rank == MASTER_NODE) cout << "Creating face information." << endl;
-      DGMesh->CreateFaces(config_container[iZone]);
+        /*--- Determine the standard elements for the volume elements. ---*/
+        if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+        DGMesh->CreateStandardVolumeElements(config_container[iZone]);
+
+        /*--- Create the face information needed to compute the contour integral
+         for the elements in the Discontinuous Galerkin formulation. ---*/
+        if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+        DGMesh->CreateFaces(config_container[iZone]);
+      }
     }
 
   }
@@ -274,10 +299,10 @@ int main(int argc, char *argv[]) {
             (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetUnst_RestartIter())) ||
                                iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
-          solver_container[ZONE_0] = new CBaselineSolver(geometry_container[ZONE_0], config_container[ZONE_0]);
+          solver_container[ZONE_0][INST_0] = new CBaselineSolver(geometry_container[ZONE_0][INST_0], config_container[ZONE_0]);
           SolutionInstantiatedFlow = true;
         }
-          solver_container[ZONE_0]->LoadRestart_FSI(geometry_container[ZONE_0], &solver_container, config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
+          solver_container[ZONE_0][INST_0]->LoadRestart_FSI(geometry_container[ZONE_0][INST_0], config_container[ZONE_0], SU2_TYPE::Int(MESH_0));
 
 
         /*--- For the structural zone (ZONE_1) ---*/
@@ -287,10 +312,10 @@ int main(int argc, char *argv[]) {
             (iExtIter == 0 || ((config_container[ZONE_1]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_1]->GetDyn_RestartIter())) ||
                                iExtIter % config_container[ZONE_1]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                iExtIter+1 == config_container[ZONE_1]->GetnExtIter()))) {
-          solver_container[ZONE_1] = new CBaselineSolver(geometry_container[ZONE_1], config_container[ZONE_1]);
+          solver_container[ZONE_1][INST_0] = new CBaselineSolver(geometry_container[ZONE_1][INST_0], config_container[ZONE_1]);
           SolutionInstantiatedFEM = true;
         }
-          solver_container[ZONE_1]->LoadRestart_FSI(geometry_container[ZONE_1], &solver_container, config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
+          solver_container[ZONE_1][INST_0]->LoadRestart_FSI(geometry_container[ZONE_1][INST_0], config_container[ZONE_1], SU2_TYPE::Int(MESH_0));
 
         if (rank == MASTER_NODE) cout << "Writing the volume solution for time step " << iExtIter << "." << endl;
         output->SetBaselineResult_Files(solver_container, geometry_container, config_container, iExtIter, nZone);
@@ -347,10 +372,11 @@ int main(int argc, char *argv[]) {
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
 
-                  solver_container[iZone] = new CBaselineSolver_FEM(geometry_container[iZone], config_container[iZone]);
+                  solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated[iZone] = true;
                 }
-                solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], (int)iExtIter, true);
+                solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone],
+                                                             config_container[iZone], (int)iExtIter, true);
               }
 
               if (rank == MASTER_NODE)
@@ -369,8 +395,8 @@ int main(int argc, char *argv[]) {
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Definition of the solution class ---*/
 
-      solver_container[iZone] = new CBaselineSolver_FEM(geometry_container[ZONE_0], config_container[ZONE_0]);
-      solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+      solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
+      solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
     }
 
     output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, 0, nZone);
@@ -426,10 +452,10 @@ int main(int argc, char *argv[]) {
                     (iExtIter == 0 || (config_container[ZONE_0]->GetRestart() && ((long)iExtIter == config_container[ZONE_0]->GetUnst_RestartIter() ||
                                                                                   iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                                                                   iExtIter+1 == config_container[ZONE_0]->GetnExtIter())))) {
-                  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
+                  solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated[iZone] = true;
                 }
-                  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                  solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
               if (rank == MASTER_NODE)
@@ -448,13 +474,19 @@ int main(int argc, char *argv[]) {
       /*--- Read in the restart file for this time step ---*/
       for (iZone = 0; iZone < nZone; iZone++) {
 
-        /*--- Either instantiate the solution class or load a restart file. ---*/
-        solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-        solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-        /*--- Print progress in solution writing to the screen. ---*/
-        if (rank == MASTER_NODE) {
-          cout << "Storing the volume solution for time instance " << iZone << "." << endl;
+          config_container[iZone]->SetiInst(iInst);
+
+          /*--- Either instantiate the solution class or load a restart file. ---*/
+          solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
+          solver_container[iZone][iInst]->LoadRestart(&geometry_container[iZone][iInst], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+
+          /*--- Print progress in solution writing to the screen. ---*/
+          if (rank == MASTER_NODE) {
+            cout << "Storing the volume solution for time instance " << iInst << "." << endl;
+          }
+
         }
 
       }
@@ -505,10 +537,10 @@ int main(int argc, char *argv[]) {
                     (iExtIter == 0 || ((config_container[ZONE_0]->GetRestart() && (SU2_TYPE::Int(iExtIter) == config_container[ZONE_0]->GetDyn_RestartIter())) ||
                                        iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 ||
                                        iExtIter+1 == config_container[ZONE_0]->GetnExtIter()))) {
-                  solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
+                  solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated = true;
                 }
-                  solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
               if (rank == MASTER_NODE)
@@ -528,8 +560,8 @@ int main(int argc, char *argv[]) {
 
       for (iZone = 0; iZone < nZone; iZone++) {
         /*--- Definition of the solution class ---*/
-        solver_container[iZone] = new CBaselineSolver(geometry_container[iZone], config_container[iZone]);
-        solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
+        solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
       }
 
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
@@ -546,9 +578,13 @@ int main(int argc, char *argv[]) {
   
   if (geometry_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (geometry_container[iZone] != NULL) {
-        delete geometry_container[iZone];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (geometry_container[iZone][iInst] != NULL) {
+          delete geometry_container[iZone][iInst];
+        }
       }
+      if (geometry_container[iZone] != NULL)
+        delete geometry_container[iZone];
     }
     delete [] geometry_container;
   }
@@ -556,9 +592,13 @@ int main(int argc, char *argv[]) {
   
   if (solver_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
-      if (solver_container[iZone] != NULL) {
-        delete solver_container[iZone];
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (solver_container[iZone][iInst] != NULL) {
+          delete solver_container[iZone][iInst];
+        }
       }
+      if (solver_container[iZone] != NULL)
+        delete solver_container[iZone];
     }
     delete [] solver_container;
   }
