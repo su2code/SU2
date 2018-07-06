@@ -1700,6 +1700,8 @@ inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = 
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
+inline bool CConfig::GetWall_Functions(void) { return Wall_Functions; }
+
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
