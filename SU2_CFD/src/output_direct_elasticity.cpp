@@ -129,12 +129,12 @@ void CFEAOutput::SetOutputFields(CConfig *config){
   AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
-  AddOutputField("UTOL",   "Res_FEM[0]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("RTOL",   "Res_FEM[1]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("ETOL",   "Res_FEM[2]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_X", "Res_FEM[0]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_Y", "Res_FEM[1]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_Z", "Res_FEM[2]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("UTOL",   "Res[U]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("RTOL",   "Res[R]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("ETOL",   "Res[E]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_X", "Res[DispX]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_Y", "Res[DispY]", FORMAT_FIXED,  "RESIDUALS");
+  AddOutputField("DISP_Z", "Res[DispZ]", FORMAT_FIXED,  "RESIDUALS");
   
   
   AddOutputField("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
