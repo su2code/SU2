@@ -1808,7 +1808,7 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
   su2double t1, t2, y1, y2, m;
   su2double w_min = 1., w_max = 20.E3; // [Hz]
   unsigned long N = signal.len[iPhi];
-  n_sample = (unsigned long)w_max*20+0.5;
+  n_sample = floor(w_max*20+0.5);
 
   w = new su2double[n_sample];
   p_of_w = new su2double[n_sample];
