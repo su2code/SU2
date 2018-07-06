@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -1742,6 +1742,8 @@ inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = 
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
+inline bool CConfig::GetWall_Functions(void) { return Wall_Functions; }
+
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
@@ -1813,6 +1815,10 @@ inline su2double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }
 inline su2double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
 
 inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
+
+inline unsigned short CConfig::GetiInst(void) { return iInst; }
+
+inline void CConfig::SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
