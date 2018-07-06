@@ -604,7 +604,9 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               cout << "Propagation complete." << endl;
 
               if (rank == MASTER_NODE){
-                Objective_Function += boom.PLdB[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                  Objective_Function += boom.PLdB[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                }
               }
 
               /*---Write boom strength metrics to file---*/
@@ -723,7 +725,9 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               cout << "Propagation complete." << endl;
 
               if (rank == MASTER_NODE){
-                Objective_Function += boom.p_int2[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                  Objective_Function += boom.PLdB[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
+                }
               }
 
               /*---Write boom strength metrics to file---*/
