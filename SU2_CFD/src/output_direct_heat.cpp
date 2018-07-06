@@ -95,6 +95,6 @@ inline void CHeatOutput::SetOutputFields(CConfig *config){
   AddOutputField("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
   AddOutputField("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
   
-  AddOutputField("HEAT", "Res[Heat]", FORMAT_FIXED, "RESIDUALS");
+  AddOutputField("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
   
 }
