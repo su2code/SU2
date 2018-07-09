@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines used by SU2_FSI.
  *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -56,7 +56,6 @@ using namespace std;
  * \brief Main class for defining the interpolator, it requires
  * a child class for each particular interpolation method
  * \author H. Kline
- * \version 3.2.9 "eagle"
  */
 class CInterpolator {
 protected:
