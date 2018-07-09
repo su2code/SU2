@@ -2,7 +2,7 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -533,29 +533,33 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
-    
-    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-    Roe_Dissipation = 0.0;
-    Vortex_Tilting  = 0.0;
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
+  
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
-    
-    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-    Roe_Dissipation = 0.0;
-    Vortex_Tilting  = 0.0;
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
+
 }
 
 CNSVariable::~CNSVariable(void) { }

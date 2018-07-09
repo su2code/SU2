@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -65,7 +65,16 @@ protected:
   char runtime_file_name[MAX_STRING_SIZE];
   su2double StartTime,                          /*!< \brief Start point of the timer for performance benchmarking.*/
             StopTime,                           /*!< \brief Stop point of the timer for performance benchmarking.*/
+            UsedTimePreproc,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking preprocessing phase.*/
+            UsedTimeCompute,                    /*!< \brief Elapsed time between Start and Stop point of the timer for tracking compute phase.*/
+            UsedTimeOutput,                     /*!< \brief Elapsed time between Start and Stop point of the timer for tracking output phase.*/
             UsedTime;                           /*!< \brief Elapsed time between Start and Stop point of the timer.*/
+  su2double BandwidthSum;                       /*!< \brief Aggregate value of the bandwidth for writing restarts (to be average later).*/
+  unsigned long IterCount,                      /*!< \brief Iteration count stored for performance benchmarking.*/
+  OutputCount;                                  /*!< \brief Output count stored for performance benchmarking.*/
+  unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+  su2double MDOFs;                              /*!< \brief Total number of DOFs in millions in the calculation (including ghost points).*/
+  su2double MDOFsDomain;                        /*!< \brief Total number of DOFs in millions in the calculation (excluding ghost points).*/
   unsigned long ExtIter;                        /*!< \brief External iteration.*/
   ofstream **ConvHist_file;                       /*!< \brief Convergence history file.*/
   ofstream FSIHist_file;                        /*!< \brief FSI convergence history file.*/
@@ -602,6 +611,15 @@ public:
    * \return Thermal conductivity at the vertex.
    */
   su2double GetThermalConductivity(unsigned short iMarker, unsigned short iVertex);
+
+  /*!
+   * \brief Preprocess the inlets via file input for all solvers.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geometry,
+                                    CConfig *config);
 
   /*!
    * \brief Get the unit normal (vector) at a vertex on a specified marker.
@@ -1441,7 +1459,7 @@ public:
  * \class CMultiphysicsZonalDriver
  * \brief Class for driving zone-specific iterations.
  * \author O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CMultiphysicsZonalDriver : public CDriver {
 protected:
