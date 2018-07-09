@@ -8123,9 +8123,9 @@ public:
 
   /*!
    *
-   * \brief Set freestream turbonormal for initializing solution.
+   * \brief Set multizone properties.
    */
-  void SetMultizone(CConfig *driver_config);
+  void SetMultizone(CConfig *driver_config, CConfig **config_container);
 
   /*!
    * \brief Get the verbosity level of the console output.

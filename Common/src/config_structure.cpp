@@ -8061,7 +8061,7 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
 
 }
 
-void CConfig::SetMultizone(CConfig *driver_config){
+void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
 
   unsigned short iMarker_CfgFile, iMarker_ZoneInterface;
 
@@ -8105,9 +8105,6 @@ void CConfig::SetMultizone(CConfig *driver_config){
   /*--- Set the Multizone Boolean to true ---*/
   Multizone_Problem = true;
 
-  if (driver_config->GetKind_MZSolver() == MZ_FLUID_STRUCTURE_INTERACTION)
-    FSI_Problem = true;
-
   /*--- Set the Restart iter for time dependent problems ---*/
   if (driver_config->GetRestart()){
     Unst_RestartIter = driver_config->GetRestart_Iter();
@@ -8119,6 +8116,30 @@ void CConfig::SetMultizone(CConfig *driver_config){
     Delta_UnstTime = driver_config->GetTime_Step();
     Delta_DynTime  = driver_config->GetTime_Step();
   }
+
+  /*------------------------------------------------------------*/
+  /*------ Determine the special properties of the problem -----*/
+  /*------------------------------------------------------------*/
+
+  bool structural_zone = false;
+  bool fluid_zone = false;
+
+  unsigned short iZone = 0;
+
+  /*--- If there is at least a fluid and a structural zone ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      fluid_zone = true;
+      break;
+    case FEM_ELASTICITY:
+      structural_zone = true;
+      break;
+    }
+  }
+
+  /*--- If the problem has FSI properties ---*/
+  if (fluid_zone && structural_zone) FSI_Problem = true;
 
 }
 
