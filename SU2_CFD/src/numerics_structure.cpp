@@ -1719,7 +1719,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
                   su2double *val_normal,
                   su2double val_laminar_viscosity,
                   su2double val_eddy_viscosity,
-                  bool val_qcr) {
+                  su2double val_tau_wall, bool val_qcr) {
 
   unsigned short iVar, iDim, jDim;
   su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
@@ -1732,25 +1732,74 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
+  
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
       - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
                                                  - TWO3*Density*val_turb_ke*delta[iDim][jDim];
-  if (val_qcr){
-    su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+  
+  /*--- If we are using wall functions, modify the shear stress, tau wall is provided ---*/
+  
+  if (val_tau_wall > 0.0) {
+    
+    su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
+    
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += val_normal[iDim]*val_normal[iDim];
+    Area = sqrt(Area);
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = val_normal[iDim]/Area;
+    
+    /*--- First, compute wall shear stress as the magnitude of the wall-tangential
+     component of the shear stress tensor---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      TauElem[iDim] = 0.0;
+      for (jDim = 0; jDim < nDim; jDim++)
+        TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
+    }
+    
+    TauNormal = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      TauNormal += TauElem[iDim] * UnitNormal[iDim];
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+    
+    WallShearStress = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+    WallShearStress = sqrt(WallShearStress);
+    
+    /*--- Scale the stress tensor by the ratio of the wall shear stress
+     to the computed representation of the shear stress ---*/
+    
+    for (iDim = 0 ; iDim < nDim; iDim++)
+      for (jDim = 0 ; jDim < nDim; jDim++)
+        tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
+    
+  }
+  
+  /*--- Apply the QCR correction ---*/
+  
+  if (val_qcr) {
+    
+    su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
     unsigned short kDim;
-
+    
     /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
+    
     den_aux = 0.0;
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
         den_aux += val_gradprimvar[iDim+1][jDim] * val_gradprimvar[iDim+1][jDim];
     den_aux = sqrt(max(den_aux,1E-10));
-
+    
     /*--- Adding the QCR contribution ---*/
-        
+    
     for (iDim = 0 ; iDim < nDim; iDim++){
       for (jDim = 0 ; jDim < nDim; jDim++){
         for (kDim = 0 ; kDim < nDim; kDim++){
@@ -1763,6 +1812,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -1794,11 +1844,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
+  
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
