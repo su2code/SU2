@@ -221,7 +221,7 @@ CDriver::CDriver(char* confFile,
           case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
           case WAVE_EQUATION: cout << "Wave equation." << endl; break;
           case HEAT_EQUATION: case HEAT_EQUATION_FVM: cout << "Heat equation." << endl; break;
-          case FEM_ELASTICITY: case DISC_ADJ_FEM: cout << "Geometrically linear elasticity solver." << endl; break;
+          case FEM_ELASTICITY: case DISC_ADJ_FEM: cout << "Elasticity solver." << endl; break;
           case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
           case ADJ_NAVIER_STOKES: cout << "Continuous Navier-Stokes adjoint equations." << endl; break;
           case ADJ_RANS: cout << "Continuous RANS adjoint equations." << endl; break;
@@ -747,9 +747,6 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
     if (driver_config->GetKind_Solver() == MULTIZONE){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-
-      /*--- Set the interface markers for multizone ---*/
-      config_container[iZone]->SetMultizone(driver_config);
     }
     else{
       config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
@@ -758,6 +755,18 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
     /*--- Set the MPI communicator ---*/
 
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
+
+  }
+
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetKind_Solver() == MULTIZONE){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Read the number of instances for each zone ---*/
 
