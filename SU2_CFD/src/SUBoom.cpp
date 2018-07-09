@@ -1592,8 +1592,8 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
     }
     su2double u[3], v[3];
     for(int k = 0; k < 3; k++){
-      u[k] = corners[3][k] - corners[0]k];
-      v[k] = corners[2][k] - corners[1]k];
+      u[k] = corners[3][k] - corners[0][k];
+      v[k] = corners[2][k] - corners[1][k];
     }
     /*---Cross product---*/
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
