@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -496,6 +496,13 @@ public:
   void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_AuxVar_Gradient(CGeometry *geometry, CConfig *config);
+  
+  /*!
    * \brief Compute the Green-Gauss gradient of the auxiliary variable.
    * \param[in] geometry - Geometrical definition of the problem.
    */
@@ -917,7 +924,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   virtual void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                          CConfig *config, unsigned short val_marker, bool inlet_surface);
+                          CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief A virtual member.
@@ -1501,7 +1508,7 @@ public:
    * \brief A virtual member.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  virtual void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  virtual void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief A virtual member.
@@ -2253,7 +2260,7 @@ public:
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  virtual su2double GetTotal_NetCThrust(void);
+  virtual su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief A virtual member.
@@ -3899,6 +3906,23 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                             CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void InitTurboContainers(CGeometry *geometry, CConfig *config);
@@ -4454,7 +4478,7 @@ protected:
   Total_CL_Prev,    /*!< \brief Total lift coefficient for all the boundaries (fixed lift mode). */
   Total_SolidCD, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_CD_Prev, /*!< \brief Total drag coefficient for all the boundaries (fixed lift mode). */
-  Total_NetCThrust, /*!< \brief Total drag coefficient for all the boundaries. */
+  Total_NetThrust, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_Power, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_ReverseFlow, /*!< \brief Total drag coefficient for all the boundaries. */
   Total_IDC,        /*!< \brief Total IDC coefficient for all the boundaries. */
@@ -4466,8 +4490,6 @@ protected:
   Total_ByPassProp_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Adiab_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
   Total_Poly_Eff,     /*!< \brief Total Mass Flow Ratio for all the boundaries. */
-  Total_NetCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
-  Total_BCThrust_Prev,    /*!< \brief Total lift coefficient for all the boundaries. */
   Total_Custom_ObjFunc,        /*!< \brief Total custom objective function for all the boundaries. */
   Total_CSF,    /*!< \brief Total sideforce coefficient for all the boundaries. */
   Total_CMx,      /*!< \brief Total x moment coefficient for all the boundaries. */
@@ -5001,7 +5023,7 @@ public:
     * \param[in] val_marker - Surface marker where the boundary condition is applied.
     */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
   
   /*!
    * \brief Impose the interface boundary condition using the residual.
@@ -5650,7 +5672,7 @@ public:
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
-  su2double GetTotal_NetCThrust(void);
+  su2double GetTotal_NetThrust(void);
   
   /*!
    * \brief Provide the total (inviscid + viscous) non dimensional drag coefficient.
@@ -5854,7 +5876,7 @@ public:
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
    * \param[in] val_Total_CD - Value of the total drag coefficient.
    */
-  void SetTotal_NetCThrust(su2double val_Total_NetCThrust);
+  void SetTotal_NetThrust(su2double val_Total_NetThrust);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional drag coefficient.
@@ -8078,7 +8100,7 @@ public:
   void SetFreeStream_Solution(CConfig *config);
 
   /*!
-   * \brief Update the artificial compressibility parameter.
+   * \brief Update the Beta parameter for the incompressible preconditioner.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -8606,6 +8628,14 @@ public:
    */
   void SetRoe_Dissipation(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Computes the wall shear stress (Tau_Wall) on the surface using a wall function.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config);
+ 
 };
 
 /*!
@@ -9047,7 +9077,7 @@ public:
    * \return Value of the Omega_Max
    */
   void SetOmega_Max(su2double val_omega_max);
-  
+
 };
 
 /*!
@@ -9327,11 +9357,10 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
-  
+
   /*!
    * \brief Source term computation.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9529,7 +9558,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Set the solution using the Freestream values.
@@ -9585,6 +9614,17 @@ public:
    */
   su2double GetNuTilde_Inf(void);
 
+  /*!
+   * \brief Compute nu tilde from the wall functions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker - Surface marker where the boundary condition is applied.
+   */
+  void SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                              CNumerics *visc_numerics, CConfig *config, unsigned short val_marker);
 };
 
 /*!
@@ -10344,7 +10384,7 @@ public:
    * \param[in] val_marker - Surface marker where the boundary condition is applied.
    */
   void BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                  CConfig *config, unsigned short val_marker, bool inlet_surface);
+                  CConfig *config, unsigned short val_marker, bool val_inlet_surface);
 
   /*!
    * \brief Impose via the residual the adjoint symmetry boundary condition.

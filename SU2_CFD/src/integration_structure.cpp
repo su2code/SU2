@@ -2,7 +2,7 @@
  * \file integration_structure.cpp
  * \brief This subroutine includes the space and time integration structure
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -83,8 +83,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
-
-  
   /*--- Compute source term residuals ---*/
 
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
@@ -108,6 +106,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 
   /*--- Weak boundary conditions ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
