@@ -861,8 +861,8 @@ void SetProjection_Transp(CGeometry *geometry, CConfig *config, su2double** Grad
             if (geometry->node[iPoint]->GetDomain()) {
               x = geometry->node[iPoint]->GetCoord(0);
               if(x >= x0 && x <= x1){
-                my_Gradient[0] += 1. - (x - x0)/(x1-x0) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
-                my_Gradient[1] +=      (x - x0)/(x1-x0) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+                my_Gradient[0] += (1. - (x - x0)/(x1-x0)) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
+                my_Gradient[1] +=      ((x - x0)/(x1-x0)) * geometry->vertex[iMarker][iVertex]->GetAuxTransp();
               }
             }
           }
