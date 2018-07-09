@@ -1590,8 +1590,11 @@ void SUBoom::RayTubeArea(unsigned short iPhi){
       corners[k][1] = y_int;
       corners[k][2] = z_int;
     }
-    su2double u[3] = {corners[3][0]-corners[0][0], corners[3][1]-corners[0][1], corners[3][2]-corners[0][2]};
-    su2double v[3] = {corners[2][0]-corners[1][0], corners[2][1]-corners[1][1], corners[2][2]-corners[1][2]};
+    su2double u[3], v[3];
+    for(int k = 0; k < 3; k++){
+      u[k] = corners[3][k] - corners[0]k];
+      v[k] = corners[2][k] - corners[1]k];
+    }
     /*---Cross product---*/
     su2double c[3] = {u[1]*v[2]-u[2]*v[1], u[2]*v[0]-u[0]*v[2], u[0]*v[1]-u[1]*v[0]};
     Ah = 0.5*sqrt(pow(c[0],2)+pow(c[1],2)+pow(c[2],2));
