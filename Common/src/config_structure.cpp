@@ -183,12 +183,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-  	nZone = config->GetnTimeInstances();
-  }
-
   return (unsigned short) nZone;
 }
 
@@ -626,7 +620,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
@@ -2346,6 +2339,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions ---*/
+
+  Wall_Functions = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+        Wall_Functions = true;
+      
+      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
+        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+
+        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+    }
+  }
+  
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
@@ -6686,6 +6696,32 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
     return multizone_filename;
 }
 
