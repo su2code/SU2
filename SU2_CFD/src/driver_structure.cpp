@@ -728,6 +728,9 @@ void CDriver::Postprocessing() {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
+  if (nInst != NULL) delete [] nInst;
+  if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
+  
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
@@ -2585,7 +2588,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         if (incompressible) {
           /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Upwind_Flow()) {
-            case ROE:
+            case FDS:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
