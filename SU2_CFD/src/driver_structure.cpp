@@ -3217,7 +3217,9 @@ void CDriver::Output_Preprocessing(){
       break;
     }
     
-    output[iZone]->Preprocess_Historyfile(config_container[iZone]);
+    output[iZone]->PreprocessHistoryOutput(config_container[iZone]);
+    
+    output[iZone]->PreprocessVolumeOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0]);
 
   }
 

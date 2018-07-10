@@ -4290,7 +4290,7 @@ void COutput::SetConvHistory_Body(CGeometry ****geometry,
 
     /*--- Retrieve residual and extra data -----------------------------------------------------------------*/
 
-    LoadOutput_Data(geometry, solver_container, config, integration, DualTime_Iteration,
+    LoadHistoryData(geometry, solver_container, config, integration, DualTime_Iteration,
                     timeused, val_iZone, val_iInst);
 
     /*--- Write the history file ---------------------------------------------------------------------------*/
@@ -10147,25 +10147,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       if (rank == MASTER_NODE)
         cout << "Loading solution output data locally on each rank." << endl;
 
-      switch (config[iZone]->GetKind_Solver()) {
-      case EULER : case NAVIER_STOKES: case RANS :
-        if (compressible)
-          LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-        else
-          LoadLocalData_IncFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-        break;
-      case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-        break;
-      case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-        break;
-      case HEAT_EQUATION_FVM:
-        LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
-        break;
-      default: break;
-    }
+      CollectVolumeData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
+    
     
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
@@ -16989,7 +16972,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
    
   for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
     currentField = config->GetHistoryOutput_Field(iField);      
-    for(std::map<string, OutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
+    for(std::map<string, HistoryOutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
       if (currentField == iter->second.HistoryOutputGroup){
         AddHistoryHeaderString(iter->second.FieldName);
       }
@@ -16997,7 +16980,7 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   }
   for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
     currentField = config->GetHistoryOutput_Field(iField);      
-    for(std::map<string, vector<OutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
+    for(std::map<string, vector<HistoryOutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
       for (unsigned short iMarker = 0; iMarker < iter->second.size(); iMarker++){
         if (currentField == iter->second[iMarker].HistoryOutputGroup){
           AddHistoryHeaderString(iter->second[iMarker].FieldName);
@@ -17035,7 +17018,7 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   
   for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
     currentField = config->GetHistoryOutput_Field(iField);      
-    for(std::map<string, OutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
+    for(std::map<string, HistoryOutputField>::iterator iter = Output_Fields.begin(); iter != Output_Fields.end(); ++iter){
       if (currentField == iter->second.HistoryOutputGroup){
         AddHistoryValue(iter->second.Value);
       }
@@ -17044,7 +17027,7 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   
   for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
     currentField = config->GetHistoryOutput_Field(iField);      
-    for(std::map<string, vector<OutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
+    for(std::map<string, vector<HistoryOutputField>>::iterator iter = OutputPerSurface_Fields.begin(); iter != OutputPerSurface_Fields.end(); ++iter){
       for (unsigned short iMarker = 0; iMarker < iter->second.size(); iMarker++){
         if (currentField == iter->second[iMarker].HistoryOutputGroup){
           AddHistoryValue(iter->second[iMarker].Value);
@@ -17130,7 +17113,7 @@ void COutput::SetScreen_Output(CConfig *config) {
   cout << endl;
 }
 
-void COutput::Preprocess_Historyfile(CConfig *config){
+void COutput::PreprocessHistoryOutput(CConfig *config){
   
   if (rank == MASTER_NODE){
    
@@ -17174,4 +17157,63 @@ void COutput::Preprocess_Historyfile(CConfig *config){
     SetHistoryFile_Header(config);    
   }
   
+}
+
+void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
+  unsigned long iPoint, iVertex;
+  bool Wrt_Halo, isPeriodic;
+  
+  unsigned short iMarker;
+  
+  Wrt_Halo = config->GetWrt_Halo();
+  
+  Local_Data = new su2double*[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
+  }
+  
+  Local_Halo = new int[geometry->GetnPoint()];
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
+  
+  /*--- Search all send/recv boundaries on this partition for any periodic
+   nodes that were part of the original domain. We want to recover these
+   for visualization purposes. ---*/
+  
+  if (!Wrt_Halo) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
+        
+        /*--- Checking for less than or equal to the rank, because there may
+         be some periodic halo nodes that send info to the same rank. ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
+                        (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
+          if (isPeriodic) Local_Halo[iPoint] = false;
+        }
+      }
+    }
+  }
+}
+
+void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+  
+  unsigned long iPoint = 0, jPoint = 0;
+  
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    
+    /*--- Check for halos & write only if requested ---*/
+    
+    if (!Local_Halo[iPoint] || Wrt_Halo) {
+      
+      LoadVolumeData(config, geometry, solver, jPoint);
+      
+      jPoint++;
+      
+    }
+  }
 }

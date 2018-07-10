@@ -66,7 +66,7 @@ inline bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime
   return true;
 }
 
-inline void CHeatOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+inline void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   
   SetOutputFieldValue("EXT_ITER",     config[val_iZone]->GetExtIter());

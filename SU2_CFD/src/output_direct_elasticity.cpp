@@ -59,7 +59,7 @@ CFEAOutput::~CFEAOutput(void) {
 
 }
 
-void CFEAOutput::LoadOutput_Data(CGeometry ****geometry,
+void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
                                      CSolver *****solver_container,
                                      CConfig **config,
                                      CIntegration ****integration,

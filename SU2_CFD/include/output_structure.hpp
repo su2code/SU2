@@ -125,6 +125,7 @@ protected:
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
+  int* Local_Halo;
 
   su2double **Data;
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
@@ -201,6 +202,8 @@ protected:
 
   unsigned short nDim;
   
+  unsigned short GlobalField_Counter;
+  
   // TODO: COMMENT NEW STUFF
   unsigned short field_width;
   string HistorySep;
@@ -220,19 +223,29 @@ protected:
     FORMAT_SCIENTIFIC
   };
   
-  struct OutputField {
+  struct HistoryOutputField {
     string              FieldName;
     su2double           Value;
-    unsigned short  ScreenFormat;
-    string HistoryOutputGroup;
-    OutputField() {}
-    OutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
+    unsigned short      ScreenFormat;
+    string              HistoryOutputGroup;
+    HistoryOutputField() {}
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
       FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), HistoryOutputGroup(historyoutputgroup){}
   };
   
-  std::map<string, OutputField > Output_Fields;
-  std::map<string, vector<OutputField> > OutputPerSurface_Fields;
-
+  struct VolumeOutputField {
+    string FieldName;
+    int    Offset;
+    int    nVar;
+    string VolumeOutputGroup;
+    VolumeOutputField () {}
+    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
+      FieldName(fieldname), Offset(offset), VolumeOutputGroup(volumeoutputgroup){}
+  };
+  
+  std::map<string, HistoryOutputField >         Output_Fields;
+  std::map<string, vector<HistoryOutputField> > OutputPerSurface_Fields;
+  std::map<string, VolumeOutputField >          VolumeOutput_Fields;
   
   char char_histfile[200];
 
@@ -935,7 +948,7 @@ public:
    * \brief Load the output data to the containers in each subclass
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  virtual void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
   virtual void SetOutputFields(CConfig *config);
@@ -1006,7 +1019,19 @@ public:
   
   void SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker);
   
-  void Preprocess_Historyfile(CConfig *config);  
+  void PreprocessHistoryOutput(CConfig *config);  
+  
+  void PreprocessVolumeOutput(CConfig *config, CGeometry *geometry);  
+  
+  void AddVolumeOutputField(string name, string field_name, string groupname);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
+  
+  void SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value);
+  
+  void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
+  
+  
 };
 
 /*! \class CFlowOutput
@@ -1038,8 +1063,10 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);  
   
   void SetOutputFields(CConfig *config);
   
@@ -1094,7 +1121,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
   void SetOutputFields(CConfig *config);
@@ -1149,7 +1176,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
   void SetOutputFields(CConfig *config);
@@ -1203,7 +1230,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 
@@ -1260,7 +1287,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
   void SetOutputFields(CConfig *config);
@@ -1314,7 +1341,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 
@@ -1372,7 +1399,7 @@ public:
    * \brief Set the history file header
    * \param[in] config - Definition of the particular problem.
    */
-  void LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
