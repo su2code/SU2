@@ -32,7 +32,6 @@
  */
 
 #include "../include/SU2_SOL.hpp"
-#include "../../SU2_CFD/include/postprocessing_structure.hpp"
 
 using namespace std;
 

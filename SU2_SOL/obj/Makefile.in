@@ -101,7 +101,6 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
-@BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-postprocessing_structure.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-solver_boom.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../SU2_CFD/src/libSU2Core_a-SUBoom.$(OBJEXT) \
 @BUILD_NORMAL_TRUE@  ../../Common/lib/libSU2.a
@@ -115,7 +114,6 @@ bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
-@BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-postprocessing_structure.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_boom.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@  ../../SU2_CFD/src/bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
 @BUILD_REVERSE_TRUE@   ../../Common/lib/libSU2_AD.a

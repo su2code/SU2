@@ -68,8 +68,6 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
-  ../include/postprocessing_structure.hpp \
-  ../include/postprocessing_structure.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
@@ -112,7 +110,6 @@ libSU2Core_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
-  ../src/postprocessing_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_mean_inc.cpp \
   ../src/solver_adjoint_turbulent.cpp \

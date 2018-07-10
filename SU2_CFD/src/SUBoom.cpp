@@ -2142,9 +2142,11 @@ void SUBoom::WriteSensitivities(){
   unsigned long iVar, iSig, Max_nPointID, nVar, Global_Index, Total_Index;
   ofstream Boom_AdjointFile;
 
-  int rank, iProcessor, nProcessor;
+  int rank = 0, iProcessor, nProcessor = 1;
+#ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
   unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
 
   if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
