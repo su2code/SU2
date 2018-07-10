@@ -432,7 +432,7 @@ COutput::~COutput(void) {
 
 void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
                                  CSolver *FlowSolver, unsigned long iExtIter,
-                                 unsigned short val_iZone) {
+                                 unsigned short val_iZone, unsigned short val_iInst) {
   
   unsigned short iMarker;
   unsigned long iPoint, iVertex, Global_Index;
@@ -453,7 +453,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   strcpy (cstr, config->GetSurfFlowCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
 
   }else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -670,7 +670,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     /*--- Write file name with extension if unsteady ---*/
     strcpy (cstr, filename.c_str());
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -777,7 +777,7 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   
 }
 
-void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone) {
+void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst) {
   
 #ifndef HAVE_MPI
   
@@ -792,7 +792,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
   strcpy (cstr, config->GetSurfAdjCoeff_FileName().c_str());
   
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+    SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
     
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -1048,7 +1048,7 @@ void COutput::SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolve
     strcpy (cstr, filename.c_str());
     
     if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iZone));
+      SPRINTF (buffer, "_%d.csv", SU2_TYPE::Int(val_iInst));
       
     } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
       if ((SU2_TYPE::Int(iExtIter) >= 0) && (SU2_TYPE::Int(iExtIter) < 10)) SPRINTF (buffer, "_0000%d.csv", SU2_TYPE::Int(iExtIter));
@@ -4038,7 +4038,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
@@ -4281,7 +4281,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
   }
 }
 
-void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone) {
+void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
   char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
@@ -4319,6 +4319,9 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   string filename = config->GetConv_FileName();
   if(config->GetnZone() > 1){
     filename = config->GetMultizone_HistoryFileName(filename, val_iZone);
+  }
+  if(config->GetnTimeInstances() > 1){
+    filename = config->GetMultiInstance_HistoryFileName(filename, val_iInst);
   }
   strcpy (cstr, filename.data());
   
@@ -4529,13 +4532,14 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
 
 
 void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
-                                  CGeometry ***geometry,
-                                  CSolver ****solver_container,
+                                  CGeometry ****geometry,
+                                  CSolver *****solver_container,
                                   CConfig **config,
-                                  CIntegration ***integration,
+                                  CIntegration ****integration,
                                   bool DualTime_Iteration,
                                   su2double timeused,
-                                  unsigned short val_iZone) {
+                                  unsigned short val_iZone,
+                                  unsigned short val_iInst) {
   
   bool output_surface       = (config[val_iZone]->GetnMarker_Analyze() != 0);
   bool output_comboObj      = (config[val_iZone]->GetnObj() > 1);
@@ -4545,6 +4549,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   unsigned long iExtIter    = config[val_iZone]->GetExtIter();
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
   unsigned short nZone      = config[val_iZone]->GetnZone();
+  unsigned short nInst      = config[val_iZone]->GetnTimeInstances();
   bool cont_adj             = config[val_iZone]->GetContinuous_Adjoint();
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool energy               = config[val_iZone]->GetEnergy_Equation();
@@ -4581,22 +4586,22 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
-            SpecialOutput_AnalyzeSurface(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                         geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_AnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                         geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
-            SpecialOutput_Distortion(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_Distortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                     geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the equivalent area. ---*/
 
           if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
-            SpecialOutput_SonicBoom(solver_container[val_iZone][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][MESH_0], config[ZONE_0], output_files);
+            SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                    geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
           }
           
           break;
@@ -4605,7 +4610,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
       
       if (config[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iZone, nZone, output_files);
+        SpecialOutput_HarmonicBalance(solver_container, geometry, config, val_iInst, nInst, output_files);
       }
       
       /*--- Compute span-wise values file for turbomachinery. ---*/
@@ -4633,10 +4638,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*-- Compute the total objective if a "combo" objective is used ---*/
     
     if (output_comboObj) {
-      solver_container[val_iZone][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
+      solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->SetTotal_ComboObj(0.0);
       switch (config[val_iZone]->GetKind_Solver()) {
       case EULER:                   case NAVIER_STOKES:                   case RANS:
-        solver_container[val_iZone][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
+        solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->Evaluate_ObjFunc(config[val_iZone]);
         break;
       }
     }
@@ -4661,7 +4666,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned long LinSolvIter = 0, iPointMaxResid;
     su2double timeiter = timeused/su2double(iExtIter+1);
     
-    unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+    unsigned short nDim = geometry[val_iZone][val_iInst][FinestMesh]->GetnDim();
 
     
     bool rotating_frame = config[val_iZone]->GetRotating_Frame();
@@ -4839,29 +4844,29 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Flow solution coefficients ---*/
         
-        Total_CL             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
-        Total_CD             = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-        Total_CSF            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
-        Total_CEff           = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-        Total_CMx            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-        Total_CMy            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-        Total_CMz            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-        Total_CFx            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-        Total_CFy            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-        Total_CFz            = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
-        Total_ComboObj       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
+        Total_CL             = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CL();
+        Total_CD             = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CD();
+        Total_CSF            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CSF();
+        Total_CEff           = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+        Total_CMx            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+        Total_CMy            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+        Total_CMz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+        Total_CFx            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+        Total_CFy            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+        Total_CFz            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+        Total_ComboObj       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         Total_AoA            = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset();
-        Total_Custom_ObjFunc = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
+        Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
 
         if (thermal) {
-          Total_Heat         = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
-          Total_MaxHeat      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
-          Total_Temperature  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AvgTemperature();
+          Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
+          Total_MaxHeat      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_MaxHeatFlux();
+          Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_AvgTemperature();
 
           if(weakly_coupled_heat) {
-            Total_Heat         = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-            Total_MaxHeat      = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-            Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+            Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+            Total_MaxHeat      = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+            Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
           }
         }
 
@@ -4896,26 +4901,26 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         if (equiv_area) {
-          Total_CEquivArea    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
-          Total_CNearFieldOF  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
+          Total_CEquivArea    = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CEquivArea();
+          Total_CNearFieldOF  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CNearFieldOF();
           
           Total_CEquivArea    = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CEquivArea;
           Total_CNearFieldOF  = config[val_iZone]->GetWeightCd()*Total_CD + (1.0-config[val_iZone]->GetWeightCd())*Total_CNearFieldOF;
         }
         
         if (engine || actuator_disk) {
-          Total_NetThrust = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_NetThrust();
-          Total_Power     = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_Power();
-          Total_AeroCD    = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
-          Total_SolidCD   = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
-          Total_IDR       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDR();
-          Total_IDC       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_IDC();
+          Total_NetThrust = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_NetThrust();
+          Total_Power     = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Power();
+          Total_AeroCD    = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_AeroCD();
+          Total_SolidCD   = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_SolidCD();
+          Total_IDR       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_IDR();
+          Total_IDC       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_IDC();
         }
         
         if (rotating_frame) {
-          Total_CT      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CT();
-          Total_CQ      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CQ();
-          Total_CMerit  = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMerit();
+          Total_CT      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CT();
+          Total_CQ      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CQ();
+          Total_CMerit  = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CMerit();
         }
         
         if (aeroelastic) {
@@ -4929,16 +4934,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         if (output_per_surface) {
           /*--- Look over the markers being monitored and get the desired values ---*/
           for (iMarker_Monitoring = 0; iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-            Surface_CL[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring);
-            Surface_CD[iMarker_Monitoring]      = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring);
-            Surface_CSF[iMarker_Monitoring] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring);
-            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
-            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
-            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
-            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
-            Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
-            Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
-            Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+            Surface_CL[iMarker_Monitoring]      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CL(iMarker_Monitoring);
+            Surface_CD[iMarker_Monitoring]      = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CD(iMarker_Monitoring);
+            Surface_CSF[iMarker_Monitoring] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CSF(iMarker_Monitoring);
+            Surface_CEff[iMarker_Monitoring]       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CEff(iMarker_Monitoring);
+            Surface_CFx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFx(iMarker_Monitoring);
+            Surface_CFy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFy(iMarker_Monitoring);
+            Surface_CFz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CFz(iMarker_Monitoring);
+            Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
+            Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
+            Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
           }
         }
         
@@ -4984,18 +4989,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Flow Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Flow; iVar++)
-          residual_flow[iVar] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
+          residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
         /*--- Turbulent residual ---*/
         
         if (turbulent) {
           for (iVar = 0; iVar < nVar_Turb; iVar++)
-            residual_turbulent[iVar] = solver_container[val_iZone][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
+            residual_turbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
 
         if (weakly_coupled_heat) {
           for (iVar = 0; iVar < nVar_Heat; iVar++) {
-            residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+            residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
           }
 
         }
@@ -5004,7 +5009,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (transition) {
           for (iVar = 0; iVar < nVar_Trans; iVar++)
-            residual_transition[iVar] = solver_container[val_iZone][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
+            residual_transition[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TRANS_SOL]->GetRes_RMS(iVar);
         }
         
         
@@ -5016,7 +5021,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Iterations of the linear solver ---*/
         
-        LinSolvIter = (unsigned long) solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetIterLinSolver();
+        LinSolvIter = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetIterLinSolver();
         
         /*--- Adjoint solver ---*/
         
@@ -5024,18 +5029,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Adjoint solution coefficients ---*/
           
-          Total_Sens_Geo       = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
-          Total_Sens_Mach      = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
-          Total_Sens_AoA       = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
-          Total_Sens_Press     = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
-          Total_Sens_Temp      = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
-          Total_Sens_BPressure = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
-          Total_Sens_ModVel    = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
+          Total_Sens_Geo       = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Geo();
+          Total_Sens_Mach      = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Mach();
+          Total_Sens_AoA       = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0;
+          Total_Sens_Press     = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Press();
+          Total_Sens_Temp      = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_Temp();
+          Total_Sens_BPressure = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
+          Total_Sens_ModVel    = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
 
           /*--- Adjoint flow residuals ---*/
           
           for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
-            residual_adjflow[iVar] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(iVar);
+            residual_adjflow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(iVar);
           }
           
           /*--- Adjoint turbulent residuals ---*/
@@ -5043,7 +5048,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if (turbulent) {
             if (!frozen_visc) {
               for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
-                residual_adjturbulent[iVar] = solver_container[val_iZone][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
+                residual_adjturbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
             }
           }
           
@@ -5055,12 +5060,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Wave coefficients  ---*/
         
-        Total_CWave = solver_container[val_iZone][FinestMesh][WAVE_SOL]->GetTotal_CWave();
+        Total_CWave = solver_container[val_iZone][val_iInst][FinestMesh][WAVE_SOL]->GetTotal_CWave();
         
         /*--- Wave Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Wave; iVar++) {
-          residual_wave[iVar] = solver_container[val_iZone][FinestMesh][WAVE_SOL]->GetRes_RMS(iVar);
+          residual_wave[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][WAVE_SOL]->GetRes_RMS(iVar);
         }
         
         break;
@@ -5069,12 +5074,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- Heat coefficients  ---*/
         
-        Total_CHeat = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
+        Total_CHeat = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_CHeat();
         
         /*--- Wave Residuals ---*/
         
         for (iVar = 0; iVar < nVar_Heat; iVar++) {
-          residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+          residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
         }
         
         break;
@@ -5083,14 +5088,14 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- Heat coefficients  ---*/
 
-        Total_Heat         = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-        Total_MaxHeat      = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
-        Total_Temperature  = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
+        Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+        Total_MaxHeat      = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
+        Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
 
         /*--- Heat Residuals ---*/
 
         for (iVar = 0; iVar < nVar_Heat; iVar++) {
-          residual_heat[iVar] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
+          residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
         }
 
         break;
@@ -5099,13 +5104,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
         
-        Total_VMStress = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
         
-        Total_ForceCoeff = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetForceCoeff();
+        Total_ForceCoeff = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetForceCoeff();
 
-        Total_IncLoad = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetLoad_Increment();
+        Total_IncLoad = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetLoad_Increment();
 
-        LinSolvIter = (unsigned long) solver_container[val_iZone][FinestMesh][FEA_SOL]->GetIterLinSolver();
+        LinSolvIter = (unsigned long) solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetIterLinSolver();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -5113,12 +5118,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         
         if (linear_analysis) {
           for (iVar = 0; iVar < nVar_FEM; iVar++) {
-            residual_fem[iVar] = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
+            residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetRes_RMS(iVar);
           }
         }
         else if (nonlinear_analysis) {
           for (iVar = 0; iVar < nVar_FEM; iVar++) {
-            residual_fem[iVar] = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetRes_FEM(iVar);
+            residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetRes_FEM(iVar);
           }
         }
         
@@ -5128,13 +5133,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         /*--- FEM coefficients -- As of now, this is the Von Mises Stress ---*/
 
-        //Total_CFEM = solver_container[val_iZone][FinestMesh][FEA_SOL]->GetTotal_CFEA();
+        Total_VMStress = solver_container[val_iZone][val_iInst][FinestMesh][FEA_SOL]->GetTotal_CFEA();
 
         /*--- Residuals: ---*/
         /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
         /*--- Nonlinear analysis: UTOL, RTOL and DTOL (defined in the Postprocessing function) ---*/
          for (iVar = 0; iVar < nVar_FEM; iVar++) {
-           residual_fem[iVar] = solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
+           residual_fem[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetRes_RMS(iVar);
          }
 
         break;
@@ -5143,9 +5148,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
 
     if (extra_heat_output) {
-      Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
-      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
-      Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
+      Extra_Total_Heat      = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_HeatFlux();
+      //Extra_Total_Temperature   = solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_Temperature();
+      Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
     /*--- Header frequency ---*/
@@ -5212,8 +5217,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_NetThrust, Total_Power, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
             if (rotating_frame) SPRINTF (rotating_frame_coeff, ", %14.8e, %14.8e, %14.8e", Total_CMerit, Total_CT, Total_CQ);
             if (inv_design) {
-              SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
-              if (thermal && !turbo) SPRINTF (Heat_inverse_design, ", %14.8e", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff());
+              SPRINTF (Cp_inverse_design, ", %14.8e", solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_CpDiff());
+              if (thermal && !turbo) SPRINTF (Heat_inverse_design, ", %14.8e", solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFluxDiff());
             }
             
             if (direct_diff != NO_DERIVATIVE) {
@@ -5456,7 +5461,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
         }
       }
-      if (val_iZone == 0 || fluid_structure){
+      if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
         /*--- Write the screen header---*/
         if (  (!fem && ((write_heads) && !(!DualTime_Iteration && Unsteady))) ||
             (fem && ((write_heads_FEM) && !(!DualTime_Iteration && nonlinear_analysis)))
@@ -5471,8 +5476,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 cout << endl << "---------------------- Local Time Stepping Summary ----------------------" << endl;
 
                 for (unsigned short iMesh = FinestMesh; iMesh <= config[val_iZone]->GetnMGLevels(); iMesh++)
-                  cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
-                  ". Max. DT: " << solver_container[val_iZone][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
+                  cout << "MG level: "<< iMesh << " -> Min. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMin_Delta_Time()<<
+                  ". Max. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
 
                   if (nZone > 1)
@@ -5547,11 +5552,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (flow) {
                 if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()== 0.0))
                 {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                 } else if ((config[val_iZone]->GetUnsteady_Simulation() == TIME_STEPPING) && (config[val_iZone]->GetUnst_CFL()!= 0.0)) {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ". Time step: " << solver_container[val_iZone][val_iInst][config[val_iZone]->GetFinestMesh()][FLOW_SOL]->GetMin_Delta_Time() << ". CFL: " << config[val_iZone]->GetUnst_CFL()<<".";
                 } else {
-                  cout << endl << "Min DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
+                  cout << endl << "Min DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMin_Delta_Time()<< ".Max DT: " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetMax_Delta_Time() << ".Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
                 }
               } else {
                 cout << endl << "Dual Time step: " << config[val_iZone]->GetDelta_UnstTimeND() << ".";
@@ -5568,12 +5573,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case EULER :                  case NAVIER_STOKES:
 
             /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
 
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
 
-            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
 
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
@@ -5635,12 +5640,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case RANS :
 
             /*--- Visualize the maximum residual ---*/
-            iPointMaxResid = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
-            Coord = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
+            iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
 
             cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
 
-            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_Max(0)) << "." << endl;
             if (config[val_iZone]->GetSystemMeasurements() == SI) {
               cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
               if (nDim == 3) cout << ", " << Coord[2];
@@ -5651,7 +5656,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (nDim == 3) cout << ", " << Coord[2]*12.0;
               cout <<   ")." << endl;
             }
-            cout <<"Maximum Omega " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
+            cout <<"Maximum Omega " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetOmega_Max() << ", maximum Strain Rate " << solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetStrainMag_Max() << "." << endl;
 
             /*--- Print out the number of non-physical points and reconstructions ---*/
             if (config[val_iZone]->GetNonphysical_Points() > 0)
@@ -5751,9 +5756,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:
 
               /*--- Visualize the maximum residual ---*/
-              iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-              Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
               if (config[val_iZone]->GetSystemMeasurements() == SI) {
                 cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
                 if (nDim == 3) cout << ", " << Coord[2];
@@ -5799,9 +5804,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             case ADJ_RANS : case DISC_ADJ_RANS:
 
               /*--- Visualize the maximum residual ---*/
-              iPointMaxResid = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
-              Coord = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
-              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
+              iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max(0);
+              Coord = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetPoint_Max_Coord(0);
+              cout << endl << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetRes_Max(0)) << "." << endl;
               if (config[val_iZone]->GetSystemMeasurements() == SI) {
                 cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
                 if (nDim == 3) cout << ", " << Coord[2];
@@ -5859,9 +5864,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
       }
 
-      /*--- Write the solution on the screen and history file ---*/
+      /*--- Write the solution on the screen ---*/
       
-      if (val_iZone == 0 || fluid_structure){
+      if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
         cout.precision(6);
         cout.setf(ios::fixed, ios::floatfield);
         if (!fem) {
@@ -5925,7 +5930,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
 
           /*--- Write screen output ---*/
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6017,7 +6022,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           /*--- Write screen output ---*/
 
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if(DualTime_Iteration || !Unsteady) {
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6086,7 +6091,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << wave_coeff << wave_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_wave[0]);
@@ -6101,7 +6106,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << heat_coeff << heat_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             cout.precision(6);
             cout.setf(ios::fixed, ios::floatfield);
             cout.width(14); cout << log10(residual_heat[0]);
@@ -6158,16 +6163,16 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
 
           if (config[val_iZone]->GetnElasticityMod() == 1){
-            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-            cout.width(14); cout << solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+            cout.width(14); cout << solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+            cout.width(14); cout << solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
           }
           else{
             Total_SensE = 0.0; Total_SensNu = 0.0;
             for (unsigned short iVar = 0; iVar < config[val_iZone]->GetnElasticityMod(); iVar++){
-                Total_SensE += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
-                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
-                Total_SensNu += solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
-                    *solver_container[val_iZone][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
+                Total_SensE += solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0)
+                    *solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_E(0);
+                Total_SensNu += solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0)
+                    *solver_container[val_iZone][val_iInst][FinestMesh][ADJFEA_SOL]->GetGlobal_Sens_Nu(0);
             }
             Total_SensE = sqrt(Total_SensE);
             Total_SensNu = sqrt(Total_SensNu);
@@ -6185,7 +6190,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << begin << adjoint_coeff << adj_flow_resid << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6240,7 +6245,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
           }
-          if (val_iZone == 0 || fluid_structure){
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
             if (DualTime_Iteration || !Unsteady){
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
@@ -6250,7 +6255,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
               else {
                 if (compressible) {
-                  if (geometry[val_iZone][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
+                  if (geometry[val_iZone][val_iInst][FinestMesh]->GetnDim() == 2 ) { cout.width(15); cout << log10(residual_adjflow[3]); }
                   else { cout.width(15); cout << log10(residual_adjflow[4]); }
                 }
                 if (incompressible) {
@@ -6320,7 +6325,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   }
 }
 
-void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone) {
+void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone) {
   
   su2double CFLFactor = 1.0, power = 1.0, CFL = 0.0, CFLMin = 0.0, CFLMax = 0.0, Div = 1.0, Diff = 0.0, MGFactor[100];
   unsigned short iMesh;
@@ -6335,21 +6340,21 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
   switch( config[val_iZone]->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES : case RANS:
       if (energy) {
-        nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
-        RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
+        nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
+        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
       }
       else if (weakly_coupled_heat) {
-        RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
       }
       else {
-        RhoRes_New = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+        RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
       }
       break;
     case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-      RhoRes_New = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+      RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
       break;
     case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-      RhoRes_New = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+      RhoRes_New = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
       break;
   }
   
@@ -6399,22 +6404,22 @@ void COutput::SetCFL_Number(CSolver ****solver_container, CConfig **config, unsi
 
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
-    nVar = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetnVar();
-    if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
-    else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
-    else RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
+    nVar = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetnVar();
+    if (energy) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(nVar-1);
+    else if (weakly_coupled_heat) RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    else RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetRes_RMS(0);
     break;
   case ADJ_EULER : case ADJ_NAVIER_STOKES: case ADJ_RANS:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][ADJFLOW_SOL]->GetRes_RMS(0);
     break;
   case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-    RhoRes_Old[val_iZone] = solver_container[val_iZone][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
+    RhoRes_Old[val_iZone] = solver_container[val_iZone][INST_0][FinestMesh][HEAT_SOL]->GetRes_RMS(0);
     break;
   }
   
 }
 
-void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output) {
+void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output) {
   
   char cstr[200];
   unsigned short iDim, iMarker_Monitoring;
@@ -6434,7 +6439,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   unsigned short Ref_NonDim = config[val_iZone]->GetRef_NonDim();
 
   unsigned short FinestMesh = config[val_iZone]->GetFinestMesh();
-  unsigned short nDim = geometry[val_iZone][FinestMesh]->GetnDim();
+  unsigned short nDim = geometry[val_iZone][INST_0][FinestMesh]->GetnDim();
   bool flow = ((config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
                (config[val_iZone]->GetKind_Solver() == RANS));
   
@@ -6534,26 +6539,26 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
 
     /*--- Flow solution coefficients ---*/
     
-    Total_CL       = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CL();
-    Total_CD       = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CD();
-    Total_CSF      = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CSF();
-    Total_CEff        = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CEff();
-    Total_CMx         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMx();
-    Total_CMy         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMy();
-    Total_CMz         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CMz();
-    Total_CFx         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
-    Total_CFy         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-    Total_CFz         = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+    Total_CL       = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CL();
+    Total_CD       = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CD();
+    Total_CSF      = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CSF();
+    Total_CEff        = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CEff();
+    Total_CMx         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMx();
+    Total_CMy         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMy();
+    Total_CMz         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CMz();
+    Total_CFx         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+    Total_CFy         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+    Total_CFz         = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFz();
     
     if (nDim == 2) {
-      Total_CoPx = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy();
-      Total_CoPy = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPy() / solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      Total_CoPx = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFy();
+      Total_CoPy = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CoPy() / solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
       Total_CoPz = 0.0;
     }
     if (nDim == 3) {
-      Total_CoPx = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz();
+      Total_CoPx = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CoPx() / solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFz();
       Total_CoPy = 0.0;
-      Total_CoPz = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      Total_CoPz = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CoPz() / solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
     }
     
     if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx *= 12.0; Total_CoPy *= 12.0; Total_CoPz *= 12.0; }
@@ -6561,71 +6566,71 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     /*--- Flow inviscid solution coefficients ---*/
     
     Inv_CL =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CL_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CL_Inv();
     Inv_CD =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CD_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CD_Inv();
     Inv_CSF =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Inv();
     Inv_CEff =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Inv();
     Inv_CMx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Inv();
     Inv_CMy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Inv();
     Inv_CMz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Inv();
     Inv_CFx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Inv();
     Inv_CFy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Inv();
     Inv_CFz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Inv();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Inv();
     
     /*--- Flow viscous solution coefficients ---*/
     
     Visc_CL =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CL_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CL_Visc();
     Visc_CD =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CD_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CD_Visc();
     Visc_CSF =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Visc();
     Visc_CEff =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Visc();
     Visc_CMx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Visc();
     Visc_CMy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Visc();
     Visc_CMz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Visc();
     Visc_CFx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Visc();
     Visc_CFy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Visc();
     Visc_CFz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Visc();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Visc();
     
     /*--- Flow momentum solution coefficients ---*/
     
     Mnt_CL =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CL_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CL_Mnt();
     Mnt_CD =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CD_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CD_Mnt();
     Mnt_CSF =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CSF_Mnt();
     Mnt_CEff =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CEff_Mnt();
     Mnt_CMx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMx_Mnt();
     Mnt_CMy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMy_Mnt();
     Mnt_CMz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CMz_Mnt();
     Mnt_CFx =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFx_Mnt();
     Mnt_CFy =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFy_Mnt();
     Mnt_CFz =
-    solver[val_iZone][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Mnt();
+    solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetAllBound_CFz_Mnt();
     
     
     /*--- Look over the markers being monitored and get the desired values ---*/
@@ -6634,126 +6639,126 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
          iMarker_Monitoring < config[ZONE_0]->GetnMarker_Monitoring();
          iMarker_Monitoring++) {
       Surface_CL[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CL(
                                                              iMarker_Monitoring);
       Surface_CD[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CD(
                                                              iMarker_Monitoring);
       Surface_CSF[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CSF(
                                                               iMarker_Monitoring);
       Surface_CEff[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CEff(
                                                                iMarker_Monitoring);
       Surface_CMx[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMx(
                                                               iMarker_Monitoring);
       Surface_CMy[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMy(
                                                               iMarker_Monitoring);
       Surface_CMz[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMz(
                                                               iMarker_Monitoring);
       Surface_CFx[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFx(
                                                               iMarker_Monitoring);
       Surface_CFy[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFy(
                                                               iMarker_Monitoring);
       Surface_CFz[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFz(
                                                               iMarker_Monitoring);
       
       Surface_CL_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CL_Inv(
                                                                  iMarker_Monitoring);
       Surface_CD_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CD_Inv(
                                                                  iMarker_Monitoring);
       Surface_CSF_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CSF_Inv(
                                                                   iMarker_Monitoring);
       Surface_CEff_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CEff_Inv(
                                                                    iMarker_Monitoring);
       Surface_CMx_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMx_Inv(
                                                                   iMarker_Monitoring);
       Surface_CMy_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMy_Inv(
                                                                   iMarker_Monitoring);
       Surface_CMz_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMz_Inv(
                                                                   iMarker_Monitoring);
       Surface_CFx_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFx_Inv(
                                                                   iMarker_Monitoring);
       Surface_CFy_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFy_Inv(
                                                                   iMarker_Monitoring);
       Surface_CFz_Inv[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFz_Inv(
                                                                   iMarker_Monitoring);
       Surface_CL_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CL_Visc(
                                                                   iMarker_Monitoring);
       Surface_CD_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CD_Visc(
                                                                   iMarker_Monitoring);
       Surface_CSF_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CSF_Visc(
                                                                    iMarker_Monitoring);
       Surface_CEff_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CEff_Visc(
                                                                     iMarker_Monitoring);
       Surface_CMx_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMx_Visc(
                                                                    iMarker_Monitoring);
       Surface_CMy_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMy_Visc(
                                                                    iMarker_Monitoring);
       Surface_CMz_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMz_Visc(
                                                                    iMarker_Monitoring);
       Surface_CFx_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFx_Visc(
                                                                    iMarker_Monitoring);
       Surface_CFy_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFy_Visc(
                                                                    iMarker_Monitoring);
       Surface_CFz_Visc[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Visc(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFz_Visc(
                                                                    iMarker_Monitoring);
       
       Surface_CL_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CL_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CL_Mnt(
                                                                  iMarker_Monitoring);
       Surface_CD_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CD_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CD_Mnt(
                                                                  iMarker_Monitoring);
       Surface_CSF_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CSF_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CSF_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CEff_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CEff_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CEff_Mnt(
                                                                    iMarker_Monitoring);
       Surface_CMx_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMx_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMx_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CMy_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMy_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMy_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CMz_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CMz_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CMz_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CFx_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFx_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFx_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CFy_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFy_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFy_Mnt(
                                                                   iMarker_Monitoring);
       Surface_CFz_Mnt[iMarker_Monitoring] =
-      solver[val_iZone][FinestMesh][FLOW_SOL]->GetSurface_CFz_Mnt(
+      solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetSurface_CFz_Mnt(
                                                                   iMarker_Monitoring);
       
     }
@@ -7442,7 +7447,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     Breakdown_file << "\n" << "\n" <<"Forces breakdown:" << "\n" << "\n";
 
     if (nDim == 3) {
-      su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFz()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      su2double m = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFz()/solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
       su2double term = (Total_CoPz/m)-Total_CoPx;
       
       if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Z-"<< term << "." << "\n\n";
@@ -7451,7 +7456,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
       else Breakdown_file << " in." << "\n\n";
     }
     else {
-      su2double m = solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFy()/solver[val_iZone][FinestMesh][FLOW_SOL]->GetTotal_CFx();
+      su2double m = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFy()/solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetTotal_CFx();
       su2double term = (Total_CoPy/m)-Total_CoPx;
       if (term > 0) Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y-"<< term << "." << "\n\n";
       else Breakdown_file << "Center of Pressure: X="  << 1/m <<"Y+"<< fabs(term);
@@ -7464,15 +7469,15 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
     su2double RefDensity, RefArea, RefVel, Factor, Ref;
     RefArea     = config[val_iZone]->GetRefArea();
     if (compressible) {
-      RefDensity  = solver[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
-      RefVel = solver[val_iZone][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
+      RefDensity  = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+      RefVel = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetModVelocity_Inf();
     } else {
       if ((config[val_iZone]->GetRef_Inc_NonDim() == DIMENSIONAL) ||
           (config[val_iZone]->GetRef_Inc_NonDim() == INITIAL_VALUES)) {
-        RefDensity  = solver[val_iZone][FinestMesh][FLOW_SOL]->GetDensity_Inf();
+        RefDensity  = solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetDensity_Inf();
         RefVel = 0.0;
         for (iDim = 0; iDim < nDim; iDim++)
-          RefVel  += solver[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim)*solver[val_iZone][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim);
+          RefVel  += solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim)*solver[val_iZone][INST_0][FinestMesh][FLOW_SOL]->GetVelocity_Inf(iDim);
         RefVel = sqrt(RefVel);
       } else {
         RefDensity = config[val_iZone]->GetInc_Density_Ref();
@@ -8157,7 +8162,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geo
   
 }
 
-void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                               unsigned long iExtIter, unsigned short val_nZone) {
   
   unsigned short iZone;
@@ -8187,12 +8192,12 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
         
       case EULER : case NAVIER_STOKES : case RANS :
         
-        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0][ADJFLOW_SOL], solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
     }
@@ -8207,7 +8212,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
     
     if (Wrt_Vol || Wrt_Srf) {
       if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
-      MergeConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
+      MergeConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
     }
     
     /*--- Merge coordinates of all grid nodes (excluding ghost points).
@@ -8215,24 +8220,24 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
      restart files. ---*/
     
     if (rank == MASTER_NODE) cout << "Merging coordinates in the Master node." << endl;
-    MergeCoordinates(config[iZone], geometry[iZone][MESH_0]);
+    MergeCoordinates(config[iZone], geometry[iZone][INST_0][MESH_0]);
     
     if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
       if (FileFormat == TECPLOT_BINARY) {
         if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume and surface mesh files." << endl;
-        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][MESH_0], iZone);
-        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][MESH_0], iZone);
+        SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
+        SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
         if (!wrote_base_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+          DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
         if (!wrote_surf_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], wrote_surf_file);
+          DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], wrote_surf_file);
       }
     }
     
     /*--- Merge the solution data needed for volume solutions and restarts ---*/
     
     if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-    MergeSolution(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+    MergeSolution(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
     
     /*--- Write restart, or Tecplot files using the merged data.
      This data lives only on the master, and these routines are currently
@@ -8243,7 +8248,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       /*--- Write a native restart file ---*/
       
       if (rank == MASTER_NODE) cout << "Writing SU2 native restart file." << endl;
-      SetRestart(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone);
+      SetRestart(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0] , iZone);
       
       if (Wrt_Vol) {
         
@@ -8254,8 +8259,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            SetTecplotASCII(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
             break;
             
           case FIELDVIEW:
@@ -8263,8 +8268,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a FieldView ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file volume solution file." << endl;
-            SetFieldViewASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            SetFieldViewASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
             break;
             
           case TECPLOT_BINARY:
@@ -8272,7 +8277,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary volume solution file." << endl;
-            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
             break;
             
           case FIELDVIEW_BINARY:
@@ -8280,8 +8285,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a FieldView binary file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing FieldView binary file volume solution file." << endl;
-            SetFieldViewBinary(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            SetFieldViewBinary(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
             break;
             
           case PARAVIEW:
@@ -8289,8 +8294,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Paraview ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], false);
+            SetParaview_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
             break;
             
           default:
@@ -8308,8 +8313,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII surface solution file." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0] , iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            SetTecplotASCII(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0] , iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], true);
             break;
             
           case TECPLOT_BINARY:
@@ -8317,7 +8322,7 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Tecplot binary solution file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Tecplot binary surface solution file." << endl;
-            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][MESH_0], iZone);
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][INST_0][MESH_0], iZone);
             break;
             
           case PARAVIEW:
@@ -8325,8 +8330,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
             /*--- Write a Paraview ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone][MESH_0], iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone][MESH_0], true);
+            SetParaview_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], true);
             break;
             
           default:
@@ -8337,8 +8342,8 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
       
       /*--- Release memory needed for merging the solution data. ---*/
       
-      DeallocateCoordinates(config[iZone], geometry[iZone][MESH_0]);
-      DeallocateSolution(config[iZone], geometry[iZone][MESH_0]);
+      DeallocateCoordinates(config[iZone], geometry[iZone][INST_0][MESH_0]);
+      DeallocateSolution(config[iZone], geometry[iZone][INST_0][MESH_0]);
       
     }
     
@@ -8353,57 +8358,63 @@ void COutput::SetResult_Files(CSolver ****solver_container, CGeometry ***geometr
   }
 }
 
-void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
+void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
                                       unsigned long iExtIter, unsigned short val_nZone) {
   
-  unsigned short iZone;
+  unsigned short iZone, iInst, nInst;
   
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
-    /*--- Flags identifying the types of files to be written. ---*/
-    
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = false; }
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-    
-    /*--- Get the file output format ---*/
-    
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    /*--- Merge the node coordinates and connectivity if necessary. This
+    nInst = config[iZone]->GetnTimeInstances();
+
+    for (iInst = 0; iInst < nInst; iInst++) {
+
+      config[iZone]->SetiInst(iInst);
+
+      /*--- Flags identifying the types of files to be written. ---*/
+
+      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+      if (config[iZone]->GetKind_SU2() == SU2_DOT) { Wrt_Vol = false; }
+      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+
+      /*--- Get the file output format ---*/
+
+      unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+
+      /*--- Merge the node coordinates and connectivity if necessary. This
      is only performed if a volume solution file is requested, and it
      is active by default. ---*/
-    
-    if ((Wrt_Vol || Wrt_Srf)) {
-      if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
-      MergeConnectivity(config[iZone], geometry[iZone], iZone);
-    }
-    
-    /*--- Merge the solution data needed for volume solutions and restarts ---*/
-    
-    if ((Wrt_Vol || Wrt_Srf)) {
-      if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
-      MergeBaselineSolution(config[iZone], geometry[iZone], solver[iZone], iZone);
-    }
-    
-    /*--- Write restart, Tecplot or Paraview files using the merged data.
+
+      if ((Wrt_Vol || Wrt_Srf)) {
+        if (rank == MASTER_NODE) cout << "Merging connectivities in the Master node." << endl;
+        MergeConnectivity(config[iZone], geometry[iZone][iInst], iZone);
+      }
+
+      /*--- Merge the solution data needed for volume solutions and restarts ---*/
+
+      if ((Wrt_Vol || Wrt_Srf)) {
+        if (rank == MASTER_NODE) cout << "Merging solution in the Master node." << endl;
+        MergeBaselineSolution(config[iZone], geometry[iZone][iInst], solver[iZone][iInst], iZone);
+      }
+
+      /*--- Write restart, Tecplot or Paraview files using the merged data.
      This data lives only on the master, and these routines are currently
      executed by the master proc alone (as if in serial). ---*/
-    
 
-    if (rank == MASTER_NODE) {
 
-      if (Wrt_Vol) {
+      if (rank == MASTER_NODE) {
 
-        switch (FileFormat) {
+        if (Wrt_Vol) {
+
+          switch (FileFormat) {
 
           case TECPLOT:
 
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (volume grid)." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
             break;
 
           case FIELDVIEW:
@@ -8411,8 +8422,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a FieldView ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-            SetFieldViewASCII(config[iZone], geometry[iZone], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            SetFieldViewASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
             break;
 
           case TECPLOT_BINARY:
@@ -8420,8 +8431,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a Tecplot binary solution file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (volume grid)." << endl;
-            SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone], iZone);
-            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone], iZone);
+            SetTecplotBinary_DomainMesh(config[iZone], geometry[iZone][iInst], iZone);
+            SetTecplotBinary_DomainSolution(config[iZone], geometry[iZone][iInst], iZone);
             break;
 
           case FIELDVIEW_BINARY:
@@ -8429,8 +8440,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a binary binary file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing FieldView ASCII file (volume grid)." << endl;
-            SetFieldViewBinary(config[iZone], geometry[iZone], iZone, val_nZone);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            SetFieldViewBinary(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
             break;
 
           case PARAVIEW:
@@ -8438,27 +8449,27 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (volume grid)." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, false);
-            DeallocateConnectivity(config[iZone], geometry[iZone], false);
+            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
             break;
 
           default:
             break;
+          }
+
         }
 
-      }
+        if (Wrt_Srf) {
 
-      if (Wrt_Srf) {
-
-        switch (FileFormat) {
+          switch (FileFormat) {
 
           case TECPLOT:
 
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file (surface grid)." << endl;
-            SetTecplotASCII(config[iZone], geometry[iZone], solver, iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            SetTecplotASCII(config[iZone], geometry[iZone][iInst], &solver[iZone][iInst], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
             break;
 
           case TECPLOT_BINARY:
@@ -8466,8 +8477,8 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a Tecplot binary solution file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot Binary file (surface grid)." << endl;
-            SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone], iZone);
-            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone], iZone);
+            SetTecplotBinary_SurfaceMesh(config[iZone], geometry[iZone][iInst], iZone);
+            SetTecplotBinary_SurfaceSolution(config[iZone], geometry[iZone][iInst], iZone);
             break;
 
           case PARAVIEW:
@@ -8475,35 +8486,37 @@ void COutput::SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CC
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII file (surface grid)." << endl;
-            SetParaview_ASCII(config[iZone], geometry[iZone], iZone, val_nZone, true);
-            DeallocateConnectivity(config[iZone], geometry[iZone], true);
+            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
             break;
 
           default:
             break;
+          }
         }
+
+        if (FileFormat == TECPLOT_BINARY) {
+          if (!wrote_base_file)
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
+          if (!wrote_surf_file)
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], wrote_surf_file);
+        }
+
+        if (Wrt_Vol || Wrt_Srf)
+          DeallocateSolution(config[iZone], geometry[iZone][iInst]);
       }
 
-      if (FileFormat == TECPLOT_BINARY) {
-        if (!wrote_base_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone], false);
-        if (!wrote_surf_file)
-          DeallocateConnectivity(config[iZone], geometry[iZone], wrote_surf_file);
-      }
 
-      if (Wrt_Vol || Wrt_Srf)
-        DeallocateSolution(config[iZone], geometry[iZone]);
+
+      /*--- Final broadcast (informing other procs that the base output
+     file was written). ---*/
+
+#ifdef HAVE_MPI
+      SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
     }
 
-
-    
-    /*--- Final broadcast (informing other procs that the base output
-     file was written). ---*/
-    
-#ifdef HAVE_MPI
-    SU2_MPI::Bcast(&wrote_base_file, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
-#endif
-    
   }
 }
 
@@ -11076,8 +11089,8 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
 }
 
-void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container,
-                                CConfig **config, CIntegration ***integration, unsigned long iExtIter,
+void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container,
+                                CConfig **config, CIntegration ****integration, unsigned long iExtIter,
                                 unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header) {
 
   int rank = MASTER_NODE;
@@ -11236,7 +11249,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
 
   if ((rank == MASTER_NODE) && (!header)){
 
-      unsigned short nDim = geometry[ZONE_STRUCT][MESH_0]->GetnDim();
+      unsigned short nDim = geometry[ZONE_STRUCT][INST_0][MESH_0]->GetnDim();
 
       unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
       unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
@@ -11296,22 +11309,22 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
       su2double Total_CL = 0.0, Total_CD = 0.0, Total_CMx = 0.0, Total_CMy = 0.0, Total_CMz = 0.0, Total_CEff = 0.0,
                 Total_OF = 0.0;
 
-      Total_CL       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CL();
-      Total_CD       = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CD();
-      Total_CEff     = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CEff();
-      Total_CMx      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      Total_CMy      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      Total_CMz      = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetTotal_CMz();
+      Total_CL       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL();
+      Total_CD       = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD();
+      Total_CEff     = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CEff();
+      Total_CMx      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMx();
+      Total_CMy      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMy();
+      Total_CMz      = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetTotal_CMz();
 
       bool print_of = false;
 
       switch (config[ZONE_STRUCT]->GetKind_ObjFunc()){
         case REFERENCE_GEOMETRY:
-          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
+          Total_OF = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefGeom();
           print_of = true;
           break;
         case REFERENCE_NODE:
-          Total_OF = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
+          Total_OF = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
           print_of = true;
           break;
         default:
@@ -11321,24 +11334,24 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, C
       if ((!disc_adj_flow) && (!disc_adj_fem)){
         /*--- Flow Residuals ---*/
         for (iVar = 0; iVar < nVar_Flow; iVar++)
-          residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
+          residual_flow[iVar] = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetRes_BGS(iVar);
 
         /*--- FEA Residuals ---*/
         for (iVar = 0; iVar < nVar_FEM; iVar++)
-          residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
+          residual_fem[iVar] = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetRes_BGS(iVar);
 
-        residual_fsi[0] = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetFSI_Residual();
-        coeffs_fsi[0]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetRelaxCoeff();
-        coeffs_fsi[1]  = solver_container[ZONE_STRUCT][MESH_0][FEA_SOL]->GetForceCoeff();
+        residual_fsi[0] = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetFSI_Residual();
+        coeffs_fsi[0]  = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetRelaxCoeff();
+        coeffs_fsi[1]  = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetForceCoeff();
 
       }
       else{
           /*--- Flow Residuals ---*/
           for (iVar = 0; iVar < nVar_Flow; iVar++)
-            residual_flow[iVar] = solver_container[ZONE_FLOW][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
+            residual_flow[iVar] = solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->GetRes_BGS(iVar);
           /*--- FEA Residuals ---*/
           for (iVar = 0; iVar < nVar_FEM; iVar++)
-            residual_fem[iVar] = solver_container[ZONE_STRUCT][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
+            residual_fem[iVar] = solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetRes_BGS(iVar);
       }
 
       /*--- Write the begining of the history file ---*/
@@ -11472,7 +11485,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   /*--- Merge the information and write the output files ---*/
 
-  SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
+  SetBaselineResult_Files(&solver, &geometry, config, 0, val_nZone);
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
     delete solver[iZone];
@@ -11728,7 +11741,7 @@ void COutput::WriteTurboPerfConvHistory(CConfig *config){
   
 }
 
-void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CConfig **config,
+void COutput::SpecialOutput_Turbo(CSolver *****solver, CGeometry ****geometry, CConfig **config,
                                        unsigned short val_iZone, bool output) {
   
   string inMarker_Tag, outMarker_Tag, inMarkerTag_Mix;
@@ -11744,8 +11757,8 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
 
   /*--- Start of write file turboperformance spanwise ---*/
   if (rank == MASTER_NODE){
-    SpanWiseValuesIn = geometry[val_iZone][MESH_0]->GetSpanWiseValue(1);
-    SpanWiseValuesOut = geometry[val_iZone][MESH_0]->GetSpanWiseValue(2);
+    SpanWiseValuesIn = geometry[val_iZone][INST_0][MESH_0]->GetSpanWiseValue(1);
+    SpanWiseValuesOut = geometry[val_iZone][INST_0][MESH_0]->GetSpanWiseValue(2);
 
 
 
@@ -11981,7 +11994,7 @@ void COutput::SpecialOutput_Turbo(CSolver ****solver, CGeometry ***geometry, CCo
   }
 }
 
-void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output) {
+void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iInst, unsigned short val_nInst, bool output) {
   
   /*--- Write file with flow quantities for harmonic balance HB ---*/
   ofstream HB_output_file;
@@ -11991,7 +12004,7 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geo
   su2double *sbuf_var = NULL,  *rbuf_var = NULL;
 
   /*--- Other variables ---*/
-  unsigned short iVar, kZone;
+  unsigned short iVar, kInst;
   unsigned short nVar_output = 5;
   unsigned long current_iter = config[ZONE_0]->GetExtIter();
 
@@ -12011,7 +12024,7 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geo
     HB_output_file <<  "\"time_instance\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\"" << endl;
 
     mean_HB_file.precision(15);
-    if (current_iter == 0 && iZone == 1) {
+    if (current_iter == 0 && iInst == 1) {
       mean_HB_file.open("history_HB.plt", ios::trunc);
       mean_HB_file << "TITLE = \"SU2 HARMONIC BALANCE SIMULATION\"" << endl;
       mean_HB_file <<  "VARIABLES = \"Iteration\",\"CL\",\"CD\",\"CMx\",\"CMy\",\"CMz\",\"CT\",\"CQ\",\"CMerit\"" << endl;
@@ -12026,32 +12039,32 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geo
     /*--- Run through the zones, collecting the output variables
        N.B. Summing across processors within a given zone is being done
        elsewhere. ---*/
-    for (kZone = 0; kZone < val_nZone; kZone++) {
+    for (kInst = 0; kInst < val_nInst; kInst++) {
       
       /*--- Flow solution coefficients (parallel) ---*/
-      sbuf_var[0] = solver[kZone][MESH_0][FLOW_SOL]->GetTotal_CL();
-      sbuf_var[1] = solver[kZone][MESH_0][FLOW_SOL]->GetTotal_CD();
-      sbuf_var[2] = solver[kZone][MESH_0][FLOW_SOL]->GetTotal_CMx();
-      sbuf_var[3] = solver[kZone][MESH_0][FLOW_SOL]->GetTotal_CMy();
-      sbuf_var[4] = solver[kZone][MESH_0][FLOW_SOL]->GetTotal_CMz();
+      sbuf_var[0] = solver[ZONE_0][kInst][MESH_0][FLOW_SOL]->GetTotal_CL();
+      sbuf_var[1] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CD();
+      sbuf_var[2] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMx();
+      sbuf_var[3] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMy();
+      sbuf_var[4] = solver[ZONE_0][kInst][INST_0][FLOW_SOL]->GetTotal_CMz();
       
       for (iVar = 0; iVar < nVar_output; iVar++) {
         rbuf_var[iVar] = sbuf_var[iVar];
       }
 
-      HB_output_file << kZone << ", ";
+      HB_output_file << kInst << ", ";
       for (iVar = 0; iVar < nVar_output; iVar++)
         HB_output_file << rbuf_var[iVar] << ", ";
       HB_output_file << endl;
 
       /*--- Increment the total contributions from each zone, dividing by nZone as you go ---*/
       for (iVar = 0; iVar < nVar_output; iVar++) {
-        averages[iVar] += (1.0/su2double(val_nZone))*rbuf_var[iVar];
+        averages[iVar] += (1.0/su2double(val_nInst))*rbuf_var[iVar];
       }
     }
   }
 
-  if (rank == MASTER_NODE && iZone == ZONE_0) {
+  if (rank == MASTER_NODE && iInst == INST_0) {
 
     mean_HB_file << current_iter << ", ";
     for (iVar = 0; iVar < nVar_output; iVar++) {
@@ -12072,40 +12085,43 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geo
   delete [] averages;
 }
 
-void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
-                                       CGeometry ***geometry,
+void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
+                                       CGeometry ****geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
-                                       unsigned short val_nZone) {
+                                       unsigned short val_nZone,
+                                       unsigned short *nInst) {
   
-  unsigned short iZone, iVar;
+  unsigned short iZone, iVar, iInst;
   unsigned long iPoint;
   bool compressible = true;
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
-    bool cont_adj = config[iZone]->GetContinuous_Adjoint();
-    bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
-    /*--- Flags identifying the types of files to be written. ---*/
-    /*--- For now, we are disabling the parallel writers for Tecplot
+      bool cont_adj = config[iZone]->GetContinuous_Adjoint();
+      bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
+
+      /*--- Flags identifying the types of files to be written. ---*/
+      /*--- For now, we are disabling the parallel writers for Tecplot
           ASCII until we have parallel versions of all file formats
           available. SU2_SOL will remain intact for writing files
           until this capability is completed. ---*/
-    
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
-    bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
+
+      bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol();
+      bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol();
+      bool Wrt_Csv = config[iZone]->GetWrt_Csv_Sol();
 
 #ifdef HAVE_MPI
-    /*--- Do not merge the connectivity or write the visualization files
+      /*--- Do not merge the connectivity or write the visualization files
      if we are running in parallel. Force the use of SU2_SOL to merge and
      write the viz. files in this case to save overhead. ---*/
 
-    if (size > SINGLE_NODE) {
-      Wrt_Vol = false;
-      Wrt_Srf = false;
-    }
+      if (size > SINGLE_NODE) {
+        Wrt_Vol = false;
+        Wrt_Srf = false;
+      }
 #endif
 
     /*--- Check for compressible/incompressible flow problems. ---*/
@@ -12118,14 +12134,14 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     
     switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
-        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][MESH_0],
-                                        solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
+            solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][MESH_0],
-                                           solver_container[iZone][MESH_0][ADJFLOW_SOL],
-                                           solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone);
+        if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][iInst][MESH_0],
+            solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL],
+            solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       default: break;
     }
@@ -12133,11 +12149,11 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     /*--- Write a template inlet profile file if requested. ---*/
 
     if (config[iZone]->GetWrt_InletFile()) {
-      MergeInletCoordinates(config[iZone], geometry[iZone][MESH_0]);
+      MergeInletCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       if (rank == MASTER_NODE) {
-        Write_InletFile_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0]);
-        DeallocateInletCoordinates(config[iZone], geometry[iZone][MESH_0]);
+        Write_InletFile_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
+        DeallocateInletCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
       }
       config[iZone]->SetWrt_InletFile(false);
     }
@@ -12145,26 +12161,26 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
      the local data for that particular problem alone. ---*/
-    
-    if (rank == MASTER_NODE)
-      cout << "Loading solution output data locally on each rank." << endl;
-    
-    switch (config[iZone]->GetKind_Solver()) {
+
+      if (rank == MASTER_NODE)
+        cout << "Loading solution output data locally on each rank." << endl;
+
+      switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES: case RANS :
         if (compressible)
-          LoadLocalData_Flow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+          LoadLocalData_Flow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         else
-          LoadLocalData_IncFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+          LoadLocalData_IncFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        LoadLocalData_AdjFlow(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        LoadLocalData_Elasticity(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case POISSON_EQUATION: case WAVE_EQUATION: case HEAT_EQUATION: case HEAT_EQUATION_FVM:
-        LoadLocalData_Base(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+        LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       default: break;
     }
@@ -12177,12 +12193,12 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       if (rank == MASTER_NODE)
         cout << "Storing solution output data locally on each rank (cte. CL mode)." << endl;
       
-      Local_Data_Copy = new su2double*[geometry[iZone][MESH_0]->GetnPoint()];
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      Local_Data_Copy = new su2double*[geometry[iZone][iInst][MESH_0]->GetnPoint()];
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         Local_Data_Copy[iPoint] = new su2double[nVar_Par];
       }
       
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar_Par; iVar++) {
           Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
         }
@@ -12198,13 +12214,13 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
       if (rank == MASTER_NODE)
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
       
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++) {
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
         for (iVar = 0; iVar < nVar_Par; iVar++) {
           Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
         }
       }
       
-      for (iPoint = 0; iPoint < geometry[iZone][MESH_0]->GetnPoint(); iPoint++)
+      for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++)
         delete [] Local_Data_Copy[iPoint];
       delete [] Local_Data_Copy;
       
@@ -12214,25 +12230,25 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
      i.e., a linear partitioning of the data across all ranks in the communicator. ---*/
     
     if (rank == MASTER_NODE) cout << "Sorting output data across all ranks." << endl;
-    SortOutputData(config[iZone], geometry[iZone][MESH_0]);
+    SortOutputData(config[iZone], geometry[iZone][iInst][MESH_0]);
     
     /*--- Write either a binary or ASCII restart file in parallel. ---*/
 
     if (config[iZone]->GetWrt_Binary_Restart()) {
       if (rank == MASTER_NODE) cout << "Writing binary SU2 native restart file." << endl;
-      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+      WriteRestart_Parallel_Binary(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
     } else {
       if (rank == MASTER_NODE) cout << "Writing ASCII SU2 native restart file." << endl;
-      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][MESH_0], solver_container[iZone][MESH_0], iZone);
+      WriteRestart_Parallel_ASCII(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone, iInst);
     }
 
     /*--- Write a slice on a structured mesh if requested. ---*/
 
     if (config[iZone]->GetWrt_Slice()) {
-      WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
-                     solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 0);
-      WriteCSV_Slice(config[iZone], geometry[iZone][MESH_0],
-                     solver_container[iZone][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
+      WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
+                     solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 0);
+      WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
+                     solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
     }
 
     /*--- Get the file output format ---*/
@@ -12250,11 +12266,11 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
 
       if (rank == MASTER_NODE)
         cout << "Preparing element connectivity across all ranks." << endl;
-      SortConnectivity(config[iZone], geometry[iZone][MESH_0], iZone);
+      SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
 
       /*--- Sort the surface data and renumber if for writing. ---*/
 
-      SortOutputData_Surface(config[iZone], geometry[iZone][MESH_0]);
+      SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
@@ -12267,8 +12283,8 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           case FIELDVIEW:
@@ -12287,8 +12303,8 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
             if (rank == MASTER_NODE) cout << "Tecplot binary volume files not available in serial with SU2_CFD." << endl;
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -12304,27 +12320,27 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                     solver_container[iZone][MESH_0], iZone, val_nZone, false);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
 
           default:
             break;
+          }
+
         }
 
-      }
+        if (Wrt_Srf) {
 
-      if (Wrt_Srf) {
-
-        switch (FileFormat) {
+          switch (FileFormat) {
 
           case TECPLOT:
 
             /*--- Write a Tecplot ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
 
           case TECPLOT_BINARY:
@@ -12334,8 +12350,8 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
             if (rank == MASTER_NODE) cout << "Tecplot binary surface files not available in serial with SU2_CFD." << endl;
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
-            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                       solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
 
           case PARAVIEW:
@@ -12343,35 +12359,36 @@ void COutput::SetResult_Files_Parallel(CSolver ****solver_container,
             /*--- Write a Paraview ASCII file ---*/
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
-            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][MESH_0],
-                                        solver_container[iZone][MESH_0], iZone, val_nZone, true);
+            WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
-            
+
           default:
             break;
+          }
+
         }
-        
+
+        /*--- Clean up the connectivity data that was allocated for output. ---*/
+
+        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], false);
+        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
+
+        /*--- Clean up the surface data that was only needed for output. ---*/
+
+        DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
+
       }
 
-      /*--- Clean up the connectivity data that was allocated for output. ---*/
+      /*--- Deallocate the nodal data needed for writing restarts. ---*/
 
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], false);
-      DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][MESH_0], true);
+      DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
 
-      /*--- Clean up the surface data that was only needed for output. ---*/
+      /*--- Clear the variable names list. ---*/
 
-      DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][MESH_0]);
-      
+      Variable_Names.clear();
+
     }
-    
-    /*--- Deallocate the nodal data needed for writing restarts. ---*/
-    
-    DeallocateData_Parallel(config[iZone], geometry[iZone][MESH_0]);
-    
-    /*--- Clear the variable names list. ---*/
-    
-    Variable_Names.clear();
-
   }
 }
 
@@ -17281,11 +17298,11 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   
 }
 
-void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
   
   /*--- Local variables ---*/
   
-  unsigned short nZone = geometry->GetnZone();
+  unsigned short nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned short iVar;
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
@@ -17316,9 +17333,13 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
   
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (nInst > 1)
+    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
@@ -17408,11 +17429,11 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
   
 }
 
-void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) {
+void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst) {
 
   /*--- Local variables ---*/
 
-  unsigned short iVar, nZone = geometry->GetnZone();
+  unsigned short iVar, nZone = geometry->GetnZone(), nInst = config->GetnTimeInstances();
   unsigned long iPoint, iExtIter = config->GetExtIter();
   bool fem       = (config->GetKind_Solver() == FEM_ELASTICITY);
   bool adjoint   = (config->GetContinuous_Adjoint() ||
@@ -17440,9 +17461,13 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   if (nZone > 1)
     filename= config->GetMultizone_FileName(filename, val_iZone);
 
+  /*--- Append the zone number if multiple instance problems ---*/
+  if (nInst > 1)
+    filename= config->GetMultiInstance_FileName(filename, val_iInst);
+
   /*--- Unsteady problems require an iteration number to be appended. ---*/
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iZone));
+    filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(val_iInst));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   } else if ((fem) && (config->GetWrt_Dynamic())) {

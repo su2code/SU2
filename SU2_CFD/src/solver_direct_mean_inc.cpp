@@ -8185,12 +8185,12 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   
   Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
-  /*--- Get wall function treatment from config. ---*/
-
-  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
-  if (Wall_Function != NO_WALL_FUNCTION) {
-    SU2_MPI::Error("Wall function treatment not implemented yet.", CURRENT_FUNCTION);
-  }
+//  /*--- Get wall function treatment from config. ---*/
+//
+//  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+//  if (Wall_Function != NO_WALL_FUNCTION) {
+//    SU2_MPI::Error("Wall function treament not implemented yet", CURRENT_FUNCTION);
+//  }
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
