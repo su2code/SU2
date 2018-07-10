@@ -7813,21 +7813,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
   }
 
-  /*--- Periodic transormations is not implemented yet. Store default 
-   zeros to avoid issues. We will rewrite the periodic BCs from scratch. ---*/
-  
-  unsigned short nPeriodic = 1, iPeriodic = 0;
-  config->SetnPeriodicIndex(nPeriodic);
-  su2double* center    = new su2double[3];
-  su2double* rotation  = new su2double[3];
-  su2double* translate = new su2double[3];
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-  }
-  config->SetPeriodicCenter(iPeriodic, center);
-  config->SetPeriodicRotation(iPeriodic, rotation);
-  config->SetPeriodicTranslate(iPeriodic, translate);
-  delete [] center; delete [] rotation; delete [] translate;
+  /*--- Periodic transformations not implemented yet.
+   We will rewrite the periodic BCs from scratch. ---*/
 
   /*--- initialize pointers for turbomachinery computations  ---*/
   nSpanWiseSections       = new unsigned short[2];
