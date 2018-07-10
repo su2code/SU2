@@ -329,8 +329,9 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
-  /*--- Copy the number of dimensions. ---*/
-  nDim = geometry->GetnDim();
+  /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
+  nDim  = geometry->GetnDim();
+  nZone = geometry->GetnZone();
 
   /*--- Determine the number of variables stored per DOF.              ---*/
   /*--- This is specifically taylored towards perfect gas computations ---*/

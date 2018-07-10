@@ -57,6 +57,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(void) : CSolver() {
 
   /*--- Initialization of the boolean symmetrizingTermsPresent. ---*/
   symmetrizingTermsPresent = true;
+
+  /*--- Initialize the variables for the monitoring data to avoid
+        possible valgrind warnings. ---*/
+  Total_CL   = Total_CD  = Total_CSF = 0.0;
+  Total_CFx  = Total_CFy = Total_CFz = 0.0;
+  Total_CMx  = Total_CMy = Total_CMz = 0.0;
+  Total_CEff = 0.0;
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDim, unsigned short iMesh) : CSolver() {
@@ -91,6 +98,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CConfig *config, unsigned short val_nDi
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   SetNondimensionalization(config, iMesh, false);
+
+  /*--- Initialize the variables for the monitoring data to avoid
+        possible valgrind warnings. ---*/
+  Total_CL   = Total_CD  = Total_CSF = 0.0;
+  Total_CFx  = Total_CFy = Total_CFz = 0.0;
+  Total_CMx  = Total_CMy = Total_CMz = 0.0;
+  Total_CEff = 0.0;
 }
 
 CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -9483,8 +9497,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
   CMx_Visc = NULL; CMy_Visc = NULL; CMz_Visc = NULL;
   CFx_Visc = NULL; CFy_Visc = NULL; CFz_Visc = NULL;
 
-  ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
-
   /*--- Surface-based array initialization ---*/
   Surface_CL_Visc  = NULL; Surface_CD_Visc  = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL; Surface_CFy_Visc = NULL; Surface_CFz_Visc = NULL;
@@ -9509,8 +9521,7 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CMx_Visc = NULL; Surface_CMy_Visc = NULL; Surface_CMz_Visc = NULL;
   MaxHeatFlux_Visc = NULL; Heat_Visc = NULL;
 
-  ForceViscous = NULL;  MomentViscous = NULL;
-  CSkinFriction = NULL; Cauchy_Serie = NULL;
+  Cauchy_Serie = NULL;
 
   /*--- Initialize the solution and right hand side vectors for storing
    the residuals and updating the solution (always needed even for
@@ -9520,8 +9531,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
   //LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Non dimensional coefficients ---*/
-  ForceViscous  = new su2double[3];
-  MomentViscous = new su2double[3];
   CD_Visc       = new su2double[nMarker];
   CL_Visc       = new su2double[nMarker];
   CSF_Visc      = new su2double[nMarker];
@@ -9598,7 +9607,6 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
 }
 
 CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
-  unsigned short iMarker;
 
   if (CD_Visc != NULL)       delete [] CD_Visc;
   if (CL_Visc != NULL)       delete [] CL_Visc;
@@ -9610,9 +9618,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   if (CFy_Visc != NULL)      delete [] CFy_Visc;
   if (CFz_Visc != NULL)      delete [] CFz_Visc;
   if (CEff_Visc != NULL)     delete [] CEff_Visc;
-  if (ForceViscous != NULL)  delete [] ForceViscous;
-  if (MomentViscous != NULL) delete [] MomentViscous;
-
 
   if (Surface_CL_Visc != NULL)   delete [] Surface_CL_Visc;
   if (Surface_CD_Visc != NULL)   delete [] Surface_CD_Visc;
@@ -9629,13 +9634,6 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
   if (MaxHeatFlux_Visc != NULL)  delete [] MaxHeatFlux_Visc;
 
   if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
-
-  if (CSkinFriction != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      delete CSkinFriction[iMarker];
-    }
-    delete [] CSkinFriction;
-  }
 
   if( SGSModel ) delete SGSModel;
 }
@@ -9740,8 +9738,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
 
-        for(unsigned short iDim=0; iDim<nDim; ++iDim)
-          ForceViscous[iDim] = MomentViscous[iDim] = 0.0;
+        su2double ForceViscous[]  = {0.0, 0.0, 0.0};
+        su2double MomentViscous[] = {0.0, 0.0, 0.0};
 
         /* Easier storage of the boundary faces for this boundary marker. */
         const unsigned long      nSurfElem = boundaries[iMarker].surfElem.size();
