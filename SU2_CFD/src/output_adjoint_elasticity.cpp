@@ -83,7 +83,7 @@ void CDiscAdjFEAOutput::SetOutputFields(CConfig *config){
   
 }
 
-inline void CDiscAdjFEAOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+inline void CDiscAdjFEAOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   
   SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());

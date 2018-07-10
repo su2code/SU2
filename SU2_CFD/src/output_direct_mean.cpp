@@ -151,10 +151,34 @@ inline void CFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
   AddOutputField("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
 
+  AddVolumeOutputField("COORD-X", "x", "COORDINATES");
+  AddVolumeOutputField("COORD-Y", "y", "COORDINATES");
+  AddVolumeOutputField("COORD-Z", "z", "COORDINATES");
+  AddVolumeOutputField("DENSITY",    "Density",    "CONSERVATIVE");
+  AddVolumeOutputField("MOMENTUM-X", "Momentum-x", "CONSERVATIVE");
+  AddVolumeOutputField("MOMENTUM-Y", "Momentum-y", "CONSERVATIVE");
+  AddVolumeOutputField("MOMENTUM-Z", "Momentum-z", "CONSERVATIVE");
+  AddVolumeOutputField("ENERGY",     "Energy",     "CONSERVATIVE");
   
+    
 }
 
-inline void CFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+
+inline void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+          
+  
+  SetVolumeOutputFieldValue("COORD-X", iPoint, geometry->node[iPoint]->GetCoord(0));  
+  SetVolumeOutputFieldValue("COORD-Y", iPoint, geometry->node[iPoint]->GetCoord(1));
+  SetVolumeOutputFieldValue("COORD-Z", iPoint, geometry->node[iPoint]->GetCoord(2));
+  
+  SetVolumeOutputFieldValue("DENSITY",    iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(0));
+  SetVolumeOutputFieldValue("MOMENTUM-X", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(1));
+  SetVolumeOutputFieldValue("MOMENTUM-Y", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(2));
+  SetVolumeOutputFieldValue("MOMENTUM-Z", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(3));
+  SetVolumeOutputFieldValue("ENERGY",     iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(4));
+}
+
+inline void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned short iVar;
   

@@ -161,7 +161,7 @@ inline bool CIncFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualt
 }
 
 
-inline void CIncFlowOutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   
   SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());

@@ -36,6 +36,7 @@
  */
 
 #pragma once
+#include "output_structure.hpp"
 
 inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
@@ -55,7 +56,7 @@ inline bool COutput::WriteScreen_Header(CConfig *config) { }
 
 inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
 
-inline void COutput::LoadOutput_Data(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
 
 inline void COutput::PrintScreenFixed(stringstream& stream, su2double val) {
@@ -93,12 +94,12 @@ inline void COutput::PrintHistorySep(stringstream& stream){
 }
 
 inline void COutput::AddOutputField(string name, string field_name, unsigned short format, string groupname ){
-  Output_Fields[name] = OutputField(field_name, format, groupname);
+  Output_Fields[name] = HistoryOutputField(field_name, format, groupname);
 }
 
 inline void COutput::AddOutputPerSurfaceField(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
   for (unsigned short i = 0; i < marker_names.size(); i++){
-    OutputPerSurface_Fields[name].push_back(OutputField(field_name+"("+marker_names[i]+")", format, groupname));
+    OutputPerSurface_Fields[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
   }
 }
 
@@ -117,3 +118,14 @@ inline void COutput::SetOutputPerSurfaceFieldValue(string name, su2double value,
     SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
   }
 }
+
+inline void COutput::AddVolumeOutputField(string name, string field_name, string groupname){
+  VolumeOutput_Fields[name] = VolumeOutputField(field_name, GlobalField_Counter, groupname);
+  GlobalField_Counter++;
+}
+
+inline void COutput::SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value){
+  Local_Data[iPoint][VolumeOutput_Fields[name].Offset] = value;
+}
+inline void COutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {}
+
