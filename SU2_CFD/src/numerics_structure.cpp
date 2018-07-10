@@ -2760,9 +2760,11 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
   assert((Sensor_i >= 0) && (Sensor_i <= 1));
   assert((Sensor_j >= 0) && (Sensor_j <= 1));
 
+  /*--- A minimum level of upwinding is used to enhance stability ---*/
+
   const su2double Min_Dissipation = 0.05;
-  const unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
   
+  const unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
   const su2double Mean_Dissipation = 0.5*(Dissipation_i + Dissipation_j);
   const su2double Mean_Sensor = 0.5*(Sensor_i + Sensor_j);
   
@@ -2789,6 +2791,12 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
       const su2double phi2 = Mean_Dissipation;
       
       Dissipation_ij = max(Min_Dissipation, phi1 + phi2 - (phi1*phi2));
+
+  } else {
+
+    SU2_MPI::Error("Unrecognized upwind/central blending scheme!",
+                   CURRENT_FUNCTION);
+
   }
 
 }

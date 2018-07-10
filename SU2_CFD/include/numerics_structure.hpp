@@ -1544,7 +1544,27 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  /*!
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
+   */
+  virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
   
+  /*!
+   * \brief - Calculate the central/upwind blending function for a face
+   *
+   * At its simplest level, this function will calculate the average
+   * value of the "Roe dissipation" or central/upwind blending function
+   * at a face. If Ducros shock sensors are used, then this method will
+   * also adjust the central/upwind blending to account for shocks.
+   *
+   * \param[in] Dissipation_i - Value of the blending function at point i
+   * \param[in] Dissipation_j - Value of the bledning function at point j
+   * \param[in] Sensor_i - Shock sensor at point i
+   * \param[in] Sensor_j - Shock sensor at point j
+   * \param[out] Dissipation_ij - Blending parameter at face
+   */
   void SetRoe_Dissipation(const su2double Dissipation_i,
                           const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,

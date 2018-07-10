@@ -492,6 +492,11 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void SetMaxLength(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */

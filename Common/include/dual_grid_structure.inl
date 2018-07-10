@@ -100,7 +100,7 @@ inline void CPoint::AddVolume (su2double val_Volume) { Volume[0] += val_Volume; 
 
 inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
 
-inline void CPoint::SetMaxLength (su2double val_max_length) { MaxLength = val_max_length; }
+inline void CPoint::SetMaxLength(su2double val_max_length) { MaxLength = val_max_length; }
 
 inline void CPoint::SetMove(bool val_move) { Move = val_move; }
 

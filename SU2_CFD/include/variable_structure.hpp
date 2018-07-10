@@ -3886,7 +3886,7 @@ private:
   su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
-  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
+  su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient (central = 0, upwind = 1). */
   su2double Vortex_Tilting;  /*!< \brief Value of the vortex tilting variable for DES length scale computation. */
   
 public:
@@ -4060,6 +4060,11 @@ public:
   
   /*!
    * \brief Set the new solution for Roe Dissipation.
+   *
+   * Dissipation = 0 indicates that a central scheme should be
+   * used, while Dissipation = 1 indicates that an upwind scheme should
+   * be used.
+   *
    * \param[in] val_delta - A scalar measure of the grid size
    * \param[in] val_const_DES - The DES constant (C_DES)
    */
@@ -4067,6 +4072,13 @@ public:
 
   /*!
    * \brief Set the new solution for Roe Dissipation.
+   *
+   * Dissipation = 0 indicates that a central scheme should be
+   * used, while Dissipation = 1 indicates that an upwind scheme should
+   * be used.
+   *
+   * \param[in] val_delta - A scalar measure of the grid size
+   * \param[in] val_const_DES - The DES constant (C_DES)
    */
   void SetRoe_Dissipation_FD(su2double wall_distance);
   

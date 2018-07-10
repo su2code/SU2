@@ -15878,8 +15878,6 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
   
   config->SetDomainVolume(DomainVolume);
-  
-  SetMaxLength();
 
   delete[] Coord_Edge_CG;
   delete[] Coord_FaceElem_CG;
