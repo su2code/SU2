@@ -531,29 +531,33 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
-    
-    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-    Roe_Dissipation = 0.0;
-    Vortex_Tilting  = 0.0;
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
+  
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
-    
-    inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
-    Roe_Dissipation = 0.0;
-    Vortex_Tilting  = 0.0;
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
+
 }
 
 CNSVariable::~CNSVariable(void) { }
