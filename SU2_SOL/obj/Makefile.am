@@ -68,16 +68,16 @@ endif
 
 if BUILD_REVERSE
 su2_sol_ldadd += \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_boom.$(OBJEXT) \
-  ../../SU2_CFD/src/bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_boom.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
    ../../Common/lib/libSU2_AD.a
 endif
 
