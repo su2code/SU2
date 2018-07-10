@@ -14849,11 +14849,6 @@ private:
   bool SGSModelUsed;       /*!< \brief Whether or not an LES Subgrid Scale model is used. */
 
   su2double
-  *ForceViscous,         /*!< \brief Viscous force for each boundary. */
-  *MomentViscous, 	 /*!< \brief Inviscid moment for each boundary. */
-  **CSkinFriction;       /*!< \brief Skin friction coefficient for each boundary and vertex. */
-
-  su2double
   *CL_Visc, 	            /*!< \brief Lift coefficient (viscous contribution) for each boundary. */
   *CD_Visc,              /*!< \brief Drag coefficient (viscous contribution) for each boundary. */
   *CSF_Visc,         /*!< \brief Side force coefficient (viscous contribution) for each boundary. */
