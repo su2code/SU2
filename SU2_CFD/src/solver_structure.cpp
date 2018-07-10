@@ -89,6 +89,8 @@ CSolver::CSolver(void) {
   nCol_InletFile    = NULL;
   Inlet_Data        = NULL;
 
+  /*--- Variable initialization to avoid valgrid warnings when not used. ---*/
+  IterLinSolver = 0;
 }
 
 CSolver::~CSolver(void) {
