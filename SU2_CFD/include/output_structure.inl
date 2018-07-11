@@ -46,7 +46,7 @@ inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short
 
 inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
 
-inline void COutput::SetOutputFields(CConfig *config){}
+inline void COutput::SetHistoryOutputFields(CConfig *config){}
 
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
  
@@ -120,12 +120,18 @@ inline void COutput::SetOutputPerSurfaceFieldValue(string name, su2double value,
 }
 
 inline void COutput::AddVolumeOutputField(string name, string field_name, string groupname){
-  VolumeOutput_Fields[name] = VolumeOutputField(field_name, GlobalField_Counter, groupname);
-  GlobalField_Counter++;
+  VolumeOutput_Fields[name] = VolumeOutputField(field_name, -1, groupname);
 }
 
 inline void COutput::SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value){
-  Local_Data[iPoint][VolumeOutput_Fields[name].Offset] = value;
+  if (VolumeOutput_Fields.count(name) > 0){
+    if (VolumeOutput_Fields[name].Offset != -1){
+      Local_Data[iPoint][VolumeOutput_Fields[name].Offset] = value;
+    }
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+  }
 }
 inline void COutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {}
 
+inline void COutput::SetVolumeOutputFields(CConfig *config) {}

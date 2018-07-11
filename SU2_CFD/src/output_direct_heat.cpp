@@ -83,7 +83,7 @@ inline void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
 }
   
 
-inline void CHeatOutput::SetOutputFields(CConfig *config){
+inline void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
   AddOutputField("EXT_ITER", "Ext_Iter", FORMAT_INTEGER, "EXT_ITER");
   AddOutputField("INT_ITER", "Int_Iter", FORMAT_INTEGER, "INT_ITER");

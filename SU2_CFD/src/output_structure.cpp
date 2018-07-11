@@ -10160,11 +10160,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       
       Local_Data_Copy = new su2double*[geometry[iZone][iInst][MESH_0]->GetnPoint()];
       for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        Local_Data_Copy[iPoint] = new su2double[nVar_Par];
+        Local_Data_Copy[iPoint] = new su2double[GlobalField_Counter];
       }
       
       for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
+        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
           Local_Data_Copy[iPoint][iVar] = Local_Data[iPoint][iVar];
         }
       }
@@ -10180,7 +10180,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         cout << "Recovering solution output data locally on each rank (cte. CL mode)." << endl;
       
       for (iPoint = 0; iPoint < geometry[iZone][iInst][MESH_0]->GetnPoint(); iPoint++) {
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
+        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
           Local_Data[iPoint][iVar] = Local_Data_Copy[iPoint][iVar];
         }
       }
@@ -10424,16 +10424,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   /*--- All output files first need the grid coordinates. ---*/
   
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
+  GlobalField_Counter  = 1; Variable_Names.push_back("x");
+  GlobalField_Counter += 1; Variable_Names.push_back("y");
   if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
+    GlobalField_Counter += 1; Variable_Names.push_back("z");
   }
   
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
   
-  nVar_Par += nVar_Consv_Par;
+  GlobalField_Counter += nVar_Consv_Par;
   
   Variable_Names.push_back("Density");
   Variable_Names.push_back("X-Momentum");
@@ -10459,7 +10459,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add the limiters ---*/
     
     if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       
       Variable_Names.push_back("Limiter_Density");
       Variable_Names.push_back("Limiter_X-Momentum");
@@ -10481,7 +10481,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       
       Variable_Names.push_back("Residual_Density");
       Variable_Names.push_back("Residual_X-Momentum");
@@ -10503,8 +10503,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add the grid velocity. ---*/
     
     if (grid_movement) {
-      if (geometry->GetnDim() == 2) nVar_Par += 2;
-      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
+      else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
       
       Variable_Names.push_back("X-Grid_Velocity");
       Variable_Names.push_back("Y-Grid_Velocity");
@@ -10514,14 +10514,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add Pressure, Temperature, Cp, Mach. ---*/
     
-    nVar_Par += 1;
+    GlobalField_Counter += 1;
     Variable_Names.push_back("Pressure");
     
-    nVar_Par += 2;
+    GlobalField_Counter += 2;
     Variable_Names.push_back("Temperature");
     Variable_Names.push_back("Mach");
     
-    nVar_Par += 1;
+    GlobalField_Counter += 1;
     if (config->GetOutput_FileFormat() == PARAVIEW){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
@@ -10532,25 +10532,25 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("X-Skin_Friction_Coefficient");
         Variable_Names.push_back("Y-Skin_Friction_Coefficient");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          GlobalField_Counter += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
         }
-        nVar_Par += 2;
+        GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
         Variable_Names.push_back("Y_Plus");
       } else {
-        nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("<greek>m</greek>");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("C<sub>f</sub>_x");
         Variable_Names.push_back("C<sub>f</sub>_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+          GlobalField_Counter += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
-        nVar_Par += 2;
+        GlobalField_Counter += 2;
         Variable_Names.push_back("h");
         Variable_Names.push_back("y<sup>+</sup>");
       }
@@ -10559,7 +10559,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add Eddy Viscosity. ---*/
     
     if (Kind_Solver == RANS) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       if (config->GetOutput_FileFormat() == PARAVIEW){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
@@ -10570,14 +10570,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
     
     if (config->GetWrt_SharpEdges()) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
     
     /*--- Add the intermittency for the BC trans. model. ---*/
     
     if (transition) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       if (config->GetOutput_FileFormat() == PARAVIEW){
         Variable_Names.push_back("gamma_BC");
       } else {
@@ -10586,14 +10586,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
-      nVar_Par +=1;
+      GlobalField_Counter +=1;
       Variable_Names.push_back("DES_LengthScale");
-      nVar_Par +=1;
+      GlobalField_Counter +=1;
       Variable_Names.push_back("Wall_Distance");
     }
     
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-      nVar_Par +=1;
+      GlobalField_Counter +=1;
       Variable_Names.push_back("Roe_Dissipation");
     }
     
@@ -10641,7 +10641,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
   }
   
   Local_Halo = new int[geometry->GetnPoint()];
@@ -10927,16 +10927,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
   /*--- All output files first need the grid coordinates. ---*/
 
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
+  GlobalField_Counter  = 1; Variable_Names.push_back("x");
+  GlobalField_Counter += 1; Variable_Names.push_back("y");
   if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
+    GlobalField_Counter += 1; Variable_Names.push_back("z");
   }
 
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
 
-  nVar_Par += nVar_Consv_Par;
+  GlobalField_Counter += nVar_Consv_Par;
 
   /*--- The incompressible solver uses primitives as the working variables. ---*/
 
@@ -10964,7 +10964,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the limiters ---*/
 
     if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
 
       Variable_Names.push_back("Limiter_Pressure");
       Variable_Names.push_back("Limiter_X-Velocity");
@@ -10986,7 +10986,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the residuals ---*/
 
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
 
       Variable_Names.push_back("Residual_Pressure");
       Variable_Names.push_back("Residual_X-Velocity");
@@ -11008,8 +11008,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the grid velocity. ---*/
 
     if (grid_movement) {
-      if (geometry->GetnDim() == 2) nVar_Par += 2;
-      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
+      else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
 
       Variable_Names.push_back("X-Grid_Velocity");
       Variable_Names.push_back("Y-Grid_Velocity");
@@ -11018,7 +11018,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Add Cp, Mach. ---*/
 
-    nVar_Par += 2;
+    GlobalField_Counter += 2;
     if (config->GetOutput_FileFormat() == PARAVIEW){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
@@ -11030,25 +11030,25 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("X-Skin_Friction_Coefficient");
         Variable_Names.push_back("Y-Skin_Friction_Coefficient");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          GlobalField_Counter += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
         }
-        nVar_Par += 2;
+        GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
         Variable_Names.push_back("Y_Plus");
       } else {
-        nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("<greek>m</greek>");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("C<sub>f</sub>_x");
         Variable_Names.push_back("C<sub>f</sub>_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
+          GlobalField_Counter += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
-        nVar_Par += 2;
+        GlobalField_Counter += 2;
         Variable_Names.push_back("h");
         Variable_Names.push_back("y<sup>+</sup>");
       }
@@ -11057,7 +11057,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add Eddy Viscosity. ---*/
 
     if (Kind_Solver == RANS) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       if (config->GetOutput_FileFormat() == PARAVIEW){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
@@ -11068,14 +11068,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the distance to the nearest sharp edge if requested. ---*/
 
     if (config->GetWrt_SharpEdges()) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
 
     /*--- Add the intermittency for the BC trans. model. ---*/
 
     if (transition) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       if (config->GetOutput_FileFormat() == PARAVIEW){
         Variable_Names.push_back("gamma_BC");
       } else {
@@ -11085,7 +11085,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- New variables get registered here before the end of the loop. ---*/
 
-    nVar_Par += 1;
+    GlobalField_Counter += 1;
     Variable_Names.push_back("Density");
 
   }
@@ -11130,7 +11130,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
   }
 
   Local_Halo = new int[geometry->GetnPoint()];
@@ -11394,16 +11394,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   
   /*--- All output files first need the grid coordinates. ---*/
   
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
+  GlobalField_Counter  = 1; Variable_Names.push_back("x");
+  GlobalField_Counter += 1; Variable_Names.push_back("y");
   if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
+    GlobalField_Counter += 1; Variable_Names.push_back("z");
   }
   
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
   
-  nVar_Par += nVar_Consv_Par;
+  GlobalField_Counter += nVar_Consv_Par;
   
   /*--- For now, leave the names as "Conservative_", etc., in order
    to avoid confusion with the serial version, which still prints these
@@ -11440,7 +11440,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   if ((Kind_Solver == DISC_ADJ_EULER)         ||
       (Kind_Solver == DISC_ADJ_NAVIER_STOKES) ||
       (Kind_Solver == DISC_ADJ_RANS)) {
-    nVar_Par += nDim;
+    GlobalField_Counter += nDim;
     Variable_Names.push_back("Sensitivity_x");
     Variable_Names.push_back("Sensitivity_y");
     if (geometry->GetnDim()== 3)
@@ -11455,7 +11455,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the limiters ---*/
     
     if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Limiter_Adjoint_Pressure");
         Variable_Names.push_back("Limiter_Adjoint_X-Velocity");
@@ -11484,7 +11484,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Residual_Adjoint_Pressure");
         Variable_Names.push_back("Residual_Adjoint_X-Velocity");
@@ -11513,8 +11513,8 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the grid velocity. ---*/
     
     if (grid_movement) {
-      if (geometry->GetnDim() == 2) nVar_Par += 2;
-      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
+      else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
       Variable_Names.push_back("Grid_Velx");
       Variable_Names.push_back("Grid_Vely");
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
@@ -11522,7 +11522,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- All adjoint solvers write the surface sensitivity. ---*/
     
-    nVar_Par += 1; Variable_Names.push_back("Surface_Sensitivity");
+    GlobalField_Counter += 1; Variable_Names.push_back("Surface_Sensitivity");
     
     /*--- For the continouus adjoint, we write either convective scheme's
      dissipation sensor (centered) or limiter (uwpind) for adj. density. ---*/
@@ -11530,7 +11530,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
         ( Kind_Solver == ADJ_RANS               )) {
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       if (config->GetKind_ConvNumScheme() == SPACE_CENTERED) {
         Variable_Names.push_back("Dissipation_Sensor");
       } else {
@@ -11571,7 +11571,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
   
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
   }
   
   Local_Halo = new int[geometry->GetnPoint()];
@@ -11789,16 +11789,16 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   
   /*--- All output files first need the grid coordinates. ---*/
   
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
+  GlobalField_Counter  = 1; Variable_Names.push_back("x");
+  GlobalField_Counter += 1; Variable_Names.push_back("y");
   if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
+    GlobalField_Counter += 1; Variable_Names.push_back("z");
   }
   
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
   
-  nVar_Par += nVar_Consv_Par;
+  GlobalField_Counter += nVar_Consv_Par;
   
   /*--- For now, leave the names as "Conservative_", etc., in order
    to avoid confusion with the serial version, which still prints these
@@ -11818,7 +11818,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     /*--- Add the limiters ---*/
     
     if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       Variable_Names.push_back("Limiter_Displacement_1");
       Variable_Names.push_back("Limiter_Displacement_2");
       if (geometry->GetnDim() == 3)
@@ -11828,7 +11828,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       Variable_Names.push_back("Residual_Displacement_1");
       Variable_Names.push_back("Residual_Displacement_2");
       if (geometry->GetnDim() == 3)
@@ -11839,20 +11839,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     if (config->GetDynamic_Analysis() == DYNAMIC) {
       
       /*--- Velocities ---*/
-      nVar_Par += 2;
+      GlobalField_Counter += 2;
       Variable_Names.push_back("Velocity_1");
       Variable_Names.push_back("Velocity_2");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 1;
+        GlobalField_Counter += 1;
         Variable_Names.push_back("Velocity_3");
       }
       
       /*--- Accelerations ---*/
-      nVar_Par += 2;
+      GlobalField_Counter += 2;
       Variable_Names.push_back("Acceleration_1");
       Variable_Names.push_back("Acceleration_2");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 1;
+        GlobalField_Counter += 1;
         Variable_Names.push_back("Acceleration_3");
       }
     }
@@ -11861,12 +11861,12 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
 
       /*--- Add the stresses. ---*/
     
-      nVar_Par += 3;
+      GlobalField_Counter += 3;
       Variable_Names.push_back("Sxx");
       Variable_Names.push_back("Syy");
       Variable_Names.push_back("Sxy");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 3;
+        GlobalField_Counter += 3;
         Variable_Names.push_back("Szz");
         Variable_Names.push_back("Sxz");
         Variable_Names.push_back("Syz");
@@ -11874,7 +11874,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
 
       /*--- Add the Von Mises Stress. ---*/
     
-      nVar_Par += 1;
+      GlobalField_Counter += 1;
       Variable_Names.push_back("Von_Mises_Stress");
     
     }
@@ -11888,7 +11888,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
   }
   
   Local_Halo = new int[geometry->GetnPoint()];
@@ -12081,16 +12081,16 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
   /*--- All output files first need the grid coordinates. ---*/
   
-  nVar_Par  = 1; Variable_Names.push_back("x");
-  nVar_Par += 1; Variable_Names.push_back("y");
+  GlobalField_Counter  = 1; Variable_Names.push_back("x");
+  GlobalField_Counter += 1; Variable_Names.push_back("y");
   if (geometry->GetnDim() == 3) {
-    nVar_Par += 1; Variable_Names.push_back("z");
+    GlobalField_Counter += 1; Variable_Names.push_back("z");
   }
   
   /*--- At a mininum, the restarts and visualization files need the
    conservative variables, so these follow next. ---*/
   
-  nVar_Par += nVar_Consv_Par;
+  GlobalField_Counter += nVar_Consv_Par;
   for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
     varname << "Conservative_" << iVar+1;
     Variable_Names.push_back(varname.str());
@@ -12105,7 +12105,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       for (iVar = 0; iVar < nVar_Consv_Par; iVar++) {
         varname << "Residual_" << iVar+1;
         Variable_Names.push_back(varname.str());
@@ -12122,7 +12122,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Local_Data[iPoint] = new su2double[nVar_Par];
+    Local_Data[iPoint] = new su2double[GlobalField_Counter];
   }
   
   Local_Halo = new int[geometry->GetnPoint()];
@@ -13458,7 +13458,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   unsigned long iProcessor;
   unsigned long iPoint, Global_Index, nLocalPoint, nTotalPoint, iVertex;
   
-  int VARS_PER_POINT = nVar_Par;
+  int VARS_PER_POINT = GlobalField_Counter;
   int *Local_Halo = NULL;
 
   bool isPeriodic;
@@ -13864,7 +13864,7 @@ void COutput::SortOutputData_Surface(CConfig *config, CGeometry *geometry) {
   unsigned long iPoint, jPoint, kPoint, iElem;
   unsigned long Global_Index, nLocalPoint, nTotalPoint, iVertex;
   
-  int VARS_PER_POINT = nVar_Par;
+  int VARS_PER_POINT = GlobalField_Counter;
   int *Local_Halo = NULL;
   int iNode, count;
   int SendRecv, RecvFrom;
@@ -15352,7 +15352,7 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
           
           /*--- Loop over the variables and write the values to file ---*/
           
-          for (iVar = 0; iVar < nVar_Par; iVar++) {
+          for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
             restart_file << scientific << Parallel_Data[iVar][iPoint] << "\t";
           }
           restart_file << "\n";
@@ -15441,32 +15441,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- These point offsets should be computed once and stored so that we don't
   repeat this code throughout. ---*/
 
-  /*--- Search all send/recv boundaries on this partition for any periodic
-   nodes that were part of the original domain. We want to recover these
-   for visualization purposes. ---*/
-
-  unsigned long iVertex;
-  bool isPeriodic;
-
-  int *Local_Halo = new int[geometry->GetnPoint()];
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    Local_Halo[iPoint] = !geometry->node[iPoint]->GetDomain();
-
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-
-      /*--- Checking for less than or equal to the rank, because there may
-       be some periodic halo nodes that send info to the same rank. ---*/
-
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        isPeriodic = ((geometry->vertex[iMarker][iVertex]->GetRotation_Type() > 0) &&
-                      (geometry->vertex[iMarker][iVertex]->GetRotation_Type() % 2 == 1));
-        if (isPeriodic) Local_Halo[iPoint] = false;
-      }
-    }
-  }
-
   /*--- Sum total number of nodes that belong to the domain ---*/
 
   unsigned long nTotalPoint;
@@ -15518,18 +15492,18 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    one int for ExtIter and 8 su2doubles. ---*/
 
   int var_buf_size = 5;
-  int var_buf[5] = {535532, nVar_Par, (int)nTotalPoint, 1, 8};
+  int var_buf[5] = {535532, GlobalField_Counter, (int)nTotalPoint, 1, 8};
 
   /*--- Prepare the 1D data buffer on this rank. ---*/
 
-  passivedouble *buf = new passivedouble[nParallel_Poin*nVar_Par];
+  passivedouble *buf = new passivedouble[nParallel_Poin*GlobalField_Counter];
 
   /*--- For now, create a temp 1D buffer to load up the data for writing.
    This will be replaced with a derived data type most likely. ---*/
 
   for (iPoint = 0; iPoint < nParallel_Poin; iPoint++)
-    for (iVar = 0; iVar < nVar_Par; iVar++)
-      buf[iPoint*nVar_Par+iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
+    for (iVar = 0; iVar < GlobalField_Counter; iVar++)
+      buf[iPoint*GlobalField_Counter+iVar] = SU2_TYPE::GetValue(Parallel_Data[iVar][iPoint]);
 
   /*--- Prepare metadata. ---*/
 
@@ -15622,7 +15596,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
   /*--- Define a derived datatype for this ranks contiguous chunk of data
    that will be placed in the restart (1D array size = num points * num vars). ---*/
 
-  MPI_Type_contiguous(nVar_Par*nParallel_Poin, MPI_DOUBLE, &filetype);
+  MPI_Type_contiguous(GlobalField_Counter*nParallel_Poin, MPI_DOUBLE, &filetype);
   MPI_Type_commit(&filetype);
 
   /*--- All ranks open the file using MPI. Here, we try to open the file with
@@ -15659,7 +15633,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
      fixed length of 33 for the string length to match with CGNS. This is
      needed for when we read the strings later. ---*/
 
-    for (iVar = 0; iVar < nVar_Par; iVar++) {
+    for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
       disp = var_buf_size*sizeof(int) + iVar*CGNS_STRING_SIZE*sizeof(char);
       strcpy(str_buf, Variable_Names[iVar].c_str());
       MPI_File_write_at(fhw, disp, str_buf, CGNS_STRING_SIZE, MPI_CHAR, MPI_STATUS_IGNORE);
@@ -15671,8 +15645,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    After the calculations above, we have the partition sizes store in nPoint_Linear
    in cumulative storage format. ---*/
 
-  disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-          nVar_Par*nPoint_Linear[rank]*sizeof(passivedouble));
+  disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
+          GlobalField_Counter*nPoint_Linear[rank]*sizeof(passivedouble));
 
   /*--- Set the view for the MPI file write, i.e., describe the location in
    the file that this rank "sees" for writing its piece of the restart file. ---*/
@@ -15681,8 +15655,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Collective call for all ranks to write to their view simultaneously. ---*/
 
-  MPI_File_write_all(fhw, buf, nVar_Par*nParallel_Poin, MPI_DOUBLE, &status);
-  file_size += (su2double)nVar_Par*nParallel_Poin*sizeof(passivedouble);
+  MPI_File_write_all(fhw, buf, GlobalField_Counter*nParallel_Poin, MPI_DOUBLE, &status);
+  file_size += (su2double)GlobalField_Counter*nParallel_Poin*sizeof(passivedouble);
 
   /*--- Free the derived datatype. ---*/
 
@@ -15698,15 +15672,15 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
     /*--- External iteration. ---*/
 
-    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-            nVar_Par*nTotalPoint*sizeof(passivedouble));
+    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
+            GlobalField_Counter*nTotalPoint*sizeof(passivedouble));
     MPI_File_write_at(fhw, disp, &Restart_ExtIter, 1, MPI_INT, MPI_STATUS_IGNORE);
     file_size += (su2double)sizeof(int);
 
     /*--- Additional doubles for AoA, AoS, etc. ---*/
 
-    disp = (var_buf_size*sizeof(int) + nVar_Par*CGNS_STRING_SIZE*sizeof(char) +
-            nVar_Par*nTotalPoint*sizeof(passivedouble) + 1*sizeof(int));
+    disp = (var_buf_size*sizeof(int) + GlobalField_Counter*CGNS_STRING_SIZE*sizeof(char) +
+            GlobalField_Counter*nTotalPoint*sizeof(passivedouble) + 1*sizeof(int));
     MPI_File_write_at(fhw, disp, Restart_Metadata, 8, MPI_DOUBLE, MPI_STATUS_IGNORE);
     file_size += (su2double)8*sizeof(passivedouble);
 
@@ -15883,7 +15857,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
 
   /*--- Send and Recv buffers ---*/
 
-  su2double *Buffer_Send_Data = new su2double [MaxLocalVertex_Surface*nVar_Par];
+  su2double *Buffer_Send_Data = new su2double [MaxLocalVertex_Surface*GlobalField_Counter];
   su2double *Buffer_Recv_Data = NULL;
 
   unsigned long *Buffer_Send_GlobalIndex = new unsigned long [MaxLocalVertex_Surface];
@@ -15892,7 +15866,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   /*--- Prepare the receive buffers on the master node only. ---*/
 
   if (rank == MASTER_NODE) {
-    Buffer_Recv_Data = new su2double [nProcessor*MaxLocalVertex_Surface*nVar_Par];
+    Buffer_Recv_Data = new su2double [nProcessor*MaxLocalVertex_Surface*GlobalField_Counter];
     Buffer_Recv_GlobalIndex  = new unsigned long [nProcessor*MaxLocalVertex_Surface];
   }
 
@@ -15914,8 +15888,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
       if ((Parallel_Data[DIRECTION][iPoint] > coordMin) &&
           (Parallel_Data[DIRECTION][iPoint] < coordMax)) {
         Buffer_Send_GlobalIndex[nLocalVertex_Surface] = Global_Index;
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
-          Buffer_Send_Data[nLocalVertex_Surface*nVar_Par+iVar] = Parallel_Data[iVar][iPoint];
+        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
+          Buffer_Send_Data[nLocalVertex_Surface*GlobalField_Counter+iVar] = Parallel_Data[iVar][iPoint];
         }
         nLocalVertex_Surface++;
       }
@@ -15925,7 +15899,7 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
   /*--- Send the information to the master node ---*/
 
 #ifdef HAVE_MPI
-  SU2_MPI::Gather(Buffer_Send_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, Buffer_Recv_Data, MaxLocalVertex_Surface*nVar_Par, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+  SU2_MPI::Gather(Buffer_Send_Data, MaxLocalVertex_Surface*GlobalField_Counter, MPI_DOUBLE, Buffer_Recv_Data, MaxLocalVertex_Surface*GlobalField_Counter, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #else
   for (iVertex = 0; iVertex < Buffer_Recv_nVertex[0]; iVertex++) {
@@ -15978,8 +15952,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
         /*--- Write the the data ---*/
 
         SurfFlow_file << scientific << Global_Index;
-        Total_Index  = iProcessor*MaxLocalVertex_Surface*nVar_Par+iVertex*nVar_Par;
-        for (iVar = 0; iVar < nVar_Par; iVar++) {
+        Total_Index  = iProcessor*MaxLocalVertex_Surface*GlobalField_Counter+iVertex*GlobalField_Counter;
+        for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
           SurfFlow_file << scientific << ", " << Buffer_Recv_Data[Total_Index+iVar];
         }
         SurfFlow_file << endl;
@@ -16033,7 +16007,7 @@ void COutput::DeallocateData_Parallel(CConfig *config, CGeometry *geometry) {
   
   /*--- Deallocate memory for solution data ---*/
   
-  for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
+  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
     if (Parallel_Data[iVar] != NULL) delete [] Parallel_Data[iVar];
   }
   if (Parallel_Data != NULL) delete [] Parallel_Data;
@@ -16044,7 +16018,7 @@ void COutput::DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometr
   
   /*--- Deallocate memory for surface solution data ---*/
 
-  for (unsigned short iVar = 0; iVar < nVar_Par; iVar++) {
+  for (unsigned short iVar = 0; iVar < GlobalField_Counter; iVar++) {
     if (Parallel_Surf_Data[iVar] != NULL) delete [] Parallel_Surf_Data[iVar];
   }
   if (Parallel_Surf_Data != NULL) delete [] Parallel_Surf_Data;
@@ -17148,7 +17122,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
              (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
     else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
-    SetOutputFields(config);
+    SetHistoryOutputFields(config);
     // Open the history file using only the master node
     
     cout << "History filename: " << char_histfile << endl;
@@ -17160,6 +17134,22 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
+  
+  SetVolumeOutputFields(config);
+  
+  string currentField;
+  
+  for (unsigned short iField = 0; iField < config->GetnVolumeOutput(); iField++){
+    currentField = config->GetVolumeOutput_Field(iField);      
+    for(std::map<string,VolumeOutputField>::iterator iter = VolumeOutput_Fields.begin(); iter != VolumeOutput_Fields.end(); ++iter){
+      if (currentField == iter->second.VolumeOutputGroup){
+        iter->second.Offset = GlobalField_Counter;
+        Variable_Names.push_back(iter->second.FieldName);
+        GlobalField_Counter++;
+      }
+    }
+  }
+    
   unsigned long iPoint, iVertex;
   bool Wrt_Halo, isPeriodic;
   

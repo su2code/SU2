@@ -53,7 +53,7 @@ CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
 
 }
 
-void CDiscAdjFlowOutput::SetOutputFields(CConfig *config){
+void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");

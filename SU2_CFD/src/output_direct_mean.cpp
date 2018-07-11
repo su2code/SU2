@@ -58,7 +58,7 @@ CFlowOutput::~CFlowOutput(void) {
 
 
 
-inline void CFlowOutput::SetOutputFields(CConfig *config){
+inline void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",   FORMAT_INTEGER, "INT_ITER");
@@ -151,20 +151,25 @@ inline void CFlowOutput::SetOutputFields(CConfig *config){
   AddOutputField("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
   AddOutputField("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
 
+
+}
+
+void CFlowOutput::SetVolumeOutputFields(CConfig *config){
+  
   AddVolumeOutputField("COORD-X", "x", "COORDINATES");
   AddVolumeOutputField("COORD-Y", "y", "COORDINATES");
   AddVolumeOutputField("COORD-Z", "z", "COORDINATES");
+  
   AddVolumeOutputField("DENSITY",    "Density",    "CONSERVATIVE");
   AddVolumeOutputField("MOMENTUM-X", "Momentum-x", "CONSERVATIVE");
   AddVolumeOutputField("MOMENTUM-Y", "Momentum-y", "CONSERVATIVE");
   AddVolumeOutputField("MOMENTUM-Z", "Momentum-z", "CONSERVATIVE");
   AddVolumeOutputField("ENERGY",     "Energy",     "CONSERVATIVE");
   
-    
+  
 }
 
-
-inline void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
           
   
   SetVolumeOutputFieldValue("COORD-X", iPoint, geometry->node[iPoint]->GetCoord(0));  
@@ -178,7 +183,7 @@ inline void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   SetVolumeOutputFieldValue("ENERGY",     iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(4));
 }
 
-inline void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned short iVar;
   
@@ -259,17 +264,18 @@ inline void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
   }
 }
 
-inline bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
  return true;
 }
 
-inline bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
+bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header;
   write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
   
   return true;
 }
-inline bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+
+bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   return true;
 }
 

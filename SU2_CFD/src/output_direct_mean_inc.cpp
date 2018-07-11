@@ -60,7 +60,7 @@ CIncFlowOutput::~CIncFlowOutput(void) {
 }
 
 
-void CIncFlowOutput::SetOutputFields(CConfig *config){
+void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
