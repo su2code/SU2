@@ -1007,9 +1007,9 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   string *ScreenOutput,    /*!< \brief Kind of the screen output. */
-  *HistoryOutput;                  /*!< \brief Kind of the output printed to the history file. */
+  *HistoryOutput, *VolumeOutput;                  /*!< \brief Kind of the output printed to the history file. */
   unsigned short nScreenOutput,         /*!< \brief Number of screen output variables (max: 6). */
-  nHistoryOutput;                       /*!< \brief Number of variables printed to the history file. */
+  nHistoryOutput, nVolumeOutput;                       /*!< \brief Number of variables printed to the history file. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8460,6 +8460,15 @@ public:
   */
   string GetHistoryOutput_Field(unsigned short iField);
 
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnVolumeOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetVolumeOutput_Field(unsigned short iField);
 
 };
 

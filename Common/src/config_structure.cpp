@@ -2119,7 +2119,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringListOption("SCREEN_OUTPUT", nScreenOutput, ScreenOutput);
   /* DESCRIPTION: Type of output printed to the history file */
   addStringListOption("HISTORY_OUTPUT", nHistoryOutput, HistoryOutput);
-
+  /* DESCRIPTION: Type of output printed to the volume solution file */
+  addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
+  
   /* END_CONFIG_OPTIONS */
 
 }
