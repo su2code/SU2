@@ -647,7 +647,7 @@ void CDriver::Postprocessing() {
   for (iZone = 0; iZone < nZone; iZone++) {
 	for (iInst = 0; iInst < nInst[iZone]; iInst++)
     delete iteration_container[iZone][iInst];
-    delete iteration_container[iZone];
+    delete [] iteration_container[iZone];
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
@@ -689,7 +689,7 @@ void CDriver::Postprocessing() {
         for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
           if (geometry_container[iZone][iInst][iMGlevel] != NULL) delete geometry_container[iZone][iInst][iMGlevel];
         }
-        if (geometry_container[iZone][iInst] != NULL) delete geometry_container[iZone][iInst];
+        if (geometry_container[iZone][iInst] != NULL) delete [] geometry_container[iZone][iInst];
       }
       delete [] geometry_container[iZone];
     }
@@ -713,7 +713,7 @@ void CDriver::Postprocessing() {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
       if (grid_movement[iZone][iInst] != NULL) delete grid_movement[iZone][iInst];
     }
-    if (grid_movement[iZone] != NULL) delete grid_movement[iZone];
+    if (grid_movement[iZone] != NULL) delete [] grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
@@ -1528,10 +1528,10 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
       delete solver_container[val_iInst][iMGlevel][ADJFEA_SOL];
     }
     
-    delete solver_container[val_iInst][iMGlevel];
+    delete [] solver_container[val_iInst][iMGlevel];
   }
   
-  delete solver_container[val_iInst];
+  delete [] solver_container[val_iInst];
 
 }
 
@@ -1647,7 +1647,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   if (adj_euler || adj_ns || disc_adj) delete integration_container[val_iInst][ADJFLOW_SOL];
   if (adj_turb) delete integration_container[val_iInst][ADJTURB_SOL];
 
-  delete integration_container[val_iInst];
+  delete [] integration_container[val_iInst];
   
 
 }
