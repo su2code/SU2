@@ -97,6 +97,7 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
       } else {
         ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
       }
+      break;
     case POLYNOMIAL_CONDUCTIVITY:
       ThermalConductivity = new CPolynomialConductivity(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND());
       break;
