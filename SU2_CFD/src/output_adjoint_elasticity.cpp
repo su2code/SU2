@@ -65,7 +65,7 @@ inline bool CDiscAdjFEAOutput::WriteScreen_Header(CConfig *config) { return true
 
 inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
 
-void CDiscAdjFEAOutput::SetOutputFields(CConfig *config){
+void CDiscAdjFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");

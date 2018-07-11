@@ -119,7 +119,6 @@ protected:
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
   
-  unsigned short nVar_Par;
   su2double **Local_Data;
   su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
@@ -236,7 +235,6 @@ protected:
   struct VolumeOutputField {
     string FieldName;
     int    Offset;
-    int    nVar;
     string VolumeOutputGroup;
     VolumeOutputField () {}
     VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
@@ -951,7 +949,7 @@ public:
   virtual void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
-  virtual void SetOutputFields(CConfig *config);
+  virtual void SetHistoryOutputFields(CConfig *config);
   
   
   /*!
@@ -1025,13 +1023,13 @@ public:
   
   void AddVolumeOutputField(string name, string field_name, string groupname);
   
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
+  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
   
   void SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value);
   
   void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
-  
-  
+    
+  virtual void SetVolumeOutputFields(CConfig *config);
 };
 
 /*! \class CFlowOutput
@@ -1068,7 +1066,9 @@ public:
   
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);  
   
-  void SetOutputFields(CConfig *config);
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void SetHistoryOutputFields(CConfig *config);
   
   /*!
    * \brief Determines if the history file output.
@@ -1124,7 +1124,7 @@ public:
   void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
   
   /*!
    * \brief Determines if the history file output.
@@ -1179,7 +1179,7 @@ public:
   void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
 
   /*!
    * \brief Determines if the history file output.
@@ -1253,7 +1253,7 @@ public:
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
   
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
    
 
 };
@@ -1290,7 +1290,7 @@ public:
   void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
 
   /*!
    * \brief Determines if the history file output.
@@ -1345,7 +1345,7 @@ public:
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
 
 
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
   
   /*!
    * \brief Determines if the history file output.
@@ -1393,7 +1393,7 @@ public:
    */
   virtual ~CDiscAdjFEAOutput(void);
 
-  void SetOutputFields(CConfig *config);
+  void SetHistoryOutputFields(CConfig *config);
 
   /*!
    * \brief Set the history file header

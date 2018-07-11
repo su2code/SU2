@@ -63,7 +63,7 @@ inline bool CAdjFlowOutput::WriteScreen_Header(CConfig *config) {return true;  }
 inline bool CAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {return true;  }
 
 
-void CAdjFlowOutput::SetOutputFields(CConfig *config){
+void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");

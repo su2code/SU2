@@ -118,7 +118,7 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
   
 }
 
-void CFEAOutput::SetOutputFields(CConfig *config){
+void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
