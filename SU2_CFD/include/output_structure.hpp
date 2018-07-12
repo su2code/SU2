@@ -185,16 +185,17 @@ class COutput {
         **TurbIntensityOut,
         **Turb2LamViscRatioOut,
         **NuFactorIn,
-        **NuFactorOut;
+        **NuFactorOut,
+		**WorkDonePerCycle_Surf,
+		**WorkDonePerCycle_Dom;
 
   su2double *EntropyGenAverage_HB,
             *TotPressureLossAverage_HB;
   su2double TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
-  unsigned short steps_per_cycle;
+  unsigned int steps_per_cycle;
   vector<su2double> WorkDone_iTime;
-  su2double WorkDonePerCycle;
 
 protected:
 

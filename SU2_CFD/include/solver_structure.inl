@@ -1141,7 +1141,7 @@ inline su2double CSolver::GetConjugateHeatVariable(unsigned short val_marker, un
 
 inline void CSolver::SetWorkDone(su2double F, unsigned short val_marker) { }
 
-inline su2double CSolver::GetWorkDone(unsigned short val_marker) { return 1.0; }
+inline su2double CSolver::GetWorkDone(unsigned short val_marker, unsigned short valSpan) { return 1.0; }
 
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 

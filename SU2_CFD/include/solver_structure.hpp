@@ -4212,7 +4212,7 @@ public:
 
   virtual void SetWorkDone(su2double F, unsigned short inMarkerTP);
 
-  virtual su2double GetWorkDone(unsigned short inMarkerTP);
+  virtual su2double GetWorkDone(unsigned short valMarker, unsigned short iSpan);
 
 };
 
@@ -4424,7 +4424,8 @@ protected:
    AllBound_CEff_Mnt,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
    AllBound_CMerit_Mnt,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
    AllBound_CT_Mnt,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-   AllBound_CQ_Mnt;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+   AllBound_CQ_Mnt,      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_LocalWork;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
   
   su2double
   Total_ComboObj, /*!< \brief Total 'combo' objective for all monitored boundaries */
@@ -4579,7 +4580,9 @@ protected:
 
   su2double ****SlidingState;
   int **SlidingStateNodes;
-
+  unsigned int steps_per_cycle;
+  vector<su2double> WorkDone1;
+  su2double LocalWork;
 public:
   
   
@@ -6758,7 +6761,7 @@ public:
 
   void SetWorkDone(su2double W, unsigned short val_marker);
 
-  su2double GetWorkDone(unsigned short val_marker);
+  su2double GetWorkDone(unsigned short val_marker, unsigned short valSpan);
 
 
 };

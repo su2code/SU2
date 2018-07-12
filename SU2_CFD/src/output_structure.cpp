@@ -179,6 +179,8 @@ COutput::COutput(CConfig *config) {
     Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf*nTimeInstances];
     NuFactorIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
     NuFactorOut                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    WorkDonePerCycle_Surf         = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    WorkDonePerCycle_Dom         = new su2double*[nMarkerTurboPerf*nTimeInstances];
 
     for (iMarker = 0; iMarker < nMarkerTurboPerf*nTimeInstances; iMarker++){
       TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -230,6 +232,8 @@ COutput::COutput(CConfig *config) {
       Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
       NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
       NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      WorkDonePerCycle_Surf   [iMarker] = new su2double [nSpanWiseSections + 1];
+      WorkDonePerCycle_Dom   [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
       for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -252,6 +256,8 @@ COutput::COutput(CConfig *config) {
         PressureRatio           [iMarker][iSpan] = 0.0;
         TotalTemperatureIn      [iMarker][iSpan] = 0.0;
         EnthalpyOut             [iMarker][iSpan] = 0.0;
+        WorkDonePerCycle_Surf   [iMarker][iSpan] = 0.0;
+        WorkDonePerCycle_Dom   [iMarker][iSpan] = 0.0;
 
 
         VelocityOutIs           [iMarker][iSpan] = 0.0;
@@ -300,7 +306,8 @@ COutput::COutput(CConfig *config) {
     EntropyGenAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
     TotPressureLossAverage_HB = new su2double[config->GetnMarker_Turbomachinery()]();
 
-    steps_per_cycle=200.0; /* Hard coded steps per cycle to calculate workdone per cycle Need to be corrected */
+    steps_per_cycle= SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND());
+    cout<<"Steps per cycle : "<<(2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()<<endl;
     for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
     	WorkDone_iTime.push_back(0.0);
   }
@@ -374,6 +381,8 @@ COutput::~COutput(void) {
       delete [] Turb2LamViscRatioOut [iMarker];
       delete [] NuFactorIn           [iMarker];
       delete [] NuFactorOut          [iMarker];
+      delete [] WorkDonePerCycle_Surf[iMarker];
+      delete [] WorkDonePerCycle_Dom[iMarker];
 
 
     }
@@ -426,6 +435,8 @@ COutput::~COutput(void) {
     delete [] Turb2LamViscRatioOut;
     delete [] NuFactorIn;
     delete [] NuFactorOut;
+    delete [] WorkDonePerCycle_Surf;
+    delete [] WorkDonePerCycle_Dom;
 
     if (EntropyGenAverage_HB != NULL)      delete[] EntropyGenAverage_HB;
     if (TotPressureLossAverage_HB != NULL) delete[] TotPressureLossAverage_HB;
@@ -4409,8 +4420,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       // different from zero only in multi-zone computation
       turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
       turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
-      turbo_coeff += ",\"WorkDonePerCyc_" + tag.str() + "\"";
-      turbo_coeff += ",\"WorkDone_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDonePerCyc_D_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDonePerCyc_S_" + tag.str() + "\"";
 
     }
   }
@@ -5328,12 +5339,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 
-				SPRINTF(surface_coeff, ", %12.10f", WorkDonePerCycle);
+				SPRINTF(surface_coeff, ", %12.10f", WorkDonePerCycle_Dom[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 
-				SPRINTF(surface_coeff, ", %12.10f", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring));
+				//SPRINTF(surface_coeff, ", %12.10f", solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring,0));
+				SPRINTF(surface_coeff, ", %12.10f", WorkDonePerCycle_Surf[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-								cout<<"solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring)"<<solver_container[val_iZone][FinestMesh][FLOW_SOL]->GetWorkDone(iMarker_Monitoring)<<" "<<iMarker_Monitoring<<endl;
 
               }
             }

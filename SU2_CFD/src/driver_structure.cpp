@@ -3714,11 +3714,16 @@ void CTurbomachineryDriver::Run() {
   }
 
   if (rank == MASTER_NODE){
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0]);
+	solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetWorkDone(10,1);
     SetTurboPerformance(ZONE_0);
 
   if(unsteady)
     SetTurboAvgPerformance(ZONE_0);
 
+  //solver_container[iZone][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[iZone][MESH_0],config_container[iZone]);
+  //solver_container[ZONE_0][MESH_0][FLOW_SOL]->Pressure_Forces(geometry_container[ZONE_0][MESH_0],config_container[ZONE_0]);
+  //solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetWorkDone(10,1);
   }
 
 
