@@ -5365,6 +5365,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
+  LocalWork=0.0;
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CoPx_Inv, MyAllBound_CoPy_Inv, MyAllBound_CoPz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
@@ -5381,6 +5382,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   }
   bool grid_movement        = config->GetGrid_Movement();
   bool axisymmetric         = config->GetAxisymmetric();
+  bool unsteady				= (config->GetUnsteady_Simulation()!=NO);
 
   /*--- Evaluate reference values for non-dimensionalization.
    For dynamic meshes, use the motion Mach number as a reference value
@@ -5513,6 +5515,13 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
             ForceInviscid[iDim] += Force[iDim];
           }
           
+          if(unsteady){
+        	  su2double *Grid_Vel;
+        	  Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        	  for (iDim = 0; iDim<nDim; iDim++)
+        	          		  LocalWork +=(-(Pressure) * Normal[iDim] * Grid_Vel[iDim]);
+          }
+
           /*--- Moment with respect to the reference axis ---*/
           
           if (nDim == 3) {

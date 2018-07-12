@@ -3971,6 +3971,8 @@ protected:
   su2double ****SlidingState;
   int **SlidingStateNodes;
 
+  su2double LocalWork;
+
 public:
   
   
@@ -6111,6 +6113,10 @@ public:
    * \param[in] inMarkerTP - turboperformance marker.
    */
   void SetNuOut(su2double value, unsigned short inMarkerTP, unsigned short valSpan);
+
+  void SetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
+
+  su2double GetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
 
 
 };
