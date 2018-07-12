@@ -144,7 +144,8 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Transpiration_Objective; /*!< \brief Flag for adding transpiration objective.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -5709,6 +5710,12 @@ public:
    * \return Transpiration boundary identification.
    */
   string GetTranspTag(unsigned short val_dv);
+
+  /*!
+   * \brief Provides the transpiration objective information.
+   * \return Transpiration objective information, if <code>TRUE</code> then the code will add the jet blowing coefficient to the objective.
+   */
+  bool GetTranspiration_Objective(void);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.

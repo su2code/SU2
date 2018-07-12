@@ -8943,6 +8943,12 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
     }
   }
+
+  if(config->GetTranspiration_Objective()){
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      Total_ComboObj+=Surface_Cmu[iMarker_Monitoring];
+    }
+  }
   
 }
 

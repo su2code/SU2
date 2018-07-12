@@ -900,6 +900,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
                                                TransEps0, TransEps1, TransEps2, TransEps3);
   /* DESCRIPTION:  transpiration input file */
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
+  /* DESCRIPTION:  add transpiration to objective */
+  addBoolOption("TRANSPIRATION_OBJECTIVE", Transpiration_Objective, false);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,

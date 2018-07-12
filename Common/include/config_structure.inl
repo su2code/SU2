@@ -736,6 +736,8 @@ inline unsigned short CConfig::GetDesign_Variable(unsigned short val_dv) { retur
 
 inline string CConfig::GetTranspTag(unsigned short val_dv) { return TranspTag[val_dv]; }
 
+inline bool CConfig::GetTranspiration_Objective(void) { return Transpiration_Objective; }
+
 inline unsigned short CConfig::GetConvCriteria(void) { return ConvCriteria; }
 
 inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
