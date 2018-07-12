@@ -1,7 +1,7 @@
 # Continous Integration setup for SU2.
 # Tests on the develop branch in both serial and parallel.
 
-dist: xenial
+dist: trusty
 sudo: required
 
 language: python
