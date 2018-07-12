@@ -4913,6 +4913,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case TOTAL_HEATFLUX:             cout << "Total heat flux objective function." << endl; break;
         case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
         case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
+        case BLOWING_COEFFICIENT:        cout << "AFC jet blowing objective function." << endl; break;
         case SURFACE_TOTAL_PRESSURE:         cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:        cout << "Average static pressure objective function." << endl; break;
         case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
@@ -6727,6 +6728,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
+        case BLOWING_COEFFICIENT:         AdjExt = "_cmu";      break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;

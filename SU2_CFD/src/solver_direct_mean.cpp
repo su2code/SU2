@@ -5492,13 +5492,16 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
   su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, NFPressOF, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
-  Force[3] = {0.0,0.0,0.0};
+  Force[3] = {0.0,0.0,0.0},
+  Momentum = 0.0;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
+  bool transp = (config->GetnMarker_Transpiration() > 0);
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CoPx_Inv, MyAllBound_CoPy_Inv, MyAllBound_CoPz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
+  if(transp) su2double MyAllBound_Cmu, *MySurface_Cmu = NULL;
 #endif
   
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -5542,6 +5545,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CFx = 0.0;          Total_CFy = 0.0;   Total_CFz = 0.0;
   Total_CT = 0.0;           Total_CQ = 0.0;    Total_CMerit = 0.0;
   Total_CNearFieldOF = 0.0; Total_Heat = 0.0;  Total_MaxHeat = 0.0;
+  Total_Cmu = 0.0;
   
   AllBound_CD_Inv = 0.0;        AllBound_CL_Inv = 0.0; AllBound_CSF_Inv = 0.0;
   AllBound_CMx_Inv = 0.0;          AllBound_CMy_Inv = 0.0;   AllBound_CMz_Inv = 0.0;
@@ -5549,6 +5553,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;   AllBound_CFz_Inv = 0.0;
   AllBound_CT_Inv = 0.0;           AllBound_CQ_Inv = 0.0;    AllBound_CMerit_Inv = 0.0;
   AllBound_CNearFieldOF_Inv = 0.0; AllBound_CEff_Inv = 0.0;
+  AllBound_Cmu = 0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CL_Inv[iMarker_Monitoring]      = 0.0; Surface_CD_Inv[iMarker_Monitoring]      = 0.0;
@@ -5561,6 +5566,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CFx[iMarker_Monitoring]            = 0.0; Surface_CFy[iMarker_Monitoring]            = 0.0;
     Surface_CFz[iMarker_Monitoring]            = 0.0; Surface_CMx[iMarker_Monitoring]            = 0.0;
     Surface_CMy[iMarker_Monitoring]            = 0.0; Surface_CMz[iMarker_Monitoring]            = 0.0;
+    Surface_Cmu[iMarker_Monitoring]            = 0.0;
   }
   
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
@@ -5596,6 +5602,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
       CFx_Inv[iMarker] = 0.0;          CFy_Inv[iMarker] = 0.0;   CFz_Inv[iMarker] = 0.0;
       CT_Inv[iMarker] = 0.0;           CQ_Inv[iMarker] = 0.0;    CMerit_Inv[iMarker] = 0.0;
       CNearFieldOF_Inv[iMarker] = 0.0; CEff_Inv[iMarker] = 0.0;
+      Cmu[iMarker] = 0.0;
       
       for (iDim = 0; iDim < nDim; iDim++) ForceInviscid[iDim] = 0.0;
       MomentInviscid[0] = 0.0; MomentInviscid[1] = 0.0; MomentInviscid[2] = 0.0;
@@ -5659,6 +5666,19 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           MomentInviscid[2] += (Force[1]*MomentDist[0]-Force[0]*MomentDist[1])/RefLength;
           MomentZ_Force[0]  += (-Force[0]*Coord[1]);
           MomentZ_Force[1]  += (Force[1]*Coord[0]);
+
+          if(Boundary == TRANSPIRATION){
+            su2double Density   = node[iPoint]->GetDensity();
+            su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+            su2double MassFlow = 0.0;
+            su2double Velocity[3];
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Velocity[iDim]  = node[iPoint]->GetVelocity(iDim);
+              MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
+              Momentum += abs(MassFlow*Velocity[iDim]*factor); // TODO: Include pressure term for under-expanded jets
+            }
+          }
+
         }
         
       }
@@ -5680,6 +5700,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
             CT_Inv[iMarker]     = -CFx_Inv[iMarker];
             CQ_Inv[iMarker]     = -CMz_Inv[iMarker];
             CMerit_Inv[iMarker] = CT_Inv[iMarker] / (CQ_Inv[iMarker] + EPS);
+            Cmu[iMarker]        = Momentum;
           }
           if (nDim == 3) {
             CD_Inv[iMarker]      =  ForceInviscid[0]*cos(Alpha)*cos(Beta) + ForceInviscid[1]*sin(Beta) + ForceInviscid[2]*sin(Alpha)*cos(Beta);
@@ -5697,6 +5718,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
             CT_Inv[iMarker]      = -CFz_Inv[iMarker];
             CQ_Inv[iMarker]      = -CMz_Inv[iMarker];
             CMerit_Inv[iMarker]  = CT_Inv[iMarker] / (CQ_Inv[iMarker] + EPS);
+            Cmu[iMarker]         = Momentum;
           }
           
           AllBound_CD_Inv           += CD_Inv[iMarker];
@@ -5715,6 +5737,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           AllBound_CT_Inv           += CT_Inv[iMarker];
           AllBound_CQ_Inv           += CQ_Inv[iMarker];
           AllBound_CMerit_Inv        = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+          AllBound_Cmu              += Cmu[iMarker];
           
           /*--- Compute the coefficients per surface ---*/
           
@@ -5732,6 +5755,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
               Surface_CMx_Inv[iMarker_Monitoring]     += CMx_Inv[iMarker];
               Surface_CMy_Inv[iMarker_Monitoring]     += CMy_Inv[iMarker];
               Surface_CMz_Inv[iMarker_Monitoring]     += CMz_Inv[iMarker];
+              Surface_Cmu[iMarker_Monitoring]         += Cmu[iMarker];
             }
           }
           
@@ -5771,6 +5795,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   MyAllBound_CQ_Inv           = AllBound_CQ_Inv;           AllBound_CQ_Inv = 0.0;
   AllBound_CMerit_Inv = 0.0;
   MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
+  if(transp){MyAllBound_Cmu   = AllBound_Cmu;              AllBound_Cmu = 0.0;}
   
   SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_CL_Inv, &AllBound_CL_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5789,6 +5814,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
   SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if(transp) SU2_MPI::Allreduce(&MyAllBound_Cmu, &AllBound_Cmu, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
   
@@ -5802,6 +5828,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   MySurface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
   MySurface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  if(transp) MySurface_Cmu = new su2double[config->GetnMarker_Monitoring()];
 
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     MySurface_CL_Inv[iMarker_Monitoring]      = Surface_CL_Inv[iMarker_Monitoring];
@@ -5814,6 +5841,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     MySurface_CMx_Inv[iMarker_Monitoring]        = Surface_CMx_Inv[iMarker_Monitoring];
     MySurface_CMy_Inv[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
     MySurface_CMz_Inv[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
+    if(transp) MySurface_Cmu[iMarker_Monitoring] = Surface_Cmu[iMarker_Monitoring];
 
     Surface_CL_Inv[iMarker_Monitoring]         = 0.0;
     Surface_CD_Inv[iMarker_Monitoring]         = 0.0;
@@ -5825,6 +5853,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
     Surface_CMy_Inv[iMarker_Monitoring]        = 0.0;
     Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
+    if(transp) Surface_Cmu[iMarker_Monitoring] = 0.0;
   }
   
   SU2_MPI::Allreduce(MySurface_CL_Inv, Surface_CL_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5838,11 +5867,13 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(MySurface_CMx_Inv, Surface_CMx_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMy_Inv, Surface_CMy_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(MySurface_CMz_Inv, Surface_CMz_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  if(transp) SU2_MPI::Allreduce(MySurface_Cmu, Surface_Cmu, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   delete [] MySurface_CL_Inv; delete [] MySurface_CD_Inv; delete [] MySurface_CSF_Inv;
   delete [] MySurface_CEff_Inv;  delete [] MySurface_CFx_Inv;   delete [] MySurface_CFy_Inv;
   delete [] MySurface_CFz_Inv;   delete [] MySurface_CMx_Inv;   delete [] MySurface_CMy_Inv;
   delete [] MySurface_CMz_Inv;
+  if(transp) delete [] MySurface_Cmu;
   
 #endif
   
@@ -5865,6 +5896,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
+  Total_Cmu           = AllBound_Cmu;
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   
@@ -8850,6 +8882,9 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         break;
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
+        break;
+      case BLOWING_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_Cmu[iMarker_Monitoring];
         break;
         
         /*--- The following are not per-surface, and as a result will be

@@ -205,6 +205,7 @@ def get_headerMap(nZones = 1):
                  "AoA"             : "AOA"                     ,
                  "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
+                 "Cmu"             : "JET_MOMENTUM"            ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
@@ -288,6 +289,7 @@ optnames_aero = [ "LIFT"                        ,
                   "FORCE_Z"                     ,
                   "EFFICIENCY"                  ,
                   "FIGURE_OF_MERIT"             ,
+                  "JET_MOMENTUM"                ,
                   "TORQUE"                      ,
                   "THRUST"                      ,
                   "SURFACE_TOTAL_PRESSURE"      ,
@@ -463,7 +465,8 @@ per_surface_map = {"LIFT"       :   "CL" ,
                   "FORCE_X"     :   "CFx"   ,
                   "FORCE_Y"     :   "CFy"   ,
                   "FORCE_Z"     :   "CFz"   ,
-                  "EFFICIENCY"  :   "CL/CD" }
+                  "EFFICIENCY"  :   "CL/CD" ,
+                  "JET_MOMENTUM":   "Cmu"}
 
 # -------------------------------------------------------------------
 #  Include per-surface output from History File
@@ -614,6 +617,7 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                      : "ct"        ,
                  "TORQUE"                      : "cq"        ,
                  "FIGURE_OF_MERIT"             : "merit"     ,
+                 "JET_MOMENTUM"                : "cmu"       ,
                  "SURFACE_TOTAL_PRESSURE"      : "pt"        ,
                  "SURFACE_STATIC_PRESSURE"     : "pe"        ,
                  "SURFACE_MASSFLOW"            : "mfr"       ,

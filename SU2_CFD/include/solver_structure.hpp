@@ -4331,6 +4331,7 @@ protected:
   *CFx_Inv,      /*!< \brief x Force coefficient (inviscid contribution) for each boundary. */
   *CFy_Inv,      /*!< \brief y Force coefficient (inviscid contribution) for each boundary. */
   *CFz_Inv,      /*!< \brief z Force coefficient (inviscid contribution) for each boundary. */
+  *Cmu,          /*!< \brief Jet blowing coeficient for each boundary. */
   *Surface_CL_Inv, /*!< \brief Lift coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CD_Inv, /*!< \brief Drag coefficient (inviscid contribution) for each monitoring surface. */
   *Surface_CSF_Inv, /*!< \brief Side-force coefficient (inviscid contribution) for each monitoring surface. */
@@ -4485,6 +4486,7 @@ protected:
   Total_CQ,    /*!< \brief Total torque coefficient for all the boundaries. */
   Total_Heat,    /*!< \brief Total heat load for all the boundaries. */
   Total_MaxHeat, /*!< \brief Maximum heat flux on all boundaries. */
+  Total_Cmu,     /*!< \brief Jet blowing on all boundaries. */
   Total_AeroCD,      /*!< \brief Total aero drag coefficient for all the boundaries. */
   Total_CEquivArea,      /*!< \brief Total Equivalent Area coefficient for all the boundaries. */
   Total_CNearFieldOF,      /*!< \brief Total Near-Field Pressure coefficient for all the boundaries. */
@@ -4501,6 +4503,7 @@ protected:
   *Surface_CMx,            /*!< \brief x Moment coefficient for each monitoring surface. */
   *Surface_CMy,            /*!< \brief y Moment coefficient for each monitoring surface. */
   *Surface_CMz,            /*!< \brief z Moment coefficient for each monitoring surface. */
+  *Surface_Cmu,            /*!< \brief Jet blowing coefficient for each monitoring surface. */
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
   
@@ -6843,8 +6846,8 @@ protected:
   AllBound_CEff_Inv,      /*!< \brief Efficient coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CMerit_Inv,      /*!< \brief Rotor Figure of Merit (inviscid contribution) for all the boundaries. */
   AllBound_CT_Inv,      /*!< \brief Total thrust coefficient (inviscid contribution) for all the boundaries. */
-  AllBound_CQ_Inv;      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
-
+  AllBound_CQ_Inv,      /*!< \brief Total torque coefficient (inviscid contribution) for all the boundaries. */
+  AllBound_Cmu;      /*!< \brief Total jet blowing coefficientfor all the boundaries. */
 
   su2double
   AllBound_CD_Mnt,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
