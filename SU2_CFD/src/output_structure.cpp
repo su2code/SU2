@@ -171,6 +171,10 @@ COutput::COutput(CConfig *config) {
     Turb2LamViscRatioOut          = new su2double*[nMarkerTurboPerf*nTimeInstances];
     NuFactorIn                    = new su2double*[nMarkerTurboPerf*nTimeInstances];
     NuFactorOut                   = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalWorkDone_S               = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalWorkDone_D               = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalWorkDonePerCyc_S         = new su2double*[nMarkerTurboPerf*nTimeInstances];
+    TotalWorkDonePerCyc_D         = new su2double*[nMarkerTurboPerf*nTimeInstances];
 
     for (iMarker = 0; iMarker < nMarkerTurboPerf*nTimeInstances; iMarker++){
       TotalStaticEfficiency   [iMarker] = new su2double [nSpanWiseSections + 1];
@@ -222,6 +226,10 @@ COutput::COutput(CConfig *config) {
       Turb2LamViscRatioOut    [iMarker] = new su2double [nSpanWiseSections + 1];
       NuFactorIn              [iMarker] = new su2double [nSpanWiseSections + 1];
       NuFactorOut             [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalWorkDone_S         [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalWorkDone_D         [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalWorkDonePerCyc_S   [iMarker] = new su2double [nSpanWiseSections + 1];
+      TotalWorkDonePerCyc_D   [iMarker] = new su2double [nSpanWiseSections + 1];
 
 
       for (iSpan = 0; iSpan < nSpanWiseSections + 1; iSpan++){
@@ -275,6 +283,10 @@ COutput::COutput(CConfig *config) {
         Turb2LamViscRatioOut    [iMarker][iSpan] = 0.0;
         NuFactorIn              [iMarker][iSpan] = 0.0;
         NuFactorOut             [iMarker][iSpan] = 0.0;
+        TotalWorkDone_S         [iMarker][iSpan] = 0.0;
+        TotalWorkDone_D         [iMarker][iSpan] = 0.0;
+        TotalWorkDonePerCyc_S   [iMarker][iSpan] = 0.0;
+        TotalWorkDonePerCyc_D   [iMarker][iSpan] = 0.0;
         MachIn                  [iMarker][iSpan] = new su2double[4];
         MachOut                 [iMarker][iSpan] = new su2double[4];
         TurboVelocityIn         [iMarker][iSpan] = new su2double[4];
@@ -357,6 +369,10 @@ COutput::~COutput(void) {
       delete [] Turb2LamViscRatioOut [iMarker];
       delete [] NuFactorIn           [iMarker];
       delete [] NuFactorOut          [iMarker];
+      delete [] TotalWorkDone_S      [iMarker];
+      delete [] TotalWorkDone_D      [iMarker];
+      delete [] TotalWorkDonePerCyc_S[iMarker];
+      delete [] TotalWorkDonePerCyc_D[iMarker];
 
 
     }
@@ -406,6 +422,10 @@ COutput::~COutput(void) {
     delete [] Turb2LamViscRatioOut;
     delete [] NuFactorIn;
     delete [] NuFactorOut;
+    delete [] TotalWorkDone_S;
+    delete [] TotalWorkDone_D;
+    delete [] TotalWorkDonePerCyc_S;
+    delete [] TotalWorkDonePerCyc_D;
 
   }
 }
@@ -4358,6 +4378,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       // different from zero only in multi-zone computation
       turbo_coeff += ",\"TotalEfficiency_" + tag.str() + "\"";
       turbo_coeff += ",\"TotalStaticEfficiency_" + tag.str() + "\"";
+      turbo_coeff += ",\"InstWorkDone_S_" + tag.str() + "\"";
+      turbo_coeff += ",\"InstWorkDone_D_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDonePerCyc_S_" + tag.str() + "\"";
+      turbo_coeff += ",\"WorkDonePerCyc_D_" + tag.str() + "\"";
 
     }
   }
@@ -5151,6 +5175,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								strcat(turbo_coeff, surface_coeff);
 //                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
 //								strcat(turbo_coeff, surface_coeff);
+
+				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_S[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_D[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDonePerCyc_S[iMarker_Monitoring][nSpanWiseSections]);
+								strcat(turbo_coeff, surface_coeff);
+				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDonePerCyc_D[iMarker_Monitoring][nSpanWiseSections]);
+							    strcat(turbo_coeff, surface_coeff);
 
               }
             }

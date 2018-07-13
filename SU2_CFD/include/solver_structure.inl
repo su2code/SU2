@@ -983,6 +983,12 @@ inline void CSolver::SetRelTangVelocityOut(su2double value, unsigned short inMar
 
 inline void CSolver::SetFreeStream_TurboSolution(CConfig *config){ }
 
+inline void CSolver::SetWorkDone(unsigned short inMarkerTP, unsigned short valSpan){ }
+
+inline su2double CSolver::GetWorkDone(unsigned short inMarkerTP, unsigned short valSpan){ return 0.0; }
+
+inline su2double CSolver::GetWorkDonePerCycle(unsigned short inMarkerTP, unsigned short valSpan){ return 0.0; }
+
 inline su2double CEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
 
 inline su2double CEulerSolver::GetModVelocity_Inf(void) { 

@@ -4041,6 +4041,7 @@ void CTurbomachineryDriver::Run() {
           solver_container, iZone);
     }
   }
+  solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetWorkDone(0,0);
 
 }
 
@@ -4073,7 +4074,10 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
   /* --- compute turboperformance for each stage and the global machine ---*/
 
+  //solver_container[targetZone][MESH_0][FLOW_SOL]->SetWorkDone(0,0);
+
   output->ComputeTurboPerformance(solver_container[targetZone][MESH_0][FLOW_SOL], geometry_container[targetZone][MESH_0], config_container[targetZone]);
+
 
 }
 

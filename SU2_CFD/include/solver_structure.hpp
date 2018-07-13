@@ -3604,6 +3604,12 @@ public:
    */
   virtual void SetFreeStream_TurboSolution(CConfig *config);
 
+  virtual void SetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
+
+  virtual su2double GetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
+
+  virtual su2double GetWorkDonePerCycle(unsigned short inMarkerTP, unsigned short valSpan);
+
 
 };
 
@@ -3972,6 +3978,9 @@ protected:
   int **SlidingStateNodes;
 
   su2double LocalWork;
+
+  vector<su2double> WorkDonePerCycle;
+  unsigned short steps_per_cycle;
 
 public:
   
@@ -6117,6 +6126,8 @@ public:
   void SetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
 
   su2double GetWorkDone(unsigned short inMarkerTP, unsigned short valSpan);
+
+  su2double GetWorkDonePerCycle(unsigned short inMarkerTP, unsigned short valSpan);
 
 
 };

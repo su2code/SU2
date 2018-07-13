@@ -624,6 +624,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CoPx_Inv           = new su2double[nMarker];
   CoPy_Inv           = new su2double[nMarker];
   CoPz_Inv           = new su2double[nMarker];
+  LocalWork			= 0.0;
  
   ForceMomentum     = new su2double[nDim];
   MomentMomentum    = new su2double[3];
@@ -854,6 +855,15 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Set_MPI_Solution(geometry, config);
   
+  /* Vector Initialization for per cycle */
+
+  if((config->GetUnsteady_Simulation() != NO)){
+
+  steps_per_cycle = SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND())+1;
+
+  for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
+  	WorkDonePerCycle.push_back(0.0);
+  }
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -15359,6 +15369,24 @@ void CEulerSolver::PreprocessSpanWiceBC_Outlet(CConfig *config, CGeometry *geome
   delete [] SpanPercent;
   delete [] PStaticImposed;
 
+}
+
+void CEulerSolver::SetWorkDone(unsigned short marker_val, unsigned short span_val) {
+WorkDonePerCycle.push_back(LocalWork);
+}
+
+su2double CEulerSolver::GetWorkDone(unsigned short marker_val, unsigned short span_val) {
+	return LocalWork;
+}
+
+su2double CEulerSolver::GetWorkDonePerCycle(unsigned short marker_val, unsigned short span_val){
+	su2double WorkDoneTotal=0.0;
+	//cout<<"Work Done Per Cycle :: "<<steps_per_cycle<<endl;
+	for (vector<su2double>::iterator iEW = WorkDonePerCycle.end()-1; iEW >= (WorkDonePerCycle.end()-steps_per_cycle); iEW--){
+		WorkDoneTotal +=*iEW;
+		//cout<<"WorkDoneTotal :: "<<WorkDoneTotal<<endl;
+	}
+	return WorkDoneTotal/steps_per_cycle;
 }
 
 CNSSolver::CNSSolver(void) : CEulerSolver() {

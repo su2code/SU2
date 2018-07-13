@@ -251,7 +251,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       TotalPressureLoss[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]);
       KineticEnergyLoss[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]  = 2*(EnthalpyOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
       PressureRatio[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]      = TotalPressureOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]/TotalPressureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
-
+      TotalWorkDone_S[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]           = solver_container->GetWorkDone(iMarkerTP,iSpan);
+      TotalWorkDone_D[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]   = EulerianWork[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][iSpan]*MassFlowOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
+      TotalWorkDonePerCyc_S[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]           = solver_container->GetWorkDonePerCycle(iMarkerTP,iSpan);
 
     }
   }
@@ -260,6 +262,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     /*--- Compute performance for each stage ---*/
 
     EulerianWork[nMarkerTurboPerf*iTimeInstance +  nBladesRow + nStages][nSpanWiseSections]           = 0.0;
+
     /*---Comnpute performance for each stage---*/
     for(iStage = 0; iStage < nStages; iStage++ ){
       FluidModel->SetTDState_Ps(PressureOut[nMarkerTurboPerf*iTimeInstance + iStage*2 +1][config->GetnSpan_iZones(iStage*2 +1)], EntropyIn[nMarkerTurboPerf*iTimeInstance + iStage*2][config->GetnSpan_iZones(iStage*2)]);
@@ -298,6 +301,7 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
     PressureRatio[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]          = PressureRatio[nMarkerTurboPerf*iTimeInstance][config->GetnSpan_iZones(0)]*PressureOut[nMarkerTurboPerf*iTimeInstance][config->GetnSpan_iZones(0)]/PressureOut[nMarkerTurboPerf*iTimeInstance + nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
     MassFlowIn[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]             = MassFlowIn[nMarkerTurboPerf*iTimeInstance][config->GetnSpan_iZones(0)];
     MassFlowOut[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]            = MassFlowOut[nMarkerTurboPerf*iTimeInstance + nBladesRow-1][config->GetnSpan_iZones(nBladesRow-1)];
+    TotalWorkDone_D[nMarkerTurboPerf*iTimeInstance +  nBladesRow + nStages][nSpanWiseSections]           = 0.0;
 
     EntropyGen[nMarkerTurboPerf*iTimeInstance + nBladesRow + nStages][nSpanWiseSections]     = 0.0;
     for(iBlade = 0; iBlade < nBladesRow; iBlade++ ){

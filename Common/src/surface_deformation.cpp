@@ -3412,6 +3412,7 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
   unsigned long iVertex;
   string Marker_Tag, Moving_Tag;
   int rank;
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3426,6 +3427,14 @@ void CSurfaceMovement::Surface_Plunging(CGeometry *geometry, CConfig *config,
 
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
+
+  if (harmonic_balance){
+	  iZone=ZONE_0;
+	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
+	  deltaT = period/(su2double)(config->GetnTimeInstances());
+  }
 
   /*--- Compute delta time based on physical time step ---*/
   time_new = static_cast<su2double>(iter)*deltaT;
@@ -3538,6 +3547,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   unsigned long iPoint, iVertex;
   string Marker_Tag, Moving_Tag;
   int rank;
+  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3552,6 +3562,14 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
 
   deltaT = config->GetDelta_UnstTimeND();
   Lref   = config->GetLength_Ref();
+
+  if (harmonic_balance){
+	  iZone=ZONE_0;
+	  /*--- period of oscillation & compute time interval using nTimeInstances ---*/
+	  su2double period = config->GetHarmonicBalance_Period();
+	  period /= config->GetTime_Ref();
+	  deltaT = period/(su2double)(config->GetnTimeInstances());
+  }
 
   /*--- Compute delta time based on physical time step ---*/
   time_new = static_cast<su2double>(iter)*deltaT;

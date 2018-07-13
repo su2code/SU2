@@ -182,7 +182,11 @@ class COutput {
         **TurbIntensityOut,
         **Turb2LamViscRatioOut,
         **NuFactorIn,
-        **NuFactorOut;
+        **NuFactorOut,
+  	  	**TotalWorkDone_S,
+  	  	**TotalWorkDone_D,
+  	  	**TotalWorkDonePerCyc_S,
+        **TotalWorkDonePerCyc_D;
 
   su2double EntropyGenAverage_HB,
             Power_HB,

@@ -1477,6 +1477,7 @@ void CSysMatrix::BuildILUPreconditioner(bool transposed) {
    is modified by the algorithm, so that we have the factorization stored
    in the ILUMatrix at the end of this preprocessing. ---*/
 
+  ILU_matrix = new su2double [nnz_ilu*nVar*nEqn];
   for (iVar = 0; iVar < nnz_ilu*nVar*nEqn; iVar++) ILU_matrix[iVar] = 0.0;
 
   for (iPoint = 0; iPoint < (long)nPointDomain; iPoint++) {
