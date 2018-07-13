@@ -5509,7 +5509,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CoPx_Inv, MyAllBound_CoPy_Inv, MyAllBound_CoPz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
-  su2double MyAllBound_Cmu, *MySurface_Cmu = NULL;
+  if(transp) su2double MyAllBound_Cmu, *MySurface_Cmu = NULL;
 #endif
   
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -5849,7 +5849,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     MySurface_CMx_Inv[iMarker_Monitoring]        = Surface_CMx_Inv[iMarker_Monitoring];
     MySurface_CMy_Inv[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
     MySurface_CMz_Inv[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
-    if(transp) MySurface_Cmu[iMarker_Monitoring] = Surface_Cmu[iMarker_Monitoring];
+    if(transp) MySurface_Cmu[iMarker_Monitoring]            = Surface_Cmu[iMarker_Monitoring];
 
     Surface_CL_Inv[iMarker_Monitoring]         = 0.0;
     Surface_CD_Inv[iMarker_Monitoring]         = 0.0;
@@ -5861,7 +5861,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMx_Inv[iMarker_Monitoring]        = 0.0;
     Surface_CMy_Inv[iMarker_Monitoring]        = 0.0;
     Surface_CMz_Inv[iMarker_Monitoring]        = 0.0;
-    if(transp) Surface_Cmu[iMarker_Monitoring] = 0.0;
+    if(transp) Surface_Cmu[iMarker_Monitoring]            = 0.0;
   }
   
   SU2_MPI::Allreduce(MySurface_CL_Inv, Surface_CL_Inv, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -15839,6 +15839,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CoPx_Visc         = new su2double[nMarker];
   CoPy_Visc         = new su2double[nMarker];
   CoPz_Visc         = new su2double[nMarker];
+  Cmu               = new su2double[nMarker];
 
   Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
@@ -15850,6 +15851,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_Cmu            = new su2double[config->GetnMarker_Monitoring()];
  
   Surface_CL_Mnt         = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Mnt         = new su2double[config->GetnMarker_Monitoring()];
