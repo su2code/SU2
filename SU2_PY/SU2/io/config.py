@@ -136,7 +136,7 @@ class Config(ordered_bunch):
         except KeyError:
             raise KeyError('Config parameter not found: %s' % k)
 
-    def unpack_dvs(self,dv_new,dv_old=None):
+    def unpack_dvs(self,i_dv,dv_new,dv_old=None):
         """ updates config with design variable vectors
             will scale according to each DEFINITION_DV scale parameter
             
@@ -184,7 +184,7 @@ class Config(ordered_bunch):
         param_dv['FFDTAG'] = def_dv['FFDTAG']
         param_dv['SIZE']   = def_dv['SIZE']
 
-        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
+        self.update({ 'DV_MARKER'        : def_dv['MARKER'][i_dv] ,
                       'DV_VALUE_OLD'     : dv_old              ,
                       'DV_VALUE_NEW'     : dv_new              })
         
