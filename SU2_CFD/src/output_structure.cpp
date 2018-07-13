@@ -302,6 +302,11 @@ COutput::COutput(CConfig *config) {
     }
 
   }
+
+  steps_per_cycle = SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND())+1;
+
+  for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
+  	WorkDonePerCycle.push_back(0.0);
 }
 
 COutput::~COutput(void) {

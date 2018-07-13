@@ -193,6 +193,9 @@ class COutput {
             TotalTotalEfficiencyAverage_HB,
             TotalStaticEfficiencyAverage_HB;
 
+  vector<su2double> WorkDonePerCycle;
+  unsigned short steps_per_cycle;
+
 protected:
 
 public:
@@ -871,6 +874,8 @@ public:
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
   
+  void SetWorkDone(unsigned short iMarkerTP, unsigned short iSpan);
+
 };
 
 #include "output_structure.inl"

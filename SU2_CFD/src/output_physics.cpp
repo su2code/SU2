@@ -350,6 +350,12 @@ for (iGeomZone = 0; iGeomZone < nBladesRow; iGeomZone++ ){
 }
 
 
+void COutput::SetWorkDone(unsigned short iMarkerTP, unsigned short iSpan) {
+	WorkDonePerCycle.push_back(TotalWorkDone_D[0][1]);
 
+	su2double WorkDoneTotal=0.0;
 
-
+	for (vector<su2double>::iterator iEW = WorkDonePerCycle.end()-1; iEW >= (WorkDonePerCycle.end()-steps_per_cycle); iEW--)
+		WorkDoneTotal +=*iEW;
+	TotalWorkDonePerCyc_D[0][1] = WorkDoneTotal/steps_per_cycle;
+}

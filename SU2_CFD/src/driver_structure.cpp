@@ -4042,7 +4042,7 @@ void CTurbomachineryDriver::Run() {
     }
   }
   solver_container[ZONE_0][MESH_0][FLOW_SOL]->SetWorkDone(0,0);
-
+  output->SetWorkDone(0,0);
 }
 
 void CTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
