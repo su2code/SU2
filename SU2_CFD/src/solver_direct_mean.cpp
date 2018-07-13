@@ -5499,7 +5499,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, NFPressOF, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
   Force[3] = {0.0,0.0,0.0},
-  Momentum = 0.0;
+  Momentum = 0.0, Density, Area, MassFlow, Velocity[3];
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
@@ -5617,6 +5617,8 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
       MomentZ_Force[0] = 0.0; MomentZ_Force[1] = 0.0; MomentZ_Force[2] = 0.0;
 
       NFPressOF = 0.0;
+
+      Momentum = 0.0;
       
       /*--- Loop over the vertices to compute the forces ---*/
       
@@ -5674,10 +5676,8 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           MomentZ_Force[1]  += (Force[1]*Coord[0]);
 
           if(Boundary == TRANSPIRATION){
-            su2double Density   = node[iPoint]->GetDensity();
-            su2double Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
-            su2double MassFlow = 0.0;
-            su2double Velocity[3];
+            Density   = node[iPoint]->GetDensity();
+            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity[iDim]  = node[iPoint]->GetVelocity(iDim);
               MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
