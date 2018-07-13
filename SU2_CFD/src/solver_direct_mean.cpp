@@ -45,6 +45,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
   CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  Cmu = NULL;
 
   CD_Mnt = NULL; CL_Mnt = NULL; CSF_Mnt = NULL;  CEff_Mnt = NULL;
   CMx_Mnt = NULL; CMy_Mnt = NULL; CMz_Mnt = NULL;
@@ -60,6 +61,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
   Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_Cmu = NULL;
 
   Surface_CL_Mnt = NULL; Surface_CD_Mnt = NULL; Surface_CSF_Mnt = NULL; Surface_CEff_Mnt = NULL;
   Surface_CFx_Mnt = NULL; Surface_CFy_Mnt = NULL; Surface_CFz_Mnt = NULL;
