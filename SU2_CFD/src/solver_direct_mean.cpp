@@ -229,6 +229,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
   CFx_Inv = NULL; CFy_Inv = NULL; CFz_Inv = NULL;
   CoPx_Inv = NULL; CoPy_Inv = NULL; CoPz_Inv = NULL;
+  Cmu = NULL;
 
   CD_Mnt= NULL; CL_Mnt= NULL; CSF_Mnt= NULL; CEff_Mnt= NULL;
   CMx_Mnt= NULL;   CMy_Mnt= NULL;   CMz_Mnt= NULL;
@@ -244,6 +245,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CL_Inv = NULL; Surface_CD_Inv = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
   Surface_CFx_Inv = NULL; Surface_CFy_Inv = NULL; Surface_CFz_Inv = NULL;
   Surface_CMx_Inv = NULL; Surface_CMy_Inv = NULL; Surface_CMz_Inv = NULL;
+  Surface_Cmu = NULL;
 
   Surface_CL_Mnt= NULL; Surface_CD_Mnt= NULL; Surface_CSF_Mnt= NULL; Surface_CEff_Mnt= NULL;
   Surface_CFx_Mnt= NULL;   Surface_CFy_Mnt= NULL;   Surface_CFz_Mnt= NULL;
@@ -634,6 +636,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   CoPx_Inv           = new su2double[nMarker];
   CoPy_Inv           = new su2double[nMarker];
   CoPz_Inv           = new su2double[nMarker];
+  Cmu                = new su2double[nMarker];
  
   ForceMomentum     = new su2double[nDim];
   MomentMomentum    = new su2double[3];
@@ -661,6 +664,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   Surface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
   Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_Cmu            = new su2double[config->GetnMarker_Monitoring()];
 
   Surface_CL_Mnt     = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Mnt     = new su2double[config->GetnMarker_Monitoring()];
@@ -905,6 +909,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (CoPx_Inv != NULL)           delete [] CoPx_Inv;
   if (CoPy_Inv != NULL)           delete [] CoPy_Inv;
   if (CoPz_Inv != NULL)           delete [] CoPz_Inv;
+  if (Cmu != NULL)                delete [] Cmu;
   if (Surface_CL_Inv != NULL) delete[] Surface_CL_Inv;
   if (Surface_CD_Inv != NULL) delete[] Surface_CD_Inv;
   if (Surface_CSF_Inv != NULL) delete[] Surface_CSF_Inv;
@@ -915,6 +920,7 @@ CEulerSolver::~CEulerSolver(void) {
   if (Surface_CMx_Inv != NULL)  delete [] Surface_CMx_Inv;
   if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
   if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
+  if (Surface_Cmu != NULL)  delete [] Surface_Cmu
 
   if (CD_Mnt != NULL)         delete [] CD_Mnt;
   if (CL_Mnt != NULL)         delete [] CL_Mnt;
