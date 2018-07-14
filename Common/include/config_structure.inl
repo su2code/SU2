@@ -411,6 +411,10 @@ inline su2double CConfig::GetTemperature_Ref(void) { return Temperature_Ref; }
 
 inline su2double CConfig::GetDensity_Ref(void) { return Density_Ref; }
 
+inline void CConfig::SetBoolDimensionalLUTViscosity(bool bool_dim) { BoolDimensionalLUTViscosity = bool_dim; }
+
+inline bool CConfig::GetBoolDimensionalLUTViscosity(void) { return BoolDimensionalLUTViscosity; }
+
 inline su2double CConfig::GetVelocity_Ref(void) { return Velocity_Ref; }
 
 inline su2double CConfig::GetEnergy_Ref(void) { return Energy_Ref; }
@@ -677,6 +681,8 @@ inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
 
 inline unsigned long CConfig::GetWrt_Sol_Freq_DualTime(void) { return Wrt_Sol_Freq_DualTime; }
 
+inline bool CConfig::GetLUT_Debug_Mode(void) { return LUT_Debug_Mode; }
+
 inline unsigned long CConfig::GetWrt_Con_Freq(void) { return Wrt_Con_Freq; }
 
 inline unsigned long CConfig::GetWrt_Con_Freq_MultiZone(void) { return Wrt_Con_Freq_MultiZone; }
@@ -707,6 +713,8 @@ inline su2double CConfig::GetPressure_Critical(void) { return Pressure_Critical;
 inline su2double CConfig::GetTemperature_Critical(void) { return Temperature_Critical; }
 
 inline su2double CConfig::GetAcentric_Factor(void) { return Acentric_Factor; }
+
+inline string CConfig::GetLUTFileName(void){return LUT_FileName;}
 
 inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_ViscosityModel; }
 

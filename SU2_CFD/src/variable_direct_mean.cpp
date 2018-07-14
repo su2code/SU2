@@ -617,6 +617,9 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
     
     /*--- Check will be moved inside fluid model plus error description strings ---*/
     
+    cout << "primitive " << density << " " << staticEnergy <<
+    		" " << turb_ke << " " << Velocity2 << endl;
+
     FluidModel->SetTDState_rhoe(density, staticEnergy);
     
     SetDensity();
@@ -626,6 +629,9 @@ bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel
     
     RightVol = false;
     
+    cout << "primitive " << FluidModel->GetPressure() << " " << FluidModel->GetTemperature() <<
+    		" " << FluidModel->GetSoundSpeed2()<< endl;
+
   }
   
   /*--- Set enthalpy ---*/

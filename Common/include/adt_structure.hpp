@@ -244,6 +244,13 @@ public:
                             su2double       &dist,
                             unsigned long   &pointID,
                             int             &rankID);
+
+  void Determine_N_NearestNodes(int N, const su2double *coor,
+                              su2double *       dist,
+                              unsigned long*  pointID,
+                              int*             rankID);
+
+
 private:
   /*!
    * \brief Default constructor of the class, disabled.

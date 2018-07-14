@@ -627,6 +627,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Critical Density, default value for MDM */
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
+   /* DESCRIPTION: Look Up Table filename, used by both fluid and transport models.*/
+   addStringOption("LUT_FILENAME", LUT_FileName, string("LUT"));
+
+   /* DESCRIPTION: Debug mode for the LookUpTable fluid model, i.e. enable printing of errors*/
+   addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, true);
+
    /*--- Options related to Viscosity Model ---*/
   /*!\brief VISCOSITY_MODEL \n DESCRIPTION: model of the viscosity \n OPTIONS: See \link ViscosityModel_Map \endlink \n DEFAULT: SUTHERLAND \ingroup Config*/
   addEnumOption("VISCOSITY_MODEL", Kind_ViscosityModel, ViscosityModel_Map, SUTHERLAND);

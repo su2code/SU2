@@ -488,3 +488,161 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
   dist = sqrt(dist);
 
 }
+
+void su2_adtPointsOnlyClass::Determine_N_NearestNodes(int N,
+		const su2double *coor, su2double * dist, unsigned long* pointID,
+		int* rankID) {
+
+	/*--------------------------------------------------------------------------*/
+	/*--- Step 1: Initialize the nearest node to the central node of the     ---*/
+	/*---         root leaf. Note that the distance is the distance squared  ---*/
+	/*---         to avoid a sqrt.                                           ---*/
+	/*--------------------------------------------------------------------------*/
+
+	unsigned long kk = leaves[0].centralNodeID;
+	const su2double *coorTarget = coorPoints.data() + nDimADT * kk;
+
+	for (int i = 0; i < N; i++) {
+		pointID[0] = 0;
+		rankID[0] = HUGE_VAL;
+		dist[i] = HUGE_VAL;
+	}
+
+	//Initialize the first distance
+	pointID[0] = localPointIDs[kk];
+	rankID[0] = ranksOfPoints[kk];
+	dist[0] = 0;
+	//Normalized distance per component (i.e. component should never be 0)
+	for (unsigned short l = 0; l < nDimADT; ++l) {
+		const su2double ds = (coor[l] - coorTarget[l]) / coor[l];
+		dist[0] += ds * ds;
+	}
+
+	/*--------------------------------------------------------------------------*/
+	/*--- Step 2: Traverse the tree and search for the nearest node.         ---*/
+	/*---         During the tree traversal the currently stored distance    ---*/
+	/*---         squared is modified, because the guaranteed minimum        ---*/
+	/*---         distance squared of the children could be smaller.         ---*/
+	/*--------------------------------------------------------------------------*/
+
+	/* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
+	 it only contains the root leaf. Make sure to wipe out any data from a
+	 previous search. */
+	frontLeaves.clear();
+	frontLeaves.push_back(0);
+
+	/* Infinite loop of the tree traversal. */
+	for (;;) {
+
+		/* Initialize the new front, i.e. the front for the next round, to empty. */
+		frontLeavesNew.clear();
+
+		/* Loop over the leaves of the current front. */
+		for (unsigned long i = 0; i < frontLeaves.size(); ++i) {
+
+			/* Store the current leaf a bit easier in ll and loop over its children. */
+			const unsigned long ll = frontLeaves[i];
+			for (unsigned short mm = 0; mm < 2; ++mm) {
+
+				/* Determine whether this child contains a node or a leaf
+				 of the next level of the ADT. */
+				kk = leaves[ll].children[mm];
+				if (leaves[ll].childrenAreTerminal[mm]) {
+
+					/*--- Child contains a node. Compute the distance squared to this node
+					 and store it if this distance squared is less than any of the currently
+					 stored values. ---*/
+					coorTarget = coorPoints.data() + nDimADT * kk;
+					su2double distTarget = 0;
+					for (unsigned short l = 0; l < nDimADT; ++l) {
+						const su2double ds = (coor[l] - coorTarget[l]) / coor[l];
+						distTarget += ds * ds;
+					}
+					//Generalization of the algorithm to handle as many points as desired.
+					int dist_i = 0;
+					while (dist_i < N) {
+						if (distTarget <= dist[dist_i]){
+							if(pointID[dist_i] != localPointIDs[kk]){
+							for (int dist_j = N - 1; dist_j > dist_i; dist_j--) {
+								dist[dist_j] = dist[dist_j - 1];
+								pointID[dist_j] = pointID[dist_j - 1];
+								rankID[dist_j] = rankID[dist_j - 1];
+							}
+							dist[dist_i] = distTarget;
+							pointID[dist_i] = localPointIDs[kk];
+							rankID[dist_i] = ranksOfPoints[kk];
+							}
+							dist_i = N + 1; //break the loop
+						}
+						dist_i++;
+					}
+				} else {
+
+					/*--- Child contains a leaf. Determine the possible minimum distance
+					 squared to that leaf. ---*/
+					su2double posDist = 0.0;
+					for (unsigned short l = 0; l < nDimADT; ++l) {
+						su2double ds = 0.0;
+						if (coor[l] < leaves[kk].xMin[l])
+							ds = (coor[l] - leaves[kk].xMin[l]) / coor[l];
+						else if (coor[l] > leaves[kk].xMax[l])
+							ds = (coor[l] - leaves[kk].xMax[l]) / coor[l];
+
+						posDist += ds * ds;
+					}
+
+					/*--- Check if the possible minimum distance is less than the currently
+					 worst stored minimum distance. If so this leaf must be stored for the
+					 next round. In that case the distance squared to the central node is
+					 determined, which is used to update the currently stored value. ---*/
+					if (posDist < dist[N - 1]) {
+						frontLeavesNew.push_back(kk);
+
+						const unsigned long jj = leaves[kk].centralNodeID;
+
+						coorTarget = coorPoints.data() + nDimADT * jj;
+						su2double distTarget = 0;
+						for (unsigned short l = 0; l < nDimADT; ++l) {
+							const su2double ds = (coor[l] - coorTarget[l]) / coor[l];
+							distTarget += ds * ds;
+						}
+
+						//Generalization of the algorithm to handle as many points as desired.
+						int dist_i = 0;
+						while (dist_i < N) {
+							if (distTarget <= dist[dist_i]) {
+								if(pointID[dist_i] != localPointIDs[jj]){
+								for (int dist_j = N - 1; dist_j > dist_i; dist_j--) {
+									dist[dist_j] = dist[dist_j - 1];
+									pointID[dist_j] = pointID[dist_j - 1];
+									rankID[dist_j] = rankID[dist_j - 1];
+								}
+								dist[dist_i] = distTarget;
+								pointID[dist_i] = localPointIDs[jj];
+								rankID[dist_i] = ranksOfPoints[jj];
+								}
+								dist_i = N + 1; //break the loop
+							}
+							dist_i++;
+						}
+					}
+				}
+			}
+		}
+
+		/*--- End of the loop over the current front. Copy the data from
+		 frontLeavesNew to frontLeaves for the next round. If the new front
+		 is empty the entire tree has been traversed and a break can be made
+		 from the infinite loop. ---*/
+		frontLeaves = frontLeavesNew;
+		if (frontLeaves.size() == 0)
+			break;
+	}
+
+	/* At the moment the distance squared to the nearest node is stored.
+	 Take the sqrt to obtain the correct value. */
+	for (int i; i < N; i++) {
+		dist[i] = sqrt(dist[i]);
+	}
+
+}

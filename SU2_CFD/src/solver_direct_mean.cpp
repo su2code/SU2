@@ -3591,6 +3591,17 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
+  if (config->GetRef_NonDim() != DIMENSIONAL )
+  { if (config->GetKind_FluidModel() == LUT)
+  	  { cout << " Error: LUT can only be used for DIMENSIONAL simulations" << endl;
+  	    cout << " Please update config file" << endl;
+        exit(EXIT_FAILURE);}
+    else { cout << " Warning: You are running a non-dimensional simulation." << endl;
+    cout << " Coherence of the results is not granted." << endl;
+    cout << " The code presents severe bugs, please update config file" << endl;
+    getchar();}
+  }
+
   switch (config->GetKind_FluidModel()) {
 
     case STANDARD_AIR:
@@ -3662,6 +3673,20 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       }
       break;
 
+    case LUT:
+      FluidModel = new CLookUpTable(config, true);
+      if (free_stream_temp) {
+        FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+        Density_FreeStream = FluidModel->GetDensity();
+        config->SetDensity_FreeStream(Density_FreeStream);
+      }
+      else {
+        FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+        Temperature_FreeStream = FluidModel->GetTemperature();
+        config->SetTemperature_FreeStream(Temperature_FreeStream);
+      }
+      break;
+
   }
 
   Mach2Vel_FreeStream = FluidModel->GetSoundSpeed();
@@ -3701,7 +3726,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     /*--- Reynolds based initialization ---*/
 
     if (reynolds_init) {
-
+      cout << "Reynolds_init" << endl;
       /*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
 
@@ -3724,20 +3749,19 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       Pressure_FreeStream = FluidModel->GetPressure();
       config->SetPressure_FreeStream(Pressure_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-
     }
 
     /*--- Thermodynamics quantities based initialization ---*/
 
     else {
-
+      config->SetBoolDimensionalLUTViscosity(true);
       FluidModel->SetLaminarViscosityModel(config);
       Viscosity_FreeStream = FluidModel->GetLaminarViscosity();
       config->SetViscosity_FreeStream(Viscosity_FreeStream);
       Energy_FreeStream = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStream*ModVel_FreeStream;
-
     }
 
+    config->SetBoolDimensionalLUTViscosity(false);
     /*--- Turbulence kinetic energy ---*/
 
     Tke_FreeStream  = 3.0/2.0*(ModVel_FreeStream*ModVel_FreeStream*config->GetTurbulenceIntensity_FreeStream()*config->GetTurbulenceIntensity_FreeStream());
@@ -3779,6 +3803,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     Density_Ref       = Density_FreeStream;        // Density_FreeStream = 1.0
     Temperature_Ref   = Temperature_FreeStream;    // Temp_FreeStream = 1.0
   }
+
+
+
+
+
   config->SetPressure_Ref(Pressure_Ref);
   config->SetDensity_Ref(Density_Ref);
   config->SetTemperature_Ref(Temperature_Ref);
@@ -3825,6 +3854,9 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Omega_FreeStreamND = Density_FreeStreamND*Tke_FreeStreamND/(Viscosity_FreeStreamND*config->GetTurb2LamViscRatio_FreeStream());
   config->SetOmega_FreeStreamND(Omega_FreeStreamND);
   
+  if (config->GetKind_FluidModel()== LUT)
+  { config-> SetEnergy_Ref(1.0);}
+
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
  
   /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
@@ -3855,10 +3887,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
+
+    case LUT:
+      FluidModel = new CLookUpTable(config, false);
+      FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+      break;
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
-  
+
   if (viscous) {
     
     /*--- Constant viscosity model ---*/
@@ -3880,8 +3917,10 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
   
+
+
   Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
-  
+
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
   
@@ -3945,7 +3984,19 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
         break;
 
+      case LUT:
+          cout << "Fluid Model: Structured P-rho LUT "<< endl;
+          cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: "<< Gamma << endl;
+          cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+          cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+          cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+          cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+          break;
+
     }
+
     if (viscous) {
       switch (config->GetKind_ViscosityModel()) {
 
@@ -9295,6 +9346,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
         StaticEnergy_e = FluidModel->GetStaticEnergy();
         Energy_e = StaticEnergy_e + 0.5 * Velocity2_e;
         if (tkeNeeded) Energy_e += GetTke_Inf();
+
         break;
 
       case STATIC_SUPERSONIC_INFLOW_PT:
@@ -9383,6 +9435,7 @@ void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
           Velocity2_e += Velocity_e[iDim]*Velocity_e[iDim];
         }
         Energy_e = FluidModel->GetStaticEnergy() + 0.5*Velocity2_e;
+
         break;
 
       default:

@@ -651,6 +651,7 @@ private:
   AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
+  LUT_FileName, /*!< \brief Look up table file name. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
@@ -675,7 +676,8 @@ private:
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
-  Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
+  Plot_Section_Forces,       /*!< \brief Write sectional forces for specified markers. */
+  LUT_Debug_Mode; /*!< \brief Prints errors related to points being thermodynamically outside the table. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
@@ -852,6 +854,7 @@ private:
   bool ParMETIS;              /*!< \brief Boolean for activating ParMETIS mode (while testing). */
   unsigned short DirectDiff;  /*!< \brief Direct Differentation mode. */
   bool DiscreteAdjoint;       /*!< \brief AD-based discrete adjoint mode. */
+  bool BoolDimensionalLUTViscosity; /*!< \brief bool for dimensional LUT viscosity */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
   *default_eng_cyl,           /*!< \brief Default engine box array for the COption class. */
   *default_eng_val,           /*!< \brief Default engine box array values for the COption class. */
@@ -7453,6 +7456,17 @@ public:
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
+
+
+  // LUT options //
+
+  void SetBoolDimensionalLUTViscosity(bool bool_dim);
+
+  bool GetBoolDimensionalLUTViscosity(void);
+
+  string GetLUTFileName(void);
+
+  bool GetLUT_Debug_Mode(void);
 };
 
 #include "config_structure.inl"
