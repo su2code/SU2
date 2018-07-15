@@ -15250,9 +15250,9 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
         	Rc = 0;
         }
         else {
-          if (Old_Solution_Turb) {
-            index += skipVarsTurb;
-          }
+//          if (Old_Solution_Turb) {
+//            index += skipVarsTurb;
+//          }
           Rc = Restart_Data[index+nVar];
          }
         solver[MESH_0][TWO_PHASE_SOL]->node[iPoint_Local]->SetCriticalRadius(Rc);
@@ -15856,16 +15856,30 @@ void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CC
                   LiqVolFraction = solver[TWO_PHASE_SOL]->node[iPoint]->GetSolution(3) * 4/3*3.14;
 
                   LiqMassFraction  =  LiqVolFraction*solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(1);
-                  LiqMassFraction /= solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
+                  LiqMassFraction /= rho_m;//solver[TWO_PHASE_SOL]->node[iPoint]->GetLiquidPrim(8);
 
                   // you must introduce entropy in the liquid properties
                   // this is a check to see if entropy can be calculated
 
-                  su2double TempPressure = log(Pressure*config->GetPressure_Ref()/1e5);
+/*                  su2double TempPressure = log(Pressure*config->GetPressure_Ref()/1e5);
 
                   Vap_LiqDeltaEntropy = -0.0358*pow(TempPressure, 4) - 0.0422*pow(TempPressure, 3) +0.0106*pow(TempPressure, 2)
                                 -1.4787*TempPressure +6.0249;
                   Vap_LiqDeltaEntropy *= 1000/ (config->GetEnergy_Ref()/config->GetTemperature_Ref());
+*/
+
+                  su2double TempPressure = log(Pressure/1e5);
+
+                  Vap_LiqDeltaEntropy = -1.93581e-04*pow(TempPressure, 5) - 9.99264e-04*pow(TempPressure, 4) +
+                		                 6.83263e-04*pow(TempPressure, 3) - 3.48809e-03*pow(TempPressure, 2) -
+                                         6.40433e-01*TempPressure +6.08689;
+                  Vap_LiqDeltaEntropy *= 1000;
+
+  // the one up is only for DIMENSIONAL PROBLEMS - CHECK BECAUSE THE ADIMENSIONALIZATION OF SU2 APPARENTLY IS NOT COHERENT
+  // you cannot take the P, T, rho, e reference from a state, all of them, E is in J/kg, so m2/s2, it has to be adimensionalised with a
+  // velocity, not with the energy fo a state. Same as for the entropy, it has to be made with Eref and Tref, not with the entropy of a given state
+  // combination of dimensionless units has always to be one, here it is not the case.
+
 
                   TotalMom0 += Mom0;
                   TotalLiqVolFraction += LiqVolFraction;

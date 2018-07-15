@@ -973,7 +973,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
     if (nDim == 3) skipVars += 7;
   }
 
-  if (Old_Solution_Turb) {
+/*  if (Old_Solution_Turb) {
     if (config->GetKind_Turb_Model() != NONE) {
       if (config->GetKind_Turb_Model() == SST)
         skipVars += 2;
@@ -981,7 +981,7 @@ void C2phaseSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig
         skipVars += 1;
     }
   }
-
+*/
 
   /*--- Load data from the restart into correct containers. ---*/
 

@@ -266,10 +266,31 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       // preliminary attempt, imposed liquid volume fraction at component outlet //
 
     	  su2double delta_Sout = solver_container->GetVap_LiqDeltaEntropyOut(iMarkerTP, iSpan);
+
+    	  su2double TempPressure= log(PressureOut[iMarkerTP][iSpan]/1e5);
+/*    	  delta_Sout = 1000*(-1.93581e-04*pow(TempPressure, 5) - 9.99264e-04*pow(TempPressure, 4) +
+        		                 6.83263e-04*pow(TempPressure, 3) - 3.48809e-03*pow(TempPressure, 2) -
+                                 6.40433e-01*TempPressure +6.08689);
+  */
+/*    	  delta_Sout = EntropyOut[iMarkerTP][iSpan]-1000*(8.97464E-05*pow(TempPressure, 5) + 5.87222E-04*pow(TempPressure, 4) +
+    			   9.36847E-04*pow(TempPressure, 3) + 1.23415E-02*pow(TempPressure, 2) +
+				   3.07961E-01*TempPressure -5.67850 + 8.207286923);*/
+    	  delta_Sout = EntropyOut[iMarkerTP][iSpan]-1000*(7.50283E-05*pow(TempPressure, 5) +2.16222E-04*pow(TempPressure, 4) +
+    			  1.82179E-05*pow(TempPressure, 3) + 1.55647E-02*pow(TempPressure, 2) +
+				  3.21400E-01*TempPressure + 1.30378 +1.248500838);
+
+
     	  EntropyGen[iMarkerTP][iSpan] = -LiquidFractionOut[iMarkerTP][iSpan]*delta_Sout + EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan];
     	  EntropyGen[iMarkerTP][iSpan] = 2*EntropyGen[iMarkerTP][iSpan]*TemperatureOut/relVel2;
+//          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
 
-          TotalPressureLoss[iMarkerTP][iSpan]  = LiqVolumeOut[iMarkerTP][iSpan]*100000;
+          cout << EntropyOut[iMarkerTP][iSpan] << " " << EntropyIn[iMarkerTP][iSpan] << " " << EntropyIn_BC[iMarkerTP][iSpan] << endl;
+          cout << LiquidFractionOut[iMarkerTP][iSpan] << " " << delta_Sout << " " << sqrt(relVel2) << " " << TemperatureOut << endl;
+//          getchar();
+
+//          TotalPressureLoss[iMarkerTP][iSpan]  = LiqVolumeOut[iMarkerTP][iSpan]*100000;
+
+          TotalPressureLoss[iMarkerTP][iSpan]  = DensityOut[iMarkerTP][iSpan]*sqrt(relVel2);
 
 		  if (DropletNumberOut[iMarkerTP][iSpan] !=0) {
 			  KineticEnergyLoss[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan];
@@ -280,9 +301,9 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 		  KineticEnergyLoss[iMarkerTP][iSpan] /= 1e-8;
 
       } else {
-//          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
+ //         EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
           EntropyGen[iMarkerTP][iSpan] = 2*(EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])*TemperatureOut/relVel2;
-          TotalPressureLoss[iMarkerTP][iSpan]  = (relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
+          TotalPressureLoss[iMarkerTP][iSpan]  = DensityOut[iMarkerTP][iSpan]*sqrt(relVel2);//(relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
           KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
 
       }

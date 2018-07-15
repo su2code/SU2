@@ -12648,7 +12648,6 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     ThirdIndex = ADJTURB_SOL;  break;
   }
   
-  /* NOTE: when existent, ADJTWO_PHASE_SOL is always index 2, ADJTURB_SOL always follows ADJTWO_PHASE_SOL */
 
   nVar_First = solver[FirstIndex]->GetnVar();
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();

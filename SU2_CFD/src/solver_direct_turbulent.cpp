@@ -1055,6 +1055,9 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
 
+
+  bool Old_Solution_1Ph = config->GetOld_Solution_1Ph();
+
   string UnstExt, text_line;
   ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
@@ -1086,6 +1089,10 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
+
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_RANS) ||
+	   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) ;
+
   /*--- Skip flow variables ---*/
   
   unsigned short skipVars = 0;
@@ -1099,6 +1106,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     if (nDim == 3) skipVars += 7;
   }
 
+	if (two_phase) {
+	  if (Old_Solution_1Ph) {
+		  skipVars += 5;
+	  }
+	}
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
