@@ -3726,7 +3726,6 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     /*--- Reynolds based initialization ---*/
 
     if (reynolds_init) {
-      cout << "Reynolds_init" << endl;
       /*--- First, check if there is mesh motion. If yes, use the Mach
          number relative to the body to initialize the flow. ---*/
 
