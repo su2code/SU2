@@ -42,6 +42,10 @@
 
 #include <ctime>
 
+#ifndef HAVE_MUTATIONPP
+#include "mutation++.h"
+#endif
+
 #include "driver_structure.hpp"
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"

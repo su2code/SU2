@@ -207,6 +207,13 @@ public:
   su2double Dissipation_ij;
     
   su2double *l, *m;
+	su2double *dPdU_i, *dPdU_j;
+	su2double *dTdU_i, *dTdU_j;
+	su2double *dTvedU_i, *dTvedU_j;
+	su2double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+  unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
+ 	RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
+  CVariable *var;
 
   /*!
    * \brief Constructor of the class.
