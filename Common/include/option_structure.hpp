@@ -130,9 +130,15 @@ const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. 
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
-const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
-
+const su2double STANDARD_GRAVITY = 9.80665;          /*!< \brief Acceleration due to gravity at surface of earth. */
+const su2double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
+const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
+const su2double UNIVERSAL_GAS_CONSTANT = 8314.462175; /*! \brief Universal gas constant [J kmol^-1 K^-1] */
+const su2double ELECTRON_CHARGE = 1.60217646E-19;	/*!< \brief Electronic charge constant. */
+const su2double ELECTRON_MASS = 9.10938188E-31;	/*!< \brief Mass of an electron. */
+const su2double FREE_PERMITTIVITY = 8.8541878176E-12; /*!< \brief Premittivity of free space. */
+const su2double MAGNETIC_CONSTANT = 1.25663706E-6;  /*!< \brief magnetic permeability of free space. */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -426,6 +432,8 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_TNE2_SYS = 23,  /*!< \brief One-physics case, the code is solving the two-temperature model. */
+  RUNTIME_ADJTNE2_SYS = 24  /*!< \brief One-physics case, the code is solving the two-temperature model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -433,6 +441,9 @@ const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow s
 
 const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
+
+const int TNE2_SOL = 0;		/*!< \brief Position of the mean flow solution in the solution container array. */
+const int ADJTNE2_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solution container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
