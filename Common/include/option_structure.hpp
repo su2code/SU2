@@ -128,8 +128,7 @@ const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when a
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
-const unsigned int ZONE_1 = 1; /*!< \brief Definition of the second grid domain. */
-const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
@@ -221,6 +220,12 @@ enum ENUM_SOLVER {
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
   DISC_ADJ_FEM = 40
+	TNE2_EULER = 41,
+  TNE2_NAVIER_STOKES = 42,
+  ADJ_TNE2_EULER = 43,
+  ADJ_TNE2_NAVIER_STOKES = 44,
+	DISC_ADJ_TNE2_EULER = 45,
+  DISC_ADJ_TNE2_NAVIER_STOKES = 46
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -228,10 +233,14 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("EULER", EULER)
 ("NAVIER_STOKES", NAVIER_STOKES)
 ("RANS", RANS)
+("TNE2_EULER",TNE2_EULER)
+("TNE2_RANS",TNE2_NAVIER_STOKES)
 ("POISSON_EQUATION", POISSON_EQUATION)
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
+("ADJ_TNE2_NAVIER_STOKES",ADJ_TNE2_NAVIER_STOKES)
+("ADJ_TNE2_EULER",ADJ_TNE2_EULER)
 ("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
 ("HEAT_EQUATION", HEAT_EQUATION)
@@ -239,6 +248,8 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_TNE2_EULER",DISC_ADJ_TNE2_EULER)
+("DISC_ADJ_TNE2_NAVIER_STOKES",DISC_ADJ_TNE2_NAVIER_STOKES)
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
@@ -310,8 +321,6 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
 ("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
 
-
-
 /*!
  * \brief types of interpolators
  */
@@ -331,7 +340,6 @@ static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string
 /*!
  * \brief types of (coupling) transfers between distinct physical zones
  */
-
 enum ENUM_TRANSFER {
   ZONES_ARE_EQUAL                   = 0,    /*!< \brief Zones are equal - no transfer. */
   NO_COMMON_INTERFACE               = 1,    /*!< \brief No common interface between the zones (geometrical). */
@@ -951,6 +959,10 @@ enum BC_TYPE {
   DISP_DIR_BOUNDARY = 40,    /*!< \brief Boundary displacement definition. */
   DAMPER_BOUNDARY = 41,    /*!< \brief Damper. */
   CHT_WALL_INTERFACE = 50, /*!< \brief Domain interface definition. */
+	HEAT_FLUX_NONCATALYTIC = 51, /*!< \brief No-slip, constant heat flux, noncatalytic bc. */
+  HEAT_FLUX_CATALYTIC= 52, /*!< \brief No-slip, constant heat flux, catalytic bc. */
+  ISOTHERMAL_NONCATALYTIC = 53, /*!< \brief No-slip, constant temperature, noncatalytic bc. */
+  ISOTHERMAL_CATALYTIC = 54, /*!< \brief No-slip, constant temperature, catalytic bc. */
   SEND_RECEIVE = 99,		/*!< \brief Boundary send-receive definition. */
 };
 
@@ -1546,7 +1558,6 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("ROTATE_GRID", ROTATE_GRID)
 ("SCALE_GRID", SCALE_GRID)
 ;
-
 
 /*!
  * \brief types of FFD Blending function
