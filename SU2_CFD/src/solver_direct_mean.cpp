@@ -4281,6 +4281,8 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
+  unsigned short iPoint;
+
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
   if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
@@ -4312,7 +4314,6 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
  
   /*--- Upwind second order reconstruction ---*/
   
-  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
     
     /*--- Gradient computation ---*/
     
@@ -4323,12 +4324,18 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
       SetPrimitive_Gradient_LS(geometry, config);
     }
     
+    for (iPoint=0; iPoint<nPoint; iPoint++)
+    	solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
+
     /*--- Limiter computation ---*/
-    
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
+
     if (limiter && (iMesh == MESH_0)
         && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
     
   }
+  
+  
   
   /*--- Artificial dissipation ---*/
   

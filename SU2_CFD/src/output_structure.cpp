@@ -12545,6 +12545,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
     }
+
+	nVar_Par += 2;
+	Variable_Names.push_back("Vorticity_x");
+	Variable_Names.push_back("Vorticity_y");
+
+	if (nDim ==3){nVar_Par += 1;
+	Variable_Names.push_back("Vorticity_z");}
+
+	nVar_Par += 1;
+	Variable_Names.push_back("Vorticity Module");
     
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
@@ -12793,7 +12803,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetTemperature(); iVar++;
         Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/solver[FLOW_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
         Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
-        
+		
+		Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity(0); iVar++;
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity(1); iVar++;
+
+        if (nDim ==3) {
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity(2); iVar++;}
+
+
+        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity_Module(); iVar++;
+
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           
           /*--- Load data for the laminar viscosity. ---*/

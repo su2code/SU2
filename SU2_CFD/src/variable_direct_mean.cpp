@@ -445,6 +445,22 @@ void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
             Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
+bool CEulerVariable::SetVorticity(void) {
+  
+  Vorticity[0] = 0.0; Vorticity[1] = 0.0;
+  
+  Vorticity[2] = Gradient_Primitive[2][0]-Gradient_Primitive[1][1];
+  
+  if (nDim == 3) {
+    Vorticity[0] = Gradient_Primitive[3][1]-Gradient_Primitive[2][2];
+    Vorticity[1] = -(Gradient_Primitive[3][0]-Gradient_Primitive[1][2]);
+  }
+  
+
+  return false;
+  
+}
+
 void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
     unsigned short iVar, iDim;
   

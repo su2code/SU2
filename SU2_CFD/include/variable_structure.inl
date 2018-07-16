@@ -309,6 +309,10 @@ inline su2double CVariable::GetThermalConductivity_ve(void) { return 0; }
 
 inline su2double* CVariable::GetVorticity(void) { return 0; }
 
+inline su2double CVariable::GetVorticity_Module(void) { return 0; }
+
+inline su2double CVariable::GetVorticity(unsigned short val_var) { return 0; }
+
 inline su2double CVariable::GetStrainMag(void) { return 0; }
 
 inline void CVariable::SetForceProj_Vector(su2double *val_ForceProj_Vector) { }
@@ -857,6 +861,11 @@ inline void CEulerVariable::Set_BGSSolution_k(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution[iVar];
 }
+
+inline su2double CEulerVariable::GetVorticity_Module(void) 
+{ return (sqrt(pow(Vorticity[0],2) + pow(Vorticity[1],2) + pow(Vorticity[2],2)));}
+
+inline su2double CEulerVariable::GetVorticity(unsigned short val_var) { return Vorticity[val_var]; }
 
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 

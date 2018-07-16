@@ -1060,6 +1060,8 @@ public:
    * \return Value of the vorticity.
    */
   virtual su2double *GetVorticity(void);
+  virtual su2double GetVorticity_Module(void);
+  virtual su2double GetVorticity(unsigned short val_var);
   
   /*!
    * \brief A virtual member.
@@ -3169,7 +3171,8 @@ protected:
   su2double  Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
   su2double *WindGust;      /*! < \brief Wind gust value */
   su2double *WindGustDer;   /*! < \brief Wind gust derivatives value */
-  
+  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
+
   /*--- Primitive variable definition ---*/
   
   su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
@@ -3240,6 +3243,13 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution_New(unsigned short val_var, su2double val_solution);
+	
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity(void);
+  su2double GetVorticity_Module(void);
+  su2double GetVorticity(unsigned short val_var);
 
   /*!
    * \brief Set to zero the gradient of the primitive variables.
