@@ -3998,8 +3998,7 @@ void CFEM_DG_EulerSolver::CheckTimeSynchronization(CConfig         *config,
 void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **solver_container,
                                              CNumerics **numerics, CConfig *config,
                                              unsigned short iMesh) {
-  /* Variable for the internal timing and store the number of time levels.. */
-  double tick = 0.0;
+  /* Easier storage of the number of time levels.. */
   const unsigned short nTimeLevels = config->GetnLevels_TimeAccurateLTS();
 
   /* Define and initialize the bool vector, that indicates whether or
@@ -4047,9 +4046,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                                            + nVolElemInternalPerTimeLevel[level];
               const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level+1];
 
-              config->Tick(&tick);
               ADER_DG_PredictorStep(config, elemBeg, elemEnd, workArray);
-              config->Tock(tick,"ADER_DG_PredictorStep",2);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4062,9 +4059,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned long  elemBeg = nVolElemOwnedPerTimeLevel[level];
               const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level]
                                            + nVolElemInternalPerTimeLevel[level];
-              config->Tick(&tick);
               ADER_DG_PredictorStep(config, elemBeg, elemEnd, workArray);
-              config->Tock(tick,"ADER_DG_PredictorStep",2);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4126,14 +4121,12 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                 adjElem  = ownedElemAdjLowTimeLevel[level+1].data();
               }
 
-              config->Tick(&tick);
               ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
                                                   nVolElemOwnedPerTimeLevel[level],
                                                   nVolElemOwnedPerTimeLevel[level+1],
                                                   nAdjElem, adjElem,
                                                   tasksList[i].secondPartTimeIntADER,
                                                   VecWorkSolDOFs[level].data());
-              config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4150,14 +4143,12 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
                 adjElem  = haloElemAdjLowTimeLevel[level+1].data();
               }
 
-              config->Tick(&tick);
               ADER_DG_TimeInterpolatePredictorSol(config, tasksList[i].intPointADER,
                                                   nVolElemHaloPerTimeLevel[level],
                                                   nVolElemHaloPerTimeLevel[level+1],
                                                   nAdjElem, adjElem,
                                                   tasksList[i].secondPartTimeIntADER,
                                                   VecWorkSolDOFs[level].data());
-              config->Tock(tick,"ADER_DG_TimeInterpolatePredictorSol",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4166,10 +4157,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               Shock_Capturing_DG(config, nVolElemOwnedPerTimeLevel[level],
                                  nVolElemOwnedPerTimeLevel[level+1], workArray);
-              config->Tock(tick,"Shock_Capturing",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4178,10 +4167,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Compute the artificial viscosity for shock capturing in DG. ---*/
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               Shock_Capturing_DG(config, nVolElemHaloPerTimeLevel[level],
                                  nVolElemHaloPerTimeLevel[level+1], workArray);
-              config->Tock(tick,"Shock_Capturing",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4190,10 +4177,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Compute the volume portion of the residual. ---*/
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
                               nVolElemOwnedPerTimeLevel[level+1], workArray);
-              config->Tock(tick,"Volume_Residual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4202,12 +4187,10 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /* Compute the residual of the faces that only involve owned elements. */
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               unsigned long indResFaces = startLocResInternalFacesLocalElem[level];
               ResidualFaces(config, nMatchingInternalFacesLocalElem[level],
                             nMatchingInternalFacesLocalElem[level+1],
                             indResFaces, numerics[CONV_TERM], workArray);
-              config->Tock(tick,"ResidualFaces",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4216,12 +4199,10 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /* Compute the residual of the faces that involve a halo element. */
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               unsigned long indResFaces = startLocResInternalFacesWithHaloElem[level];
               ResidualFaces(config, nMatchingInternalFacesWithHaloElem[level],
                             nMatchingInternalFacesWithHaloElem[level+1],
                             indResFaces, numerics[CONV_TERM], workArray);
-              config->Tock(tick,"ResidualFaces",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4230,10 +4211,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Apply the boundary conditions that only depend on data
                     of owned elements. ---*/
-              config->Tick(&tick);
               Boundary_Conditions(tasksList[i].timeLevel, config, numerics, false,
                                   workArray);
-              config->Tock(tick,"Boundary_Conditions",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4242,10 +4221,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Apply the boundary conditions that also depend on data
                     of halo elements. ---*/
-              config->Tick(&tick);
               Boundary_Conditions(tasksList[i].timeLevel, config, numerics, true,
                                   workArray);
-              config->Tock(tick,"Boundary_Conditions",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4253,9 +4230,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
             case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_OWNED_ELEMENTS: {
 
               /* Create the final residual by summing up all contributions. */
-              config->Tick(&tick);
               CreateFinalResidual(tasksList[i].timeLevel, true);
-              config->Tock(tick,"CreateFinalResidual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4263,9 +4238,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
             case CTaskDefinition::SUM_UP_RESIDUAL_CONTRIBUTIONS_HALO_ELEMENTS: {
 
               /* Create the final residual by summing up all contributions. */
-              config->Tick(&tick);
               CreateFinalResidual(tasksList[i].timeLevel, false);
-              config->Tock(tick,"CreateFinalResidual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4274,10 +4247,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /* Accumulate the space time residuals for the owned elements
                  for ADER-DG. */
-              config->Tick(&tick);
               AccumulateSpaceTimeResidualADEROwnedElem(config, tasksList[i].timeLevel,
                                                        tasksList[i].intPointADER);
-              config->Tock(tick,"AccumulateSpaceTimeResidualADEROwnedElem",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4286,10 +4257,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /* Accumulate the space time residuals for the halo elements
                  for ADER-DG. */
-              config->Tick(&tick);
               AccumulateSpaceTimeResidualADERHaloElem(config, tasksList[i].timeLevel,
                                                       tasksList[i].intPointADER);
-              config->Tock(tick,"AccumulateSpaceTimeResidualADERHaloElem",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4298,13 +4267,11 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Multiply the residual by the (lumped) mass matrix, to obtain the final value. ---*/
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
               MultiplyResidualByInverseMassMatrix(config, useADER,
                                                   nVolElemOwnedPerTimeLevel[level],
                                                   nVolElemOwnedPerTimeLevel[level+1],
                                                   workArray);
-              config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4313,10 +4280,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 
               /*--- Perform the update step for ADER-DG. ---*/
               const unsigned short level = tasksList[i].timeLevel;
-              config->Tick(&tick);
               ADER_DG_Iteration(nVolElemOwnedPerTimeLevel[level],
                                 nVolElemOwnedPerTimeLevel[level+1]);
-              config->Tock(tick,"ADER_DG_Iteration",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
             }
@@ -4346,23 +4311,15 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
 void CFEM_DG_EulerSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                                     CNumerics **numerics, CConfig *config,
                                                     unsigned short iMesh, unsigned short RunTime_EqSystem) {
-  double tick = 0.0;
-
   /* Preprocessing. */
-  config->Tick(&tick);
   Preprocessing(geometry, solver_container, config, iMesh, 0, RunTime_EqSystem, false);
   TolerancesADERPredictorStep();
-  config->Tock(tick,"Preprocessing",2);
 
   /* Process the tasks list to carry out one ADER space time integration step. */
-  config->Tick(&tick);
   ProcessTaskList_DG(geometry, solver_container, numerics, config, iMesh);
-  config->Tock(tick,"ProcessTaskList_DG",3);
 
   /* Postprocessing. */
-  config->Tick(&tick);
   Postprocessing(geometry, solver_container, config, iMesh);
-  config->Tock(tick,"Postprocessing",2);
 }
 
 void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
@@ -4422,9 +4379,6 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                                                 const unsigned long elemBeg,
                                                 const unsigned long elemEnd,
                                                 su2double           *workArray) {
-
-  /* Initialize the argument to the timing routines. */
-  double tick = 0.0;
 
   /* Get the data of the ADER time integration scheme. */
   const unsigned short nTimeDOFs              = config->GetnTimeDOFsADER_DG();
@@ -4692,10 +4646,8 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
 
         /* Carry out the multiplication with the inverse of the mass matrix.
            The result is stored in resInt as temporary storage. */
-        config->GEMM_Tick(&tick);
         DenseMatrixProduct(nDOFs, NPadDOF, nDOFs, volElem[l].invMassMatrix.data(),
                            res, resInt);
-        config->GEMM_Tock(tick, "ADER_DG_PredictorStep", nDOFs, NPadDOF, nDOFs);
 
         /* Loop over the time DOFs for this chunk of time DOFs. */
         for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
@@ -4828,9 +4780,6 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
-  /* Initialize the argument to the timing routines. */
-  double tick = 0.0;
-
   /* Get the necessary information from the standard element. */
   const unsigned short ind                = elem->indStandardElement;
   const unsigned short nInt               = standardElementsSol[ind].GetNIntegration();
@@ -4910,17 +4859,10 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF,
                      gradFluxXInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_1",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF,
                      gradFluxYInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_2",
-                    nInt*nDim, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -4982,9 +4924,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
-    config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_3", nInt, NPad, nDOFs);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5027,10 +4967,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_4",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -5040,8 +4977,6 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
-  /* Initialize the argument to the timing routines. */
-  double tick = 0.0;
 
   /* Get the necessary information from the standard element. */
   const unsigned short ind                = elem->indStandardElement;
@@ -5136,23 +5071,12 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF,
                      gradFluxXInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_1",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF,
                      gradFluxYInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_2",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF,
                      gradFluxZInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_3",
-                    nInt*nDim, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -5231,9 +5155,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
-    config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_4", nInt, NPad, nDOFs);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5279,10 +5201,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_5",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -5292,8 +5211,6 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
                                                                  const unsigned short NPad,
                                                                  su2double            *res,
                                                                  su2double            *work) {
-  /* Initialize the argument for the timing routines. */
-  double tick = 0.0;
 
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. */
@@ -5329,10 +5246,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
   /*--- the call to DenseMatrixProduct is nInt*(nDim+1).                   ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_1",
-                    nInt*3, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the inviscid fluxes, multiplied by the   ---*/
@@ -5447,10 +5361,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_2",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -5460,9 +5371,6 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
                                                                  const unsigned short NPad,
                                                                  su2double            *res,
                                                                  su2double            *work) {
-  /* Initialize the argument for the timing routines. */
-  double tick = 0.0;
-
   /* Set the pointers for solAndGradInt and divFlux to work. The same array
      can be used for both help arrays. */
   su2double *solAndGradInt = work;
@@ -5499,10 +5407,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
   /*--- the call to DenseMatrixProduct is nInt*(nDim+1).                   ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_1",
-                    nInt*4, NPad, nDOFs);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5641,10 +5546,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_2",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
@@ -5766,9 +5668,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Initialization for the timing routines and set the number of bytes
-     that must be copied in the memcpy calls. */
-  double tick = 0.0;
+  /* Set the number of bytes that must be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Store the number of metric points per integration point, which depends
@@ -5825,9 +5725,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product to determine
        the solution in the integration points of the chunk of elements. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, solDOFs, solInt);
-    config->GEMM_Tock(tick, "Volume_Residual1", nInt, NPad, nDOFs);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -6096,18 +5994,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product.
        Use solDOFs as a temporary storage for the matrix product. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs);
-    config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, NPad, nInt*nDim);
 
     /* Add the contribution from the source terms, if needed. Use solInt
        as temporary storage for the matrix product. */
     if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
-      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFs, NPad, nInt, matBasisIntTrans, sources, solInt);
-      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, NPad, nInt);
 
       /* Add the residuals due to source terms to the volume residuals */
       for(unsigned short i=0; i<(nDOFs*NPad); ++i)
@@ -6225,9 +6119,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Initialization for the timing routines and set the number of bytes
-     that must be copied in the memcpy calls. */
-  double tick = 0.0;
+  /* Set the number of bytes that must be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Loop over the requested range of matching faces. Multiple faces
@@ -6286,9 +6178,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     su2double *resSide0 = solIntL;
 
     /* Call the general function to carry out the matrix product. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0);
-    config->GEMM_Tock(tick, "ResidualFaces1", nDOFsFace0, NPad, nInt);
 
     /* Check if the number of DOFs on both sides of the face is different.
        In that case also the matrix product with the basis functions on side 1
@@ -6297,9 +6187,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     su2double *resSide1 = solIntR;
     if(nDOFsFace1 != nDOFsFace0) {
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1);
-      config->GEMM_Tock(tick, "ResidualFaces2", nDOFsFace1, NPad, nInt);
     }
 
     /* Loop over the number of faces in this chunk. */
@@ -6353,7 +6241,6 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
      same memory can be used for the storage of the solution of the DOFs of
      the face and the fluxes. */
   su2double *solFace = fluxes;
-  double tick = 0.0;
 
   /* Number of bytes to be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
@@ -6423,9 +6310,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, NPad, nDOFsFace0, basisFace0, solFace, solIntL);
-  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace1", nInt, NPad, nDOFsFace0);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 2: Interpolate the right state in the integration points of ---*/
@@ -6472,9 +6357,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
   /* Compute the right states. Call the general function to
      carry out the matrix product. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, NPad, nDOFsFace1, basisFace1, solFace, solIntR);
-  config->GEMM_Tock(tick, "InviscidFluxesInternalMatchingFace2", nInt, NPad, nDOFsFace1);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the fluxes in the integration points using the   ---*/
@@ -6673,9 +6556,6 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               const unsigned long elemEnd,
                                               su2double           *workArray) {
 
-  /*--- Initialize the variable for the timer. ---*/
-  double tick = 0.0;
-
   /*--- Set the reference to the correct residual. This depends
         whether or not the ADER scheme is used. ---*/
   vector<su2double> &VecRes = useADER ? VecTotResDOFsADER : VecResDOFs;
@@ -6706,11 +6586,8 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
       /* Multiply the residual with the inverse of the mass matrix.
          Use the array workArray as temporary storage. */
       memcpy(workArray, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
-      config->GEMM_Tick(&tick);
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
                          volElem[l].invMassMatrix.data(), workArray, res);
-      config->GEMM_Tock(tick, "MultiplyResidualByInverseMassMatrix",
-                        volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
     }
   }
 }
@@ -6722,10 +6599,8 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   vector<su2double> workArrayVec(sizeWorkArray, 0.0);
   su2double *workArray = workArrayVec.data();
 
-  /* The number of bytes to copied in the memcpy calls and an initialization
-     of the argument in the calls to the timing routines. */
+  /* The number of bytes to copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
-  double tick = 0.0;
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -6867,9 +6742,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
-          config->GEMM_Tick(&tick);
           DenseMatrixProduct(nInt, NPad, nDOFs, basisFace, workArray, solInt);
-          config->GEMM_Tock(tick, "Pressure_Forces", nInt, NPad, nDOFs);
 
           /* Make a distinction between two and three space dimensions
              in order to have the most efficient code. */
@@ -8624,9 +8497,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Initialization of the timer and aasier storage of the number of bytes
-     to copy in the memcpy calls. */
-  double tick = 0.0;
+  /* Easier storage of the number of bytes to copy in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Get the required information from the standard face, which is the
@@ -8680,9 +8551,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
 
   /* Call the general function to carry out the matrix product. Use solint0
      as temporary storage for the result. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFaceTrans, fluxes, solInt0);
-  config->GEMM_Tock(tick, "ResidualInviscidBoundaryFace", nDOFs, NPad, nInt);
 
   /* Loop over the number of simultaneously treated faces to store the
      residual in the correct locations in resFaces. */
@@ -8745,10 +8614,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
   }
 
   /* Call the general function to carry out the matrix product. */
-  double tick = 0.0;
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt, NPad, nDOFs, basisFace, solFace, solIntL);
-  config->GEMM_Tock(tick, "LeftStatesIntegrationPointsBoundaryFace", nInt, NPad, nDOFs);
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config,
@@ -9672,10 +9538,8 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   /*--- function must be modified when wall functions are implemented.     ---*/
   /*--------------------------------------------------------------------------*/
 
-  /* The number of bytes to copied in the memcpy calls and an initialization
-     of the argument in the calls to the timing routines. */
+  /* The number of bytes to copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
-  double tick = 0.0;
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -9815,9 +9679,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
-          config->GEMM_Tick(&tick);
           DenseMatrixProduct(nInt, NPad, nDOFsFace, basisFace, solCopy, solInt);
-          config->GEMM_Tock(tick, "Friction_Forces_1", nInt, NPad, nDOFsFace);
 
           /*--- Store the solution of the DOFs of the adjacent elements in contiguous
                 memory such that the function DenseMatrixProduct can be used to compute
@@ -9835,9 +9697,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
-          config->GEMM_Tick(&tick);
           DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem, derBasisElem, solCopy, gradSolInt);
-          config->GEMM_Tock(tick, "Friction_Forces_2", nInt*nDim, NPad, nDOFsElem);
 
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
@@ -10293,9 +10153,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Initialization for the timing routines and set the number of bytes
-     that must be copied in the memcpy calls. */
-  double tick = 0.0;
+  /* Set the number of bytes that must be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Initialize the minimum and maximum time step. */
@@ -10372,10 +10230,8 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
            /* Call the general function to carry out the matrix product to determine
               the gradients in the DOFs of this chunk of elements. */
-           config->GEMM_Tick(&tick);
            DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs,
                               solDOFs, gradSolDOFs);
-           config->GEMM_Tock(tick, "SetTime_Step", nDOFs*nDim, NPad, nDOFs);
         }
 
         /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
@@ -10679,9 +10535,6 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
-  /* Initialize the argument to the timing routines. */
-  double tick = 0.0;
-
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -10729,10 +10582,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
 
   /* Compute the derivatives of the solution variables w.r.t. the parametric
      coordinates in the DOFs. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_1",
-                    nDOFs*nDim, NPad, nDOFs);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -10844,17 +10694,10 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF,
                      gradFluxXInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_2",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF,
                      gradFluxYInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_3",
-                    nInt*nDim, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -10916,9 +10759,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
-    config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_4", nInt, NPad, nDOFs);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -10961,10 +10802,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_2D_5",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -10974,9 +10812,6 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
                                                            const unsigned short NPad,
                                                            su2double            *res,
                                                            su2double            *work) {
-  /* Initialize the argument to the timing routines. */
-  double tick = 0.0;
-
   /* Constant factor present in the heat flux vector. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
   const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
@@ -11026,10 +10861,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
 
   /* Compute the derivatives of the solution variables w.r.t. the parametric
      coordinates in the DOFs. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_1",
-                    nDOFs*nDim, NPad, nDOFs);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -11181,23 +11013,12 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF,
                      gradFluxXInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_2",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF,
                      gradFluxYInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_3",
-                    nInt*nDim, NPad, nDOFs);
-
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF,
                      gradFluxZInt);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_4",
-                    nInt*nDim, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -11276,9 +11097,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
-    config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_5", nInt, NPad, nDOFs);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -11324,10 +11143,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_AliasedPredictorResidual_3D_6",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -11337,8 +11153,6 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
-  /* Initialize the argument for the timing routines. */
-  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
@@ -11402,17 +11216,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_1",
-                    nInt*3, NPad, nDOFs);
 
   /* Compute the second derivatives w.r.t. the parametric coordinates
      in the integration points. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*3, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_2",
-                    nInt*3, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of viscous fluxes, multiplied by the        ---*/
@@ -11678,10 +11486,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_2D_3",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -11691,8 +11496,6 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
                                                               const unsigned short NPad,
                                                               su2double            *res,
                                                               su2double            *work) {
-  /* Initialize the argument for the timing routines. */
-  double tick = 0.0;
 
   /* Constant factor present in the heat flux vector, the inverse of
      the specific heat at constant volume and ratio lambdaOverMu. */
@@ -11757,17 +11560,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_1",
-                    nInt*4, NPad, nDOFs);
 
   /* Compute the second derivatives w.r.t. the parametric coordinates
      in the integration points. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*6, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_2",
-                    nInt*6, NPad, nDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of viscous fluxes, multiplied by the        ---*/
@@ -12202,10 +11999,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
-  config->GEMM_Tock(tick, "ADER_DG_NonAliasedPredictorResidual_3D_3",
-                    nDOFs, NPad, nInt);
 }
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
@@ -12406,9 +12200,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Initialization for the timing routines and set the number of bytes
-     that must be copied in the memcpy calls. */
-  double tick = 0.0;
+  /* Set the number of bytes that must be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /* Store the number of metric points per integration point, which depends
@@ -12470,9 +12262,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /* Call the general function to carry out the matrix product to determine
        the solution and gradients in the integration points of the chunk
        of elements. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*(nDim+1), NPad, nDOFs, matBasisInt, solDOFs, solAndGradInt);
-    config->GEMM_Tock(tick, "Volume_Residual1", nInt*(nDim+1), NPad, nDOFs);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
@@ -12480,7 +12270,6 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /*---         weight, in the integration points.                       ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     /* Determine the offset between the solution variables and the r-derivatives,
        which is also the offset between the r- and s-derivatives and the offset
        between s- and t-derivatives. */
@@ -12937,8 +12726,6 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
 #endif
 
-    config->Tock(tick, "IR_2_1", 4);
-
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the contribution to the residuals from the       ---*/
     /*---         integration over the volume element.                     ---*/
@@ -12946,18 +12733,14 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product.
        Use solDOFs as a temporary storage for the matrix product. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs);
-    config->GEMM_Tock(tick, "Volume_Residual2", nDOFs, NPad, nInt*nDim);
 
     /* Add the contribution from the source terms, if needed. Use solAndGradInt
        as temporary storage for the matrix product. */
     if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
-      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nDOFs, NPad, nInt, matBasisIntTrans, sources, solAndGradInt);
-      config->GEMM_Tock(tick, "Volume_Residual3", nDOFs, NPad, nInt);
 
       /* Add the residuals due to source terms to the volume residuals */
       for(unsigned short i=0; i<(nDOFs*NPad); ++i)
@@ -13000,10 +12783,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
      corresponds to 64 byte alignment. */
   const unsigned short nPadMin = 64/sizeof(passivedouble);
 
-  /* Initialization for the timing routines and set the number of bytes
-     that must be copied in the memcpy calls. */
-  double tick = 0.0;
-  double tick2 = 0.0;
+  /* Set the number of bytes that must be copied in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
   /*--- Loop over the requested range of matching faces. Multiple faces
@@ -13051,18 +12831,14 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     /*---         this chunk of matching faces.                            ---*/
     /*------------------------------------------------------------------------*/
 
-    config->Tick(&tick);
     InviscidFluxesInternalMatchingFace(config, l, lEnd, NPad,
                                        solIntL, solIntR, fluxes, numerics);
-    config->Tock(tick, "ER_1_1", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the viscous fluxes in the integration points of  ---*/
     /*---         this chunk of matching faces and subtract them from the  ---*/
     /*---         already computed inviscid fluxes.                        ---*/
     /*------------------------------------------------------------------------*/
-
-    config->Tick(&tick);
 
     /*---------------------------*/
     /*--- Side 0 of the face. ---*/
@@ -13117,9 +12893,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     /* Compute the gradients w.r.t. the parametric coordinates in the integration
        points. Call the general function to carry out the matrix product. */
-    config->GEMM_Tick(&tick2);
     DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem0, derBasisElem, solElem, gradSolInt);
-    config->GEMM_Tock(tick2, "ResidualFaces1", nInt*nDim, NPad, nDOFsElem0);
 
     /*--- Loop over the faces in this chunk to compute the viscous flux
           vector for side 0. */
@@ -13192,9 +12966,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     /* Compute the gradients w.r.t. the parametric coordinates in the integration
        points. Call the general function to carry out the matrix product. */
-    config->GEMM_Tick(&tick2);
     DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem1, derBasisElem, solElem, gradSolInt);
-    config->GEMM_Tock(tick2, "ResidualFaces2", nInt*nDim, NPad, nDOFsElem1);
 
     /*--- Loop over the faces in this chunk to compute the viscous flux
           vector for side 1. */
@@ -13217,15 +12989,11 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     /*--- Subtract half of the viscous fluxes from the inviscid fluxes. ---*/
     for(unsigned short j=0; j<(NPad*nInt); ++j) fluxes[j] -= 0.5*viscFluxes[j];
 
-    config->Tock(tick, "ER_1_2", 4);
-
     /*------------------------------------------------------------------------*/
     /*--- Step 3: Compute the penalty terms in the integration points of   ---*/
     /*---         this chunk of matching faces and add them to the already ---*/
     /*---         stored inviscid and viscous fluxes.                      ---*/
     /*------------------------------------------------------------------------*/
-
-    config->Tick(&tick);
 
     /* Get the required constant needed for the penalty terms. */
     const su2double ConstPenFace = standardMatchingFacesSol[ind].GetPenaltyConstant();
@@ -13261,14 +13029,11 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       for(unsigned short j=0; j<NPad; ++j)
         flux[j] *= weights[i];
     }
-    config->Tock(tick, "ER_1_3", 4);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 4: Compute the contribution to the residuals from the       ---*/
     /*---         integration over this internal matching face.            ---*/
     /*------------------------------------------------------------------------*/
-
-    config->Tick(&tick);
 
     /* Set the value of the offset of the residual between each of the fused
        faces. This depends whether or not symmetrizing terms are stored.
@@ -13286,9 +13051,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     su2double *resSide0 = gradSolInt;
 
     /* Call the general function to carry out the matrix product. */
-    config->GEMM_Tick(&tick2);
     DenseMatrixProduct(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0);
-    config->GEMM_Tock(tick2, "ResidualFaces3", nDOFsFace0, NPad, nInt);
 
     /* Check if the number of DOFs on both sides of the face is different.
        In that case also the matrix product with the basis functions on side 1
@@ -13297,9 +13060,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     su2double *resSide1 = viscFluxes;
     if(nDOFsFace1 != nDOFsFace0) {
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-      config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1);
-      config->GEMM_Tock(tick2, "ResidualFaces4", nDOFsFace1, NPad, nInt);
     }
 
     /* Loop over the number of faces in this chunk. */
@@ -13333,8 +13094,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       }
     }
 
-    config->Tock(tick, "ER_1_4", 4);
-
     /*------------------------------------------------------------------------*/
     /*--- Step 5: Compute and distribute the symmetrizing terms, if        ---*/
     /*---         present. Note that these terms must be distributed to    ---*/
@@ -13342,8 +13101,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     /*------------------------------------------------------------------------*/
 
     if( symmetrizingTermsPresent ) {
-
-      config->Tick(&tick);
 
       /* Use gradSolInt as a buffer to store the parametric fluxes. */
       su2double *paramFluxes = gradSolInt;
@@ -13376,9 +13133,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. Use solIntL as storage for the residual. */
       const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
-      config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem0, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntL);
-      config->GEMM_Tock(tick2, "ResidualFaces5", nDOFsElem0, NPad, nInt*nDim);
 
       /* Loop over the faces in this chunk to compute the transformed
          symmetrizing fluxes for side 1. */
@@ -13394,9 +13149,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
          be negated, because two minus signs enter the formulation for side 1,
          which cancel each other. Use solIntR as storage for the residual. */
       derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
-      config->GEMM_Tick(&tick2);
       DenseMatrixProduct(nDOFsElem1, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntR);
-      config->GEMM_Tock(tick2, "ResidualFaces6", nDOFsElem1, NPad, nInt*nDim);
 
       /* Loop over the number of faces in this chunk. */
       for(unsigned short ll=0; ll<llEnd; ++ll) {
@@ -13416,8 +13169,6 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
         for(unsigned short i=0; i<nDOFsElem1; ++i)
           memcpy(resElem1+nVar*i, solIntR+NPad*i+llNVar, nBytes);
       }
-
-      config->Tock(tick, "ER_1_5", 4);
     }
 
     /* Update the value of the counter l to the end index of the
@@ -14409,9 +14160,6 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
 
-  /* Initialization for the timing routines. */
-  double tick = 0.0;
-
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -14507,9 +14255,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
 
     /* Compute the left gradients in the integration points. Call the general
        function to carry out the matrix product. */
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt);
-    config->GEMM_Tock(tick, "BC_Sym_Plane", nInt*nDim, NPad, nDOFsElem);
 
     /*-----------------------------------------------------------------------*/
     /*--- Step 3: Computation of the viscous fluxes in the integration    ---*/
@@ -15445,9 +15191,6 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
                                              su2double          *viscosityInt,
                                              su2double          *kOverCvInt) {
 
-  /* Initialization of the variable for the timer function. */
-  double tick = 0.0;
-
   /* Easier storage of the number of bytes to copy in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
@@ -15482,9 +15225,7 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
 
   /* Compute the gradients in the integration points. Call the general function to
      carry out the matrix product. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt);
-  config->GEMM_Tock(tick, "ComputeViscousFluxesBoundaryFaces", nInt*nDim, NPad, nDOFsElem);
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Compute the viscous normal fluxes in the integration points ---*/
@@ -15524,9 +15265,6 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                         su2double          *kOverCvInt,
                                         CWallModel         *wallModel) {
 
-  /* Initialization of the variable for the timer function. */
-  double tick = 0.0;
-
   /* Loop over the simultaneously treated faces. */
   for(unsigned short l=0; l<nFaceSimul; ++l) {
     const unsigned short llNVar = l*nVar;
@@ -15549,11 +15287,9 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
       const unsigned short nIntThisDonor = surfElem[l].nIntPerWallFunctionDonor[j+1]
                                          - surfElem[l].nIntPerWallFunctionDonor[j];
 
-      config->GEMM_Tick(&tick);
       DenseMatrixProduct(nIntThisDonor, nVar, nDOFsElem,
                          surfElem[l].matWallFunctionDonor[j].data(), solDOFsElem,
                          workArray);
-      config->GEMM_Tock(tick, "WallTreatmentViscousFluxes", nIntThisDonor, nVar, nDOFsElem);
 
       /* Loop over the integration points for this donor element. */
       for(unsigned short i=surfElem[l].nIntPerWallFunctionDonor[j];
@@ -15647,9 +15383,6 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
                                       su2double                *resFaces,
                                       unsigned long            &indResFaces) {
 
-  /* Initialization of the variable for the timer function. */
-  double tick = 0.0;
-
   /* Easier storage of the number of bytes to copy in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
@@ -15736,9 +15469,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
   /* Call the general function to carry out the matrix product. Use viscFluxes
      as temporary storage for the result. */
-  config->GEMM_Tick(&tick);
   DenseMatrixProduct(nDOFs, NPad, nInt, basisFaceTrans, fluxes, viscFluxes);
-  config->GEMM_Tock(tick, "ResidualViscousBoundaryFace1", nDOFs, NPad, nInt);
 
   /* Loop over the number of faces in this chunk to store the residual in
      the correct locations in resFaces. */
@@ -15788,9 +15519,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
        the residual. Use fluxes as temporary storage for the result. */
     const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
 
-    config->GEMM_Tick(&tick);
     DenseMatrixProduct(nDOFsElem, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, fluxes);
-    config->GEMM_Tock(tick, "ResidualViscousBoundaryFace2", nDOFsElem, NPad, nInt*nDim);
 
     /* Loop over the faces of this chunk to store the residual in
        the correct locations in resFaces. */
