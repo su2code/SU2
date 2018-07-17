@@ -13409,13 +13409,11 @@ protected:
                                                                        elements of a higher time level and the time integration
                                                                        points for ADER-DG. */
 
-  unsigned short nIntegrationMax; /*!< \brief Maximum number of integration points used. */
-  unsigned short nDOFsMax;        /*!< \brief Maximum number of DOFs present. */
+  unsigned int sizeWorkArray;     /*!< \brief The size of the work array needed. */
 
   vector<su2double> TolSolADER;   /*!< \brief Vector, which stores the tolerances for the conserved
                                               variables in the ADER predictor step. */
 
-  vector<su2double> VecTmpMemory;  /*!< \brief Vector for temporary memory. */
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
   vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
@@ -13714,13 +13712,15 @@ public:
   /*!
    * \brief Function, carries out the predictor step of the ADER-DG
             time integration.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   void ADER_DG_PredictorStep(CConfig             *config,
                              const unsigned long elemBeg,
-                             const unsigned long elemEnd);
+                             const unsigned long elemEnd,
+                             su2double           *workArray);
 
   /*!
    * \brief Function, which interpolates the predictor solution of ADER-DG
@@ -13752,38 +13752,44 @@ public:
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG. It is a virtual
             function, because this function is overruled for Navier-Stokes.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   virtual void Shock_Capturing_DG(CConfig             *config,
                                   const unsigned long elemBeg,
-                                  const unsigned long elemEnd);
+                                  const unsigned long elemEnd,
+                                  su2double           *workArray);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual. It is a virtual
             function, because this function is overruled for Navier-Stokes.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   virtual void Volume_Residual(CConfig             *config,
                                const unsigned long elemBeg,
-                               const unsigned long elemEnd);
+                               const unsigned long elemEnd,
+                               su2double           *workArray);
 
   /*!
    * \brief Function, which computes the spatial residual for the DG discretization.
-   * \param[in] timeLevel           - Time level of the time accurate local time stepping,
-                                      if relevant.
-   * \param[in] config              - Definition of the particular problem.
-   * \param[in] numerics            - Description of the numerical method.
-   * \param[in] haloInfoNeededForBC - If true,  treat boundaries for which halo data is needed.
-                                      If false, treat boundaries for which only owned data is needed.
+   * \param[in]  timeLevel           - Time level of the time accurate local time stepping,
+                                       if relevant.
+   * \param[in]  config              - Definition of the particular problem.
+   * \param[in]  numerics            - Description of the numerical method.
+   * \param[in]  haloInfoNeededForBC - If true,  treat boundaries for which halo data is needed.
+                                       If false, treat boundaries for which only owned data is needed.
+   * \param[out] workArray           - Work array.
    */
   void Boundary_Conditions(const unsigned short timeLevel,
                            CConfig              *config,
                            CNumerics            **numerics,
-                           const bool           haloInfoNeededForBC);
+                           const bool           haloInfoNeededForBC,
+                           su2double            *workArray);
 
   /*!
    * \brief Compute the spatial residual for the given range of faces. It is a virtual
@@ -13794,12 +13800,14 @@ public:
    * \param[in,out] indResFaces - Index where to store the residuals in
                                   the vector of face residuals.
    * \param[in]     numerics    - Description of the numerical method.
+   * \param[out]    workArray   - Work array.
    */
   virtual void ResidualFaces(CConfig             *config,
                              const unsigned long indFaceBeg,
                              const unsigned long indFaceEnd,
                              unsigned long       &indResFaces,
-                             CNumerics           *numerics);
+                             CNumerics           *numerics,
+                             su2double           *workArray);
 
   /*!
    * \brief Function, which accumulates the space time residual of the ADER-DG
@@ -13857,13 +13865,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Euler_Wall(CConfig                  *config,
                              const unsigned long      surfElemBeg,
                              const unsigned long      surfElemEnd,
                              const CSurfaceElementFEM *surfElem,
                              su2double                *resFaces,
-                             CNumerics                *conv_numerics);
+                             CNumerics                *conv_numerics,
+                             su2double                *workArray);
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
@@ -13876,13 +13886,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Far_Field(CConfig                  *config,
                             const unsigned long      surfElemBeg,
                             const unsigned long      surfElemEnd,
                             const CSurfaceElementFEM *surfElem,
                             su2double                *resFaces,
-                            CNumerics                *conv_numerics);
+                            CNumerics                *conv_numerics,
+                            su2double                *workArray);
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
@@ -13895,13 +13907,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Sym_Plane(CConfig                  *config,
                             const unsigned long      surfElemBeg,
                             const unsigned long      surfElemEnd,
                             const CSurfaceElementFEM *surfElem,
                             su2double                *resFaces,
-                            CNumerics                *conv_numerics);
+                            CNumerics                *conv_numerics,
+                            su2double                *workArray);
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
@@ -13915,6 +13929,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Inlet(CConfig                  *config,
                         const unsigned long      surfElemBeg,
@@ -13922,7 +13937,8 @@ public:
                         const CSurfaceElementFEM *surfElem,
                         su2double                *resFaces,
                         CNumerics                *conv_numerics,
-                        unsigned short           val_marker);
+                        unsigned short           val_marker,
+                        su2double                *workArray);
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
@@ -13936,6 +13952,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Outlet(CConfig                  *config,
                          const unsigned long      surfElemBeg,
@@ -13943,7 +13960,8 @@ public:
                          const CSurfaceElementFEM *surfElem,
                          su2double                *resFaces,
                          CNumerics                *conv_numerics,
-                         unsigned short           val_marker);
+                         unsigned short           val_marker,
+                         su2double                *workArray);
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
@@ -13957,6 +13975,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_HeatFlux_Wall(CConfig                  *config,
                                 const unsigned long      surfElemBeg,
@@ -13964,7 +13983,8 @@ public:
                                 const CSurfaceElementFEM *surfElem,
                                 su2double                *resFaces,
                                 CNumerics                *conv_numerics,
-                                unsigned short           val_marker);
+                                unsigned short           val_marker,
+                                su2double                *workArray);
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
@@ -13978,6 +13998,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Isothermal_Wall(CConfig                  *config,
                                   const unsigned long      surfElemBeg,
@@ -13985,7 +14006,8 @@ public:
                                   const CSurfaceElementFEM *surfElem,
                                   su2double                *resFaces,
                                   CNumerics                *conv_numerics,
-                                  unsigned short           val_marker);
+                                  unsigned short           val_marker,
+                                  su2double                *workArray);
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
@@ -13999,6 +14021,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Riemann(CConfig                  *config,
                           const unsigned long      surfElemBeg,
@@ -14006,7 +14029,8 @@ public:
                           const CSurfaceElementFEM *surfElem,
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
-                          unsigned short           val_marker);
+                          unsigned short           val_marker,
+                          su2double                *workArray);
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
@@ -14019,13 +14043,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   virtual void BC_Custom(CConfig                  *config,
                          const unsigned long      surfElemBeg,
                          const unsigned long      surfElemEnd,
                          const CSurfaceElementFEM *surfElem,
                          su2double                *resFaces,
-                         CNumerics                *conv_numerics);
+                         CNumerics                *conv_numerics,
+                         su2double                *workArray);
 
 #ifdef RINGLEB
   /*!
@@ -14736,15 +14762,17 @@ private:
   /*!
    * \brief Function, which multiplies the residual by the inverse
             of the (lumped) mass matrix.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] useADER - Whether or not the ADER residual must be multiplied.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  useADER   - Whether or not the ADER residual must be multiplied.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   void MultiplyResidualByInverseMassMatrix(CConfig             *config,
                                            const bool          useADER,
                                            const unsigned long elemBeg,
-                                           const unsigned long elemEnd);
+                                           const unsigned long elemEnd,
+                                           su2double           *workArray);
 
   /*!
    * \brief Function, which computes the residual contribution from a boundary
@@ -14919,31 +14947,37 @@ public:
 
   /*!
    * \brief Compute the artificial viscosity for shock capturing in DG.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   void Shock_Capturing_DG(CConfig             *config,
                           const unsigned long elemBeg,
-                          const unsigned long elemEnd);
+                          const unsigned long elemEnd,
+                          su2double           *workArray);
 
   /*!
    * \brief Per-Olof Persson's method for capturing shock in DG
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   void Shock_Capturing_DG_Persson(const unsigned long elemBeg,
-                                  const unsigned long elemEnd);
+                                  const unsigned long elemEnd,
+                                  su2double           *workArray);
 
   /*!
    * \brief Compute the volume contributions to the spatial residual.
-   * \param[in] config  - Definition of the particular problem.
-   * \param[in] elemBeg - Begin index of the element range to be computed.
-   * \param[in] elemEnd - End index (not included) of the element range to be computed.
+   * \param[in]  config    - Definition of the particular problem.
+   * \param[in]  elemBeg   - Begin index of the element range to be computed.
+   * \param[in]  elemEnd   - End index (not included) of the element range to be computed.
+   * \param[out] workArray - Work array.
    */
   void Volume_Residual(CConfig             *config,
                        const unsigned long elemBeg,
-                       const unsigned long elemEnd);
+                       const unsigned long elemEnd,
+                       su2double           *workArray);
 
   /*!
    * \brief Compute the spatial residual for the given range of faces.
@@ -14953,12 +14987,14 @@ public:
    * \param[in,out] indResFaces - Index where to store the residuals in
                                   the vector of face residuals.
    * \param[in]     numerics    - Description of the numerical method.
+   * \param[out]    workArray   - Work array.
    */
   void ResidualFaces(CConfig             *config,
                      const unsigned long indFaceBeg,
                      const unsigned long indFaceEnd,
                      unsigned long       &indResFaces,
-                     CNumerics           *numerics);
+                     CNumerics           *numerics,
+                     su2double           *workArray);
 
   /*!
    * \brief Impose via the residual the Euler wall boundary condition.
@@ -14970,13 +15006,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray - Work array.
    */
   void BC_Euler_Wall(CConfig                  *config,
                      const unsigned long      surfElemBeg,
                      const unsigned long      surfElemEnd,
                      const CSurfaceElementFEM *surfElem,
                      su2double                *resFaces,
-                     CNumerics                *conv_numerics);
+                     CNumerics                *conv_numerics,
+                     su2double                *workArray);
 
   /*!
    * \brief Impose the far-field boundary condition.
@@ -14988,13 +15026,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   void BC_Far_Field(CConfig                  *config,
                     const unsigned long      surfElemBeg,
                     const unsigned long      surfElemEnd,
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
-                    CNumerics                *conv_numerics);
+                    CNumerics                *conv_numerics,
+                    su2double                *workArray);
 
   /*!
    * \brief Impose the symmetry boundary condition using the residual.
@@ -15006,13 +15046,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   void BC_Sym_Plane(CConfig                  *config,
                     const unsigned long      surfElemBeg,
                     const unsigned long      surfElemEnd,
                     const CSurfaceElementFEM *surfElem,
                     su2double                *resFaces,
-                    CNumerics                *conv_numerics);
+                    CNumerics                *conv_numerics,
+                    su2double                *workArray);
 
   /*!
    * \brief Impose the subsonic inlet boundary condition.
@@ -15025,6 +15067,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   void BC_Inlet(CConfig                  *config,
                 const unsigned long      surfElemBeg,
@@ -15032,7 +15075,8 @@ public:
                 const CSurfaceElementFEM *surfElem,
                 su2double                *resFaces,
                 CNumerics                *conv_numerics,
-                unsigned short           val_marker);
+                unsigned short           val_marker,
+                su2double                *workArray);
 
   /*!
    * \brief Impose the outlet boundary condition.
@@ -15045,6 +15089,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   void BC_Outlet(CConfig                  *config,
                  const unsigned long      surfElemBeg,
@@ -15052,7 +15097,8 @@ public:
                  const CSurfaceElementFEM *surfElem,
                  su2double                *resFaces,
                  CNumerics                *conv_numerics,
-                 unsigned short           val_marker);
+                 unsigned short           val_marker,
+                 su2double                *workArray);
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -15065,6 +15111,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   void BC_HeatFlux_Wall(CConfig                  *config,
                         const unsigned long      surfElemBeg,
@@ -15072,7 +15119,8 @@ public:
                         const CSurfaceElementFEM *surfElem,
                         su2double                *resFaces,
                         CNumerics                *conv_numerics,
-                        unsigned short           val_marker);
+                        unsigned short           val_marker,
+                        su2double                *workArray);
 
   /*!
    * \brief Impose an isothermal condition at the wall.
@@ -15085,6 +15133,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   void BC_Isothermal_Wall(CConfig                  *config,
                           const unsigned long      surfElemBeg,
@@ -15092,7 +15141,8 @@ public:
                           const CSurfaceElementFEM *surfElem,
                           su2double                *resFaces,
                           CNumerics                *conv_numerics,
-                          unsigned short           val_marker);
+                          unsigned short           val_marker,
+                          su2double                *workArray);
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction.
@@ -15105,6 +15155,7 @@ public:
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
    * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
+   * \param[out] workArray     - Work array.
    */
   void BC_Riemann(CConfig                  *config,
                   const unsigned long      surfElemBeg,
@@ -15112,7 +15163,8 @@ public:
                   const CSurfaceElementFEM *surfElem,
                   su2double                *resFaces,
                   CNumerics                *conv_numerics,
-                  unsigned short           val_marker);
+                  unsigned short           val_marker,
+                  su2double                *workArray);
 
   /*!
    * \brief Impose the user customized boundary condition.
@@ -15124,13 +15176,15 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
    */
   void BC_Custom(CConfig                  *config,
                  const unsigned long      surfElemBeg,
                  const unsigned long      surfElemEnd,
                  const CSurfaceElementFEM *surfElem,
                  su2double                *resFaces,
-                 CNumerics                *conv_numerics);
+                 CNumerics                *conv_numerics,
+                 su2double                *workArray);
 
   /*!
    * \brief Compute the viscosity at the infinity.
