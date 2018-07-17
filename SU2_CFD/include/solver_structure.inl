@@ -732,6 +732,9 @@ inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver
 inline void CSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_periodic_index) { }
 
+inline void CSolver::BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
+                                     CConfig *config, unsigned short val_periodic_index) { }
+
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                       CConfig *config, unsigned short val_marker) { }
 
