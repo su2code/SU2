@@ -1874,7 +1874,8 @@ inline void CFEM_DG_EulerSolver::BC_HeatFlux_Wall(CConfig                  *conf
                                                   const CSurfaceElementFEM *surfElem,
                                                   su2double                *resFaces,
                                                   CNumerics                *conv_numerics,
-                                                  unsigned short           val_marker) {}
+                                                  unsigned short           val_marker,
+                                                  su2double                *workArray) {}
 
 inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *config,
                                                     const unsigned long      surfElemBeg,
@@ -1882,7 +1883,8 @@ inline void CFEM_DG_EulerSolver::BC_Isothermal_Wall(CConfig                  *co
                                                     const CSurfaceElementFEM *surfElem,
                                                     su2double                *resFaces,
                                                     CNumerics                *conv_numerics,
-                                                    unsigned short           val_marker) {}
+                                                    unsigned short           val_marker,
+                                                    su2double                *workArray) {}
 
 inline su2double CFEM_DG_NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

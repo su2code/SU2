@@ -178,7 +178,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Determine the maximum number of integration points used. Usually this
         is for the volume integral, but to avoid problems the faces are also
         taken into account.  ---*/
-  nIntegrationMax = 0;
+  unsigned short nIntegrationMax = 0;
   for(unsigned short i=0; i<nStandardBoundaryFacesSol; ++i) {
     const unsigned short nInt = standardBoundaryFacesSol[i].GetNIntegration();
     nIntegrationMax = max(nIntegrationMax, nInt);
@@ -197,7 +197,7 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
   /*--- Determine the maximum number of DOFs used. This is for the volume elements.
         Note that also the element adjacent to side 1 of the matching faces must
         be taken into account, because this could be an external element. */
-  nDOFsMax = 0;
+  unsigned short nDOFsMax = 0;
   for(unsigned short i=0; i<nStandardElementsSol; ++i) {
     const unsigned short nDOFs = standardElementsSol[i].GetNDOFs();
     nDOFsMax = max(nDOFsMax, nDOFs);
@@ -208,9 +208,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     nDOFsMax = max(nDOFsMax, nDOFs);
   }
 
-  /*--- Determine the size of the vector VecTmpMemory. ---*/
+  /*--- Determine the size of the work array. ---*/
   const unsigned short nPadGemm = config->GetSizeMatMulPadding();
-  unsigned int sizeVecTmp;
   if( config->GetViscous() ) {
 
     /* Viscous simulation. */
@@ -219,8 +218,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
 
     const unsigned int sizeGradSolInt = nIntegrationMax*nDim*max(nPadGemm,nDOFsMax);
 
-    sizeVecTmp = nIntegrationMax*(4 + 3*nPadGemm) + sizeFluxes + sizeGradSolInt
-               + max(nIntegrationMax,nDOFsMax)*nPadGemm + nPadGemm*nDOFsMax;
+    sizeWorkArray = nIntegrationMax*(4 + 3*nPadGemm) + sizeFluxes + sizeGradSolInt
+                  + max(nIntegrationMax,nDOFsMax)*nPadGemm + nPadGemm*nDOFsMax;
   }
   else {
 
@@ -228,13 +227,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     unsigned int sizeVol = nPadGemm*nIntegrationMax*(nDim+2) + nPadGemm*nDOFsMax;
     unsigned int sizeSur = nPadGemm*(2*nIntegrationMax + max(nIntegrationMax,nDOFsMax));
 
-    sizeVecTmp = max(sizeVol, sizeSur);
+    sizeWorkArray = max(sizeVol, sizeSur);
   }
 
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG) {
 
     /*--- ADER-DG scheme. Determine the size needed for the predictor step
-          and make sure that sizeVecTmp is big enough. This size depends
+          and make sure that sizeWorkArray is big enough. This size depends
           whether an aliased or a non-aliased predictor step is used. Note
           that the size estimates are for viscous computations. ---*/
     const unsigned short nTimeDOFs = config->GetnTimeDOFsADER_DG();
@@ -248,12 +247,8 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       sizePredictorADER += (nDim+1)*nPadGemm*max(nIntegrationMax, nDOFsMax)
                          + nDim*nDim*nPadGemm*max(nIntegrationMax,nDOFsMax);
 
-    sizeVecTmp = max(sizeVecTmp, sizePredictorADER);
+    sizeWorkArray = max(sizeWorkArray, sizePredictorADER);
   }
-
-  /* Allocate the memory for VecTmpMemory and initialize it to zero to avoid
-     warnings in debug mode  about uninitialized memory when padding is applied. */
-  VecTmpMemory.assign(sizeVecTmp, 0.0);
 
   /*--- Perform the non-dimensionalization for the flow equations using the
         specified reference values. ---*/
@@ -4011,6 +4006,11 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
      not the tasks from the list have been completed. */
   vector<bool> taskCompleted(tasksList.size(), false);
 
+  /* Allocate the memory for the work array and initialize it to zero to avoid
+     warnings in debug mode  about uninitialized memory when padding is applied. */
+  vector<su2double> workArrayVec(sizeWorkArray, 0.0);
+  su2double *workArray = workArrayVec.data();
+
   /* While loop to carry out all the tasks in tasksList. */
   unsigned long lowestIndexInList = 0;
   while(lowestIndexInList < tasksList.size()) {
@@ -4048,7 +4048,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level+1];
 
               config->Tick(&tick);
-              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd, workArray);
               config->Tock(tick,"ADER_DG_PredictorStep",2);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4063,7 +4063,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned long  elemEnd = nVolElemOwnedPerTimeLevel[level]
                                            + nVolElemInternalPerTimeLevel[level];
               config->Tick(&tick);
-              ADER_DG_PredictorStep(config, elemBeg, elemEnd);
+              ADER_DG_PredictorStep(config, elemBeg, elemEnd, workArray);
               config->Tock(tick,"ADER_DG_PredictorStep",2);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4168,7 +4168,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned short level = tasksList[i].timeLevel;
               config->Tick(&tick);
               Shock_Capturing_DG(config, nVolElemOwnedPerTimeLevel[level],
-                                 nVolElemOwnedPerTimeLevel[level+1]);
+                                 nVolElemOwnedPerTimeLevel[level+1], workArray);
               config->Tock(tick,"Shock_Capturing",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4180,7 +4180,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned short level = tasksList[i].timeLevel;
               config->Tick(&tick);
               Shock_Capturing_DG(config, nVolElemHaloPerTimeLevel[level],
-                                 nVolElemHaloPerTimeLevel[level+1]);
+                                 nVolElemHaloPerTimeLevel[level+1], workArray);
               config->Tock(tick,"Shock_Capturing",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4192,7 +4192,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const unsigned short level = tasksList[i].timeLevel;
               config->Tick(&tick);
               Volume_Residual(config, nVolElemOwnedPerTimeLevel[level],
-                              nVolElemOwnedPerTimeLevel[level+1]);
+                              nVolElemOwnedPerTimeLevel[level+1], workArray);
               config->Tock(tick,"Volume_Residual",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4206,7 +4206,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               unsigned long indResFaces = startLocResInternalFacesLocalElem[level];
               ResidualFaces(config, nMatchingInternalFacesLocalElem[level],
                             nMatchingInternalFacesLocalElem[level+1],
-                            indResFaces, numerics[CONV_TERM]);
+                            indResFaces, numerics[CONV_TERM], workArray);
               config->Tock(tick,"ResidualFaces",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4220,7 +4220,7 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               unsigned long indResFaces = startLocResInternalFacesWithHaloElem[level];
               ResidualFaces(config, nMatchingInternalFacesWithHaloElem[level],
                             nMatchingInternalFacesWithHaloElem[level+1],
-                            indResFaces, numerics[CONV_TERM]);
+                            indResFaces, numerics[CONV_TERM], workArray);
               config->Tock(tick,"ResidualFaces",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4231,7 +4231,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               /*--- Apply the boundary conditions that only depend on data
                     of owned elements. ---*/
               config->Tick(&tick);
-              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, false);
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, false,
+                                  workArray);
               config->Tock(tick,"Boundary_Conditions",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4242,7 +4243,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               /*--- Apply the boundary conditions that also depend on data
                     of halo elements. ---*/
               config->Tick(&tick);
-              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, true);
+              Boundary_Conditions(tasksList[i].timeLevel, config, numerics, true,
+                                  workArray);
               config->Tock(tick,"Boundary_Conditions",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4300,7 +4302,8 @@ void CFEM_DG_EulerSolver::ProcessTaskList_DG(CGeometry *geometry,  CSolver **sol
               const bool useADER = config->GetKind_TimeIntScheme() == ADER_DG;
               MultiplyResidualByInverseMassMatrix(config, useADER,
                                                   nVolElemOwnedPerTimeLevel[level],
-                                                  nVolElemOwnedPerTimeLevel[level+1]);
+                                                  nVolElemOwnedPerTimeLevel[level+1],
+                                                  workArray);
               config->Tock(tick,"MultiplyResidualByInverseMassMatrix",3);
               taskCarriedOut = taskCompleted[i] = true;
               break;
@@ -4417,7 +4420,8 @@ void CFEM_DG_EulerSolver::TolerancesADERPredictorStep(void) {
 
 void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
                                                 const unsigned long elemBeg,
-                                                const unsigned long elemEnd) {
+                                                const unsigned long elemEnd,
+                                                su2double           *workArray) {
 
   /* Initialize the argument to the timing routines. */
   double tick = 0.0;
@@ -4482,7 +4486,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
     const unsigned short nVarNDOFs = nVar*nDOFs;
 
     /* Set the pointers for the working variables. */
-    su2double *resInt  = VecTmpMemory.data();
+    su2double *resInt  = workArray;
     su2double *solPred = resInt  + NPad*nDOFs;
     su2double *dSol    = solPred + nVarNDOFs*nTimeDOFs;
     su2double *resTot  = dSol    + nVarNDOFs*nTimeDOFs;
@@ -5734,7 +5738,8 @@ void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig           
 
 void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
                                              const unsigned long elemBeg,
-                                             const unsigned long elemEnd) {
+                                             const unsigned long elemEnd,
+                                             su2double           *workArray) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
@@ -5745,7 +5750,8 @@ void CFEM_DG_EulerSolver::Shock_Capturing_DG(CConfig             *config,
 
 void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
                                           const unsigned long elemBeg,
-                                          const unsigned long elemEnd) {
+                                          const unsigned long elemEnd,
+                                          su2double           *workArray) {
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
@@ -5792,7 +5798,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
     const su2double *weights             = standardElementsSol[ind].GetWeightsIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solDOFs = VecTmpMemory.data();
+    su2double *solDOFs = workArray;
     su2double *sources = solDOFs + nDOFs*NPad;
     su2double *solInt  = sources + nInt *NPad;
     su2double *fluxes  = solInt  + nInt *NPad;
@@ -6131,7 +6137,8 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
                                               CConfig              *config,
                                               CNumerics            **numerics,
-                                              const bool           haloInfoNeededForBC){
+                                              const bool           haloInfoNeededForBC,
+                                              su2double            *workArray){
 
   /* Loop over all boundaries. */
   for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -6158,39 +6165,39 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
         switch (config->GetMarker_All_KindBC(iMarker)) {
           case EULER_WALL:
             BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                          numerics[CONV_BOUND_TERM]);
+                          numerics[CONV_BOUND_TERM], workArray);
             break;
           case FAR_FIELD:
             BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                         numerics[CONV_BOUND_TERM]);
+                         numerics[CONV_BOUND_TERM], workArray);
             break;
           case SYMMETRY_PLANE:
             BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                         numerics[CONV_BOUND_TERM]);
+                         numerics[CONV_BOUND_TERM], workArray);
             break;
           case INLET_FLOW:
             BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                     numerics[CONV_BOUND_TERM], iMarker);
+                     numerics[CONV_BOUND_TERM], iMarker, workArray);
             break;
           case OUTLET_FLOW:
             BC_Outlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                      numerics[CONV_BOUND_TERM], iMarker);
+                      numerics[CONV_BOUND_TERM], iMarker, workArray);
             break;
           case ISOTHERMAL:
             BC_Isothermal_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                               numerics[CONV_BOUND_TERM], iMarker);
+                               numerics[CONV_BOUND_TERM], iMarker, workArray);
             break;
           case HEAT_FLUX:
             BC_HeatFlux_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                             numerics[CONV_BOUND_TERM], iMarker);
+                             numerics[CONV_BOUND_TERM], iMarker, workArray);
             break;
           case RIEMANN_BOUNDARY:
             BC_Riemann(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                       numerics[CONV_BOUND_TERM], iMarker);
+                       numerics[CONV_BOUND_TERM], iMarker, workArray);
             break;
           case CUSTOM_BOUNDARY:
             BC_Custom(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                      numerics[CONV_BOUND_TERM]);
+                      numerics[CONV_BOUND_TERM], workArray);
             break;
           case PERIODIC_BOUNDARY:  // Nothing to be done for a periodic boundary.
             break;
@@ -6206,7 +6213,8 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
                                         const unsigned long indFaceBeg,
                                         const unsigned long indFaceEnd,
                                         unsigned long       &indResFaces,
-                                        CNumerics           *numerics) {
+                                        CNumerics           *numerics,
+                                        su2double           *workArray) {
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -6244,7 +6252,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     const unsigned short nDOFsFace1 = standardMatchingFacesSol[ind].GetNDOFsFaceSide1();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL = VecTmpMemory.data();
+    su2double *solIntL = workArray;
     su2double *solIntR = solIntL + NPad*max(nInt, nDOFsFace0);
     su2double *fluxes  = solIntR + NPad*max(nInt, nDOFsFace1);
 
@@ -6662,10 +6670,10 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
                                               CConfig            *config,
                                               const bool          useADER,
                                               const unsigned long elemBeg,
-                                              const unsigned long elemEnd) {
+                                              const unsigned long elemEnd,
+                                              su2double           *workArray) {
 
-  /*--- Set the pointers for the local arrays. ---*/
-  su2double *tmpRes = VecTmpMemory.data();
+  /*--- Initialize the variable for the timer. ---*/
   double tick = 0.0;
 
   /*--- Set the reference to the correct residual. This depends
@@ -6696,11 +6704,11 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
     else {
 
       /* Multiply the residual with the inverse of the mass matrix.
-         Use the array tmpRes as temporary storage. */
-      memcpy(tmpRes, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
+         Use the array workArray as temporary storage. */
+      memcpy(workArray, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
       config->GEMM_Tick(&tick);
       DenseMatrixProduct(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-                         volElem[l].invMassMatrix.data(), tmpRes, res);
+                         volElem[l].invMassMatrix.data(), workArray, res);
       config->GEMM_Tock(tick, "MultiplyResidualByInverseMassMatrix",
                         volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol);
     }
@@ -6708,6 +6716,11 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
 }
 
 void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
+
+  /* Allocate the memory for the work array and initialize it to zero to avoid
+     warnings in debug mode  about uninitialized memory when padding is applied. */
+  vector<su2double> workArrayVec(sizeWorkArray, 0.0);
+  su2double *workArray = workArrayVec.data();
 
   /* The number of bytes to copied in the memcpy calls and an initialization
      of the argument in the calls to the timing routines. */
@@ -6833,7 +6846,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
           const su2double *weights   = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
           /* Set the pointers for the local work arrays. */
-          su2double *solInt    = VecTmpMemory.data();
+          su2double *solInt    = workArray;
           su2double *workArray = solInt + NPad*nInt;
 
           /* Loop over the faces that are treated simultaneously. */
@@ -8052,7 +8065,8 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         const unsigned long      surfElemEnd,
                                         const CSurfaceElementFEM *surfElem,
                                         su2double                *resFaces,
-                                        CNumerics                *conv_numerics) {
+                                        CNumerics                *conv_numerics,
+                                        su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8084,15 +8098,15 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the inviscid wall BC's. */
     BoundaryStates_Euler_Wall(config, llEnd, NPad, &surfElem[l],
@@ -8102,7 +8116,7 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8115,7 +8129,8 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
                                        const unsigned long      surfElemEnd,
                                        const CSurfaceElementFEM *surfElem,
                                        su2double                *resFaces,
-                                       CNumerics                *conv_numerics) {
+                                       CNumerics                *conv_numerics,
+                                       su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8147,15 +8162,15 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Set the right state in the integration points to the free stream value. */
     for(unsigned short ll=0; ll<llEnd; ++ll) {
@@ -8171,7 +8186,7 @@ void CFEM_DG_EulerSolver::BC_Far_Field(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8184,7 +8199,8 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
                                        const unsigned long      surfElemEnd,
                                        const CSurfaceElementFEM *surfElem,
                                        su2double                *resFaces,
-                                       CNumerics                *conv_numerics) {
+                                       CNumerics                *conv_numerics,
+                                       su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8216,15 +8232,15 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Make a distinction between two and three space dimensions
        in order to have the most efficient code. */
@@ -8300,7 +8316,7 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8314,7 +8330,8 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
                                    const CSurfaceElementFEM *surfElem,
                                    su2double                *resFaces,
                                    CNumerics                *conv_numerics,
-                                   unsigned short           val_marker) {
+                                   unsigned short           val_marker,
+                                   su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8346,15 +8363,15 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the subsonic inlet BC's. */
     BoundaryStates_Inlet(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -8363,7 +8380,7 @@ void CFEM_DG_EulerSolver::BC_Inlet(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8377,7 +8394,8 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
                                     const CSurfaceElementFEM *surfElem,
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
-                                    unsigned short           val_marker) {
+                                    unsigned short           val_marker,
+                                    su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8409,15 +8427,15 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the subsonic inlet BC's. */
     BoundaryStates_Outlet(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -8426,7 +8444,7 @@ void CFEM_DG_EulerSolver::BC_Outlet(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8440,7 +8458,8 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
                                      const CSurfaceElementFEM *surfElem,
                                      su2double                *resFaces,
                                      CNumerics                *conv_numerics,
-                                     unsigned short           val_marker) {
+                                     unsigned short           val_marker,
+                                     su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8472,15 +8491,15 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the subsonic inlet BC's. */
     BoundaryStates_Riemann(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -8489,7 +8508,7 @@ void CFEM_DG_EulerSolver::BC_Riemann(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -8502,7 +8521,8 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
                                     const unsigned long      surfElemEnd,
                                     const CSurfaceElementFEM *surfElem,
                                     su2double                *resFaces,
-                                    CNumerics                *conv_numerics) {
+                                    CNumerics                *conv_numerics,
+                                    su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -8534,15 +8554,15 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
-       faces. The array workArray is used as temporary storage inside the
+       faces. The array work is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /*--- Loop over the number of simultaneously treated faces and integration points
           to compute the right state via the customized boundary conditions. ---*/
@@ -8584,7 +8604,7 @@ void CFEM_DG_EulerSolver::BC_Custom(CConfig                  *config,
        is the same for all boundary conditions. Hence a generic function can
        be used to carry out this task. */
     ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
-                                 solIntL, solIntR, workArray, resFaces, indResFaces);
+                                 solIntL, solIntR, work, resFaces, indResFaces);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
@@ -9640,6 +9660,11 @@ CFEM_DG_NSSolver::~CFEM_DG_NSSolver(void) {
 
 void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
+  /* Allocate the memory for the work array and initialize it to zero to avoid
+     warnings in debug mode  about uninitialized memory when padding is applied. */
+  vector<su2double> workArrayVec(sizeWorkArray, 0.0);
+  su2double *workArray = workArrayVec.data();
+
   /*--------------------------------------------------------------------------*/
   /*--- The skin friction is computed using the laminar viscosity and      ---*/
   /*--- velocity gradients. This is correct when integration to the wall   ---*/
@@ -9768,7 +9793,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
           const su2double *weights       = standardBoundaryFacesSol[ind].GetWeightsIntegration();
 
           /* Set the pointers for the local work arrays. */
-          su2double *solInt     = VecTmpMemory.data();
+          su2double *solInt     = workArray;
           su2double *gradSolInt = solInt     + NPad*nInt;
           su2double *solCopy    = gradSolInt + NPad*nInt*nDim;
 
@@ -10236,6 +10261,11 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
   /* Check whether or not a time stepping scheme is used. */
   const bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
 
+  /* Allocate the memory for the work array and initialize it to zero to avoid
+     warnings in debug mode  about uninitialized memory when padding is applied. */
+  vector<su2double> workArrayVec(sizeWorkArray, 0.0);
+  su2double *workArray = workArrayVec.data();
+
   /* Constant factor present in the heat flux vector, namely the ratio of
      thermal conductivity and viscosity. */
   const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
@@ -10316,7 +10346,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
         if(nPoly == 0) nPoly = 1;
 
         /*--- Set the pointers for the local arrays. ---*/
-        su2double *solDOFs     = VecTmpMemory.data();
+        su2double *solDOFs     = workArray;
         su2double *gradSolDOFs = solDOFs + nDOFs*NPad;
 
         /* Determine the offset between the r-derivatives and s-derivatives, which is
@@ -12180,20 +12210,22 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
                                           const unsigned long elemBeg,
-                                          const unsigned long elemEnd) {
+                                          const unsigned long elemEnd,
+                                          su2double           *workArray) {
 
   /*--- Run shock capturing algorithm ---*/
   switch( config->GetKind_FEM_DG_Shock() ) {
     case NONE:
       break;
     case PERSSON:
-      Shock_Capturing_DG_Persson(elemBeg, elemEnd);
+      Shock_Capturing_DG_Persson(elemBeg, elemEnd, workArray);
       break;
   }
 
 }
 void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
-                                                  const unsigned long elemEnd) {
+                                                  const unsigned long elemEnd,
+                                                  su2double           *workArray) {
 
   /*--- Dummy variable for storing shock sensor value temporarily ---*/
   su2double sensorVal, sensorLowerBound, machNorm, machMax;
@@ -12255,7 +12287,7 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
                              + nVar*volElem[l].offsetDOFsSolThisTimeLevel;
 
     /* Temporary storage of mach number for DOFs in this element. */
-    su2double *machSolDOFs = VecTmpMemory.data();
+    su2double *machSolDOFs = workArray;
     su2double *vecTemp     = machSolDOFs + nDOFs;
 
     /* Calculate primitive variables and mach number for DOFs in this element.
@@ -12354,7 +12386,8 @@ void CFEM_DG_NSSolver::Shock_Capturing_DG_Persson(const unsigned long elemBeg,
 
 void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
                                        const unsigned long elemBeg,
-                                       const unsigned long elemEnd) {
+                                       const unsigned long elemEnd,
+                                       su2double           *workArray) {
 
   /*--- Determine whether a body force term is present. ---*/
   bool body_force = config->GetBody_Force();
@@ -12408,7 +12441,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     if(nPoly == 0) nPoly = 1;
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solDOFs       = VecTmpMemory.data();
+    su2double *solDOFs       = workArray;
     su2double *sources       = solDOFs       + nDOFs*NPad;
     su2double *solAndGradInt = sources       + nInt *NPad;
     su2double *fluxes        = solAndGradInt + nInt *NPad*(nDim+1);
@@ -12955,7 +12988,8 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
                                      const unsigned long indFaceBeg,
                                      const unsigned long indFaceEnd,
                                      unsigned long       &indResFaces,
-                                     CNumerics           *numerics) {
+                                     CNumerics           *numerics,
+                                     su2double           *workArray) {
 
   /* Determine the number of faces that are treated simultaneously
      in the matrix products to obtain good gemm performance. */
@@ -13002,7 +13036,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     const unsigned int sizeGradSolInt = nInt*nDim*NPad;
 
-    su2double *solIntL       = VecTmpMemory.data();
+    su2double *solIntL       = workArray;
     su2double *solIntR       = solIntL       + NPad*max(nInt, nDOFsElem0);
     su2double *viscosityIntL = solIntR       + NPad*max(nInt, nDOFsElem1);
     su2double *kOverCvIntL   = viscosityIntL + llEnd*nInt;
@@ -14234,7 +14268,8 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
                                      const unsigned long      surfElemEnd,
                                      const CSurfaceElementFEM *surfElem,
                                      su2double                *resFaces,
-                                     CNumerics                *conv_numerics){
+                                     CNumerics                *conv_numerics,
+                                     su2double                *workArray){
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -14267,15 +14302,15 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the inviscid wall BC's. */
     BoundaryStates_Euler_Wall(config, llEnd, NPad, &surfElem[l],
@@ -14285,7 +14320,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray, resFaces,
+                                    solIntL, solIntR, work, resFaces,
                                     indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
@@ -14299,7 +14334,8 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
                                     const unsigned long      surfElemEnd,
                                     const CSurfaceElementFEM *surfElem,
                                     su2double                *resFaces,
-                                    CNumerics                *conv_numerics){
+                                    CNumerics                *conv_numerics,
+                                    su2double                *workArray){
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -14332,15 +14368,15 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Set the right state in the integration points to the free stream value. */
     for(unsigned short ll=0; ll<llEnd; ++ll) {
@@ -14356,7 +14392,7 @@ void CFEM_DG_NSSolver::BC_Far_Field(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray, resFaces,
+                                    solIntL, solIntR, work, resFaces,
                                     indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
@@ -14370,7 +14406,8 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     const unsigned long      surfElemEnd,
                                     const CSurfaceElementFEM *surfElem,
                                     su2double                *resFaces,
-                                    CNumerics                *conv_numerics){
+                                    CNumerics                *conv_numerics,
+                                    su2double                *workArray){
 
   /* Initialization for the timing routines. */
   double tick = 0.0;
@@ -14420,7 +14457,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
     const su2double     *derBasisElem = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL      = VecTmpMemory.data();
+    su2double *solIntL      = workArray;
     su2double *solIntR      = solIntL + NPad*nInt;
     su2double *viscosityInt = solIntR + NPad*nInt;
     su2double *kOverCvInt   = viscosityInt + llEnd*nInt;
@@ -14791,7 +14828,8 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
                                 const CSurfaceElementFEM *surfElem,
                                 su2double                *resFaces,
                                 CNumerics                *conv_numerics,
-                                unsigned short           val_marker) {
+                                unsigned short           val_marker,
+                                su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -14824,15 +14862,15 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the subsonic inlet BC's. */
     BoundaryStates_Inlet(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -14841,7 +14879,7 @@ void CFEM_DG_NSSolver::BC_Inlet(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray, resFaces,
+                                    solIntL, solIntR, work, resFaces,
                                     indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
@@ -14856,7 +14894,8 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
                                  const CSurfaceElementFEM *surfElem,
                                  su2double                *resFaces,
                                  CNumerics                *conv_numerics,
-                                 unsigned short           val_marker) {
+                                 unsigned short           val_marker,
+                                 su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -14889,15 +14928,15 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the subsonic outlet BC's. */
     BoundaryStates_Outlet(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -14906,7 +14945,7 @@ void CFEM_DG_NSSolver::BC_Outlet(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray, resFaces,
+                                    solIntL, solIntR, work, resFaces,
                                     indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
@@ -14921,7 +14960,8 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
                                         const CSurfaceElementFEM *surfElem,
                                         su2double                *resFaces,
                                         CNumerics                *conv_numerics,
-                                        unsigned short           val_marker) {
+                                        unsigned short           val_marker,
+                                        su2double                *workArray) {
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -14965,15 +15005,15 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /*--- Loop over the number of faces in this chunk and the number of
           integration points and apply the heat flux wall boundary conditions
@@ -15020,7 +15060,7 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     Wall_HeatFlux, true, 0.0, false,
                                     &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces,
+                                    work, resFaces, indResFaces,
                                     boundaries[val_marker].wallModel);
 
     /* Update the value of the counter l to the end index of the
@@ -15035,7 +15075,8 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
                                           const CSurfaceElementFEM *surfElem,
                                           su2double                *resFaces,
                                           CNumerics                *conv_numerics,
-                                          unsigned short           val_marker) {
+                                          unsigned short           val_marker,
+                                          su2double                *workArray) {
 
   /* Set the factor for the wall velocity. For factWallVel = 0, the right state
      contains the wall velocity. For factWallVel = 1.0, the velocity of the
@@ -15084,15 +15125,15 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /*--- Loop over the number of faces in this chunk and the number of
           integration points and apply the isothermal wall boundary conditions
@@ -15135,7 +15176,7 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, TWall, true,
                                     &surfElem[l], solIntL, solIntR,
-                                    workArray, resFaces, indResFaces,
+                                    work, resFaces, indResFaces,
                                     boundaries[val_marker].wallModel);
 
     /* Update the value of the counter l to the end index of the
@@ -15150,7 +15191,8 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
                                   const CSurfaceElementFEM *surfElem,
                                   su2double                *resFaces,
                                   CNumerics                *conv_numerics,
-                                  unsigned short           val_marker) {
+                                  unsigned short           val_marker,
+                                  su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
   unsigned long indResFaces = 0;
@@ -15183,15 +15225,15 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /* Compute the right state by applying the Riemann BC's. */
     BoundaryStates_Riemann(config, llEnd, NPad, &surfElem[l], val_marker, solIntL, solIntR);
@@ -15200,7 +15242,7 @@ void CFEM_DG_NSSolver::BC_Riemann(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray,
+                                    solIntL, solIntR, work,
                                     resFaces, indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
@@ -15214,7 +15256,8 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
                                  const unsigned long      surfElemEnd,
                                  const CSurfaceElementFEM *surfElem,
                                  su2double                *resFaces,
-                                 CNumerics                *conv_numerics) {
+                                 CNumerics                *conv_numerics,
+                                 su2double                *workArray) {
 
 #ifdef CUSTOM_BC_NSUNITQUAD
   /* Get the flow angle, which is stored in the angle of attack and the
@@ -15257,15 +15300,15 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
     const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
 
     /*--- Set the pointers for the local arrays. ---*/
-    su2double *solIntL   = VecTmpMemory.data();
-    su2double *solIntR   = solIntL      + NPad*nInt;
-    su2double *workArray = solIntR + NPad*nInt;
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
 
     /* Compute the left states in the integration points of the chunk of
        faces. The array workarray is used as temporary storage inside the
        function LeftStatesIntegrationPointsBoundaryFace. */
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
-                                            workArray, solIntL);
+                                            work, solIntL);
 
     /*--- Loop over the number of faces and integration points to compute the
           right state via the customized boundary conditions. ---*/
@@ -15317,7 +15360,7 @@ void CFEM_DG_NSSolver::BC_Custom(CConfig                  *config,
        boundary conditions (except the symmetry plane). */
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
-                                    solIntL, solIntR, workArray,
+                                    solIntL, solIntR, work,
                                     resFaces, indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
