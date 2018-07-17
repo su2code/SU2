@@ -895,6 +895,17 @@ public:
                            CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
   
   /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
+                           CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
   * \brief Impose the interface state across sliding meshes.
   * \param[in] geometry - Geometrical definition of the problem.
   * \param[in] solver_container - Container vector with all the solutions.
@@ -5086,6 +5097,17 @@ public:
    */
   void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                    CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
+                   CConfig *config, unsigned short val_periodic_index);
   
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.
