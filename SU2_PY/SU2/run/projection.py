@@ -89,7 +89,7 @@ def projection( config, state={}, step = 1e-3 ):
         step = [step]*n_DV
     dv_old = [0.0]*n_DV # SU2_DOT input requirement, assumes linear superposition of design variables
     dv_new = step
-    konfig.unpack_dvs(dv_new,dv_old)
+    konfig.unpack_dvs(dv_new,0,dv_old)
 
     # filenames
     objective      = konfig['OBJECTIVE_FUNCTION']

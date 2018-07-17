@@ -136,7 +136,7 @@ class Config(ordered_bunch):
         except KeyError:
             raise KeyError('Config parameter not found: %s' % k)
 
-    def unpack_dvs(self,dv_new,dv_old=None,i_dv=None):
+    def unpack_dvs(self,dv_new,i_dv,dv_old=None):
         """ updates config with design variable vectors
             will scale according to each DEFINITION_DV scale parameter
             
