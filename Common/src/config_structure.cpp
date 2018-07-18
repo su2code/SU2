@@ -324,12 +324,15 @@ void CConfig::SetPointersNull(void) {
   
   /*--- Marker Pointers ---*/
 
-  Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_PerBound       = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   = NULL;    Marker_InterfaceBound = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet            = NULL;    
-  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           = NULL;
-  Marker_Isothermal           = NULL;    Marker_HeatFlux         = NULL;    Marker_EngineInflow   = NULL;
+  Marker_Euler                = NULL;    Marker_FarField         			 = NULL;    Marker_Custom         = NULL;
+  Marker_SymWall              = NULL;    Marker_PerBound         			 = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound   			 = NULL;    Marker_InterfaceBound = NULL;
+  Marker_Dirichlet            = NULL;    Marker_Inlet            			 = NULL;    
+  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           			 = NULL;
+  Marker_Isothermal           = NULL;    Marker_HeatFlux               = NULL;    
+	Marker_IsothermalCatalytic  = NULL;    Marker_IsothermalNonCatalytic = NULL;
+  Marker_HeatFluxNonCatalytic = NULL;    Marker_HeatFluxCatalytic      = NULL;
+	Marker_EngineInflow         = NULL;
   Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;    Marker_Disp_Dir       = NULL;
   Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
   Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
@@ -434,6 +437,8 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow          = NULL;    
   Kappa_AdjFlow       = NULL;
   Kappa_Heat          = NULL;
+	Kappa_TNE2          = NULL;
+	Kappa_AdjTNE2       = NULL;
   Stations_Bounds     = NULL;
   ParamDV             = NULL;     
   DV_Value            = NULL;    
@@ -557,8 +562,19 @@ void CConfig::SetPointersNull(void) {
 
   Wrt_InletFile = false;
   
+	/*--- Reacting Chemisty, collisions, plasmas ---*/
+	Reactions               = NULL; Omega00               = NULL; Omega11        = NULL;
+	Gas_Composition         = NULL; Enthalpy_Formation    = NULL; Blottner       = NULL;
+  Species_Ref_Temperature = NULL; Species_Ref_Viscosity = NULL; nElStates      = NULL;
+  CharElTemp              = NULL; degen                 = NULL;
+  Molar_Mass              = NULL; Particle_Mass         = NULL;
+  ArrheniusCoefficient    = NULL; ArrheniusEta          = NULL; ArrheniusTheta  = NULL;
+  CharVibTemp             = NULL; RotationModes         = NULL; Ref_Temperature = NULL;
+  Tcf_a=NULL;    Tcf_b=NULL;    Tcb_a=NULL;    Tcb_b=NULL;
+  Diss=NULL;
+		
 }
-
+ 
 void CConfig::SetRunTime_Options(void) {
   
   /* DESCRIPTION: Number of external iterations */
@@ -731,6 +747,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
+  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
+  AddDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -997,6 +1015,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_HEATFLUX  \n DESCRIPTION: Specified heat flux wall boundary marker(s)
    Format: ( Heat flux marker, wall heat flux (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_HEATFLUX", nMarker_HeatFlux, Marker_HeatFlux, Heat_Flux);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+	addStringDoubleListOption("MARKER_ISOTHERMAL_NONCATALYTIC", nMarker_IsothermalNonCatalytic, Marker_IsothermalNonCatalytic, Isothermal_Temperature);
+  /* DESCRIPTION: Isothermal wall boundary marker(s)
+   Format: ( isothermal marker, wall temperature (static), ... ) */
+	addStringDoubleListOption("MARKER_ISOTHERMAL_CATALYTIC", nMarker_IsothermalCatalytic, Marker_IsothermalCatalytic, Isothermal_Temperature);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+	addStringDoubleListOption("MARKER_HEATFLUX_NONCATALYTIC", nMarker_HeatFluxNonCatalytic, Marker_HeatFluxNonCatalytic, Heat_Flux);
+  /* DESCRIPTION: Specified heat flux wall boundary marker(s)
+   Format: ( Heat flux marker, wall heat flux (static), ... ) */
+	addStringDoubleListOption("MARKER_HEATFLUX_CATALYTIC", nMarker_HeatFluxCatalytic, Marker_HeatFluxCatalytic, Heat_Flux);
   /*!\brief MARKER_ENGINE_INFLOW  \n DESCRIPTION: Engine inflow boundary marker(s)
    Format: ( nacelle inflow marker, fan face Mach, ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_ENGINE_INFLOW", nMarker_EngineInflow, Marker_EngineInflow, EngineInflow_Target);
@@ -1127,6 +1157,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("TIME_DISCRE_TURB", Kind_TimeIntScheme_Turb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
+	/* DESCRIPTION: Time discretization */
+  addEnumOption("TIME_DISCRE_TNE2", Kind_TimeIntScheme_TNE2, Time_Int_Map, EULER_IMPLICIT);
+  /* DESCRIPTION: Time discretization */
+  addEnumOption("TIME_DISCRE_ADJTNE2", Kind_TimeIntScheme_AdjTNE2, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
