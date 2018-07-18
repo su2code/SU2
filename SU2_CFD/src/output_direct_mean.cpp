@@ -38,11 +38,36 @@
 
 #include "../include/output_structure.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
 
   nDim = geometry->GetnDim();  
   
   turb_model = config->GetKind_Turb_Model();
+  
+  grid_movement = config->GetGrid_Movement(); 
+  
+  su2double Gas_Constant, Mach2Vel, Mach_Motion;
+  unsigned short iDim;
+  su2double Gamma = config->GetGamma();
+      
+  /*--- Set the non-dimensionalization for coefficients. ---*/
+  
+  RefArea = config->GetRefArea();
+  
+  if (grid_movement) {
+    Gas_Constant = config->GetGas_ConstantND();
+    Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+    Mach_Motion = config->GetMach_Motion();
+    RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+  }
+  else {
+    RefVel2 = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      RefVel2  += solver[FLOW_SOL]->GetVelocity_Inf(iDim)*solver[FLOW_SOL]->GetVelocity_Inf(iDim);
+  }
+  RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
+  RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
+  factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
 }
 
@@ -156,31 +181,141 @@ inline void CFlowOutput::SetHistoryOutputFields(CConfig *config){
 
 void CFlowOutput::SetVolumeOutputFields(CConfig *config){
   
+  // Grid coordinates
   AddVolumeOutputField("COORD-X", "x", "COORDINATES");
   AddVolumeOutputField("COORD-Y", "y", "COORDINATES");
-  AddVolumeOutputField("COORD-Z", "z", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutputField("COORD-Z", "z", "COORDINATES");
   
+  // Conservative variables
   AddVolumeOutputField("DENSITY",    "Density",    "CONSERVATIVE");
   AddVolumeOutputField("MOMENTUM-X", "Momentum-x", "CONSERVATIVE");
   AddVolumeOutputField("MOMENTUM-Y", "Momentum-y", "CONSERVATIVE");
-  AddVolumeOutputField("MOMENTUM-Z", "Momentum-z", "CONSERVATIVE");
-  AddVolumeOutputField("ENERGY",     "Energy",     "CONSERVATIVE");
+  if (nDim == 3)
+    AddVolumeOutputField("MOMENTUM-Z", "Momentum-z", "CONSERVATIVE");
+  AddVolumeOutputField("ENERGY",     "Energy",     "CONSERVATIVE");  
   
+  // Primitive variables
+  AddVolumeOutputField("PRESSURE",    "Pressure",                "PRIMITIVE");
+  AddVolumeOutputField("TEMPERATURE", "Temperature",             "PRIMITIVE");
+  AddVolumeOutputField("MACH",        "Mach",                    "PRIMITIVE");
+  AddVolumeOutputField("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
+  
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    AddVolumeOutputField("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE");
+    
+    AddVolumeOutputField("SKIN_FRICTION-X", "Skin_Friction_Coefficient-x", "PRIMITIVE");
+    AddVolumeOutputField("SKIN_FRICTION-Y", "Skin_Friction_Coefficient-y", "PRIMITIVE");
+    if (nDim == 3)
+      AddVolumeOutputField("SKIN_FRICTION-Z", "Skin_Friction_Coefficient-z", "PRIMITIVE");
+    
+    AddVolumeOutputField("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
+    AddVolumeOutputField("Y_PLUS", "Y_Plus", "PRIMITIVE");
+    
+  }
+  
+  if (config->GetKind_Solver() == RANS) {
+    AddVolumeOutputField("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
+  }
+  
+  if (config->GetKind_Trans_Model() == BC){
+    AddVolumeOutputField("INTERMITTENCY", "gamma_BC", "INTERMITTENCY");
+  }
+
+  //Residuals
+  AddVolumeOutputField("RESIDUAL_DENSITY", "Residual_Density", "RESIDUAL");
+  AddVolumeOutputField("RESIDUAL_MOMENTUM-X", "Residual_Momentum-x", "RESIDUAL");
+  AddVolumeOutputField("RESIDUAL_MOMENTUM-Y", "Residual_Momentum-y", "RESIDUAL");
+  if (nDim == 3)
+    AddVolumeOutputField("RESIDUAL_MOMENTUM-Z", "Residual_Momentum-z", "RESIDUAL");
+  AddVolumeOutputField("RESIDUAL_ENERGY", "Residual_Energy", "RESIDUAL");
+  
+  // Limiter values
+  AddVolumeOutputField("LIMITER_DENSITY", "Limiter_Density", "LIMITER");
+  AddVolumeOutputField("LIMITER_MOMENTUM-X", "Limiter_Momentum-x", "LIMITER");
+  AddVolumeOutputField("LIMITER_MOMENTUM-Y", "Limiter_Momentum-y", "LIMITER");
+  if (nDim == 3)
+    AddVolumeOutputField("LIMITER_MOMENTUM-Z", "Limiter_Momentum-z", "LIMITER");
+  AddVolumeOutputField("LIMITER_ENERGY", "Limiter_Energy", "LIMITER");
   
 }
 
 void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+  
+  CVariable* Node_Flow = solver[FLOW_SOL]->node[iPoint]; 
+  CVariable* Node_Turb;
+  
+  if (config->GetKind_Turb_Model() != NONE){
+    Node_Turb = solver[TURB_SOL]->node[iPoint]; 
+  }
+  
+  CPoint*    Node_Geo  = geometry->node[iPoint];
           
+  SetVolumeOutputFieldValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputFieldValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputFieldValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
-  SetVolumeOutputFieldValue("COORD-X", iPoint, geometry->node[iPoint]->GetCoord(0));  
-  SetVolumeOutputFieldValue("COORD-Y", iPoint, geometry->node[iPoint]->GetCoord(1));
-  SetVolumeOutputFieldValue("COORD-Z", iPoint, geometry->node[iPoint]->GetCoord(2));
+  SetVolumeOutputFieldValue("DENSITY",    iPoint, Node_Flow->GetSolution(0));
+  SetVolumeOutputFieldValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(1));
+  SetVolumeOutputFieldValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(2));
+  if (nDim == 3){
+    SetVolumeOutputFieldValue("MOMENTUM-Z", iPoint, Node_Flow->GetSolution(3));
+    SetVolumeOutputFieldValue("ENERGY",     iPoint, Node_Flow->GetSolution(4));
+  } else {
+    SetVolumeOutputFieldValue("ENERGY",     iPoint, Node_Flow->GetSolution(3));    
+  }
   
-  SetVolumeOutputFieldValue("DENSITY",    iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(0));
-  SetVolumeOutputFieldValue("MOMENTUM-X", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(1));
-  SetVolumeOutputFieldValue("MOMENTUM-Y", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(2));
-  SetVolumeOutputFieldValue("MOMENTUM-Z", iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(3));
-  SetVolumeOutputFieldValue("ENERGY",     iPoint, solver[FLOW_SOL]->node[iPoint]->GetSolution(4));
+  SetVolumeOutputFieldValue("PRESSURE", iPoint, Node_Flow->GetPressure());
+  SetVolumeOutputFieldValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature());
+  SetVolumeOutputFieldValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2())/Node_Flow->GetSoundSpeed());
+  SetVolumeOutputFieldValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - RefPressure)*factor*RefArea);
+  
+  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    SetVolumeOutputFieldValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity());
+  }
+  
+  if (config->GetKind_Solver() == RANS) {
+    SetVolumeOutputFieldValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity());
+  }
+  
+  if (config->GetKind_Trans_Model() == BC){
+    SetVolumeOutputFieldValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC());
+  }
+  
+  SetVolumeOutputFieldValue("RESIDUAL_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  SetVolumeOutputFieldValue("RESIDUAL_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 1));
+  SetVolumeOutputFieldValue("RESIDUAL_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 2));
+  if (nDim == 3){
+    SetVolumeOutputFieldValue("RESIDUAL_MOMENTUM-Z", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
+    SetVolumeOutputFieldValue("RESIDUAL_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 4));
+  } else {
+    SetVolumeOutputFieldValue("RESIDUAL_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));   
+  }
+  
+  SetVolumeOutputFieldValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(0));
+  SetVolumeOutputFieldValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(1));
+  SetVolumeOutputFieldValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(2));
+  if (nDim == 3){
+    SetVolumeOutputFieldValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(3));
+    SetVolumeOutputFieldValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(4));
+  } else {
+    SetVolumeOutputFieldValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(3));   
+  }
+  
+}
+
+void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+  
+  if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver()  == RANS)) {  
+    SetVolumeOutputFieldValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
+    SetVolumeOutputFieldValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
+    if (nDim == 3)
+      SetVolumeOutputFieldValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
+  
+    SetVolumeOutputFieldValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
+    SetVolumeOutputFieldValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
+  }
 }
 
 void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,

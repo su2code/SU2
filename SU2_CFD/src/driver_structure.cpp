@@ -3181,7 +3181,7 @@ void CDriver::Output_Preprocessing(){
       if (rank == MASTER_NODE)
         cout << ": Euler/Navier-Stokes/RANS output structure." << endl;
       if (config_container[iZone]->GetKind_Regime() == COMPRESSIBLE)
-        output[iZone] = new CFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+        output[iZone] = new CFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
       else if (config_container[iZone]->GetKind_Regime() == INCOMPRESSIBLE)
         output[iZone] = new CIncFlowOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;

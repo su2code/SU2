@@ -1029,6 +1029,9 @@ public:
   
   void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
     
+  void CollectSurfaceData(CConfig* config, CGeometry* geometry, CSolver** solver);
+  
+  virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
 };
 
@@ -1043,6 +1046,10 @@ private:
   unsigned short nVar, nDim;
 
   unsigned short turb_model;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
 
 public:
 
@@ -1050,7 +1057,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CFlowOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1064,11 +1071,13 @@ public:
   void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   
   void SetVolumeOutputFields(CConfig *config);
   
   void SetHistoryOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
   
   /*!
    * \brief Determines if the history file output.
