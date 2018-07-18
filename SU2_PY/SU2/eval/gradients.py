@@ -662,7 +662,7 @@ def findiff( config, state=None ):
     deform_set = konfig['DV_KIND'] == Definition_DV['KIND']
     if not deform_set: 
         dvs_base = [0.0] * n_dv
-        konfig.unpack_dvs(dvs_base,0,dvs_base)    
+        konfig.unpack_dvs(dvs_base,dvs_base)    
     else:
         dvs_base = konfig['DV_VALUE_NEW']
 
@@ -720,7 +720,7 @@ def findiff( config, state=None ):
 
                 this_state = su2io.State()
                 this_state.FILES = copy.deepcopy( state.FILES )
-                this_konfig.unpack_dvs(this_dvs,i_dv,dvs_base)
+                this_konfig.unpack_dvs(this_dvs,dvs_base)
 
                 this_konfig.dump(temp_config_name)
 
@@ -994,7 +994,7 @@ def directdiff( config, state=None ):
                 this_dvs_old[i_dv] = 1.0
                 this_state = su2io.State()
                 this_state.FILES = copy.deepcopy( state.FILES )
-                this_konfig.unpack_dvs(this_dvs, 0, this_dvs_old)
+                this_konfig.unpack_dvs(this_dvs, this_dvs_old)
 
                 this_konfig.dump(temp_config_name)
 

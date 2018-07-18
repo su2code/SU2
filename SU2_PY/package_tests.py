@@ -180,7 +180,7 @@ def level2():
         config['EXT_ITER'] = 9
         dv_new = [0.0]*38
         #dv_new[10] = 0.05
-        config.unpack_dvs(dv_new,0)
+        config.unpack_dvs(dv_new)
         
         state = SU2.io.State()
         

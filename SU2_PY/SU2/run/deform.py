@@ -84,7 +84,7 @@ def deform ( config, dv_new=None, dv_old=None ):
     konfig = copy.deepcopy(config)
     
     # unpack design variables
-    if dv_new: konfig.unpack_dvs(dv_new,0,dv_old)
+    if dv_new: konfig.unpack_dvs(dv_new,dv_old)
     
     # redundancy check
     if konfig['DV_VALUE_NEW'] == konfig['DV_VALUE_OLD']:
