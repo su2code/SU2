@@ -794,19 +794,19 @@ inline short CConfig::GetFFD_Fix_JDir(unsigned short val_index) { return FFD_Fix
 
 inline short CConfig::GetFFD_Fix_KDir(unsigned short val_index) { return FFD_Fix_KDir[val_index]; }
 
-inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
+inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {
 	if (nMG_PreSmooth == 0) return 1;
-	else return MG_PreSmooth[val_mesh]; 
+	else return MG_PreSmooth[val_mesh];
 }
 
-inline unsigned short CConfig::GetMG_PostSmooth(unsigned short val_mesh) { 
+inline unsigned short CConfig::GetMG_PostSmooth(unsigned short val_mesh) {
 	if (nMG_PostSmooth == 0) return 0;
 	else return MG_PostSmooth[val_mesh];
 }
 
-inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) { 
+inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) {
 	if (nMG_CorrecSmooth == 0) return 0;
-	else return MG_CorrecSmooth[val_mesh]; 
+	else return MG_CorrecSmooth[val_mesh];
 }
 
 inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
@@ -833,13 +833,13 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
-inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
+inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; }
 
-inline unsigned short CConfig::GetKind_DensityModel(void) { return Kind_DensityModel; } 
+inline unsigned short CConfig::GetKind_DensityModel(void) { return Kind_DensityModel; }
 
-inline bool CConfig::GetEnergy_Equation(void) { return Energy_Equation; } 
+inline bool CConfig::GetEnergy_Equation(void) { return Energy_Equation; }
 
-inline bool CConfig::GetIonization(void) {retur ionization}
+inline bool CConfig::GetIonization(void) {return ionization; }
 
 inline unsigned short CConfig::GetKind_InitOption(void) { return Kind_InitOption; }
 
@@ -1037,9 +1037,9 @@ inline su2double* CConfig::GetRefTemperature() { return Ref_Temperature; }
 
 inline su2double* CConfig::GetWall_Catalycity() { return Wall_Catalycity; }
 
-inline su2double* CConfig::GetMolar_Mass() { return Molar_Mass; } 
+inline su2double* CConfig::GetMolar_Mass() { return Molar_Mass; }
 
-inline su2double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; } 
+inline su2double CConfig::GetMolar_Mass(unsigned short iSpecies) { return Molar_Mass[iSpecies]; }
 
 inline su2double CConfig::GetInitial_Gas_Composition(unsigned short iSpecies) { return Gas_Composition[iSpecies]; }
 
