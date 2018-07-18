@@ -13840,34 +13840,24 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
    names. Names can be set alternatively by using the commented code
    below. ---*/
   
-  Variable_Names.push_back("Displacement_1");
-  Variable_Names.push_back("Displacement_2");
+  Variable_Names.push_back("Displacement_x");
+  Variable_Names.push_back("Displacement_y");
   if (geometry->GetnDim() == 3)
-    Variable_Names.push_back("Displacement_3");
+    Variable_Names.push_back("Displacement_z");
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
   if (!config->GetLow_MemoryOutput()) {
     
-    /*--- Add the limiters ---*/
-    
-    if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Displacement_1");
-      Variable_Names.push_back("Limiter_Displacement_2");
-      if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Limiter_Displacement_3");
-    }
-    
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Displacement_1");
-      Variable_Names.push_back("Residual_Displacement_2");
+      Variable_Names.push_back("Residual_Displacement_x");
+      Variable_Names.push_back("Residual_Displacement_y");
       if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Residual_Displacement_3");
+        Variable_Names.push_back("Residual_Displacement_z");
     }
     
     /*--- If the analysis is dynamic... ---*/
@@ -13875,20 +13865,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       
       /*--- Velocities ---*/
       nVar_Par += 2;
-      Variable_Names.push_back("Velocity_1");
-      Variable_Names.push_back("Velocity_2");
+      Variable_Names.push_back("Velocity_x");
+      Variable_Names.push_back("Velocity_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1;
-        Variable_Names.push_back("Velocity_3");
+        Variable_Names.push_back("Velocity_z");
       }
       
       /*--- Accelerations ---*/
       nVar_Par += 2;
-      Variable_Names.push_back("Acceleration_1");
-      Variable_Names.push_back("Acceleration_2");
+      Variable_Names.push_back("Acceleration_x");
+      Variable_Names.push_back("Acceleration_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1;
-        Variable_Names.push_back("Acceleration_3");
+        Variable_Names.push_back("Acceleration_z");
       }
     }
     
@@ -13993,12 +13983,6 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       }
       
       if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
-            iVar++;
-          }
-        }
         if (config->GetWrt_Residuals()) {
           for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
