@@ -10149,7 +10149,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       CollectVolumeData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
     
-    
+      CollectSurfaceData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
+      
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
@@ -17137,12 +17138,14 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   
   SetVolumeOutputFields(config);
   
+  GlobalField_Counter = 0;
+  
   string currentField;
   
   for (unsigned short iField = 0; iField < config->GetnVolumeOutput(); iField++){
     currentField = config->GetVolumeOutput_Field(iField);      
     for(std::map<string,VolumeOutputField>::iterator iter = VolumeOutput_Fields.begin(); iter != VolumeOutput_Fields.end(); ++iter){
-      if (currentField == iter->second.VolumeOutputGroup){
+      if (((currentField == iter->second.VolumeOutputGroup) || (currentField == iter->first)) && (iter->second.Offset == -1)){
         iter->second.Offset = GlobalField_Counter;
         Variable_Names.push_back(iter->second.FieldName);
         GlobalField_Counter++;
@@ -17153,13 +17156,16 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   unsigned long iPoint, iVertex;
   bool Wrt_Halo, isPeriodic;
   
-  unsigned short iMarker;
+  unsigned short iMarker, iField;
   
   Wrt_Halo = config->GetWrt_Halo();
   
   Local_Data = new su2double*[geometry->GetnPoint()];
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     Local_Data[iPoint] = new su2double[GlobalField_Counter];
+    for (iField = 0; iField < GlobalField_Counter; iField++){
+      Local_Data[iPoint][iField] = 0.0;
+    }
   }
   
   Local_Halo = new int[geometry->GetnPoint()];
@@ -17200,10 +17206,33 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     if (!Local_Halo[iPoint] || Wrt_Halo) {
       
-      LoadVolumeData(config, geometry, solver, jPoint);
+      LoadVolumeData(config, geometry, solver, iPoint);
       
-      jPoint++;
-      
+    }
+  }
+}
+
+void COutput::CollectSurfaceData(CConfig* config, CGeometry *geometry, CSolver** solver){
+  
+  bool Wrt_Halo = config->GetWrt_Halo();
+  
+  unsigned short iMarker = 0;
+  unsigned long iVertex, iPoint;
+  
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_Plotting(iMarker) == YES) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Check for halos & write only if requested ---*/
+        
+        if (!Local_Halo[iPoint] || Wrt_Halo) {
+
+          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
+          
+        }
+      }
     }
   }
 }

@@ -135,3 +135,5 @@ inline void COutput::SetVolumeOutputFieldValue(string name, unsigned long iPoint
 inline void COutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {}
 
 inline void COutput::SetVolumeOutputFields(CConfig *config) {}
+
+inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {}
