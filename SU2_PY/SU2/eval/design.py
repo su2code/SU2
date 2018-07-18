@@ -223,7 +223,7 @@ def obj_f(dvs,config,state=None):
     """
     
     # unpack config and state 
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     
     def_objs = config['OPT_OBJECTIVE']
@@ -312,7 +312,7 @@ def obj_df(dvs,config,state=None):
     """    
     
     # unpack config and state
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
@@ -408,7 +408,7 @@ def con_ceq(dvs,config,state=None):
     """
     
     # unpack state and config
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     
     def_cons = config['OPT_CONSTRAINT']['EQUALITY']
@@ -450,7 +450,7 @@ def con_dceq(dvs,config,state=None):
     """
     
     # unpack state and config
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
@@ -500,7 +500,7 @@ def con_cieq(dvs,config,state=None):
     """    
     
     # unpack state and config    
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     
     def_cons = config['OPT_CONSTRAINT']['INEQUALITY']
@@ -545,7 +545,7 @@ def con_dcieq(dvs,config,state=None):
     """    
     
     # unpack state and config
-    config.unpack_dvs(dvs,0)
+    config.unpack_dvs(dvs)
     state = su2io.State(state)
     grad_method = config.get('GRADIENT_METHOD','CONTINUOUS_ADJOINT')
     
