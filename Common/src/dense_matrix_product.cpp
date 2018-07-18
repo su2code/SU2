@@ -30,6 +30,60 @@
  */
 
 #include "../include/dense_matrix_product.hpp"
+#include <cstring>
+
+using namespace std;
+
+#if !defined(HAVE_LIBXSMM) && !defined(HAVE_CBLAS) && !defined(HAVE_MKL)
+
+/*--- Create an unnamed namespace to keep the functions for the
+      native implementation of the matrix product local. ---*/
+namespace {
+
+/* Macros for accessing submatrices of a matmul using the leading dimension. */
+#define A(i, j) a[(j)*lda + (i)]
+#define B(i, j) b[(j)*ldb + (i)]
+#define C(i, j) c[(j)*ldc + (i)]
+
+/* Naive gemm implementation to handle arbitrary sized matrices. */
+void gemm_arbitrary(int m, int n, int k, const su2double *a, int lda,
+                    const su2double *b, int ldb, su2double *c, int ldc) {
+
+  /* The order of these loops is tuned for column-major matrices. */
+  for (int p = 0; p < k; p++) {
+    for (int j = 0; j < n; j++) {
+      for (int i = 0; i < m; i++) {
+        C(i, j) += A(i, p) * B(p, j);
+      }
+    }
+  }
+}
+
+/* Local implementation of the matrix multiplication. */
+void su2_gemm(const int m,        const int n,        const int k,
+              const su2double *a, const su2double *b, su2double *c) {
+
+  /* Initialize the elements of c to zero. */
+  memset(c, 0, m*n*sizeof(su2double));
+
+  /* Set the leading dimensions of the three matrices. */
+  const int lda = m;
+  const int ldb = k;
+  const int ldc = m;
+
+  /* Call gemm_arbitrary to do the actual job. */
+  gemm_arbitrary(m, n, k, a, lda, b, ldb, c, ldc);
+}
+
+#undef C
+#undef B
+#undef A
+
+} /* namespace */
+
+#endif
+
+/*--- The actual function to carry out the dense matrix product. ---*/
 
 void DenseMatrixProduct(const int M,        const int N,        const int K,
                         const su2double *A, const su2double *B, su2double *C) {
@@ -48,17 +102,11 @@ void DenseMatrixProduct(const int M,        const int N,        const int K,
               1.0, A, K, B, N, 0.0, C, N);
 #else
 
-  /* Standard internal implementation of the matrix matrix multiplication. */
-  for(int i=0; i<M; ++i) {
-    const int jj = i*K;
-    const int kk = i*N;
-    for(int j=0; j<N; ++j) {
-      const int ii = kk + j;
-      C[ii] = 0.0;
-      for(int k=0; k<K; ++k)
-        C[ii] += A[jj+k]*B[k*N+j];
-    }
-  }
-
+  /* Native implementation of the matrix product. This optimized implementation
+     assumes that the matrices are in column major order. This can be
+     accomplished by swapping N and M and A and B. This implementation is based
+     on https://github.com/flame/how-to-optimize-gemm. */
+  su2_gemm(N, M, K, B, A, C);
+  
 #endif
 }
