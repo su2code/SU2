@@ -223,41 +223,41 @@ class Project(object):
         # done, return output
         return vals
     
-    def unpack_dvs(self,dvs,i_dv):
+    def unpack_dvs(self,dvs):
         dvs = copy.deepcopy(dvs)
         konfig = copy.deepcopy( self.config )
         if isinstance(dvs, np.ndarray): dvs = dvs.tolist()
-        konfig.unpack_dvs(dvs,i_dv)
+        konfig.unpack_dvs(dvs)
         return konfig, dvs
     
     def obj_f(self,dvs):
         func = su2eval.obj_f
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
         
     def obj_df(self,dvs):
         func = su2eval.obj_df
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_ceq(self,dvs):
         func = su2eval.con_ceq
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_dceq(self,dvs):
         func = su2eval.con_dceq
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_cieq(self,dvs):
         func = su2eval.con_cieq
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def con_dcieq(self,dvs):
         func = su2eval.con_dcieq
-        konfig,dvs = self.unpack_dvs(dvs,0)
+        konfig,dvs = self.unpack_dvs(dvs)
         return self._eval(konfig, func,dvs)
     
     def func(self,func_name,config):
