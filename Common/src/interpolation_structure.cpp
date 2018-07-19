@@ -85,7 +85,7 @@ CInterpolator::~CInterpolator(void) {
 }
 
 
-CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) {
+CInterpolator::CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone) {
   
   size = SU2_MPI::GetSize();
   rank = SU2_MPI::GetRank();
@@ -96,8 +96,8 @@ CInterpolator::CInterpolator(CGeometry ***geometry_container, CConfig **config, 
   donorZone  = iZone;
   targetZone = jZone;
 
-  donor_geometry  = geometry_container[donorZone][MESH_0];
-  target_geometry = geometry_container[targetZone][MESH_0];
+  donor_geometry  = geometry_container[donorZone][INST_0][MESH_0];
+  target_geometry = geometry_container[targetZone][INST_0][MESH_0];
 
   /*--- Initialize transfer coefficients between the zones ---*/
     /* Since this is a virtual function, call it in the child class constructor  */
@@ -290,7 +290,7 @@ int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_mark
 
 void CInterpolator::ReconstructBoundary(unsigned long val_zone, int val_marker){
     
-  CGeometry *geom = Geometry[val_zone][MESH_0];
+  CGeometry *geom = Geometry[val_zone][INST_0][MESH_0];
     
   unsigned long iVertex, jVertex, kVertex;
     
@@ -593,7 +593,7 @@ su2double CInterpolator::PointsDistance(su2double *point_i, su2double *point_j){
 /* Nearest Neighbor Interpolator */
 CNearestNeighbor::CNearestNeighbor(void):  CInterpolator() { }
 
-CNearestNeighbor::CNearestNeighbor(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
+CNearestNeighbor::CNearestNeighbor(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
@@ -722,7 +722,7 @@ void CNearestNeighbor::Set_TransferCoeff(CConfig **config) {
 
 
 
-CIsoparametric::CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone) {
+CIsoparametric::CIsoparametric(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
@@ -1268,7 +1268,7 @@ void CIsoparametric::Isoparameters(unsigned short nDim, unsigned short nDonor,
 
 
 /* Mirror Interpolator */
-CMirror::CMirror(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
+CMirror::CMirror(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
@@ -1496,7 +1496,7 @@ void CMirror::Set_TransferCoeff(CConfig **config) {
   }
 }
 
-CSlidingMesh::CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
+CSlidingMesh::CSlidingMesh(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone)  :  CInterpolator(geometry_container, config, iZone, jZone){
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
@@ -2733,7 +2733,7 @@ bool CSlidingMesh::CheckPointInsideTriangle(su2double* Point, su2double* T1, su2
 /*--- Radial Basis Function Interpolator ---*/
 CRadialBasisFunction::CRadialBasisFunction(void):  CInterpolator() { }
 
-CRadialBasisFunction::CRadialBasisFunction(CGeometry ***geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
+CRadialBasisFunction::CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config,  unsigned int iZone, unsigned int jZone) :  CInterpolator(geometry_container, config, iZone, jZone) {
 
   /*--- Initialize transfer coefficients between the zones ---*/
   Set_TransferCoeff(config);
