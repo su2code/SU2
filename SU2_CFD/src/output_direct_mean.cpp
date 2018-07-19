@@ -195,6 +195,20 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutputField("MOMENTUM-Z", "Momentum-z", "CONSERVATIVE");
   AddVolumeOutputField("ENERGY",     "Energy",     "CONSERVATIVE");  
   
+  // Turbulent Residuals
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    AddVolumeOutputField("TKE", "TKE", "CONSERVATIVE");
+    AddVolumeOutputField("OMEGA", "Omega", "CONSERVATIVE");
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    AddVolumeOutputField("NU_TILDE", "Nu_Tilde", "CONSERVATIVE");
+    break;
+  case NONE:
+    break;
+  }
+  
   // Primitive variables
   AddVolumeOutputField("PRESSURE",    "Pressure",                "PRIMITIVE");
   AddVolumeOutputField("TEMPERATURE", "Temperature",             "PRIMITIVE");
@@ -230,6 +244,19 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutputField("RESIDUAL_MOMENTUM-Z", "Residual_Momentum-z", "RESIDUAL");
   AddVolumeOutputField("RESIDUAL_ENERGY", "Residual_Energy", "RESIDUAL");
   
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    AddVolumeOutputField("RESIDUAL_TKE", "Residual_TKE", "RESIDUAL");
+    AddVolumeOutputField("RESIDUAL_OMEGA", "Residual_Omega", "RESIDUAL");
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    AddVolumeOutputField("RESIDUAL_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
+    break;
+  case NONE:
+    break;
+  }
+  
   // Limiter values
   AddVolumeOutputField("LIMITER_DENSITY", "Limiter_Density", "LIMITER");
   AddVolumeOutputField("LIMITER_MOMENTUM-X", "Limiter_Momentum-x", "LIMITER");
@@ -238,6 +265,29 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutputField("LIMITER_MOMENTUM-Z", "Limiter_Momentum-z", "LIMITER");
   AddVolumeOutputField("LIMITER_ENERGY", "Limiter_Energy", "LIMITER");
   
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    AddVolumeOutputField("LIMITER_TKE", "Limiter_TKE", "RESIDUAL");
+    AddVolumeOutputField("LIMITER_OMEGA", "Limiter_Omega", "RESIDUAL");
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    AddVolumeOutputField("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "RESIDUAL");
+    break;
+  case NONE:
+    break;
+  }
+  
+  // Hybrid RANS-LES
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    AddVolumeOutputField("DES_LENGTHSCALE", "DES_LengthScale", "DDES");
+    AddVolumeOutputField("WALL_DISTANCE", "Wall_Distance", "DDES");
+  }
+  
+  // Roe Low Dissipation
+  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+    AddVolumeOutputField("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
+  }
 }
 
 void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -264,6 +314,20 @@ void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputFieldValue("ENERGY",     iPoint, Node_Flow->GetSolution(4));
   } else {
     SetVolumeOutputFieldValue("ENERGY",     iPoint, Node_Flow->GetSolution(3));    
+  }
+  
+  // Turbulent Residuals
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    SetVolumeOutputFieldValue("TKE", iPoint, Node_Turb->GetSolution(0));
+    SetVolumeOutputFieldValue("OMEGA", iPoint, Node_Turb->GetSolution(1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputFieldValue("NU_TILDE", iPoint, Node_Turb->GetSolution(0));
+    break;
+  case NONE:
+    break;
   }
   
   SetVolumeOutputFieldValue("PRESSURE", iPoint, Node_Flow->GetPressure());
@@ -293,6 +357,19 @@ void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputFieldValue("RESIDUAL_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));   
   }
   
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    SetVolumeOutputFieldValue("RESIDUAL_TKE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputFieldValue("RESIDUAL_OMEGA", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputFieldValue("RESIDUAL_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    break;
+  case NONE:
+    break;
+  }
+  
   SetVolumeOutputFieldValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(0));
   SetVolumeOutputFieldValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(1));
   SetVolumeOutputFieldValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(2));
@@ -301,6 +378,28 @@ void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputFieldValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(4));
   } else {
     SetVolumeOutputFieldValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(3));   
+  }
+  
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    SetVolumeOutputFieldValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter_Primitive(0));
+    SetVolumeOutputFieldValue("LIMITER_OMEGA", iPoint, Node_Turb->GetLimiter_Primitive(1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputFieldValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter_Primitive(0));
+    break;
+  case NONE:
+    break;
+  }
+  
+  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
+    SetVolumeOutputFieldValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale());
+    SetVolumeOutputFieldValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance());
+  }
+  
+  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+    SetVolumeOutputFieldValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
   }
   
 }

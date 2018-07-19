@@ -10148,9 +10148,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         cout << "Loading solution output data locally on each rank." << endl;
 
       CollectVolumeData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
-    
-      CollectSurfaceData(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
-      
+         
     /*--- Store the solution to be used on the final iteration with cte. lift mode. ---*/
 
     if ((!cont_adj) && (!disc_adj) && (config[iZone]->GetFixed_CL_Mode()) &&
@@ -17197,8 +17195,9 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
 void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver){
   
   bool Wrt_Halo = config->GetWrt_Halo();
-  
+  unsigned short iMarker = 0;
   unsigned long iPoint = 0, jPoint = 0;
+  long iVertex = 0;
   
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     
@@ -17206,33 +17205,17 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     
     if (!Local_Halo[iPoint] || Wrt_Halo) {
       
-      LoadVolumeData(config, geometry, solver, iPoint);
+      LoadVolumeData(config, geometry, solver, jPoint);
       
-    }
-  }
-}
-
-void COutput::CollectSurfaceData(CConfig* config, CGeometry *geometry, CSolver** solver){
-  
-  bool Wrt_Halo = config->GetWrt_Halo();
-  
-  unsigned short iMarker = 0;
-  unsigned long iVertex, iPoint;
-  
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Plotting(iMarker) == YES) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Check for halos & write only if requested ---*/
-        
-        if (!Local_Halo[iPoint] || Wrt_Halo) {
-
-          LoadSurfaceData(config, geometry, solver, iPoint, iMarker, iVertex);
-          
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if (config->GetMarker_All_Plotting(iMarker) == YES) {
+          iVertex = geometry->node[iPoint]->GetVertex(iMarker);
+          if (iVertex != -1){ 
+            LoadSurfaceData(config, geometry, solver, jPoint, iMarker, iVertex);
+          }
         }
       }
+      jPoint++;
     }
   }
 }
