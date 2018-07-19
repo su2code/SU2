@@ -1028,9 +1028,7 @@ public:
   void SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value);
   
   void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
-    
-  void CollectSurfaceData(CConfig* config, CGeometry* geometry, CSolver** solver);
-  
+      
   virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
 };
@@ -1075,9 +1073,9 @@ public:
   
   void SetVolumeOutputFields(CConfig *config);
   
-  void SetHistoryOutputFields(CConfig *config);
-  
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  void SetHistoryOutputFields(CConfig *config);
   
   /*!
    * \brief Determines if the history file output.
@@ -1112,6 +1110,10 @@ private:
   unsigned short nDim;
   unsigned short turb_model;
   bool heat, weakly_coupled_heat;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
  
 public:
 
@@ -1119,7 +1121,7 @@ public:
    * \brief Constructor of the class
    * \param[in] config - Definition of the particular problem.
    */
-  CIncFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+  CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
 
   /*!
    * \brief Destructor of the class.
@@ -1154,6 +1156,12 @@ public:
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
 
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
 };
 
 /*! \class CFEAOutput
