@@ -4377,6 +4377,8 @@ private:
 
   su2double *Edge_Vector;
   bool implicit,direct;
+  su2double **Mean_GradPoissonVar;
+  su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
   su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
   unsigned short iVar, iDim;
 

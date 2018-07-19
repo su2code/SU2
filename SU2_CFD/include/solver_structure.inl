@@ -933,6 +933,10 @@ inline unsigned long CSolver::GetPoint_Max_BGS(unsigned short val_var) { return 
 
 inline su2double* CSolver::GetPoint_Max_Coord_BGS(unsigned short val_var) { return Point_Max_Coord_BGS[val_var]; }
 
+inline void CSolver::SetMassFluxConvergence(bool val_convergence) { }
+  
+inline bool CSolver::GetMassFluxConvergence() { return false; }
+
 inline void CSolver::Set_OldSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
     node[iPoint]->Set_OldSolution(); // The loop should be over nPoints
@@ -1942,7 +1946,32 @@ inline void CIncEulerSolver::SetTotal_ComboObj(su2double ComboObj) {Total_ComboO
 inline su2double CIncEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
 //---------------------------------------------------------------------------------------------------------------------------------
+inline void CPBIncEulerSolver::SetMassFluxConvergence(bool val_convergence) { MassConvergence = val_convergence; }
+  
+inline bool CPBIncEulerSolver::GetMassFluxConvergence() { return MassConvergence; }
 
+inline su2double *CPBIncEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
+
+inline su2double CPBIncEulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { return Density_Inf*Velocity_Inf[val_dim]; }
+
+inline su2double CPBIncEulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
+
+inline su2double *CPBIncEulerSolver::GetVelocity_Inf(void) { return Velocity_Inf; }
+
+inline su2double CPBIncEulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
+
+inline su2double CPBIncEulerSolver::GetDensity_Inf(void) { return Density_Inf; }
+
+inline su2double CPBIncEulerSolver::GetModVelocity_Inf(void) {
+  su2double Vel2 = 0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Vel2 += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  return sqrt(Vel2);
+}
+
+inline void CPBIncEulerSolver::SetPressure_Inf(su2double p_inf){Pressure_Inf = p_inf;}
+
+inline void CPBIncEulerSolver::SetTemperature_Inf(su2double t_inf){Temperature_Inf = t_inf;}
 //---------------------------------------------------------------------------------------------------------------------------------
 inline su2double CIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

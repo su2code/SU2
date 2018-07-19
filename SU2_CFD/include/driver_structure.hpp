@@ -796,8 +796,104 @@ public:
   void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
 
 };
+//-------------------------------------------------------------------------------------------------------------------------
+class CPBFluidDriver : public CDriver {
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CPBFluidDriver(char* confFile,
+               unsigned short val_nZone,
+               unsigned short val_nDim,
+               SU2_Comm MPICommunicator);
 
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CPBFluidDriver(void);
 
+  /*!
+   * \brief Run a single iteration of the physics within multiple zones.
+   */
+  void Run();
+
+  /*!
+   * \brief Update the dual-time solution within multiple zones.
+   */
+  void Update();
+
+  /*!
+   * \brief Reset the convergence flag (set to false) of the multizone solver.
+   */
+  void ResetConvergence();
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure (multiple zone).
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
+  /*!
+   * \brief Perform a static mesh deformation, without considering grid velocity (multiple zone).
+   */
+  void StaticMeshUpdate();
+
+  /*!
+   * \brief Perform a mesh deformation as initial condition (multiple zone).
+   */
+  void SetInitialMesh();
+
+  /*!
+   * \brief Process the boundary conditions and update the multigrid structure.
+   */
+  void BoundaryConditionsUpdate();
+
+  /*!
+   * \brief Transfer data among different zones (multiple zone).
+   */
+  void Transfer_Data(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Set the total temperature of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ttotal - Value of the total (stagnation) temperature.
+   */
+  void SetVertexTtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ttotal);
+
+  /*!
+   * \brief Set the total pressure of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] val_Ptotal - Value of the total (stagnation) pressure.
+   */
+  void SetVertexPtotal(unsigned short iMarker, unsigned short iVertex, su2double val_Ptotal);
+
+  /*!
+   * \brief Set the flow direction of a vertex on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the flow direction unit vector
+   * \param[in] val_FlowDir - Component of a unit vector representing the flow direction
+   */
+  void SetVertexFlowDir(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_FlowDir);
+
+  /*!
+   * \brief Set a turbulence variable on a specified inlet marker.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the turbulence variable (i.e. k is 0 in SST)
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetVertexTurbVar(unsigned short iMarker, unsigned short iVertex, unsigned short iDim, su2double val_tub_var);
+
+};
+
+//-------------------------------------------------------------------------------------------------------------------------
 /*!
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.

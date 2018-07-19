@@ -665,6 +665,7 @@ inline void CVariable::GetAdjointSolution_Accel_time_n(su2double *adj_sol) { }
 
 inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
 
+inline su2double CVariable::GetSolution_iter_m(unsigned short val_var) { return 0.0; }
 
 inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
 
@@ -680,11 +681,15 @@ inline void CVariable::SetSolution_New(void) { }
 
 inline void CVariable::AddSolution_New(unsigned short val_var, su2double val_solution) { }
 
+inline void CVariable::AddSolution_iter_m(unsigned short val_var, su2double val_solution) { }
+
 inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
 
 inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) { }
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
+
+inline void CVariable::SetMassFluxZero(){  }
 
 inline void CVariable::AddMassFlux(su2double val_MassFlux){  }
 
@@ -693,6 +698,10 @@ inline void CVariable::SubtractMassFlux(su2double val_MassFlux){  }
 inline su2double CVariable::GetMassFlux() {}
 
 inline su2double CVariable::GetMean_Mom_Coeff() {}
+
+inline su2double CVariable::GetPoisson_Coeff() { }
+  
+inline void CVariable::SetPoisson_Coeff(su2double val_Poisson_Coeff){ }
 
 inline void CVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) {  }
 
@@ -1035,12 +1044,12 @@ inline su2double CPBIncEulerVariable::GetVelocity2(void) { return Velocity2; }
 
 inline void CPBIncEulerVariable::SetDensity(su2double val_density) { Primitive[nDim+1] = val_density; }
 
-inline void CPBIncEulerVariable::SetPressure_val(su2double val_pressure) { Primitive[0] += val_pressure; }
+inline void CPBIncEulerVariable::SetPressure_val(su2double val_pressure) { Primitive[0] = val_pressure; }
 
-inline void CPBIncEulerVariable::SetVelocity2(void) {
+inline void CPBIncEulerVariable::SetVelocity(void) {
   Velocity2 = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    Primitive[iDim+1] = Solution[iDim+1] / Primitive[nDim+1];
+    Primitive[iDim+1] = Solution[iDim] / Primitive[nDim+1];
     Velocity2 += Primitive[iDim+1]*Primitive[iDim+1];
   }
 }
@@ -1077,6 +1086,8 @@ inline su2double **CPBIncEulerVariable::GetGradient_Primitive(void) { return Gra
 
 inline su2double *CPBIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
 
+inline void CPBIncEulerVariable::SetMassFluxZero(){ MassFlux = 0.0 ; }
+
 inline void CPBIncEulerVariable::AddMassFlux(su2double val_MassFlux){ MassFlux += val_MassFlux ; }
 
 inline void CPBIncEulerVariable::SubtractMassFlux(su2double val_MassFlux){ MassFlux -= val_MassFlux ; }
@@ -1086,6 +1097,10 @@ inline su2double CPBIncEulerVariable::GetMassFlux() {return MassFlux;}
 inline su2double CPBIncEulerVariable::GetMean_Mom_Coeff() {return Mean_Mom_Coeff;}
 
 inline void CPBIncEulerVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) { Mean_Mom_Coeff = val_Mean_Mom_Coeff; }
+
+inline su2double CPBIncEulerVariable::GetSolution_iter_m(unsigned short val_var) { return Solution_iter_m[val_var]; }
+
+inline void CPBIncEulerVariable::AddSolution_iter_m(unsigned short val_var, su2double val_solution) { Solution_iter_m[val_var] += val_solution;}
 
 //-------------------------------------------------------------------------------------------------------------------------------
 
@@ -1349,6 +1364,10 @@ inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { 
 inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density;}
 
 inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
+
+inline void CPotentialVariable :: SetPoisson_Coeff(su2double val_Poisson_Coeff) { Poisson_Coeff = val_Poisson_Coeff ; }
+
+inline su2double :: CPotentialVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
 
 inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 

@@ -64,6 +64,7 @@ protected:
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
+  su2double *Solution_iter_m;  /*!< \brief Solution of the problem at iteration m for pressure-based scheme. */
   su2double **Gradient;    /*!< \brief Gradient of the solution of the problem. */
   su2double *Limiter;        /*!< \brief Limiter of the solution of the problem. */
   su2double *Solution_Max;    /*!< \brief Max solution for limiter computation. */
@@ -258,6 +259,14 @@ public:
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   void AddSolution(unsigned short val_var, su2double val_solution);
+  
+  /*!
+   * \brief Add a value to the solution.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  virtual void AddSolution_iter_m(unsigned short val_var, su2double val_solution);
+  
 
   /*!
    * \brief A virtual member.
@@ -265,6 +274,13 @@ public:
    * \return Pointer to the old solution vector.
    */
   virtual su2double GetSolution_New(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the iter solution vector.
+   */
+  virtual su2double GetSolution_iter_m(unsigned short val_var);
   
   /*!
    * \brief A virtual member.
@@ -2376,6 +2392,8 @@ public:
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
   
+  virtual void SetMassFluxZero();
+  
   virtual void AddMassFlux(su2double val_MassFlux);
   
   virtual void SubtractMassFlux(su2double val_MassFlux);
@@ -2385,6 +2403,10 @@ public:
   virtual su2double GetMean_Mom_Coeff();
   
   virtual su2double GetMassFlux();
+  
+  virtual su2double GetPoisson_Coeff();
+  
+  virtual void SetPoisson_Coeff(su2double val_Poisson_Coeff);
 
 };
 
@@ -2424,6 +2446,7 @@ public:
  */
 class CPotentialVariable : public CVariable {
   su2double *Charge_Density;
+  su2double Poisson_Coeff;
 public:
   
   /*!
@@ -2456,6 +2479,10 @@ public:
    * \param[in] negative_charge - Mass density of negative charge.
    */
   void SetChargeDensity(su2double positive_charge, su2double negative_charge);
+  
+  su2double GetPoisson_Coeff();
+  
+  void SetPoisson_Coeff(su2double val_Poisson_Coeff);
   
 };
 
@@ -3912,6 +3939,15 @@ public:
    */
   virtual ~CPBIncEulerVariable(void);
   
+  void AddSolution_iter_m(unsigned short val_var, su2double val_solution);
+  
+   /*!
+   * \brief Return solution at iteration m.
+   * \param[in] val_var - Index of the variable.
+   * \return Pointer to the old solution vector.
+   */
+  su2double GetSolution_iter_m(unsigned short val_var);
+  
   /*!
    * \brief Set to zero the gradient of the primitive variables.
    */
@@ -4016,7 +4052,7 @@ public:
   /*!
    * \brief Set the value of the square of velocity for the incompressible flows.
    */
-  void SetVelocity2(void);
+  void SetVelocity(void);
   
   /*!
    * \brief Get the norm 2 of the velocity.
@@ -4055,6 +4091,13 @@ public:
    * \param[in] val_density - Direction of projection.
    * \return Value of the projected velocity.
    */  
+  void SetMassFluxZero();
+
+  /*!
+   * \brief Get the mass flux 
+   * \param[in] val_density - Direction of projection.
+   * \return Value of the projected velocity.
+   */  
   void AddMassFlux(su2double val_flux);
   
   /*!
@@ -4073,9 +4116,10 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows.
    */
-  bool SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config);
+  bool SetPrimVar(su2double Density_Inf, CConfig *config);
 
 
+   
 
   su2double GetMassFlux();
 
