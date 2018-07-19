@@ -81,10 +81,10 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   
   /*--- Compute viscous residuals ---*/
   
-  
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
- 
+
+  
   /*--- Compute source term residuals ---*/
 
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
@@ -349,14 +349,10 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
       case (EULER_IMPLICIT):
         solver_container[MainSolver]->ImplicitEuler_Iteration(geometry, solver_container, config);
         break;
-      case (DIRECT_SOLVE):
-        solver_container[MainSolver]->Direct_Solve(geometry, solver_container, config);
-        break;
-        
     }
 
    /*--- Structural time integration schemes ---*/
-  //cout<<"Time integration, called from "<<KindSolver<<endl;
+  
   }
   else if (KindSolver == FEM_ELASTICITY) {
 
@@ -512,10 +508,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       if (monitor > InitResidual) InitResidual = monitor;
       
       /*--- Check the convergence ---*/
-    
       
       if (((fabs(InitResidual - monitor) >= config->GetOrderMagResidual()) && (monitor < InitResidual))  ||
-          (monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true;  }
+          (monitor <= config->GetMinLogResidual())) { Convergence = true; Convergence_FullMG = true; }
       else { Convergence = false; Convergence_FullMG = false; }
       
     }

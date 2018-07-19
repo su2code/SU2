@@ -6325,8 +6325,9 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar, jVar;
-  unsigned long iPoint, total_index, IterLinSol = 0;
-  su2double Delta, *local_Res_TruncError, Vol;
+  unsigned long iPoint, jPoint, total_index, IterLinSol = 0;
+  su2double Delta, *local_Res_TruncError, Vol, jac_matrix[100][100];
+  unsigned long total_index_i, total_index_j;
   
   bool adjoint = config->GetContinuous_Adjoint();
   bool roe_turkel = config->GetKind_Upwind_Flow() == TURKEL;
@@ -6398,6 +6399,25 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- Solve or smooth the linear system ---*/
+  
+  cout<<"Jacobian matrix"<<nVar<<endl;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+		total_index = iPoint*nVar + iVar;
+      for (jPoint = 0; jPoint < nPoint; jPoint++) 
+         for (jVar = 0; jVar < nVar; jVar++) {
+			 total_index = jPoint*nVar + jVar;
+           jac_matrix[iPoint*nVar + iVar][jPoint*nVar + jVar] = Jacobian.GetBlock(iPoint,iVar,jPoint,jVar);
+              //cout<<Jacobian.GetBlock(iPoint,iVar,jPoint,jVar)<<", "<<iPoint<<", "<<iVar<<", "<<jPoint<<", "<<jVar<<", "<<iPoint*nVar + iVar<<", "<<jPoint*nVar + jVar<<endl;
+		  }
+    }
+  }
+  
+  for (total_index_i = 0;total_index_i < 100; total_index_i++) {
+    for (total_index_j = 0;total_index_j < 100; total_index_j++)
+       cout<<jac_matrix[total_index_i][total_index_j]<<"\t";
+    cout<<"\n";
+  }
   
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);

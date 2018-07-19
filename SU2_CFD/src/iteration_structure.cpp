@@ -889,14 +889,15 @@ void CPBFluidIteration::Iterate(COutput *output,
   nMassIter = 10; 
   
   /*--- Have to check convergence within the Poisson iteration, this value is provisional ---*/
-  nPressureIter = 1000;
+  nPressureIter = 5;
   //cout<<"starting mass iteration .... "<<endl;
   
   for (MassIter = 0; MassIter < nMassIter; MassIter++) {
 
     config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
+	
 	/*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-  
+	
 	integration_container[val_iZone][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
 	
@@ -909,9 +910,9 @@ void CPBFluidIteration::Iterate(COutput *output,
     for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) {
 		config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
 		integration_container[val_iZone][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                     config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone);
+                                                                            config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone);
  
-        if (integration_container[val_iZone][POISSON_SOL]->GetConvergence()) break;
+       //if (integration_container[val_iZone][POISSON_SOL]->GetConvergence()) break;
     }
     
     /*--- Correct pressure and velocities ---*/
@@ -924,7 +925,7 @@ void CPBFluidIteration::Iterate(COutput *output,
     
     
     /*--- Set source term for pressure correction equation based on current flow solution ---*/
-	solver_container[val_iZone][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
+	//solver_container[val_iZone][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0], config_container[val_iZone]);
 	
 	
     /*--- Check convergance of mass flux ---*/

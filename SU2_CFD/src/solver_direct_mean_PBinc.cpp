@@ -310,6 +310,10 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
       }
     }
   }
+ /* for (iMarker = 0; iMarker < nMarker; iMarker++)
+   for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+    for (iVar = 0; iVar < nVar; iVar++)
+     //cout<<CharacPrimVar[iMarker][iVertex][iVar]<<" charcprimvar from solver constructor"<<endl;*/
   
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
@@ -448,7 +452,6 @@ CPBIncEulerSolver::CPBIncEulerSolver(CGeometry *geometry, CConfig *config, unsig
     Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/
-
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint] = new CPBIncEulerVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
 
@@ -760,6 +763,9 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool fixed_cl         = config->GetFixed_CL_Mode();
+  su2double				*TestVec;
+  unsigned long 		iVertex;
+  unsigned short		iVar, iMarker;
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -814,6 +820,17 @@ void CPBIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_cont
     if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
   }
   
+  
+  
+  /*for (iMarker = 0; iMarker < nMarker; iMarker++)
+   for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+    TestVec = GetCharacPrimVar(iMarker,iVertex);
+    for (iVar = 0; iVar < nVar; iVar++) 
+      //cout<<TestVec[iVar]<<" charcprimvar from preprocessing"<<endl;
+  }*/
+  
+  
+  
 }
 
 void CPBIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -836,7 +853,7 @@ unsigned long iPoint, ErrorCounter = 0;
 unsigned long CPBIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  
+  unsigned short iVar;
   su2double pressure_val;
   
   bool RightSol = true;
@@ -856,6 +873,8 @@ unsigned long CPBIncEulerSolver::SetPrimitive_Variables(CSolver **solver_contain
     /*--- Initialize the convective, source and viscous residual vector ---*/
     
     if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+    
+    node[iPoint]->SetMassFluxZero();
     
   }
   
@@ -897,7 +916,6 @@ void CPBIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) 
     /*--- Mean Values ---*/
 
     Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
-    //Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2() + node[jPoint]->GetBetaInc2());
     Mean_DensityInc = 0.5 * (node[iPoint]->GetDensity() + node[jPoint]->GetDensity());
     Mean_Speed = Mean_ProjVel;
 
@@ -938,7 +956,6 @@ void CPBIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) 
       /*--- Mean Values ---*/
       
       Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
-      //Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
       Mean_DensityInc = node[iPoint]->GetDensity();
       Mean_Speed = Mean_ProjVel;
       
@@ -954,7 +971,7 @@ void CPBIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) 
       
       /*--- Inviscid contribution ---*/
       
-      Lambda = fabs(Mean_ProjVel) + Mean_Speed;
+      Lambda = fabs(2.0*Mean_ProjVel);
       if (geometry->node[iPoint]->GetDomain()) {
         node[iPoint]->AddLambda(Lambda);
       }
@@ -1220,6 +1237,247 @@ void CPBIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *con
 }
 
 
+
+void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+  
+  /*--- Restart the solution from file information ---*/
+  unsigned short iDim, iVar, iMesh, iMeshFine;
+  unsigned long iPoint, index, iChildren, Point_Fine;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  su2double Area_Children, Area_Parent, *Coord, *Solution_Fine;
+  bool grid_movement  = config->GetGrid_Movement();
+  bool static_fsi = ((config->GetUnsteady_Simulation() == STEADY) &&
+                     (config->GetFSI_Simulation()));
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool steady_restart = config->GetSteadyRestart();
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  string UnstExt, text_line;
+  ifstream restart_file;
+  
+  unsigned short iZone = config->GetiZone();
+  unsigned short nZone = config->GetnZone();
+
+  string restart_filename = config->GetSolution_FlowFileName();
+
+  Coord = new su2double [nDim];
+  for (iDim = 0; iDim < nDim; iDim++)
+    Coord[iDim] = 0.0;
+  
+  int counter = 0;
+  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+  unsigned long iPoint_Global_Local = 0;
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+
+  /*--- Skip coordinates ---*/
+
+  unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+  if (nZone > 1)
+  restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+
+  /*--- Modify file name for an unsteady restart ---*/
+  
+  if (dual_time || time_stepping)
+    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+
+  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+
+  if (config->GetRead_Binary_Restart()) {
+    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+  } else {
+    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+  }
+
+  /*--- Load data from the restart into correct containers. ---*/
+
+  counter = 0;
+  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on the current processor, we will load and instantiate the vars. ---*/
+
+    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+
+    if (iPoint_Local > -1) {
+
+      /*--- We need to store this point's data, so jump to the correct
+       offset in the buffer of data from the restart file and load it. ---*/
+
+      index = counter*Restart_Vars[1] + skipVars;
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      node[iPoint_Local]->SetSolution(Solution);
+      iPoint_Global_Local++;
+
+      /*--- For dynamic meshes, read in and store the
+       grid coordinates and grid velocities for each node. ---*/
+
+      if (grid_movement) {
+
+        /*--- First, remove any variables for the turbulence model that
+         appear in the restart file before the grid velocities. ---*/
+
+        if (turb_model == SA || turb_model == SA_NEG) {
+          index++;
+        } else if (turb_model == SST) {
+          index+=2;
+        }
+
+        /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
+        /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
+        /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
+
+        su2double GridVel[3] = {0.0,0.0,0.0};
+        if (!steady_restart) {
+
+          /*--- Rewind the index to retrieve the Coords. ---*/
+          index = counter*Restart_Vars[1];
+          for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
+
+          /*--- Move the index forward to get the grid velocities. ---*/
+          index = counter*Restart_Vars[1] + skipVars + nVar;
+          for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
+        }
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[MESH_0]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+        }
+      }
+      
+
+      /*--- For static FSI problems, grid_movement is 0 but we need to read in and store the
+       grid coordinates for each node (but not the grid velocities, as there are none). ---*/
+
+      if (static_fsi && val_update_geo) {
+       /*--- Rewind the index to retrieve the Coords. ---*/
+        index = counter*Restart_Vars[1];
+        for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim];}
+
+        for (iDim = 0; iDim < nDim; iDim++) {
+          geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+        }
+      }
+
+      /*--- Increment the overall counter for how many points have been loaded. ---*/
+      counter++;
+      
+    }
+  }
+
+  /*--- Detect a wrong solution file ---*/
+
+  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+
+#ifndef HAVE_MPI
+  rbuf_NotMatching = sbuf_NotMatching;
+#else
+  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+#endif
+  if (rbuf_NotMatching != 0) {
+    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+  }
+  
+  /*--- Communicate the loaded solution on the fine grid before we transfer
+   it down to the coarse levels. We alo call the preprocessing routine
+   on the fine level in order to have all necessary quantities updated,
+   especially if this is a turbulent simulation (eddy viscosity). ---*/
+  
+  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+  
+  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        Solution_Fine = solver[iMesh-1][FLOW_SOL]->node[Point_Fine]->GetSolution();
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+        }
+      }
+      solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
+    }
+    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+
+  }
+  
+  /*--- Update the geometry for flows on dynamic meshes ---*/
+  
+  if (grid_movement) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry[MESH_0]->Set_MPI_Coord(config);
+    geometry[MESH_0]->Set_MPI_GridVel(config);
+    
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+    
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+    }
+  }
+  
+  /*--- Update the geometry for flows on static FSI problems with moving meshes ---*/
+  
+  if (static_fsi && val_update_geo) {
+    
+    /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+    
+    geometry[MESH_0]->Set_MPI_Coord(config);
+    
+    /*--- Recompute the edges and  dual mesh control volumes in the
+     domain and on the boundaries. ---*/
+    
+    geometry[MESH_0]->SetCoord_CG();
+    geometry[MESH_0]->SetControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    
+    /*--- Update the multigrid structure after setting up the finest grid,
+     including computing the grid velocities on the coarser levels. ---*/
+    
+    for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+      iMeshFine = iMesh-1;
+      geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
+      geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
+      geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+    }
+  }
+  
+  delete [] Coord;
+
+  /*--- Delete the class memory that is used to load the restart. ---*/
+
+  if (Restart_Vars != NULL) delete [] Restart_Vars;
+  if (Restart_Data != NULL) delete [] Restart_Data;
+  Restart_Vars = NULL; Restart_Data = NULL;
+  
+}
+
+
+
+
+
 void CPBIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config) {
   
   unsigned long iEdge, iPoint, jPoint;
@@ -1440,9 +1698,6 @@ void CPBIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *c
     cout << "Bulk modulus: " << config->GetBulk_Modulus();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
     else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    //cout << "Artificial compressibility factor: " << config->GetArtComp_Factor();
-    //if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    //else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
     
     cout << "Free-stream static pressure: " << config->GetPressure_FreeStream();
     if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
@@ -1705,6 +1960,8 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
     /*--- Compute the residual ---*/
     
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
+    
+    //for (iVar = 0; iVar < nVar; iVar++) cout<<"Upwind Residual["<<iVar<<"]: "<<Res_Conv[iVar]<<endl;
 
     /*--- Update residual value ---*/
     
@@ -1731,7 +1988,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
 #endif
     if (iMesh == MESH_0) config->SetNonphysical_Reconstr(counter_global);
   }
-  
+
 }
 
 
@@ -1745,6 +2002,7 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
   unsigned short iVar;
   unsigned long iEdge, iPoint, jPoint;
+
 
 
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
@@ -1865,27 +2123,29 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
   }
 
   /*--- Compute pressure term ---*/
-
+  
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
     /*--- Points in edge, set normal vectors, and number of neighbors ---*/
 
     iPoint = geometry->edge[iEdge]->GetNode(0); jPoint = geometry->edge[iEdge]->GetNode(1);
     second_numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
-    second_numerics->SetNeighbor(geometry->node[iPoint]->GetnNeighbor(), geometry->node[jPoint]->GetnNeighbor());
+    
 
     /*--- Set current estimate of pressure ---*/
-    // No need for Set Primitive, need only SetPressure but that value must be the current guess of pressure.
-    // Have to resolve this properly. The pressure at the face must be reconstructed properly. Now it is a 
-    // average of the two nodes.
+    
     second_numerics->SetPrimitive(node[iPoint]->GetPrimitive(), node[jPoint]->GetPrimitive());
 
     /*--- Compute residuals, and Jacobians ---*/
     second_numerics->ComputeResidual(Residual,config);
 
     /*--- Add the source residual to the total ---*/
+    
+    
 
     LinSysRes.AddBlock(iPoint, Residual);
+    LinSysRes.SubtractBlock(jPoint, Residual);
   }
 }
 
@@ -2111,7 +2371,7 @@ void CPBIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *c
     //AD::EndPreacc();
   }
 
- // Set_MPI_Primitive_Gradient(geometry, config);
+  Set_MPI_Primitive_Gradient(geometry, config);
 
 }
 
@@ -2413,7 +2673,7 @@ void CPBIncEulerSolver::SetFreeStream_Solution(CConfig *config){
   unsigned short iDim;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    //node[iPoint]->SetSolution(0, Pressure_Inf);
+    node[iPoint]->SetPressure_val(Pressure_Inf);
     for (iDim = 0; iDim < nDim; iDim++){
       node[iPoint]->SetSolution(iDim, Density_Inf*Velocity_Inf[iDim]);
     }
@@ -2426,10 +2686,12 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	
   unsigned short iVar, jVar, iDim, jDim, nGradVar;
   unsigned long iPoint, jPoint, iEdge, iMarker, iVertex;
-  su2double MassFlux_Part, Mom_Coeff, *Vel_i, *Vel_j,*Normal;
-  su2double Res_MassFlux, Criteria,Area;
-  
-  
+  su2double Edge_Vector[3], proj_vector_ij,dist_ij;
+  su2double *Coord_i, *Coord_j;
+  su2double MassFlux_Part, Mom_Coeff, *Vel_i, *Vel_j,*Normal_edge,*Normal_vert;
+  su2double Res_MassFlux, Criteria,Area,Vol;
+  su2double Mom_Coeff_i,Mom_Coeff_j;
+  su2double GradPav,GradPin;
   for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->SetMassFluxZero();
   
      /*--- Loop interior edges ---*/
@@ -2437,17 +2699,75 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    Normal = geometry->edge[iEdge]->GetNormal();
-    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+    Normal_edge = geometry->edge[iEdge]->GetNormal();
+    Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal_edge[iDim]*Normal_edge[iDim];
     Area = sqrt(Area);
     
-    //Vel_i = node[iPoint]->GetVelocity();
-    //Vel_j = node[iPoint]->GetSolution();
-    //Include Rhie-Chow interpolation here and in marker
-    MassFlux_Part = 0.0;
+	MassFlux_Part = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) 
-      MassFlux_Part += GetDensity_Inf()*(0.5*(node[iPoint]->GetVelocity(iDim)+node[jPoint]->GetVelocity(iDim)) - 0.0)*Area*Normal[iDim];
+      MassFlux_Part += GetDensity_Inf()*(0.5*(node[iPoint]->GetVelocity(iDim)+node[jPoint]->GetVelocity(iDim)))*Normal_edge[iDim];
+	
+	
+	//------- Rhie-Chow interpolation ---------//
+	
+	dist_ij = 0; proj_vector_ij = 0;
+    Coord_i = geometry->node[iPoint]->GetCoord();
+    Coord_j = geometry->node[jPoint]->GetCoord();
+	for (iDim = 0; iDim < nDim; iDim++) {
+		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+		dist_ij += Edge_Vector[iDim]*Edge_Vector[iDim];
+		proj_vector_ij += Edge_Vector[iDim]*Normal_edge[iDim];
+	}
+	dist_ij = sqrt(dist_ij) ;
+	if (dist_ij == 0.0) proj_vector_ij = 0.0;
+	else proj_vector_ij = proj_vector_ij/dist_ij;
+      
+    Mom_Coeff_i = 0.0 ;
+    Mom_Coeff_j = 0.0 ;
+	for (iVar = 0; iVar < nVar; iVar++) {
+      Mom_Coeff_i += Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
+      Mom_Coeff_j += Jacobian.GetBlock(jPoint,jPoint,iVar,iVar);
+    }
+    Mom_Coeff_i = Mom_Coeff_i/nVar ;
+    Mom_Coeff_j = Mom_Coeff_j/nVar ;
+    Mom_Coeff = (Mom_Coeff_i + Mom_Coeff_j);
+    Vol = (geometry->node[iPoint]->GetVolume() + geometry->node[jPoint]->GetVolume()) ;
+    GradPav = (node[jPoint]->GetPressure() - node[iPoint]->GetPressure())/(dist_ij) ;
+    GradPin = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+       GradPin += 0.5*(node[iPoint]->GetGradient_Primitive(0,iDim)*Normal[iDim]+node[jPoint]->GetGradient_Primitive(0,iDim)*Normal[iDim]);
     
+    /*for (iDim = 0; iDim < nDim; iDim++) {
+        Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
+        Vector_j[iDim] = 0.5*(geometry->node[iPoint]->GetCoord(iDim) - geometry->node[jPoint]->GetCoord(iDim));
+   }
+      
+   Gradient_i = node[iPoint]->GetGradient_Primitive();
+   Gradient_j = node[jPoint]->GetGradient_Primitive();
+    
+   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      Project_Grad_i = 0.0; Project_Grad_j = 0.0;
+      Non_Physical = node[iPoint]->GetNon_Physical()*node[jPoint]->GetNon_Physical();
+      for (iDim = 0; iDim < nDim; iDim++) {
+          Project_Grad_i += Vector_i[iDim]*Gradient_i[iVar][iDim]*Non_Physical;
+          Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
+      }   
+      Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+      Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+    }*/
+       
+    
+        
+    MassFlux_Part -= GetDensity_Inf()*Vol/Mom_Coeff*(GradPav - GradPin)*(Area/proj_vector_ij);
+    
+    cout<<"iEdge: "<<iEdge<<endl;
+    cout<<"iPoint: "<<iPoint<<", Coord i: "<<Coord_i[0]<<", "<<Coord_i[1]<<endl;
+    cout<<"jPoint: "<<jPoint<<", Coord j: "<<Coord_j[0]<<", "<<Coord_j[1]<<endl;
+    /*cout<<"Vel i: "<<node[iPoint]->GetVelocity(0)<<", "<<node[iPoint]->GetVelocity(1)<<endl;
+    cout<<"Vel j: "<<node[jPoint]->GetVelocity(0)<<", "<<node[jPoint]->GetVelocity(1)<<endl;
+    cout<<"Normal: "<<Normal_edge[0]<<", "<<Normal_edge[1]<<" MassFlux_Part: "<<MassFlux_Part<<", "<<dist_ij<<", "<<proj_vector_ij<<", "<<(Mom_Coeff_i + Mom_Coeff_j)<<endl;*/
+    
+    //--- Mass flux entering is positive, leaving is negative ---//
     if (geometry->node[iPoint]->GetDomain())
 	  node[iPoint]->AddMassFlux(MassFlux_Part);
 	if (geometry->node[jPoint]->GetDomain())
@@ -2456,29 +2776,29 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   
     /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+	  cout<<"BC: "<<config->GetMarker_All_TagBound(iMarker)<<endl;
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      
       if (geometry->node[iPoint]->GetDomain()) {
-		  Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-		  /*if (config->GetMarker_All_KindBC(iMarker) != INLET_FLOW || config->GetMarker_All_KindBC(iMarker) != OUTLET_FLOW)
-		    for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];*/
-		  
-		  Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
-		  
-		  //Vel_i = node[iPoint]->GetSolution();
-		  
-		  MassFlux_Part = 0.0;
-		  for (iDim = 0; iDim < nDim; iDim++) 			
-			MassFlux_Part += GetDensity_Inf()*1.0*(node[iPoint]->GetVelocity(iDim))*Area*Normal[iDim];
-          
-		 node[iPoint]->AddMassFlux(MassFlux_Part); 
+		 
+		cout<<"iPoint: "<<iPoint<<" Vertex"<<iVertex<<", iMarker: "<<iMarker<<endl;
+		cout<<"Coord_i: "<<geometry->node[iPoint]->GetCoord(0)<<", "<<geometry->node[iPoint]->GetCoord(1)<<endl;
+		Normal_vert = geometry->vertex[iMarker][iVertex]->GetNormal(); 
+	    //cout<<"Normal: "<<Normal_vert[0]<<", "<<Normal_vert[1]<<"iPoint: "<<iPoint<<" Vertex"<<iVertex<<", iMarker: "<<iMarker<<endl;
+        //cout<<"Vel: "<<node[iPoint]->GetVelocity(0)<<", "<<node[iPoint]->GetVelocity(1)<<endl; (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) || 
+        //for (iDim = 0; iDim < nDim; iDim++) Normal_vert[iDim] = -Normal_vert[iDim];
+
+         MassFlux_Part = 0.0;
+		 for (iDim = 0; iDim < nDim; iDim++) 
+		   MassFlux_Part += GetDensity_Inf()*(node[iPoint]->GetVelocity(iDim))*Normal_vert[iDim];
+			
+		 node[iPoint]->AddMassFlux(MassFlux_Part);
 	  }
    }
   }
+  
+  
   Res_MassFlux = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  Mom_Coeff = 0.0 ;
@@ -2487,6 +2807,9 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	     Mom_Coeff += Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
 	  
 	  node[iPoint]->SetMean_Mom_Coeff(Mom_Coeff/nVar);
+	  
+	  //cout<<"iPoint: "<<iPoint<<", Massflux: "<<node[iPoint]->GetMassFlux()<<endl;
+	  
 	  
 	  Res_MassFlux += node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux();
   }
@@ -2501,20 +2824,22 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   cout<<"Mass flux: "<<Res_MassFlux<<endl;
   if (Res_MassFlux <= Criteria) MassConvergence = true;
   
-  
-  
+  //delete [] PrimVar_i;
+  //delete [] PrimVar_j;
+ 
+ 
 }
 
 void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 	
 	unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
 	unsigned short iDim, iVar;
-	su2double **vel_corr, **press_corr_i, **press_corr_j, press_corr_avg;
+	su2double **vel_corr, press_corr_i, press_corr_j, press_corr_avg;
 	su2double Edge_Vec[3], alpha_vel,dist_ij_2;
-	su2double *Normal, factor, Area, Vel;
+	su2double *Normal, factor, Area, Vel,rho;
 	//su2double *Coord_i, *Coord_j;
 	
-	/*--- Loop interior edges ---*/
+	
   
   vel_corr = new su2double* [nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++) 
@@ -2524,67 +2849,53 @@ void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_co
 	for (iVar = 0; iVar < nVar; iVar++)
 	    vel_corr[iPoint][iVar] = 0.0;
   
-  
-  //for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
-    //iPoint = geometry->edge[iEdge]->GetNode(0);
-    //jPoint = geometry->edge[iEdge]->GetNode(1);
+  /*--- Loop interior edges ---*/
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
     
-    //Normal = geometry->edge[iEdge]->GetNormal();
+    Normal = geometry->edge[iEdge]->GetNormal();
    
-    //Area = 0.0;
-    //for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
     
-    ////dist_ij_2 = 0; proj_vector_ij = 0;
-    ////Coord_i = geometry->node[iPoint]->GetCoord();
-    ////Coord_j = geometry->node[jPoint]->GetCoord();
-	////for (iDim = 0; iDim < nDim; iDim++) {
-		////Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-		////dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-		////proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
-	////}
-	
-	////if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
-	////else proj_vector_ij = proj_vector_ij/dist_ij_2;
-
-
-    //press_corr_i = solver_container[POISSON_SOL]->node[iPoint]->GetGradient();
-    //press_corr_j = solver_container[POISSON_SOL]->node[jPoint]->GetGradient();
+    press_corr_i = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
+    press_corr_j = solver_container[POISSON_SOL]->node[jPoint]->GetSolution(0);
     
-    //press_corr_avg = 0.5*(press_corr_j + press_corr_i);
-    //for (iVar = 0; iVar < nVar; iVar++) {
-		//vel_corr[iPoint][iVar] += Area*press_corr_avg;
-		//vel_corr[jPoint][iVar] += -Area*press_corr_avg;
-    //}
-  //}
+    press_corr_avg = 0.5*(press_corr_j + press_corr_i);
+    for (iVar = 0; iVar < nVar; iVar++) {
+		vel_corr[iPoint][iVar] += Area*press_corr_avg;
+		vel_corr[jPoint][iVar] += Area*press_corr_avg;
+    }
+  }
 	
-	///*--- Loop boundary edges ---*/
-  //for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    //if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        //config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
-    //for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      //iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-      //if (geometry->node[iPoint]->GetDomain()) {
-	 	  //Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-		  //Area = 0.0;
-		  //for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-		  //press_corr_i = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
-		  //for (iVar = 0; iVar < nVar; iVar++) vel_corr[iPoint][iVar] += Area*press_corr_avg;
-		 //}
-	//}
-  //}
+	/*--- Loop boundary edges ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+	 	  Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+		  Area = 0.0;
+		  for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+		  press_corr_i = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
+		  for (iVar = 0; iVar < nVar; iVar++) vel_corr[iPoint][iVar] += Area*press_corr_avg;
+		 }
+	}
+  }
   
     /*--- Add  velocity corrections ---*/
-   alpha_vel = 0.5;
+   alpha_vel = 0.8;
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		press_corr_i = solver_container[POISSON_SOL]->node[iPoint]->GetGradient();
 		for (iVar = 0; iVar < nVar; iVar++) {
 			factor = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
-			vel_corr[iPoint][iVar] = press_corr_i[0][iVar];
-			vel_corr[iPoint][iVar] = geometry->node[iPoint]->GetVolume()*vel_corr[iPoint][iVar]/factor;
+			vel_corr[iPoint][iVar] = vel_corr[iPoint][iVar]/factor;
 			Vel = node[iPoint]->GetVelocity(iVar) - alpha_vel*vel_corr[iPoint][iVar];
-			Vel = Vel*node[iPoint]->GetDensity();
-			//node[iPoint]->SetSolution(iVar,Vel);
-			node[iPoint]->AddSolution(iVar,-alpha_vel*vel_corr[iPoint][iVar]);
+			rho = node[iPoint]->GetDensity();
+			Vel = rho*Vel;
+			node[iPoint]->SetSolution(iVar,Vel);
+			//node[iPoint]->AddSolution(iVar,-rho*alpha_vel*vel_corr[iPoint][iVar]);
 		}
 		
 	}
@@ -2601,11 +2912,11 @@ void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_co
 void CPBIncEulerSolver::CorrectPressure(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 	
 	
-	unsigned long iPoint, iVertex;
+	unsigned long iPoint, iVertex, iMarker;
 	su2double Pressure_Correc, Current_Pressure;
 	su2double alpha_p;//This should be config->getrelaxation (like)
 	
-	alpha_p = 0.5;
+	alpha_p = 0.2;
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 		Pressure_Correc = solver_container[POISSON_SOL]->node[iPoint]->GetSolution_Old(0);
@@ -2613,15 +2924,29 @@ void CPBIncEulerSolver::CorrectPressure(CGeometry *geometry, CSolver **solver_co
 		node[iPoint]->SetPressure_val(Current_Pressure);
 	}
 	
+	
+	for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	  //cout<<"BC: "<<config->GetMarker_All_TagBound(iMarker)<<endl;
+	  for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      if (geometry->node[iPoint]->GetDomain()) {
+		 //cout<<"iPoint: "<<iPoint<<", Pressure correction: "<<solver_container[POISSON_SOL]->node[iPoint]->GetSolution_Old(0)<<endl;
+	  }
+  }
+}
+	
 }
 
 void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim, iVar, jVar;
-  unsigned long iPoint, iVertex;
-
-  su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
+  unsigned short iDim, jDim, iVar, jVar, kVar;
+  unsigned long iPoint, iVertex,Point_Normal;
+  
+  su2double Density = 0.0, Pressure = 0.0, Pressure_Normal, *Normal = NULL, Area, *NormalArea, turb_ke,*UnitNormal,*ProjFlux_b;
+  su2double *Velocity_b, VelMagnitude2_b, Pressure_b;
+  su2double *Velocity_i, ProjVelocity_i = 0.0, VelMagnitude2_i;
+  su2double **Jacobian_b, **DubDu;//, **Jacobian_i;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
@@ -2630,6 +2955,17 @@ void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_cont
   
   Normal     = new su2double[nDim];
   NormalArea = new su2double[nDim];
+  UnitNormal = new su2double[nDim];
+  Velocity_b = new su2double[nDim];
+  Velocity_i = new su2double[nDim];
+  Jacobian_b = new su2double*[nVar];
+
+  DubDu = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_b[iVar] = new su2double[nVar];
+   // Jacobian_i[iVar] = new su2double[nVar];
+    DubDu[iVar] = new su2double[nVar];
+  }
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -2650,24 +2986,38 @@ void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_cont
       
       for (iDim = 0; iDim < nDim; iDim++) {
         NormalArea[iDim] = -Normal[iDim];
+        UnitNormal[iDim] = -Normal[iDim]/Area;
       }
 
+      
       /*--- Compute the residual ---*/
 
       Pressure = node[iPoint]->GetPressure();
       Density  = node[iPoint]->GetDensity();
 
-      //Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         Residual[iDim] = 0.0;
-
+        
+        
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+     
+      /*--- Get the pressure at  closest interior node ---*/
+      
+      Pressure_Normal = node[Point_Normal]->GetPressure();
+      
+      /*--- Neumann BC for pressure ---*/
+      
+      node[iPoint]->SetPressure_val(Pressure_Normal);
+      
       /*--- Add the Reynolds stress tensor contribution ---*/
 
-      if (tkeNeeded) {
+      /*if (tkeNeeded) {
         turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
         for (iDim = 0; iDim < nDim; iDim++)
-          Residual[iDim+1] += (2.0/3.0)*Density*turb_ke*NormalArea[iDim];
-      }
+          Residual[iDim] += (2.0/3.0)*Density*turb_ke*NormalArea[iDim];
+      }*/
       
       /*--- Add value to the residual ---*/
       
@@ -2677,19 +3027,19 @@ void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_cont
       
       if (implicit) {
         
-        /*--- Initialize Jacobian ---*/
+        //--- Initialize Jacobian ---//
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++)
             Jacobian_i[iVar][jVar] = 0.0;
         }
         
-        /*for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][0] = -Normal[iDim];*/
-        //Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-        Jacobian.DeleteValsRowi(iPoint);
-
-      }
+        //for (iDim = 0; iDim < nDim; iDim++)
+          //Jacobian_i[iDim+1][0] = -Normal[iDim];
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }    
+      
+      
     }
   }
   
@@ -2765,6 +3115,8 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
       
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
+      node[iPoint]->SetPressure_val(GetPressure_Inf());
       
       
     }
@@ -2794,11 +3146,10 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
     /*--- Allocate the value at the inlet ---*/
-    //cout<<"Vertex: "<<iVertex<<endl;
+
     
     V_inlet = GetCharacPrimVar(val_marker, iVertex);
-    //cout<<"Inlet velocities...(V_inlet)Getcharac"<<endl;
-    //for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_inlet[iVar]<<endl;
+
     
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -2819,17 +3170,14 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
       /*--- Retrieve solution at this boundary node. ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
-      //cout<<"Inlet velocities...(V_domain)"<<endl;
-      //for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_domain[iVar]<<endl;
-
+   //   cout<<"Inlet velocities...(V_domain)Getcharac at "<<iPoint<<endl;
+    //for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_inlet[iVar]<<endl;
+ 
       /*--- Retrieve the specified velocity for the inlet. ---*/
 
       Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
       Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
-      //cout<<"Inlet conditions read....."<<endl;
-      //cout<<"PTotal: "<<config->GetInlet_Ptotal(Marker_Tag)<<endl<<"VelRef: "<<config->GetVelocity_Ref()<<endl;
-      //cout<<"Flow dir: "<<Flow_Dir[0]<<", "<<Flow_Dir[1]<<endl;
-
+      
       /*--- Store the velocity in the primitive variable vector. ---*/
 
       for (iDim = 0; iDim < nDim; iDim++)
@@ -2843,8 +3191,8 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
       V_inlet[nDim+1] = GetDensity_Inf();
       
-      //cout<<"Inlet velocities...(V_inlet) VelMag*Flowdir"<<endl;
-      //for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_inlet[iVar]<<endl;
+    /*  cout<<"Inlet velocities...(V_inlet) VelMag*Flowdir"<<endl;
+      for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_inlet[iVar]<<endl;*/
       
       /*--- Set various quantities in the solver class ---*/
       
@@ -2860,12 +3208,15 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
       
       /*--- Update residual value ---*/
       
+      //for(iVar = 0; iVar < nVar; iVar++) cout<<"Res: "<<Residual[iVar]<<endl;
+      
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
     }
     //cout<<"-------End of iVertex loop-------"<<endl;
   }
@@ -2878,7 +3229,7 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 
 void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim;
+  unsigned short iDim,iVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area, yCoordRef, yCoord;
   su2double *V_outlet, *V_domain;
@@ -2920,6 +3271,9 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       /*--- Current solution at this boundary node ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
+      
+      /*cout<<"V_domain, from iPoint "<<iPoint<<", Normal neighbor: "<<Point_Normal<<endl;
+      for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_domain[iVar]<<endl;*/
 
       /*--- The pressure is computed from the infinity values ---*/
       
@@ -2941,6 +3295,9 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       /*--- Constant value of density ---*/
       
       V_outlet[nDim+1] = GetDensity_Inf();
+      
+      /*cout<<"Outlet velocities...(V_outlet) Neumann BC, = normal neighbor"<<endl;
+      for(iVar = 0; iVar < nPrimVar; iVar++) cout<<"Vel: "<<V_outlet[iVar]<<endl;*/
 
             
       /*--- Set various quantities in the solver class ---*/
@@ -2955,6 +3312,8 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       
       /*--- Update residual value ---*/
+      
+      //for(iVar = 0; iVar < nVar; iVar++) cout<<"Res: "<<Residual[iVar]<<endl;
       
       LinSysRes.AddBlock(iPoint, Residual);
       

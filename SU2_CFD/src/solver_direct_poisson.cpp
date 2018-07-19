@@ -729,7 +729,7 @@ void CPoissonSolverFVM:: LoadRestart(CGeometry **geometry, CSolver ***solver, CC
 void CPoissonSolverFVM::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                      CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 										 
-su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j;
+su2double Poisson_Coeff_i,Poisson_Coeff_j,**Sol_i_Grad,**Sol_j_Grad,Poissonval_i,Poissonval_j,*Normal;
 su2double Mom_Coeff;
 unsigned long iEdge, iPoint, jPoint;
 
@@ -779,9 +779,9 @@ unsigned long iEdge, iPoint, jPoint;
 			
 			Poisson_Coeff_j = solver_container[FLOW_SOL]->GetDensity_Inf()*geometry->node[jPoint]->GetVolume()/Mom_Coeff;
 			
-			node[iPoint]->SetPoisson_Coeff(solver_container[FLOW_SOL]->node[iPoint]->GetMean_Mom_Coeff());
+			//node[iPoint]->SetPoisson_Coeff(solver_container[FLOW_SOL]->node[iPoint]->GetMean_Mom_Coeff());
 			
-			node[jPoint]->SetPoisson_Coeff(solver_container[FLOW_SOL]->node[jPoint]->GetMean_Mom_Coeff());
+			//node[jPoint]->SetPoisson_Coeff(solver_container[FLOW_SOL]->node[jPoint]->GetMean_Mom_Coeff());
 			
 			numerics->SetPoisson_Coeff(Poisson_Coeff_i,Poisson_Coeff_j);
 			
@@ -807,6 +807,7 @@ void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_con
                         unsigned short iMesh){
 							
   
+  /*--- Compute gradients so we can use it to find the velocity corrections ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 
@@ -849,9 +850,6 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->ComputeResidual(Residual, Jacobian_i, config);
 
     /*--- Add the source residual to the total ---*/
-    
-    //cout<<"iPoint: "<<iPoint<<" Source Residual: "<<Residual[0]<<endl;
-    
 
     LinSysRes.AddBlock(iPoint, Residual);
     
@@ -1133,30 +1131,7 @@ void CPoissonSolverFVM::Direct_Solve(CGeometry *geometry, CSolver **solver_conta
     }
   }
   
-  cout<<"Jacobian matrix"<<endl;
-  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
-	  cout<<iPoint<<" : ";
-   for (j=0;j<geometry->GetnPointDomain();j++)
-       cout<<CoeffMatrix.GetBlock(iPoint,j,0,0)<<" , ";
-   cout<<endl;
-  }
-  
-  
-   cout<<"RHS"<<endl;
-  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
-	 cout<<iPoint<<" : ";
-    cout<<LinSysRes.GetBlock(iPoint,0);
-   cout<<endl;
-  }
-  
-     /* cout<<"BC"<<endl;
-  for (iPoint=0;iPoint<geometry->GetnPoint();iPoint++){
-	  cout<<iPoint<<" : ";
-      cout<<LinSysSol.GetBlock(iPoint,0);
-   cout<<endl;
-  }*/
    
-  
   /*--- Solve or smooth the linear system ---*/
   
   CSysSolve system;
@@ -1244,7 +1219,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 	
     Volume = 0.5*(geometry->node[iPoint]->GetVolume() + geometry->node[jPoint]->GetVolume());
     
-    //Mom_Coeff = 0.5*(solver_container[FLOW_SOL]->node[iPoint]->GetMean_Mom_Coeff()+solver_container[FLOW_SOL]->node[iPoint]->GetMean_Mom_Coeff());//config->GetPoisson_Coeff
     Poisson_Coeff = 0.5 * (node[iPoint]->GetPoisson_Coeff() + node[iPoint]->GetPoisson_Coeff());
     Lambda = Poisson_Coeff*Area*Area;
     
@@ -1282,7 +1256,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
 	if (Vol != 0.0) {
 		Local_Delta_Time = config->GetCFL(iMesh)*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
-		//cout<<"CFL, Lambda and time step: "<<config->GetCFL(iMesh)<<", "<<node[iPoint]->GetMax_Lambda_Visc()<<" and "<<Local_Delta_Time<<endl;
+		//Local_Delta_Time = 5.0*Vol*Vol/node[iPoint]->GetMax_Lambda_Visc();
 
 		/*--- Min-Max-Logic ---*/
 		Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
@@ -1395,20 +1369,23 @@ void CPoissonSolverFVM::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_cont
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 									
 	BC_Neumann(geometry, solver_container, numerics, config, val_marker) ;
+	//BC_Dirichlet(geometry, solver_container, config, val_marker);
 									 }
                                  
                                  
 void CPoissonSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 								
-   BC_Dirichlet(geometry, solver_container, config, val_marker);
+   BC_Neumann(geometry, solver_container, conv_numerics, config, val_marker) ;
+   //BC_Dirichlet(geometry, solver_container, config, val_marker);
 }
 
 
 void CPoissonSolverFVM::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 								
-   BC_Dirichlet(geometry, solver_container, config, val_marker);
+  //BC_Neumann(geometry, solver_container, conv_numerics, config, val_marker) ;
+  BC_Dirichlet(geometry, solver_container, config, val_marker);
 }
 
 /*-----------------------------------------------------------------------------------------------*/
