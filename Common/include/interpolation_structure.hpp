@@ -436,59 +436,65 @@ public:
 
 };
 
+/*!
+ * \brief Helper class used by CRadialBasisFunction to calculate the interpolation weights.
+ * This does not inherit from CSysMatrix because: it is a dense format rather than block sparse;
+ * as the interpolation is done on a single core there are no methods for communication.
+ * The code can be compiled with LAPACK to use optimized matrix inversion and multiplication routines.
+ * CPPFLAGS="-DHAVE_LAPACK" LDFLAGS=-L/path/to/lapack_lib LIBS="-llapack -lrefblas -lgfortran"
+ */
 class CSymmetricMatrix{
 
-	private:
+  private:
 		
-		/*--- Variables ---*/
-		bool initialized, inversed;
-		int sz, num_val;
-		int *perm_vec;
-		double *val_vec, *decompose_vec, *inv_val_vec;
-		
-		enum DecompositionType { none, cholesky, lu };
-		
-		DecompositionType decomposed;
-		
-		/*--- Methods ---*/
-		inline int CalcIdx(int i, int j);
-		inline int CalcIdxFull(int i, int j);
+    /*--- Variables ---*/
+    bool initialized, inversed;
+    int sz, num_val;
+    int *perm_vec;
+    double *val_vec, *decompose_vec, *inv_val_vec;
 
-	public:
+    enum DecompositionType { none, cholesky, lu };
+		
+    DecompositionType decomposed;
+		
+    /*--- Methods ---*/
+    inline int CalcIdx(int i, int j);
+    inline int CalcIdxFull(int i, int j);
+    inline void CheckBounds(int i, int j);
+
+  public:
 	
-		/*--- Methods ---*/
-		CSymmetricMatrix();
-		~CSymmetricMatrix();
+    /*--- Methods ---*/
+    CSymmetricMatrix();
+    ~CSymmetricMatrix();
 		
-		void Initialize(int N);
-		void Initialize(int N, su2double *formed_val_vec);
+    void Initialize(int N);
+    void Initialize(int N, su2double *formed_val_vec);
 
-		inline int GetSize();
+    inline int GetSize();
 
-		void Write(int i, int j, const su2double& val);
-		double Read(int i, int j);
-		
-		void CholeskyDecompose(bool overwrite);
-		void LUDecompose();
-		void CalcInv(bool overwrite);
-		
-		void CalcInv_dsptri();
-		void CalcInv_dpotri();
-		
-		double ReadL(int i, int j);
-		double ReadU(int i, int j);
-		double ReadInv(int i,int j);
-		
-		void Print();
-		void PrintInv();
-		void PrintLU();
-		void CheckInv();
-		
-		void VecMatMult(double *v);
-		void VecMatMult(double *v, int N);
-		void VecMatMult(double *v, double *res, int N);
-		void MatVecMult(double *v);
+    void Write(int i, int j, const su2double& val);
+    double Read(int i, int j);
 
-		void MatMatMult(bool left_mult, su2double *mat_vec, int N);
+    void CholeskyDecompose(bool overwrite);
+    void LUDecompose();
+    void CalcInv(bool overwrite);
+		
+    void MatVecMult(double *v);
+    void MatMatMult(bool left_mult, su2double *mat_vec, int N);
+		
+    // matrix inverted using LAPACK routines
+    void CalcInv_dsptri();
+    void CalcInv_dpotri() {};
+		
+    double ReadL(int i, int j);
+    double ReadU(int i, int j);
+    double ReadInv(int i,int j);
+    
+    // Helpful functions for debug
+    void Print();
+    void PrintInv();
+    void PrintLU();
+    void CheckInv();
 
 };
