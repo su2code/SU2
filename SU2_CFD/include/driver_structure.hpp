@@ -904,6 +904,11 @@ public:
    */
   bool Monitor(unsigned long ExtIter);
 
+  /*!
+   * \brief To set grid velocity for deforming Mesh
+   */
+  void SetTimeSpectral_Velocities();
+
 };
 
 

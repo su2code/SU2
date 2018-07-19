@@ -5767,7 +5767,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMy[iMarker_Monitoring]        = Surface_CMy_Inv[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]        = Surface_CMz_Inv[iMarker_Monitoring];
   }
-  
+
 }
 
 void CEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
@@ -15381,11 +15381,9 @@ su2double CEulerSolver::GetWorkDone(unsigned short marker_val, unsigned short sp
 
 su2double CEulerSolver::GetWorkDonePerCycle(unsigned short marker_val, unsigned short span_val){
 	su2double WorkDoneTotal=0.0;
-	//cout<<"Work Done Per Cycle :: "<<steps_per_cycle<<endl;
-	for (vector<su2double>::iterator iEW = WorkDonePerCycle.end()-1; iEW >= (WorkDonePerCycle.end()-steps_per_cycle); iEW--){
-		WorkDoneTotal +=*iEW;
-		//cout<<"WorkDoneTotal :: "<<WorkDoneTotal<<endl;
-	}
+		for (vector<su2double>::iterator iEW = WorkDonePerCycle.end()-1; iEW >= (WorkDonePerCycle.end()-steps_per_cycle); iEW--){
+			WorkDoneTotal +=*iEW;
+		}
 	return WorkDoneTotal/steps_per_cycle;
 }
 
@@ -16072,7 +16070,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
-  
+
+  if((config->GetUnsteady_Simulation() != NO)){
+
+  steps_per_cycle = SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND())+1;
+
+  for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
+  	WorkDonePerCycle.push_back(0.0);
+  }
 }
 
 CNSSolver::~CNSSolver(void) {

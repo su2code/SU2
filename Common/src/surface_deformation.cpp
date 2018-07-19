@@ -3569,16 +3569,27 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
 	  su2double period = config->GetHarmonicBalance_Period();
 	  period /= config->GetTime_Ref();
 	  deltaT = period/(su2double)(config->GetnTimeInstances());
+
   }
 
   /*--- Compute delta time based on physical time step ---*/
   time_new = static_cast<su2double>(iter)*deltaT;
+
+  if (harmonic_balance) {
+  	/*--- For harmonic balance, begin movement from the zero position ---*/
+  	time_old = 0.0;
+  } else {
+  	time_old = time_new;
+  	if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
+  }
+
+/*
   if (iter == 0) {
     time_old = time_new;
   } else {
     time_old = static_cast<su2double>(iter-1)*deltaT;
   }
-
+*/
   /*--- Store displacement of each node on the pitching surface ---*/
     /*--- Loop over markers and find the particular marker(s) (surface) to pitch ---*/
 

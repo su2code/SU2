@@ -2502,6 +2502,7 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
     }
   }
   
+
 	/*--- Compute delta change in the angle about the x, y, & z axes. ---*/
   
 	dtheta = -Ampl[0]*(sin(Omega[0]*time_new + Phase[0]) - sin(Omega[0]*time_old + Phase[0]));

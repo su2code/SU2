@@ -4640,6 +4640,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
     
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
+    bool harmonic_balance = (config[val_iZone]->GetUnsteady_Simulation()==HARMONIC_BALANCE);
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
 
@@ -5150,8 +5151,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 //                }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
-//                SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
+				if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
+				else SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -5176,10 +5178,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								//
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-								strcat(turbo_coeff, surface_coeff);
-//                SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+				if(harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+				else SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 //								strcat(turbo_coeff, surface_coeff);
+
+								strcat(turbo_coeff, surface_coeff);
 
 				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_S[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -11112,7 +11115,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
   unsigned short iMarker_PerformanceRow, iMarker_PerformanceStage;
   unsigned short iGeomZone;
 
-  unsigned short nVar_output = 23;      // Number of performance output variables TODO generalize using vectors
+  unsigned short nVar_output = 24;      // Number of performance output variables TODO generalize using vectors
   unsigned short output_precision = 8;
   /*--- Allocate memory for send buffer ---*/
   sbuf_var = new su2double[nVar_output];
@@ -11126,7 +11129,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
 
     HB_output_file.precision(output_precision);
     HB_output_file.open("HB_output.csv", ios::out);
-    HB_output_file <<  "\"Time_instance\",\"Geom_Zone\",\"EntropyGen\",\"KineticEnergyLoss\",\"TotalPressureLoss\",\"h_in\",\"h_out\",\"s_in\",\"s_out\",\"P_in\",\"P_out\",\"M_in\",\"M_out\",\"rho_in\",\"rho_out\",\"alpha_in\",\"alpha_out\",\"beta_in\",\"beta_out\", \"EulerianWork\",\"TS_Efficiency\",\"TT_Efficiency\",\"Avg_s_gen\",\"Avg_Power\",\"Avg_TS_Efficiency\"" << endl;
+    HB_output_file <<  "VARIABLES = \"Time_instance\",\"Geom_Zone\",\"EntropyGen\",\"KineticEnergyLoss\",\"TotalPressureLoss\",\"h_in\",\"h_out\",\"s_in\",\"s_out\",\"P_in\",\"P_out\",\"M_in\",\"M_out\",\"rho_in\",\"rho_out\",\"alpha_in\",\"alpha_out\",\"beta_in\",\"beta_out\", \"EulerianWork\",\"WorkDone_S\",\"TS_Efficiency\",\"TT_Efficiency\",\"Avg_s_gen\",\"Avg_Power\",\"Avg_TS_Efficiency\"" << endl;
 
   }
 
@@ -11159,6 +11162,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
         sbuf_var[++var_tag] = FlowAngleIn[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)]*45/atan(1);
         sbuf_var[++var_tag] = FlowAngleOut[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)]*45/atan(1);
         sbuf_var[++var_tag] = EulerianWork[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = TotalWorkDone_S[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
 
         /*--- Performance calculation stage for all time instances---*/
         if (nGeomZones > 1) {
