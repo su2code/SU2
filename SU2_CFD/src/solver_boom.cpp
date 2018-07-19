@@ -897,22 +897,22 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   ground_flag = false;
   
   while(!ground_flag){
-  	// Preprocessing(iPhi, iIter);
-   //  Spreading(iPhi);
-   //  Stratification(iPhi);
-   // //  if(flt_h - ray_z > 250.){
-   //    Relaxation(iPhi, iIter);
-   // //  }
-   //  Attenuation(iPhi);
-  	// Nonlinearity(iPhi);
-    Preprocessing(iPhi, iIter);
-    // Attenuation(iPhi);
-    // Nonlinearity(iPhi);
-    if(flt_h - ray_z > 100.){
-      Relaxation(iPhi, iIter);
-    }
+  	Preprocessing(iPhi, iIter);
     Spreading(iPhi);
     Stratification(iPhi);
+   //  if(flt_h - ray_z > 250.){
+      Relaxation(iPhi, iIter);
+   //  }
+    Attenuation(iPhi);
+  	Nonlinearity(iPhi);
+    // Preprocessing(iPhi, iIter);
+    // Attenuation(iPhi);
+    // Nonlinearity(iPhi);
+    // if(flt_h - ray_z > 100.){
+    //   Relaxation(iPhi, iIter);
+    // }
+    // Spreading(iPhi);
+    // Stratification(iPhi);
     ray_z -= dz;
     iIter++;
   }
@@ -924,7 +924,7 @@ int rank = 0;
 #endif
 
   if(rank == MASTER_NODE){
-    cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", rho = " << rho0 << ", T = " << T_inf << ", c = " << c0 << ", A = " << ray_A << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
+    cout << "iIter = " << iIter << ", z = " << ray_z << ", A = " << ray_A << ", p = " << p_inf << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
     cout << "Signal propagated in " << iIter << " iterations." << endl;
   }
 
@@ -971,14 +971,16 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     M_a = p_peak/(rho0*pow(c0,2));
     cout << "Acoustic Mach number: " << M_a << endl;
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_U/flt_M);
+      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_U);
   	}
-    // w0 = 2.*M_PI*flt_U/scale_L; // Characteristic time governed by length of signal
-    w0 = 2.*M_PI*flt_U/(flt_M*scale_L); // Characteristic time governed by length of signal
+    f0 = flt_U/scale_L; // Characteristic time governed by length of signal
+    // f0 = ((flt_U/flt_M))/scale_L; // Characteristic time governed by length of signal
+    w0 = 2.*M_PI*f0; 
     c0_old = c0;
     // p0 = Pr;
     // p0 = 50;
     p0 = 101328.2042877057; // From sBOOM output
+    // p0 = p_peak;
     //142.5 // search KZK Boston University
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       signal.P[i] = signal.p_prime[iPhi][i]/p0;
@@ -1003,10 +1005,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     }
     sigFile.close();
 
-    max_dp = 0;
-    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-      max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
-    }
+    // max_dp = 0;
+    // for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+    //   max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
+    // }
   }
   else{
     c0_old = c0;
@@ -1038,10 +1040,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     // scale_L = signal.x[iPhi][iend] - signal.x[iPhi][istart];
     // w0 = 2.*M_PI*flt_U/scale_L; 
     
-    max_dp = 0;
-    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-      max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
-    }
+    // max_dp = 0;
+    // for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+    //   max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
+    // }
   }
 
   /*---Humidity---*/
@@ -1062,36 +1064,42 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
 
-  m_nu_O2 = c0*A_nu_O2/M_PI;
-  m_nu_N2 = c0*A_nu_N2/M_PI;
-  // m_nu_O2 = 2.*c0*A_nu_O2;
-  // m_nu_N2 = 2.*c0*A_nu_N2;
+  // m_nu_O2 = c0*A_nu_O2/M_PI;
+  // m_nu_N2 = c0*A_nu_N2/M_PI;
+  // // m_nu_O2 = 2.*c0*A_nu_O2;
+  // // m_nu_N2 = 2.*c0*A_nu_N2;
 
-  // m_nu_O2 = exp(-m_nu_O2); // Convert from [Np] to [-]
-  // m_nu_N2 = exp(-m_nu_N2);
+  // // m_nu_O2 = exp(-m_nu_O2); // Convert from [Np] to [-]
+  // // m_nu_N2 = exp(-m_nu_N2);
 
   su2double f_nu_O2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
   su2double f_nu_N2 = p_inf/Pr * sqrt(Tr/T_inf) * (9. + 280.*h*exp(-4.170*(pow(Tr/T_inf, 1./3.) - 1.)));
 
-  // tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
-  // tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
-  tau_nu_O2 = 1./(f_nu_O2);
-  tau_nu_N2 = 1./(f_nu_N2);
+  theta_nu_O2 = f0/f_nu_O2;
+  theta_nu_N2 = f0/f_nu_N2;
 
-  theta_nu_O2 = w0*tau_nu_O2;
-  theta_nu_N2 = w0*tau_nu_N2;
-  // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
-  // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
+  C_nu_O2 = A_nu_O2 * f0 * xbar * theta_nu_O2;
+  C_nu_N2 = A_nu_N2 * f0 * xbar * theta_nu_N2;
 
-  // C_nu_O2 = m_nu_O2*theta_nu_O2*w0*xbar/(2*c0);
-  // C_nu_N2 = m_nu_N2*theta_nu_N2*w0*xbar/(2*c0);
-  // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
-  // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
-  C_nu_O2 = m_nu_O2*tau_nu_O2*w0*rho0*pow(c0,2)/(beta*p_peak);
-  C_nu_N2 = m_nu_N2*tau_nu_N2*w0*rho0*pow(c0,2)/(beta*p_peak);
+  // // tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
+  // // tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
+  // tau_nu_O2 = 1./(f_nu_O2);
+  // tau_nu_N2 = 1./(f_nu_N2);
 
-  C_nu_O2 = exp(-C_nu_O2); // Convert from [Np] to [-]
-  C_nu_N2 = exp(-C_nu_N2);
+  // theta_nu_O2 = w0*tau_nu_O2;
+  // theta_nu_N2 = w0*tau_nu_N2;
+  // // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
+  // // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
+
+  // // C_nu_O2 = m_nu_O2*theta_nu_O2*w0*xbar/(2*c0);
+  // // C_nu_N2 = m_nu_N2*theta_nu_N2*w0*xbar/(2*c0);
+  // // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
+  // // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
+  // C_nu_O2 = m_nu_O2*tau_nu_O2*w0*rho0*pow(c0,2)/(beta*p_peak);
+  // C_nu_N2 = m_nu_N2*tau_nu_N2*w0*rho0*pow(c0,2)/(beta*p_peak);
+
+  // C_nu_O2 = exp(-C_nu_O2); // Convert from [Np] to [-]
+  // C_nu_N2 = exp(-C_nu_N2);
 
   if(iIter == 0){
     // dsigma = 0.02*dtau;
@@ -1111,9 +1119,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   // DetermineStepSize(iPhi);
 
 
-  if(iIter%2000 == 0){
-    cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", C_nu_O2 = " << C_nu_O2 << ", C_nu_N2 = " << C_nu_N2;
-    cout << ", theta_nu_O2 = " << theta_nu_O2 << ", theta_nu_N2 = " << theta_nu_N2 << ", Gamma = " << Gamma << ", xbar = " << xbar << endl;
+  if(iIter%100 == 0){
+    // cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", C_nu_O2 = " << C_nu_O2 << ", C_nu_N2 = " << C_nu_N2;
+    // cout << ", theta_nu_O2 = " << theta_nu_O2 << ", theta_nu_N2 = " << theta_nu_N2 << ", Gamma = " << Gamma << ", xbar = " << xbar << endl;
+    cout << "iIter = " << iIter << ", z = " << ray_z << ", A = " << ray_A << ", p = " << p_inf << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
   }
 
 }
@@ -1161,7 +1170,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   cout << "Length scale of waveform = " << scale_L << " m." << endl;
 
   /*---Loop over signal and find smallest spacing---*/
-  su2double dx, dx_min = scale_L/2001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
+  su2double dx, dx_min = scale_L/5001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
   for(unsigned long i = 1; i < signal.len[iPhi]; i++){
     dx = signal.x[iPhi][i] - signal.x[iPhi][i-1];
     dx_min = min(dx, dx_min);
@@ -1191,7 +1200,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   signal.len[iPhi] = ceil(len_new+len_recompress*2.5);
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*1.15), i1 = i0+len_new, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*1.45), i1 = i0+len_new, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_min*su2double(i0-i);
@@ -1366,7 +1375,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);
   su2double dA_dsigma = (A_new-ray_A)/(1.0E-6);
 
-  dsigma_A = abs(0.02*ray_A/dA_dsigma);
+  dsigma_A = abs(0.05*ray_A/dA_dsigma);
   // su2double dxi_dz, deta_dz, ds_dz, ds, z_new;
   // su2double uwind = 0., vwind = 0.;
   // ds = xbar*1.0E-6;
@@ -1408,23 +1417,23 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   cp1 *= (1+0.0016*hp1);
 
   su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-6);
-  dsigma_rc = abs(0.02*rho0*c0/drhoc_dsigma);
+  dsigma_rc = abs(0.05*rho0*c0/drhoc_dsigma);
 
   su2double dc_dsigma = (cp1-c0)/(1.0E-6);
-  dsigma_c = abs(0.02*c0/dc_dsigma);
+  dsigma_c = abs(0.05*c0/dc_dsigma);
 
   /*---Pick minimum dsigma---*/
   dsigma = dsigma_non;
   dsigma = min(dsigma, dsigma_tv);
-  if(flt_h - ray_z > 100.){
+  // if(flt_h - ray_z > 100.){
     dsigma = min(dsigma, dsigma_relO);
     dsigma = min(dsigma, dsigma_relN);
-  }
+  // }
   dsigma = min(dsigma, dsigma_A);
   dsigma = min(dsigma, dsigma_rc);
   dsigma = min(dsigma, dsigma_c);
   dsigma = min(dsigma, dsigma_old);
-  dsigma_old = 1.5*dsigma;
+  dsigma_old = 10.*dsigma;
 
   /*---Check for intersection with ground plane---*/
   ds = xbar*dsigma;
@@ -1545,7 +1554,7 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
 
   su2double lambda[2] = {dsigma*C_nu_O2/pow(dtau,2), dsigma*C_nu_N2/pow(dtau,2)},
             mur[2] = {theta_nu_O2/(2.*dtau), theta_nu_N2/(2.*dtau)},
-            alpha, alpha_p;
+            alpha, alpha_p, a, b, c;
   su2double *y = new su2double[signal.len[iPhi]],
             *ci  = new su2double[signal.len[iPhi]-1],
             *di  = new su2double[signal.len[iPhi]-1];
@@ -1557,8 +1566,6 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
   for(unsigned short j = 0; j < 2; j++){
     /*---Tridiagonal matrix-vector multiplication B_nu * Pk (see Cleveland thesis)---*/
     y[0] = signal.P[0];
-    // y[1] = signal.P[1];
-    // y[signal.len[iPhi]-2] = signal.P[signal.len[iPhi]-2];
     y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
       y[i] = (alpha_p*lambda[j]-mur[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mur[j])*signal.P[i+1];
@@ -1567,11 +1574,12 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
     /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
     ci[0] = 0.;
     di[0] = y[0];
-    // ci[1] = 0.;
-    // di[1] = y[1];
+    a = -(alpha*lambda[j] + mur[j]);
+    b = 1. + 2.*alpha*lambda[j];
+    c = -(alpha*lambda[j] - mur[j]);
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-      ci[i] = -(alpha*lambda[j]-mur[j])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mur[j])*ci[i-1]);
-      di[i] = (y[i] + (alpha*lambda[j]+mur[j])*di[i-1])/((1.+2.*alpha*lambda[j]) + (alpha*lambda[j]+mur[j])*ci[i-1]);
+      ci[i] = c/(b - a*ci[i-1]);
+      di[i] = (y[i] - a*di[i-1])/(b - a*ci[i-1]);
     }
 
     for(int i = signal.len[iPhi]-2; i >= 1; i--){

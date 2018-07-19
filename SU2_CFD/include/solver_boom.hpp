@@ -56,6 +56,7 @@ public:
   /*---ABE variables---*/
   su2double p0, 			// Reference pressure
         p_peak,   // Reference pressure for shock formation distance
+        f0,       // Reference frequency
   			w0,				// Reference angular frequency
         w0_g,     // Angular frequency at the ground
   			rho0,			// Ambient density (function of altitude)
