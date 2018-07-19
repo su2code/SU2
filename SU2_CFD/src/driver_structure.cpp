@@ -6281,6 +6281,8 @@ void CDiscAdjFSIDriver::Iterate_Direct(unsigned short ZONE_FLOW, unsigned short 
 
 void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
+  bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+
   /*-----------------------------------------------------------------*/
   /*------------------- Set Dependency on Geometry ------------------*/
   /*-----------------------------------------------------------------*/
@@ -6290,6 +6292,11 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
 
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+  
+  if(turbulent){
+    solver_container[ZONE_FLOW][MESH_0][TURB_SOL]->Postprocessing(geometry_container[ZONE_FLOW][MESH_0], solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0);
+    solver_container[ZONE_FLOW][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+  }
 
   /*-----------------------------------------------------------------*/
   /*----------------- Iterate the flow solver -----------------------*/
@@ -6312,6 +6319,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
 
 void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
+  bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
 
   /*-----------------------------------------------------------------*/
   /*---------- Set Dependencies on Geometry and Flow ----------------*/
@@ -6325,6 +6333,11 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
   solver_container[ZONE_FLOW][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][MESH_0],solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
+  if(turbulent){
+    solver_container[ZONE_FLOW][MESH_0][TURB_SOL]->Postprocessing(geometry_container[ZONE_FLOW][MESH_0], solver_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW], MESH_0);
+    solver_container[ZONE_FLOW][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][MESH_0], config_container[ZONE_FLOW]);
+  }
+  
   /*-----------------------------------------------------------------*/
   /*-------------------- Transfer Tractions -------------------------*/
   /*-----------------------------------------------------------------*/
