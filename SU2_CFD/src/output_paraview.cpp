@@ -41,6 +41,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     
   unsigned short iDim, iVar, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
+  unsigned short iInst = config->GetiInst();
     
   unsigned long iPoint, iElem, iNode;
   unsigned long iExtIter = config->GetExtIter();
@@ -125,11 +126,11 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   }
     
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(iInst) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 10) && (SU2_TYPE::Int(iInst) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 100) && (SU2_TYPE::Int(iInst) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(iInst));
+    if ((SU2_TYPE::Int(iInst) >= 1000) && (SU2_TYPE::Int(iInst) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(iInst));
+    if (SU2_TYPE::Int(iInst) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(iInst));
         
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
@@ -378,18 +379,18 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
 
       bool isVector = false;
-      size_t found = config->fields[iField].find("X-");
+      size_t found = config->fields[iField].find("_x");
       if (found!=string::npos) {
         output_variable = true;
         isVector = true;
       }
-      found = config->fields[iField].find("Y-");
+      found = config->fields[iField].find("_y");
       if (found!=string::npos) {
         output_variable = false;
         //skip
         VarCounter++;
       }
-      found = config->fields[iField].find("Z-");
+      found = config->fields[iField].find("_z");
       if (found!=string::npos) {
         output_variable = false;
         //skip
@@ -400,7 +401,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
         /*--- Several output variables should be written as vectors. ---*/
 
-        fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+        fieldname.erase(fieldname.end()-2,fieldname.end());
 
         if (rank == MASTER_NODE) {
           Paraview_File << "\nVECTORS " << fieldname << " double\n";
@@ -1841,7 +1842,7 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
 }
 
-void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol) {
 
   unsigned short iDim, nDim = geometry->GetnDim();
   unsigned short Kind_Solver = config->GetKind_Solver();
@@ -1919,11 +1920,11 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
-    if (SU2_TYPE::Int(val_iZone) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 10) && (SU2_TYPE::Int(val_iZone) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 100) && (SU2_TYPE::Int(val_iZone) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iZone));
-    if ((SU2_TYPE::Int(val_iZone) >= 1000) && (SU2_TYPE::Int(val_iZone) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iZone));
-    if (SU2_TYPE::Int(val_iZone) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iZone));
+    if (SU2_TYPE::Int(val_iInst) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 10) && (SU2_TYPE::Int(val_iInst) < 100)) SPRINTF (buffer, "_000%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 100) && (SU2_TYPE::Int(val_iInst) < 1000)) SPRINTF (buffer, "_00%d.vtk", SU2_TYPE::Int(val_iInst));
+    if ((SU2_TYPE::Int(val_iInst) >= 1000) && (SU2_TYPE::Int(val_iInst) < 10000)) SPRINTF (buffer, "_0%d.vtk", SU2_TYPE::Int(val_iInst));
+    if (SU2_TYPE::Int(val_iInst) >= 10000) SPRINTF (buffer, "_%d.vtk", SU2_TYPE::Int(val_iInst));
 
   } else if (config->GetUnsteady_Simulation() && config->GetWrt_Unsteady()) {
     if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d.vtk", SU2_TYPE::Int(iExtIter));
@@ -2188,12 +2189,12 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
 
     bool output_variable = true, isVector = false;
-    size_t found = Variable_Names[iField].find("X-");
+    size_t found = Variable_Names[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
     }
-    found = Variable_Names[iField].find("Y-");
+    found = Variable_Names[iField].find("_y");
     if (found!=string::npos) {
       output_variable = false;
       //skip
@@ -2203,7 +2204,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 #endif
       VarCounter++;
     }
-found = Variable_Names[iField].find("Z-");
+found = Variable_Names[iField].find("_z");
     if (found!=string::npos) {
       output_variable = false;
       //skip
@@ -2216,7 +2217,7 @@ found = Variable_Names[iField].find("Z-");
 
     if (output_variable && isVector) {
 
-      fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+      fieldname.erase(fieldname.end()-2,fieldname.end());
 
       if (rank == MASTER_NODE) {
         Paraview_File << "\nVECTORS " << fieldname << " double\n";

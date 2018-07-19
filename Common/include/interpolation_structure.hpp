@@ -65,7 +65,6 @@ using namespace std;
  * \brief Main class for defining the interpolator, it requires
  * a child class for each particular interpolation method
  * \author H. Kline
- * \version 3.2.9 "eagle"
  */
 class CInterpolator {
 protected:
@@ -113,7 +112,7 @@ protected:
   nLocalLinkedNodes;                   /*!\brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
 public:
-  CGeometry*** Geometry;        /*! \brief Vector which stores n zones of geometry. */
+  CGeometry**** Geometry;        /*! \brief Vector which stores n zones of geometry. */
   CGeometry* donor_geometry;    /*! \brief Vector which stores the donor geometry. */
   CGeometry* target_geometry;   /*! \brief Vector which stores the target geometry. */
 
@@ -129,7 +128,7 @@ public:
  * \param[in] iZone - index of the donor zone
  * \param[in] jZone - index of the target zone
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -213,7 +212,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CNearestNeighbor(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -241,7 +240,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CIsoparametric(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -289,7 +288,7 @@ public:
    * Data is set in geometry[targetZone]
    *
    */
-  CMirror(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -317,7 +316,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -413,7 +412,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CRadialBasisFunction(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CRadialBasisFunction(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
