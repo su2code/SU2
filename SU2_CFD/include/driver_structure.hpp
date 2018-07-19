@@ -1187,7 +1187,8 @@ class CDiscAdjFSIDriver : public CFSIDriver {
             flow_criteria_rel,
             structure_criteria,
             structure_criteria_rel;
-
+  
+  bool filterCrossTerm;
 
   enum OF_KIND{
     NO_OBJECTIVE_FUNCTION = 0,               /*!< \brief Indicates that there is no objective function. */
