@@ -5153,6 +5153,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								strcat(turbo_coeff, surface_coeff);
 				if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
 				else SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
+//               SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
 
 								strcat(turbo_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", EulerianWork[iMarker_Monitoring][nSpanWiseSections]);
@@ -5180,10 +5181,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								strcat(turbo_coeff, surface_coeff);
 				if(harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
 				else SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-//								strcat(turbo_coeff, surface_coeff);
+//               SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
 
 								strcat(turbo_coeff, surface_coeff);
-
 				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_S[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_D[iMarker_Monitoring][nSpanWiseSections]);

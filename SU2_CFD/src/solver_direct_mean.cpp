@@ -4732,6 +4732,7 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
   bool ideal_gas        = (config->GetKind_FluidModel() == STANDARD_AIR || config->GetKind_FluidModel() == IDEAL_GAS );
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
   bool low_mach_corr    = config->Low_Mach_Correction();
+  bool minmod			= config->GetKind_SlopeLimit_Flow() == MINMOD;
 
   /*--- Loop over all the edges ---*/
 
@@ -4785,16 +4786,52 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
           Project_Grad_j += Vector_j[iDim]*Gradient_j[iVar][iDim]*Non_Physical;
         }
         if (limiter) {
-          if (van_albada){
-            Limiter_i[iVar] = (V_j[iVar]-V_i[iVar])*(2.0*Project_Grad_i + V_j[iVar]-V_i[iVar])/(4*Project_Grad_i*Project_Grad_i+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
-            Limiter_j[iVar] = (V_j[iVar]-V_i[iVar])*(-2.0*Project_Grad_j + V_j[iVar]-V_i[iVar])/(4*Project_Grad_j*Project_Grad_j+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
-          }
-          Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+
+        	if (van_albada){
+        		Limiter_i[iVar] = (V_j[iVar]-V_i[iVar])*(2.0*Project_Grad_i + V_j[iVar]-V_i[iVar])/(4*Project_Grad_i*Project_Grad_i+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
+        		Limiter_j[iVar] = (V_j[iVar]-V_i[iVar])*(-2.0*Project_Grad_j + V_j[iVar]-V_i[iVar])/(4*Project_Grad_j*Project_Grad_j+(V_j[iVar]-V_i[iVar])*(V_j[iVar]-V_i[iVar])+EPS);
+        		Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+        		Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        	}
+        	else if (minmod){
+        		su2double Sol_Left  = max(V_i[iVar] - Project_Grad_i, 0.0);
+        		su2double Sol_Right = max(V_j[iVar] - Project_Grad_j, 0.0);
+        		su2double Delta_Left=0.0, Delta_Right=0.0, Delta = 0.0;
+
+
+        		Delta_Left = V_i[iVar]-Sol_Left; Delta_Right = (V_j[iVar]-V_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        			Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *min(fabs(Delta_Left),fabs(Delta_Right));
+        		Primitive_i[iVar] = V_i[iVar] + Delta ;
+
+        		Delta_Left = Sol_Right-V_j[iVar]; Delta_Right = (V_j[iVar]-V_i[iVar])/2;
+
+        		if (Delta_Left > 0 && Delta_Right > 0) {
+        			Delta    = 1.0;
+        		} else if (Delta_Left < 0 && Delta_Right < 0) {
+        			Delta = -1.0;
+        		} else {
+        			Delta = 0;
+        		}
+        		Delta = Delta *min(fabs(Delta_Left),fabs(Delta_Right));
+        		Primitive_j[iVar] = V_j[iVar] - Delta ;
+        	}
+        	else{
+        		Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+        		Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
+        	}
         }
+
         else {
-          Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
-          Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
+        	Primitive_i[iVar] = V_i[iVar] + Project_Grad_i;
+        	Primitive_j[iVar] = V_j[iVar] + Project_Grad_j;
         }
       }
 
@@ -5379,6 +5416,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
 #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv, MyAllBound_CMx_Inv, MyAllBound_CMy_Inv, MyAllBound_CMz_Inv, MyAllBound_CoPx_Inv, MyAllBound_CoPy_Inv, MyAllBound_CoPz_Inv, MyAllBound_CFx_Inv, MyAllBound_CFy_Inv, MyAllBound_CFz_Inv, MyAllBound_CT_Inv, MyAllBound_CQ_Inv, MyAllBound_CNearFieldOF_Inv, *MySurface_CL_Inv = NULL, *MySurface_CD_Inv = NULL, *MySurface_CSF_Inv = NULL, *MySurface_CEff_Inv = NULL, *MySurface_CFx_Inv = NULL, *MySurface_CFy_Inv = NULL, *MySurface_CFz_Inv = NULL, *MySurface_CMx_Inv = NULL, *MySurface_CMy_Inv = NULL, *MySurface_CMz_Inv = NULL;
+  su2double MyAllBound_LocalWork;
 #endif
   
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
@@ -5429,7 +5467,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_CoPx_Inv = 0.0;         AllBound_CoPy_Inv = 0.0;  AllBound_CoPz_Inv = 0.0;
   AllBound_CFx_Inv = 0.0;          AllBound_CFy_Inv = 0.0;   AllBound_CFz_Inv = 0.0;
   AllBound_CT_Inv = 0.0;           AllBound_CQ_Inv = 0.0;    AllBound_CMerit_Inv = 0.0;
-  AllBound_CNearFieldOF_Inv = 0.0; AllBound_CEff_Inv = 0.0;
+  AllBound_CNearFieldOF_Inv = 0.0; AllBound_CEff_Inv = 0.0; AllBound_LocalWork=0.0;
   
   for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     Surface_CL_Inv[iMarker_Monitoring]      = 0.0; Surface_CD_Inv[iMarker_Monitoring]      = 0.0;
@@ -5602,6 +5640,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           AllBound_CT_Inv           += CT_Inv[iMarker];
           AllBound_CQ_Inv           += CQ_Inv[iMarker];
           AllBound_CMerit_Inv        = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
+          AllBound_LocalWork	+=LocalWork;
           
           /*--- Compute the coefficients per surface ---*/
           
@@ -5658,6 +5697,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   MyAllBound_CQ_Inv           = AllBound_CQ_Inv;           AllBound_CQ_Inv = 0.0;
   AllBound_CMerit_Inv = 0.0;
   MyAllBound_CNearFieldOF_Inv = AllBound_CNearFieldOF_Inv; AllBound_CNearFieldOF_Inv = 0.0;
+  MyAllBound_LocalWork = AllBound_LocalWork;
   
   SU2_MPI::Allreduce(&MyAllBound_CD_Inv, &AllBound_CD_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&MyAllBound_CL_Inv, &AllBound_CL_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -5676,6 +5716,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   SU2_MPI::Allreduce(&MyAllBound_CQ_Inv, &AllBound_CQ_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CMerit_Inv = AllBound_CT_Inv / (AllBound_CQ_Inv + EPS);
   SU2_MPI::Allreduce(&MyAllBound_CNearFieldOF_Inv, &AllBound_CNearFieldOF_Inv, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_LocalWork, &AllBound_LocalWork, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   
   /*--- Add the forces on the surfaces using all the nodes ---*/
   
@@ -5752,6 +5793,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
+  LocalWork	=	AllBound_LocalWork;
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   

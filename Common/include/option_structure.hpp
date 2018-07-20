@@ -616,7 +616,8 @@ enum ENUM_LIMITER {
   BARTH_JESPERSEN      = 3, /*!< \brief Slope limiter using Barth-Jespersen method (stencil formulation). */
   VAN_ALBADA_EDGE      = 4, /*!< \brief Slope limiter using Van Albada method (edge formulation). */
   SHARP_EDGES          = 5, /*!< \brief Slope limiter using sharp edges. */
-  WALL_DISTANCE        = 6  /*!< \brief Slope limiter using wall distance. */
+  WALL_DISTANCE        = 6,  /*!< \brief Slope limiter using wall distance. */
+  MINMOD        	   = 7  /*!< \brief Slope limiter using wall distance. */
 };
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
 ("NONE", NO_LIMITER)
@@ -625,7 +626,8 @@ static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIM
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", WALL_DISTANCE);
+("WALL_DISTANCE", WALL_DISTANCE)
+("MINMOD", MINMOD);
 
 /*!
  * \brief types of turbulent models
