@@ -9405,14 +9405,14 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     fieldnames.push_back("\"x\"");
     fieldnames.push_back("\"y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"z\",");
+      fieldnames.push_back("\"z\"");
     }
     fieldnames.push_back("\"Sensitivity_x\"");
     fieldnames.push_back("\"Sensitivity_y\"");
     if (nDim == 3) {
       fieldnames.push_back("\"Sensitivity_z\"");
     }
-    fieldnames.push_back("\"Sensitivity\"");
+    fieldnames.push_back("\"Surface_Sensitivity\"");
 
     solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
 
@@ -10435,9 +10435,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   GlobalField_Counter += nVar_Consv_Par;
   
   Variable_Names.push_back("Density");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("Momentum_x");
+  Variable_Names.push_back("Momentum_y");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Momentum_z");
   Variable_Names.push_back("Energy");
   
   if (SecondIndex != NONE) {
@@ -10461,9 +10461,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       GlobalField_Counter += nVar_Consv_Par;
       
       Variable_Names.push_back("Limiter_Density");
-      Variable_Names.push_back("Limiter_X-Momentum");
-      Variable_Names.push_back("Limiter_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      Variable_Names.push_back("Limiter_Momentum_x");
+      Variable_Names.push_back("Limiter_Momentum_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Momentum_z");
       Variable_Names.push_back("Limiter_Energy");
       
       if (SecondIndex != NONE) {
@@ -10483,9 +10483,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       GlobalField_Counter += nVar_Consv_Par;
       
       Variable_Names.push_back("Residual_Density");
-      Variable_Names.push_back("Residual_X-Momentum");
-      Variable_Names.push_back("Residual_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      Variable_Names.push_back("Residual_Momentum_x");
+      Variable_Names.push_back("Residual_Momentum_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Momentum_z");
       Variable_Names.push_back("Residual_Energy");
       
       if (SecondIndex != NONE) {
@@ -10505,9 +10505,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
       else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
       
-      Variable_Names.push_back("X-Grid_Velocity");
-      Variable_Names.push_back("Y-Grid_Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
     
     
@@ -10531,12 +10531,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
-        GlobalField_Counter += 2;
-        Variable_Names.push_back("X-Skin_Friction_Coefficient");
-        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
+        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+        nVar_Par += 2;
+        Variable_Names.push_back("Skin_Friction_Coefficient_x");
+        Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          GlobalField_Counter += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -10940,9 +10940,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   /*--- The incompressible solver uses primitives as the working variables. ---*/
 
   Variable_Names.push_back("Pressure");
-  Variable_Names.push_back("X-Velocity");
-  Variable_Names.push_back("Y-Velocity");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Velocity");
+  Variable_Names.push_back("Velocity_x");
+  Variable_Names.push_back("Velocity_y");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Velocity_z");
   Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
@@ -10966,9 +10966,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       GlobalField_Counter += nVar_Consv_Par;
 
       Variable_Names.push_back("Limiter_Pressure");
-      Variable_Names.push_back("Limiter_X-Velocity");
-      Variable_Names.push_back("Limiter_Y-Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Velocity");
+      Variable_Names.push_back("Limiter_Velocity_x");
+      Variable_Names.push_back("Limiter_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Velocity_z");
       Variable_Names.push_back("Limiter_Temperature");
 
       if (SecondIndex != NONE) {
@@ -10988,9 +10988,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       GlobalField_Counter += nVar_Consv_Par;
 
       Variable_Names.push_back("Residual_Pressure");
-      Variable_Names.push_back("Residual_X-Velocity");
-      Variable_Names.push_back("Residual_Y-Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Velocity");
+      Variable_Names.push_back("Residual_Velocity_x");
+      Variable_Names.push_back("Residual_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
       Variable_Names.push_back("Residual_Temperature");
 
       if (SecondIndex != NONE) {
@@ -11010,9 +11010,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
       else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
 
-      Variable_Names.push_back("X-Grid_Velocity");
-      Variable_Names.push_back("Y-Grid_Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
 
     /*--- Add Cp, Mach. ---*/
@@ -11029,12 +11029,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
-        GlobalField_Counter += 2;
-        Variable_Names.push_back("X-Skin_Friction_Coefficient");
-        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
+        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
+        nVar_Par += 2;
+        Variable_Names.push_back("Skin_Friction_Coefficient_x");
+        Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          GlobalField_Counter += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -11411,16 +11411,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 
   if (incompressible) {
     Variable_Names.push_back("Adjoint_Pressure");
-    Variable_Names.push_back("Adjoint_X-Velocity");
-    Variable_Names.push_back("Adjoint_Y-Velocity");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Velocity");
+    Variable_Names.push_back("Adjoint_Velocity_x");
+    Variable_Names.push_back("Adjoint_Velocity_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Velocity_z");
     Variable_Names.push_back("Adjoint_Temperature");
   } else {
     Variable_Names.push_back("Adjoint_Density");
-    Variable_Names.push_back("Adjoint_X-Momentum");
-    Variable_Names.push_back("Adjoint_Y-Momentum");
+    Variable_Names.push_back("Adjoint_Momentum_x");
+    Variable_Names.push_back("Adjoint_Momentum_y");
     if (geometry->GetnDim() == 3)
-      Variable_Names.push_back("Adjoint_Z-Momentum");
+      Variable_Names.push_back("Adjoint_Momentum_z");
     Variable_Names.push_back("Adjoint_Energy");
   }
   if (SecondIndex != NONE) {
@@ -11457,16 +11457,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       GlobalField_Counter += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Limiter_Adjoint_Pressure");
-        Variable_Names.push_back("Limiter_Adjoint_X-Velocity");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Velocity");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Limiter_Adjoint_Velocity_x");
+        Variable_Names.push_back("Limiter_Adjoint_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Velocity_z");
         Variable_Names.push_back("Limiter_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Limiter_Adjoint_Density");
-        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_Momentum_x");
+        Variable_Names.push_back("Limiter_Adjoint_Momentum_y");
         if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+          Variable_Names.push_back("Limiter_Adjoint_Momentum_z");
         Variable_Names.push_back("Limiter_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
@@ -11486,16 +11486,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       GlobalField_Counter += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Residual_Adjoint_Pressure");
-        Variable_Names.push_back("Residual_Adjoint_X-Velocity");
-        Variable_Names.push_back("Residual_Adjoint_Y-Velocity");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Residual_Adjoint_Velocity_x");
+        Variable_Names.push_back("Residual_Adjoint_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Velocity_z");
         Variable_Names.push_back("Residual_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Residual_Adjoint_Density");
-        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_Momentum_x");
+        Variable_Names.push_back("Residual_Adjoint_Momentum_y");
         if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+          Variable_Names.push_back("Residual_Adjoint_Momentum_z");
         Variable_Names.push_back("Residual_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
@@ -11512,11 +11512,11 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the grid velocity. ---*/
     
     if (grid_movement) {
-      if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
-      else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
-      Variable_Names.push_back("Grid_Velx");
-      Variable_Names.push_back("Grid_Vely");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+      if (geometry->GetnDim() == 2) nVar_Par += 2;
+      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
     
     /*--- All adjoint solvers write the surface sensitivity. ---*/
@@ -11804,55 +11804,45 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
    names. Names can be set alternatively by using the commented code
    below. ---*/
   
-  Variable_Names.push_back("Displacement_1");
-  Variable_Names.push_back("Displacement_2");
+  Variable_Names.push_back("Displacement_x");
+  Variable_Names.push_back("Displacement_y");
   if (geometry->GetnDim() == 3)
-    Variable_Names.push_back("Displacement_3");
+    Variable_Names.push_back("Displacement_z");
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
   if (!config->GetLow_MemoryOutput()) {
     
-    /*--- Add the limiters ---*/
-    
-    if (config->GetWrt_Limiters()) {
-      GlobalField_Counter += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Displacement_1");
-      Variable_Names.push_back("Limiter_Displacement_2");
-      if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Limiter_Displacement_3");
-    }
-    
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      GlobalField_Counter += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Displacement_1");
-      Variable_Names.push_back("Residual_Displacement_2");
+      nVar_Par += nVar_Consv_Par;
+      Variable_Names.push_back("Residual_Displacement_x");
+      Variable_Names.push_back("Residual_Displacement_y");
       if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Residual_Displacement_3");
+        Variable_Names.push_back("Residual_Displacement_z");
     }
     
     /*--- If the analysis is dynamic... ---*/
     if (config->GetDynamic_Analysis() == DYNAMIC) {
       
       /*--- Velocities ---*/
-      GlobalField_Counter += 2;
-      Variable_Names.push_back("Velocity_1");
-      Variable_Names.push_back("Velocity_2");
+      nVar_Par += 2;
+      Variable_Names.push_back("Velocity_x");
+      Variable_Names.push_back("Velocity_y");
       if (geometry->GetnDim() == 3) {
-        GlobalField_Counter += 1;
-        Variable_Names.push_back("Velocity_3");
+        nVar_Par += 1;
+        Variable_Names.push_back("Velocity_z");
       }
       
       /*--- Accelerations ---*/
-      GlobalField_Counter += 2;
-      Variable_Names.push_back("Acceleration_1");
-      Variable_Names.push_back("Acceleration_2");
+      nVar_Par += 2;
+      Variable_Names.push_back("Acceleration_x");
+      Variable_Names.push_back("Acceleration_y");
       if (geometry->GetnDim() == 3) {
-        GlobalField_Counter += 1;
-        Variable_Names.push_back("Acceleration_3");
+        nVar_Par += 1;
+        Variable_Names.push_back("Acceleration_z");
       }
     }
     
@@ -11957,12 +11947,6 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       }
       
       if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
-            iVar++;
-          }
-        }
         if (config->GetWrt_Residuals()) {
           for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
