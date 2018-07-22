@@ -10348,10 +10348,6 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
 
-      /*--- Clear the variable names list. ---*/
-
-      Variable_Names.clear();
-
     }
 
 }
@@ -13844,10 +13840,6 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
   delete [] nPoint_Send;
   delete [] nPoint_Flag;
   
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
-    delete [] Local_Data[iPoint];
-  delete [] Local_Data;
-  
   delete [] Local_Halo;
   delete [] npoint_procs;
   delete [] starting_node;
@@ -15722,7 +15714,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   delete [] buf;
 
-  delete [] Local_Halo;
   delete [] npoint_procs;
   delete [] nPoint_Linear;
 
