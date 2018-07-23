@@ -213,6 +213,18 @@ def main():
     pass_list.append(discadj_euler_py.run_filediff())
     test_list.append(discadj_euler_py)
     
+    # test discrete_adjoint with multiple ffd boxes
+    discadj_multiple_ffd_py = TestCase('discadj_multiple_ffd_py')
+    discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
+    discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
+    discadj_multiple_ffd_py.test_iter = 10
+    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
+    discadj_multiple_ffd_py.timeout   = 1600
+    discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
+    discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
+    pass_list.append(discadj_multiple_ffd_py.run_filediff())
+    test_list.append(discadj_multiple_ffd_py)
+
     # test direct_differentiation.py
     directdiff_euler_py = TestCase('directdiff_euler_py')
     directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
@@ -224,6 +236,18 @@ def main():
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     pass_list.append(directdiff_euler_py.run_filediff())
     test_list.append(directdiff_euler_py)
+
+    # test direct_differentiation.py with multiple ffd boxes
+    directdiff_multiple_ffd_py = TestCase('directdiff_multiple_ffd_py')
+    directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
+    directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
+    directdiff_multiple_ffd_py.test_iter = 10
+    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
+    directdiff_multiple_ffd_py.timeout   = 1600
+    directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
+    directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff())
+    test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
     discadj_multi_py            = TestCase('discadj_multi_py')
