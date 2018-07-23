@@ -69,8 +69,8 @@ void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
     LaminarViscosity = new CSutherland(config->GetMu_RefND(), config->GetMu_Temperature_RefND(), config->GetMu_SND());
     break;
   case LUT_VISCOSITY:
-		LaminarViscosity = new CLookUpTable_Viscosity(config, config->GetBoolDimensionalLUTViscosity());
-		break;
+	LaminarViscosity = new CLookUpTable_Viscosity(config, config->GetBoolDimensionalLUTViscosity());
+	break;
 
     }
 }
