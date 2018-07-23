@@ -260,7 +260,7 @@ def get_headerMap(nZones = 1):
                  "D(Secondary_Strength)"        : "D_SURFACE_SECONDARY"             ,
                  "D(Momentum_Distortion)"       : "D_SURFACE_MOM_DISTORTION"        ,
                  "D(Secondary_Over_Uniformity)" : "D_SURFACE_SECOND_OVER_UNIFORM"   ,
-                 "D(Pressure_Drop"              : "D_SURFACE_PRESSURE_DROP"         }
+                 "D(Pressure_Drop)"             : "D_SURFACE_PRESSURE_DROP"         }
  
     return history_header_map        
 
