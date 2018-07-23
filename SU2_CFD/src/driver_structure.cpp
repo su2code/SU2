@@ -925,6 +925,10 @@ void CDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][iInst][iMGlevel]->SetBoundControlVolume(config_container[iZone], geometry_container[iZone][iInst][iMGlevel-1], ALLOCATE);
         geometry_container[iZone][iInst][iMGlevel]->SetCoord(geometry_container[iZone][iInst][iMGlevel-1]);
 
+        /*--- Compute the max length. ---*/
+
+        geometry_container[iZone][iInst][iMGlevel]->SetMaxLength();
+
         /*--- Find closest neighbor to a surface point ---*/
 
         geometry_container[iZone][iInst][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);

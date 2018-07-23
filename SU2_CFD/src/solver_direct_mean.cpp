@@ -14067,6 +14067,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      geometry[iMesh]->SetMaxLength();
       }
     }
 
@@ -14094,6 +14095,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetMaxLength();
     }
   }
   
