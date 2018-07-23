@@ -370,6 +370,7 @@ private:
   unsigned short nMGLevels;		/*!< \brief Number of multigrid levels (coarse levels). */
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
+  Molecular_Mass,
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_2phase,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
@@ -658,6 +659,7 @@ private:
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
   Restart_2phaseFileName,			/*!< \brief Restart file for 2phase variables. */
+  LUT_FileName,
   Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
@@ -671,6 +673,7 @@ private:
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
   bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  LUT_Debug_Mode,
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -3427,6 +3430,8 @@ public:
    */
   unsigned short GetKind_2phase_Model(void);
 
+  bool GetLUT_Debug_Mode(void);
+
   /*!
      * \brief Get the kind of the nucleation model.
      * \return Kind of the nucleation model.
@@ -3438,6 +3443,8 @@ public:
        * \return Kind of the liquid model.
        */
       unsigned short GetKind_Liquid_Model(void);
+
+      su2double GetMolecular_Mass(void);
 
   /*!
    * \brief Get the kind of the transition model.
@@ -4654,6 +4661,8 @@ public:
    * \return Name of the restart file for the 2phase variables.
    */
   string GetRestart_2phaseFileName(void);
+
+  string GetLUTFileName(void);
 
   /*!
    * \brief Get the name of the file with the adjoint variables.

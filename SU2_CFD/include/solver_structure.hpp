@@ -48,6 +48,7 @@
 #include <stdio.h>
 
 #include "fluid_model.hpp"
+#include "fluid_model_lut.hpp"
 #include "liquid_phase_model.hpp"
 #include "numerics_structure.hpp"
 #include "variable_structure.hpp"

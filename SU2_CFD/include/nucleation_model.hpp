@@ -1,4 +1,5 @@
 /*!
+ /*!
  * \file nucleation_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
@@ -61,8 +62,9 @@ class CNucleationModel {
 
 protected: su2double J, G;
 
-		   su2double Gas_Constant;
-		   su2double Boltzmann, MolMass;
+		   su2double Gas_Constant, Fluid;
+		   double    Boltzmann, MolMass;
+
 
 
 
@@ -85,13 +87,13 @@ public:
      * \brief compute the nucleation rate.
      */
     virtual   su2double SetNucleationRate(su2double P, su2double T, su2double rho,
-            su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_Liquid);
+            su2double h, su2double k, su2double mu, su2double Gamma, su2double HeatCapP, su2double *V_Liquid);
 
     /*!
      * \brief compute the growth rate.
      */
     virtual   su2double SetGrowthRate(su2double P, su2double T, su2double rho,
-            su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_Liquid);
+            su2double h, su2double k, su2double mu, su2double Gamma, su2double HeatCapP, su2double *V_Liquid);
 
 };
 
@@ -123,13 +125,13 @@ public:
    * \brief compute the nucleation rate.
    */
   su2double SetNucleationRate(su2double P, su2double T, su2double rho,
-          su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_Liquid);
+          su2double h, su2double k, su2double mu, su2double Gamma, su2double HeatCapP, su2double *V_Liquid);
 
   /*!
    * \brief compute the growth rate.
    */
   su2double SetGrowthRate(su2double P, su2double T, su2double rho,
-          su2double h, su2double k, su2double mu, su2double Gamma, su2double *V_Liquid);
+          su2double h, su2double k, su2double mu, su2double Gamma, su2double HeatCapP, su2double *V_Liquid);
 
 };
 

@@ -574,6 +574,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief KIND_LIQUID_MODEL \n DESCRIPTION: Specify liquid model \n Options: DEFAULT: WATER \ingroup Config*/
   addEnumOption("KIND_LIQUID_MODEL", Kind_Liquid_Model, Liquid_Model_Map, WATER);
 
+  /*!\brief KIND_LIQUID_MODEL \n DESCRIPTION: Specify liquid model \n Options: DEFAULT: WATER \ingroup Config*/
+  addDoubleOption("MOLECULAR_MASS", Molecular_Mass, 0.018);
+
+
+
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
@@ -1309,6 +1314,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
+
+  /* DESCRIPTION: Look Up Table filename, used by both fluid and transport models.*/
+  addStringOption("LUT_FILENAME", LUT_FileName, string("LUT"));
+
+  /* DESCRIPTION: Debug mode for the LookUpTable fluid model, i.e. enable printing of errors*/
+  addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, false);
 
   addStringOption("RESTART_2PHASE_FILENAME", Restart_2phaseFileName, string("restart_2phase.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/

@@ -87,6 +87,7 @@ libSU2Core_sources = \
   ../src/fluid_model_pig.cpp \
   ../src/fluid_model_pvdw.cpp \
   ../src/fluid_model_ppr.cpp \
+  ../src/fluid_model_lut.cpp \
   ../src/heat_capacity.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \

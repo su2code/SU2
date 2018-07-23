@@ -470,6 +470,8 @@ inline su2double CConfig::GetLimiterCoeff(void) { return LimiterCoeff; }
 
 inline su2double CConfig::GetLimiterCoeff_2phase(void) { return LimiterCoeff_2phase; }
 
+inline bool CConfig::GetLUT_Debug_Mode(void) { return LUT_Debug_Mode; }
+
 inline unsigned long CConfig::GetLimiterIter(void) { return LimiterIter; }
 
 inline su2double CConfig::GetSharpEdgesCoeff(void) { return SharpEdgesCoeff; }
@@ -1252,6 +1254,8 @@ inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName
 
 inline string CConfig::GetRestart_2phaseFileName(void) { return Restart_2phaseFileName; }
 
+inline string CConfig::GetLUTFileName(void) { return LUT_FileName; }
+
 inline string CConfig::GetAdj_FileName(void) { return Adj_FileName; }
 
 inline string CConfig::GetObjFunc_Grad_FileName(void) { return ObjFunc_Grad_FileName; }
@@ -1622,5 +1626,7 @@ inline su2double* CConfig::GetFFD_BSplineOrder(){return FFD_BSpline_Order;}
 
 
 inline unsigned short CConfig::GetKind_Nucleation_Model(void) { return Kind_Nucleation_Model; }
+
+inline su2double CConfig::GetMolecular_Mass(void) { return Molecular_Mass; }
 
 inline unsigned short CConfig::GetKind_Liquid_Model(void) { return Kind_Liquid_Model; }

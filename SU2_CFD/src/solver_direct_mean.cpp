@@ -3707,6 +3707,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   Density_FreeStream  = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
 
+  if (config->GetKind_FluidModel() == LUT) {Energy_Ref = 1; config->SetEnergy_Ref(Energy_Ref);}
+
   switch (config->GetKind_FluidModel()) {
 
     case STANDARD_AIR:
@@ -3800,6 +3802,21 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         config->SetTemperature_FreeStream(Temperature_FreeStream);
       }
       break;
+
+
+    case LUT:
+       FluidModel = new CLookUpTable(config, true);
+       if (free_stream_temp) {
+         FluidModel->SetTDState_PT(Pressure_FreeStream, Temperature_FreeStream);
+         Density_FreeStream = FluidModel->GetDensity();
+         config->SetDensity_FreeStream(Density_FreeStream);
+       }
+       else {
+         FluidModel->SetTDState_Prho(Pressure_FreeStream, Density_FreeStream );
+         Temperature_FreeStream = FluidModel->GetTemperature();
+         config->SetTemperature_FreeStream(Temperature_FreeStream);
+       }
+       break;
 
   }
 
@@ -4027,6 +4044,11 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
       break;
       
+    case LUT:
+		  FluidModel = new CLookUpTable(config, false);
+		  FluidModel->SetEnergy_Prho(Pressure_FreeStreamND, Density_FreeStreamND);
+		  break;
+
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -4058,7 +4080,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   if (tkeNeeded) { Energy_FreeStreamND += Tke_FreeStreamND; };  config->SetEnergy_FreeStreamND(Energy_FreeStreamND);
   
   Energy_Ref = Energy_FreeStream/Energy_FreeStreamND; config->SetEnergy_Ref(Energy_Ref);
-  
+
   Total_UnstTimeND = config->GetTotal_UnstTime() / Time_Ref;    config->SetTotal_UnstTimeND(Total_UnstTimeND);
   Delta_UnstTimeND = config->GetDelta_UnstTime() / Time_Ref;    config->SetDelta_UnstTimeND(Delta_UnstTimeND);
   
@@ -4121,6 +4143,18 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
         cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
         break;
+
+
+      case LUT:
+          cout << "Fluid Model: Structured P-rho LUT "<< endl;
+          cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+          cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND()<< endl;
+          cout << "Specific Heat Ratio: "<< Gamma << endl;
+          cout << "Critical Pressure:   " << config->GetPressure_Critical()  << " Pa." << endl;
+          cout << "Critical Temperature:  " << config->GetTemperature_Critical() << " K." << endl;
+          cout << "Critical Pressure (non-dim):   " << config->GetPressure_Critical() /config->GetPressure_Ref() << endl;
+          cout << "Critical Temperature (non-dim) :  " << config->GetTemperature_Critical() /config->GetTemperature_Ref() << endl;
+          break;
 
     }
     if (viscous) {
