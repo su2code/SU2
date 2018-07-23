@@ -315,30 +315,30 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
     muTurb = muTurb_new;
 
-    if(residual < 0.00000001){
+    if(residual < 0.000001){
       converged = true;
       tauWall = (mu[0] + muTurb[0]) * ( (u[1] - u[0])/(y[1] - y[0]) );
       qWall = c_p * (mu[0]/Pr_lam + muTurb[0]/Pr_turb) * ( (T[1] - T[0]) / (y[1] - y[0]));
       ViscosityWall = mu[0] + muTurb[0];
       kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
-
-//      // Debugging output
-//      cout << "tauWall = " << tauWall << endl;
-//      cout << "qWall = " << qWall << endl;
-//      cout << "ViscosityWall = " << ViscosityWall << endl;
-//      cout << "kOverCvWall = " << kOverCvWall << endl;
-//      cout << "y, u, T, mu, muTurb, rho" << endl;
-//      for(unsigned short i=0; i<numPoints; i++){
-//        cout << y[i] << ", ";
-//        cout << u[i] << ", ";
-//        cout << T[i] << ", ";
-//        cout << mu[i] << ", ";
-//        cout << muTurb[i] << ", ";
-//        cout << rho[i] << ", ";
-//        cout << endl;
     }
     else if(j == 50){
       cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Wall Model did not converge" << endl;
+      //      // Debugging output
+      //      cout << "tauWall = " << tauWall << endl;
+      //      cout << "qWall = " << qWall << endl;
+      //      cout << "ViscosityWall = " << ViscosityWall << endl;
+      //      cout << "kOverCvWall = " << kOverCvWall << endl;
+      //      cout << "y, u, T, mu, muTurb, rho" << endl;
+      //      for(unsigned short i=0; i<numPoints; i++){
+      //        cout << y[i] << ", ";
+      //        cout << u[i] << ", ";
+      //        cout << T[i] << ", ";
+      //        cout << mu[i] << ", ";
+      //        cout << muTurb[i] << ", ";
+      //        cout << rho[i] << ", ";
+      //        cout << endl;
+      //	  }
       SU2_MPI::Error("Did not converge", CURRENT_FUNCTION);
     }
 
