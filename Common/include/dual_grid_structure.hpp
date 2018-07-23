@@ -573,12 +573,12 @@ public:
 	 * \param[in] val_Volume - Value of the volume.
 	 */
 	void SetVolume(su2double val_Volume);
-	
-  /*!
-   * \brief Set the max cell-center to cell-center length.
-   * \param[in] val_max_length - Value of the max length
-   */
-  void SetMaxLength(su2double val_max_length);
+
+        /*!
+         * \brief Set the max cell-center to cell-center length.
+         * \param[in] val_max_length - Value of the max length
+         */
+        void SetMaxLength(su2double val_max_length);
 
 	/*! 
 	 * \brief Set if a element is going to be moved on the deformation process.

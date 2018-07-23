@@ -15879,7 +15879,7 @@ void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action)
   }
   
   config->SetDomainVolume(DomainVolume);
-
+  
   delete[] Coord_Edge_CG;
   delete[] Coord_FaceElem_CG;
   delete[] Coord_Elem_CG;
