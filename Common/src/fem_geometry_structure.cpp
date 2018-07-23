@@ -5734,130 +5734,143 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
   if(config->GetKind_TimeIntScheme_Flow() == ADER_DG)
     TimeCoefficientsPredictorADER_DG(config);
 
+  /* Define the double vector to define the values of the mass matrix
+     contributions of the standard element in the integration points. */
+  vector<vector<su2double> > valMMInt;
+  valMMInt.resize(standardElementsSol.size());
+
+  /* Loop over the different standard elements. */
+  for(unsigned long i=0; i<standardElementsSol.size(); ++i) {
+    
+    /* Get the required data from the standard element. */
+    const unsigned short nInt  = standardElementsSol[i].GetNIntegration();
+    const unsigned short nDOFs = standardElementsSol[i].GetNDOFs();
+    const su2double      *lag  = standardElementsSol[i].GetBasisFunctionsIntegration();
+    const su2double      *w    = standardElementsSol[i].GetWeightsIntegration();
+
+    /* Allocate the memory for valMMInt[i]. */
+    valMMInt[i].resize(nDOFs*nDOFs*nInt);
+
+    /* Create the values of valMMInt[i], which is a matrix of size
+       nDOFs2XnInt stored in row major order. */
+    unsigned int ll = 0;
+    for(unsigned short k=0; k<nDOFs; ++k)
+      for(unsigned short j=0; j<nDOFs; ++j)
+        for(unsigned short l=0; l<nInt; ++l, ++ll)
+          valMMInt[i][ll] = w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
+  }
+
   /* Loop over the owned volume elements. */
   for(unsigned long i=0; i<nVolElemOwned; ++i) {
 
     /* Easier storage of the index of the corresponding standard element and
-       determine the number of integration points, the number of DOFs for the
-       solution, the Lagrangian interpolation functions in the integration points
-       and the weights in the integration points. */
-    const unsigned short ind   = volElem[i].indStandardElement;
-    const unsigned short nInt  = standardElementsSol[ind].GetNIntegration();
-    const unsigned short nDOFs = volElem[i].nDOFsSol;
-    const su2double      *lag  = standardElementsSol[ind].GetBasisFunctionsIntegration();
-    const su2double      *w    = standardElementsSol[ind].GetWeightsIntegration();
+       get the necessary information from it. */
+    const unsigned short ind    = volElem[i].indStandardElement;
+    const unsigned short nInt   = standardElementsSol[ind].GetNIntegration();
+    const unsigned short nDOFs  = volElem[i].nDOFsSol;
+    const unsigned int   nDOFs2 = nDOFs*nDOFs;
+    const su2double     *valInt = valMMInt[ind].data();
 
-    /*--- Check if the mass matrix or its inverse must be computed. ---*/
-    if(FullMassMatrix || FullInverseMassMatrix) {
+    /* Copy the data of the Jacobian in the integration points in
+       a separate vector. */
+    vector<su2double> JacVec(nInt);
+    su2double *Jac = JacVec.data();
 
-      /* Allocate the memory for working vector for the construction
-         of the mass matrix. */
-      vector<su2double> massMat(nDOFs*nDOFs, 0.0);
+    for(unsigned short l=0; l<nInt; ++l)
+      Jac[l] = volElem[i].metricTerms[l*nMetricPerPoint];
 
-      /*--- Double loop over the DOFs to create the local mass matrix. ---*/
-      unsigned short ll = 0;
-      for(unsigned short k=0; k<nDOFs; ++k) {
-        for(unsigned short j=0; j<nDOFs; ++j, ++ll) {
+    /* Allocate the memory for working vector for the construction
+       of the mass matrix and initialize it to zero.. */
+    vector<su2double> massMat(nDOFs2);
 
-          /* Loop over the integration point to create the actual value of entry
-             (k,j) of the local mass matrix. */
-          for(unsigned short l=0; l<nInt; ++l)
-            massMat[ll] += volElem[i].metricTerms[l*nMetricPerPoint]
-                         * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
-        }
-      }
-
-      /* Store the full mass matrix in volElem[i], if needed. */
-      if( FullMassMatrix ) volElem[i].massMatrix = massMat;
-
-      /*--- Check if the inverse of mass matrix is needed. ---*/
-      if( FullInverseMassMatrix ) {
-
-        /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
-
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
-
-        /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
-           and LAPACKE_dpotri. As the mass matrix is positive definite, a
-           Cholesky decomposition is used, which is much more efficient than
-           a standard inverse. */
-        lapack_int errorCode;
-        errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   massMat.data(), nDOFs);
-        if(errorCode != 0) {
-          ostringstream message;
-          if(errorCode < 0)  {
-            message << "Something wrong when calling LAPACKE_dpotrf. Error code: "
-                    << errorCode;
-          }
-          else {
-            message << "Mass matrix not positive definite. " << endl;
-            message << "This is most likely caused by a too low accuracy of the quadrature rule," << endl;
-            message << "possibly combined with a low quality element." << endl;
-            message << "Increase the accuracy of the quadrature rule.";
-          }
-
-          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-        }
-
-        errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   massMat.data(), nDOFs);
-        if(errorCode != 0) {
-          ostringstream message;
-          if(errorCode < 0) {
-            message << "Something wrong when calling LAPACKE_dpotri. Error code: "
-                    << errorCode;
-          }
-          else {
-            message << "Mass matrix is singular. " << endl;
-            message << "The is most likely caused by a too low accuracy of the quadrature rule, " << endl;
-            message << "possibly combined with a low quality element." << endl;
-            message << "Increase the accuracy of the quadrature rule.";
-          }
-
-          SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-        }
-
-        /* The Lapack routines for a Cholesky decomposition only store the upper
-           part of the matrix. Copy the data to the lower part. */
-        for(unsigned short k=0; k<nDOFs; ++k) {
-          for(unsigned short j=(k+1); j<nDOFs; ++j) {
-            massMat[j*nDOFs+k] = massMat[k*nDOFs+j];
-          }
-        }
-#else
-        /* No support for Lapack. Hence an internal routine is used.
-           This does not all the checking the Lapack routine does. */
-        FEMStandardElementBaseClass::InverseMatrix(nDOFs, massMat);
-#endif
-        /* Store the inverse of the mass matrix in volElem[i]. */
-        volElem[i].invMassMatrix = massMat;
-      }
+    /* Construct the mass matrix by looping over the elements of massMat
+       and summing up the contributions from the integration points. */
+    for(unsigned int k=0; k<nDOFs2; ++k) {
+      const su2double *val = valInt + k*nInt;
+      for(unsigned short l=0; l<nInt; ++l)
+        massMat[k] += val[l]*Jac[l];
     }
+
+    /* Store the full mass matrix in volElem[i], if needed. */
+    if( FullMassMatrix ) volElem[i].massMatrix = massMat;
 
     /*--- Check if the lumped mass matrix is needed. ---*/
     if( LumpedMassMatrix ) {
 
-      /* Allocate the memory for the lumped mass matrix. */
-      volElem[i].lumpedMassMatrix.resize(nDOFs);
+      /* Allocate the memory for the lumped mass matrix and initialize them to zero.. */
+      volElem[i].lumpedMassMatrix.assign(nDOFs, 0.0);
 
-      /*--- Loop over the DOFs to compute the diagonal elements of the local mass
-            matrix. It is the sum of the absolute values of the row. ---*/
+      /* Loop over the DOFs to compute the elements of the local lumped mass
+         matrix. It is the sum of the absolute values of the row. */
       for(unsigned short j=0; j<nDOFs; ++j) {
-        volElem[i].lumpedMassMatrix[j] = 0.0;
+        const su2double *val = massMat.data() + j*nDOFs;
+        for(unsigned short k=0; k<nDOFs; ++k)
+          volElem[i].lumpedMassMatrix[j] += fabs(val[k]);
+      }
+    }
 
-        /* Loop over the DOFs to compute the elements of the row of the mass matrix. */
-        for(unsigned short k=0; k<nDOFs; ++k) {
+    /*--- Check if the inverse of mass matrix is needed. ---*/
+    if( FullInverseMassMatrix ) {
 
-          su2double Mjk = 0.0;
-          for(unsigned short l=0; l<nInt; ++l)
-            Mjk += volElem[i].metricTerms[l*nMetricPerPoint]
-                 * w[l]*lag[l*nDOFs+k]*lag[l*nDOFs+j];
+      /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
 
-          /* Update the lumped mass matrix. */
-          volElem[i].lumpedMassMatrix[j] += fabs(Mjk);
+#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+
+      /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
+         and LAPACKE_dpotri. As the mass matrix is positive definite, a
+         Cholesky decomposition is used, which is much more efficient than
+         a standard inverse. */
+      lapack_int errorCode;
+      errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
+                                   massMat.data(), nDOFs);
+      if(errorCode != 0) {
+        ostringstream message;
+        if(errorCode < 0)  {
+          message << "Something wrong when calling LAPACKE_dpotrf. Error code: "
+                  << errorCode;
+        }
+        else {
+          message << "Mass matrix not positive definite. " << endl;
+          message << "This is most likely caused by a too low accuracy of the quadrature rule," << endl;
+          message << "possibly combined with a low quality element." << endl;
+          message << "Increase the accuracy of the quadrature rule.";
+        }
+
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+
+      errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
+                                   massMat.data(), nDOFs);
+      if(errorCode != 0) {
+        ostringstream message;
+        if(errorCode < 0) {
+          message << "Something wrong when calling LAPACKE_dpotri. Error code: "
+                  << errorCode;
+        }
+        else {
+          message << "Mass matrix is singular. " << endl;
+          message << "The is most likely caused by a too low accuracy of the quadrature rule, " << endl;
+          message << "possibly combined with a low quality element." << endl;
+          message << "Increase the accuracy of the quadrature rule.";
+        }
+
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+
+      /* The Lapack routines for a Cholesky decomposition only store the upper
+         part of the matrix. Copy the data to the lower part. */
+      for(unsigned short k=0; k<nDOFs; ++k) {
+        for(unsigned short j=(k+1); j<nDOFs; ++j) {
+          massMat[j*nDOFs+k] = massMat[k*nDOFs+j];
         }
       }
+#else
+      /* No support for Lapack. Hence an internal routine is used.
+         This does not all the checking the Lapack routine does. */
+      FEMStandardElementBaseClass::InverseMatrix(nDOFs, massMat);
+#endif
+      /* Store the inverse of the mass matrix in volElem[i]. */
+      volElem[i].invMassMatrix = massMat;
     }
   }
 }
