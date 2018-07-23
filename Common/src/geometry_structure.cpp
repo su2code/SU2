@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -7812,24 +7812,9 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
 
   }
-
-  /*--- Periodic transormations is not implemented yet. Store default 
-   zeros to avoid issues. We will rewrite the periodic BCs from scratch. ---*/
   
-  unsigned short nPeriodic = 1, iPeriodic = 0;
-  config->SetnPeriodicIndex(nPeriodic);
-  su2double* center    = new su2double[3];
-  su2double* rotation  = new su2double[3];
-  su2double* translate = new su2double[3];
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-  }
-  config->SetPeriodicCenter(iPeriodic, center);
-  config->SetPeriodicRotation(iPeriodic, rotation);
-  config->SetPeriodicTranslate(iPeriodic, translate);
-  delete [] center; delete [] rotation; delete [] translate;
-
-  /*--- initialize pointers for turbomachinery computations  ---*/
+  /*--- Initialize pointers for turbomachinery computations  ---*/
+  
   nSpanWiseSections       = new unsigned short[2];
   SpanWiseValue           = new su2double*[2];
   for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
@@ -7865,7 +7850,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     MinRelAngularCoord[iMarker]     = NULL;
   }
 
-  /*--- initialize pointers for turbomachinery performance computation  ---*/
+  /*--- Initialize pointers for turbomachinery performance computation  ---*/
+  
   nTurboPerf     = config->GetnMarker_TurboPerformance();
   TangGridVelIn  = new su2double*[config->GetnMarker_TurboPerformance()];
   SpanAreaIn     = new su2double*[config->GetnMarker_TurboPerformance()];
@@ -8556,7 +8542,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long iElem_Bound = 0, iPoint = 0, ielem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex;
+  vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
   unsigned long i;
   long local_index;
   vector<unsigned long>::iterator it;
@@ -8586,7 +8572,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Initialize counters for local/global points & elements ---*/
   
 #ifdef HAVE_MPI
-  unsigned long LocalIndex, j;
+  unsigned long j;
 #endif
   
   /*--- Actuator disk preprocesing ---*/
@@ -9113,7 +9099,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   if (val_nZone > 1 || harmonic_balance) {
     if (harmonic_balance) {
-      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << "." << endl;
+      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -9301,7 +9287,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           else {
             ostringstream strsX, strsY, strsZ;
             unsigned long BackActDisk_Index = node_count;
-            unsigned long LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
+            LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
             strsX.precision(20); strsY.precision(20); strsZ.precision(20);
             su2double CoordX = CoordXActDisk[LocalIndex]; strsX << scientific << CoordX;
             su2double CoordY = CoordYActDisk[LocalIndex]; strsY << scientific << CoordY;
@@ -9367,7 +9353,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -9912,7 +9898,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -10254,7 +10240,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- If more than one, find the zone in the mesh file ---*/
   
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -12035,21 +12021,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       }
     }
     
-    /*--- Periodic transormations is not implement, store default zeros ---*/
-    unsigned short nPeriodic = 1, iPeriodic = 0;
-    config->SetnPeriodicIndex(nPeriodic);
-    su2double* center    = new su2double[3];
-    su2double* rotation  = new su2double[3];
-    su2double* translate = new su2double[3];
-    for (unsigned short iDim = 0; iDim < 3; iDim++) {
-      center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-    }
-    config->SetPeriodicCenter(iPeriodic, center);
-    config->SetPeriodicRotation(iPeriodic, rotation);
-    config->SetPeriodicTranslate(iPeriodic, translate);
-    delete [] center; delete [] rotation; delete [] translate;
-    
   }
+
+  /*--- Periodic transformations are not implemented yet for CGNS.
+   Store default zeros. ---*/
+  
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  su2double* center    = new su2double[3];
+  su2double* rotation  = new su2double[3];
+  su2double* translate = new su2double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
+  delete [] center; delete [] rotation; delete [] translate;
   
   /*--- Deallocate temporary memory. ---*/
   
@@ -19795,7 +19783,11 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Apply roll to cut the nacelle ---*/
 
-    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Angle = MinAngle + iPlane*dAngle*PI_NUMBER/180.0;
+    
+    if (Angle <= 0) Angle = 1E-6;
+    if (Angle >= 360) Angle = 359.999999;
+
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);
@@ -20041,12 +20033,12 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   
 }
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
+CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
    need access to the other zones in the mesh for zone boundaries. ---*/
   
-  CGeometry *fine_grid = geometry[iZone][iMesh-1];
+  CGeometry *fine_grid = geometry[iZone][iInst][iMesh-1];
   CConfig *config = config_container[iZone];
   
   /*--- Local variables ---*/
