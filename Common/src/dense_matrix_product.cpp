@@ -59,6 +59,23 @@ void gemm_arbitrary(int m, int n, int k, const su2double *a, int lda,
   }
 }
 
+/* Blocking parameters for the outer kernel.  We multiply mc x kc blocks of A
+   with kc x nc panels of B (this approach is referred to as `gebp` in the
+   literature). */
+constexpr int mc = 256;
+constexpr int kc = 128;
+constexpr int nc = 128;
+
+/* Compute a portion of C one block at a time.  Handle ragged edges with calls
+   to a slow but general function. */
+void gemm_inner(int m, int n, int k, const su2double *a, int lda,
+                const su2double *b, int ldb, su2double *c, int ldc) {
+
+  /* Carry out the multiplication for this block. At the
+     moment simply a call to gemm_arbitrary. */
+  gemm_arbitrary(m, n, k, a, lda, b, ldb, c, ldc);
+}
+
 /* Local implementation of the matrix multiplication. */
 void su2_gemm(const int m,        const int n,        const int k,
               const su2double *a, const su2double *b, su2double *c) {
@@ -71,8 +88,20 @@ void su2_gemm(const int m,        const int n,        const int k,
   const int ldb = k;
   const int ldc = m;
 
-  /* Call gemm_arbitrary to do the actual job. */
-  gemm_arbitrary(m, n, k, a, lda, b, ldb, c, ldc);
+  /* The full matrix multiplication is split in several blocks.
+     Loop over these blocks. */
+  for(int p=0; p<k; p+=kc) {
+    int pb = min(k-p, kc);
+    for(int j=0; j<n; j+=nc) {
+      int jb = min(n-j, nc);
+      for(int i=0; i<m; i+=mc) {
+        int ib = min(m-i, mc);
+
+        /* Carry out the multiplication for this block. */
+        gemm_inner(ib, jb, pb, &A(i, p), lda, &B(p, j), ldb, &C(i, j), ldc);
+      }
+    }
+  } 
 }
 
 #undef C
@@ -93,7 +122,7 @@ void DenseMatrixProduct(const int M,        const int N,        const int K,
   /* The gemm function of libxsmm is used to carry out the multiplication.
      Note that libxsmm_gemm expects the matrices in column major order. That's
      why the calling sequence is different from cblas_dgemm. */
-  libxsmm_gemm(NULL, NULL, N, M, K, NULL, B, NULL, A, NULL, NULL, C, NULL);
+    libxsmm_gemm(NULL, NULL, N, M, K, NULL, B, NULL, A, NULL, NULL, C, NULL);
 
 #elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
