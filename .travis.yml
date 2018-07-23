@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - fixed-term.Charanya.Venkatesan-Crome@us.bosch.com
   
 branches:
     only:
-        - develop
+        - feature_directdiff_obj
 
 python:
     - 2.7
