@@ -122,7 +122,15 @@ void DenseMatrixProduct(const int M,        const int N,        const int K,
   /* The gemm function of libxsmm is used to carry out the multiplication.
      Note that libxsmm_gemm expects the matrices in column major order. That's
      why the calling sequence is different from cblas_dgemm. */
-    libxsmm_gemm(NULL, NULL, N, M, K, NULL, B, NULL, A, NULL, NULL, C, NULL);
+  int ldb = N;
+  int lda = K;
+  int ldc = N;
+
+  su2double alpha = 1.0;
+  su2double beta  = 0.0;
+  char trans = 'N';
+
+  libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &ldb, A, &lda, &beta, C, &ldc);
 
 #elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
