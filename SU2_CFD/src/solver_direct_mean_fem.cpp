@@ -4503,16 +4503,50 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
              account for this offset in the actual interpolation loop. */
           su2double *solThisInt = solInt + nVar*(intPoint - intStart);
 
-          /* Carry out the actual interpolation. */
-          for(unsigned short j=0; j<nTimeDOFs; ++j) {
+          /* Carry out the actual interpolation. Make a distinction between
+             2D and 3D for performance reasons. */
+          switch( nDim ) {
+            case 2: {
+              for(unsigned short j=0; j<nTimeDOFs; ++j) {
 
-            const su2double *solPredTimeInd = solPred + j*nVarNDOFs;
-            for(unsigned short i=0; i<nDOFs; ++i) {
-              su2double       *ssol     = solThisInt + i*NPadInt;
-              const su2double *ssolPred = solPredTimeInd + i*nVar;
+                if(DOFToThisTimeInt[j] != 0.0) {
+                  const unsigned int indPredTime = j*nVarNDOFs;
 
-              for(unsigned short k=0; k<nVar; ++k)
-                ssol[k] += DOFToThisTimeInt[j]*ssolPred[k];
+                  for(unsigned short i=0; i<nDOFs; ++i) {
+                    const unsigned int indSol  = i*NPadInt;
+                    const unsigned int indPred = indPredTime + i*nVar;
+
+                    solThisInt[indSol]   += DOFToThisTimeInt[j]*solPred[indPred];
+                    solThisInt[indSol+1] += DOFToThisTimeInt[j]*solPred[indPred+1];
+                    solThisInt[indSol+2] += DOFToThisTimeInt[j]*solPred[indPred+2];
+                    solThisInt[indSol+3] += DOFToThisTimeInt[j]*solPred[indPred+3];
+                  }
+                }
+              }
+
+              break;
+            }
+
+            case 3: {
+              for(unsigned short j=0; j<nTimeDOFs; ++j) {
+
+                if(DOFToThisTimeInt[j] != 0.0) {
+                  const unsigned int indPredTime = j*nVarNDOFs;
+
+                  for(unsigned short i=0; i<nDOFs; ++i) {
+                    const unsigned int indSol  = i*NPadInt;
+                    const unsigned int indPred = indPredTime + i*nVar;
+
+                    solThisInt[indSol]   += DOFToThisTimeInt[j]*solPred[indPred];
+                    solThisInt[indSol+1] += DOFToThisTimeInt[j]*solPred[indPred+1];
+                    solThisInt[indSol+2] += DOFToThisTimeInt[j]*solPred[indPred+2];
+                    solThisInt[indSol+3] += DOFToThisTimeInt[j]*solPred[indPred+3];
+                    solThisInt[indSol+4] += DOFToThisTimeInt[j]*solPred[indPred+4];
+                  }
+                }  
+              } 
+
+              break;
             }
           }
         }
@@ -4584,31 +4618,76 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
             const su2double *DOFToThisTimeInt = timeInterpolDOFToIntegrationADER_DG
                                               + intPoint*nTimeDOFs;
 
-            /* Loop over the time DOFs for this chunk of time DOFs. */
-            for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
+            /* Update the actual interpolation. Make a distinction between
+               2D and 3D for performance reasons. */
+            switch( nDim ) {
+              case 2: {
 
-              /* Set the pointer to the address where the 1st residual of the
-                 1st spatial DOF starts for this time DOF. In this way there is
-                 no need to account for this offset in the loop below. */
-              su2double *resThisTimeDOF = res + nVar*(iTimeDOF-DOFStart);
+                /* Loop over the time DOFs for this time integration point and check
+                   if this time integration point contributes to the residual of
+                   this time DOF. */
+                for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
+                  if(DOFToThisTimeInt[iTimeDOF] != 0.0) {
 
-              /* Determine the multiplication factor for this time DOF. The factor
-                 0.5 is present, because the length of the interval [-1..1] is 2. */
-              const su2double w = 0.5*timeIntegrationWeights[intPoint]
-                                * VecDeltaTime[l]*DOFToThisTimeInt[iTimeDOF];
+                    /* Determine the index where the 1st residual of the 1st spatial
+                       DOF starts for this time DOF. Also determine the multiplication
+                       factor for this time DOF. The factor 0.5 is present, because
+                       the length of the interval in parameter space, [-1..1], is 2. */
+                    const unsigned int indResThisTimeDOF = nVar*(iTimeDOF-DOFStart);
+                    const su2double w = 0.5*timeIntegrationWeights[intPoint]
+                                      * VecDeltaTime[l]*DOFToThisTimeInt[iTimeDOF];
 
-              /* Loop over the number of spatial DOFs to update their residuals. */
-              for(unsigned short i=0; i<nDOFs; ++i) {
+                    /* Loop over the number of spatial DOFs to update their residuals. Note
+                       the minus sign, see the comment in the larger comment section above. */
+                    for(unsigned short i=0; i<nDOFs; ++i) {
 
-                /* Set the pointers to the residual of the integration point and
-                   the total residual for this spatial DOF. */
-                const su2double *rresInt = resThisInt + i*NPadInt;
-                su2double       *rresDOF = resThisTimeDOF + i*NPadDOF;
+                      const unsigned int indResThisInt = i*NPadInt;
+                      const unsigned int indResDOF     = indResThisTimeDOF + i*NPadDOF;
 
-                /* Update the residual. Note the minus sign, see the comment in
-                   the larger comment section above. */
-                for(unsigned short k=0; k<nVar; ++k)
-                  rresDOF[k] -= w*rresInt[k];
+                      res[indResDOF]   -= w*resThisInt[indResThisInt];
+                      res[indResDOF+1] -= w*resThisInt[indResThisInt+1];
+                      res[indResDOF+2] -= w*resThisInt[indResThisInt+2];
+                      res[indResDOF+3] -= w*resThisInt[indResThisInt+3];
+                    }
+                  }
+                }
+
+                break;
+              }
+
+              case 3: {
+
+                /* Loop over the time DOFs for this time integration point and check
+                   if this time integration point contributes to the residual of
+                   this time DOF. */
+                for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
+                  if(DOFToThisTimeInt[iTimeDOF] != 0.0) {
+
+                    /* Determine the index where the 1st residual of the 1st spatial
+                       DOF starts for this time DOF. Also determine the multiplication
+                       factor for this time DOF. The factor 0.5 is present, because
+                       the length of the interval in parameter space, [-1..1], is 2. */
+                    const unsigned int indResThisTimeDOF = nVar*(iTimeDOF-DOFStart);
+                    const su2double w = 0.5*timeIntegrationWeights[intPoint]
+                                      * VecDeltaTime[l]*DOFToThisTimeInt[iTimeDOF];
+
+                    /* Loop over the number of spatial DOFs to update their residuals. Note
+                       the minus sign, see the comment in the larger comment section above. */
+                    for(unsigned short i=0; i<nDOFs; ++i) {
+
+                      const unsigned int indResThisInt = i*NPadInt;
+                      const unsigned int indResDOF     = indResThisTimeDOF + i*NPadDOF;
+
+                      res[indResDOF]   -= w*resThisInt[indResThisInt];
+                      res[indResDOF+1] -= w*resThisInt[indResThisInt+1];
+                      res[indResDOF+2] -= w*resThisInt[indResThisInt+2];
+                      res[indResDOF+3] -= w*resThisInt[indResThisInt+3];
+                      res[indResDOF+4] -= w*resThisInt[indResThisInt+4];
+                    }
+                  }
+                }
+
+                break;
               }
             }
           }
@@ -4649,31 +4728,77 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
         DenseMatrixProduct(nDOFs, NPadDOF, nDOFs, volElem[l].invMassMatrix.data(),
                            res, resInt);
 
-        /* Loop over the time DOFs for this chunk of time DOFs. */
-        for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
+        /* Make a distinction between 2D and 3D for performance reasons. */
+        switch( nDim ) {
+          case 2: {
 
-          /* Set the pointer to the address where the 1st entry of the
-             1st spatial DOF starts for this time DOF. In this way there is
-             no need to account for this offset in the loop below. */
-          const su2double *resThisTimeDOF = resInt + nVar*(iTimeDOF-DOFStart);
+            /* Loop over the time DOFs for this chunk of time DOFs. */
+            for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
 
-          /* Loop over all the time DOFs to compute the contribution of
-             iTimeDOF to the update. */
-          for(unsigned short jTimeDOF=0; jTimeDOF<nTimeDOFs; ++jTimeDOF) {
+              /* Index of the 1st entry of the 1st spatial DOF starts for this time DOF. */
+              const unsigned int indResThisTimeDOF = nVar*(iTimeDOF-DOFStart);
 
-            /* Determine the entry in timeCoefADER_DG needed to update
-               timeDOF jTimeDOF with the residual of iTimeDOF. */
-            const su2double coefADER = timeCoefADER_DG[jTimeDOF*nTimeDOFs+iTimeDOF];
+              /* Loop over all the time DOFs to compute the contribution of
+                 iTimeDOF to the update. */
+              for(unsigned short jTimeDOF=0; jTimeDOF<nTimeDOFs; ++jTimeDOF) {
 
-            /* Loop over the spatial DOFs and update dSol for time DOF jTimeDOF. */
-            su2double *dSolTimeInd = dSol + jTimeDOF*nVarNDOFs;
-            for(unsigned short i=0; i<nDOFs; ++i) {
-              const su2double *rres  = resThisTimeDOF + i*NPadDOF;
-              su2double       *ddSol = dSolTimeInd    + i*nVar;
+                /* Easier storage of the ADER coefficient of timeDOF jTimeDOF
+                   to the residual of iTimeDOF and determine the starting
+                   index for the update for timeDOF jTimeDOF. */
+                const su2double coefADER = timeCoefADER_DG[jTimeDOF*nTimeDOFs+iTimeDOF];
+                const unsigned int indDSolTimeInd = jTimeDOF*nVarNDOFs;
 
-              for(unsigned short k=0; k<nVar; ++k)
-                ddSol[k] += coefADER*rres[k];
+                /* Loop over the spatial DOFs for timeDOF jTimeDOF and update dSol. */
+                for(unsigned short i=0; i<nDOFs; ++i) {
+
+                  const unsigned int indResInt = indResThisTimeDOF + i*NPadDOF;
+                  const unsigned int indDSol   = indDSolTimeInd    + i*nVar;
+
+                  dSol[indDSol]   += coefADER*resInt[indResInt];
+                  dSol[indDSol+1] += coefADER*resInt[indResInt+1];
+                  dSol[indDSol+2] += coefADER*resInt[indResInt+2];
+                  dSol[indDSol+3] += coefADER*resInt[indResInt+3];
+                }
+              }
             }
+
+            break;
+          }
+
+          case 3: {
+
+            /* Loop over the time DOFs for this chunk of time DOFs. */
+            for(unsigned short iTimeDOF=DOFStart; iTimeDOF<DOFEnd; ++iTimeDOF) {
+
+              /* Index of the 1st entry of the 1st spatial DOF starts for this time DOF. */
+              const unsigned int indResThisTimeDOF = nVar*(iTimeDOF-DOFStart);
+
+              /* Loop over all the time DOFs to compute the contribution of
+                 iTimeDOF to the update. */
+              for(unsigned short jTimeDOF=0; jTimeDOF<nTimeDOFs; ++jTimeDOF) {
+
+                /* Easier storage of the ADER coefficient of timeDOF jTimeDOF
+                   to the residual of iTimeDOF and determine the starting
+                   index for the update for timeDOF jTimeDOF. */
+                const su2double coefADER = timeCoefADER_DG[jTimeDOF*nTimeDOFs+iTimeDOF];
+                const unsigned int indDSolTimeInd = jTimeDOF*nVarNDOFs;
+
+                /* Loop over the spatial DOFs for timeDOF jTimeDOF and update dSol. */
+                for(unsigned short i=0; i<nDOFs; ++i) {
+
+                  const unsigned int indResInt = indResThisTimeDOF + i*NPadDOF;
+                  const unsigned int indDSol   = indDSolTimeInd    + i*nVar;
+
+                  dSol[indDSol]   += coefADER*resInt[indResInt];
+                  dSol[indDSol+1] += coefADER*resInt[indResInt+1];
+                  dSol[indDSol+2] += coefADER*resInt[indResInt+2];
+                  dSol[indDSol+3] += coefADER*resInt[indResInt+3];
+                  dSol[indDSol+4] += coefADER*resInt[indResInt+4];
+                } 
+              } 
+            } 
+
+            break;
           }
         }
       }
