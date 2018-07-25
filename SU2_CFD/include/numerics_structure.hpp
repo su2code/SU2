@@ -777,6 +777,16 @@ public:
                            su2double *val_pressure, su2double *val_enthalpy,
                            su2double *val_normal, su2double *val_Proj_Flux);
 
+   /*!
+    * \brief Compute the projected inviscid flux vector.
+    * \param[in] val_U - Conserved variables
+    * \param[in] val_V - Primitive variables
+    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+    * \param[out] val_Proj_Flux - Pointer to the projected flux.
+    */
+  void GetInviscidProjFlux(su2double *val_U, su2double *val_V,
+                           su2double *val_normal, su2double *val_Proj_Flux);
+
   /*!
    * \brief Compute the projected inviscid flux vector for incompresible simulations
    * \param[in] val_density - Pointer to the density.
@@ -827,6 +837,21 @@ public:
                           su2double val_eddy_viscosity,
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
+
+   /*!
+    * * \brief Compute the projection of the viscous fluxes into a direction.
+    * \brief Overloaded function for multiple species viscous calculations
+    * \param[in] val_primvar - Primitive variables.
+    * \param[in] val_gradprimvar - Gradient of the primitive variables.
+    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+    * \param[in] val_laminar_viscosity - Laminar viscosity.
+    * \param[in] val_eddy_viscosity - Eddy viscosity.
+    */
+ void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+                         su2double *val_eve, su2double *val_normal,
+                         su2double *val_diffusioncoeff, su2double val_viscosity,
+                         su2double val_therm_conductivity,
+                         su2double val_therm_conductivity_ve, CConfig *config);
 
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
@@ -1044,6 +1069,21 @@ public:
   void GetPMatrix(su2double *val_density, su2double *val_velocity,
                   su2double *val_soundspeed, su2double *val_normal,
                   su2double **val_p_tensor);
+ /*!
+  * \overload
+  * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
+  *        in the form $P^{-1}(A.Normal)P=Lambda$.
+  * \param[in] U - Vector of conserved variables (really only need rhoEve)
+  * \param[in] V - Vector of primitive variables
+  * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
+  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+  * \param[in] l - Tangential vector to face.
+  * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+  * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+  */
+  void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
+                  su2double *val_normal, su2double *l, su2double *m,
+                  su2double **val_p_tensor) ;
 
   /*!
    * \brief Computation of the matrix Rinv*Pe.
@@ -1160,6 +1200,21 @@ public:
                       su2double *val_soundspeed, su2double *val_normal,
                       su2double **val_invp_tensor);
 
+  /*!
+  * \overload
+  * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
+  *        in the form $P^{-1}(A.Normal)P=Lambda$.
+  * \param[in] U - Vector of conserved variables.
+  * \param[in] V - Vector of primitive variables.
+  * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
+  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+  * \param[in] l - Tangential vector to face.
+  * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+  * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+  */
+ void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
+                     su2double *val_normal, su2double *l, su2double *m,
+                     su2double **val_invp_tensor) ;
   /*!
    * \brief Compute viscous residual and jacobian.
    */

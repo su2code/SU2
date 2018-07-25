@@ -395,17 +395,17 @@ inline su2double *CVariable::GetdTdU() { return NULL; }
 
 inline su2double *CVariable::GetdTvedU() { return NULL; }
 
-inline su2double CVariable::CalcEve(su2double *V, CConfig *config, unsigned short val_Species) { return 0; }
+inline su2double CVariable::CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species) { return 0; }
 
-inline su2double CVariable::CalcHs(su2double *V, CConfig *config, unsigned short val_Species) { return 0; }
+inline su2double CVariable::CalcHs(CConfig *config, su2double val_T, su2double val_eves, unsigned short val_Species) { return 0; }
 
 inline su2double CVariable::CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
 
-inline void CVariable::CalcdPdU(su2double *V, CConfig *config, su2double *dPdU) { }
+inline void CVariable::CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU) { }
 
 inline void CVariable::CalcdTdU(su2double *V, CConfig *config, su2double *dTdU) { }
 
-inline void CVariable::CalcdTvedU(su2double *V, CConfig *config, su2double *dTvedU) { }
+inline void CVariable::CalcdTvedU(su2double *V, su2double *val_eves, CConfig *config, su2double *dTvedU) { }
 
 inline void CVariable::SetDeltaPressure(su2double *val_velocity, su2double Gamma) { }
 
@@ -857,7 +857,7 @@ inline su2double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
 inline su2double CEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
-inline void CEulerVariable::Set_BGSSolution_k(void) { 
+inline void CEulerVariable::Set_BGSSolution_k(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution[iVar];
 }
@@ -963,18 +963,18 @@ inline su2double CIncEulerVariable::GetVelocity(unsigned short val_dim) { return
 
 inline su2double CIncEulerVariable::GetVelocity2(void) { return Velocity2; }
 
-inline bool CIncEulerVariable::SetDensity(su2double val_density) { 
-  Primitive[nDim+2] = val_density; 
+inline bool CIncEulerVariable::SetDensity(su2double val_density) {
+  Primitive[nDim+2] = val_density;
   if (Primitive[nDim+2] > 0.0) return false;
   else return true;
 }
 
 inline void CIncEulerVariable::SetPressure(void) { Primitive[0] = Solution[0]; }
 
-inline bool CIncEulerVariable::SetTemperature(su2double val_temperature) { 
+inline bool CIncEulerVariable::SetTemperature(su2double val_temperature) {
   Primitive[nDim+1] = val_temperature;
   if (Primitive[nDim+1] > 0.0) return false;
-  else return true; 
+  else return true;
 }
 
 inline void CIncEulerVariable::SetVelocity(void) {
@@ -1256,7 +1256,7 @@ inline void CFEAVariable::RegisterSolution_Accel_time_n() {
 
 inline su2double CFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
-inline void CFEAVariable::Set_BGSSolution_k(void) { 
+inline void CFEAVariable::Set_BGSSolution_k(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution[iVar];
 }
@@ -1609,12 +1609,12 @@ inline su2double CDiscAdjFEAVariable::GetCross_Term_Derivative(unsigned short iV
 
 inline void CDiscAdjFEAVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
 
-inline void CDiscAdjVariable::Set_BGSSolution_k(void) { 
+inline void CDiscAdjVariable::Set_BGSSolution_k(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution_BGS[iVar];
 }
 
-inline void CDiscAdjVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { 
+inline void CDiscAdjVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) {
   Solution_BGS[iDim] = val_solution;
 }
 
@@ -1622,18 +1622,18 @@ inline su2double CDiscAdjVariable::Get_BGSSolution(unsigned short iDim) { return
 
 inline su2double CDiscAdjVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
-inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) { 
+inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_Geometry_BGS_k[iDim] = Solution_Geometry[iDim];
 }
 
 inline su2double CDiscAdjVariable::Get_BGSSolution_Geometry(unsigned short iDim) { return Solution_Geometry_BGS_k[iDim];}
 
-inline void CDiscAdjFEAVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { 
+inline void CDiscAdjFEAVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) {
   Solution_BGS[iDim] = val_solution;
 }
 
-inline void CDiscAdjFEAVariable::Set_BGSSolution_k(void) { 
+inline void CDiscAdjFEAVariable::Set_BGSSolution_k(void) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_BGS_k[iDim] = Solution_BGS[iDim];
 }
@@ -1641,4 +1641,3 @@ inline void CDiscAdjFEAVariable::Set_BGSSolution_k(void) {
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS[iDim];}
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
-
