@@ -2098,11 +2098,10 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool second_order     = ((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
-                           (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) ||
+  bool second_order     = (config->GetMUSCL_Flow() ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-  bool limiter          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) &&
-                           (!low_fidelity) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter          = second_order && config->GetKind_SlopeLimit_Flow() != NO_LIMITER &&
+                           (!low_fidelity) && (ExtIter <= config->GetLimiterIter());
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
                            (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
@@ -2465,10 +2464,8 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity  = (config->GetLowFidelitySim() && (iMesh == MESH_1));
-  bool second_order  = (((config->GetSpatialOrder_Flow() == SECOND_ORDER) ||
-                            (config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER)) &&
-                           ((iMesh == MESH_0) || low_fidelity));
-  bool limiter       = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && !low_fidelity);
+  bool second_order  = (config->GetMUSCL_Flow() && ((iMesh == MESH_0) || low_fidelity));
+  bool limiter       = (second_order && config->GetKind_SlopeLimit_Flow() != NO_LIMITER && !low_fidelity);
   bool grid_movement = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
@@ -6243,9 +6240,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
                                (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_turb         = ((config->GetSpatialOrder_Turb() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_adjflow      = ((config->GetSpatialOrder_AdjFlow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow         = (config->GetMUSCL_Flow() &&(config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_turb         = (config->GetMUSCL_Turb() &&(config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_adjflow      = (config->GetMUSCL_AdjFlow() &&(config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool limiter_visc         = config->GetViscous_Limiter_Flow();
   bool fixed_cl             = config->GetFixed_CL_Mode();
 

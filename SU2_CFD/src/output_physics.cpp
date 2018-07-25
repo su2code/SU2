@@ -282,31 +282,16 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
 
     	  EntropyGen[iMarkerTP][iSpan] = -LiquidFractionOut[iMarkerTP][iSpan]*delta_Sout + EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan];
     	  EntropyGen[iMarkerTP][iSpan] = 2*EntropyGen[iMarkerTP][iSpan]*TemperatureOut/relVel2;
-//          EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
-
-          cout << EntropyOut[iMarkerTP][iSpan] << " " << EntropyIn[iMarkerTP][iSpan] << " " << EntropyIn_BC[iMarkerTP][iSpan] << endl;
-          cout << LiquidFractionOut[iMarkerTP][iSpan] << " " << delta_Sout << " " << sqrt(relVel2) << " " << TemperatureOut << endl;
-//          getchar();
-
 //          TotalPressureLoss[iMarkerTP][iSpan]  = LiqVolumeOut[iMarkerTP][iSpan]*100000;
 
-          TotalPressureLoss[iMarkerTP][iSpan]  = DensityOut[iMarkerTP][iSpan]*sqrt(relVel2);
-
-		  if (DropletNumberOut[iMarkerTP][iSpan] !=0) {
-			  KineticEnergyLoss[iMarkerTP][iSpan] = LiqVolumeOut[iMarkerTP][iSpan] /3.14 /4 *3 /DropletNumberOut[iMarkerTP][iSpan];
-			  KineticEnergyLoss[iMarkerTP][iSpan] = pow(KineticEnergyLoss[iMarkerTP][iSpan], 0.333);}
-		  else
-			  KineticEnergyLoss[iMarkerTP][iSpan] = 0;
-
-		  KineticEnergyLoss[iMarkerTP][iSpan] /= 1e-8;
 
       } else {
- //         EntropyGen[iMarkerTP][iSpan] = (EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])/abs(EntropyIn_BC[iMarkerTP][iSpan] + 1);
           EntropyGen[iMarkerTP][iSpan] = 2*(EntropyOut[iMarkerTP][iSpan] - EntropyIn[iMarkerTP][iSpan])*TemperatureOut/relVel2;
-          TotalPressureLoss[iMarkerTP][iSpan]  = DensityOut[iMarkerTP][iSpan]*sqrt(relVel2);//(relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
-          KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
 
       }
+
+      TotalPressureLoss[iMarkerTP][iSpan]  = DensityOut[iMarkerTP][iSpan]*sqrt(relVel2);//(relPressureIn - relPressureOut)/(relPressureIn - PressureOut[iMarkerTP][iSpan]);
+      KineticEnergyLoss[iMarkerTP][iSpan]  = 2*(EnthalpyOut[iMarkerTP][iSpan] - enthalpyOutIs)/relVelOutIs2;
 
       EulerianWork[iMarkerTP][iSpan]       = TotalEnthalpyIn[iMarkerTP][iSpan] - TotalEnthalpyOut[iMarkerTP][iSpan];
       PressureRatio[iMarkerTP][iSpan]      = TotalPressureOut[iMarkerTP][iSpan]/TotalPressureIn[iMarkerTP][iSpan];

@@ -428,8 +428,8 @@ void C2phaseSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contai
 	  unsigned long iEdge, iPoint, jPoint;
 	  unsigned short iDim, iVar;
 
-	  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-	  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+	  bool second_order  = config->GetMUSCL_2phase();
+	  bool limiter       = config->GetMUSCL_2phase();
 	  bool grid_movement = config->GetGrid_Movement();
 
 	  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1412,7 +1412,7 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   unsigned long iPoint;
 
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow          = ((config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
 
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
     
@@ -1430,7 +1430,7 @@ void C2phase_HillSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (config->GetMUSCL_2phase() || config->GetKind_SlopeLimit_2phase()!=NO_LIMITER) SetSolution_Limiter(geometry, config);
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
@@ -1443,8 +1443,8 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar, jVar;
 
-  bool second_order  = ((config->GetSpatialOrder_2phase() == SECOND_ORDER) || (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER));
-  bool limiter       = (config->GetSpatialOrder_2phase() == SECOND_ORDER_LIMITER);
+  bool second_order  = config->GetMUSCL_2phase();
+  bool limiter       = (config->GetMUSCL_2phase() && config->GetKind_SlopeLimit_2phase() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
 
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -1528,7 +1528,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         	Sol_Left  = max(Two_phase_i[iVar] - Project_Grad_i, 0.0);
         	Sol_Right = max(Two_phase_j[iVar] - Project_Grad_j, 0.0);
 
-        	if (config->GetKind_SlopeLimit_2phase() == MINMOD) {
+        	if (config->GetKind_SlopeLimit_2phase() == MINMOD_EDGE) {
 
         		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
@@ -1555,7 +1555,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
-        	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA) {
+        	} else if (config->GetKind_SlopeLimit_2phase() == VAN_ALBADA_EDGE) {
                 // VAN_ALBADA LIMITER
 
         	   Delta_Left = Two_phase_j[iVar]-Two_phase_i[iVar];
@@ -1571,7 +1571,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
                Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
-        	} else if (config->GetKind_SlopeLimit_2phase() == PUT) {
+        	} else if (config->GetKind_SlopeLimit_2phase() == PUT_EDGE) {
 
            		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
@@ -1586,7 +1586,7 @@ void C2phase_HillSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
         		Solution_j[iVar] = Two_phase_j[iVar] - config->GetLimiterCoeff_2phase() * Delta;
 
 
-        	} else if (config->GetKind_SlopeLimit_2phase() == SUPERBEE) {
+        	} else if (config->GetKind_SlopeLimit_2phase() == SUPERBEE_EDGE) {
 
         		Delta_Left = Two_phase_i[iVar]-Sol_Left; Delta_Right = (Two_phase_j[iVar]-Two_phase_i[iVar])/2;
 
@@ -2161,7 +2161,8 @@ void C2phase_QMOMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   unsigned long iPoint;
 
   unsigned long ExtIter      = config->GetExtIter();
-  bool limiter_flow          = ((config->GetSpatialOrder_Flow() == SECOND_ORDER_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_flow          = ((config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool limiter_2phase          = ((config->GetMUSCL_2phase() && config->GetKind_SlopeLimit_2phase() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
@@ -2180,7 +2181,7 @@ void C2phase_QMOMSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetSpatialOrder() == SECOND_ORDER_LIMITER) SetSolution_Limiter(geometry, config);
+  if (limiter_2phase) SetSolution_Limiter(geometry, config);
 
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
@@ -2193,8 +2194,8 @@ void C2phase_QMOMSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
 	  unsigned long iEdge, iPoint, jPoint;
 	  unsigned short iDim, iVar;
 
-	  bool second_order  = ((config->GetSpatialOrder() == SECOND_ORDER) || (config->GetSpatialOrder() == SECOND_ORDER_LIMITER));
-	  bool limiter       = (config->GetSpatialOrder() == SECOND_ORDER_LIMITER);
+	  bool second_order  = config->GetMUSCL_2phase();
+	  bool limiter       = second_order && config->GetKind_SlopeLimit_2phase() != NO_LIMITER;
 	  bool grid_movement = config->GetGrid_Movement();
 
 	  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {

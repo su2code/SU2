@@ -687,25 +687,29 @@ static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<strin
  * \brief types of slope limiters
  */
 enum ENUM_LIMITER {
-  VENKATAKRISHNAN = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
-  BARTH_JESPERSEN = 1,  /*!< \brief Slope limiter using Barth-Jespersen method. */
-  SHARP_EDGES = 2,       /*!< \brief Slope limiter using sharp edges. */
-  SOLID_WALL_DISTANCE = 3,       /*!< \brief Slope limiter using wall distance. */
-  VAN_ALBADA = 4,         /*!< \brief Slope limiter using Van Albada Method. */
-  MINMOD = 5,       /*!< \brief Slope limiter using mimmod. */
-  SUPERBEE = 6,       /*!< \brief Slope limiter using van_leer. */
-  PUT = 7       /*!< \brief Slope limiter using van_leer. */
+  NO_LIMITER     = 0,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  VENKATAKRISHNAN = 1,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  VENKATAKRISHNAN_WANG = 2,	/*!< \brief Slope limiter using Venkatakrisnan method. */
+  BARTH_JESPERSEN = 3,  /*!< \brief Slope limiter using Barth-Jespersen method. */
+  SHARP_EDGES = 4,       /*!< \brief Slope limiter using sharp edges. */
+  SOLID_WALL_DISTANCE = 5,       /*!< \brief Slope limiter using wall distance. */
+  VAN_ALBADA_EDGE = 6,         /*!< \brief Slope limiter using Van Albada Method. */
+  MINMOD_EDGE = 7,       /*!< \brief Slope limiter using mimmod. */
+  SUPERBEE_EDGE = 8,       /*!< \brief Slope limiter using van_leer. */
+  PUT_EDGE = 9       /*!< \brief Slope limiter using van_leer. */
 };
 
 static const map<string, ENUM_LIMITER> Limiter_Map = CCreateMap<string, ENUM_LIMITER>
+("NO_LIMITER", NO_LIMITER)
 ("VENKATAKRISHNAN", VENKATAKRISHNAN)
+("VENKATAKRISHNAN_WANG", VENKATAKRISHNAN_WANG)
 ("BARTH_JESPERSEN", BARTH_JESPERSEN)
 ("SHARP_EDGES", SHARP_EDGES)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE)
-("VAN_ALBADA", VAN_ALBADA)
-("MINMOD", MINMOD)
-("SUPERBEE", SUPERBEE)
-("PUT", PUT);
+("SOLID_WALL_DISTANCE", SOLID_WALL_DISTANCE)
+("VAN_ALBADA_EDGE", VAN_ALBADA_EDGE)
+("MINMOD_EDGE", MINMOD_EDGE)
+("SUPERBEE_EDGE", SUPERBEE_EDGE)
+("PUT_EDGE", PUT_EDGE);
 
 /*!
  * \brief types of turbulent models

@@ -466,13 +466,7 @@ private:
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
   Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
-  SpatialOrder,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Flow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_Turb,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_2phase,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjFlow,		/*!< \brief Order of the spatial numerical integration.*/
-  SpatialOrder_AdjTurb;		/*!< \brief Order of the spatial numerical integration.*/
+  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   bool FSI_Problem;			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool Constant_Gamma;			/*!< \brief polytropic gas... . */
@@ -565,6 +559,12 @@ private:
   bool Wrt_Dynamic;  		/*!< \brief Write dynamic data adding header and prefix. */
   bool LowFidelitySim;  /*!< \brief Compute a low fidelity simulation. */
   bool Restart,	/*!< \brief Restart solution (for direct, adjoint, and linearized problems).*/
+  MUSCL,
+  MUSCL_Flow,
+  MUSCL_Turb,
+  MUSCL_2phase,
+  MUSCL_AdjFlow,
+  MUSCL_AdjTurb,
   Old_Solution_1Ph,/*!< \brief Restart solution from single phase computation*/
   Old_Solution_Turb,/*!< \brief Restart solution from turbulent computation*/
   Update_Restart_Params,
@@ -1893,7 +1893,7 @@ public:
    * \param[in] val_kind_slopelimit - If upwind scheme, kind of slope limit.
    */
   void SetKind_ConvNumScheme(unsigned short val_kind_convnumscheme, unsigned short val_kind_centered,
-                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, unsigned short val_order_spatial_int);
+                             unsigned short val_kind_upwind, unsigned short val_kind_slopelimit, bool val_muscl);
   
   /*!
    * \brief Get the value of limiter coefficient.
@@ -3507,7 +3507,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetSpatialOrder(void);
+  bool GetMUSCL(void);
   
   /*!
    * \brief Get the order of the spatial integration.
@@ -3516,7 +3516,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetSpatialOrder_Flow(void);
+  bool GetMUSCL_Flow(void);
   
   /*!
    * \brief Get the order of the spatial integration.
@@ -3525,7 +3525,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetSpatialOrder_Turb(void);
+  bool GetMUSCL_Turb(void);
   
   /*!
    * \brief Get the order of the spatial integration.
@@ -3534,7 +3534,7 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetSpatialOrder_2phase(void);
+  bool GetMUSCL_2phase(void);
 
   /*!
    * \brief Get the order of the spatial integration.
@@ -3543,8 +3543,10 @@ public:
    *       linearized) that is being solved.
    * \return Kind of upwind scheme for the convective terms.
    */
-  unsigned short GetSpatialOrder_AdjFlow(void);
+  bool GetMUSCL_AdjFlow(void);
   
+  bool GetMUSCL_AdjTurb(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the flow equations.
