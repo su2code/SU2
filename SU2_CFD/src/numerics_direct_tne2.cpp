@@ -111,10 +111,10 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
   su2double U_i, U_j;
 
 	/*--- AD setup ---*/
-	AD::StartPreacc();
-  AD::SetPreaccIn(V_i, nSpecies+nDim+4);
-  AD::SetPreaccIn(V_j, nSpecies+nDim+4);
-  AD::SetPreaccIn(Normal, nDim);
+	//AD::StartPreacc();
+  //AD::SetPreaccIn(V_i, nSpecies+nDim+4);
+  //AD::SetPreaccIn(V_j, nSpecies+nDim+4);
+  //AD::SetPreaccIn(Normal, nDim);
   //if (grid_movement) {
   //  AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
   //}
