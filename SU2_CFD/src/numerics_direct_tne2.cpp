@@ -47,7 +47,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
 	unsigned short iVar;
 
   /*--- Read configuration parameters ---*/
-	implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -120,7 +120,7 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
   //}
 
   /*--- Compute geometrical quantities ---*/
-	Area = 0;
+	Area = 0.0;
 	for (iDim = 0; iDim < nDim; iDim++)
 		Area += Normal[iDim]*Normal[iDim];
 	Area = sqrt(Area);
@@ -223,8 +223,8 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
-	AD::SetPreaccOut(val_residual, nVar);
-	AD::EndPreacc();
+	//AD::SetPreaccOut(val_residual, nVar);
+	//AD::EndPreacc();
 }
 
 CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
