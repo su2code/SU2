@@ -582,9 +582,11 @@ inline su2double CConfig::GetLength_Reynolds(void) { return Length_Reynolds; }
 inline unsigned short CConfig::GetnStartUpIter(void) { return nStartUpIter; }
 
 inline su2double *CConfig::GetRefOriginMoment(unsigned short val_marker) {
-    RefOriginMoment[0] = RefOriginMoment_X[val_marker];
-    RefOriginMoment[1] = RefOriginMoment_Y[val_marker];
-    RefOriginMoment[2] = RefOriginMoment_Z[val_marker];
+    if(val_marker < nMarker_Monitoring) {
+      RefOriginMoment[0] = RefOriginMoment_X[val_marker];
+      RefOriginMoment[1] = RefOriginMoment_Y[val_marker];
+      RefOriginMoment[2] = RefOriginMoment_Z[val_marker];
+    }
     return RefOriginMoment;
 }
 
