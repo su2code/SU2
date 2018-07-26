@@ -885,6 +885,20 @@ public:
                           su2double **val_Proj_Jac_tensor);
 
   /*!
+   * \overload
+   * \brief Compute the projection of the inviscid Jacobian matrices for the two-temperature model.
+   * \param[in] val_U - Vector conserved variables.
+   * \param[in] val_V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of partial derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_scale - Scale of the projection.
+   * \param[out] val_Proj_Jac_tensor - Pointer to the projected inviscid Jacobian.
+   */
+  void GetInviscidProjJac(su2double *val_U, su2double *val_V, su2double *val_dPdU,
+                          su2double *val_normal, su2double val_scale,
+                          su2double **val_Proj_Jac_Tensor);
+
+  /*!
    * \brief Compute the projection of the inviscid Jacobian matrices (incompressible).
    * \param[in] val_density - Value of the density.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -1016,6 +1030,33 @@ public:
                           su2double **val_Proj_Jac_Tensor_j);
 
   /*!
+   * \brief TSL-Approximation of Viscous NS Jacobians.
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_dS - Area of the face between two nodes.
+   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+   */
+  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                          su2double **val_Mean_GradPrimVar,
+                          su2double *val_Mean_Eve,
+                          su2double *val_Mean_Cvve,
+                          su2double *val_diffusion_coeff,
+                          su2double val_laminar_viscosity,
+                          su2double val_thermal_conductivity,
+                          su2double val_thermal_conductivity_ve,
+                          su2double val_dist_ij,
+                          su2double *val_normal, su2double val_dS,
+                          su2double *val_Proj_Visc_Flux,
+                          su2double **val_Proj_Jac_Tensor_i,
+                          su2double **val_Proj_Jac_Tensor_j,
+                          CConfig *config);
+
+  /*!
    * \brief Mapping between primitives variables P and conservatives variables C.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
@@ -1069,18 +1110,19 @@ public:
   void GetPMatrix(su2double *val_density, su2double *val_velocity,
                   su2double *val_soundspeed, su2double *val_normal,
                   su2double **val_p_tensor);
- /*!
-  * \overload
-  * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
-  *        in the form $P^{-1}(A.Normal)P=Lambda$.
-  * \param[in] U - Vector of conserved variables (really only need rhoEve)
-  * \param[in] V - Vector of primitive variables
-  * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
-  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-  * \param[in] l - Tangential vector to face.
-  * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-  * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-  */
+
+  /*!
+   * \overload
+   * \brief Computation of the matrix P, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables (really only need rhoEve)
+   * \param[in] V - Vector of primitive variables
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved vars.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
   void GetPMatrix(su2double *U, su2double *V, su2double *val_dPdU,
                   su2double *val_normal, su2double *l, su2double *m,
                   su2double **val_p_tensor) ;
@@ -1106,10 +1148,10 @@ public:
    * \param[in] val_velocity - value of the velocity.
    * \param[out] val_invR_invPe - Pointer to the matrix of conversion from entropic to conserved variables.
    */
-
   void GetRMatrix(su2double val_pressure, su2double val_soundspeed,
                   su2double val_density, su2double* val_velocity,
                   su2double** val_invR_invPe);
+
 	/*!
 	 * \brief Computation of the matrix R.
 	 * \param[in] val_soundspeed - value of the sound speed.
@@ -1172,7 +1214,6 @@ public:
 	 */
 	void GetPrecondJacobian(su2double Beta2, su2double r_hat, su2double s_hat, su2double t_hat, su2double rB2a2, su2double* val_Lambda, su2double* val_normal, su2double** val_absPeJac);
 
-
   /*!
    * \brief Computation of the matrix P^{-1}, this matrix diagonalize the conservative Jacobians
    * in the form $P^{-1}(A.Normal)P=Lambda$.
@@ -1201,20 +1242,21 @@ public:
                       su2double **val_invp_tensor);
 
   /*!
-  * \overload
-  * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
-  *        in the form $P^{-1}(A.Normal)P=Lambda$.
-  * \param[in] U - Vector of conserved variables.
-  * \param[in] V - Vector of primitive variables.
-  * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
-  * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-  * \param[in] l - Tangential vector to face.
-  * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
-  * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
-  */
- void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
+   * \overload
+   * \brief Computation of the matrix P^{-1}, this matrix diagonalizes the conservative Jacobians
+   *        in the form $P^{-1}(A.Normal)P=Lambda$.
+   * \param[in] U - Vector of conserved variables.
+   * \param[in] V - Vector of primitive variables.
+   * \param[in] val_dPdU - Vector of derivatives of pressure w.r.t. conserved variables
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] l - Tangential vector to face.
+   * \param[in] m - Tangential vector to face (mutually orthogonal to val_normal & l).
+   * \param[out] val_invp_tensor - Pointer to inverse of the P matrix.
+   */
+  void GetPMatrix_inv(su2double *U, su2double *V, su2double *val_dPdU,
                      su2double *val_normal, su2double *l, su2double *m,
                      su2double **val_invp_tensor) ;
+
   /*!
    * \brief Compute viscous residual and jacobian.
    */

@@ -1580,6 +1580,44 @@ public:
   su2double GetGamma(void);
 
   /*!
+	 * \brief Get the value of the Gamma of fluid (ratio of specific heats) for a particular species.
+	 * \param[in] - val_Species: Index of desired species specific heat ratio.
+	 * \return Value of the constant: Species_Gamma[iSpecies]
+	 */
+	su2double GetSpecies_Gamma(unsigned short val_Species);
+
+  /*!
+	 * \brief Get the value of the charge number for a particular species (1 for ions, -1 for electrons, 0 for neutral).
+	 * \param[in] - val_Species: Index of desired species charge number.
+	 * \return Value of the constant: Charge_Number[val_Species]
+	 */
+	int GetCharge_Number(unsigned short val_Species);
+
+  /*!
+	 * \brief Get the value of the limits for the sections.
+	 * \return Value of the limits for the sections.
+	 */
+	su2double GetSection_Location(unsigned short val_var);
+
+	/*!
+	 * \brief Get the array that maps chemical consituents to each chemical reaction.
+	 * \return Memory location of the triple pointer to the 3-D reaction map array.
+	 */
+	int ***GetReaction_Map(void);
+
+	/*!
+	 * \brief Get the array containing the curve fit coefficients for the Omega(0,0) collision integrals.
+	 * \return Memory location of the triple pointer to the 3-D collision integral array.
+	 */
+	su2double ***GetCollisionIntegral00(void);
+
+	/*!
+	 * \brief Get the array containing the curve fit coefficients for the Omega(1,1) collision integrals.
+	 * \return Memory location of the triple pointer to the 3-D collision integral array.
+	 */
+	su2double ***GetCollisionIntegral11(void);
+
+  /*!
    * \brief Get the values of the CFL adapation.
    * \return Value of CFL adapation
    */
@@ -5083,6 +5121,12 @@ public:
    * \return: The number of chemical reactions, read from input file
    */
   su2double GetCharVibTemp(unsigned short iSpecies);
+
+  /*!
+	 * \brief Provides a table of equilibrium constants for a particular chemical reaction for a supplied gas model.
+	 * \return: Matrix of reaction constants
+	 */
+	void GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned short iReaction);
 
   /*!
    * \brief Provides the molar mass of each species present in multi species fluid
