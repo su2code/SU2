@@ -81,15 +81,17 @@ CElementProperty::CElementProperty(void) {
   iMat_Prop = 0;
   iElectric_Prop = 0;
   iDV = 0;
+  density = 1.0;
 
 }
 
-CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV) {
+CElementProperty::CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity) {
 
   iMat_Mod = valMat_Model;
   iMat_Prop = valMat_Prop;
   iElectric_Prop = valElectric_Prop;
   iDV = valDV;
+  density = valDensity;
 
 }
 

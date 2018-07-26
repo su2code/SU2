@@ -1901,3 +1901,11 @@ inline bool CConfig::GetQCR(void) {return QCR;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline bool CConfig::GetTopology_Optimization(void) { return topology_optimization; }
+
+inline string CConfig::GetTopology_Optim_FileName(void) { return top_optim_output_file; }
+
+inline su2double CConfig::GetSIMP_Exponent(void) { return simp_exponent; }
+
+inline su2double CConfig::GetSIMP_MinStiffness(void) { return simp_minimum_stiffness; }
