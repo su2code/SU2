@@ -3181,8 +3181,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
 
     /* Carry out the matrix matrix product. */
-    DenseMatrixProduct(nDim*nIntegration, nDim, nDOFs,
-                       matDerBasisInt, vecRHS.data(), vecResult.data());
+    su2_gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
+             vecRHS.data(), vecResult.data());
 
     /*--- Compute the Jacobians in the integration points and determine
           the minimum and maximum values. Make a distinction between

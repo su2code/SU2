@@ -2274,8 +2274,8 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
   }
 
   /* Carry out the matrix matrix product */
-  DenseMatrixProduct(nDim*nIntegration, nDim, nDOFs,
-                     matDerBasisInt, vecRHS.data(), derivCoor);
+  su2_gemm(nDim*nIntegration, nDim, nDOFs,
+           matDerBasisInt, vecRHS.data(), derivCoor);
 }
 
 void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
@@ -5590,9 +5590,8 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       vector<su2double> helpVecDerMetrics(nDim*nInt*(nMetricPerPoint-1));
       su2double *vecDerMetrics = helpVecDerMetrics.data();
 
-      DenseMatrixProduct(nDim*nInt, nMetricPerPoint-1, nDOFsGrid,
-                         matDerBasisInt, metricGridDOFs.data(),
-                         vecDerMetrics);
+      su2_gemm(nDim*nInt, nMetricPerPoint-1, nDOFsGrid, matDerBasisInt,
+               metricGridDOFs.data(), vecDerMetrics);
 
       /* Allocate the memory for the additional metric terms needed to
          compute the second derivatives. */

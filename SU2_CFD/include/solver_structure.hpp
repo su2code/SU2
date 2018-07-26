@@ -66,7 +66,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/dense_matrix_product.hpp"
+#include "../../Common/include/su2_blas.hpp"
 #include "../../Common/include/graph_vertex_coloring.hpp"
 
 using namespace std;

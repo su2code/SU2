@@ -1,10 +1,10 @@
 /*!
- * \file dense_matrix_product.hpp
- * \brief Include files and headers of the functions to carry out a dense
- *        matrix product. The functions are in the
- *        <i>dense_matrix_product.cpp</i> file.
+ * \file su2_blas.hpp
+ * \brief Include files and headers of the functions for matrix and vector
+          operations, which are typically found in the BLAS libraries.
+          The functions are in the <i>su2_blass.cpp</i> file.
  * \author E. van der Weide
- * \version 4.3.0 "Cardinal"
+ * \version 6.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -60,5 +60,21 @@
  * \param[in]  B  - Input matrix in the multiplication.
  * \param[out] C  - Result of the matrix product A*B.
  */
-void DenseMatrixProduct(const int M,        const int N,        const int K,
-                        const su2double *A, const su2double *B, su2double *C);
+void su2_gemm(const int M,        const int N,        const int K,
+              const su2double *A, const su2double *B, su2double *C);
+
+/*!
+ * \brief Function, to carry out the axpy operation, i.e y += a*x.
+ * \param[in]    n   - Number of elements in the vectors x and y.
+ * \param[in]    a   - Specifies the scalar a.
+ * \param[in]    x   - Array, which must be added, size of x must be
+                       at least 1 + (n-1)*abs(incx).
+ * param[in]    incx - Specifies the increment of x.
+ * param[inout] y    - Vector to be updated, size of y must be
+                       at least 1 + (n-1)*abs(incy).
+ * param[in]    incy - Specifies the increment of y.
+ 
+ */
+void su2_axpy(const int n,    const su2double a,  const su2double *x,
+              const int incx, su2double *y,       const int incy);
+
