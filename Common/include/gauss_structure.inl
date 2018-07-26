@@ -69,3 +69,11 @@ inline unsigned long CElementProperty::GetElectric_Prop(void) { return iElectric
 
 inline unsigned long CElementProperty::GetDV(void) { return iDV; }
 
+inline void CElementProperty::SetDensity(su2double valDensity) { density = valDensity; }
+
+inline su2double CElementProperty::GetDensity(void) { return density; }
+  
+inline su2double CElementProperty::GetAdjointDensity(void) { return SU2_TYPE::GetDerivative(density); }
+  
+inline void CElementProperty::RegisterDensity(void) { AD::RegisterInput(density); }
+
