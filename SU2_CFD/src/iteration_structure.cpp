@@ -490,12 +490,11 @@ void CFluidIteration::Iterate(COutput *output,
 
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
-
+  
   integration_container[val_iZone][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone);
-
-
-
+  
+  
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
      (config_container[val_iZone]->GetKind_Solver() == TWO_PHASE_RANS) ||       
      ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc) ||
@@ -533,11 +532,14 @@ void CFluidIteration::Iterate(COutput *output,
   }
   
   
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() )
-    
-  /*--- Write the convergence history (only screen output) ---*/
+  /*--- Write the convergence history ---*/
+
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
     
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone);
+    
+  }
+  
 }
 
 void CFluidIteration::Update(COutput *output,
@@ -1910,7 +1912,7 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
   
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned short Kind_Solver = config_container[val_iZone]->GetKind_Solver();
-  unsigned IntIter = 0;
+  unsigned long IntIter = 0;
   bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
   bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
 
@@ -1932,8 +1934,8 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
 
     /*--- Set the convergence criteria (only residual possible) ---*/
 
-    integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0],config_container[val_iZone],
-                                                                          IntIter,log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
+    integration_container[val_iZone][ADJFLOW_SOL]->Convergence_Monitoring(geometry_container[val_iZone][MESH_0], config_container[val_iZone],
+                                                                          IntIter, log10(solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)), MESH_0);
 
     }
   if ((Kind_Solver == DISC_ADJ_RANS || Kind_Solver == DISC_ADJ_TWO_PHASE_RANS) && !frozen_visc) {
@@ -1999,7 +2001,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->RegisterVariables(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
     
-    if (turbulent && !frozen_visc) {
+    if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
       solver_container[iZone][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
 
@@ -2007,7 +2009,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver ****solver_container, CGeomet
       solver_container[iZone][MESH_0][ADJTWO_PHASE_SOL]->RegisterSolution(geometry_container[iZone][MESH_0], config_container[iZone]);
     }
   }
-
   if (kind_recording == MESH_COORDS){
 
     /*--- Register node coordinates as input ---*/
@@ -2035,7 +2036,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver ****solver_container, CGeom
 
   solver_container[iZone][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
 
-  if (turbulent && !frozen_visc){
+  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
     solver_container[iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][MESH_0],solver_container[iZone][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][MESH_0], config_container[iZone]);
@@ -2062,7 +2063,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver ****solver_container, CGeome
     solver_container[iZone][MESH_0][FLOW_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],config_container[iZone]);
   
   }
-  if (turbulent && !frozen_visc){
+  if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
     solver_container[iZone][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][MESH_0],
                                                                  config_container[iZone]);
   }

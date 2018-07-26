@@ -1,7 +1,7 @@
 /*!
- * \file variable_adjoint_turbulent.cpp
- * \brief Definition of the solution fields.
- * \author F. Palacios, A. Bueno
+ * \file output_structure.inl
+ * \brief In-Line subroutines of the <i>output_structure.hpp</i> file.
+ * \author J. Smith
  * \version 5.0.0 "Raven"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
@@ -31,46 +31,14 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/variable_structure.hpp"
+#pragma once
 
-CAdjTurbVariable::CAdjTurbVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-}
+inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
-CAdjTurbVariable::CAdjTurbVariable(su2double val_psinu_inf, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
+inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned short iSpan) { return FlowAngleOut[iMarkerTP][iSpan]*180.0/PI_NUMBER; }
 
-  unsigned short iVar;
+inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
 
-  /*--- Array initialization ---*/
-  
-  dmuT_dUTvar = NULL;
-  dRTstar_dUTvar = NULL;
-  dFT_dUTvar = NULL;
-  EddyViscSens = NULL;
-  
-  /*--- Initialization of variables ---*/
-  
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_psinu_inf;
-    Solution_Old[iVar] = val_psinu_inf;
-  }
-  
-  Residual_Old = new su2double [nVar];
-  
-  if (config->GetMUSCL_Turb() && config->GetKind_SlopeLimit_Turb()) Limiter = new su2double [nVar];
-  
-}
+inline su2double COutput::GetTotalPressureLoss(unsigned short iMarkerTP, unsigned short iSpan) { return TotalPressureLoss[iMarkerTP][iSpan]; }
 
-CAdjTurbVariable::~CAdjTurbVariable(void) {
-  
-  if (dmuT_dUTvar   != NULL) delete [] dmuT_dUTvar;
-  if (EddyViscSens  != NULL) delete [] EddyViscSens;
-  
-}
+inline su2double COutput::GetKineticEnergyLoss(unsigned short iMarkerTP, unsigned short iSpan) { return KineticEnergyLoss[iMarkerTP][iSpan]; }

@@ -226,7 +226,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   if (nDim == 3) Phi_Inf[2] = 0.0;
   
   /*--- If outflow objective, nonzero initialization ---*/
-  if ((config->GetKind_ObjFunc() == AVG_TOTAL_PRESSURE)){
+  if ((config->GetKind_ObjFunc() == SURFACE_TOTAL_PRESSURE)){
     su2double SoundSpeed,*vel_inf,R,vel2,vel;
     R = config->GetGas_ConstantND();
     vel_inf = config->GetVelocity_FreeStreamND();
@@ -259,7 +259,7 @@ CAdjIncEulerSolver::CAdjIncEulerSolver(CGeometry *geometry, CConfig *config, uns
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE || config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE || config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -1502,7 +1502,7 @@ void CAdjIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_con
    adjoint equations (note that the flow problem may use different methods). ---*/
   
   bool implicit       = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order   = config->GetMUSCL_AdjFlow();
+  bool second_order   = config->GetMUSCL_AdjFlow() ;
   bool limiter        = second_order && config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER;
   bool center         = (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED);
   bool center_jst     = (config->GetKind_Centered_AdjFlow() == JST);
@@ -1650,7 +1650,7 @@ void CAdjIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_c
   unsigned short iDim, iVar;
   
   bool implicit         = (config->GetKind_TimeIntScheme_AdjFlow() == EULER_IMPLICIT);
-  bool second_order     = (config->GetMUSCL_AdjFlow() && (iMesh == MESH_0));
+  bool second_order     = config->GetMUSCL_AdjFlow() ;
   bool limiter          = second_order && config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER;
   bool grid_movement    = config->GetGrid_Movement();
   
@@ -1939,7 +1939,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   unsigned long iPoint;
   su2double SharpEdge_Distance, eps, ds, scale, Sensor, Param_Kappa_2, Param_Kappa_4;
   
-  eps = config->GetLimiterCoeff()*config->GetRefElemLength();
+  eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
   Param_Kappa_2 = config->GetKappa_2nd_AdjFlow();
   Param_Kappa_4 = config->GetKappa_4th_AdjFlow();
   
@@ -1948,7 +1948,7 @@ void CAdjIncEulerSolver::SetDissipation_Switch(CGeometry *geometry, CConfig *con
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetSharpEdgesCoeff()*eps);
+    SharpEdge_Distance = (geometry->node[iPoint]->GetSharpEdge_Distance() - config->GetAdjSharp_LimiterCoeff()*eps);
     
     ds = 0.0;
     if (SharpEdge_Distance < -eps) ds = 1.0;
@@ -2222,9 +2222,9 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE))
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE))
    factor = 1.0/Area_Monitored;
   
   /*--- Initialize sensitivities to zero ---*/
@@ -2327,8 +2327,8 @@ void CAdjIncEulerSolver::Inviscid_Sensitivity(CGeometry *geometry, CSolver **sol
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           
@@ -3921,7 +3921,7 @@ CAdjIncNSSolver::CAdjIncNSSolver(CGeometry *geometry, CConfig *config, unsigned 
   
   /*--- Calculate area monitored for area-averaged-outflow-quantity-based objectives ---*/
   myArea_Monitored = 0.0;
-  if (config->GetKind_ObjFunc()==AVG_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==AVG_OUTLET_PRESSURE){
+  if (config->GetKind_ObjFunc()==SURFACE_TOTAL_PRESSURE ||  config->GetKind_ObjFunc()==SURFACE_STATIC_PRESSURE){
     for (iMarker =0; iMarker < config->GetnMarker_All();  iMarker++){
       if (config->GetMarker_All_Monitoring(iMarker) == YES){
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -4113,7 +4113,6 @@ void CAdjIncNSSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     /*--- Gradient of adjoint variables ---*/
     
     numerics->SetAdjointVarGradient(node[iPoint]->GetGradient(), NULL);
-    numerics->SetAdjointVarLimiter(node[iPoint]->GetLimiter(), NULL);
 
     /*--- Set volume ---*/
     
@@ -4296,9 +4295,9 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
   
   if ((ObjFunc == INVERSE_DESIGN_HEATFLUX) ||
       (ObjFunc == TOTAL_HEATFLUX) || (ObjFunc == MAXIMUM_HEATFLUX) ||
-      (ObjFunc == MASS_FLOW_RATE) ) factor = 1.0;
+      (ObjFunc == SURFACE_MASSFLOW) ) factor = 1.0;
 
- if ((ObjFunc == AVG_TOTAL_PRESSURE) || (ObjFunc == AVG_OUTLET_PRESSURE)) factor = 1.0/Area_Monitored;
+ if ((ObjFunc == SURFACE_TOTAL_PRESSURE) || (ObjFunc == SURFACE_STATIC_PRESSURE)) factor = 1.0/Area_Monitored;
 
 
   /*--- Compute gradient of the grid velocity, if applicable ---*/
@@ -4489,8 +4488,8 @@ void CAdjIncNSSolver::Viscous_Sensitivity(CGeometry *geometry, CSolver **solver_
           /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
           
           if (config->GetSens_Remove_Sharp()) {
-            eps = config->GetLimiterCoeff()*config->GetRefElemLength();
-            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetSharpEdgesCoeff()*eps )
+            eps = config->GetVenkat_LimiterCoeff()*config->GetRefElemLength();
+            if ( geometry->node[iPoint]->GetSharpEdge_Distance() < config->GetAdjSharp_LimiterCoeff()*eps )
               CSensitivity[iMarker][iVertex] = 0.0;
           }
           

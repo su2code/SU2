@@ -460,6 +460,10 @@ void CTransfer_MixingPlaneInterface::SetAverageValues(CSolver *donor_solution, C
     target_solution->SetOmegaOut(donor_solution->GetOmegaOut(donorZone, iSpan), donorZone, iSpan);
     target_solution->SetNuOut(donor_solution->GetNuOut(donorZone, iSpan), donorZone, iSpan);
 
+    /*--- transfer relative tangential velocity ---*/
+    target_solution->SetRelTangVelocityIn(donor_solution->GetRelTangVelocityIn(donorZone, iSpan), donorZone, iSpan);
+    target_solution->SetRelTangVelocityOut(donor_solution->GetRelTangVelocityOut(donorZone, iSpan), donorZone, iSpan);
+
   }
 }
 
@@ -469,10 +473,8 @@ void CTransfer_MixingPlaneInterface::SetAverageTurboGeoValues(CGeometry *donor_g
   for(iSpan = 0; iSpan<nSpanMaxAllZones+1; iSpan++){
     target_geometry->SetTurboRadiusIn(donor_geometry->GetTurboRadiusIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetSpanAreaIn(donor_geometry->GetSpanAreaIn(donorZone, iSpan), donorZone, iSpan);
-    target_geometry->SetTangGridVelIn(donor_geometry->GetTangGridVelIn(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetTurboRadiusOut(donor_geometry->GetTurboRadiusOut(donorZone, iSpan), donorZone, iSpan);
     target_geometry->SetSpanAreaOut(donor_geometry->GetSpanAreaOut(donorZone, iSpan), donorZone, iSpan);
-    target_geometry->SetTangGridVelOut(donor_geometry->GetTangGridVelOut(donorZone, iSpan), donorZone, iSpan);
   }
 
 }

@@ -250,6 +250,7 @@ public:
                               unsigned long*  pointID,
                               int*             rankID);
 
+
 private:
   /*!
    * \brief Default constructor of the class, disabled.

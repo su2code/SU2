@@ -138,7 +138,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -430,13 +430,14 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   Total_CFx     = 0.0;  Total_CFy          = 0.0;  Total_CFz          = 0.0;
   Total_CT      = 0.0;  Total_CQ           = 0.0;  Total_CMerit       = 0.0;
   Total_MaxHeat = 0.0;  Total_Heat         = 0.0;  Total_ComboObj     = 0.0;
-  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;
+  Total_CpDiff  = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc=0.0;
   
   /*--- Coefficients for fixed lift mode. ---*/
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions ---*/
 
   Density_Inf     = config->GetDensity_FreeStreamND();
@@ -1770,16 +1771,16 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   if (viscous) {
     
     /*--- Constant viscosity model ---*/
-    config->SetMu_ConstantND(config->GetMu_ConstantND()/Viscosity_Ref);
+    config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
     /*--- Sutherland's model ---*/
     
-    config->SetMu_RefND(config->GetMu_RefND()/Viscosity_Ref);
-    config->SetMu_SND(config->GetMu_SND()/config->GetTemperature_Ref());
-    config->SetMu_Temperature_RefND(config->GetMu_Temperature_RefND()/config->GetTemperature_Ref());
+    config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
+    config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
+    config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
     /* constant thermal conductivity model */
-    config->SetKt_ConstantND(config->GetKt_ConstantND()/Conductivity_Ref);
+    config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
     
     FluidModel->SetLaminarViscosityModel(config);
     FluidModel->SetThermalConductivityModel(config);
@@ -2095,6 +2096,8 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 #endif
   
   unsigned long ExtIter = config->GetExtIter();
+
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool adjoint          = config->GetContinuous_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool low_fidelity     = (config->GetLowFidelitySim() && (iMesh == MESH_1));
@@ -2140,7 +2143,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   if (center && !Output) {
     SetMax_Eigenvalue(geometry, config);
-    if ((center_jst) && ((iMesh == MESH_0) || low_fidelity)) {
+    if ((center_jst) && ((iMesh == MESH_0) )) {
       SetDissipation_Switch(geometry, config);
       SetUndivided_Laplacian(geometry, config);
     }
@@ -2148,7 +2151,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Initialize the Jacobian matrices ---*/
   
-  if (implicit && !config->GetDiscrete_Adjoint()) Jacobian.SetValZero();
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
   
@@ -2467,6 +2470,7 @@ void CIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_cont
   bool second_order  = (config->GetMUSCL_Flow() && ((iMesh == MESH_0) || low_fidelity));
   bool limiter       = (second_order && config->GetKind_SlopeLimit_Flow() != NO_LIMITER && !low_fidelity);
   bool grid_movement = config->GetGrid_Movement();
+bool disc_adjoint     = config->GetDiscrete_Adjoint();
 
   /*--- Loop over all the edges ---*/
   
@@ -3843,6 +3847,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
+        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -4028,41 +4034,59 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
-  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j, *Primitive_i, *Primitive_j,
+  su2double **Gradient_i, **Gradient_j, *Coord_i, *Coord_j,
+  *Primitive, *Primitive_i, *Primitive_j, *LocalMinPrimitive, *LocalMaxPrimitive,
+  *GlobalMinPrimitive, *GlobalMaxPrimitive,
   dave, LimK, eps2, eps1, dm, dp, du, y, limiter;
   
-  /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
-  
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      node[iPoint]->SetSolution_Max(iVar, -EPS);
-      node[iPoint]->SetSolution_Min(iVar, EPS);
-      node[iPoint]->SetLimiter_Primitive(iVar, 2.0);
+  dave = config->GetRefElemLength();
+  LimK = config->GetVenkat_LimiterCoeff();
+
+  if (config->GetKind_SlopeLimit_Flow() == NO_LIMITER) {
+   
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        node[iPoint]->SetLimiter_Primitive(iVar, 1.0);
+      }
     }
   }
   
-  /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
-  
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  else {
     
-    /*--- Point identification, Normal vector and area ---*/
+    /*--- Initialize solution max and solution min and the limiter in the entire domain --*/
     
-    iPoint = geometry->edge[iEdge]->GetNode(0);
-    jPoint = geometry->edge[iEdge]->GetNode(1);
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        node[iPoint]->SetSolution_Max(iVar, -EPS);
+        node[iPoint]->SetSolution_Min(iVar, EPS);
+        node[iPoint]->SetLimiter_Primitive(iVar, 2.0);
+      }
+    }
     
-    /*--- Get the primitive variables ---*/
+    /*--- Establish bounds for Spekreijse monotonicity by finding max & min values of neighbor variables --*/
     
-    Primitive_i = node[iPoint]->GetPrimitive();
-    Primitive_j = node[jPoint]->GetPrimitive();
-    
-    /*--- Compute the maximum, and minimum values for nodes i & j ---*/
-    
-    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-      du = (Primitive_j[iVar] - Primitive_i[iVar]);
-      node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
-      node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
-      node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
-      node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+    for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+      
+      /*--- Point identification, Normal vector and area ---*/
+      
+      iPoint = geometry->edge[iEdge]->GetNode(0);
+      jPoint = geometry->edge[iEdge]->GetNode(1);
+      
+      /*--- Get the primitive variables ---*/
+      
+      Primitive_i = node[iPoint]->GetPrimitive();
+      Primitive_j = node[jPoint]->GetPrimitive();
+      
+      /*--- Compute the maximum, and minimum values for nodes i & j ---*/
+      
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        du = (Primitive_j[iVar] - Primitive_i[iVar]);
+        node[iPoint]->SetSolution_Min(iVar, min(node[iPoint]->GetSolution_Min(iVar), du));
+        node[iPoint]->SetSolution_Max(iVar, max(node[iPoint]->GetSolution_Max(iVar), du));
+        node[jPoint]->SetSolution_Min(iVar, min(node[jPoint]->GetSolution_Min(iVar), -du));
+        node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
+      }
+      
     }
     
   }
@@ -4081,8 +4105,18 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       Coord_i    = geometry->node[iPoint]->GetCoord();
       Coord_j    = geometry->node[jPoint]->GetCoord();
       
+      AD::StartPreacc();
+      AD::SetPreaccIn(Gradient_i, nPrimVarGrad, nDim);
+      AD::SetPreaccIn(Gradient_j, nPrimVarGrad, nDim);
+      AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
+
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
         
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Max(iVar));
+        AD::SetPreaccIn(node[jPoint]->GetSolution_Min(iVar));
+
         /*--- Calculate the interface left gradient, delta- (dm) ---*/
         
         dm = 0.0;
@@ -4096,8 +4130,10 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
           limiter = dp/dm;
         }
         
-        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar))
+        if (limiter < node[iPoint]->GetLimiter_Primitive(iVar)) {
           node[iPoint]->SetLimiter_Primitive(iVar, limiter);
+          AD::SetPreaccOut(node[iPoint]->GetLimiter_Primitive()[iVar]);
+        }
         
         /*--- Calculate the interface right gradient, delta+ (dp) ---*/
         
@@ -4112,10 +4148,14 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
           limiter = dp/dm;
         }
         
-        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar))
+        if (limiter < node[jPoint]->GetLimiter_Primitive(iVar)) {
           node[jPoint]->SetLimiter_Primitive(iVar, limiter);
+          AD::SetPreaccOut(node[jPoint]->GetLimiter_Primitive()[iVar]);
+        }
         
       }
+      
+      AD::EndPreacc();
       
     }
     
@@ -4131,14 +4171,44 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
   
   /*--- Venkatakrishnan limiter ---*/
   
-  if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) {
+  if ((config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN) ||
+      (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG)) {
     
-    /*-- Get limiter parameters from the configuration file ---*/
+    /*--- Allocate memory for the max and min primitive value --*/
     
-    dave = config->GetRefElemLength();
-    LimK = config->GetLimiterCoeff();
-    eps1 = LimK*dave;
-    eps2 = eps1*eps1*eps1;
+    LocalMinPrimitive = new su2double [nPrimVarGrad]; GlobalMinPrimitive = new su2double [nPrimVarGrad];
+    LocalMaxPrimitive = new su2double [nPrimVarGrad]; GlobalMaxPrimitive = new su2double [nPrimVarGrad];
+    
+    /*--- Compute the max value and min value of the solution ---*/
+    
+    Primitive = node[0]->GetPrimitive();
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      LocalMinPrimitive[iVar] = Primitive[iVar];
+      LocalMaxPrimitive[iVar] = Primitive[iVar];
+    }
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+      
+      /*--- Get the primitive variables ---*/
+      
+      Primitive = node[iPoint]->GetPrimitive();
+
+      for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        LocalMinPrimitive[iVar] = min (LocalMinPrimitive[iVar], Primitive[iVar]);
+        LocalMaxPrimitive[iVar] = max (LocalMaxPrimitive[iVar], Primitive[iVar]);
+      }
+      
+    }
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(LocalMinPrimitive, GlobalMinPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(LocalMaxPrimitive, GlobalMaxPrimitive, nPrimVarGrad, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      GlobalMinPrimitive[iVar] = LocalMinPrimitive[iVar];
+      GlobalMaxPrimitive[iVar] = LocalMaxPrimitive[iVar];
+    }
+#endif
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
@@ -4157,6 +4227,15 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
 
 
       for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+        
+        if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
+          eps1 = LimK * (GlobalMaxPrimitive[iVar] - GlobalMinPrimitive[iVar]);
+          eps2 = eps1*eps1;
+        }
+        else {
+          eps1 = LimK*dave;
+          eps2 = eps1*eps1*eps1;
+        }
         
         AD::SetPreaccIn(node[iPoint]->GetSolution_Max(iVar));
         AD::SetPreaccIn(node[iPoint]->GetSolution_Min(iVar));
@@ -4202,6 +4281,9 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
       
     }
     
+    delete [] LocalMinPrimitive; delete [] GlobalMinPrimitive;
+    delete [] LocalMaxPrimitive; delete [] GlobalMaxPrimitive;
+
   }
   
   /*--- Limiter MPI ---*/
@@ -4214,7 +4296,7 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
                                    CConfig *config, unsigned short iMesh, bool Output) {
   
   su2double Target_CL = 0.0, AoA = 0.0, Vel_Infty[3] = {0.0,0.0,0.0},
-  AoA_inc = 0.0, Vel_Infty_Mag, Delta_AoA, Old_AoA, dCL_dAlpha_, dCD_dCL_;
+  AoA_inc = 0.0, Vel_Infty_Mag, Old_AoA;
   
   unsigned short iDim;
   
@@ -4246,12 +4328,8 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     if ((ExtIter % Iter_Fixed_CL == 0) && (ExtIter != 0)) {
       AoA_Counter++;
-      if ((AoA_Counter != 0) &&
-          (AoA_Counter != 1) &&
-          (AoA_Counter != Update_Alpha) &&
-          (AoA_Counter != Update_Alpha + 2) &&
-          (AoA_Counter != Update_Alpha + 4) ) Update_AoA = true;
-      else Update_AoA = false;
+      if ((AoA_Counter <= Update_Alpha)) Update_AoA = true;
+      Update_AoA = true;
     }
     
     /*--- Store the update boolean for use on other mesh levels in the MG ---*/
@@ -4328,7 +4406,6 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) && write_heads && !config->GetDiscrete_Adjoint()) {
       Old_AoA = config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      Delta_AoA = Old_AoA - AoA_Prev;
       
       cout.precision(7);
       cout.setf(ios::fixed, ios::floatfield);
@@ -4338,25 +4415,100 @@ void CIncEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_cont
       cout.precision(4);
       cout << "Previous AoA: " << Old_AoA << " deg";
       cout << ", new AoA: " << config->GetAoA() << " deg." << endl;
-      
-      cout.precision(7);
-      if ((fabs(Delta_AoA) > EPS) && (AoA_Counter != 2))  {
-        
-        dCL_dAlpha_ = (Total_CL-Total_CL_Prev)/Delta_AoA;
-        dCD_dCL_ = (Total_CD-Total_CD_Prev)/(Total_CL-Total_CL_Prev);
-        
-        cout << "Approx. Delta CL / Delta AoA: " << dCL_dAlpha_ << " (1/deg)." << endl;
-        cout << "Approx. Delta CD / Delta CL: " << dCD_dCL_ << ". " << endl;
-        
-      }
-      
-      Total_CD_Prev = Total_CD;
-      Total_CL_Prev = Total_CL;
-      AoA_Prev =config->GetAoA() - AoA_inc*(180.0/PI_NUMBER);
-      
+
       cout << "-------------------------------------------------------------------------" << endl << endl;
     }
     
+  }
+  
+}
+
+void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
+
+  unsigned short iMarker_Monitoring;
+  su2double Weight_ObjFunc;
+
+  /*--- Loop over all monitored markers, add to the 'combo' objective ---*/
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+    Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+
+    switch(config->GetKind_ObjFunc(iMarker_Monitoring)) {
+      case DRAG_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
+        if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+        break;
+      case LIFT_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case SIDEFORCE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CSF[iMarker_Monitoring]);
+        break;
+      case EFFICIENCY:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CEff[iMarker_Monitoring]);
+        break;
+      case MOMENT_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMx[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMx_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMy[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMy_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case MOMENT_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*(Surface_CMz[iMarker_Monitoring]);
+        if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCMz_dCL()*(Surface_CL[iMarker_Monitoring]);
+        break;
+      case FORCE_X_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFx[iMarker_Monitoring];
+        break;
+      case FORCE_Y_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFy[iMarker_Monitoring];
+        break;
+      case FORCE_Z_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Surface_CFz[iMarker_Monitoring];
+        break;
+
+        /*--- The following are not per-surface, and as a result will be
+         * double-counted iff multiple surfaces are specified as well as multi-objective
+         * TODO: print a warning to the user about that possibility. ---*/
+
+      case INVERSE_DESIGN_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+        break;
+      case INVERSE_DESIGN_HEATFLUX:
+        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+        break;
+      case THRUST_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CT;
+        break;
+      case TORQUE_COEFFICIENT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+        break;
+      case FIGURE_OF_MERIT:
+        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+        break;
+      case SURFACE_TOTAL_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+        break;
+      case SURFACE_STATIC_PRESSURE:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+        break;
+      case SURFACE_MASSFLOW:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+        break;
+      case SURFACE_MACH:
+        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+        break;
+      case CUSTOM_OBJFUNC:
+        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+        break;
+      default:
+        break;
+
+    }
   }
   
 }
@@ -5779,7 +5931,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
     /*--- Read and store the restart metadata. ---*/
 
-    Read_SU2_Restart_Metadata(geometry, config, filename_);
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
     
   }
 
@@ -6107,7 +6259,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   AoA_Prev = 0.0;
   Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
-  
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
   /*--- Read farfield conditions from config ---*/
   
   Density_Inf   = config->GetDensity_FreeStreamND();
@@ -6235,16 +6388,16 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 #endif
   
   unsigned long ExtIter     = config->GetExtIter();
-  bool adjoint              = config->GetContinuous_Adjoint();
+  bool cont_adjoint         = config->GetContinuous_Adjoint();
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
   bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) ||
-                               (adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
+  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
-  bool limiter_flow         = (config->GetMUSCL_Flow() &&(config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_turb         = (config->GetMUSCL_Turb() &&(config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_adjflow      = (config->GetMUSCL_AdjFlow() &&(config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
-  bool limiter_visc         = config->GetViscous_Limiter_Flow();
+  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
+ bool limiter_visc         = config->GetViscous_Limiter_Flow();
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
   
@@ -6276,7 +6429,7 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Compute the limiter in case we need it in the turbulence model
    or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
   
-  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow || limiter_visc) && !Output) { SetPrimitive_Limiter(geometry, config);
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow) && !Output) { SetPrimitive_Limiter(geometry, config);
   }
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
@@ -6284,8 +6437,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   StrainMag_Max = 0.0, Omega_Max = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
-    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity(limiter_visc);
-    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag(limiter_visc);
+    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
+    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
     
     StrainMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
     Vorticity = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
@@ -6592,8 +6745,6 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
                                  node[jPoint]->GetGradient_Primitive());
-    numerics->SetPrimVarLimiter(node[iPoint]->GetLimiter_Primitive(),
-                                node[jPoint]->GetLimiter_Primitive());
     
     /*--- Turbulent kinetic energy ---*/
     
@@ -7012,7 +7163,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
-  unsigned short iDim, iVar;
+  unsigned short iDim, iVar, Wall_Function;
   unsigned long iVertex, iPoint, total_index;
   
   su2double *GridVel, *Normal, Area;
@@ -7023,7 +7174,21 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
+
+  /*--- Get wall function treatment from config. ---*/
+
+  Wall_Function = config->GetWallFunction_Treatment(Marker_Tag);
+  if(Wall_Function != NO_WALL_FUNCTION) {
+
+    cout << endl << "Wall function treament not implemented yet" << endl << endl;
+#ifndef HAVE_MPI
+    exit(EXIT_FAILURE);
+#else
+    MPI_Abort(MPI_COMM_WORLD,1);
+    MPI_Finalize();
+#endif
+  }
+
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {

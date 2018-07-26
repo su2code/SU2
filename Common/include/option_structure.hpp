@@ -178,18 +178,15 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
 ("HIGH", VERB_HIGH);
 
 /*!
- * \brief Type of One-Dimensionalization
+ * \brief Average method for marker analyze
  */
-enum ONED_TYPE {
-  ONED_NONE = 0, /*!< \brief no one-dimensionalization. */
-  ONED_AREA = 1, /*!< \brief Area-weighted average. */
-  ONED_MFLUX = 2 /*!< \brief Mass-flux weighted average. */
+enum AVERAGE_TYPE {
+  AVERAGE_AREA = 1, /*!< \brief Area-weighted average. */
+  AVERAGE_MASSFLUX = 2 /*!< \brief Mass-flux weighted average. */
 };
-static const map<string, ONED_TYPE> OneD_Map = CCreateMap<string, ONED_TYPE>
-("NONE", ONED_NONE)
-("AREA", ONED_AREA)
-("MASSFLUX", ONED_MFLUX);
-
+static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_TYPE>
+("AREA", AVERAGE_AREA)
+("MASSFLUX", AVERAGE_MASSFLUX);
 
 /*!
  * \brief different solver types for the CFD component
@@ -364,11 +361,7 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,			//!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). //
   RUNTIME_TURB_SYS = 3,			//!< \brief One-physics case, the code is solving the turbulence model. //
-
-  //check what value to use here
   RUNTIME_2PHASE_SYS = 9,			//!< \brief One-physics case, the code is solving the 2phase model. //
-
-
   RUNTIME_POISSON_SYS = 4,			//!< \brief One-physics case, the code is solving the poissonal potential equation. //
   RUNTIME_ADJPOT_SYS = 5,		//!< \brief One-physics case, the code is solving the adjoint potential flow equation. //
   RUNTIME_ADJFLOW_SYS = 6,		//!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). //
@@ -380,50 +373,13 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,               //!< \brief One-physics case, the code is solving the turbulence model. //
   RUNTIME_ADJTWO_PHASE_SYS = 23,        //!< \brief One-physics case, the code is solving the adjoint for the 2 phase model. //
 };
-/*
-enum RUNTIME_TYPE {
-  RUNTIME_FLOW_SYS = 2,			//!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). //
-  RUNTIME_TURB_SYS = 3,			//!< \brief One-physics case, the code is solving the turbulence model. //
 
-  //check what value to use here
-  RUNTIME_2PHASE_SYS = 1,			//!< \brief One-physics case, the code is solving the 2phase model. //
-
-
-  RUNTIME_POISSON_SYS = 4,			//!< \brief One-physics case, the code is solving the poissonal potential equation. //
-  RUNTIME_ADJPOT_SYS = 5,		//!< \brief One-physics case, the code is solving the adjoint potential flow equation. //
-  RUNTIME_ADJFLOW_SYS = 7,		//!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). //
-  RUNTIME_ADJTURB_SYS = 8,		//!< \brief One-physics case, the code is solving the adjoint turbulence model. //
-  RUNTIME_WAVE_SYS = 13,		//!< \brief One-physics case, the code is solving the wave equation. //
-  RUNTIME_MULTIGRID_SYS = 14,   	//!< \brief Full Approximation Storage Multigrid system of equations. //
-  RUNTIME_FEA_SYS = 20,		//!< \brief One-physics case, the code is solving the FEA equation. //
-  RUNTIME_HEAT_SYS = 21,		//!< \brief One-physics case, the code is solving the heat equation. //
-  RUNTIME_TRANS_SYS = 22,               //!< \brief One-physics case, the code is solving the turbulence model. //
-  RUNTIME_ADJTWO_PHASE_SYS = 6,        //!< \brief One-physics case, the code is solving the adjoint for the 2 phase model. //
-};
-*/
-
-const int FLOW_SOL = 0;		//!< \brief Position of the mean flow solution in the solver container array.
-const int ADJFLOW_SOL = 1;	//!< \brief Position of the continuous adjoint flow solution in the solver container array.
-
+const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
+const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
 const int TURB_SOL = 2;		//!< \brief Position of the turbulence model solution in the solver container array.
-
 const int TWO_PHASE_SOL = 5;//!< \brief Position of the phase model solution in the solver container array.
-
 const int ADJTWO_PHASE_SOL = 6; //!< \brief Position of the two phase model adjoint solution in the solver container array.
 const int ADJTURB_SOL = 3;	//!< \brief Position of the continuous adjoint turbulence solution in the solver container array.
-
-
-/*
-const int FLOW_SOL = 5;		//!< \brief Position of the mean flow solution in the solver container array.
-const int ADJFLOW_SOL = 6;	//!< \brief Position of the continuous adjoint flow solution in the solver container array.
-
-const int TURB_SOL = 2;		//!< \brief Position of the turbulence model solution in the solver container array.
-
-const int TWO_PHASE_SOL = 0;//!< \brief Position of the phase model solution in the solver container array.
-
-const int ADJTWO_PHASE_SOL = 1; //!< \brief Position of the two phase model adjoint solution in the solver container array.
-const int ADJTURB_SOL = 3;	//!< \brief Position of the continuous adjoint turbulence solution in the solver container array.
-*/
 
 
 const int TRANS_SOL = 4;	//!< \brief Position of the transition model solution in the solver container array.
@@ -670,18 +626,6 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("SCALAR_UPWIND", SCALAR_UPWIND)
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE);
 
-/*!
- * \brief Spatial numerical order integration
- */
-enum ENUM_SPATIAL_ORDER {
-  FIRST_ORDER = 0,        /*!< \brief First order */
-  SECOND_ORDER = 1,        /*!< \brief Second order. */
-  SECOND_ORDER_LIMITER = 2 /*!< \brief Second order with limiter. */
-};
-static const map<string, ENUM_SPATIAL_ORDER> SpatialOrder_Map = CCreateMap<string, ENUM_SPATIAL_ORDER>
-("1ST_ORDER", FIRST_ORDER)
-("2ND_ORDER", SECOND_ORDER)
-("2ND_ORDER_LIMITER", SECOND_ORDER_LIMITER);
 
 /*!
  * \brief types of slope limiters
@@ -771,6 +715,25 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM)
 ("BC", BC); //BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of wall functions.
+ */
+enum ENUM_WALL_FUNCTIONS {
+  NO_WALL_FUNCTION          = 0,   /*!< \brief No wall function treatment, integration to the wall. Default behavior. */
+  STANDARD_WALL_FUNCTION    = 1,   /*!< \brief Standard wall function. */
+  ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
+  SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
+  EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 5    /*!< \brief Non-equilibrium wall model for LES. */
+};
+static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
+("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
+("STANDARD_WALL_FUNCTION",    STANDARD_WALL_FUNCTION)
+("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
+("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
+("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
+("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL);
 
 /*!
  * \brief type of time integration schemes
@@ -935,12 +898,14 @@ enum RIEMANN_TYPE {
   STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
   MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
-  SUPERSONIC_OUTFLOW = 9, /*!< \brief User does not specify anything information are retrieved from the other domain */
+  SUPERSONIC_OUTFLOW = 9,
   RADIAL_EQUILIBRIUM = 10,
   TOTAL_CONDITIONS_PT_1D = 11,
   STATIC_PRESSURE_1D = 12,
   MIXING_IN_1D = 13,
-  MIXING_OUT_1D =14
+  MIXING_OUT_1D =14,
+  SPANWISE_TOTAL_CONDITIONS_PT=15,
+  SPANWISE_STATIC_PRESSURE=16
 };
 
 static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -957,7 +922,10 @@ static const map<string, RIEMANN_TYPE> Riemann_Map = CCreateMap<string, RIEMANN_
 ("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
 ("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
 ("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
-("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
+("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+("SPANWISE_TOTAL_CONDITIONS_PT", SPANWISE_TOTAL_CONDITIONS_PT)
+("SPANWISE_STATIC_PRESSURE", SPANWISE_STATIC_PRESSURE);
+
 
 
 static const map<string, RIEMANN_TYPE> Giles_Map = CCreateMap<string, RIEMANN_TYPE>
@@ -974,7 +942,9 @@ static const map<string, RIEMANN_TYPE> Giles_Map = CCreateMap<string, RIEMANN_TY
 ("SUPERSONIC_OUTFLOW", SUPERSONIC_OUTFLOW)
 ("RADIAL_EQUILIBRIUM", RADIAL_EQUILIBRIUM)
 ("TOTAL_CONDITIONS_PT_1D", TOTAL_CONDITIONS_PT_1D)
-("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D);
+("STATIC_PRESSURE_1D", STATIC_PRESSURE_1D)
+("SPANWISE_TOTAL_CONDITIONS_PT", SPANWISE_TOTAL_CONDITIONS_PT)
+("SPANWISE_STATIC_PRESSURE", SPANWISE_STATIC_PRESSURE);
 
 /*!
  * \brief types of mixing process for averaging quantities at the boundaries.
@@ -1092,9 +1062,9 @@ enum ACTDISK_TYPE {
   VARIABLES_JUMP = 1,		/*!< \brief User specifies the variables jump. */
   BC_THRUST = 2,     /*!< \brief User specifies the BC thrust. */
   NET_THRUST = 3,     /*!< \brief User specifies the Net thrust. */
-  DRAG_MINUS_THRUST = 4,     /*!< \brief ACDC computes the right thrust. */
-  MASSFLOW = 5,     /*!< \brief ACDC computes the right thrust. */
-  POWER = 6     /*!< \brief User specifies the Net thrust. */
+  DRAG_MINUS_THRUST = 4,     /*!< \brief User specifies the D-T. */
+  MASSFLOW = 5,     /*!< \brief User specifies the massflow. */
+  POWER = 6     /*!< \brief User specifies the power. */
 };
 static const map<string, ACTDISK_TYPE> ActDisk_Map = CCreateMap<string, ACTDISK_TYPE>
 ("VARIABLES_JUMP", VARIABLES_JUMP)
@@ -1141,32 +1111,23 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
-  MAX_THICKNESS = 21,           /*!< \brief Maximum thickness. */
-  MIN_THICKNESS = 22,           /*!< \brief Minimum thickness. */
-  MAX_THICK_SEC1 = 23,          /*!< \brief Maximum thickness in section 1. */
-  MAX_THICK_SEC2 = 24,          /*!< \brief Maximum thickness in section 2. */
-  MAX_THICK_SEC3 = 25,          /*!< \brief Maximum thickness in section 3. */
-  MAX_THICK_SEC4 = 26,          /*!< \brief Maximum thickness in section 4. */
-  MAX_THICK_SEC5 = 27,           /*!< \brief Maximum thickness in section 5. */
-  AVG_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
-  AVG_OUTLET_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
-  MASS_FLOW_RATE = 30,           /*!< \brief Mass Flow Rate objective function definition. */
-  AERO_DRAG_COEFFICIENT = 35, 	  /*!< \brief Aero Drag objective function definition. */
-  RADIAL_DISTORTION = 36, 	      /*!< \brief Radial Distortion objective function definition. */
-  CIRCUMFERENTIAL_DISTORTION = 37,  /*!< \brief Circumferential Distortion objective function definition. */
-  CUSTOM_OBJFUNC = 38, 	           /*!< \brief Custom objective function definition. */
-  TOTAL_PRESSURE_LOSS=39,
-  KINETIC_ENERGY_LOSS=40,
-  TOTAL_EFFICIENCY=41,
-  TOTAL_STATIC_EFFICIENCY=42,
-  EULERIAN_WORK=43,
-  TOTAL_ENTHALPY_IN=44,
-  FLOW_ANGLE_IN=45,
-  FLOW_ANGLE_OUT=46,
-  MASS_FLOW_IN=47,
-  MASS_FLOW_OUT=48,
-  PRESSURE_RATIO=49,
-  ENTROPY_GENERATION=50
+  SURFACE_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
+  SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
+  SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
+  SURFACE_MACH = 51,           /*!< \brief Mach number objective function definition. */
+  CUSTOM_OBJFUNC = 31, 	           /*!< \brief Custom objective function definition. */
+  TOTAL_PRESSURE_LOSS = 39,
+  KINETIC_ENERGY_LOSS = 40,
+  TOTAL_EFFICIENCY = 41,
+  TOTAL_STATIC_EFFICIENCY = 42,
+  EULERIAN_WORK = 43,
+  TOTAL_ENTHALPY_IN = 44,
+  FLOW_ANGLE_IN = 45,
+  FLOW_ANGLE_OUT = 46,
+  MASS_FLOW_IN = 47,
+  MASS_FLOW_OUT = 48,
+  PRESSURE_RATIO = 49,
+  ENTROPY_GENERATION = 50
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1189,19 +1150,10 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
-("MAX_THICKNESS", MAX_THICKNESS)
-("MIN_THICKNESS", MIN_THICKNESS)
-("MAX_THICK_SEC1", MAX_THICK_SEC1)
-("MAX_THICK_SEC2", MAX_THICK_SEC2)
-("MAX_THICK_SEC3", MAX_THICK_SEC3)
-("MAX_THICK_SEC4", MAX_THICK_SEC4)
-("MAX_THICK_SEC5", MAX_THICK_SEC5)
-("AVG_TOTAL_PRESSURE", AVG_TOTAL_PRESSURE)
-("AVG_OUTLET_PRESSURE", AVG_OUTLET_PRESSURE)
-("MASS_FLOW_RATE", MASS_FLOW_RATE)
-("AERO_DRAG", AERO_DRAG_COEFFICIENT)
-("RADIAL_DISTORTION", RADIAL_DISTORTION)
-("CIRCUMFERENTIAL_DISTORTION", CIRCUMFERENTIAL_DISTORTION)
+("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
+("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
+("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
+("SURFACE_MACH", SURFACE_MACH)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
@@ -1460,7 +1412,7 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU0", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1483,12 +1435,14 @@ static const map<string, ENUM_FFD_CONTINUITY> Continuity_Map = CCreateMap<string
 enum ENUM_FFD_COORD_SYSTEM {
   CARTESIAN = 0,
   CYLINDRICAL = 1,
-  SPHERICAL = 2
+  SPHERICAL = 2,
+  POLAR = 3
 };
 static const map<string, ENUM_FFD_COORD_SYSTEM> CoordSystem_Map = CCreateMap<string, ENUM_FFD_COORD_SYSTEM>
 ("CARTESIAN", CARTESIAN)
 ("CYLINDRICAL", CYLINDRICAL)
-("SPHERICAL", SPHERICAL);
+("SPHERICAL", SPHERICAL)
+("POLAR", POLAR);
 
 /*!
  * \brief types of sensitivity smoothing
@@ -1516,7 +1470,7 @@ static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCrea
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU0", ILU);
+("ILU", ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
@@ -1538,15 +1492,15 @@ static const map<string, ENUM_GEO_ANALYTIC> Geo_Analytic_Map = CCreateMap<string
 /*!
  * \brief types of axis orientation
  */
-enum ENUM_AXIS_ORIENTATION {
-  X_AXIS = 0,   /*!< \brief X axis orientation. */
-  Y_AXIS = 1, 	/*!< \brief Y axis orientation. */
-  Z_AXIS = 2    /*!< \brief Z axis orientation. */
+enum ENUM_GEO_DESCRIPTION {
+	TWOD_AIRFOIL = 0,   /*!< \brief Airfoil analysis. */
+  WING = 1, 	/*!< \brief Wing analysis. */
+  FUSELAGE = 2    /*!< \brief Fuselage analysis. */
 };
-static const map<string, ENUM_AXIS_ORIENTATION> Axis_Stations_Map = CCreateMap<string, ENUM_AXIS_ORIENTATION>
-("X_AXIS", X_AXIS)
-("Y_AXIS", Y_AXIS)
-("Z_AXIS", Z_AXIS);
+static const map<string, ENUM_GEO_DESCRIPTION> Geo_Description_Map = CCreateMap<string, ENUM_GEO_DESCRIPTION>
+("AIRFOIL", TWOD_AIRFOIL)
+("WING", WING)
+("FUSELAGE", FUSELAGE);
 
 /*!
  * \brief types of schemes for unsteady computations
@@ -1585,7 +1539,7 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
 enum ENUM_DEFORM_STIFFNESS {
   CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
   INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the deforming surface. */
+  WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
@@ -3500,5 +3454,202 @@ public:
     this->press_jump = NULL;
     this->temp_jump = NULL;
     this->omega = NULL;
+  }
+};
+
+
+class COptionWallFunction : public COptionBase {
+  string name; // identifier for the option
+  unsigned short &nMarkers;
+  string* &markers;
+  unsigned short*  &walltype;
+  unsigned short** &intInfo;
+  su2double**      &doubleInfo;
+
+public:
+  COptionWallFunction(const string name, unsigned short &nMarker_WF, 
+                      string* &Marker_WF, unsigned short* &type_WF,
+                      unsigned short** &intInfo_WF, su2double** &doubleInfo_WF) :
+  nMarkers(nMarker_WF), markers(Marker_WF), walltype(type_WF),
+  intInfo(intInfo_WF), doubleInfo(doubleInfo_WF) {
+    this->name = name;
+  }
+
+  ~COptionWallFunction(){}
+
+  string SetValue(vector<string> option_value) {
+
+    /*--- First check if NONE is specified. ---*/
+    unsigned short totalSize = option_value.size();
+    if ((totalSize == 1) && (option_value[0].compare("NONE") == 0)) {
+      this->SetDefault();
+      return "";
+    }
+
+    /*--- Determine the number of markers, for which a wall
+          function treatment has been specified. ---*/
+    unsigned short counter = 0, nVals = 0;
+    while (counter < totalSize ) {
+
+      /* Update the counter for the number of markers specified
+         and store the current index for possible error messages. */
+      ++nVals;
+      const unsigned short indMarker = counter;
+
+      /* Check if a wall function type has been specified for this marker.
+         If not, create an error message and return. */
+      ++counter;
+      const unsigned short indWallType = counter;
+      unsigned short typeWF = NO_WALL_FUNCTION;
+      bool validWF = true;
+      if (counter == totalSize) validWF = false;
+      else {
+        map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+        it = Wall_Functions_Map.find(option_value[counter]);
+        if(it == Wall_Functions_Map.end()) validWF = false;
+        else                               typeWF  = it->second;
+      }
+
+      if (!validWF ) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(": Invalid wall function type, ");
+        newstring.append(option_value[counter]);
+        newstring.append(", encountered for marker ");
+        newstring.append(option_value[indMarker]);
+        return newstring;
+      }
+
+      /* Update the counter, as the wall function type is valid. */
+      ++counter;
+
+      /*--- For some wall function types some additional info
+            must be specified. Hence the counter must be updated
+            accordingly. ---*/
+      switch( typeWF ) {
+        case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
+        case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
+        default: break;
+      }
+
+      /* In case the counter is larger than totalSize, the data for
+         this wall function type has not been specified correctly. */
+      if (counter > totalSize) {
+        string newstring;
+        newstring.append(this->name);
+        newstring.append(", marker ");
+        newstring.append(option_value[indMarker]);
+        newstring.append(", wall function type ");
+        newstring.append(option_value[indWallType]);
+        newstring.append(": Additional information is missing.");
+        return newstring;
+      }
+    }
+
+    /* Allocate the memory to store the data for the wall function markers. */
+    this->nMarkers   = nVals;
+    this->markers    = new string[nVals];
+    this->walltype   = new unsigned short[nVals];
+    this->intInfo    = new unsigned short*[nVals];
+    this->doubleInfo = new su2double*[nVals];
+
+    for (unsigned short i=0; i<nVals; i++) {
+      this->intInfo[i]    = NULL;
+      this->doubleInfo[i] = NULL;
+    }
+
+    /*--- Loop over the wall markers and store the info in the
+          appropriate arrays. ---*/
+    counter = 0;
+    for (unsigned short i=0; i<nVals; i++) {
+
+      /* Set the name of the wall function marker. */
+      this->markers[i].assign(option_value[counter++]);
+
+      /* Determine the wall function type. As their validaties have
+         already been tested, there is no need to do so again. */
+      map<string, ENUM_WALL_FUNCTIONS>::const_iterator it;
+      it = Wall_Functions_Map.find(option_value[counter++]);
+
+      this->walltype[i] = it->second;
+
+      /*--- For some wall function types, some additional info
+            is needed, which is extracted from option_value. ---*/
+      switch( this->walltype[i] ) {
+
+        case EQUILIBRIUM_WALL_MODEL: {
+
+          /* LES equilibrium wall model. The exchange distance, stretching
+             factor and number of points in the wall model must be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[2];
+
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_2nd(option_value[counter++]);
+          if (!(ss_2nd >> this->doubleInfo[i][1])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          istringstream ss_3rd(option_value[counter++]);
+          if (!(ss_3rd >> this->intInfo[i][0])) {
+            return badValue(option_value, "unsigned short", this->name);
+          }
+
+          break;
+        }
+
+        case NONEQUILIBRIUM_WALL_MODEL: {
+
+          /* LES non-equilibrium model. The RANS turbulence model and
+             the exchange distance need to be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[1];
+
+          /* Check for a valid RANS turbulence model. */
+          map<string, ENUM_TURB_MODEL>::const_iterator iit;
+          iit = Turb_Model_Map.find(option_value[counter++]);
+          if(iit == Turb_Model_Map.end()) {
+            string newstring;
+            newstring.append(this->name);
+            newstring.append(", marker ");
+            newstring.append(this->markers[i]);
+            newstring.append(", wall function type ");
+            newstring.append(option_value[counter-2]);
+            newstring.append(": Invalid RANS turbulence model, ");
+            newstring.append(option_value[counter-1]);
+            newstring.append(", specified");
+            return newstring;
+          }
+
+          this->intInfo[i][0] = iit->second;
+
+          /* Extract the exchange distance. */
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+
+          break;
+        }
+
+        default: // Just to avoid a compiler warning.
+          break;
+      }
+    }
+
+    // Need to return something...
+    return "";
+  }
+
+  void SetDefault() {
+    this->nMarkers   = 0;
+    this->markers    = NULL;
+    this->walltype   = NULL;
+    this->intInfo    = NULL;
+    this->doubleInfo = NULL;
   }
 };

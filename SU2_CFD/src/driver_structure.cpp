@@ -351,7 +351,7 @@ CDriver::CDriver(char* confFile,
   if(initStaticMovement){
     if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement();
+      InitStaticMeshMovement(true);
   }
 
  if (config_container[ZONE_0]->GetBoolTurbomachinery()){
@@ -950,9 +950,10 @@ void CDriver::Solver_Preprocessing(CSolver ***solver_container, CGeometry **geom
         solver_container[iMGlevel][ADJFLOW_SOL] = new CAdjIncNSSolver(geometry[iMGlevel], config, iMGlevel);
       }
     }
-    if (adj_turb) {
+    if (adj_turb && !disc_adj) {
       solver_container[iMGlevel][ADJTURB_SOL] = new CAdjTurbSolver(geometry[iMGlevel], config, iMGlevel);
     }
+    
     if (disc_adj) {
       solver_container[iMGlevel][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[iMGlevel], config, solver_container[iMGlevel][FLOW_SOL], RUNTIME_FLOW_SYS, iMGlevel);
       if (adj_turb)
@@ -1444,15 +1445,8 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
             default : cout << "Centered scheme not implemented." << endl; exit(EXIT_FAILURE); break;
           }
           
-          if (!config->GetLowFidelitySim()) {
-            for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
-          else {
-            numerics_container[MESH_1][FLOW_SOL][CONV_TERM] = new CCentJST_Flow(nDim, nVar_Flow, config);
-            for (iMGlevel = 2; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-              numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
-          }
+          for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+            numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CCentLax_Flow(nDim, nVar_Flow, config);
           
           /*--- Definition of the boundary condition method ---*/
           for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -1619,7 +1613,7 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
       else
         numerics_container[iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
       
-        numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+      numerics_container[iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
     
   }
@@ -1648,9 +1642,9 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA(nDim, nVar_Turb, config);
-      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSA_Neg(nDim, nVar_Turb, config);
-      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGradCorrected_TurbSST(nDim, nVar_Turb, constants, config);
+      if (spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, true, config);
+      else if (neg_spalart_allmaras) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
+      else if (menter_sst) numerics_container[iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, true, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -1667,15 +1661,15 @@ void CDriver::Numerics_Preprocessing(CNumerics ****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, false, config);
       }
       else if (neg_spalart_allmaras) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, false, config);
       }
       else if (menter_sst) {
         numerics_container[iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSST(nDim, nVar_Turb, config);
-        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, config);
+        numerics_container[iMGlevel][TURB_SOL][VISC_BOUND_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, false, config);
       }
     }
   }
@@ -2471,13 +2465,13 @@ void CDriver::Iteration_Preprocessing() {
         cout << ": Euler/Navier-Stokes/RANS turbomachinery fluid iteration." << endl;
       iteration_container[iZone] = new CTurboIteration(config_container[iZone]);
 
-    }
-    else{
-      if (rank == MASTER_NODE)
-        cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
+      }
+      else{
+        if (rank == MASTER_NODE)
+          cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CFluidIteration(config_container[iZone]);
-    }
-    break;
+      }
+      break;
 
   case WAVE_EQUATION:
     if (rank == MASTER_NODE)
@@ -2502,8 +2496,7 @@ void CDriver::Iteration_Preprocessing() {
       cout << ": FEM iteration." << endl;
       iteration_container[iZone] = new CFEM_StructuralAnalysis(config_container[iZone]);
     break;
-
-  case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
+    case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     if (rank == MASTER_NODE)
       cout << ": adjoint Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone] = new CAdjFluidIteration(config_container[iZone]);
@@ -2781,7 +2774,7 @@ void CDriver::Interface_Preprocessing() {
 
 }
 
-void CDriver::InitStaticMeshMovement(){
+void CDriver::InitStaticMeshMovement(bool print){
 
   unsigned short iMGlevel;
   unsigned short Kind_Grid_Movement;
@@ -2800,11 +2793,11 @@ void CDriver::InitStaticMeshMovement(){
 
       /*--- Fixed wall velocities: set the grid velocities only one time
          before the first iteration flow solver. ---*/
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting the moving wall velocities." << endl;
 
       surface_movement[iZone]->Moving_Walls(geometry_container[iZone][MESH_0],
-          config_container[iZone], iZone, 0);
+          config_container[iZone], iZone, 0, print);
 
       /*--- Update the grid velocities on the coarser multigrid levels after
            setting the moving wall velocities for the finest mesh. ---*/
@@ -2818,7 +2811,7 @@ void CDriver::InitStaticMeshMovement(){
       /*--- Steadily rotating frame: set the grid velocities just once
          before the first iteration flow solver. ---*/
 
-      if (rank == MASTER_NODE) {
+      if (rank == MASTER_NODE && print) {
         cout << endl << " Setting rotating frame grid velocities";
         cout << " for zone " << iZone << "." << endl;
       }
@@ -2827,7 +2820,7 @@ void CDriver::InitStaticMeshMovement(){
            rotating reference frame. ---*/
 
       for (iMGlevel = 0; iMGlevel <= config_container[ZONE_0]->GetnMGLevels(); iMGlevel++){
-        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, true);
+        geometry_container[iZone][iMGlevel]->SetRotationalVelocity(config_container[iZone], iZone, print);
         geometry_container[iZone][iMGlevel]->SetShroudVelocity(config_container[iZone]);
       }
 
@@ -2839,7 +2832,7 @@ void CDriver::InitStaticMeshMovement(){
          the calculation (similar to rotating frame, but there is no extra
          source term for translation). ---*/
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && print)
         cout << endl << " Setting translational grid velocities." << endl;
 
       /*--- Set the translational velocity on all grid levels. ---*/
@@ -2906,6 +2899,7 @@ void CDriver::TurbomachineryPreprocessing(){
     geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, true);
     geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], true);
   }
+
 
   if(mixingplane){
     if (rank == MASTER_NODE) cout << "Set span-wise sections between zones on Mixing-Plane interface." << endl;
@@ -2983,7 +2977,11 @@ void CDriver::TurbomachineryPreprocessing(){
 
     }
   }
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Inlet())
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Inlet(config_container[ZONE_0],geometry_container[ZONE_0][MESH_0]);
 
+  if (config_container[ZONE_0]->GetBoolSpanwiseBC_Outlet())
+    solver_container[nZone -1][MESH_0][FLOW_SOL]->PreprocessSpanWiceBC_Outlet(config_container[nZone -1],geometry_container[nZone -1][MESH_0]);
 }
 
 void CDriver::StartSolver() {
@@ -3035,8 +3033,13 @@ void CDriver::StartSolver() {
       Update();
 
     }
+    
+    /*--- In the FSIDriver case, mesh and solution updates are already included into the Run function ---*/
+    
     else {
-      Run();      // In the FSIDriver case, mesh and solution updates are already included into the Run function
+      
+      Run();
+      
     }
 
     /*--- Monitor the computations after each iteration. ---*/
@@ -3073,7 +3076,7 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
   /*--- Read the target heat flux ---*/
 
   if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-    output->SetHeat_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
+    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
@@ -3159,94 +3162,75 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 void CDriver::Output(unsigned long ExtIter) {
   
   int rank = MASTER_NODE;
+  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
+  bool output_files = false;
+  
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-
-    /*--- Solution output. Determine whether a solution needs to be written
-     after the current iteration, and if so, execute the output file writing
-     routines. ---*/
-
-    if ((ExtIter+1 >= config_container[ZONE_0]->GetnExtIter())
-
-	||
-
-	((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
-	 !((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-	   (config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) ||
-	   (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)))
-
-	||
-
-      (StopCalc)
+  
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
+  
+  if (
       
-      ||
+      /*--- General if statements to print output statements ---*/
+      
+      (ExtIter+1 >= nExtIter) || (StopCalc) ||
+      
+      /*--- Fixed CL problem ---*/
+      
+      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
+       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == ExtIter)) ||
+      
+      /*--- Steady problems ---*/
+      
+      ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (ExtIter != 0) &&
+       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+      
+      /*--- Unsteady problems ---*/
       
       (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
         (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
-      
-      ||
+       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
       
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (!fsi) &&
        ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                           ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
-      
-      ||
+                           ((ExtIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
       
       ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (fsi) &&
-       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))
+       ((ExtIter == 0) || ((ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
       
-      ||
+      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+       ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))
       
-      (((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-        ((ExtIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))))) {
+      ) {
     
-    /*--- Low-fidelity simulations (using a coarser multigrid level
-     approximation to the solution) require an interpolation back to the
-     finest grid. ---*/
+    output_files = true;
     
-    if (config_container[ZONE_0]->GetLowFidelitySim()) {
-      integration_container[ZONE_0][FLOW_SOL]->SetProlongated_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], solver_container[ZONE_0][MESH_1][FLOW_SOL], geometry_container[ZONE_0][MESH_0], geometry_container[ZONE_0][MESH_1], config_container[ZONE_0]);
-      integration_container[ZONE_0][FLOW_SOL]->Smooth_Solution(RUNTIME_FLOW_SYS, solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], 3, 1.25, config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Set_MPI_Solution(geometry_container[ZONE_0][MESH_0], config_container[ZONE_0]);
-      solver_container[ZONE_0][MESH_0][config_container[ZONE_0]->GetContainerPosition(RUNTIME_FLOW_SYS)]->Preprocessing(geometry_container[ZONE_0][MESH_0], solver_container[ZONE_0][MESH_0], config_container[ZONE_0], MESH_0, 0, RUNTIME_FLOW_SYS, true);
-    }
+  }
+  
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+  
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+  }
+  
+  /*--- write the solution ---*/
+  
+  if (output_files) {
     
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- For specific applications, evaluate and plot the surface. ---*/
     
-    if (config_container[ZONE_0]->GetnMarker_Analyze() != 0) {
-      
-      output->WriteSurface_Analysis(config_container[ZONE_0], geometry_container[ZONE_0][MESH_0],
-                                    solver_container[ZONE_0][MESH_0][FLOW_SOL]);
-    }
-    
-    /*--- For specific applications, evaluate and plot the equivalent area. ---*/
-    
-    if (config_container[ZONE_0]->GetEquivArea() == YES) {
-      
-      output->SetEquivalentArea(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                                geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
-    
-    /*--- Execute the routine for writing restart, volume solution,
-     surface solution, and surface comma-separated value files. ---*/
 
     output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, nZone);
 
-    /*--- Output a file with the forces breakdown. ---*/
-    
-    output->SetForces_Breakdown(geometry_container, solver_container,
-                                config_container, integration_container, ZONE_0);
-    
-    /*--- Compute the forces at different sections. ---*/
-    
-    if (config_container[ZONE_0]->GetPlot_Section_Forces()) {
-      output->SetForceSections(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-                               geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
-    }
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     
@@ -4269,28 +4253,35 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
     rampFreq       = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(1));
     finalRamp_Iter = SU2_TYPE::Int(config_container[ZONE_0]->GetRampRotatingFrame_Coeff(2));
     rot_z_ini = config_container[ZONE_0]->GetRampRotatingFrame_Coeff(0);
-    print = false;
-    if(ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter){
+    print = (ExtIter+1)%(config_container[ZONE_0]->GetWrt_Con_Freq()*40) ==0 && ExtIter <= 2*finalRamp_Iter;
+
+    if((ExtIter % rampFreq == 0 &&  ExtIter <= finalRamp_Iter) || ExtIter == finalRamp_Iter){
 
       for (iZone = 0; iZone < nZone; iZone++) {
         rot_z_final = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
         if(abs(rot_z_final) > 0.0){
-          rot_z = rot_z_ini + ExtIter*( rot_z_final - rot_z_ini)/finalRamp_Iter;
-          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
-          if(rank == MASTER_NODE && print && ExtIter > 0) {
-            cout << endl << " Updated rotating frame grid velocities";
-            cout << " for zone " << iZone << "." << endl;
+          if(ExtIter == finalRamp_Iter){
+            rot_z = config_container[iZone]->GetFinalRotation_Rate_Z(iZone);
           }
-          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, print);
+          else{
+            rot_z = rot_z_ini + su2double(ExtIter)*( rot_z_final - rot_z_ini)/su2double(finalRamp_Iter);
+          }
+          config_container[iZone]->SetRotation_Rate_Z(rot_z, iZone);
+          geometry_container[iZone][MESH_0]->SetRotationalVelocity(config_container[iZone], iZone, false);
           geometry_container[iZone][MESH_0]->SetShroudVelocity(config_container[iZone]);
         }
       }
+    }
 
+    if(print){
       for (iZone = 0; iZone < nZone; iZone++) {
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone], iZone, INFLOW, false);
-        geometry_container[iZone][MESH_0]->SetAvgTurboValue(config_container[iZone],iZone, OUTFLOW, false);
-        geometry_container[iZone][MESH_0]->GatherInOutAverageValues(config_container[iZone], false);
-
+        rot_z= config_container[iZone]->GetRotation_Rate_Z(iZone);
+        if(abs(rot_z) > 0.0){
+          if(rank == MASTER_NODE && print) {
+            cout << endl << "---------------------- Check on Rotating Frame Ramp ----------------------" << endl;
+            cout << "Current Angular velocity about z axes: "<< rot_z << " rad/s." <<  endl;
+          }
+        }
       }
 
       for (iZone = 1; iZone < nZone; iZone++) {
@@ -4640,9 +4631,6 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 
 void CDiscAdjFluidDriver::SetObjFunction(){
 
-  bool output_1d       = config_container[ZONE_0]->GetWrt_1D_Output();
-  bool output_massflow = (config_container[ZONE_0]->GetKind_ObjFunc() == MASS_FLOW_RATE);
-
   int rank = MASTER_NODE;
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -4655,23 +4643,24 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   }
 
   for (iZone = 0; iZone < nZone; iZone++){
-    if (output_1d) {
-      switch (config_container[iZone]->GetKind_Solver()) {
-        case EULER:                   case NAVIER_STOKES:                   case RANS:
-        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-        case DISC_ADJ_TWO_PHASE_EULER:case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:case DISC_ADJ_TWO_PHASE_RANS:
-          output->OneDimensionalOutput(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
-          break;
-      }
-    }
-    if (output_massflow && !output_1d) {
-      switch (config_container[iZone]->GetKind_Solver()) {
-        case EULER:                   case NAVIER_STOKES:                   case RANS:
-        case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-        case DISC_ADJ_TWO_PHASE_EULER:case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:case DISC_ADJ_TWO_PHASE_RANS:
-          output->SetMassFlowRate(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone]);
-          break;
-      }
+    switch (config_container[iZone]->GetKind_Solver()) {
+      case EULER:                   case NAVIER_STOKES:                   case RANS:
+      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+ case DISC_ADJ_TWO_PHASE_EULER:case DISC_ADJ_TWO_PHASE_NAVIER_STOKES:case DISC_ADJ_TWO_PHASE_RANS:
+               
+        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+          output->SpecialOutput_AnalyzeSurface(solver_container[iZone][MESH_0][FLOW_SOL], geometry_container[iZone][MESH_0], config_container[iZone], false);
+        
+        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+          output->SpecialOutput_Distortion(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
+        
+        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
+          output->SpecialOutput_SonicBoom(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
+          
+        if (config_container[ZONE_0]->GetPlot_Section_Forces())
+          output->SpecialOutput_SpanLoad(solver_container[ZONE_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], false);
+        
+        break;
     }
   }
 
@@ -4766,6 +4755,9 @@ void CDiscAdjTurbomachineryDriver::DirectRun(){
 #endif
 
 
+  /*--- Recording the setting of the steady grid movement needed to compute the correct sensitivity ---*/
+  InitStaticMeshMovement(false);
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -4813,13 +4805,19 @@ void CDiscAdjTurbomachineryDriver::SetObjFunction(){
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case ENTROPY_GENERATION:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetEntropyGen(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
     break;
   case FLOW_ANGLE_OUT:
-      solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
-      break;
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetFlowAngleOut(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
   case MASS_FLOW_IN:
-    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanWiseSections()));
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetMassFlowIn(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case TOTAL_PRESSURE_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetTotalPressureLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
+    break;
+  case KINETIC_ENERGY_LOSS:
+    solver_container[ZONE_0][MESH_0][FLOW_SOL]->AddTotal_ComboObj(output->GetKineticEnergyLoss(config_container[ZONE_0]->GetnMarker_TurboPerformance() - 1, config_container[ZONE_0]->GetnSpanMaxAllZones()));
     break;
   default:
     break;
@@ -4917,7 +4915,6 @@ void CHBDriver::Update() {
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone);
 
-    output->HarmonicBalanceOutput(solver_container, config_container, nZone, iZone);
 
   }
 

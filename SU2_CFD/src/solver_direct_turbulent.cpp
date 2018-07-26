@@ -41,8 +41,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   upperlimit    = NULL;
   nVertex       = NULL;
   nMarker       = 0;
-  /*--- Initialize the Primitive Variables (two by default for turbulent)---*/
-  nPrimVar = 2;
+  
 }
 
 CTurbSolver::CTurbSolver(CConfig *config) : CSolver() {
@@ -437,7 +436,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, iVar;
   
   bool second_order  = config->GetMUSCL_Turb();
-  bool limiter       = (config->GetMUSCL_Turb() && config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
+  bool limiter       = second_order && config->GetKind_SlopeLimit_Turb() != NO_LIMITER;
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -549,7 +548,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
 void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
                                    CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
   unsigned long iEdge, iPoint, jPoint;
-
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge ---*/
@@ -580,7 +579,7 @@ void CTurbSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Compute residual, and Jacobians ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+    
     /*--- Add and subtract residual, and update Jacobians ---*/
     
     LinSysRes.SubtractBlock(iPoint, Residual);
@@ -645,7 +644,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
 
   switch(config->GetKind_Data_Giles(Marker_Tag))
   {
-  case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:
+  case TOTAL_CONDITIONS_PT:case TOTAL_CONDITIONS_PT_1D: case DENSITY_VELOCITY:case SPANWISE_TOTAL_CONDITIONS_PT:
     BC_Inlet_Turbo(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   case MIXING_IN:
@@ -657,7 +656,7 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
     }
     break;
 
-  case STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
+  case STATIC_PRESSURE:case SPANWISE_STATIC_PRESSURE: case MIXING_OUT: case STATIC_PRESSURE_1D: case RADIAL_EQUILIBRIUM:
     BC_Outlet(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
     break;
   }
@@ -1217,6 +1216,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- Dimension of the problem --> dependent of the turbulent model ---*/
   
   nVar = 1;
+  nPrimVar = 1;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
@@ -1425,9 +1425,10 @@ CTurbSASolver::~CTurbSASolver(void) {
 void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
   
   unsigned long iPoint;
-  unsigned long ExtIter      = config->GetExtIter();
-  bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool limiter_flow         = ((config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Flow()!=NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  unsigned long ExtIter = config->GetExtIter();
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb     = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -1446,7 +1447,7 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
 
   /*--- Upwind second order reconstruction ---*/
 
-  if ((config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Turb()!=NO_LIMITER)) SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
 
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 
@@ -1499,6 +1500,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
   
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool transition    = (config->GetKind_Trans_Model() == LM);
+  bool transition_BC = (config->GetKind_Trans_Model() == BC);
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
@@ -1538,9 +1540,15 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Compute the source term ---*/
     
     numerics->ComputeResidual(Residual, Jacobian_i, NULL, config);
+
+    /*--- Store the intermittency ---*/
+
+    if (transition_BC) {
+      node[iPoint]->SetGammaBC(numerics->GetGammaBC());
+    }
     
     /*--- Subtract residual and the Jacobian ---*/
-
+    
     LinSysRes.SubtractBlock(iPoint, Residual);
     
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -1731,7 +1739,7 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Allocate the value at the inlet ---*/
       
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
+      
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
@@ -1758,7 +1766,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -1782,15 +1789,15 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       /*--- Compute residual, and Jacobians ---*/
       
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+      
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
+      
     }
   }
-
+  
   /*--- Free locally allocated memory ---*/
   delete[] Normal;
   
@@ -1822,7 +1829,7 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Allocate the value at the outlet ---*/
       
       V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-
+      
       /*--- Retrieve solution at the farfield boundary node ---*/
       
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
@@ -1857,7 +1864,6 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Jacobian contribution for implicit integration ---*/
@@ -1880,15 +1886,15 @@ void CTurbSASolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, C
       /*--- Compute residual, and Jacobians ---*/
       
       visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-
+      
       /*--- Subtract residual, and update Jacobians ---*/
       
       LinSysRes.SubtractBlock(iPoint, Residual);
       Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-
+      
     }
   }
-
+  
   /*--- Free locally allocated memory ---*/
   
   delete[] Normal;
@@ -2938,6 +2944,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Dimension of the problem --> dependent on the turbulence model. ---*/
   
   nVar = 2;
+  nPrimVar = 2;
   nPoint = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
   
@@ -3141,9 +3148,10 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   
   unsigned long iPoint;
 
-  unsigned long ExtIter      = config->GetExtIter();
-  bool disc_adjoint         = config->GetDiscrete_Adjoint();
-  bool limiter_flow         = ((config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Flow()!=NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  unsigned long ExtIter = config->GetExtIter();
+  bool disc_adjoint     = config->GetDiscrete_Adjoint();
+  bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb     = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -3162,7 +3170,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
 
-  if (config->GetMUSCL_Flow() && config->GetKind_SlopeLimit_Turb()!=NO_LIMITER)  SetSolution_Limiter(geometry, config);
+  if (limiter_turb) SetSolution_Limiter(geometry, config);
   
   if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
 

@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi;
+  bool fsi, turbo;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -72,7 +72,8 @@ int main(int argc, char *argv[]) {
 
   nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi = config->GetFSI_Simulation();
+  fsi   = config->GetFSI_Simulation();
+  turbo = config->GetBoolTurbomachinery();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
@@ -94,7 +95,7 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
-    /*--- Use the Harmonic Balance driver. ---*/
+    /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
     driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
 
@@ -109,25 +110,30 @@ int main(int argc, char *argv[]) {
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
     or a specialized driver class for a particular multi-physics problem. ---*/
 
-    if (config->GetDiscrete_Adjoint()){
+    if (config->GetDiscrete_Adjoint()) {
 
-      if (config->GetBoolTurbomachinery()){
+      if (turbo) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
       } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        
       }
 
-    } else if (config->GetBoolTurbomachinery()){
+    } else if (turbo) {
 
       driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
 
     } else {
 
+      /*--- Instantiate the class for external aerodynamics ---*/
+
       driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      
     }
+    
   }
 
   delete config;

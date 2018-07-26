@@ -52,7 +52,7 @@ def write_plot(filename,plot_format,data_plot,keys_plot=None):
     keys_space = [default_spacing] * len(keys_plot)
     
     header = ''
-    if plot_format == 'TECPLOT':
+    if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'):
         header = 'VARIABLES='
         indent_spacing += 10
     indent_spacing = ' '*indent_spacing

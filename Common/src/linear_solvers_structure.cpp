@@ -202,14 +202,15 @@ void CSysSolve::WriteHistory(const int & iter, const su2double & res, const su2d
 
 unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
                                            CPreconditioner & precond, su2double tol, unsigned long m, bool monitoring) {
-	
+
 int rank = 0;
 
 #ifdef HAVE_MPI
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
-  
+
   /*--- Check the subspace size ---*/
+  
   if (m < 1) {
     if (rank == MASTER_NODE) cerr << "CSysSolve::ConjugateGradient: illegal value for subspace size, m = " << m << endl;
 #ifndef HAVE_MPI
@@ -225,6 +226,7 @@ int rank = 0;
   CSysVector A_p(b);
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
+  
   mat_vec(x, A_p);
   
   r -= A_p; // recall, r holds b initially
@@ -241,9 +243,11 @@ int rank = 0;
   CSysVector p(z);
   
   /*--- Set the norm to the initial initial residual value ---*/
+  
   norm0 = norm_r;
   
   /*--- Output header information including initial residual ---*/
+  
   int i = 0;
   if ((monitoring) && (rank == MASTER_NODE)) {
     WriteHeader("CG", tol, norm_r);
@@ -251,35 +255,43 @@ int rank = 0;
   }
   
   /*---  Loop over all search directions ---*/
+  
   for (i = 0; i < (int)m; i++) {
     
     /*--- Apply matrix to p to build Krylov subspace ---*/
+    
     mat_vec(p, A_p);
     
     /*--- Calculate step-length alpha ---*/
+    
     r_dot_z = dotProd(r, z);
     alpha = dotProd(A_p, p);
     alpha = r_dot_z / alpha;
     
     /*--- Update solution and residual: ---*/
+    
     x.Plus_AX(alpha, p);
     r.Plus_AX(-alpha, A_p);
     
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
+    
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) WriteHistory(i+1, norm_r, norm0);
     
     precond(r, z);
     
     /*--- Calculate Gram-Schmidt coefficient beta,
 		 beta = dotProd(r_{i+1}, z_{i+1}) / dotProd(r_{i}, z_{i}) ---*/
+    
     beta = 1.0 / r_dot_z;
     r_dot_z = dotProd(r, z);
     beta *= r_dot_z;
     
     /*--- Gram-Schmidt orthogonalization; p = beta *p + z ---*/
+    
     p.Equals_AX_Plus_BY(beta, p, 1.0, z);
+    
   }
   
 
@@ -289,20 +301,27 @@ int rank = 0;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
   
-//  /*--- Recalculate final residual (this should be optional) ---*/
-//  mat_vec(x, A_p);
-//  r = b;
-//  r -= A_p;
-//  su2double true_res = r.norm();
-//  
-//  if (fabs(true_res - norm_r) > tol*10.0) {
-//    if (rank == MASTER_NODE) {
-//      cout << "# WARNING in CSysSolve::ConjugateGradient(): " << endl;
-//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
-//      cout << "# true_res - calc_res = " << true_res - norm_r << endl;
-//    }
-//  }
-	
+  /*--- Recalculate final residual (this should be optional) ---*/
+  
+  if (monitoring) {
+    
+    mat_vec(x, A_p);
+    r = b;
+    r -= A_p;
+    su2double true_res = r.norm();
+    
+    if (fabs(true_res - norm_r) > tol*10.0) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in CSysSolve::CG_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
+        cout << "# true_res - calc_res = " << true_res - norm_r << endl;
+      }
+    }
+    
+  }
+
+  
 	return (unsigned long) i;
   
 }
@@ -429,7 +448,7 @@ int rank = 0;
     
     /*---  Output the relative residual if necessary ---*/
     
-    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
+    if ((((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0)) && (rank == MASTER_NODE)) WriteHistory(i+1, beta, norm0);
     
   }
 
@@ -445,30 +464,34 @@ int rank = 0;
     cout << "# Iteration = " << i << ": |res|/|res0| = " << beta/norm0 << ".\n" << endl;
   }
   
-//  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
-//  mat_vec(x, w[0]);
-//  w[0] -= b;
-//  su2double res = w[0].norm();
-//
-//  if (fabs(res - beta) > tol*10) {
-//    if (rank == MASTER_NODE) {
-//      cout << "# WARNING in CSysSolve::FGMRES(): " << endl;
-//      cout << "# true residual norm and calculated residual norm do not agree." << endl;
-//      cout << "# res - beta = " << res - beta << endl;
-//    }
-//  }
-	
+  /*---  Recalculate final (neg.) residual (this should be optional) ---*/
+  
+  if (monitoring) {
+    mat_vec(x, w[0]);
+    w[0] -= b;
+    su2double res = w[0].norm();
+    
+    if (fabs(res - beta) > tol*10) {
+      if (rank == MASTER_NODE) {
+        cout << "# WARNING in CSysSolve::FGMRES_LinSolver(): " << endl;
+        cout << "# true residual norm and calculated residual norm do not agree." << endl;
+        cout << "# res = " << res <<", beta = " << beta <<", tol = " << tol*10 <<"."<< endl;
+        cout << "# res - beta = " << res - beta << endl << endl;
+      }
+    }
+  }
+  
   (*residual) = beta;
-	return (unsigned long) i;
+  return (unsigned long) i;
   
 }
 
 unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec,
-                                 CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
-	
+                                           CPreconditioner & precond, su2double tol, unsigned long m, su2double *residual, bool monitoring) {
+  
   int rank = 0;
 #ifdef HAVE_MPI
-	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
   
   /*--- Check the subspace size ---*/
@@ -483,20 +506,20 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     MPI_Finalize();
 #endif
   }
-	
+  
   CSysVector r(b);
   CSysVector r_0(b);
   CSysVector p(b);
-	CSysVector v(b);
+  CSysVector v(b);
   CSysVector s(b);
-	CSysVector t(b);
-	CSysVector phat(b);
-	CSysVector shat(b);
+  CSysVector t(b);
+  CSysVector phat(b);
+  CSysVector shat(b);
   CSysVector A_x(b);
   
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
   
-	mat_vec(x, A_x);
+  mat_vec(x, A_x);
   r -= A_x; r_0 = r; // recall, r holds b initially
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
@@ -504,11 +527,11 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
-	
-	/*--- Initialization ---*/
+  
+  /*--- Initialization ---*/
   
   su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-	
+  
   /*--- Set the norm to the initial initial residual value ---*/
   
   norm0 = norm_r;
@@ -520,83 +543,86 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     WriteHeader("BCGSTAB", tol, norm_r);
     WriteHistory(i, norm_r, norm0);
   }
-	
+  
   /*---  Loop over all search directions ---*/
   
   for (i = 0; i < (int)m; i++) {
-		
-		/*--- Compute rho_prime ---*/
     
-		rho_prime = rho;
-		
-		/*--- Compute rho_i ---*/
+    /*--- Compute rho_prime ---*/
     
-		rho = dotProd(r, r_0);
-		
-		/*--- Compute beta ---*/
+    rho_prime = rho;
     
-		beta = (rho / rho_prime) * (alpha /omega);
-		
-		/*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+    /*--- Compute rho_i ---*/
     
-		su2double beta_omega = -beta*omega;
-		p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
-		p.Plus_AX(1.0, r);
-		
-		/*--- Preconditioning step ---*/
+    rho = dotProd(r, r_0);
     
-		precond(p, phat);
-		mat_vec(phat, v);
-
-		/*--- Calculate step-length alpha ---*/
+    /*--- Compute beta ---*/
+    
+    beta = (rho / rho_prime) * (alpha /omega);
+    
+    /*--- p_{i} = r_{i-1} + beta * p_{i-1} - beta * omega * v_{i-1} ---*/
+    
+    su2double beta_omega = -beta*omega;
+    p.Equals_AX_Plus_BY(beta, p, beta_omega, v);
+    p.Plus_AX(1.0, r);
+    
+    /*--- Preconditioning step ---*/
+    
+    precond(p, phat);
+    mat_vec(phat, v);
+    
+    /*--- Calculate step-length alpha ---*/
     
     su2double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
     
-		/*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
+    /*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
     
-		s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
-		
-		/*--- Preconditioning step ---*/
+    s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
     
-		precond(s, shat);
-		mat_vec(shat, t);
+    /*--- Preconditioning step ---*/
     
-		/*--- Calculate step-length omega ---*/
+    precond(s, shat);
+    mat_vec(shat, t);
+    
+    /*--- Calculate step-length omega ---*/
     
     omega = dotProd(t, s) / dotProd(t, t);
     
-		/*--- Update solution and residual: ---*/
+    /*--- Update solution and residual: ---*/
     
     x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
-		r.Equals_AX_Plus_BY(1.0, s, -omega, t);
+    r.Equals_AX_Plus_BY(1.0, s, -omega, t);
     
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     
     norm_r = r.norm();
     if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 50 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
+    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 10 == 0) && (rank == MASTER_NODE)) WriteHistory(i+1, norm_r, norm0);
     
   }
-	  
+  
   if ((monitoring) && (rank == MASTER_NODE)) {
     cout << "# BCGSTAB final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
-	
-//  /*--- Recalculate final residual (this should be optional) ---*/
-//	mat_vec(x, A_x);
-//  r = b; r -= A_x;
-//  su2double true_res = r.norm();
-//  
-//  if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
-//    cout << "# WARNING in CSysSolve::BCGSTAB(): " << endl;
-//    cout << "# true residual norm and calculated residual norm do not agree." << endl;
-//    cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
-//  }
-	
+  
+    /*--- Recalculate final residual (this should be optional) ---*/
+  if (monitoring) {
+    mat_vec(x, A_x);
+    r = b; r -= A_x;
+    su2double true_res = r.norm();
+    
+    if ((fabs(true_res - norm_r) > tol*10.0) && (rank == MASTER_NODE)) {
+      cout << "# WARNING in CSysSolve::BCGSTAB_LinSolver(): " << endl;
+      cout << "# true residual norm and calculated residual norm do not agree." << endl;
+      cout << "# true_res = " << true_res <<", calc_res = " << norm_r <<", tol = " << tol*10 <<"."<< endl;
+      cout << "# true_res - calc_res = " << true_res <<" "<< norm_r << endl;
+    }
+  }
+  
   (*residual) = norm_r;
-	return (unsigned long) i;
+  return (unsigned long) i;
 }
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
@@ -697,7 +723,7 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
       case SMOOTHER_ILU:
         mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
         Jacobian.BuildILUPreconditioner();
-        IterLinSol = Jacobian.ILU0_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
+        IterLinSol = Jacobian.ILU_Smoother(LinSysRes, LinSysSol, *mat_vec, SolverTol, MaxIter, &Residual, false, geometry, config);
         delete mat_vec;
         break;
       case SMOOTHER_LINELET:

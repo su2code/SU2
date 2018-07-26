@@ -687,6 +687,7 @@ def findiff( config, state=None ):
     # files: direct solution
     if files.has_key('DIRECT'):
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend(name)
 
