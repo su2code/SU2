@@ -1307,6 +1307,16 @@ public:
   virtual void ComputeResidual(su2double *val_residual_i,
                                su2double *val_residual_j, CConfig *config);
 
+
+  /*!
+   * \overload
+   * \param[out] val_residual_i - Pointer to the total residual at point i.
+   * \param[out] val_residual_j - Pointer to the total residual at point j.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
+          	  	  	  	  	   su2double **val_Jacobian_j, CConfig *config) {
+
   /*!
    * \overload
    * \param[out] val_residual - Pointer to the total residual.
@@ -5923,7 +5933,7 @@ public:
  * \class CSourceWindGust
  * \brief Class for a source term due to a wind gust.
  * \ingroup SourceDiscr
- * \author S. Padrón
+ * \author S. Padr��n
  */
 class CSourceWindGust : public CNumerics {
 public:
