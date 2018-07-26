@@ -31,7 +31,7 @@
 
 #include "../include/fem_standard_element.hpp"
 #include "../include/gauss_jacobi_quadrature.hpp"
-#include "../include/dense_matrix_product.hpp"
+#include "../include/su2_blas.hpp"
 
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -2071,9 +2071,9 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
     for(unsigned short iDim=0; iDim<=jDim; iDim++)
     {
       /* Carry out the matrix multiplication. */
-      DenseMatrixProduct(nIntegration, nDOFs, nDOFs, matDerBasisInt,
-                         matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
-                         mat2ndDerBasisIntPoint);
+      su2_gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
+               matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
+               mat2ndDerBasisIntPoint);
 
       /* Update the pointer to the position where the next second
          derivative will be stored. */

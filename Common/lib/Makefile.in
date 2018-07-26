@@ -113,8 +113,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
 	../include/cgns_elements.hpp ../include/config_structure.hpp \
-	../include/config_structure.inl \
-	../include/dense_matrix_product.hpp \
+	../include/config_structure.inl ../include/su2_blas.hpp \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
 	../include/fem_geometry_structure.hpp \
@@ -148,7 +147,7 @@ am__libSU2_a_SOURCES_DIST =  \
 	../include/element_structure.inl ../include/adt_structure.hpp \
 	../include/adt_structure.inl ../include/wall_model.hpp \
 	../include/wall_model.inl ../src/cgns_elements.cpp \
-	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
+	../src/config_structure.cpp ../src/su2_blas.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
@@ -170,7 +169,7 @@ am__libSU2_a_SOURCES_DIST =  \
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/libSU2_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-config_structure.$(OBJEXT) \
-	../src/libSU2_a-dense_matrix_product.$(OBJEXT) \
+	../src/libSU2_a-su2_blas.$(OBJEXT) \
 	../src/libSU2_a-dual_grid_structure.$(OBJEXT) \
 	../src/libSU2_a-fem_geometry_structure.$(OBJEXT) \
 	../src/libSU2_a-fem_integration_rules.$(OBJEXT) \
@@ -207,8 +206,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
 	../include/cgns_elements.hpp ../include/config_structure.hpp \
-	../include/config_structure.inl \
-	../include/dense_matrix_product.hpp \
+	../include/config_structure.inl ../include/su2_blas.hpp \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
 	../include/fem_geometry_structure.hpp \
@@ -242,7 +240,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../include/element_structure.inl ../include/adt_structure.hpp \
 	../include/adt_structure.inl ../include/wall_model.hpp \
 	../include/wall_model.inl ../src/cgns_elements.cpp \
-	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
+	../src/config_structure.cpp ../src/su2_blas.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
@@ -263,7 +261,7 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/wall_model.cpp
 am__objects_2 = ../src/libSU2_AD_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-config_structure.$(OBJEXT) \
-	../src/libSU2_AD_a-dense_matrix_product.$(OBJEXT) \
+	../src/libSU2_AD_a-su2_blas.$(OBJEXT) \
 	../src/libSU2_AD_a-dual_grid_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_geometry_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-fem_integration_rules.$(OBJEXT) \
@@ -301,8 +299,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/datatypes/complex_structure.inl \
 	../include/ad_structure.hpp ../include/ad_structure.inl \
 	../include/cgns_elements.hpp ../include/config_structure.hpp \
-	../include/config_structure.inl \
-	../include/dense_matrix_product.hpp \
+	../include/config_structure.inl ../include/su2_blas.hpp \
 	../include/dual_grid_structure.hpp \
 	../include/dual_grid_structure.inl \
 	../include/fem_geometry_structure.hpp \
@@ -336,7 +333,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../include/element_structure.inl ../include/adt_structure.hpp \
 	../include/adt_structure.inl ../include/wall_model.hpp \
 	../include/wall_model.inl ../src/cgns_elements.cpp \
-	../src/config_structure.cpp ../src/dense_matrix_product.cpp \
+	../src/config_structure.cpp ../src/su2_blas.cpp \
 	../src/dual_grid_structure.cpp \
 	../src/fem_geometry_structure.cpp \
 	../src/fem_integration_rules.cpp \
@@ -357,7 +354,7 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/wall_model.cpp
 am__objects_3 = ../src/libSU2_DIRECTDIFF_a-cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
-	../src/libSU2_DIRECTDIFF_a-dense_matrix_product.$(OBJEXT) \
+	../src/libSU2_DIRECTDIFF_a-su2_blas.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_geometry_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-fem_integration_rules.$(OBJEXT) \
@@ -607,7 +604,7 @@ lib_sources = \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
-  ../include/dense_matrix_product.hpp \
+  ../include/su2_blas.hpp \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
   ../include/fem_geometry_structure.hpp \
@@ -648,7 +645,7 @@ lib_sources = \
   ../include/wall_model.inl \
   ../src/cgns_elements.cpp \
   ../src/config_structure.cpp \
-  ../src/dense_matrix_product.cpp \
+  ../src/su2_blas.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \
@@ -752,8 +749,8 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-config_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_a-dense_matrix_product.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_a-su2_blas.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-dual_grid_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-fem_geometry_structure.$(OBJEXT):  \
@@ -812,8 +809,8 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-config_structure.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_AD_a-dense_matrix_product.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_AD_a-su2_blas.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-dual_grid_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-fem_geometry_structure.$(OBJEXT):  \
@@ -872,8 +869,8 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2_DIRECTDIFF_a-dense_matrix_product.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2_DIRECTDIFF_a-su2_blas.$(OBJEXT): ../src/$(am__dirstamp) \
+	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-dual_grid_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-fem_geometry_structure.$(OBJEXT):  \
@@ -940,7 +937,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-adt_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-cgns_elements.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-config_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-element_structure.Po@am__quote@
@@ -962,13 +958,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-vector_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_AD_a-wall_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-ad_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-adt_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-cgns_elements.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-config_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-element_structure.Po@am__quote@
@@ -990,13 +986,13 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-vector_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-wall_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-ad_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-adt_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-cgns_elements.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-config_structure.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-element_linear.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-element_structure.Po@am__quote@
@@ -1018,6 +1014,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-matrix_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-mpi_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-su2_blas.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-wall_model.Po@am__quote@
 
@@ -1065,19 +1062,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
 
-../src/libSU2_a-dense_matrix_product.o: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-dense_matrix_product.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Tpo -c -o ../src/libSU2_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_a-dense_matrix_product.o' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_a-su2_blas.o: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2_blas.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2_blas.Tpo -c -o ../src/libSU2_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_a-su2_blas.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
 
-../src/libSU2_a-dense_matrix_product.obj: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-dense_matrix_product.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Tpo -c -o ../src/libSU2_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_a-dense_matrix_product.obj' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_a-su2_blas.obj: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-su2_blas.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-su2_blas.Tpo -c -o ../src/libSU2_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_a-su2_blas.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
 
 ../src/libSU2_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_a-dual_grid_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_a-dual_grid_structure.Tpo -c -o ../src/libSU2_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
@@ -1457,19 +1454,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
 
-../src/libSU2_AD_a-dense_matrix_product.o: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-dense_matrix_product.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Tpo -c -o ../src/libSU2_AD_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_AD_a-dense_matrix_product.o' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_AD_a-su2_blas.o: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-su2_blas.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Tpo -c -o ../src/libSU2_AD_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_AD_a-su2_blas.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
 
-../src/libSU2_AD_a-dense_matrix_product.obj: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-dense_matrix_product.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Tpo -c -o ../src/libSU2_AD_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_AD_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_AD_a-dense_matrix_product.obj' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_AD_a-su2_blas.obj: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-su2_blas.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Tpo -c -o ../src/libSU2_AD_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_AD_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_AD_a-su2_blas.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
 
 ../src/libSU2_AD_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-dual_grid_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-dual_grid_structure.Tpo -c -o ../src/libSU2_AD_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
@@ -1849,19 +1846,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-config_structure.obj `if test -f '../src/config_structure.cpp'; then $(CYGPATH_W) '../src/config_structure.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/config_structure.cpp'; fi`
 
-../src/libSU2_DIRECTDIFF_a-dense_matrix_product.o: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_DIRECTDIFF_a-dense_matrix_product.o' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_DIRECTDIFF_a-su2_blas.o: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-su2_blas.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_DIRECTDIFF_a-su2_blas.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.o `test -f '../src/dense_matrix_product.cpp' || echo '$(srcdir)/'`../src/dense_matrix_product.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-su2_blas.o `test -f '../src/su2_blas.cpp' || echo '$(srcdir)/'`../src/su2_blas.cpp
 
-../src/libSU2_DIRECTDIFF_a-dense_matrix_product.obj: ../src/dense_matrix_product.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dense_matrix_product.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/dense_matrix_product.cpp' object='../src/libSU2_DIRECTDIFF_a-dense_matrix_product.obj' libtool=no @AMDEPBACKSLASH@
+../src/libSU2_DIRECTDIFF_a-su2_blas.obj: ../src/su2_blas.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-su2_blas.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Tpo ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-su2_blas.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/su2_blas.cpp' object='../src/libSU2_DIRECTDIFF_a-su2_blas.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-dense_matrix_product.obj `if test -f '../src/dense_matrix_product.cpp'; then $(CYGPATH_W) '../src/dense_matrix_product.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/dense_matrix_product.cpp'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-su2_blas.obj `if test -f '../src/su2_blas.cpp'; then $(CYGPATH_W) '../src/su2_blas.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/su2_blas.cpp'; fi`
 
 ../src/libSU2_DIRECTDIFF_a-dual_grid_structure.o: ../src/dual_grid_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-dual_grid_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-dual_grid_structure.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-dual_grid_structure.o `test -f '../src/dual_grid_structure.cpp' || echo '$(srcdir)/'`../src/dual_grid_structure.cpp
