@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -161,6 +161,22 @@ def main():
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
     
+    ##########################################################################
+    ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
+    ##########################################################################
+
+    # Turbulent Cylinder
+    discadj_DT_1ST_cylinder           = TestCase('unsteady_cylinder_DT_1ST')
+    discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
+    discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
+    discadj_DT_1ST_cylinder.test_iter = 9
+    discadj_DT_1ST_cylinder.test_vals = [3.698165, -1.607052, -2.2500e-03, 2.7211e-05] #last 4 columns
+    discadj_DT_1ST_cylinder.su2_exec  = "SU2_CFD_AD"
+    discadj_DT_1ST_cylinder.timeout   = 1600
+    discadj_DT_1ST_cylinder.tol       = 0.00001
+    discadj_DT_1ST_cylinder.unsteady  = True
+    test_list.append(discadj_DT_1ST_cylinder)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
