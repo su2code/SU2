@@ -973,6 +973,8 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
+  
+  bool topology_mode = config->GetTopology_Optimization();
 
   string filename;
   ifstream properties_file;
@@ -997,6 +999,9 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
     if (rank == MASTER_NODE){
       cout << "There is no element-based properties file." << endl;
       cout << "The structural domain has uniform properties." << endl;
+      
+      if (topology_mode)
+        SU2_MPI::Error("Topology mode requires an element-based properties file.",CURRENT_FUNCTION);
     }
 
     for (iElem = 0; iElem < nElement; iElem++){
@@ -1059,6 +1064,13 @@ void CFEASolver::Set_ElementProperties(CGeometry *geometry, CConfig *config) {
                                                          elProperties[1],
                                                          elProperties[2],
                                                          elProperties[3]);
+
+        /*--- For backwards compatibility we only read a fifth column in topology mode ---*/
+        if (topology_mode) {
+          su2double elDensity;
+          point_line >> elDensity;
+          element_properties[iElem_Local]->SetDensity(elDensity);
+        }
 
         iElem_Global_Local++;
       }
@@ -1548,6 +1560,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   su2double *Kab = NULL;
   unsigned short NelNodes, jNode;
   
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_exponent = config->GetSIMP_Exponent();
+  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  
   /*--- Loops over all the elements ---*/
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1571,6 +1587,12 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
       }
     }
     
+    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetDensity(),simp_exponent);
+    }
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     
@@ -1592,7 +1614,7 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
         
         for (iVar = 0; iVar < nVar; iVar++) {
           for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+            Jacobian_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
           }
         }
         
@@ -1629,6 +1651,10 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
   
   bool incompressible = (config->GetMaterialCompressibility() == INCOMPRESSIBLE_MAT);
   bool de_effects = config->GetDE_Effects();
+
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_exponent = config->GetSIMP_Exponent();
+  su2double simp_minstiff = config->GetSIMP_MinStiffness();
   
   /*--- Loops over all the elements ---*/
   
@@ -1669,6 +1695,12 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
       }
     }
     
+    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetDensity(),simp_exponent);
+    }
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     if (de_effects) element_container[DE_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
@@ -1693,7 +1725,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
     for (iNode = 0; iNode < NelNodes; iNode++) {
       
       Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
       
       /*--- Check if this is my node or not ---*/
       LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
@@ -1701,7 +1733,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
       /*--- Retrieve the electric contribution to the Residual ---*/
       if (de_effects){
         Ta_DE = element_container[DE_TERM][EL_KIND]->Get_Kt_a(iNode);
-        for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta_DE[iVar];
+        for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta_DE[iVar];
         LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
         
       }
@@ -1714,10 +1746,10 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
         if (incompressible) Kk_ab = element_container[INC_TERM][EL_KIND]->Get_Kk_ab(iNode,jNode);
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          Jacobian_s_ij[iVar][iVar] = Ks_ab;
+          Jacobian_s_ij[iVar][iVar] = simp_penalty*Ks_ab;
           for (jVar = 0; jVar < nVar; jVar++) {
-            Jacobian_c_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-            if (incompressible) Jacobian_k_ij[iVar][jVar] = Kk_ab[iVar*nVar+jVar];
+            Jacobian_c_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
+            if (incompressible) Jacobian_k_ij[iVar][jVar] = simp_penalty*Kk_ab[iVar*nVar+jVar];
           }
         }
         
@@ -1731,7 +1763,7 @@ void CFEASolver::Compute_StiffMatrix_NodalStressRes(CGeometry *geometry, CSolver
           Ks_ab_DE = element_container[DE_TERM][EL_KIND]->Get_Ks_ab(iNode,jNode);
           
           for (iVar = 0; iVar < nVar; iVar++){
-            Jacobian_s_ij[iVar][iVar] = Ks_ab_DE;
+            Jacobian_s_ij[iVar][iVar] = simp_penalty*Ks_ab_DE;
           }
           
           Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_s_ij);
@@ -1886,6 +1918,10 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
   su2double *Ta = NULL;
   unsigned short NelNodes;
   
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_exponent = config->GetSIMP_Exponent();
+  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  
   /*--- Loops over all the elements ---*/
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1915,6 +1951,12 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
       }
     }
     
+    /*--- In topology mode determine the penalty to apply to the stiffness ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*pow(element_properties[iElem]->GetDensity(),simp_exponent);
+    }
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     
@@ -1931,7 +1973,7 @@ void CFEASolver::Compute_NodalStressRes(CGeometry *geometry, CSolver **solver_co
     for (iNode = 0; iNode < NelNodes; iNode++) {
       
       Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
       
       LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
       

@@ -1881,6 +1881,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Transfer method used for multiphysics problems */
   addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
 
+  /* DESCRIPTION: Topology optimization options */
+  addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
+  addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
+  addDoubleOption("TOPOL_OPTIM_SIMP_EXPONENT", simp_exponent, 1.0);
+  addDoubleOption("TOPOL_OPTIM_SIMP_MINSTIFF", simp_minimum_stiffness, 0.001);
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/

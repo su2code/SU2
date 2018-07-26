@@ -132,6 +132,7 @@ protected:
   unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
   unsigned long iElectric_Prop;         /*!< \brief Index of the electric properties (Em) for the structural model used. */
   unsigned long iDV;                    /*!< \brief Index of the group of design variables to which the element belongs. */
+  su2double density;                    /*!< \brief Value of the physical density for material-based topology optimization. */
 
 public:
 
@@ -146,7 +147,7 @@ public:
     * \param[in] val_nDim - Number of dimensions of the problem.
     * \param[in] config - Definition of the particular problem.
   */
-  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV);
+  CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity = 1.0);
 
   /*!
    * \brief Destructor of the class.
@@ -160,6 +161,14 @@ public:
   unsigned long GetElectric_Prop(void);
 
   unsigned long GetDV(void);
+  
+  void SetDensity(su2double valDensity);
+  
+  su2double GetDensity(void);
+  
+  su2double GetAdjointDensity(void);
+  
+  void RegisterDensity(void);
 };
 
 
