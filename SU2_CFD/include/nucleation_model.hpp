@@ -63,7 +63,7 @@ class CNucleationModel {
 protected: su2double J, G;
 
 		   su2double Gas_Constant, Fluid;
-		   double    Boltzmann, MolMass;
+		   su2double Boltzmann, MolMass;
 
 
 

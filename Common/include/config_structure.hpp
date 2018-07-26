@@ -679,8 +679,8 @@ bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
+  LUT_FileName,                  /*!< \brief lut file. */
   Restart_2phaseFileName,			/*!< \brief Restart file for 2phase variables. */
-  LUT_FileName,
   Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */

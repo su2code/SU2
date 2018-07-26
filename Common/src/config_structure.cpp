@@ -571,7 +571,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief REGIME_TYPE \n  DESCRIPTION: Regime type \n OPTIONS: see \link Regime_Map \endlink \ingroup Config*/
   addEnumOption("REGIME_TYPE", Kind_Regime, Regime_Map, COMPRESSIBLE);
-  
+
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
@@ -653,8 +653,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Critical Density, default value for MDM */
    addDoubleOption("ACENTRIC_FACTOR", Acentric_Factor, 0.035);
 
-   /* DESCRIPTION: Look Up Table filename, used by both fluid and transport models.*/
-   addStringOption("LUT_FILENAME", LUT_FileName, string("LUT"));
 
    /* DESCRIPTION: Debug mode for the LookUpTable fluid model, i.e. enable printing of errors*/
    addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, true);
@@ -719,6 +717,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_VISCOSITY", Viscosity_FreeStream, -1.0);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_INTERMITTENCY", Intermittency_FreeStream, 1.0);
+
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
   /* DESCRIPTION:  */
@@ -743,6 +742,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("EVAL_DOF_DCX", Eval_dOF_dCX, true);
   /* DESCRIPTION: DIscard the angle of attack in the solution and the increment in the geometry files. */
   addBoolOption("DISCARD_INFILES", Discard_InFiles, false);
+
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
   addDoubleOption("TARGET_CL", Target_CL, 0.0);
   /* DESCRIPTION: Specify a fixed coefficient of lift instead of AoA (only for compressible flows) */
@@ -922,6 +922,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumListOption("TURBOMACHINERY_KIND",nTurboMachineryKind, Kind_TurboMachinery, TurboMachinery_Map);
   /*!\brief MARKER_SHROUD \n DESCRIPTION: markers in which velocity is forced to 0.0 .
    * \n Format: (shroud1, shroud2, ...)*/
+
   addStringListOption("MARKER_SHROUD", nMarker_Shroud, Marker_Shroud);
   /*!\brief SPANWISE_BC_INLET_FILENAME \n DESCRIPTION: File containing the inlet spanwise condtions \n DEFAULT: spanwise_BCInlet.dat \ingroup Config */
   addStringOption("SPANWISE_BC_INLET_FILENAME", SpanWise_BCInlet_FileName, string("spanwise_BCInlet.dat"));
@@ -956,6 +957,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("ENGINE_HALF_MODEL", Engine_HalfModel, false);
   /* DESCRIPTION: Actuator disk double surface */
   addBoolOption("ACTDISK_SU2_DEF", ActDisk_SU2_DEF, false);
+
   /* DESCRIPTION: Definition of the distortion rack (radial number of proves / circumferential density (degree) */
   default_distortion[0] =  5.0; default_distortion[1] =  15.0;
   addDoubleArrayOption("DISTORTION_RACK", 2, DistortionRack, default_distortion);
@@ -1124,7 +1126,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /*!\par CONFIG_CATEGORY: Convergence\ingroup Config*/
   /*--- Options related to convergence ---*/
-  
+
   /*!\brief CONV_CRITERIA
    *  \n DESCRIPTION: Convergence criteria \n OPTIONS: see \link Converge_Crit_Map \endlink \n DEFAULT: RESIDUAL \ingroup Config*/
   addEnumOption("CONV_CRITERIA", ConvCriteria, Converge_Crit_Map, RESIDUAL);
@@ -1350,18 +1352,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("SOLUTION_FLOW_FILENAME", Solution_FlowFileName, string("solution_flow.dat"));
 
   addStringOption("SOLUTION_2PHASE_FILENAME", Solution_2phaseFileName, string("solution_2phase.dat"));
+
   /*!\brief SOLUTION_ADJ_FILENAME\n DESCRIPTION: Restart adjoint input file. Objective function abbreviation is expected. \ingroup Config*/
   addStringOption("SOLUTION_ADJ_FILENAME", Solution_AdjFileName, string("solution_adj.dat"));
+
   /*!\brief SOLUTION_FLOW_FILENAME \n DESCRIPTION: Restart structure input file (the file output under the filename set by RESTART_FLOW_FILENAME) \n Default: solution_flow.dat \ingroup Config */
   addStringOption("SOLUTION_STRUCTURE_FILENAME", Solution_FEMFileName, string("solution_structure.dat"));
+
   /*!\brief RESTART_FLOW_FILENAME \n DESCRIPTION: Output file restart flow \ingroup Config*/
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
 
   /* DESCRIPTION: Look Up Table filename, used by both fluid and transport models.*/
-  addStringOption("LUT_FILENAME", LUT_FileName, string("LUT"));
-
-  /* DESCRIPTION: Debug mode for the LookUpTable fluid model, i.e. enable printing of errors*/
-  addBoolOption("LUT_DEBUG_MODE", LUT_Debug_Mode, false);
+  addStringOption("LUT_FILENAME", LUT_FileName, string("lutmesh.tec"));
 
   addStringOption("RESTART_2PHASE_FILENAME", Restart_2phaseFileName, string("restart_2phase.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
@@ -1570,11 +1572,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedShortOption("AEROELASTIC_ITER", AeroelasticIter, 3);
   
   /*!\par CONFIG_CATEGORY: Optimization Problem*/
-  
-  /* DESCRIPTION: Setup for design variables (upper bound) */
-  addDoubleOption("OPT_BOUND_UPPER", DVBound_Upper, 1E6);
-  /* DESCRIPTION: Setup for design variables (lower bound) */
-  addDoubleOption("OPT_BOUND_LOWER", DVBound_Lower, -1E6);
 /* DESCRIPTION: Scale the line search in the optimizer */
   addDoubleOption("OPT_RELAX_FACTOR", Opt_RelaxFactor, 1.0);
 
@@ -1854,7 +1851,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Fix I plane */
   addShortListOption("FFD_FIX_I", nFFD_Fix_IDir, FFD_Fix_IDir);
-  
+
   /* DESCRIPTION: Fix J plane */
   addShortListOption("FFD_FIX_J", nFFD_Fix_JDir, FFD_Fix_JDir);
   
@@ -1989,7 +1986,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
-  
+
   /* END_CONFIG_OPTIONS */
 
 }

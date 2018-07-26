@@ -1,4 +1,4 @@
-/*!
+  /*!
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
@@ -435,8 +435,8 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
-  bool second_order  = config->GetMUSCL_Turb();
-  bool limiter       = second_order && config->GetKind_SlopeLimit_Turb() != NO_LIMITER;
+  bool muscl         = config->GetMUSCL_Turb();
+  bool limiter       = (config->GetKind_SlopeLimit_Turb() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
@@ -464,7 +464,7 @@ void CTurbSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_containe
     if (grid_movement)
       numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[jPoint]->GetGridVel());
     
-    if (second_order) {
+    if (muscl) {
 
       for (iDim = 0; iDim < nDim; iDim++) {
         Vector_i[iDim] = 0.5*(geometry->node[jPoint]->GetCoord(iDim) - geometry->node[iPoint]->GetCoord(iDim));
@@ -1051,11 +1051,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_RANS || config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS);
+  bool Old_Solution_1ph = config->GetOld_Solution_1Ph();
+  bool Old_Solution_Turb = config->GetOld_Solution_Turb();
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
-
-
-  bool Old_Solution_1Ph = config->GetOld_Solution_1Ph();
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -1088,10 +1088,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned long iPoint_Global_Local = 0;
   unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
-
-  bool two_phase = (config->GetKind_Solver() == TWO_PHASE_RANS) ||
-	   (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS) ;
-
   /*--- Skip flow variables ---*/
   
   unsigned short skipVars = 0;
@@ -1105,11 +1101,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
     if (nDim == 3) skipVars += 7;
   }
 
-	if (two_phase) {
-	  if (Old_Solution_1Ph) {
-		  skipVars += 5;
+  if (two_phase) {
+	  if (!Old_Solution_1ph) {
+		 skipVars +=5;
 	  }
-	}
+  }
+
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
@@ -1127,7 +1124,10 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+    	  if (Old_Solution_Turb) Solution[iVar] = Restart_Data[index+iVar];
+    	  else Solution[iVar] = 0;
+      }
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 

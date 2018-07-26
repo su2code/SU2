@@ -3830,7 +3830,8 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
   bool polytropic         = config->Get_ConstantGamma();
   bool grid_movement      = config->GetGrid_Movement();
   bool gravity            = config->GetGravityForce();
-  bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  bool turbulent          = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+		  config->GetKind_Solver() == TWO_PHASE_RANS || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS);
   unsigned short two_phase= ((config->GetKind_Solver() == TWO_PHASE_EULER) || (config->GetKind_Solver() == TWO_PHASE_NAVIER_STOKES)
 		  || (config->GetKind_Solver() == TWO_PHASE_RANS) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_EULER)
 		  || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_NAVIER_STOKES) || (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS));
@@ -3994,7 +3995,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
 
   /*--- Viscous initialization ---*/
 
-  if (viscous) {
+  if (viscous || two_phase) {
 
     /*--- The dimensional viscosity is needed to determine the free-stream conditions.
           To accomplish this, simply set the non-dimensional coefficients to the
@@ -4190,7 +4191,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
           break;
       }
 
-      if (viscous) {
+      if (viscous || two_phase) {
 
 		/*--- Constant viscosity model ---*/
 		config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
@@ -5182,6 +5183,9 @@ void CEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_contain
 			}
 			Delta = Delta *min(fabs(Delta_Left),fabs(Delta_Right));
 			Primitive_j[iVar] = V_j[iVar] - Delta;
+        } else {
+            Primitive_i[iVar] = V_i[iVar] + Limiter_i[iVar]*Project_Grad_i;
+            Primitive_j[iVar] = V_j[iVar] + Limiter_j[iVar]*Project_Grad_j;
         }
 
         } else {
@@ -10422,7 +10426,8 @@ void CEulerSolver::BC_TurboRiemann(CGeometry *geometry, CSolver **solver_contain
   unsigned short nSpanWiseSections = geometry->GetnSpanWiseSections(config->GetMarker_All_TurbomachineryFlag(val_marker));
   bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS) ||
+		  (config->GetKind_Solver() == TWO_PHASE_RANS )|| (config->GetKind_Solver() == DISC_ADJ_TWO_PHASE_RANS)) &&
       (config->GetKind_Turb_Model() == SST));
 
   su2double *Normal, *turboNormal, *UnitNormal, *FlowDirMix, FlowDirMixMag, *turboVelocity;
@@ -15876,7 +15881,7 @@ void CEulerSolver::GatherInOutAverageValues(CConfig *config, CGeometry *geometry
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
 unsigned short i, n1, n2, n1t,n2t;
-    int size;
+
     su2double *TurbPerfIn= NULL,*TurbPerfOut= NULL;
     su2double *TotTurbPerfIn = NULL,*TotTurbPerfOut = NULL;
     int *TotMarkerTP = NULL;
@@ -15940,14 +15945,12 @@ unsigned short i, n1, n2, n1t,n2t;
             kineIn              = KineIn[iMarkerTP -1][iSpan];
             omegaIn             = OmegaIn[iMarkerTP -1][iSpan];
             nuIn                = NuIn[iMarkerTP -1][iSpan];
-relTangVelocityIn   = RelTangVelocityIn[iMarkerTP -1][iSpan];
+            relTangVelocityIn   = RelTangVelocityIn[iMarkerTP -1][iSpan];
 
             mom0In              = Mom0In[iMarkerTP -1][iSpan];
             liqVolFractionIn    = LiqVolFractionIn[iMarkerTP -1][iSpan];
             vap_liqDeltaEntropyIn       = Vap_LiqDeltaEntropyIn[iMarkerTP -1][iSpan];
             liqMassFractionIn   = LiqMassFractionIn[iMarkerTP -1][iSpan];
-
-
 #ifdef HAVE_MPI
             TurbPerfIn[0]  = densityIn;
             TurbPerfIn[1]  = pressureIn;
@@ -15961,7 +15964,7 @@ relTangVelocityIn   = RelTangVelocityIn[iMarkerTP -1][iSpan];
             TurbPerfIn[9]  = liqVolFractionIn;
             TurbPerfIn[10]  = vap_liqDeltaEntropyIn;
             TurbPerfIn[11]  = liqMassFractionIn;
-TurbPerfIn[12]  = relTangVelocityIn;
+            TurbPerfIn[12]  = relTangVelocityIn;
 #endif
           }
 
@@ -15977,15 +15980,12 @@ TurbPerfIn[12]  = relTangVelocityIn;
             kineOut              = KineOut[iMarkerTP -1][iSpan];
             omegaOut             = OmegaOut[iMarkerTP -1][iSpan];
             nuOut                = NuOut[iMarkerTP -1][iSpan];
-relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
+            relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
 
             mom0Out              = Mom0Out[iMarkerTP -1][iSpan];
             liqVolFractionOut    = LiqVolFractionOut[iMarkerTP -1][iSpan];
             vap_liqDeltaEntropyOut       = Vap_LiqDeltaEntropyOut[iMarkerTP -1][iSpan];
             liqMassFractionOut   = LiqMassFractionOut[iMarkerTP -1][iSpan];
-
-
-
 
 #ifdef HAVE_MPI
             TurbPerfOut[0]  = densityOut;
@@ -16001,6 +16001,7 @@ relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
             TurbPerfOut[10]  = vap_liqDeltaEntropyOut;
             TurbPerfOut[11]  = liqMassFractionOut;
  TurbPerfOut[12]  = relTangVelocityOut;
+
 #endif
           }
         }
@@ -16054,9 +16055,8 @@ relTangVelocityOut   = RelTangVelocityOut[iMarkerTP -1][iSpan];
           vap_liqDeltaEntropyIn           = TotTurbPerfIn[n1*i+10];
           liqMassFractionIn = 0.0;
           liqMassFractionIn = TotTurbPerfIn[n1*i+11];
-relTangVelocityIn = 0.0;
+          relTangVelocityIn = 0.0;
           relTangVelocityIn = TotTurbPerfIn[n1*i+12];
-
 
           markerTP         = -1;
           markerTP         = TotMarkerTP[i];
@@ -16091,7 +16091,6 @@ relTangVelocityIn = 0.0;
           relTangVelocityOut = TotTurbPerfOut[n1*i+12];
         }
       }
-
       delete [] TotTurbPerfIn, delete [] TotTurbPerfOut; delete [] TotMarkerTP;
     }
 
@@ -16112,7 +16111,7 @@ relTangVelocityIn = 0.0;
       LiqVolFractionIn[markerTP -1][iSpan]       = liqVolFractionIn;
       Vap_LiqDeltaEntropyIn[markerTP -1][iSpan]          = vap_liqDeltaEntropyIn;
       LiqMassFractionIn[markerTP -1][iSpan]      = liqMassFractionIn;
-RelTangVelocityIn[markerTP -1][iSpan]      = relTangVelocityIn;
+      RelTangVelocityIn[markerTP -1][iSpan]      = relTangVelocityIn;
 
 
       DensityOut[markerTP -1][iSpan]             = densityOut;
@@ -16128,7 +16127,8 @@ RelTangVelocityIn[markerTP -1][iSpan]      = relTangVelocityIn;
       LiqVolFractionOut[markerTP -1][iSpan]      = liqVolFractionOut;
       Vap_LiqDeltaEntropyOut[markerTP -1][iSpan]         = vap_liqDeltaEntropyOut;
       LiqMassFractionOut[markerTP -1][iSpan]     = liqMassFractionOut;
-RelTangVelocityOut[markerTP -1][iSpan]     = relTangVelocityOut;
+      RelTangVelocityOut[markerTP -1][iSpan]     = relTangVelocityOut;
+
     }
   }
 }
