@@ -537,6 +537,42 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("INC_IDEAL_GAS", INC_IDEAL_GAS);
 
 /*!
+ * \brief types of gas models
+ */
+enum ENUM_GASMODEL {
+   NO_MODEL   = 0,
+   ARGON      = 1,
+   AIR7       = 2,
+   AIR21      = 3,
+   O2         = 4,
+   N2         = 5,
+   AIR5       = 6,
+   ARGON_SID  = 7,
+   ONESPECIES = 8
+};
+static const map<string, ENUM_GASMODEL> GasModel_Map = CCreateMap<string, ENUM_GASMODEL>
+("NONE", NO_MODEL)
+("ARGON", ARGON)
+("AIR-7", AIR7)
+("AIR-21", AIR21)
+("O2", O2)
+("N2", N2)
+("AIR-5", AIR5)
+("ARGON-SID",ARGON_SID)
+("ONESPECIES", ONESPECIES);
+
+/*!
+ * \brief types of coefficient transport model
+ */
+enum ENUM_TRANSCOEFFMODEL {
+  WBE      = 0,
+	GUPTAYOS = 1
+};
+static const map<string, ENUM_TRANSCOEFFMODEL> TransCoeffModel_Map = CCreateMap<string, ENUM_TRANSCOEFFMODEL>
+("WBE", WBE)
+("GUPTA-YOS", GUPTAYOS);
+
+/*!
  * \brief types of density models
  */
 enum ENUM_DENSITYMODEL {

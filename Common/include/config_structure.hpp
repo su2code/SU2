@@ -869,6 +869,9 @@ private:
   *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
   *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
   *Diss;                /*!< \brief Dissociation potential. */
+  int ***Reactions; /*!</brief reaction map for chemically reacting flows */
+  su2double ***Omega00;        /*!< \brief Collision integrals (Omega(0,0)) */
+  su2double ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
 	unsigned short nMass,                 /*!< \brief No of particle masses */
 	nTemp;						/*!< \brief No of freestream temperatures specified */
   su2double *Particle_Mass,         /*!< \brief Mass of all particles present in the plasma */
@@ -4406,9 +4409,8 @@ public:
   su2double GetKappa_4th_Flow(void);
 
   /*!
-	 * \brief Value of the calibrated constant for the Lax method (center scheme).
-	 * \note This constant is used in coarse levels and with first order methods.
-	 * \return Calibrated constant for the Lax method.
+   * \brief Value of the calibrated constant for the JST method (center scheme).
+	 * \return Calibrated constant for the JST method for the flow equations.
 	 */
 	su2double GetKappa_1st_TNE2(void);
 
@@ -4501,19 +4503,19 @@ public:
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_2nd_AdjTNE2(void);
+	//su2double GetKappa_2nd_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	double GetKappa_4th_AdjTNE2(void);
+	//su2double GetKappa_4th_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the low order method (center scheme).
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
-	double GetKappa_1st_AdjTNE2(void);
+	//su2double GetKappa_1st_AdjTNE2(void);
 
   /*!
    * \brief Get the kind of integration scheme (implicit)
