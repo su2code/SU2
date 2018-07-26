@@ -1,8 +1,8 @@
 /*!
- * \file dense_matrix_product.cpp
- * \brief Function used to carry out a dense matrix multiplication.
+ * \file su2_blas.cpp
+ * \brief Functions related to the BLAS functionality.
  * \author E. van der Weide
- * \version 4.3.0 "Cardinal"
+ * \version 6.0.1 "Cardinal"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -29,7 +29,7 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/dense_matrix_product.hpp"
+#include "../include/su2_blas.hpp"
 #include <cstring>
 
 using namespace std;
@@ -76,9 +76,9 @@ void gemm_inner(int m, int n, int k, const su2double *a, int lda,
   gemm_arbitrary(m, n, k, a, lda, b, ldb, c, ldc);
 }
 
-/* Local implementation of the matrix multiplication. */
-void su2_gemm(const int m,        const int n,        const int k,
-              const su2double *a, const su2double *b, su2double *c) {
+/* Local implementation of the gemm functionality. */
+void su2_gemm_imp(const int m,        const int n,        const int k,
+                  const su2double *a, const su2double *b, su2double *c) {
 
   /* Initialize the elements of c to zero. */
   memset(c, 0, m*n*sizeof(su2double));
@@ -112,10 +112,9 @@ void su2_gemm(const int m,        const int n,        const int k,
 
 #endif
 
-/*--- The actual function to carry out the dense matrix product. ---*/
-
-void DenseMatrixProduct(const int M,        const int N,        const int K,
-                        const su2double *A, const su2double *B, su2double *C) {
+/* Dense matrix multiplication, gemm functionality. */
+void su2_gemm(const int M,        const int N,        const int K,
+              const su2double *A, const su2double *B, su2double *C) {
 
 #ifdef HAVE_LIBXSMM
 
@@ -143,7 +142,7 @@ void DenseMatrixProduct(const int M,        const int N,        const int K,
      assumes that the matrices are in column major order. This can be
      accomplished by swapping N and M and A and B. This implementation is based
      on https://github.com/flame/how-to-optimize-gemm. */
-  su2_gemm(N, M, K, B, A, C);
+  su2_gemm_imp(N, M, K, B, A, C);
   
 #endif
 }
