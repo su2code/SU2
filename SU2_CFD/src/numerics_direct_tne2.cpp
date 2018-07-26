@@ -1629,7 +1629,6 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
 	}
 }
 
-
 CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
                                                unsigned short val_nVar,
                                                unsigned short val_nPrimVar,
@@ -1794,7 +1793,6 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
 
 	}
 }
-
 
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
                            unsigned short val_nVar,
@@ -2178,10 +2176,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   } // iReaction
 }
 
-
-
-void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
-                                        double **val_Jacobian_i,
+void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
+                                        su2double **val_Jacobian_i,
                                         CConfig *config) {
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
@@ -2191,11 +2187,11 @@ void CSource_TNE2::ComputeVibRelaxation(double *val_residual,
 	// Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl;
-  double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
-  double Qtv, taunum, taudenom;
-  double mu, A_sr, B_sr, num, denom;
-  double Cs;
-  double *Ms, *thetav;
+  su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
+  su2double Qtv, taunum, taudenom;
+  su2double mu, A_sr, B_sr, num, denom;
+  su2double Cs;
+  su2double *Ms, *thetav;
 
 
   /*--- Initialize residual and Jacobian arrays ---*/
