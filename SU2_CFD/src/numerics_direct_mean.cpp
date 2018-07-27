@@ -4781,8 +4781,8 @@ void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
 
   for (iDim = 0; iDim < 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta[iDim][jDim]
-      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta[iDim][jDim]);
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
     }
   }
 
@@ -4834,7 +4834,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
 
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta[iDim][jDim] / 3.0;
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
       Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
   }
@@ -4917,7 +4917,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
-      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
       urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
