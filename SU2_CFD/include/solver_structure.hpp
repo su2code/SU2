@@ -12286,6 +12286,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Filter the density field for topology optimization applications
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
 };
 

@@ -132,7 +132,8 @@ protected:
   unsigned long iMat_Prop;              /*!< \brief Index of the properties (E, Nu) for the structural model used. */
   unsigned long iElectric_Prop;         /*!< \brief Index of the electric properties (Em) for the structural model used. */
   unsigned long iDV;                    /*!< \brief Index of the group of design variables to which the element belongs. */
-  su2double density;                    /*!< \brief Value of the physical density for material-based topology optimization. */
+  su2double design_rho;                 /*!< \brief Value of the design density for material-based topology optimization. */
+  su2double physical_rho;               /*!< \brief Value of the physical density for material-based topology optimization. */
 
 public:
 
@@ -162,9 +163,13 @@ public:
 
   unsigned long GetDV(void);
   
-  void SetDensity(su2double valDensity);
+  void SetDesignDensity(su2double valDensity);
   
-  su2double GetDensity(void);
+  su2double GetDesignDensity(void);
+  
+  void SetPhysicalDensity(su2double valDensity);
+  
+  su2double GetPhysicalDensity(void);
   
   su2double GetAdjointDensity(void);
   
