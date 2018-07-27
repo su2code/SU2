@@ -3231,6 +3231,20 @@ fi
 $as_echo ">>> MPI support disabled by default <<<" >&6; }
   fi
 
+     # ----------------------------------------------------------
+     # MKL -- Check if installed and version
+     #        is high enough for required features.
+     # ----------------------------------------------------------
+if !([ -z ${MKLROOT+x} ]); then 
+
+  FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" $MKLROOT/include/mkl_version.h | tr -dc '0-9')
+  REQUIRED_MKL_VERSION=20190000
+  if [ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]; then
+    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS" 
+  fi
+fi
 
 # Check whether --with-cxx was given.
 if test "${with_cxx+set}" = set; then :
