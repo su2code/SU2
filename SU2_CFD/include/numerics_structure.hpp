@@ -208,10 +208,10 @@ public:
     
   su2double *l, *m;
 
-  su2double **MeanReynoldsStress;
-  su2double **MeanPerturbedRSM;
-  bool using_uq;
-  su2double PerturbedStrainMag;
+  su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
+  su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
+  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
 
   /*!
    * \brief Constructor of the class.
@@ -1608,17 +1608,17 @@ public:
 
   /*!
    * \brief tred2
-   * \param V
-   * \param d
-   * \param e
+   * \param V: matrix that needs to be decomposed
+   * \param d: holds eigenvalues
+   * \param e: supplemental data structure
    */
   void tred2(su2double **V, su2double *d, su2double *e);
 
   /*!
    * \brief tql2
-   * \param V
-   * \param d
-   * \param e
+   * \param V: matrix that will hold the eigenvectors
+   * \param d: array that will hold the ordered eigenvalues
+   * \param e: supplemental data structure
    */
   void tql2(su2double **V, su2double *d, su2double *e);
   
