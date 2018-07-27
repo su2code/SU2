@@ -4834,3 +4834,60 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   Restart_Vars = NULL; Restart_Data = NULL;
   
 }
+
+void CFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset)
+{
+  // Register the element density to get the derivatives required for material-based
+  // topology optimization, this is done here because element_properties is a member
+  // of CFEASolver only.
+  if (!config->GetTopology_Optimization()) return;
+
+  for (unsigned long iElem = 0; iElem < geometry->GetnElem(); iElem++)
+    element_properties[iElem]->RegisterDensity();
+}
+
+void CFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config)
+{
+  // Extract and output derivatives for topology optimization, this is done here
+  // because element_properties is a member of CFEASolver only and the output
+  // structure only supports nodal values (these are elemental).
+  if (!config->GetTopology_Optimization()) return;
+    
+  unsigned long iElem,
+                nElem = geometry->GetnElem(),
+                nElemDomain = geometry->GetGlobal_nElemDomain();
+
+  // Allocate and initialize an array onto which the derivatives of every partition will
+  // be reduced, this is to output results in the correct order, it is not a very memory
+  // efficient solution... single precision is enough for output.
+  float *send_buf = new float[nElemDomain], *rec_buf = NULL;
+  for(iElem=0; iElem<nElemDomain; ++iElem) send_buf[iElem] = 0.0;
+    
+  for(iElem=0; iElem<nElem; ++iElem) {
+    unsigned long iElem_global = geometry->elem[iElem]->GetGlobalIndex();
+    send_buf[iElem_global] = SU2_TYPE::GetValue(element_properties[iElem]->GetAdjointDensity());
+  }
+
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) rec_buf = new float[nElemDomain];
+  // need to use this version of Reduce instead of the wrapped one because we use float
+  MPI_Reduce(send_buf,rec_buf,nElemDomain,MPI_FLOAT,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#else
+  rec_buf = send_buf;
+#endif
+
+  // Master writes the file
+  if (rank == MASTER_NODE) {
+    string filename = config->GetTopology_Optim_FileName();
+    ofstream file;
+    file.open(filename.c_str());
+    for(iElem=0; iElem<nElemDomain; ++iElem) file << rec_buf[iElem] << endl;
+    file.close();
+  }
+  
+  delete [] send_buf;
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) delete [] rec_buf;
+#endif
+
+}

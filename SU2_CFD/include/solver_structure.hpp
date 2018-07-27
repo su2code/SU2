@@ -12272,6 +12272,20 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
 
 };
 
