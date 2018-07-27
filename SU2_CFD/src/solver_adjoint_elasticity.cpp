@@ -624,6 +624,8 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
         }
 
+        if (config->GetTopology_Optimization())
+          direct_solver->RegisterVariables(geometry,config);
     }
 
   }
@@ -907,7 +909,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     }
 
-
+    if (config->GetTopology_Optimization())
+      direct_solver->ExtractAdjoint_Variables(geometry,config);
   }
 
 
