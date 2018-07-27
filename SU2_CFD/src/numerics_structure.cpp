@@ -52,6 +52,7 @@ CNumerics::CNumerics(void) {
  
   tau    = NULL;
   delta  = NULL;
+  delta3 = NULL;
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
@@ -82,6 +83,7 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   tau    = NULL;
   delta  = NULL;
+  delta3 = NULL;
 
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
@@ -124,6 +126,18 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
     for (jDim = 0; jDim < nDim; jDim++) {
       if (iDim == jDim) delta[iDim][jDim] = 1.0;
       else delta[iDim][jDim]=0.0;
+    }
+  }
+
+  delta3 = new su2double* [3];
+  for (iDim = 0; iDim < 3; iDim++) {
+    delta3[iDim] = new su2double [3];
+  }
+
+  for (iDim = 0; iDim < 3; iDim++) {
+    for (jDim = 0; jDim < 3; jDim++) {
+      if (iDim == jDim) delta3[iDim][jDim] = 1.0;
+      else delta3[iDim][jDim]=0.0;
     }
   }
 
@@ -187,6 +201,14 @@ CNumerics::~CNumerics(void) {
     }
     delete [] delta;
   }
+
+  if (delta3 != NULL) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++) {
+      delete [] delta3[iDim];
+    }
+    delete [] delta3;
+  }
+
 
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
@@ -2891,63 +2913,50 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
 }
 
 void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
-    int iDim,jDim;
-    su2double *e = new su2double [3];
-    for (iDim= 0; iDim< 3; iDim++){
-        e[iDim] = 0;
-        for (jDim = 0; jDim < 3; jDim++){
-            Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
-        }
+  int iDim,jDim;
+  su2double *e = new su2double [3];
+  for (iDim= 0; iDim< 3; iDim++){
+    e[iDim] = 0;
+    for (jDim = 0; jDim < 3; jDim++){
+      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
-    tred2(Eig_Vec, Eig_Val, e);
-    tql2(Eig_Vec, Eig_Val, e);
+  }
+  tred2(Eig_Vec, Eig_Val, e);
+  tql2(Eig_Vec, Eig_Val, e);
 
-    delete [] e;
+  delete [] e;
 }
 
 void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
-    unsigned short i,j,k;
-    su2double **tmp = new su2double* [3];
-    su2double **delta3 = new su2double* [3];
+  unsigned short i,j,k;
+  su2double **tmp = new su2double* [3];
 
-    for (i = 0; i < 3; i++) {
-      delta3[i] = new su2double [3];
-    }
+  for (i= 0; i< 3; i++){
+    tmp[i] = new su2double [3];
+  }
 
-    for (i = 0; i < 3; i++) {
-      for (j = 0; j < 3; j++) {
-        if (i == j) delta3[i][j] = 1.0;
-        else delta3[i][j]=0.0;
+  for (i= 0; i< 3; i++){
+    for (j = 0; j < 3; j++){
+      tmp[i][j] = 0.0;
+      for (k = 0; k < 3; k++){
+        tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * delta3[k][j];
       }
     }
-    for (i= 0; i< 3; i++){
-        tmp[i] = new su2double [3];
-    }
+  }
 
-    for (i= 0; i< 3; i++){
-        for (j = 0; j < 3; j++){
-            tmp[i][j] = 0.0;
-            for (k = 0; k < 3; k++){
-                tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * delta3[k][j];
-            }
-        }
+  for (i= 0; i< 3; i++){
+    for (j = 0; j < 3; j++){
+      A_ij[i][j] = 0.0;
+      for (k = 0; k < 3; k++){
+        A_ij[i][j] += tmp[i][k] * Eig_Vec[j][k];
+      }
     }
+  }
 
-    for (i= 0; i< 3; i++){
-        for (j = 0; j < 3; j++){
-            A_ij[i][j] = 0.0;
-            for (k = 0; k < 3; k++){
-                A_ij[i][j] += tmp[i][k] * Eig_Vec[j][k];
-            }
-        }
-    }
-
-    for (i = 0; i < 3; i++){
-        delete [] tmp[i];
-	      delete [] delta3[i];
-    }
-    delete [] tmp;
-    delete [] delta3;
+  for (i = 0; i < 3; i++){
+    delete [] tmp[i];
+  }
+  delete [] tmp;
 }
 
 void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
