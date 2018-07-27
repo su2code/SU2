@@ -3701,15 +3701,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   }
 
-  /* --- Remove UQ if not using SST Turbulence model */
+  /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
   if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
-      using_uq = false;
-      beta_delta = 0.0;
-      eig_val_comp = 0;
-      urlx = 0;
-      permute = false;
+      cout << "UQ capabilities only implemented for SST turbulence model" << endl;
+      exit(EXIT_FAILURE);
   }
+
+  /* --- Throw error if invalid componentiality used --- */
 
   if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
       cout << "Componentality should be either 1, 2, or 3!" << endl;
@@ -4516,8 +4515,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
-	if (using_uq) cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-        if (permute) cout << "Permuting eigenvectors" << endl;
+        if (using_uq){
+          cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+          if (permute) cout << "Permuting eigenvectors" << endl;  
+        } 
         break;
       case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
       case WAVE_EQUATION: cout << "Wave equation." << endl; break;
