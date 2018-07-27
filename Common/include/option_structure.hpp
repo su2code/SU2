@@ -2,7 +2,7 @@
  * \file option_structure.hpp
  * \brief Defines classes for referencing options for easy input in CConfig
  * \author J. Hicken, B. Tracey
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -128,9 +128,12 @@ const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when a
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
-const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the second grid domain. */
+const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
+
+const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
 
 const su2double EPS = 1.0E-16;		   /*!< \brief Error scale. */
 const su2double TURB_EPS = 1.0E-16; /*!< \brief Turbulent Error scale. */
@@ -503,8 +506,7 @@ enum ENUM_FLUIDMODEL {
 	VW_GAS = 2,
 	PR_GAS = 3,
   CONSTANT_DENSITY = 4,
-  INC_STANDARD_AIR = 5,
-  INC_IDEAL_GAS = 6 
+  INC_IDEAL_GAS = 6
 
 };
 
@@ -514,7 +516,6 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS)
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
-("INC_STANDARD_AIR", INC_STANDARD_AIR)
 ("INC_IDEAL_GAS", INC_IDEAL_GAS);
 
 /*!
@@ -685,8 +686,9 @@ enum ENUM_UPWIND {
   CUSP = 9,                   /*!< \brief Convective upwind and split pressure numerical method. */
   CONVECTIVE_TEMPLATE = 10,   /*!< \brief Template for new numerical method . */
   L2ROE = 11,                 /*!< \brief L2ROE numerical method . */
-  LMROE = 12,                  /*!< \brief Rieper's Low Mach ROE numerical method . */
-  SLAU2 = 13                   /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
+  LMROE = 12,                 /*!< \brief Rieper's Low Mach ROE numerical method . */
+  SLAU2 = 13,                 /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
+  FDS = 14                    /*!< \brief Flux difference splitting upwind method (incompressible flows). */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -702,7 +704,8 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("CONVECTIVE_TEMPLATE", CONVECTIVE_TEMPLATE)
 ("L2ROE", L2ROE)
 ("LMROE", LMROE)
-("SLAU2", SLAU2);
+("SLAU2", SLAU2)
+("FDS", FDS);
 
 
 /*!
@@ -1293,6 +1296,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("SURFACE_SECONDARY", SURFACE_SECONDARY)
 ("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
 ("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
+("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
@@ -1493,13 +1497,16 @@ enum ENUM_PARAM {
   AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
   CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
   SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
-  SURFACE_FILE = 23,		     /*!< Nodal coordinates set using a surface file. */
+  SURFACE_FILE = 23,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
   NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
   DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
   DV_YOUNG = 31,
   DV_POISSON = 32,
   DV_RHO = 33,
   DV_RHO_DL = 34,
+  TRANSLATE_GRID = 35,       /*!< \brief Translate the volume grid. */
+  ROTATE_GRID = 36,          /*!< \brief Rotate the volume grid */
+  SCALE_GRID = 37,           /*!< \brief Scale the volume grid. */
   ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
   FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
 };
@@ -1536,6 +1543,9 @@ static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("POISSON_RATIO", DV_POISSON)
 ("STRUCTURAL_DENSITY", DV_RHO)
 ("DEAD_WEIGHT", DV_RHO_DL)
+("TRANSLATE_GRID", TRANSLATE_GRID)
+("ROTATE_GRID", ROTATE_GRID)
+("SCALE_GRID", SCALE_GRID)
 ;
 
 
@@ -2540,6 +2550,9 @@ public:
         case DV_POISSON:           nParamDV = 0; break;
         case DV_RHO:               nParamDV = 0; break;
         case DV_RHO_DL:            nParamDV = 0; break;
+        case SCALE_GRID:           nParamDV = 0; break;
+        case TRANSLATE_GRID:       nParamDV = 3; break;
+        case ROTATE_GRID:          nParamDV = 6; break;
         default : {
           string newstring;
           newstring.append(this->name);
@@ -2673,6 +2686,13 @@ public:
 
       for (unsigned short iValueDV = 0; iValueDV < nValueDV; iValueDV++) {
 
+        if (i >= option_value.size()) {
+          string newstring;
+          newstring.append(this->name);
+          newstring.append(": DV_VALUE does not contain enough entries to match DV_KIND or DV_PARAM.");
+          return newstring;
+        }
+        
         ss << option_value[i] << " ";
 
         ss >> this->valueDV[iDV][iValueDV];
