@@ -2,7 +2,7 @@
  * \file numerics_direct_mean_inc.cpp
  * \brief This file contains the numerical methods for incompressible flow.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -38,7 +38,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwArtComp_Flow::CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -63,7 +63,7 @@ CUpwArtComp_Flow::CUpwArtComp_Flow(unsigned short val_nDim, unsigned short val_n
   
 }
 
-CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
+CUpwFDSInc_Flow::~CUpwFDSInc_Flow(void) {
   
   delete [] Diff_V;
   delete [] Velocity_i;
@@ -83,7 +83,7 @@ CUpwArtComp_Flow::~CUpwArtComp_Flow(void) {
   
 }
 
-void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9); AD::SetPreaccIn(V_j, nDim+9); AD::SetPreaccIn(Normal, nDim);
@@ -145,11 +145,11 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Compute ProjFlux_i ---*/
 
-  GetInviscidArtCompProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &Enthalpy_i, Normal, ProjFlux_i);
+  GetInviscidIncProjFlux(&DensityInc_i, Velocity_i, &Pressure_i, &BetaInc2_i, &Enthalpy_i, Normal, ProjFlux_i);
   
   /*--- Compute ProjFlux_j ---*/
 
-  GetInviscidArtCompProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &Enthalpy_j, Normal, ProjFlux_j);
+  GetInviscidIncProjFlux(&DensityInc_j, Velocity_j, &Pressure_j, &BetaInc2_j, &Enthalpy_j, Normal, ProjFlux_j);
 
   /*--- Eigenvalues of the preconditioned system ---*/
   
@@ -192,8 +192,8 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Build the inviscid Jacobian w.r.t. the primitive variables ---*/
 
   if (implicit) {
-    GetInviscidArtCompProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, val_Jacobian_i);
-    GetInviscidArtCompProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, val_Jacobian_j);
+    GetInviscidIncProjJac(&DensityInc_i, Velocity_i, &BetaInc2_i, &Cp_i, &Temperature_i, &dRhodT_i, Normal, 0.5, val_Jacobian_i);
+    GetInviscidIncProjJac(&DensityInc_j, Velocity_j, &BetaInc2_j, &Cp_j, &Temperature_j, &dRhodT_j, Normal, 0.5, val_Jacobian_j);
   }
 
   /*--- Compute dissipation as Precon x |A_precon| x dV. If implicit,
@@ -230,7 +230,7 @@ void CUpwArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   AD::EndPreacc();
 }
 
-CCentJSTArtComp_Flow::CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentJSTInc_Flow::CCentJSTInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -258,7 +258,7 @@ CCentJSTArtComp_Flow::CCentJSTArtComp_Flow(unsigned short val_nDim, unsigned sho
 
 }
 
-CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
+CCentJSTInc_Flow::~CCentJSTInc_Flow(void) {
   
   delete [] Diff_V;
   delete [] Diff_Lapl;
@@ -273,7 +273,7 @@ CCentJSTArtComp_Flow::~CCentJSTArtComp_Flow(void) {
 
 }
 
-void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CCentJSTInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   /*--- Primitive variables at point i and j ---*/
   
@@ -318,7 +318,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
 
   /*--- Get projected flux tensor ---*/
 
-  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
+  GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
   
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = ProjFlux[iVar];
@@ -327,7 +327,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   /*--- Jacobians of the inviscid flux ---*/
   
   if (implicit) {
-    GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
@@ -397,7 +397,7 @@ void CCentJSTArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   
 }
 
-CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CCentLaxInc_Flow::CCentLaxInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   variable_density = (config->GetKind_DensityModel() == VARIABLE);
@@ -423,7 +423,7 @@ CCentLaxArtComp_Flow::CCentLaxArtComp_Flow(unsigned short val_nDim, unsigned sho
   
 }
 
-CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
+CCentLaxInc_Flow::~CCentLaxInc_Flow(void) {
   
   delete [] Diff_V;
   delete [] Velocity_i;
@@ -437,7 +437,7 @@ CCentLaxArtComp_Flow::~CCentLaxArtComp_Flow(void) {
 
 }
 
-void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CCentLaxInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   /*--- Primitive variables at point i and j ---*/
   
@@ -482,7 +482,7 @@ void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
 
   /*--- Get projected flux tensor ---*/
 
-  GetInviscidArtCompProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
+  GetInviscidIncProjFlux(&MeanDensity, MeanVelocity, &MeanPressure, &MeanBetaInc2, &MeanEnthalpy, Normal, ProjFlux);
 
   /*--- Compute inviscid residual ---*/
   
@@ -493,7 +493,7 @@ void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   /*--- Jacobians of the inviscid flux ---*/
 
   if (implicit) {
-    GetInviscidArtCompProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
+    GetInviscidIncProjJac(&MeanDensity, MeanVelocity, &MeanBetaInc2, &MeanCp, &MeanTemperature, &MeandRhodT, Normal, 0.5, val_Jacobian_i);
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
         val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
@@ -558,7 +558,7 @@ void CCentLaxArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
 
 }
 
-CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGradInc_Flow::CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
@@ -580,7 +580,7 @@ CAvgGradArtComp_Flow::CAvgGradArtComp_Flow(unsigned short val_nDim, unsigned sho
   
 }
 
-CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
+CAvgGradInc_Flow::~CAvgGradInc_Flow(void) {
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;
@@ -592,7 +592,7 @@ CAvgGradArtComp_Flow::~CAvgGradArtComp_Flow(void) {
   
 }
 
-void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
   /*--- Normalized normal vector ---*/
   
@@ -631,7 +631,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
   
   /*--- Get projected flux tensor ---*/
   
-  GetViscousArtCompProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke, Mean_Thermal_Conductivity);
+  GetViscousIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke, Mean_Thermal_Conductivity);
   
   /*--- Update viscous residual ---*/
   
@@ -660,7 +660,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
       }
     }
     else {
-      GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal,
+      GetViscousIncProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, dist_ij, UnitNormal,
                                 Area, val_Jacobian_i, val_Jacobian_j);
 
       /*--- Include the temperature equation Jacobian. ---*/
@@ -686,7 +686,7 @@ void CAvgGradArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **
 
 }
 
-CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+CAvgGradCorrectedInc_Flow::CAvgGradCorrectedInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   energy   = config->GetEnergy_Equation();
@@ -705,7 +705,7 @@ CAvgGradCorrectedArtComp_Flow::CAvgGradCorrectedArtComp_Flow(unsigned short val_
   
 }
 
-CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
+CAvgGradCorrectedInc_Flow::~CAvgGradCorrectedInc_Flow(void) {
 
   delete [] Mean_PrimVar;
   delete [] PrimVar_i;
@@ -719,13 +719,14 @@ CAvgGradCorrectedArtComp_Flow::~CAvgGradCorrectedArtComp_Flow(void) {
   
 }
 
-void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
+void CAvgGradCorrectedInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 
   AD::StartPreacc();
   AD::SetPreaccIn(V_i, nDim+9);   AD::SetPreaccIn(V_j, nDim+9);
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(PrimVar_Grad_i, nVar, nDim);
   AD::SetPreaccIn(PrimVar_Grad_j, nVar, nDim);
+  AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
   
   /*--- Normalized normal vector ---*/
@@ -787,7 +788,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
   
   /*--- Get projected flux tensor ---*/
   
-  GetViscousArtCompProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke, Mean_Thermal_Conductivity);
+  GetViscousIncProjFlux(Mean_PrimVar, Mean_GradPrimVar, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_turb_ke, Mean_Thermal_Conductivity);
   
   /*--- Update viscous residual ---*/
   
@@ -814,7 +815,7 @@ void CAvgGradCorrectedArtComp_Flow::ComputeResidual(su2double *val_residual, su2
       }
     }
     else {
-      GetViscousArtCompProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, sqrt(dist_ij_2), UnitNormal,
+      GetViscousIncProjJacs(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, sqrt(dist_ij_2), UnitNormal,
                                 Area, val_Jacobian_i, val_Jacobian_j);
 
       /*--- Include the temperature equation Jacobian. ---*/
@@ -949,7 +950,7 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
   if (Coord_i[1] > EPS) {
 
-    yinv          = 1.0/Coord_i[1];
+    yinv = 1.0/Coord_i[1];
 
     /*--- Set primitive variables at points iPoint. ---*/
 
@@ -962,7 +963,6 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
     for (iDim = 0; iDim < nDim; iDim++)
       Velocity_i[iDim] = V_i[iDim+1];
-
 
     /*--- Inviscid component of the source term. ---*/
 
@@ -1003,17 +1003,15 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
     if (viscous) {
 
-
       Laminar_Viscosity_i    = V_i[nDim+4];
       Eddy_Viscosity_i       = V_i[nDim+5];
       Thermal_Conductivity_i = V_i[nDim+6];
 
-      //unsigned short iVar, iDim, jDim;
       su2double total_viscosity, div_vel;
 
       total_viscosity = (Laminar_Viscosity_i + Eddy_Viscosity_i);
 
-      /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
+      /*--- The full stress tensor is needed for variable density ---*/
 
       div_vel = 0.0;
       for (iDim = 0 ; iDim < nDim; iDim++)
@@ -1029,11 +1027,10 @@ void CSourceIncAxisymmetric_Flow::ComputeResidual(su2double *val_residual, su2do
 
       val_residual[0] -= 0.0;
       val_residual[1] -= Volume*(yinv*tau[0][1] - TWO3*AuxVar_Grad_i[0]);
-      val_residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[1][1] -
+      val_residual[2] -= Volume*(yinv*2.0*total_viscosity*PrimVar_Grad_i[2][1] -
                                  yinv*yinv*2.0*total_viscosity*Velocity_i[1] -
                                  TWO3*AuxVar_Grad_i[1]);
       val_residual[3] -= Volume*yinv*Thermal_Conductivity_i*PrimVar_Grad_i[nDim+1][1];
-
 
     }
     
