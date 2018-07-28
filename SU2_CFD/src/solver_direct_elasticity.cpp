@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include <algorithm>
 
 CFEASolver::CFEASolver(void) : CSolver() {
   
@@ -1514,6 +1515,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
     }
   }
   
+  FilterElementDensities(geometry,config);
 }
 
 void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
@@ -4908,7 +4910,7 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
                 nElemDomain = geometry->GetGlobal_nElemDomain();
 
   CPrimalGrid **elem = geometry->elem; // to simplify the syntax
-                
+
   /*--- Determine how much space we need for the adjacency matrix by counting neighbours ---*/
   unsigned short *nFaces_elem = new unsigned short [nElemDomain];
 
@@ -4921,13 +4923,13 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   /*--- In all of these we do some pointer swapping to avoid keeping track of send/receive
-  buffers and which ones to delete depending whether we HAVE_MPI or not. ---*/
+  buffers and which ones to delete depending on whether we HAVE_MPI or not. The following
+  macro is to simplify that process. ---*/
+#define SWAP_AND_DEL_OLD(p1,p2) tmp=p1; p1=p2; delete[] tmp
   {
-    unsigned short *buffer = new unsigned short [nElemDomain];
+    unsigned short *buffer = new unsigned short [nElemDomain], *tmp = NULL;
     MPI_Allreduce(nFaces_elem,buffer,nElemDomain,MPI_UNSIGNED_SHORT,MPI_MAX,MPI_COMM_WORLD);
-    unsigned short *tmp = nFaces_elem;
-    nFaces_elem = buffer;
-    delete [] tmp;
+    SWAP_AND_DEL_OLD(nFaces_elem,buffer);
   }
 #endif
 
@@ -4941,7 +4943,8 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
   for(iElem=0; iElem<nElemDomain; ++iElem) {
     neighbour_start[iElem+1] = neighbour_start[iElem]+nFaces_elem[iElem];
   }
-  
+  delete [] nFaces_elem;
+
   /*--- Allocate ---*/
   unsigned long matrix_size = neighbour_start[nElemDomain];
   neighbour_idx = new long [matrix_size];
@@ -4965,31 +4968,25 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 #ifdef HAVE_MPI
   /*--- Share with all processors ---*/
   {
-    long *buffer = new long [matrix_size];
-    MPI_Allreduce(neighbour_idx,buffer,nElemDomain,MPI_LONG,MPI_MAX,MPI_COMM_WORLD);
-    long *tmp = neighbour_idx;
-    neighbour_idx = buffer;
-    delete [] tmp;
+    long *buffer = new long [matrix_size], *tmp = NULL;
+    MPI_Allreduce(neighbour_idx,buffer,matrix_size,MPI_LONG,MPI_MAX,MPI_COMM_WORLD);
+    SWAP_AND_DEL_OLD(neighbour_idx,buffer);
   }
 #endif
 
-  
+
   /*--- Element centroids, volumes, and densign density ---*/
   su2double *cg_elem  = new su2double [nElemDomain*nDim],
             *vol_elem = new su2double [nElemDomain],
             *rho_elem = new su2double [nElemDomain];
-  unsigned short *halo_detect = new unsigned short [nElemDomain];
-  
-#ifdef HAVE_MPI
+
   /*--- Initialize ---*/
   for(iElem=0; iElem<nElemDomain; ++iElem) {
     for(unsigned short iDim=0; iDim<nDim; ++iDim)
       cg_elem[nDim*iElem+iDim] = 0.0;
     vol_elem[iElem] = 0.0;
     rho_elem[iElem] = 0.0;
-    halo_detect[iElem] = 0;
   }
-#endif
   /*--- Populate ---*/
   for(iElem=0; iElem<nElem; ++iElem) {
     iElem_global = elem[iElem]->GetGlobalIndex();
@@ -4997,7 +4994,6 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
       cg_elem[nDim*iElem_global+iDim] = elem[iElem]->GetCG(iDim);
     vol_elem[iElem_global] = elem[iElem]->GetVolume();
     rho_elem[iElem_global] = element_properties[iElem]->GetDesignDensity();
-    halo_detect[iElem_global] = 1;
   }
   
 #ifdef HAVE_MPI
@@ -5007,55 +5003,131 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 
     buffer = new su2double [nElemDomain*nDim];
     SU2_MPI::Allreduce(cg_elem,buffer,nElemDomain*nDim,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    tmp = cg_elem;
-    cg_elem = buffer;
-    delete [] tmp;
+    SWAP_AND_DEL_OLD(cg_elem,buffer);
 
     buffer = new su2double [nElemDomain];
     SU2_MPI::Allreduce(vol_elem,buffer,nElemDomain,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    tmp = vol_elem;
-    vol_elem = buffer;
-    delete [] tmp;
-      
+    SWAP_AND_DEL_OLD(vol_elem,buffer);
+
     buffer = new su2double [nElemDomain];
-    SU2_MPI::Allreduce(vol_elem,buffer,nElemDomain,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
-    tmp = vol_elem;
-    vol_elem = buffer;
-    delete [] tmp;
+    SU2_MPI::Allreduce(rho_elem,buffer,nElemDomain,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    SWAP_AND_DEL_OLD(rho_elem,buffer);
   }
+  /*--- Account for the duplication introduced by the halo elements and the
+  reduction using MPI_SUM, which is required to maintain differentiabillity. ---*/
   {
-    unsigned short *buffer = new unsigned short [nElemDomain];
-    MPI_Allreduce(halo_detect,buffer,nElemDomain,MPI_UNSIGNED_SHORT,MPI_SUM,MPI_COMM_WORLD);
-    unsigned short *tmp = halo_detect;
-    halo_detect = buffer;
-    delete [] tmp;
-  }
+    unsigned short *halo_detect = new unsigned short [nElemDomain];
+    
+    for(iElem=0; iElem<nElemDomain; ++iElem) halo_detect[iElem] = 0;
+    for(iElem=0; iElem<nElem; ++iElem) halo_detect[elem[iElem]->GetGlobalIndex()] = 1;
 
-  /*--- Account for duplication introduced by halo elements ---*/
-  for(iElem=0; iElem<nElemDomain; ++iElem) {
-    su2double numRepeat = halo_detect[iElem];
-    for(unsigned short iDim=0; iDim<nDim; ++iDim)
-      cg_elem[nDim*iElem+iDim] /= numRepeat;
-    vol_elem[iElem] /= numRepeat;
-    rho_elem[iElem] /= numRepeat;
+    unsigned short *buffer = new unsigned short [nElemDomain], *tmp = NULL;
+    MPI_Allreduce(halo_detect,buffer,nElemDomain,MPI_UNSIGNED_SHORT,MPI_SUM,MPI_COMM_WORLD);
+    SWAP_AND_DEL_OLD(halo_detect,buffer);
+
+    for(iElem=0; iElem<nElemDomain; ++iElem) {
+      su2double numRepeat = halo_detect[iElem];
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        cg_elem[nDim*iElem+iDim] /= numRepeat;
+      vol_elem[iElem] /= numRepeat;
+      rho_elem[iElem] /= numRepeat;
+    }
+    delete [] halo_detect;
   }
+#undef SWAP_AND_DEL_OLD
 #endif
   
+  /*--- SECOND: Each processor performs the average for its elements. For each
+  element we look for neighbours of neighbours of... until the distance to the
+  closest newly found one is greater than the filter radius.  ---*/
   
+  for (iElem=0; iElem<nElem; ++iElem)
+  {
+    /*--- Center of the search ---*/
+    iElem_global = elem[iElem]->GetGlobalIndex();
+    passivedouble *X0 = new passivedouble[nDim];
+    for (unsigned short iDim=0; iDim<nDim; ++iDim)
+      X0[iDim] = SU2_TYPE::GetValue(cg_elem[nDim*iElem_global+iDim]);
+    
+    vector<long> neighbours(1,iElem_global); // of iElem
+    /*--- A way to locate neighbours of a given degree (1st degree are direct neighbours).
+    "degree_start"[degree] is the position in "neighbours" where "degree" starts. ---*/
+    vector<unsigned long> degree_start(1,0);
+    
+    passivedouble filterRadius = 0.01;
+    
+    unsigned long begin = 0, end = 1;
+    while (begin!=end)
+    {
+      /*--- Add another degree. ---*/
+      degree_start.push_back(neighbours.size());
+      
+      vector<long> new_neighbours, candidates(1,-1);
+      vector<long>::iterator it;
+      
+      /*--- For each element of the last degree added, add its direct neighbours avoiding
+      duplicates, note the special value -1 at the start position of "candidates". ---*/
+      for (unsigned long idx=begin; idx<end; ++idx)
+      {
+        /*--- Locators to access this "row" of the adjacency matrix. ---*/
+        unsigned long row_begin = neighbour_start[neighbours[idx]],
+                      row_end   = neighbour_start[neighbours[idx]+1];
+
+        for (unsigned long i=row_begin; i<row_end; ++i)
+          if (find(candidates.begin(), candidates.end(), neighbour_idx[i]) == candidates.end())
+            candidates.push_back(neighbour_idx[i]);
+      }
+      
+      /*--- Avoid duplication of previouly added neighbours.
+      Only the last two degrees need checking. ---*/
+      long current_degree = degree_start.size()-1;
+      long degree_to_check = max<long>(0,current_degree-2);
+      it = neighbours.begin()+degree_start[degree_to_check];
+      
+      for (unsigned long idx=1; idx<candidates.size(); ++idx)
+        if (find(it, neighbours.end(), candidates[idx]) == neighbours.end())
+          new_neighbours.push_back(candidates[idx]);
+          
+      /*--- Add the new neighbours that are inside the radius. ---*/
+      for (it=new_neighbours.begin(); it!=new_neighbours.end(); ++it)
+      {
+        /*--- passivedouble because we are still not going to calculate anything ---*/
+        passivedouble distance = 0.0;
+        for (unsigned short iDim=0; iDim<nDim; ++iDim)
+          distance += pow(X0[iDim]-SU2_TYPE::GetValue(cg_elem[nDim*(*it)+iDim]),2.0);
+      
+        if(sqrt(distance) < filterRadius) neighbours.push_back(*it);
+      }
+
+      /*--- Update the bounds of the search for the next level, if
+      "neighbours" does not change size the while loop stops ---*/
+      begin = end;
+      end = neighbours.size();
+    }
+    delete [] X0;
+    
+    /*--- Filter by applying the kernel ---*/
+    su2double weighted_sum = 0.0, sum_of_weights = 0.0;
+    
+    for(unsigned long i=0; i<neighbours.size(); ++i)
+    {
+      unsigned long idx = neighbours[i];
+
+      su2double distance = 0.0;
+      for (unsigned short iDim=0; iDim<nDim; ++iDim)
+        distance += pow(cg_elem[nDim*iElem_global+iDim]-cg_elem[nDim*idx+iDim],2.0);
+      distance = sqrt(distance);
+      
+      su2double weight = (filterRadius-distance)*vol_elem[idx];
+      
+      weighted_sum += weight*rho_elem[idx];
+      sum_of_weights += weight;
+    }
+    element_properties[iElem]->SetPhysicalDensity(weighted_sum/sum_of_weights);
+  }
+  
+  delete [] neighbour_idx;
+  delete [] cg_elem;
+  delete [] vol_elem;
+  delete [] rho_elem;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
