@@ -8233,12 +8233,11 @@ public:
   void GEMM_Tick(double *val_start_time);
 
   /*!
-   * \brief Stop the timer for profiling subroutines and store results.
-   * \param[in] val_start_time - the value of the start time.
-   * \param[in] val_function_name - string for the name of the profiled subroutine.
-   * \param[in] val_group_id - string for the name of the profiled subroutine.
+   * \brief Stop the timer for the GEMM profiling and store results.
+   * \param[in] val_start_time - The value of the start time.
+   * \param[in] M, N, K        - Matrix size of the GEMM call.
    */
-  void GEMM_Tock(double val_start_time, string val_function_name, int M, int N, int K);
+  void GEMM_Tock(double val_start_time, int M, int N, int K);
 
   /*!
    * \brief Write a CSV file containing the results of the profiling.

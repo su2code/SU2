@@ -3180,9 +3180,11 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     const su2double *matBasisInt    = standardVolumeElements[ii].GetMatBasisFunctionsIntegration();
     const su2double *matDerBasisInt = &matBasisInt[nDOFs*nIntegration];
 
-    /* Carry out the matrix matrix product. */
+    /* Carry out the matrix matrix product. The last argument is NULL, such
+       that this gemm call is ignored in the profiling. Replace by config if
+       if should be included. */
     su2_gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
-             vecRHS.data(), vecResult.data());
+             vecRHS.data(), vecResult.data(), NULL);
 
     /*--- Compute the Jacobians in the integration points and determine
           the minimum and maximum values. Make a distinction between

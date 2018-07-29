@@ -2070,10 +2070,12 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
        iDim, because the Hessian is symmetric. */
     for(unsigned short iDim=0; iDim<=jDim; iDim++)
     {
-      /* Carry out the matrix multiplication. */
+      /* Carry out the matrix multiplication. The last argument is NULL, such
+         that this gemm call is ignored in the profiling. Replace by config if
+         if should be included. */
       su2_gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
                matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
-               mat2ndDerBasisIntPoint);
+               mat2ndDerBasisIntPoint, NULL);
 
       /* Update the pointer to the position where the next second
          derivative will be stored. */
