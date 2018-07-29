@@ -34,6 +34,7 @@
 #pragma once
 
 #include "datatype_structure.hpp"
+#include "config_structure.hpp"
 
 /* LIBXSMM include files, if supported. */
 #ifdef HAVE_LIBXSMM
@@ -52,7 +53,8 @@
 /*-----------------------------------------------------------------------------*/
 
 /*!
- * \brief Function, which carries out a dense matrix product.
+ * \brief Function, which carries out a dense matrix product. It is a
+          limited version of the BLAS gemm functionality..
  * \param[in]  M  - Number of rows of A and C.
  * \param[in]  N  - Number of columns of B and C.
  * \param[in]  K  - Number of columns of A and number of rows of B.
@@ -61,7 +63,20 @@
  * \param[out] C  - Result of the matrix product A*B.
  */
 void su2_gemm(const int M,        const int N,        const int K,
-              const su2double *A, const su2double *B, su2double *C);
+              const su2double *A, const su2double *B, su2double *C,
+              CConfig *config);
+
+/*!
+ * \brief Function, which carries out a dense matrix vector product
+          y = A x. It is a limited version of the BLAS gemv functionality.
+  * \param[in]  M  - Number of rows of A and size of y.
+  * \param[in]  N  - Number of columns of A and size of x.
+  * \param[in]  A  - Input matrix in the multiplication, row major order.
+  * \param[in]  x  - Input vector in the multiplication.
+  * \param[out] y  - Result of the product A x.
+  */
+void su2_gemv(const int M,        const int N,   const su2double *A,
+              const su2double *x, su2double *y);
 
 /*!
  * \brief Function, to carry out the axpy operation, i.e y += a*x.

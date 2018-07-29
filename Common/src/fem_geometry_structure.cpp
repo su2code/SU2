@@ -2179,7 +2179,8 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
                                                const unsigned short nDOFs,
                                                const su2double      *matDerBasisInt,
                                                const unsigned long  *DOFs,
-                                               su2double            *derivCoor) {
+                                               su2double            *derivCoor,
+                                               CConfig              *config) {
 
   /* Allocate the memory to store the values of dxdr, dydr, etc. */
   vector<su2double> helpDxdrVec(nIntegration*nDim*nDim);
@@ -2187,7 +2188,8 @@ void CMeshFEM::ComputeGradientsCoordinatesFace(const unsigned short nIntegration
 
   /* Determine the gradients of the Cartesian coordinates w.r.t. the
      parametric coordinates. */
-  ComputeGradientsCoorWRTParam(nIntegration, nDOFs, matDerBasisInt, DOFs, dxdrVec);
+  ComputeGradientsCoorWRTParam(nIntegration, nDOFs, matDerBasisInt, DOFs,
+                               dxdrVec, config);
 
   /* Make a distinction between 2D and 3D to compute the derivatives drdx,
      drdy, etc. */
@@ -2260,7 +2262,8 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                                             const unsigned short nDOFs,
                                             const su2double      *matDerBasisInt,
                                             const unsigned long  *DOFs,
-                                            su2double            *derivCoor) {
+                                            su2double            *derivCoor,
+                                            CConfig              *config) {
 
   /* Allocate the memory to store the coordinates as right hand side. */
   vector<su2double> vecRHS(nDOFs*nDim);
@@ -2273,9 +2276,11 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
       vecRHS[ic] = meshPoints[DOFs[j]].coor[k];
   }
 
-  /* Carry out the matrix matrix product */
-  su2_gemm(nDim*nIntegration, nDim, nDOFs,
-           matDerBasisInt, vecRHS.data(), derivCoor);
+  /* Carry out the matrix matrix product The last argument is NULL, such
+     that this gemm call is ignored in the profiling. Replace by config if
+     if should be included. */
+  su2_gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
+           vecRHS.data(), derivCoor, NULL);
 }
 
 void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
@@ -2423,7 +2428,8 @@ void CMeshFEM::MetricTermsBoundaryFaces(CBoundaryFEM *boundary,
 
       ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
                                       boundary->surfElem[i].DOFsGridElement.data(),
-                                      boundary->surfElem[i].metricCoorDerivFace.data());
+                                      boundary->surfElem[i].metricCoorDerivFace.data(),
+                                      config);
     }
   }
 }
@@ -5120,7 +5126,8 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
       ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
                                       matchingFaces[i].DOFsGridElementSide0.data(),
-                                      matchingFaces[i].metricCoorDerivFace0.data());
+                                      matchingFaces[i].metricCoorDerivFace0.data(),
+                                      config);
 
       /* Compute the derivatives of the parametric coordinates w.r.t. the
          Cartesian coordinates, i.e. drdx, drdy, etc. in the integration points
@@ -5130,7 +5137,8 @@ void CMeshFEM_DG::MetricTermsMatchingFaces(CConfig *config) {
 
       ComputeGradientsCoordinatesFace(nInt, nDOFs, dr,
                                       matchingFaces[i].DOFsGridElementSide1.data(),
-                                      matchingFaces[i].metricCoorDerivFace1.data());
+                                      matchingFaces[i].metricCoorDerivFace1.data(),
+                                      config);
     }
   }
 }
@@ -5496,13 +5504,13 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
        coordinates for this element in the integration points. */
     ComputeGradientsCoorWRTParam(nInt, nDOFsGrid, matDerBasisInt,
                                  volElem[i].nodeIDsGrid.data(),
-                                 vecResultInt);
+                                 vecResultInt, config);
 
     /* Compute the gradient of the coordinates w.r.t. the parametric
        coordinates for this element in the solution DOFs. */
     ComputeGradientsCoorWRTParam(nDOFsSol, nDOFsGrid, matDerBasisSolDOFs,
                                  volElem[i].nodeIDsGrid.data(),
-                                 vecResultDOFsSol);
+                                 vecResultDOFsSol, config);
 
     /* Convert the values of dxdr, dydr, etc. to the required metric terms
        for both the integration points and the solution DOFs. */
@@ -5562,7 +5570,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       ComputeGradientsCoorWRTParam(nDOFsGrid, nDOFsGrid, matDerBasisGridDOFs,
                                    volElem[i].nodeIDsGrid.data(),
-                                   vecResultGridDOFs);
+                                   vecResultGridDOFs, config);
 
       /* Convert the values of dxdr, dydr, etc. to the required metric terms
          in the grid DOFs. */
@@ -5590,8 +5598,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       vector<su2double> helpVecDerMetrics(nDim*nInt*(nMetricPerPoint-1));
       su2double *vecDerMetrics = helpVecDerMetrics.data();
 
+      /* Carry out the matrix multiplication. The last argument is NULL, such
+         that this gemm call is ignored in the profiling. Replace by config if
+         if should be included. */
       su2_gemm(nDim*nInt, nMetricPerPoint-1, nDOFsGrid, matDerBasisInt,
-               metricGridDOFs.data(), vecDerMetrics);
+               metricGridDOFs.data(), vecDerMetrics, NULL);
 
       /* Allocate the memory for the additional metric terms needed to
          compute the second derivatives. */
@@ -5779,16 +5790,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       Jac[l] = volElem[i].metricTerms[l*nMetricPerPoint];
 
     /* Allocate the memory for working vector for the construction
-       of the mass matrix and initialize it to zero.. */
+       of the mass matrix. */
     vector<su2double> massMat(nDOFs2);
 
-    /* Construct the mass matrix by looping over the elements of massMat
-       and summing up the contributions from the integration points. */
-    for(unsigned int k=0; k<nDOFs2; ++k) {
-      const su2double *val = valInt + k*nInt;
-      for(unsigned short l=0; l<nInt; ++l)
-        massMat[k] += val[l]*Jac[l];
-    }
+    /* Create the mass matrix, which is a BLAS gemv operation. */
+    su2_gemv(nDOFs2, nInt, valInt, Jac, massMat.data());
 
     /* Store the full mass matrix in volElem[i], if needed. */
     if( FullMassMatrix ) volElem[i].massMatrix = massMat;
