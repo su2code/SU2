@@ -114,26 +114,29 @@ void su2_gemm_imp(const int m,        const int n,        const int k,
 
 /* Dense matrix multiplication, gemm functionality. */
 void su2_gemm(const int M,        const int N,        const int K,
-              const su2double *A, const su2double *B, su2double *C) {
+              const su2double *A, const su2double *B, su2double *C,
+              CConfig *config) {
+
+  /* Initialize the variable for the timing, if profiling is active. */
+#ifdef PROFILE
+  double timeGemm;
+  if( config ) config->GEMM_Tick(&timeGemm);
+#endif
 
 #ifdef HAVE_LIBXSMM
 
   /* The gemm function of libxsmm is used to carry out the multiplication.
      Note that libxsmm_gemm expects the matrices in column major order. That's
      why the calling sequence is different from cblas_dgemm. */
-  int ldb = N;
-  int lda = K;
-  int ldc = N;
-
   su2double alpha = 1.0;
   su2double beta  = 0.0;
   char trans = 'N';
 
-  libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &ldb, A, &lda, &beta, C, &ldc);
+  libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
 #elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
 
-  /* The standard blas routine dgemm is used for the multiplication. */
+  /* The standard cblas routine dgemm is used for the multiplication. */
   cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
               1.0, A, K, B, N, 0.0, C, N);
 #else
@@ -144,5 +147,35 @@ void su2_gemm(const int M,        const int N,        const int K,
      on https://github.com/flame/how-to-optimize-gemm. */
   su2_gemm_imp(N, M, K, B, A, C);
   
+#endif
+
+  /* Store the profiling information, if needed. */
+#ifdef PROFILE
+  if( config ) config->GEMM_Tock(timeGemm, M, N, K);
+#endif
+}
+
+/* Dense matrix vector multiplication, gemv functionality. */
+void su2_gemv(const int M,        const int N,   const su2double *A,
+              const su2double *x, su2double *y) {
+
+#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
+
+  /* The standard cblas routine dgemv is used for the multiplication. */
+  cblas_dgemv(CblasRowMajor, CblasNoTrans, M, N, 1.0, A, N, x, 1, 0.0, y, 1);
+
+#else
+
+  /* Native implementation of the matix vector product.
+     Initialize the elements of y to zero. */
+  memset(y, 0, M*sizeof(su2double));  
+
+  /* Carry out the matrix vector product. */
+  for(int k=0; k<M; ++k) {
+    const su2double *AA = A + k*N;
+    for(int l=0; l<N; ++l)
+      y[k] += AA[l]*x[l];
+  }
+
 #endif
 }

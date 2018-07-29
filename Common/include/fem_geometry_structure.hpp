@@ -790,12 +790,14 @@ protected:
                                  coordinates r, s and t in the integration points.
   * \param[in]  DOFs           - The DOFs of the grid associated with the element.
   * \param[out] derivCoor      - Storage for the derivatives of the coordinates.
+  *  \param[in] config         - Definition of the particular problem.
   */
   void ComputeGradientsCoordinatesFace(const unsigned short nIntegration,
                                        const unsigned short nDOFs,
                                        const su2double      *matDerBasisInt,
                                        const unsigned long  *DOFs,
-                                       su2double            *derivCoor);
+                                       su2double            *derivCoor,
+                                       CConfig              *config);
   /*!
   * \brief Function, which computes the gradients of the Cartesian coordinates
            w.r.t. the parametric coordinates in the given set of integration
@@ -808,12 +810,14 @@ protected:
                                  coordinates r, s and t in the integration points.
   * \param[in]  DOFs           - The DOFs of the grid associated with the element.
   * \param[out] derivCoor    - Storage for the derivatives of the coordinates.
+  * \param[in] config        - Definition of the particular problem.
   */
   void ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
                                     const unsigned short nDOFs,
                                     const su2double      *matDerBasisInt,
                                     const unsigned long  *DOFs,
-                                    su2double            *derivCoor);
+                                    su2double            *derivCoor,
+                                    CConfig              *config);
   /*!
   * \brief Function, which computes the information of the normals in the
            integration points of a face.

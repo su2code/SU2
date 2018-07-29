@@ -37,18 +37,20 @@
 
 #include "../include/config_structure.hpp"
 #include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_geometry_structure.hpp"
 
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
 vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
 vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
 map<string, vector<int> > Profile_Map_tp; /*!< \brief Map containing the final results for profiled functions. */
 
-vector<string> GEMM_Profile_Function;       /*!< \brief Vector of string names for profiled functions. */
-vector<double> GEMM_Profile_Time;           /*!< \brief Vector of elapsed time for profiled functions. */
-vector<double> GEMM_Profile_M;             /*!< \brief Vector of group ID number for profiled functions. */
-vector<double> GEMM_Profile_N;             /*!< \brief Vector of group ID number for profiled functions. */
-vector<double> GEMM_Profile_K;             /*!< \brief Vector of group ID number for profiled functions. */
-map<string, vector<int> > GEMM_Profile_Map; /*!< \brief Map containing the final results for profiled functions. */
+map<long3T, int> GEMM_Profile_MNK;        /*!< \brief Map, which maps the GEMM size to the index where
+                                                      the data for this GEMM is stored in several vectors. */
+vector<long>   GEMM_Profile_NCalls;       /*!< \brief Vector, which stores the number of calls to this
+                                                      GEMM size. */
+vector<double> GEMM_Profile_TotTime;      /*!< \brief Total time spent for this GEMM size. */
+vector<double> GEMM_Profile_MinTime;      /*!< \brief Minimum time spent for this GEMM size. */
+vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for this GEMM size. */
 
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
@@ -8446,11 +8448,20 @@ void CConfig::SetProfilingCSV(void) {
     l_avg_red = new double[map_size];
     n_calls_red  = new int[map_size];
   }
+
+#ifdef HAVE_MPI
   MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
   MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+#else
+  memcpy(n_calls_red, n_calls, map_size*sizeof(int));
+  memcpy(l_tot_red,   l_tot,   map_size*sizeof(double));
+  memcpy(l_avg_red,   l_avg,   map_size*sizeof(double));
+  memcpy(l_min_red,   l_min,   map_size*sizeof(double));
+  memcpy(l_max_red,   l_max,   map_size*sizeof(double));
+#endif
 
   /*--- The master rank will write the file ---*/
 
@@ -8512,39 +8523,63 @@ void CConfig::SetProfilingCSV(void) {
 void CConfig::GEMM_Tick(double *val_start_time) {
 
 #ifdef PROFILE
-#ifndef HAVE_MPI
-  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
+
+#ifdef HAVE_MKL
+  *val_start_time = dsecnd();
+#elif HAVE_MPI
   *val_start_time = MPI_Wtime();
+#else
+  *val_start_time = double(clock())/double(CLOCKS_PER_SEC);
 #endif
 
 #endif
 
 }
 
-void CConfig::GEMM_Tock(double val_start_time, string val_function_name, int M, int N, int K) {
+void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
 
 #ifdef PROFILE
 
-  double val_stop_time = 0.0, val_elapsed_time = 0.0;
+  /* Determine the timing value. The actual function called depends on
+     the type of executable. */
+  double val_stop_time = 0.0;
 
-#ifndef HAVE_MPI
-  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
-#else
+#ifdef HAVE_MKL
+  val_stop_time = dsecnd();
+#elif HAVE_MPI
   val_stop_time = MPI_Wtime();
+#else
+  val_stop_time = double(clock())/double(CLOCKS_PER_SEC);
 #endif
 
-  string desc = val_function_name + "_" + to_string(M)+"_"+ to_string(N)+"_"+ to_string(K);
+  /* Compute the elapsed time. */
+  const double val_elapsed_time = val_stop_time - val_start_time;
 
-  /*--- Compute the elapsed time for this subroutine ---*/
-  val_elapsed_time = val_stop_time - val_start_time;
+  /* Create the long3T from the M-N-K values and check if it is already
+     stored in the map GEMM_Profile_MNK. */
+  long3T MNK(M, N, K);
+  map<long3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
 
-  /*--- Store the subroutine name and the elapsed time ---*/
-  GEMM_Profile_Function.push_back(desc);
-  GEMM_Profile_Time.push_back(val_elapsed_time);
-  GEMM_Profile_M.push_back(M);
-  GEMM_Profile_N.push_back(N);
-  GEMM_Profile_K.push_back(K);
+  if(MI == GEMM_Profile_MNK.end()) {
+
+    /* Entry is not present yet. Create it. */
+    GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+
+    GEMM_Profile_NCalls.push_back(1);
+    GEMM_Profile_TotTime.push_back(val_elapsed_time);
+    GEMM_Profile_MinTime.push_back(val_elapsed_time);
+    GEMM_Profile_MaxTime.push_back(val_elapsed_time);
+  }
+  else {
+
+    /* Entry is already present. Determine its index in the
+       map and update the corresponding vectors. */
+    const int ind = MI->second;
+    ++GEMM_Profile_NCalls[ind];
+    GEMM_Profile_TotTime[ind] += val_elapsed_time;
+    GEMM_Profile_MinTime[ind]  = min(GEMM_Profile_MinTime[ind], val_elapsed_time);
+    GEMM_Profile_MaxTime[ind]  = max(GEMM_Profile_MaxTime[ind], val_elapsed_time);
+  }
 
 #endif
 
@@ -8554,150 +8589,163 @@ void CConfig::GEMMProfilingCSV(void) {
 
 #ifdef PROFILE
 
+  /* Initialize the rank to the master node. */
   int rank = MASTER_NODE;
-  int size = SINGLE_NODE;
+
 #ifdef HAVE_MPI
+  /* Parallel executable. The profiling data must be sent to the master node.
+     First determine the rank and size. */
+  int size;
   SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
   SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+
+  /* Check for the master node. */
+  if(rank == MASTER_NODE) {
+
+    /* Master node. Loop over the other ranks to receive their data. */
+    for(int proc=1; proc<size; ++proc) {
+
+      /* Block until a message from this processor arrives. Determine
+         the number of entries in the receive buffers. */
+      SU2_MPI::Status status;
+      SU2_MPI::Probe(proc, 0, MPI_COMM_WORLD, &status);
+
+      int nEntries;
+      SU2_MPI::Get_count(&status, MPI_LONG, &nEntries);
+
+      /* Allocate the memory for the receive buffers and receive the
+         three messages using blocking receives. */
+      vector<long>   recvBufNCalls(nEntries);
+      vector<double> recvBufTotTime(nEntries);
+      vector<double> recvBufMinTime(nEntries);
+      vector<double> recvBufMaxTime(nEntries);
+      vector<long>   recvBufMNK(3*nEntries);
+
+      SU2_MPI::Recv(recvBufNCalls.data(), recvBufNCalls.size(),
+                    MPI_LONG, proc, 0, MPI_COMM_WORLD, &status);
+      SU2_MPI::Recv(recvBufTotTime.data(), recvBufTotTime.size(),
+                    MPI_DOUBLE, proc, 1, MPI_COMM_WORLD, &status);
+      SU2_MPI::Recv(recvBufMinTime.data(), recvBufMinTime.size(),
+                    MPI_DOUBLE, proc, 2, MPI_COMM_WORLD, &status);
+      SU2_MPI::Recv(recvBufMaxTime.data(), recvBufMaxTime.size(),
+                    MPI_DOUBLE, proc, 3, MPI_COMM_WORLD, &status);
+      SU2_MPI::Recv(recvBufMNK.data(), recvBufMNK.size(),
+                    MPI_LONG, proc, 4, MPI_COMM_WORLD, &status);
+
+      /* Loop over the number of entries. */
+      for(int i=0; i<nEntries; ++i) {
+
+        /* Create the long3T from the M-N-K values and check if it is already
+           stored in the map GEMM_Profile_MNK. */
+        long3T MNK(recvBufMNK[3*i], recvBufMNK[3*i+1], recvBufMNK[3*i+2]);
+        map<long3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
+
+        if(MI == GEMM_Profile_MNK.end()) {
+
+          /* Entry is not present yet. Create it. */
+          GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+
+          GEMM_Profile_NCalls.push_back(recvBufNCalls[i]);
+          GEMM_Profile_TotTime.push_back(recvBufTotTime[i]);
+          GEMM_Profile_MinTime.push_back(recvBufMinTime[i]);
+          GEMM_Profile_MaxTime.push_back(recvBufMaxTime[i]);
+        }
+        else {
+
+          /* Entry is already present. Determine its index in the
+             map and update the corresponding vectors. */
+          const int ind = MI->second;
+          GEMM_Profile_NCalls[ind]  += recvBufNCalls[i];
+          GEMM_Profile_TotTime[ind] += recvBufTotTime[i];
+          GEMM_Profile_MinTime[ind]  = min(GEMM_Profile_MinTime[ind], recvBufMinTime[i]);
+          GEMM_Profile_MaxTime[ind]  = max(GEMM_Profile_MaxTime[ind], recvBufMaxTime[i]);
+        }
+      }
+    }
+  }
+  else {
+
+    /* Not the master node. Create the send buffer for the MNK data. */
+    vector<long> sendBufMNK(3*GEMM_Profile_NCalls.size());
+    for(map<long3T, int>::iterator MI =GEMM_Profile_MNK.begin();
+                                   MI!=GEMM_Profile_MNK.end(); ++MI) {
+
+      const int ind = 3*MI->second;
+      sendBufMNK[ind]   = MI->first.long0;
+      sendBufMNK[ind+1] = MI->first.long1;
+      sendBufMNK[ind+2] = MI->first.long2;
+    }
+
+    /* Send the data to the master node using blocking sends. */
+    SU2_MPI::Send(GEMM_Profile_NCalls.data(), GEMM_Profile_NCalls.size(),
+                  MPI_LONG, MASTER_NODE, 0, MPI_COMM_WORLD);
+    SU2_MPI::Send(GEMM_Profile_TotTime.data(), GEMM_Profile_TotTime.size(),
+                  MPI_DOUBLE, MASTER_NODE, 1, MPI_COMM_WORLD);
+    SU2_MPI::Send(GEMM_Profile_MinTime.data(), GEMM_Profile_MinTime.size(),
+                  MPI_DOUBLE, MASTER_NODE, 2, MPI_COMM_WORLD);
+    SU2_MPI::Send(GEMM_Profile_MaxTime.data(), GEMM_Profile_MaxTime.size(),
+                  MPI_DOUBLE, MASTER_NODE, 3, MPI_COMM_WORLD);
+    SU2_MPI::Send(sendBufMNK.data(), sendBufMNK.size(),
+                  MPI_LONG, MASTER_NODE, 4, MPI_COMM_WORLD);
+  }
+
 #endif
 
-  /*--- Each rank has the same stack trace, so the they have the same
-   function calls and ordering in the vectors. We're going to reduce
-   the timings from each rank and extract the avg, min, and max timings. ---*/
-
-  /*--- First, create a local mapping, so that we can extract the
-   min and max values for each function. ---*/
-
-  for (unsigned int i = 0; i < GEMM_Profile_Function.size(); i++) {
-
-    /*--- Add the function and initialize if not already stored (the ID
-     only needs to be stored the first time).---*/
-
-    if (GEMM_Profile_Map.find(GEMM_Profile_Function[i]) == GEMM_Profile_Map.end()) {
-
-      vector<int> profile; profile.push_back(i);
-      GEMM_Profile_Map.insert(pair<string,vector<int> >(GEMM_Profile_Function[i],profile));
-
-    } else {
-
-      /*--- This function has already been added, so simply increment the
-       number of calls and total time for this function. ---*/
-
-      GEMM_Profile_Map[GEMM_Profile_Function[i]].push_back(i);
-
-    }
-  }
-
-  /*--- We now have everything gathered by function name, so we can loop over
-   each function and store the min/max times. ---*/
-
-  int map_size = 0;
-  for (map<string,vector<int> >::iterator it=GEMM_Profile_Map.begin(); it!=GEMM_Profile_Map.end(); ++it) {
-    map_size++;
-  }
-
-  /*--- Allocate and initialize memory ---*/
-
-  double *l_min_red, *l_max_red, *l_tot_red, *l_avg_red;
-  int *n_calls_red;
-  double* l_min = new double[map_size];
-  double* l_max = new double[map_size];
-  double* l_tot = new double[map_size];
-  double* l_avg = new double[map_size];
-  int* n_calls  = new int[map_size];
-  for (int i = 0; i < map_size; i++)
-  {
-    l_min[i]   = 1e10;
-    l_max[i]   = 0.0;
-    l_tot[i]   = 0.0;
-    l_avg[i]   = 0.0;
-    n_calls[i] = 0;
-  }
-
-  /*--- Collect the info for each function from the current rank ---*/
-
-  int func_counter = 0;
-  for (map<string,vector<int> >::iterator it=GEMM_Profile_Map.begin(); it!=GEMM_Profile_Map.end(); ++it) {
-
-    for (unsigned int i = 0; i < (it->second).size(); i++) {
-      n_calls[func_counter]++;
-      l_tot[func_counter] += GEMM_Profile_Time[(it->second)[i]];
-      if (Profile_Time_tp[(it->second)[i]] < l_min[func_counter])
-        l_min[func_counter] = GEMM_Profile_Time[(it->second)[i]];
-      if (Profile_Time_tp[(it->second)[i]] > l_max[func_counter])
-        l_max[func_counter] = GEMM_Profile_Time[(it->second)[i]];
-
-    }
-    l_avg[func_counter] = l_tot[func_counter]/((double)n_calls[func_counter]);
-    func_counter++;
-  }
-
-  /*--- Now reduce the data ---*/
-
-  if (rank == MASTER_NODE) {
-    l_min_red = new double[map_size];
-    l_max_red = new double[map_size];
-    l_tot_red = new double[map_size];
-    l_avg_red = new double[map_size];
-    n_calls_red  = new int[map_size];
-  }
-  MPI_Reduce(n_calls, n_calls_red, map_size, MPI_INT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_tot, l_tot_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_avg, l_avg_red, map_size, MPI_DOUBLE, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_min, l_min_red, map_size, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Reduce(l_max, l_max_red, map_size, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-
   /*--- The master rank will write the file ---*/
-
   if (rank == MASTER_NODE) {
 
-    /*--- Take averages over all ranks on the master ---*/
+    /* Store the elements of the map GEMM_Profile_MNK in
+       vectors for post processing reasons. */
+    const unsigned int nItems = GEMM_Profile_MNK.size();
+    vector<long> M(nItems), N(nItems), K(nItems);
+    for(map<long3T, int>::iterator MI =GEMM_Profile_MNK.begin();
+                                   MI!=GEMM_Profile_MNK.end(); ++MI) {
 
-    for (int i = 0; i < map_size; i++) {
-      l_tot_red[i]   = l_tot_red[i]/(double)size;
-      l_avg_red[i]   = l_avg_red[i]/(double)size;
-      n_calls_red[i] = n_calls_red[i]/size;
+      const int ind = MI->second;
+      M[ind] = MI->first.long0;
+      N[ind] = MI->first.long1;
+      K[ind] = MI->first.long2;
     }
 
-    /*--- Now write a CSV file with the processed results ---*/
+    /* In order to create a nicer output the profiling data is sorted in
+       terms of CPU time spent. Create a vector of pairs for carrying
+       out this sort. */
+    vector<pair<double, unsigned int> > sortedTime;
 
+    for(unsigned int i=0; i<GEMM_Profile_TotTime.size(); ++i)
+      sortedTime.push_back(make_pair(GEMM_Profile_TotTime[i], i));
+
+    sort(sortedTime.begin(), sortedTime.end());
+
+    /* Open the profiling file. */
     char cstr[200];
     ofstream Profile_File;
     strcpy (cstr, "gemm_profiling.csv");
 
-    /*--- Prepare and open the file ---*/
-
     Profile_File.precision(15);
     Profile_File.open(cstr, ios::out);
 
-    /*--- Create the CSV header ---*/
+    /* Create the CSV header */
+    Profile_File << "\"Total_Time\", \"N_Calls\", \"Avg_Time\", \"Min_Time\", \"Max_Time\", \"M\", \"N\", \"K\", \"Avg GFLOPs\"" << endl;
 
-    Profile_File << "\"Function_Name\", \"N_Calls\", \"Avg_Total_Time\", \"Avg_Time\", \"Min_Time\", \"Max_Time\", \"M\", \"N\", \"K\"" << endl;
+    /* Loop through the different items, where the item with the largest total time is
+       written first. As sortedTime is sorted in increasing order, the sequence of
+       sortedTime must be reversed. */
+    for(vector<pair<double, unsigned int> >::reverse_iterator rit =sortedTime.rbegin();
+                                                              rit!=sortedTime.rend(); ++rit) {
+      /* Determine the original index in the profiling vectors. */
+      const unsigned int ind = rit->second;
+      const double AvgTime = GEMM_Profile_TotTime[ind]/GEMM_Profile_NCalls[ind];
+      const double GFlops   = 2.0e-9*M[ind]*N[ind]*K[ind]/AvgTime;
 
-    /*--- Loop through the map and write the results to the file ---*/
-
-    func_counter = 0;
-    for (map<string,vector<int> >::iterator it=GEMM_Profile_Map.begin(); it!=GEMM_Profile_Map.end(); ++it) {
-
-      Profile_File << scientific << it->first << ", " << n_calls_red[func_counter] << ", " << l_tot_red[func_counter] << ", " << l_avg_red[func_counter] << ", " << l_min_red[func_counter] << ", " << l_max_red[func_counter] << ", " << (int)GEMM_Profile_M[(it->second)[0]] << ", " << (int)GEMM_Profile_N[(it->second)[0]] << ", " << (int)GEMM_Profile_K[(it->second)[0]] << endl;
-      func_counter++;
+      /* Write the data. */
+      Profile_File << scientific << GEMM_Profile_TotTime[ind] << ", " << GEMM_Profile_NCalls[ind] << ", "
+                   << AvgTime << ", " << GEMM_Profile_MinTime[ind] << ", " << GEMM_Profile_MaxTime[ind] << ", "
+                   << M[ind] << ", " << N[ind] << ", " << K[ind] << ", " << GFlops << endl;
     }
 
+    /* Close the file. */
     Profile_File.close();
-
-  }
-
-  delete [] l_min;
-  delete [] l_max;
-  delete [] l_avg;
-  delete [] l_tot;
-  delete [] n_calls;
-  if (rank == MASTER_NODE) {
-    delete [] l_min_red;
-    delete [] l_max_red;
-    delete [] l_avg_red;
-    delete [] l_tot_red;
-    delete [] n_calls_red;
   }
 
 #endif

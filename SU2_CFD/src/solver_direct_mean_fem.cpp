@@ -4726,7 +4726,7 @@ void CFEM_DG_EulerSolver::ADER_DG_PredictorStep(CConfig             *config,
         /* Carry out the multiplication with the inverse of the mass matrix.
            The result is stored in resInt as temporary storage. */
         su2_gemm(nDOFs, NPadDOF, nDOFs, volElem[l].invMassMatrix.data(),
-                 res, resInt);
+                 res, resInt, config);
 
         /* Make a distinction between 2D and 3D for performance reasons. */
         switch( nDim ) {
@@ -4984,8 +4984,8 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -5047,7 +5047,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
+    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt, config);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5090,7 +5090,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -5194,9 +5194,9 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF, gradFluxZInt);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF, gradFluxZInt, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -5275,7 +5275,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
+    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt, config);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5321,7 +5321,7 @@ void CFEM_DG_EulerSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -5366,7 +5366,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
   /*--- the call to su2_gemm is nInt*(nDim+1).                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  su2_gemm(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the inviscid fluxes, multiplied by the   ---*/
@@ -5481,7 +5481,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig        
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -5527,7 +5527,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
   /*--- the call to su2_gemm is nInt*(nDim+1).                             ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  su2_gemm(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt, config);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -5666,7 +5666,7 @@ void CFEM_DG_EulerSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig        
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_EulerSolver::ADER_DG_TimeInterpolatePredictorSol(CConfig             *config,
@@ -5845,7 +5845,7 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product to determine
        the solution in the integration points of the chunk of elements. */
-    su2_gemm(nInt, NPad, nDOFs, matBasisInt, solDOFs, solInt);
+    su2_gemm(nInt, NPad, nDOFs, matBasisInt, solDOFs, solInt, config);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the inviscid fluxes, multiplied by minus the     ---*/
@@ -6114,14 +6114,14 @@ void CFEM_DG_EulerSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product.
        Use solDOFs as a temporary storage for the matrix product. */
-    su2_gemm(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs);
+    su2_gemm(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs, config);
 
     /* Add the contribution from the source terms, if needed. Use solInt
        as temporary storage for the matrix product. */
     if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
-      su2_gemm(nDOFs, NPad, nInt, matBasisIntTrans, sources, solInt);
+      su2_gemm(nDOFs, NPad, nInt, matBasisIntTrans, sources, solInt, config);
 
       /* Add the residuals due to source terms to the volume residuals */
       for(unsigned short i=0; i<(nDOFs*NPad); ++i)
@@ -6298,7 +6298,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     su2double *resSide0 = solIntL;
 
     /* Call the general function to carry out the matrix product. */
-    su2_gemm(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0);
+    su2_gemm(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0, config);
 
     /* Check if the number of DOFs on both sides of the face is different.
        In that case also the matrix product with the basis functions on side 1
@@ -6307,7 +6307,7 @@ void CFEM_DG_EulerSolver::ResidualFaces(CConfig             *config,
     su2double *resSide1 = solIntR;
     if(nDOFsFace1 != nDOFsFace0) {
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-      su2_gemm(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1);
+      su2_gemm(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1, config);
     }
 
     /* Loop over the number of faces in this chunk. */
@@ -6430,7 +6430,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
   /* Compute the left states. Call the general function to
      carry out the matrix product. */
-  su2_gemm(nInt, NPad, nDOFsFace0, basisFace0, solFace, solIntL);
+  su2_gemm(nInt, NPad, nDOFsFace0, basisFace0, solFace, solIntL, config);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 2: Interpolate the right state in the integration points of ---*/
@@ -6477,7 +6477,7 @@ void CFEM_DG_EulerSolver::InviscidFluxesInternalMatchingFace(
 
   /* Compute the right states. Call the general function to
      carry out the matrix product. */
-  su2_gemm(nInt, NPad, nDOFsFace1, basisFace1, solFace, solIntR);
+  su2_gemm(nInt, NPad, nDOFsFace1, basisFace1, solFace, solIntR, config);
 
   /*------------------------------------------------------------------------*/
   /*--- Step 3: Compute the fluxes in the integration points using the   ---*/
@@ -6707,7 +6707,7 @@ void CFEM_DG_EulerSolver::MultiplyResidualByInverseMassMatrix(
          Use the array workArray as temporary storage. */
       memcpy(workArray, res, nVar*volElem[l].nDOFsSol*sizeof(su2double));
       su2_gemm(volElem[l].nDOFsSol, nVar, volElem[l].nDOFsSol,
-               volElem[l].invMassMatrix.data(), workArray, res);
+               volElem[l].invMassMatrix.data(), workArray, res, config);
     }
   }
 }
@@ -6862,7 +6862,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
-          su2_gemm(nInt, NPad, nDOFs, basisFace, workArray, solInt);
+          su2_gemm(nInt, NPad, nDOFs, basisFace, workArray, solInt, config);
 
           /* Make a distinction between two and three space dimensions
              in order to have the most efficient code. */
@@ -8671,7 +8671,7 @@ void CFEM_DG_EulerSolver::ResidualInviscidBoundaryFace(
 
   /* Call the general function to carry out the matrix product. Use solint0
      as temporary storage for the result. */
-  su2_gemm(nDOFs, NPad, nInt, basisFaceTrans, fluxes, solInt0);
+  su2_gemm(nDOFs, NPad, nInt, basisFaceTrans, fluxes, solInt0, config);
 
   /* Loop over the number of simultaneously treated faces to store the
      residual in the correct locations in resFaces. */
@@ -8734,7 +8734,7 @@ void CFEM_DG_EulerSolver::LeftStatesIntegrationPointsBoundaryFace(
   }
 
   /* Call the general function to carry out the matrix product. */
-  su2_gemm(nInt, NPad, nDOFs, basisFace, solFace, solIntL);
+  su2_gemm(nInt, NPad, nDOFs, basisFace, solFace, solIntL, config);
 }
 
 void CFEM_DG_EulerSolver::ComputeInviscidFluxesFace(CConfig              *config,
@@ -9799,7 +9799,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Call the general function to carry out the matrix product to determine
              the solution in the integration points. */
-          su2_gemm(nInt, NPad, nDOFsFace, basisFace, solCopy, solInt);
+          su2_gemm(nInt, NPad, nDOFsFace, basisFace, solCopy, solInt, config);
 
           /*--- Store the solution of the DOFs of the adjacent elements in contiguous
                 memory such that the function su2_gemm can be used to compute the
@@ -9817,7 +9817,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
           /* Compute the gradients in the integration points. Call the general function to
              carry out the matrix product. */
-          su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solCopy, gradSolInt);
+          su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solCopy, gradSolInt, config);
 
           /* Determine the offset between r- and -s-derivatives, which is also the
              offset between s- and t-derivatives. */
@@ -10350,7 +10350,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
 
            /* Call the general function to carry out the matrix product to determine
               the gradients in the DOFs of this chunk of elements. */
-           su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, solDOFs, gradSolDOFs);
+           su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, solDOFs, gradSolDOFs, config);
         }
 
         /*--- Make a distinction between 2D and 3D for optimal performance. ---*/
@@ -10701,7 +10701,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
 
   /* Compute the derivatives of the solution variables w.r.t. the parametric
      coordinates in the DOFs. */
-  su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+  su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs, config);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -10813,8 +10813,8 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -10876,7 +10876,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
+    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt, config);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -10919,7 +10919,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_2D(CConfig              
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              *config,
@@ -10978,7 +10978,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
 
   /* Compute the derivatives of the solution variables w.r.t. the parametric
      coordinates in the DOFs. */
-  su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs);
+  su2_gemm(nDOFs*nDim, NPad, nDOFs, matDerBasisSolDOFs, sol, gradSolDOFs, config);
 
   /*--- Loop over the number of entities that are treated simultaneously. */
   for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -11130,9 +11130,9 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
   /*--- parametric coordinates in the integration points.                  ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt);
-  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF, gradFluxZInt);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxXDOF, gradFluxXInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxYDOF, gradFluxYInt, config);
+  su2_gemm(nInt*nDim, NPad, nDOFs, matDerBasisInt, fluxZDOF, gradFluxZInt, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of the fluxes in the integration points,    ---*/
@@ -11211,7 +11211,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
        Use gradFluxYInt to store this solution. */
     su2double *solInt = gradFluxYInt;
 
-    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt);
+    su2_gemm(nInt, NPad, nDOFs, matBasisInt, sol, solInt, config);
 
     /*--- Loop over the number of entities that are treated simultaneously. */
     for(unsigned short simul=0; simul<nSimul; ++simul) {
@@ -11257,7 +11257,7 @@ void CFEM_DG_NSSolver::ADER_DG_AliasedPredictorResidual_3D(CConfig              
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig              *config,
@@ -11330,11 +11330,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
-  su2_gemm(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  su2_gemm(nInt*3, NPad, nDOFs, matBasisInt, sol, solAndGradInt, config);
 
   /* Compute the second derivatives w.r.t. the parametric coordinates
      in the integration points. */
-  su2_gemm(nInt*3, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
+  su2_gemm(nInt*3, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of viscous fluxes, multiplied by the        ---*/
@@ -11600,7 +11600,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_2D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig              *config,
@@ -11674,11 +11674,11 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
 
   /* Compute the solution and the derivatives w.r.t. the parametric coordinates
      in the integration points. The first argument is nInt*(nDim+1). */
-  su2_gemm(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt);
+  su2_gemm(nInt*4, NPad, nDOFs, matBasisInt, sol, solAndGradInt, config);
 
   /* Compute the second derivatives w.r.t. the parametric coordinates
      in the integration points. */
-  su2_gemm(nInt*6, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol);
+  su2_gemm(nInt*6, NPad, nDOFs, mat2ndDerBasisInt, sol, secDerSol, config);
 
   /*--------------------------------------------------------------------------*/
   /*--- Compute the divergence of viscous fluxes, multiplied by the        ---*/
@@ -12113,7 +12113,7 @@ void CFEM_DG_NSSolver::ADER_DG_NonAliasedPredictorResidual_3D(CConfig           
   /*--- basisFunctionsIntTrans and divFlux.                                ---*/
   /*--------------------------------------------------------------------------*/
 
-  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res);
+  su2_gemm(nDOFs, NPad, nInt, basisFunctionsIntTrans, divFlux, res, config);
 }
 
 void CFEM_DG_NSSolver::Shock_Capturing_DG(CConfig             *config,
@@ -12376,7 +12376,7 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
     /* Call the general function to carry out the matrix product to determine
        the solution and gradients in the integration points of the chunk
        of elements. */
-    su2_gemm(nInt*(nDim+1), NPad, nDOFs, matBasisInt, solDOFs, solAndGradInt);
+    su2_gemm(nInt*(nDim+1), NPad, nDOFs, matBasisInt, solDOFs, solAndGradInt, config);
 
     /*------------------------------------------------------------------------*/
     /*--- Step 2: Compute the total fluxes (inviscid fluxes minus the      ---*/
@@ -12847,14 +12847,14 @@ void CFEM_DG_NSSolver::Volume_Residual(CConfig             *config,
 
     /* Call the general function to carry out the matrix product.
        Use solDOFs as a temporary storage for the matrix product. */
-    su2_gemm(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs);
+    su2_gemm(nDOFs, NPad, nInt*nDim, matDerBasisIntTrans, fluxes, solDOFs, config);
 
     /* Add the contribution from the source terms, if needed. Use solAndGradInt
        as temporary storage for the matrix product. */
     if( addSourceTerms ) {
 
       /* Call the general function to carry out the matrix product. */
-      su2_gemm(nDOFs, NPad, nInt, matBasisIntTrans, sources, solAndGradInt);
+      su2_gemm(nDOFs, NPad, nInt, matBasisIntTrans, sources, solAndGradInt, config);
 
       /* Add the residuals due to source terms to the volume residuals */
       for(unsigned short i=0; i<(nDOFs*NPad); ++i)
@@ -13007,7 +13007,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     /* Compute the gradients w.r.t. the parametric coordinates in the integration
        points. Call the general function to carry out the matrix product. */
-    su2_gemm(nInt*nDim, NPad, nDOFsElem0, derBasisElem, solElem, gradSolInt);
+    su2_gemm(nInt*nDim, NPad, nDOFsElem0, derBasisElem, solElem, gradSolInt, config);
 
     /*--- Loop over the faces in this chunk to compute the viscous flux
           vector for side 0. */
@@ -13080,7 +13080,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
 
     /* Compute the gradients w.r.t. the parametric coordinates in the integration
        points. Call the general function to carry out the matrix product. */
-    su2_gemm(nInt*nDim, NPad, nDOFsElem1, derBasisElem, solElem, gradSolInt);
+    su2_gemm(nInt*nDim, NPad, nDOFsElem1, derBasisElem, solElem, gradSolInt, config);
 
     /*--- Loop over the faces in this chunk to compute the viscous flux
           vector for side 1. */
@@ -13165,7 +13165,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     su2double *resSide0 = gradSolInt;
 
     /* Call the general function to carry out the matrix product. */
-    su2_gemm(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0);
+    su2_gemm(nDOFsFace0, NPad, nInt, basisFaceTrans, fluxes, resSide0, config);
 
     /* Check if the number of DOFs on both sides of the face is different.
        In that case also the matrix product with the basis functions on side 1
@@ -13174,7 +13174,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
     su2double *resSide1 = viscFluxes;
     if(nDOFsFace1 != nDOFsFace0) {
       basisFaceTrans = standardMatchingFacesSol[ind].GetBasisFaceIntegrationTransposeSide1();
-      su2_gemm(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1);
+      su2_gemm(nDOFsFace1, NPad, nInt, basisFaceTrans, fluxes, resSide1, config);
     }
 
     /* Loop over the number of faces in this chunk. */
@@ -13247,7 +13247,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
       /* Call the general function to carry out the matrix product to compute
          the residual for side 0. Use solIntL as storage for the residual. */
       const su2double *derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide0();
-      su2_gemm(nDOFsElem0, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntL);
+      su2_gemm(nDOFsElem0, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntL, config);
 
       /* Loop over the faces in this chunk to compute the transformed
          symmetrizing fluxes for side 1. */
@@ -13263,7 +13263,7 @@ void CFEM_DG_NSSolver::ResidualFaces(CConfig             *config,
          be negated, because two minus signs enter the formulation for side 1,
          which cancel each other. Use solIntR as storage for the residual. */
       derBasisElemTrans = standardMatchingFacesSol[ind].GetMatDerBasisElemIntegrationTransposeSide1();
-      su2_gemm(nDOFsElem1, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntR);
+      su2_gemm(nDOFsElem1, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, solIntR, config);
 
       /* Loop over the number of faces in this chunk. */
       for(unsigned short ll=0; ll<llEnd; ++ll) {
@@ -14369,7 +14369,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
 
     /* Compute the left gradients in the integration points. Call the general
        function to carry out the matrix product. */
-    su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt);
+    su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt, config);
 
     /*-----------------------------------------------------------------------*/
     /*--- Step 3: Computation of the viscous fluxes in the integration    ---*/
@@ -15339,7 +15339,7 @@ void CFEM_DG_NSSolver::ComputeViscousFluxesBoundaryFaces(
 
   /* Compute the gradients in the integration points. Call the general function to
      carry out the matrix product. */
-  su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt);
+  su2_gemm(nInt*nDim, NPad, nDOFsElem, derBasisElem, solElem, gradSolInt, config);
 
   /*---------------------------------------------------------------------------*/
   /*--- Step 2: Compute the viscous normal fluxes in the integration points ---*/
@@ -15402,7 +15402,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                          - surfElem[l].nIntPerWallFunctionDonor[j];
 
       su2_gemm(nIntThisDonor, nVar, nDOFsElem, surfElem[l].matWallFunctionDonor[j].data(),
-               solDOFsElem, workArray);
+               solDOFsElem, workArray, config);
 
       /* Loop over the integration points for this donor element. */
       for(unsigned short i=surfElem[l].nIntPerWallFunctionDonor[j];
@@ -15582,7 +15582,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
 
   /* Call the general function to carry out the matrix product. Use viscFluxes
      as temporary storage for the result. */
-  su2_gemm(nDOFs, NPad, nInt, basisFaceTrans, fluxes, viscFluxes);
+  su2_gemm(nDOFs, NPad, nInt, basisFaceTrans, fluxes, viscFluxes, config);
 
   /* Loop over the number of faces in this chunk to store the residual in
      the correct locations in resFaces. */
@@ -15632,7 +15632,7 @@ void CFEM_DG_NSSolver::ResidualViscousBoundaryFace(
        the residual. Use fluxes as temporary storage for the result. */
     const su2double *derBasisElemTrans = standardBoundaryFacesSol[ind].GetMatDerBasisElemIntegrationTranspose();
 
-    su2_gemm(nDOFsElem, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, fluxes);
+    su2_gemm(nDOFsElem, NPad, nInt*nDim, derBasisElemTrans, paramFluxes, fluxes, config);
 
     /* Loop over the faces of this chunk to store the residual in
        the correct locations in resFaces. */
