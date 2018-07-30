@@ -1909,3 +1909,11 @@ inline string CConfig::GetTopology_Optim_FileName(void) { return top_optim_outpu
 inline su2double CConfig::GetSIMP_Exponent(void) { return simp_exponent; }
 
 inline su2double CConfig::GetSIMP_MinStiffness(void) { return simp_minimum_stiffness; }
+
+inline su2double CConfig::GetTopology_Optim_Filter_Radius(void) { return top_optim_filter_radius; }
+  
+inline unsigned short CConfig::GetTopology_Optim_Num_Kernels(void) { return top_optim_nKernel; }
+  
+inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type, su2double &param) {
+  type = top_optim_kernels[iKernel];  param = top_optim_kernel_params[iKernel];
+}
