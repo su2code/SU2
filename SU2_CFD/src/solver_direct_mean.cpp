@@ -11900,7 +11900,8 @@ void CEulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **solver_con
   /*--- Free locally allocated memory ---*/
   
   delete [] Normal;
-  
+  delete [] Velocity;
+
 }
 
 void CEulerSolver::BC_Supersonic_Outlet(CGeometry *geometry, CSolver **solver_container,
