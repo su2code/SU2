@@ -1015,6 +1015,11 @@ private:
   string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
   su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
+  su2double top_optim_filter_radius; /*!< \brief Radius of the filter used on the design density for topology optimization. */
+  unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
+                *top_optim_kernels, /*!< \brief The kernels to use. */
+                 top_optim_nKernelParams; /*!< \brief Number of kernel parameters specified. */
+  su2double *top_optim_kernel_params; /*!< \brief The kernel parameters. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
@@ -8515,6 +8520,21 @@ public:
    */
   su2double GetSIMP_MinStiffness(void);
   
+  /*!
+   * \brief Get the radius for the filter used in topology optimization.
+   */
+  su2double GetTopology_Optim_Filter_Radius(void);
+  
+  /*!
+   * \brief Number of kernels to use in filtering the design density field.
+   */
+  unsigned short GetTopology_Optim_Num_Kernels(void);
+  
+  /*!
+   * \brief Get the i'th kernel to use and its parameter.
+   */
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type, su2double &param);
+
 };
 
 #include "config_structure.inl"
