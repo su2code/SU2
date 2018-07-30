@@ -900,9 +900,9 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   	Preprocessing(iPhi, iIter);
     Spreading(iPhi);
     Stratification(iPhi);
-   //  if(flt_h - ray_z > 250.){
+    // if(flt_h - ray_z > 2000.){
       Relaxation(iPhi, iIter);
-   //  }
+    // }
     Attenuation(iPhi);
   	Nonlinearity(iPhi);
     // Preprocessing(iPhi, iIter);
@@ -924,6 +924,7 @@ int rank = 0;
 #endif
 
   if(rank == MASTER_NODE){
+    AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
     cout << "iIter = " << iIter << ", z = " << ray_z << ", A = " << ray_A << ", p = " << p_inf << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
     cout << "Signal propagated in " << iIter << " iterations." << endl;
   }
@@ -971,15 +972,17 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     M_a = p_peak/(rho0*pow(c0,2));
     cout << "Acoustic Mach number: " << M_a << endl;
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/(flt_U);
+      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/flt_U ;
   	}
     f0 = flt_U/scale_L; // Characteristic time governed by length of signal
     // f0 = ((flt_U/flt_M))/scale_L; // Characteristic time governed by length of signal
+    // f0 = M_a*c0/scale_L; // Characteristic time governed by length of signal
     w0 = 2.*M_PI*f0; 
     c0_old = c0;
     // p0 = Pr;
     // p0 = 50;
-    p0 = 101328.2042877057; // From sBOOM output
+    // p0 = 101328.2042877057; // From sBOOM output
+    p0 = p_inf;
     // p0 = p_peak;
     //142.5 // search KZK Boston University
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
@@ -999,51 +1002,20 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     SPRINTF (filename, "nearfield_%d.dat", SU2_TYPE::Int(iPhi));
     sigFile.precision(15);
     sigFile.open(filename, ios::out);
-    // if(iPhi == 0) sigFile << "#T, p" << endl;
     for(int j = 0; j < signal.len[iPhi]; j++){
       sigFile << signal.tau[j]/w0 << "\t" << signal.P[j] << endl;
     }
     sigFile.close();
-
-    // max_dp = 0;
-    // for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-    //   max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
-    // }
   }
+
   else{
-    c0_old = c0;
-    rho0_old = rho0;
     AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
 
-    p_peak = 0.;
+    p_peak = 0., max_dp = 0.;
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       p_peak = max(p_peak, signal.P[i]*p0);
+      // if(i > 0) max_dp = max(max_dp, signal.P[i]-signal.P[i-1]);
     }
-
-    // unsigned long istart = 0, iend = signal.len[iPhi]-1;
-    // for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    //   if(abs(signal.P[i]*p0) > 1.0E-3){
-    //     istart = i;
-    //     break;
-    //   }
-    // }
-
-    // for(unsigned long i = signal.len[iPhi]-1; i >= istart+1; i--){
-    //   if(abs(signal.P[i]*p0) > 1.0E-3){
-    //     iend = i;
-    //     break;
-    //   }
-    // }
-    // for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    //   signal.tau[i] *= scale_L/(signal.x[iPhi][iend] - signal.x[iPhi][istart]);
-    // }
-    // scale_L = signal.x[iPhi][iend] - signal.x[iPhi][istart];
-    // w0 = 2.*M_PI*flt_U/scale_L; 
-    
-    // max_dp = 0;
-    // for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-    //   max_dp = max(max_dp, signal.P[i+1]-signal.P[i]);
-    // }
   }
 
   /*---Humidity---*/
@@ -1052,8 +1024,12 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   c0 *= (1+0.0016*h); // Humidity correction to speed of sound
 
   /*---Compute other coefficients needed for solution of ABE---*/
-  xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
-  // xbar = rho0*pow(c0,3)/(beta*w0*p0);
+  // xbar = rho0*pow(c0,3)/(beta*w0*p_peak);
+  // xbar = rho0*pow(c0,3)/(beta*w0*47.88); // pref = 1 psf
+  // xbar = rho0*pow(c0,3)/(beta*w0*2394); // pref = 50 psf
+  // xbar = rho0*pow(c0,3)/(beta*w0*Pr);
+  // xbar = rho0*pow(c0,3)/(beta*w0*p_inf);
+  xbar = rho0*pow(c0,3)/(beta*w0*p0);
   // xbar      = rho0*pow(c0,3)/(beta*max_dp*p0*w0/dtau);
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
   kappa     = kappa0*pow(T_inf/T0,1.5)*(T0+Ta*exp(-Tb/T0))/(T_inf+Ta*exp(-Tb/T_inf));
@@ -1064,48 +1040,22 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
 
-  // m_nu_O2 = c0*A_nu_O2/M_PI;
-  // m_nu_N2 = c0*A_nu_N2/M_PI;
-  // // m_nu_O2 = 2.*c0*A_nu_O2;
-  // // m_nu_N2 = 2.*c0*A_nu_N2;
-
-  // // m_nu_O2 = exp(-m_nu_O2); // Convert from [Np] to [-]
-  // // m_nu_N2 = exp(-m_nu_N2);
-
   su2double f_nu_O2 = p_inf/Pr * (24. + 4.04E4*h*(0.02+h)/(0.391+h));
   su2double f_nu_N2 = p_inf/Pr * sqrt(Tr/T_inf) * (9. + 280.*h*exp(-4.170*(pow(Tr/T_inf, 1./3.) - 1.)));
 
   theta_nu_O2 = f0/f_nu_O2;
   theta_nu_N2 = f0/f_nu_N2;
+  // theta_nu_O2 = w0/f_nu_O2;
+  // theta_nu_N2 = w0/f_nu_N2;
 
   C_nu_O2 = A_nu_O2 * f0 * xbar * theta_nu_O2;
   C_nu_N2 = A_nu_N2 * f0 * xbar * theta_nu_N2;
-
-  // // tau_nu_O2 = 1./(2.*M_PI*f_nu_O2);
-  // // tau_nu_N2 = 1./(2.*M_PI*f_nu_N2);
-  // tau_nu_O2 = 1./(f_nu_O2);
-  // tau_nu_N2 = 1./(f_nu_N2);
-
-  // theta_nu_O2 = w0*tau_nu_O2;
-  // theta_nu_N2 = w0*tau_nu_N2;
-  // // theta_nu_O2 = 2.*M_PI*w0*tau_nu_O2;
-  // // theta_nu_N2 = 2.*M_PI*w0*tau_nu_N2;
-
-  // // C_nu_O2 = m_nu_O2*theta_nu_O2*w0*xbar/(2*c0);
-  // // C_nu_N2 = m_nu_N2*theta_nu_N2*w0*xbar/(2*c0);
-  // // C_nu_O2 = m_nu_O2*tau_nu_O2*pow(w0,2)*xbar/(2*c0);
-  // // C_nu_N2 = m_nu_N2*tau_nu_N2*pow(w0,2)*xbar/(2*c0);
-  // C_nu_O2 = m_nu_O2*tau_nu_O2*w0*rho0*pow(c0,2)/(beta*p_peak);
-  // C_nu_N2 = m_nu_N2*tau_nu_N2*w0*rho0*pow(c0,2)/(beta*p_peak);
-
-  // C_nu_O2 = exp(-C_nu_O2); // Convert from [Np] to [-]
-  // C_nu_N2 = exp(-C_nu_N2);
+  // C_nu_O2 = A_nu_O2 * w0 * xbar * theta_nu_O2;
+  // C_nu_N2 = A_nu_N2 * w0 * xbar * theta_nu_N2;
 
   if(iIter == 0){
-    // dsigma = 0.02*dtau;
-    // dsigma_old = 0.2*dtau;
     dsigma = 0.001;
-    dsigma_old = 0.0015;
+    dsigma_old = 0.01;
     su2double uwind = 0., vwind = 0.;
     su2double ds = xbar*dsigma;
     su2double dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
@@ -1115,13 +1065,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   }
   else DetermineStepSize(iPhi);
 
-  // if(iIter == 0) dsigma_old = 100.;
-  // DetermineStepSize(iPhi);
-
-
   if(iIter%100 == 0){
-    // cout << "iIter = " << iIter << ", z = " << ray_z << ", p = " << p_inf << ", C_nu_O2 = " << C_nu_O2 << ", C_nu_N2 = " << C_nu_N2;
-    // cout << ", theta_nu_O2 = " << theta_nu_O2 << ", theta_nu_N2 = " << theta_nu_N2 << ", Gamma = " << Gamma << ", xbar = " << xbar << endl;
     cout << "iIter = " << iIter << ", z = " << ray_z << ", A = " << ray_A << ", p = " << p_inf << ", p_peak = " << p_peak << ", xbar = " << xbar << endl;
   }
 
@@ -1132,14 +1076,14 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Clip signal---*/
   unsigned long istart = 0, iend = signal.len[iPhi]-1;
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
+    if(abs(signal.p_prime[iPhi][i]/p_inf) > 1.0E-3){
       istart = i;
       break;
     }
   }
 
   for(unsigned long i = signal.len[iPhi]-1; i >= istart+1; i--){
-    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
+    if(abs(signal.p_prime[iPhi][i]/p_inf) > 1.0E-3){
       iend = i;
       break;
     }
@@ -1147,27 +1091,6 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   scale_L = signal.x[iPhi][iend] - signal.x[iPhi][istart];
   unsigned long len_new = signal.len[iPhi];
   su2double *xtmp, *ptmp;
-
-  // unsigned long len_new = iend-istart+1;
-  // su2double *xtmp = new su2double[len_new],
-  //           *ptmp = new su2double[len_new];
-
-  // for(unsigned long i = istart; i < iend+1; i++){
-  //   xtmp[i-istart] = signal.x[iPhi][i];
-  //   ptmp[i-istart] = signal.p_prime[iPhi][i];
-  // }
-
-  // signal.len[iPhi] = len_new;
-  // signal.x[iPhi] = new su2double[len_new];
-  // signal.p_prime[iPhi] = new su2double[len_new];
-  // for(unsigned long i = 0; i < len_new; i++){
-  //   signal.x[iPhi][i] = xtmp[i];
-  //   signal.p_prime[iPhi][i] = ptmp[i];
-  // }
-  // scale_L = signal.x[iPhi][len_new-1] - signal.x[iPhi][0];
-
-  // cout << "Nearfield signal clipped to " << len_new << " points." << endl;
-  cout << "Length scale of waveform = " << scale_L << " m." << endl;
 
   /*---Loop over signal and find smallest spacing---*/
   su2double dx, dx_min = scale_L/5001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
@@ -1197,10 +1120,10 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Store new signal---*/
   su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
   unsigned long len_recompress = ceil(2.*scale_L/dx_min);
-  signal.len[iPhi] = ceil(len_new+len_recompress*2.5);
+  signal.len[iPhi] = ceil(len_new+len_recompress*8);
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*1.45), i1 = i0+len_new, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*4), i1 = i0+len_new, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_min*su2double(i0-i);
@@ -1223,6 +1146,8 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   }
 
   cout << "Signal refined and padded, now contains " << signal.len[iPhi] << " points." << endl;
+  cout << "Length scale of waveform = " << scale_L << " m." << endl;
+  cout << "Sample frequency = " << flt_U/dx_min << " Hz." << endl;
 
   delete [] xtmp;
   delete [] ptmp;
@@ -1240,22 +1165,7 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
   ray_dt = 1.0E-3;
   ray_dphi = 1.0E-3;
 
-  // /*---Ray tube origin---*/
-  // ray_x[0] = 0.;
-  // ray_y[0] = ray_r0*sin(ray_phi[iPhi]);
   ray_z    = flt_h - ray_r0*cos(ray_phi[iPhi]);
-
-  // /*---Ray tube corners---*/
-  // ray_y[1] = ray_y[0];
-  // ray_x[3] = ray_x[0];
-  // ray_x[1] = ray_x[2] = ray_x[0]+(ray_dt*flt_M*c0);
-  // ray_y[2] = ray_y[3] = ray_r0*sin(ray_phi[iPhi]+ray_dphi);
-
-  // ray_lambda = pow(flt_M*flt_M-1.,-0.5);
-  // ray_gamma[0]  = asin(ray_lambda*sin(ray_phi[iPhi])*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]),2), -0.5));
-  // ray_gamma[1]  = asin(ray_lambda*sin(ray_phi[iPhi]+ray_dphi)*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]+ray_dphi),2), -0.5));
-  // ray_theta[0]  = acos(-1./(flt_M*cos(ray_gamma[0])));
-  // ray_theta[1]  = acos(-1./(flt_M*cos(ray_gamma[1])));
 
   ray_theta[0] = asin(sin(flt_mu)*sin(flt_gamma) - cos(flt_mu)*cos(flt_gamma)*cos(ray_phi[iPhi]));
   ray_theta[1] = asin(sin(flt_mu)*sin(flt_gamma) - cos(flt_mu)*cos(flt_gamma)*cos(ray_phi[iPhi]+ray_dphi));
@@ -1280,40 +1190,10 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
   su2double u[2] = {ray_x[2]-ray_x[0], ray_y[2]-ray_y[0]};
   su2double v[2] = {ray_x[3]-ray_x[1], ray_y[3]-ray_y[1]};
   su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  // su2double A_h   = 0.5*sqrt(pow(c,2))/(c0*ray_dt*ray_dphi);
   su2double A_h   = 0.5*sqrt(pow(c,2));
 
   ray_A = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);  // TODO: Add wind contribution
-  // ray_x = new su2double[4];
-  // ray_y = new su2double[4];
-  // ray_gamma = new su2double[2];
-  // ray_theta = new su2double[2];
-  // ray_dt = 1.0E-6;
-  // ray_dphi = 1.0E-6;
-
-  // /*---Ray tube origin---*/
-  // ray_x[0] = 0.;
-  // ray_y[0] = ray_r0*sin(ray_phi[iPhi]);
-  // ray_z    = flt_h - ray_r0*cos(ray_phi[iPhi]);
-
-  // /*---Ray tube corners---*/
-  // ray_y[1] = ray_y[0];
-  // ray_x[3] = ray_x[0];
-  // ray_x[1] = ray_x[2] = ray_x[0]+(ray_dt*flt_M*c0);
-  // ray_y[2] = ray_y[3] = ray_r0*sin(ray_phi[iPhi]+ray_dphi);
-
-  // ray_lambda = pow(flt_M*flt_M-1.,-0.5);
-  // ray_gamma[0]  = asin(ray_lambda*sin(ray_phi[iPhi])*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]),2), -0.5));
-  // ray_gamma[1]  = asin(ray_lambda*sin(ray_phi[iPhi]+ray_dphi)*pow(1. + pow(ray_lambda*sin(ray_phi[iPhi]+ray_dphi),2), -0.5));
-  // ray_theta[0]  = acos(-1./(flt_M*cos(ray_gamma[0])));
-  // ray_theta[1]  = acos(-1./(flt_M*cos(ray_gamma[1])));
-
-  // su2double u[2] = {ray_x[2]-ray_x[0], ray_y[2]-ray_y[0]};
-  // su2double v[2] = {ray_x[3]-ray_x[1], ray_y[3]-ray_y[1]};
-  // su2double c    = (u[0]*v[1] - u[1]*v[0])/(ray_dt*ray_dphi*c0);
-  // su2double A_h   = 0.5*sqrt(pow(c,2));
-
-  // ray_A = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
+ 
 }
 
 void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
@@ -1321,11 +1201,12 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   su2double dsigma_non, dsigma_tv, dsigma_relO, dsigma_relN, dsigma_A, dsigma_rc, dsigma_c;
 
   /*---Restrict dsigma to avoid multivalued waveforms---*/
-  su2double dp, max_dp = 1.0E-9, max_p = -1E6, min_p = 1E6;;
+  su2double dp, max_dp = 1.0E-9, min_dp = -1.0E-9, max_p = -1E6, min_p = 1E6;;
   for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
     dp = signal.P[i+1]-signal.P[i];
     // if(dp < 0.0) max_dp = max(abs(dp), max_dp);
     max_dp = max(dp, max_dp);
+    // min_dp = max(dp, min_dp);
     // max_p = max(signal.P[i],max_p);
     // min_p = min(signal.P[i],min_p);
   }
@@ -1343,7 +1224,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   /*---Restrict dsigma based on spreading---*/
   su2double dx_dz, dy_dz, ds_dz, ds, z_new;
   su2double uwind = 0., vwind = 0.;
-  ds = xbar*1.0E-6;
+  ds = xbar*1.0E-5;
   dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
   dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
   ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
@@ -1368,47 +1249,12 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
   su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
   su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  // su2double A_h   = 0.5*sqrt(pow(c,2))/(c0*ray_dt*ray_dphi);
   su2double A_h   = 0.5*sqrt(pow(c,2));
 
-  // A_new = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
-  A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);
-  su2double dA_dsigma = (A_new-ray_A)/(1.0E-6);
+  A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);  // TODO: Add wind contribution
+  su2double dA_dsigma = (A_new-ray_A)/(1.0E-5);
 
   dsigma_A = abs(0.05*ray_A/dA_dsigma);
-  // su2double dxi_dz, deta_dz, ds_dz, ds, z_new;
-  // su2double uwind = 0., vwind = 0.;
-  // ds = xbar*1.0E-6;
-  // dxi_dz  = (c0*cos(ray_theta[0]) + uwind)/(c0*sin(ray_theta[0]));
-  // deta_dz = (vwind)/(c0*sin(ray_theta[0]));
-  // ds_dz   = sqrt(pow(dxi_dz,2)+pow(deta_dz,2)+1);
-  // dz = ds/ds_dz;
-  // z_new = ray_z - dz;
-
-  // su2double x_new[4], y_new[4], A_new;
-
-  // x_new[0] = ray_x[0] + dxi_dz*dz*cos(ray_gamma[0]) - deta_dz*dz*sin(ray_gamma[0]);
-  // y_new[0] = ray_y[0] + dxi_dz*dz*sin(ray_gamma[0]) + deta_dz*dz*cos(ray_gamma[0]);
-  // x_new[1] = ray_x[1] + dxi_dz*dz*cos(ray_gamma[0]) - deta_dz*dz*sin(ray_gamma[0]);
-  // y_new[1] = ray_y[1] + dxi_dz*dz*sin(ray_gamma[0]) + deta_dz*dz*cos(ray_gamma[0]);
-
-  // dxi_dz  = (c0*cos(ray_theta[1]) + uwind)/(c0*sin(ray_theta[1]));
-  // deta_dz = (vwind)/(c0*sin(ray_theta[1]));
-
-  // x_new[2] = ray_x[2] + dxi_dz*dz*cos(ray_gamma[1]) - deta_dz*dz*sin(ray_gamma[1]);
-  // y_new[2] = ray_y[2] + dxi_dz*dz*sin(ray_gamma[1]) + deta_dz*dz*cos(ray_gamma[1]);
-  // x_new[3] = ray_x[3] + dxi_dz*dz*cos(ray_gamma[1]) - deta_dz*dz*sin(ray_gamma[1]);
-  // y_new[3] = ray_y[3] + dxi_dz*dz*sin(ray_gamma[1]) + deta_dz*dz*cos(ray_gamma[1]);
-
-  // su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
-  // su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
-  // su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  // su2double A_h   = 0.5*sqrt(pow(c,2));
-
-  // A_new = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
-  // su2double dA_dsigma = (A_new-ray_A)/(1.0E-6);
-
-  // dsigma_A = abs(0.05*ray_A/dA_dsigma);
 
   /*---Restrict dsigma based on stratification---*/
   su2double Tp1, cp1, pp1, rhop1, hp1;
@@ -1416,24 +1262,26 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   HumidityISO(z_new, pp1, Tp1, hp1);
   cp1 *= (1+0.0016*hp1);
 
-  su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-6);
+  su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-5);
   dsigma_rc = abs(0.05*rho0*c0/drhoc_dsigma);
 
-  su2double dc_dsigma = (cp1-c0)/(1.0E-6);
+  su2double dc_dsigma = (cp1-c0)/(1.0E-5);
   dsigma_c = abs(0.05*c0/dc_dsigma);
 
   /*---Pick minimum dsigma---*/
   dsigma = dsigma_non;
   dsigma = min(dsigma, dsigma_tv);
-  // if(flt_h - ray_z > 100.){
-    dsigma = min(dsigma, dsigma_relO);
-    dsigma = min(dsigma, dsigma_relN);
-  // }
+  dsigma = min(dsigma, dsigma_relO);
+  dsigma = min(dsigma, dsigma_relN);
   dsigma = min(dsigma, dsigma_A);
   dsigma = min(dsigma, dsigma_rc);
   dsigma = min(dsigma, dsigma_c);
   dsigma = min(dsigma, dsigma_old);
+  dsigma *= 0.9;
   dsigma_old = 10.*dsigma;
+  // if(flt_h - ray_z > 1500.){
+    // dsigma = max(dsigma, 0.1);
+  // }
 
   /*---Check for intersection with ground plane---*/
   ds = xbar*dsigma;
@@ -1441,17 +1289,6 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
   ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
   dz = ds/ds_dz;
-  // ds = xbar*dsigma;
-  // dxi_dz  = (c0*cos(ray_theta[0]) + uwind)/(c0*sin(ray_theta[0]));
-  // deta_dz = (vwind)/(c0*sin(ray_theta[0]));
-  // ds_dz   = sqrt(pow(dxi_dz,2)+pow(deta_dz,2)+1);
-  // dz = ds/ds_dz;
-
-  // if(ds < 0.1*xbar){
-  //   ds = 0.1*xbar;
-  //   dz = ds/ds_dz;
-  //   dsigma = 0.1;
-  // }
 
   if(ray_z-dz < 0.0){
     dz = ray_z;
@@ -1464,57 +1301,90 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
 
 void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
 
-  /*---Engquist-Osher scheme for nonlinear term---*/
-  su2double *Ptmp = new su2double[signal.len[iPhi]-2];
-  su2double p_i, p_ip, p_im;
-  for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-    p_i = signal.P[i];
-    p_ip = signal.P[i+1];
-    p_im = signal.P[i-1];
-    Ptmp[i-1] = dsigma/(4*dtau)*(p_i*(p_i-abs(p_i)) + p_ip*(p_ip + abs(p_ip)) - p_im*(p_im - abs(p_im)) - p_i*(p_i + abs(p_i))) + p_i;
-  }
-
-  for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-    signal.P[i] = Ptmp[i-1];
-  }
-
-  delete [] Ptmp;
-
-  // /*---Determine distorted time grid---*/
-  // for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-  //   signal.taud[i] = signal.tau[i] - signal.P[i]*dsigma;
-  // }
-
-  // /*---Account for nonlinearity and interpolate new signal from distorted grid---*/
-  // su2double *Ptmp = new su2double[signal.len[iPhi]];
-  // unsigned long j = 0, jp1 = 1;
+  // /*---Engquist-Osher scheme for nonlinear term---*/
+  // su2double *Ptmp = new su2double[signal.len[iPhi]-2];
+  // su2double p_i, p_ip, p_im;
   // for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-  //   if(signal.tau[i] < signal.taud[0]){
-  //     j   = 0;
-  //     jp1 = 1;
-  //   }
-  //   else if(signal.tau[i] > signal.taud[signal.len[iPhi]-1]){
-  //     j   = signal.len[iPhi]-2;
-  //     jp1 = signal.len[iPhi]-1;
-  //   }
-  //   else{
-  //     for(unsigned long k = jp1-1; k < signal.len[iPhi]-1; k++){
-  //       if((signal.tau[i] >= signal.taud[k]) && (signal.tau[i] <= signal.taud[k+1])){
-  //         j   = k;
-  //         jp1 = k+1;
-  //         break;
-  //       }
-  //     }
-  //   }
-
-  //   Ptmp[i] = signal.P[j] + (signal.tau[i] - signal.taud[j]) * (signal.P[jp1]-signal.P[j])/(signal.taud[jp1]-signal.taud[j]);
+  //   p_i = signal.P[i];
+  //   p_ip = signal.P[i+1];
+  //   p_im = signal.P[i-1];
+  //   Ptmp[i-1] = dsigma/(4*dtau)*(p_i*(p_i-abs(p_i)) + p_ip*(p_ip + abs(p_ip)) - p_im*(p_im - abs(p_im)) - p_i*(p_i + abs(p_i))) + p_i;
   // }
 
-  // for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-  //   signal.P[i] = Ptmp[i];
+  // for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+  //   signal.P[i] = Ptmp[i-1];
   // }
 
   // delete [] Ptmp;
+
+  // /*---Lax-Wendroff scheme for nonlinear term---*/
+  // su2double *Ptmp = new su2double[signal.len[iPhi]-2];
+  // su2double p_i, p_ip, p_im, f_i, f_ip, f_im, A_ip, A_im;
+  // for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+  //   p_i = signal.P[i];
+  //   p_ip = signal.P[i+1];
+  //   p_im = signal.P[i-1];
+  //   f_i = -0.5*pow(p_i,2);
+  //   f_ip = -0.5*pow(p_ip,2);
+  //   f_im = -0.5*pow(p_im,2);
+  //   A_ip = -0.5*(p_ip + p_i);
+  //   A_im = -0.5*(p_im + p_i);
+
+  //   Ptmp[i-1] = p_i - dsigma*(f_ip - f_im)/(2.*dtau)
+  //           + 0.5*pow(dsigma,2)/pow(dtau,2) * (A_ip*(f_ip - f_i) - A_ip*(f_i-f_im));
+  // }
+
+  // for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+  //   signal.P[i] = Ptmp[i-1];
+  // }
+
+  // delete [] Ptmp;
+
+  /*---Determine distorted time grid---*/
+  su2double *Ptmp = new su2double[signal.len[iPhi]];
+  for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+    signal.taud[i] = signal.tau[i] - signal.P[i]*dsigma;
+    Ptmp[i] = signal.P[i];
+  }
+
+  /*---Account for nonlinearity and interpolate new signal from distorted grid---*/
+  int j = 0, jp1 = 1, k0, len = signal.len[iPhi];
+  for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    if(signal.tau[i] < signal.taud[0]){
+      j   = 0;
+      jp1 = 1;
+    }
+    else if(signal.tau[i] > signal.taud[signal.len[iPhi]-1]){
+      j   = signal.len[iPhi]-2;
+      jp1 = signal.len[iPhi]-1;
+    }
+    else{
+      if(Ptmp[i] > 0){
+        k0 = min(jp1+3, len-1);
+        for(unsigned long k = k0; k >= 1; k--){
+          if((signal.tau[i] >= signal.taud[k-1]) && (signal.tau[i] <= signal.taud[k])){
+            j   = k-1;
+            jp1 = k;
+            break;
+          }
+        }
+      }
+      else{
+        k0 = max(j-3, 0);
+        for(unsigned long k = k0; k < signal.len[iPhi]-1; k++){
+          if((signal.tau[i] >= signal.taud[k]) && (signal.tau[i] <= signal.taud[k+1])){
+            j   = k;
+            jp1 = k+1;
+            break;
+          }
+        }
+      }
+    }
+
+    signal.P[i] = Ptmp[j] + (Ptmp[jp1]-Ptmp[j])/(signal.taud[jp1]-signal.taud[j])*(signal.tau[i]-signal.taud[j]);
+  }
+
+  delete [] Ptmp;
 
 }
 
@@ -1555,9 +1425,7 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
   su2double lambda[2] = {dsigma*C_nu_O2/pow(dtau,2), dsigma*C_nu_N2/pow(dtau,2)},
             mur[2] = {theta_nu_O2/(2.*dtau), theta_nu_N2/(2.*dtau)},
             alpha, alpha_p, a, b, c;
-  su2double *y = new su2double[signal.len[iPhi]],
-            *ci  = new su2double[signal.len[iPhi]-1],
-            *di  = new su2double[signal.len[iPhi]-1];
+  su2double *y = new su2double[signal.len[iPhi]], *ci, *di;
 
   alpha = 0.5;
   alpha_p = 1.-alpha;
@@ -1570,32 +1438,57 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
       y[i] = (alpha_p*lambda[j]-mur[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mur[j])*signal.P[i+1];
     }
-
-    /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
-    ci[0] = 0.;
-    di[0] = y[0];
+    
     a = -(alpha*lambda[j] + mur[j]);
     b = 1. + 2.*alpha*lambda[j];
     c = -(alpha*lambda[j] - mur[j]);
-    for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-      ci[i] = c/(b - a*ci[i-1]);
-      di[i] = (y[i] - a*di[i-1])/(b - a*ci[i-1]);
-    }
+    
+    // if(abs(b) > (abs(a) + abs(c))){ // Stable for diagonal dominant
+      /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
+      ci  = new su2double[signal.len[iPhi]-1];
+      di  = new su2double[signal.len[iPhi]-1];
+      ci[0] = 0.;
+      di[0] = y[0];
+      for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+        ci[i] = c/(b - a*ci[i-1]);
+        di[i] = (y[i] - a*di[i-1])/(b - a*ci[i-1]);
+      }
 
-    for(int i = signal.len[iPhi]-2; i >= 1; i--){
-      signal.P[i] = di[i] - ci[i]*signal.P[i+1];
-    }
+      for(int i = signal.len[iPhi]-2; i >= 1; i--){
+        signal.P[i] = di[i] - ci[i]*signal.P[i+1];
+      }
+
+      delete [] ci;
+      delete [] di;
+    // }
+
+    // else{
+    //   /*---Solve for Pk+1 via Gauss elimination---*/
+    //   su2double frac;
+    //   di = new su2double[signal.len[iPhi]-1];
+      
+    //   di[0] = 1.0;
+    //   // Elimination
+    //   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    //     frac = a/di[i-1];
+    //     di[i] = b - frac*c;
+    //     y[i] = y[i] - frac*y[i-1];
+    //   }
+
+    //   // Back substitution
+    //   for(unsigned long i = signal.len[iPhi]-2; i >= 1; i--){
+    //     signal.P[i] = (y[i]-c*signal.P[i+1])/di[i];
+    //   }
+
+    //   delete [] di;
+    // }
 
   }
 
   delete [] y;
-  delete [] ci;
-  delete [] di;
 }
 
 void CBoom_AugBurgers::Spreading(unsigned short iPhi){
-
-  // /*---George and Plotkin ray tube area ratio---*/
 
   /*---Compute ray tube area at sigma+dsigma---*/
   su2double dx_dz, dy_dz, ds_dz, ds, z_new;
@@ -1625,41 +1518,9 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
   su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
   su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
   su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  // su2double A_h   = 0.5*sqrt(pow(c,2))/(c0*ray_dt*ray_dphi);
   su2double A_h   = 0.5*sqrt(pow(c,2));
 
-  // A_new = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
-  A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);
-  // su2double dxi_dz, deta_dz, ds_dz, ds;
-  // su2double xi_new, eta_new, x_new[4], y_new[4], z_new, A_new;
-  // su2double uwind = 0., vwind = 0.;
-
-  // ds = xbar*dsigma;
-  // dxi_dz  = (c0*cos(ray_theta[0]) + uwind)/(c0*sin(ray_theta[0]));
-  // deta_dz = (vwind)/(c0*sin(ray_theta[0]));
-  // ds_dz   = sqrt(pow(dxi_dz,2)+pow(deta_dz,2)+1);
-  // dz = ds/ds_dz;
-  // z_new = ray_z - dz;
-
-  // x_new[0] = ray_x[0] + dxi_dz*dz*cos(ray_gamma[0]) - deta_dz*dz*sin(ray_gamma[0]);
-  // y_new[0] = ray_y[0] + dxi_dz*dz*sin(ray_gamma[0]) + deta_dz*dz*cos(ray_gamma[0]);
-  // x_new[1] = ray_x[1] + dxi_dz*dz*cos(ray_gamma[0]) - deta_dz*dz*sin(ray_gamma[0]);
-  // y_new[1] = ray_y[1] + dxi_dz*dz*sin(ray_gamma[0]) + deta_dz*dz*cos(ray_gamma[0]);
-
-  // dxi_dz  = (c0*cos(ray_theta[1]) + uwind)/(c0*sin(ray_theta[1]));
-  // deta_dz = (vwind)/(c0*sin(ray_theta[1]));
-
-  // x_new[2] = ray_x[2] + dxi_dz*dz*cos(ray_gamma[1]) - deta_dz*dz*sin(ray_gamma[1]);
-  // y_new[2] = ray_y[2] + dxi_dz*dz*sin(ray_gamma[1]) + deta_dz*dz*cos(ray_gamma[1]);
-  // x_new[3] = ray_x[3] + dxi_dz*dz*cos(ray_gamma[1]) - deta_dz*dz*sin(ray_gamma[1]);
-  // y_new[3] = ray_y[3] + dxi_dz*dz*sin(ray_gamma[1]) + deta_dz*dz*cos(ray_gamma[1]);
-
-  // su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
-  // su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
-  // su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  // su2double A_h   = 0.5*sqrt(pow(c,2));
-
-  // A_new = c0*A_h*sin(ray_theta[0])/(c0);  // TODO: Add wind contribution
+  A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);  // TODO: Add wind contribution
 
   /*---Compute change in pressure from exact solution to general ray tube area eqn---*/
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
@@ -1671,7 +1532,6 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
     ray_x[i] = x_new[i];
     ray_y[i] = y_new[i];
   }
-  // beta = beta*sqrt(ray_A/A_new);
   ray_A = A_new;
 
   /*---Snell's law for wave normals---*/
@@ -1681,8 +1541,6 @@ void CBoom_AugBurgers::Spreading(unsigned short iPhi){
   cp1 *= (1+0.0016*hp1);
   ray_theta[0] = acos(cp1*cos(ray_theta[0])/c0);
   ray_theta[1] = acos(cp1*cos(ray_theta[1])/c0);
-
-  // beta = beta*sqrt(rho0*pow(c0,5)/(rhop1*pow(cp1,5)));
 
 }
 
