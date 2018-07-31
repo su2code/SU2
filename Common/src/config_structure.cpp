@@ -4986,6 +4986,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
         case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
         case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
+        case VOLUME_FRACTION:           cout << "Volume fraction objective function." << endl; break;
       }
 		}
 		else {
@@ -6816,6 +6817,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
+        case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
       }
     }
     else{
