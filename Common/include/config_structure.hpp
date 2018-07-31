@@ -1020,6 +1020,8 @@ private:
                 *top_optim_kernels, /*!< \brief The kernels to use. */
                  top_optim_nKernelParams; /*!< \brief Number of kernel parameters specified. */
   su2double *top_optim_kernel_params; /*!< \brief The kernel parameters. */
+  unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
+  su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
@@ -8534,6 +8536,11 @@ public:
    * \brief Get the i'th kernel to use and its parameter.
    */
   void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type, su2double &param);
+  
+  /*!
+   * \brief Get the type and parameter for the projection function used in topology optimization
+   */
+  void GetTopology_Optim_Projection(unsigned short &type, su2double &param);
 
 };
 
