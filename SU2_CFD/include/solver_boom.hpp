@@ -142,9 +142,7 @@ public:
   void Nonlinearity(unsigned short iPhi);
   void Attenuation(unsigned short iPhi);
   void Relaxation(unsigned short iPhi, unsigned long iIter);
-  void Spreading(unsigned short iPhi);
-  void Stratification(unsigned short iPhi);
-  void Iterate(unsigned short iPhi);
+  void Scaling(unsigned short iPhi);
   void PerceivedLoudness(unsigned short iPhi);
   void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, unsigned long &n_sample);
   void MarkVII(unsigned short iPhi, su2double *SPL_band);
