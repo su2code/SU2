@@ -1048,7 +1048,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   su2double *xtmp, *ptmp;
 
   /*---Loop over signal and find smallest spacing---*/
-  su2double dx, dx_min = scale_L/1001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
+  su2double dx, dx_min = 1.0E3; // TODO: add min spacing input scale_L/1001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
   for(unsigned long i = 1; i < signal.len[iPhi]; i++){
     dx = signal.x[iPhi][i] - signal.x[iPhi][i-1];
     dx_min = min(dx, dx_min);

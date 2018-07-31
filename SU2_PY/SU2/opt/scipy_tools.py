@@ -173,7 +173,7 @@ def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
             
     print 'Ran SNOPT'
     print outputs
-return outputs
+    return outputs
 
 # -------------------------------------------------------------------
 #  Scipy SLSQP
