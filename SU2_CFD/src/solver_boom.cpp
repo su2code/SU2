@@ -893,9 +893,16 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
+int rank = 0;
+
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
   unsigned long iIter = 0;
   ground_flag = false;
   
+  if(rank == MASTER_NODE){
   while(!ground_flag){
   	Preprocessing(iPhi, iIter);
     Scaling(iPhi);
@@ -905,12 +912,7 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
     ray_z -= dz;
     iIter++;
   }
-
-int rank = 0;
-
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  }
 
   if(rank == MASTER_NODE){
     cout << iIter << ", z = " << ray_z << " m, p_peak = " << p_peak << " Pa" << endl;
