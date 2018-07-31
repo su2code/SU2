@@ -290,7 +290,8 @@ optnames_aero = [ "LIFT"                    ,
                   "CUSTOM_OBJFUNC"             ,
                   "COMBO"                   ,
                   "NOISE"                   ,
-                  "BOOM"]
+                  "BOOM_ENERGY"             ,
+                  "BOOM_LOUD"]
 
 # Turbo performance optimizer Function Names
 optnames_turbo = ["TOTAL_PRESSURE_LOSS"     ,
@@ -599,7 +600,8 @@ def get_adjointSuffix(objective_function=None):
                  "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
                  "COMBO"                   : "combo"     ,
                  "NOISE"                   : "no"        ,      
-                 "BOOM"                    : "boom"}
+                 "BOOM_ENERGY"             : "boom_energy",
+                 "BOOM_LOUD"               : "boom_pldb"}
     
     # if none or false, return map
     if not objective_function:

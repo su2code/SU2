@@ -6128,8 +6128,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case MASS_FLOW_OUT:           AdjExt = "_mfo";       break;
       case ENTROPY_GENERATION:      AdjExt = "_entg";      break;
       case NOISE:                   AdjExt = "_no";        break;
-      case BOOM_LOUD:               AdjExt = "_boom";      break;
-      case BOOM_ENERGY:             AdjExt = "_boom";      break;
+      case BOOM_LOUD:               AdjExt = "_boom_pldb";   break;
+      case BOOM_ENERGY:             AdjExt = "_boom_energy"; break;
       }
     }
     else{
