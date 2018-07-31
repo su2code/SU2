@@ -675,6 +675,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
   case REFERENCE_NODE:
       ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
       break;
+  case VOLUME_FRACTION:
+      ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
+      break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
       break;

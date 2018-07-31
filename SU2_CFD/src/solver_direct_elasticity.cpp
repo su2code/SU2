@@ -387,6 +387,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize the value of the total objective function ---*/
    Total_OFRefGeom = 0.0;
    Total_OFRefNode = 0.0;
+   Total_OFRefGeom = 0.0;
 
    /*--- Initialize the value of the global objective function ---*/
    Global_OFRefGeom = 0.0;
@@ -4599,6 +4600,45 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
   }
 
 
+}
+
+void CFEASolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config)
+{
+  /*--- Perform a volume average of the physical density of the elements for topology optimization ---*/
+
+  unsigned long iElem, nElem = geometry->GetnElem();
+  su2double total_volume = 0.0, integral = 0.0;
+
+  for (iElem=0; iElem<nElem; ++iElem) {
+    /*--- count only elements that belong to the partition ---*/
+    if ( geometry->node[geometry->elem[iElem]->GetNode(0)]->GetDomain() ){
+      su2double volume = geometry->elem[iElem]->GetVolume();
+      total_volume += volume;
+      integral += volume*element_properties[iElem]->GetPhysicalDensity();
+    }
+  }
+  
+#ifdef HAVE_MPI
+  {
+    su2double tmp;
+    SU2_MPI::Allreduce(&total_volume,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    total_volume = tmp;
+    SU2_MPI::Allreduce(&integral,&tmp,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    integral = tmp;
+  }
+#endif
+
+  Total_OFVolFrac = integral/total_volume;
+
+  // TODO: Temporary output file for the objective function. Will be integrated in the output once is refurbished.
+  if (rank == MASTER_NODE){
+    cout << "Objective function: " << Total_OFVolFrac << "." << endl;
+    ofstream myfile_res;
+    myfile_res.open ("of_volfrac.dat");
+    myfile_res.precision(15);
+    myfile_res << scientific << Total_OFVolFrac << endl;
+    myfile_res.close();
+  }
 }
 
 void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumerics **numerics, CConfig *config){
