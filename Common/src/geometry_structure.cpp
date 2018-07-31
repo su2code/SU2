@@ -2028,7 +2028,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
 }
 
 void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
-                                                long *&neighbour_idx)
+                                                long *&neighbour_idx) const
 {
   unsigned long iElem, iElem_global;
   
@@ -2101,7 +2101,7 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
                                        const vector<unsigned long> &neighbour_start,
                                        const long *neighbour_idx,
                                        const su2double *cg_elem,
-                                       vector<long> &neighbours)
+                                       vector<long> &neighbours) const
 {
   /*--- Center of the search ---*/
   neighbours.clear(); neighbours.push_back(iElem_global);

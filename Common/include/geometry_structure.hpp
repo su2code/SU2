@@ -1341,7 +1341,7 @@ public:
    *             neighbours of global element "i". Size nElemDomain+1
    * \param[out] neighbour_idx - Global index of the neighbours, mush be NULL on entry and free'd by calling function.
    */
-  void GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start, long *&neighbour_idx);
+  void GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start, long *&neighbour_idx) const;
   
   /*!
    * \brief Get the neighbours of the global element in the first position of "neighbours" that are within "radius" of it.
@@ -1354,7 +1354,7 @@ public:
    */
   void GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius,
                               const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
-                              const su2double *cg_elem, vector<long> &neighbours);
+                              const su2double *cg_elem, vector<long> &neighbours) const;
 
 };
 

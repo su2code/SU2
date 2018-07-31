@@ -1813,6 +1813,19 @@ static const map<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = CCreateMap<stri
 ("DILATE"  , DILATE_MORPH_FILTER)
 ("ERODE"   , ERODE_MORPH_FILTER);
 
+/*!
+ * \brief types of projection function, initially intended for structural topology optimization applications
+ */
+enum ENUM_PROJECTION_FUNCTION {
+  NO_PROJECTION  = 0,      /*!< \brief No projection. */
+  HEAVISIDE_UP   = 1,      /*!< \brief Project values towards 1. */
+  HEAVISIDE_DOWN = 2,      /*!< \brief Project values towards 0. */
+};
+static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCreateMap<string, ENUM_PROJECTION_FUNCTION>
+("NO_PROJECTION" , NO_PROJECTION)
+("HEAVISIDE_UP"  , HEAVISIDE_UP)
+("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {

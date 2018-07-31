@@ -1917,3 +1917,7 @@ inline unsigned short CConfig::GetTopology_Optim_Num_Kernels(void) { return top_
 inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type, su2double &param) {
   type = top_optim_kernels[iKernel];  param = top_optim_kernel_params[iKernel];
 }
+
+inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) {
+  type = top_optim_proj_type;  param = top_optim_proj_param;
+}

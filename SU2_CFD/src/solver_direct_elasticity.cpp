@@ -4905,13 +4905,13 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
   physical densities which are the ones used to penalize their stiffness. ---*/
 
   if (!config->GetTopology_Optimization()) return;
-
-  su2double filter_radius = config->GetTopology_Optim_Filter_Radius();
+  
+  unsigned short type;
+  su2double param, filter_radius = config->GetTopology_Optim_Filter_Radius();
   
   vector<pair<unsigned short,su2double> > kernels;
   for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
   {
-    unsigned short type; su2double param;
     config->GetTopology_Optim_Kernel(iKernel,type,param);
     kernels.push_back(make_pair(type,param));
   }
@@ -4926,7 +4926,21 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
   
   geometry->FilterValuesAtElementCG(filter_radius, kernels, design_rho, physical_rho);
   
-  /*--- ToDo: Projection method to reduce gray area ---*/
+  /*--- Apply projection ---*/
+  config->GetTopology_Optim_Projection(type,param);
+  switch (type) {
+    case NO_PROJECTION: break;
+    case HEAVISIDE_UP:
+      for (iElem=0; iElem<nElem; ++iElem)
+        physical_rho[iElem] = 1.0-exp(-param*physical_rho[iElem])+physical_rho[iElem]*exp(-param);
+      break;
+    case HEAVISIDE_DOWN:
+      for (iElem=0; iElem<nElem; ++iElem)
+        physical_rho[iElem] = exp(-param*(1.0-physical_rho[iElem]))-(1.0-physical_rho[iElem])*exp(-param);
+      break;
+    default:
+      SU2_MPI::Error("Unknown type of projection function",CURRENT_FUNCTION);
+  }
   
   for (iElem=0; iElem<nElem; ++iElem)
     element_properties[iElem]->SetPhysicalDensity(physical_rho[iElem]);
