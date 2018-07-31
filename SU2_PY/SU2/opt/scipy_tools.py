@@ -82,7 +82,8 @@ def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
     for i, dv_scl in enumerate(dv_scales):
         dv_scales[i] = 1000.
         for j in range(dv_size[i]):
-            x0[k] =x0[k]/dv_scl;
+            ##x0[k] =x0[k]/dv_scl;
+            x0[k] =x0[k]*dv_scl;
             k = k + 1
 
     # scale accuracy
@@ -90,13 +91,13 @@ def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
     obj_scale = []
     for this_obj in obj.keys():
         obj_scale = obj_scale + [obj[this_obj]['SCALE']]
-    obj_scale = [100.]
+    #obj_scale = [100.]
         
     ieq_cons = project.config['OPT_CONSTRAINT']['INEQUALITY']
     ieq_cons_scale = []
     for this_con in ieq_cons.keys():
         ieq_cons_scale = ieq_cons_scale + [ieq_cons[this_con]['SCALE']] 
-    ieq_cons_scale = [100.,100.,1000.]
+    #ieq_cons_scale = [100.,100.,1000.]
         
     if len(project.config['OPT_CONSTRAINT']['EQUALITY']) > 0:
         raise NotImplementedError('Equality constaints have not been implemented for SU2 <-> SNOPT')
@@ -118,7 +119,7 @@ def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
         # s indicated SNOPT, otherwise they are direct SU2 inputs/outputs
         x = xs*1
         for i, val in enumerate(xs):
-            x[i] = x[i]/dv_scales[i]
+            x[i] = x[i]*dv_scales[i];
         f = func(x, project)
         fs = f*obj_scale[0]
         g = hstack([f_ieqcons(x,project),f_eqcons(x,project)])
@@ -151,7 +152,7 @@ def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
         # s indicated SNOPT, otherwise they are direct SU2 inputs/outputs
         x = xs*1
         for i, val in enumerate(x):
-            x[i] = x[i]/dv_scales[i]        
+            x[i] = x[i]*dv_scales[i]        
         g_obj = fprime(x, project)
         g_obj_s = g_obj*1
         for i, val in enumerate(dv_scales):

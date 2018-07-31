@@ -595,12 +595,14 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
                 cout << "ABE initialized." << endl;
 
                 for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". ";
+                  if(rank == MASTER_NODE)
+                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". ";
                   boom.PropagateSignal(iPhi);
                 }
               }
 
-              cout << "Propagation complete." << endl;
+              if(rank == MASTER_NODE)
+                cout << "Propagation complete." << endl;
 
               if (rank == MASTER_NODE){
                 Objective_Function = 0.0;
@@ -717,7 +719,8 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
                 cout << "ABE initialized." << endl;
 
                 for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". " << endl;
+                  if(rank == MASTER_NODE)
+                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". " << endl;
                   boom.PropagateSignal(iPhi);
                 }
               }
