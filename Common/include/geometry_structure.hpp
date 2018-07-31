@@ -1356,6 +1356,12 @@ public:
                               const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
                               const su2double *cg_elem, vector<long> &neighbours) const;
 
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void SetElemVolume(CConfig *config);
+
 };
 
 /*!

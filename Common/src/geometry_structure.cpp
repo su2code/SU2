@@ -37,6 +37,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
+#include "../include/element_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1991,7 +1992,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
               case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2.0)); break;
               default: break;
             }
-//            weight *= vol_elem[*it];
+            weight *= vol_elem[*it];
             numerator   += weight*work_values[*it];
             denominator += weight;
           }
@@ -2159,6 +2160,40 @@ void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
     }
     /*--- need new iterator (to same position where it was) after change of capacity ---*/
     cursor_it = neighbours.begin()+degree_start[current_degree];
+  }
+}
+
+void CGeometry::SetElemVolume(CConfig *config)
+{
+  /*--- Compute and store the volume of each "elem" ---*/
+  for (unsigned long iElem=0; iElem<nElem; ++iElem)
+  {
+    CElement *element = NULL;
+
+    /*--- Get the appropriate type of element ---*/
+    switch (elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      element = new CTRIA1( nDim,config); break;
+      case QUADRILATERAL: element = new CQUAD4( nDim,config); break;
+      case TETRAHEDRON:   element = new CTETRA1(nDim,config); break;
+      case PYRAMID:       element = new CPYRAM5(nDim,config); break;
+      case PRISM:         element = new CPRISM6(nDim,config); break;
+      case HEXAHEDRON:    element = new CHEXA8( nDim,config); break;
+      default:
+        SU2_MPI::Error("Cannot compute the area/volume of a 1D element.",CURRENT_FUNCTION);
+    }
+    /*--- Set the nodal coordinates of the element ---*/
+    for (unsigned short iNode=0; iNode<elem[iElem]->GetnNodes(); ++iNode) {
+      unsigned long node_idx = elem[iElem]->GetNode(iNode);
+      for (unsigned short iDim=0; iDim<nDim; ++iDim) {
+        su2double coord = node[node_idx]->GetCoord(iDim);
+        element->SetRef_Coord(coord, iNode, iDim);
+      }
+    }
+    /*--- Compute ---*/
+    if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
+    else        elem[iElem]->SetVolume(element->ComputeVolume());
+
+    delete element;
   }
 }
 
