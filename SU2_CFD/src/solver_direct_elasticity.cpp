@@ -1518,9 +1518,13 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   /*
    * For topology optimization we apply a filter on the design density field to avoid
    * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
+   * This filter, and the volume fraction objective function, require the element volumes,
+   * so we ask "geometry" to compute them.
    */
-  FilterElementDensities(geometry,config);
-  
+  if (config->GetTopology_Optimization()) {
+    geometry->SetElemVolume(config);
+    FilterElementDensities(geometry,config);
+  }
 }
 
 void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
@@ -4903,8 +4907,6 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
 {
   /*--- Apply a filter to the design densities of the elements to generate the
   physical densities which are the ones used to penalize their stiffness. ---*/
-
-  if (!config->GetTopology_Optimization()) return;
   
   unsigned short type;
   su2double param, filter_radius = config->GetTopology_Optim_Filter_Radius();
