@@ -183,6 +183,9 @@ CONFIGURE_TECIO
 if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
+# Attempt to get pthread to work
+  AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
+  su2_externals_LIBS="$LIBPTHREAD $su2_externals_LIBS"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
