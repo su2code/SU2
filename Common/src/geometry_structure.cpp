@@ -12132,8 +12132,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   /*--- The CGNS reader assumes a single database. We use the value for
    iZone input to the function with +1 for the 1-based indexing in CGNS. ---*/
   
-  const int iBase = 1;
-  const int iZone = val_iZone + 1;
+  int iBase = 1;
+  int iZone = val_iZone + 1;
   
   /*--- Check whether the supplied file is truly a CGNS file. ---*/
   
@@ -12418,11 +12418,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
    SU2 memory later. ---*/
   
   vector<int> elemTypeVTK(nsections);
-  vector<int> elemIndex(nsections);
-  vector<int> elemBegin(nsections);
-  vector<int> elemEnd(nsections);
-  vector<int> nElems(nsections);
-  vector<int> dataSize(nsections);
+  
+  vector<unsigned long> elemIndex(nsections);
+  vector<unsigned long> elemBegin(nsections);
+  vector<unsigned long> elemEnd(nsections);
+  vector<unsigned long> nElems(nsections);
+  vector<unsigned long> dataSize(nsections);
   
   vector<bool> isInternal(nsections);
   
@@ -12446,37 +12447,37 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     
     /*--- Store the beginning and ending index for this section. ---*/
     
-    elemBegin[s] = (int)startE;
-    elemEnd[s]   = (int)endE;
+    elemBegin[s] = startE;
+    elemEnd[s]   = endE;
     
     /*--- Compute element linear partitioning ---*/
     
-    element_count = (int) (endE-startE+1);
+    element_count = (endE-startE+1);
     total_elems = 0;
-    for (int ii = 0; ii < size; ii++) {
-      nElem_Linear[ii] = element_count/size;
-      total_elems += nElem_Linear[ii];
+    for (iElem = 0; iElem < (unsigned long)size; iElem++) {
+      nElem_Linear[iElem] = element_count/size;
+      total_elems += nElem_Linear[iElem];
     }
     
     /*--- Get the number of remainder elements after even division ---*/
     
     element_remainder = element_count-total_elems;
-    for (unsigned long ii = 0; ii < element_remainder; ii++) {
-      nElem_Linear[ii]++;
+    for (iElem = 0; iElem < element_remainder; iElem++) {
+      nElem_Linear[iElem]++;
     }
     
     /*--- Store the number of elements that this rank is responsible for
      in the current section. ---*/
     
-    nElems[s] = (int)nElem_Linear[rank];
+    nElems[s] = nElem_Linear[rank];
     
     /*--- Get starting and end element index for my rank. ---*/
     
     elemB[0] = startE;
     elemE[0] = startE + nElem_Linear[0] - 1;
-    for (unsigned long ii = 1; ii < (unsigned long)size; ii++) {
-      elemB[ii] = elemE[ii-1]+1;
-      elemE[ii] = elemB[ii] + nElem_Linear[ii] - 1;
+    for (iElem = 1; iElem < (unsigned long)size; iElem++) {
+      elemB[iElem] = elemE[iElem-1]+1;
+      elemE[iElem] = elemB[iElem] + nElem_Linear[iElem] - 1;
     }
     
     /*--- Allocate some memory for the handling the connectivity
@@ -12491,7 +12492,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     
     vector<bool> isMixed(nElems[s]);
     
-    for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++)
+    for (iElem = 0; iElem < nElems[s]; iElem++)
       isMixed[iElem] = false;
     
     /*--- Protect against the situation where there are fewer elements
@@ -12500,7 +12501,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
      avoid a parallel read and have the master read this section (the
      master processes all of the markers anyway). ---*/
     
-    if (nElems[s] < rank+1) {
+    if (nElems[s] < (unsigned long)rank+1) {
       
       isInternal[s] = false;
       
@@ -12523,8 +12524,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Loop through all of the elements in this section to get more
        information and to decide whether it has internal elements. ---*/
       
-      int counter = 0;
-      for (int ii = 0; ii < nElems[s]; ii++) {
+      unsigned long counter = 0;
+      for (iElem = 0; iElem < nElems[s]; iElem++) {
         
         /*--- If we have a mixed element section, we need to check the elem
          type one by one. Set the flag to true if mixed. ---*/
@@ -12532,15 +12533,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         if (elemType == MIXED) {
           elmt_type = ElementType_t(connElemCGNS[counter]);
           cg_npe(elmt_type, &npe);
-          counter++; for ( int jj = 0; jj < npe; jj++ ) counter++;
-          isMixed[ii] = true;
+          counter++; for (int jj = 0; jj < npe; jj++) counter++;
+          isMixed[iElem] = true;
         } else {
           elmt_type = elemType;
         }
         
         /*--- Store the number of verts per elem for the current elem. ---*/
         
-        nPoinPerElem[ii] = npe;
+        nPoinPerElem[iElem] = npe;
         
         /*--- Store the global ID for this element. Note the -1 to move
          from CGNS convention to SU2 convention. We also subtract off
@@ -12548,7 +12549,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
          prior to this one, in order to keep the internal element global
          IDs indexed starting from zero. ---*/
         
-        elemGlobalID[ii] = elemB[rank] + ii - 1 - globalOffset;
+        elemGlobalID[iElem] = elemB[rank] + iElem - 1 - globalOffset;
         
         /*--- Need to check the element type and correctly specify the
          VTK identifier for that element. SU2 recognizes elements by
@@ -12559,39 +12560,39 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         switch (elmt_type) {
           case NODE:
             currentElem   = "Vertex";
-            elemTypes[ii] = 1;
+            elemTypes[iElem] = 1;
             break;
           case BAR_2:
             currentElem   = "Line";
-            elemTypes[ii] = 3;
+            elemTypes[iElem] = 3;
             break;
           case BAR_3:
             currentElem   = "Line";
-            elemTypes[ii] = 3;
+            elemTypes[iElem] = 3;
             break;
           case TRI_3:
             currentElem   = "Triangle";
-            elemTypes[ii] = 5;
+            elemTypes[iElem] = 5;
             break;
           case QUAD_4:
             currentElem   = "Quadrilateral";
-            elemTypes[ii] = 9;
+            elemTypes[iElem] = 9;
             break;
           case TETRA_4:
             currentElem   = "Tetrahedron";
-            elemTypes[ii] = 10;
+            elemTypes[iElem] = 10;
             break;
           case HEXA_8:
             currentElem   = "Hexahedron";
-            elemTypes[ii] = 12;
+            elemTypes[iElem] = 12;
             break;
           case PENTA_6:
             currentElem   = "Prism";
-            elemTypes[ii] = 13;
+            elemTypes[iElem] = 13;
             break;
           case PYRA_5:
             currentElem   = "Pyramid";
-            elemTypes[ii] = 14;
+            elemTypes[iElem] = 14;
             break;
           case HEXA_20:
             SPRINTF(buf1, "Section %d, npe=%d\n", s+1, npe);
@@ -12619,7 +12620,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           
           /*--- In 2-D check for line elements, VTK type 3. ---*/
           
-          if (elemTypes[ii] == 3) {
+          if (elemTypes[iElem] == 3) {
             isInternal[s] = false;
           } else {
             isInternal[s] = true;
@@ -12630,7 +12631,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           
           /*--- In 3-D check for tri/quad elements, VTK types 5 or 9. ---*/
           
-          switch (elemTypes[ii]) {
+          switch (elemTypes[iElem]) {
             case 5:
             case 9:
               isInternal[s] = false;
@@ -12647,8 +12648,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Print some information to the console. ---*/
       
       if (rank == MASTER_NODE) {
-        for (int ii = 0; ii < nElems[s]; ii++)
-          if (isMixed[ii]) {currentElem = "Mixed"; break;}
+        for (iElem = 0; iElem < nElems[s]; iElem++)
+          if (isMixed[iElem]) {currentElem = "Mixed"; break;}
         cout << "Loading section " << string(sectionNames[s].data());
         cout << " of element type " << currentElem << "." << endl;
       }
@@ -12691,7 +12692,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
         /*--- Store the number of elems (all on the master). ---*/
         
-        nElems[s] = (int) (endE-startE+1);
+        nElems[s] = (endE-startE+1);
         
         /*--- Read and store the total amount of data that will be
          listed when reading this section. ---*/
@@ -12782,24 +12783,24 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
         if (elemTypeVTK[s] == -1) {
           int counter = 0;
-          for ( int ii = 0; ii < nElems[s]; ii++ ) {
+          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
             ElementType_t elmt_type = ElementType_t(connElemTemp[counter]);
             cg_npe( elmt_type, &npe);
             counter++;
-            connElems[s][ii*connSize+0] = 0;
-            connElems[s][ii*connSize+1] = elmt_type;
+            connElems[s][iElem*connSize+0] = 0;
+            connElems[s][iElem*connSize+1] = elmt_type;
             for ( int jj = 0; jj < npe; jj++ ) {
-              connElems[s][ii*connSize+2+jj] = connElemTemp[counter] - 1;
+              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
               counter++;
             }
           }
         } else {
           int counter = 0;
-          for ( int ii = 0; ii < nElems[s]; ii++ ) {
-            connElems[s][ii*connSize+0] = 0;
-            connElems[s][ii*connSize+1] = elemTypeVTK[s];
-            for ( int jj = 0; jj < elemIndex[s]; jj++ ) {
-              connElems[s][ii*connSize+2+jj] = connElemTemp[counter] - 1;
+          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
+            connElems[s][iElem*connSize+0] = 0;
+            connElems[s][iElem*connSize+1] = elemTypeVTK[s];
+            for ( int jj = 0; jj < (int)elemIndex[s]; jj++ ) {
+              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
               counter++;
             }
           }
@@ -12818,8 +12819,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       /*--- Copy these values into the larger array into a standard
        format for the length [...] . ---*/
       
-      int counterCGNS = 0;
-      for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++) {
+      unsigned long counterCGNS = 0;
+      for (iElem = 0; iElem < nElems[s]; iElem++) {
         
         /*--- Store the conn in chunks of connSize for simplicity. ---*/
         
@@ -12863,7 +12864,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       }
       nElem_Send[size] = 0; nElem_Recv[size] = 0;
       
-      for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++) {
+      for (iElem = 0; iElem < nElems[s]; iElem++) {
         for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
           
           /*--- Get the index of the current point. ---*/
@@ -13017,7 +13018,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
       
       if (nElem_Recv[size] > 0) {
         connElems[s].resize(nElem_Recv[size]*connSize);
-        int count = 0;
+        unsigned long count = 0;
         for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
           for (iNode = 0; iNode < connSize; iNode++) {
             connElems[s][count] = (cgsize_t)connRecv[iElem*connSize+iNode];
@@ -13093,16 +13094,16 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   
   for (int s = 0; s < nsections; s++) {
     if (isInternal[s]) {
-      for (int i = 0; i < nElems[s]; i++) {
+      for (unsigned long jElem = 0; jElem < nElems[s]; jElem++) {
         
         /*--- Get the global ID for this element. ---*/
         
-        Global_Index_Elem = connElems[s][i*connSize+0];
+        Global_Index_Elem = connElems[s][jElem*connSize+0];
         
         /*--- Get the VTK type for this element. This is stored in the
          first entry of the connectivity structure. ---*/
         
-        VTK_Type = connElems[s][i*connSize+1];
+        VTK_Type = connElems[s][jElem*connSize+1];
         
         /*--- Instantiate this element and build adjacency structure. ---*/
         
@@ -13111,7 +13112,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case TRIANGLE:
             
             for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13135,7 +13136,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case QUADRILATERAL:
             
             for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13158,7 +13159,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case TETRAHEDRON:
             
             for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13182,7 +13183,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case HEXAHEDRON:
             
             for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13211,7 +13212,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case PRISM:
             
             for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13240,7 +13241,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           case PYRAMID:
             
             for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
-              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+              vnodes_cgns[j] = connElems[s][jElem*connSize+skip + j];
             }
             
 #ifdef HAVE_MPI
@@ -13350,7 +13351,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
           }
           bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
           
-          for ( int i = 0; i < nElems[s]; i++ ) {
+          for (unsigned long jElem = 0; jElem < nElems[s]; jElem++ ) {
             
             /*--- Get the VTK type for this element. Check for mixed
              elements. ---*/
@@ -13360,7 +13361,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
               /*--- Mixed-element support. Check the elem type. ---*/
               
               
-              ElementType_t elmt_type = ElementType_t(connElems[s][i*connSize + 1]);
+              ElementType_t elmt_type = ElementType_t(connElems[s][jElem*connSize + 1]);
               cg_npe( elmt_type, &npe);
               
               switch (elmt_type) {
@@ -13381,19 +13382,19 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
               /*--- Transfer the nodes for this element. ---*/
               
               for ( int j = 0; j < npe; j++ ) {
-                vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+                vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
               }
               
             } else {
               
               /*--- Not a mixed section. We know the element type. ---*/
               
-              VTK_Type = connElems[s][i*connSize + 1]; //elemTypeVTK[k][s];
+              VTK_Type = connElems[s][jElem*connSize + 1];
               
               /*--- Transfer the nodes for this element. ---*/
               
               for ( int j = 0; j < connSize-skip; j++ ) {
-                vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+                vnodes_cgns[j] = connElems[s][jElem*connSize + skip + j];
               }
               
             }
