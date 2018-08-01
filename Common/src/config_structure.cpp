@@ -180,6 +180,63 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
       }
 
       break;
+      
+    case CGNS:
+      
+#ifdef HAVE_CGNS
+      
+      /*--- Local variables which are needed when calling the CGNS mid-level API. ---*/
+      
+      int fn, nbases = 0, nzones = 0, file_type;
+      int cell_dim = 0, phys_dim = 0;
+      char basename[CGNS_STRING_SIZE];
+      
+      /*--- Check whether the supplied file is truly a CGNS file. ---*/
+      
+      if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
+        SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file."),
+                       CURRENT_FUNCTION);
+      }
+      
+      /*--- Open the CGNS file for reading. The value of fn returned
+       is the specific index number for this file and will be
+       repeatedly used in the function calls. ---*/
+      
+      if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+      
+      /*--- Get the number of databases. This is the highest node
+       in the CGNS heirarchy. ---*/
+      
+      if (cg_nbases(fn, &nbases)) cg_error_exit();
+      
+      /*--- Check if there is more than one database. Throw an
+       error if there is because this reader can currently
+       only handle one database. ---*/
+      
+      if ( nbases > 1 ) {
+        SU2_MPI::Error("CGNS reader currently incapable of handling more than 1 database." ,
+                       CURRENT_FUNCTION);
+      }
+      
+      /*--- Read the databases. Note that the indexing starts at 1. ---*/
+      
+      for ( int i = 1; i <= nbases; i++ ) {
+        
+        if (cg_base_read(fn, i, basename, &cell_dim, &phys_dim)) cg_error_exit();
+        
+        /*--- Get the number of zones for this base. ---*/
+        
+        if (cg_nzones(fn, i, &nzones)) cg_error_exit();
+        
+      }
+      
+      /*--- Set the number of zones as read from the CGNS file ---*/
+      
+      nZone = nzones;
+      
+#endif
+      
+      break;
 
   }
 

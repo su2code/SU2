@@ -173,12 +173,13 @@ public:
   map<unsigned long,unsigned long> Global_to_Local_Elem;
   unsigned long xadj_size;
   unsigned long adjacency_size;
-  unsigned long *starting_node;
-  unsigned long *ending_node;
-  unsigned long *npoint_procs;
-  unsigned long *nPoint_Linear;
+  unsigned long *beg_node;
+  unsigned long *end_node;
+  unsigned long *nPoint_Lin;
+  unsigned long *nPoint_Cum;
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
+  vector< vector<unsigned long> > adj_nodes;
   idx_t * adjacency;
   idx_t * xadj;
 #endif
@@ -1543,6 +1544,25 @@ public:
                      SU2_MPI::Request *recvReq);
 
   /*!
+   * \brief Routine to compute the initial linear partitioning offset counts and store in persistent data structures.
+   * \param[in] val_npoint_global - total number of grid points in the mesh.
+   */
+  void PrepareOffsets(unsigned long val_npoint_global);
+  
+  /*!
+   * \brief Get the processor that owns the global numbering index based on the linear partitioning.
+   * \param[in] val_global_index - Global index for a point.
+   * \returns Rank of the owner processor for the current point based on linear partitioning.
+   */
+  unsigned long GetLinearPartition(unsigned long val_global_index);
+  
+  /*!
+   * \brief Routine to prepare the adjacency for ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PrepareAdjacency(CConfig *config);
+  
+  /*!
 	 * \brief Set the send receive boundaries of the grid.
 	 * \param[in] geometry - Geometrical definition of the problem.
 	 * \param[in] config - Definition of the particular problem.
@@ -1599,6 +1619,19 @@ public:
    */
   void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
 
+  /*!
+   * \brief Reads the geometry of the grid and adjust the boundary
+   *        conditions with the configuration file in parallel (for parmetis). Overload.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_mesh_filename - Name of the file with the grid information.
+   * \param[in] val_format - Format of the file with the grid information.
+   * \param[in] val_iZone - Domain to be read from the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   * \param[in] val_flag - Boolean flag for overloading.
+   */
+  void Read_CGNS_Format_Parallel(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone, bool val_flag);
+  
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
 	 * \param[in] first_elem - Identification of the first element.

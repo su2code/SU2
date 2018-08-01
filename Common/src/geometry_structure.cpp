@@ -97,10 +97,10 @@ CGeometry::CGeometry(void) {
   
   /*--- Arrays for defining the linear partitioning ---*/
   
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node = NULL;
+  end_node   = NULL;
+  nPoint_Lin  = NULL;
+  nPoint_Cum = NULL;
 
   /*--- Containers for customized boundary conditions ---*/
 
@@ -175,10 +175,10 @@ CGeometry::~CGeometry(void) {
   if (Marker_All_SendRecv != NULL) delete [] Marker_All_SendRecv;
   if (Tag_to_Marker       != NULL) delete [] Tag_to_Marker;
   
-  if (starting_node != NULL) delete [] starting_node;
-  if (ending_node   != NULL) delete [] ending_node;
-  if (npoint_procs  != NULL) delete [] npoint_procs;
-  if (nPoint_Linear != NULL) delete [] nPoint_Linear;
+  if (beg_node   != NULL) delete [] beg_node;
+  if (end_node   != NULL) delete [] end_node;
+  if (nPoint_Lin != NULL) delete [] nPoint_Lin;
+  if (nPoint_Cum != NULL) delete [] nPoint_Cum;
 
   if(CustomBoundaryHeatFlux != NULL){
     for(iMarker=0; iMarker < nMarker; iMarker++){
@@ -1859,10 +1859,10 @@ CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
 
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node   = NULL;
+  end_node   = NULL;
+  nPoint_Lin = NULL;
+  nPoint_Cum = NULL;
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -1900,10 +1900,10 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node   = NULL;
+  end_node   = NULL;
+  nPoint_Lin = NULL;
+  nPoint_Cum = NULL;
   
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -1952,7 +1952,7 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
       Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
       break;
     case CGNS:
-      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone, true);
       break;
     default:
       SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
@@ -2048,10 +2048,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   Local_to_Global_Marker = NULL;
   Global_to_Local_Marker = NULL;
   
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node   = NULL;
+  end_node   = NULL;
+  nPoint_Lin = NULL;
+  nPoint_Cum = NULL;
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -2341,11 +2341,11 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   /*--- MEMORY WARNING: Bad usage of memory here for local_colour_values. Not scalable. 
         In the future, we should avoid sharing a single array of all colors in all nodes. ---*/
   unsigned long *local_colour_values = new unsigned long[geometry->GetGlobal_nPoint()];
-  unsigned long *local_colour_temp   = new unsigned long[geometry->ending_node[rank]-geometry->starting_node[rank]];
+  unsigned long *local_colour_temp   = new unsigned long[geometry->end_node[rank]-geometry->beg_node[rank]];
   
-  for (unsigned long i=0; i<geometry->ending_node[rank]-geometry->starting_node[rank]; i++) {
+  for (unsigned long i=0; i<geometry->end_node[rank]-geometry->beg_node[rank]; i++) {
     local_colour_temp[i]=geometry->node[i]->GetColor();
-    local_colour_values[geometry->starting_node[rank]+i]=local_colour_temp[i];
+    local_colour_values[geometry->beg_node[rank]+i]=local_colour_temp[i];
   }
   
   /*--- Communicate the grid coloring to all partitions. This information
@@ -2357,7 +2357,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   int comm_counter=0;
   for (iDomain=0; iDomain < (unsigned long)size; iDomain++) {
     if (iDomain != (unsigned long)rank) {
-      SU2_MPI::Isend(local_colour_temp, geometry->ending_node[rank]-geometry->starting_node[rank],
+      SU2_MPI::Isend(local_colour_temp, geometry->end_node[rank]-geometry->beg_node[rank],
                      MPI_UNSIGNED_LONG, iDomain, iDomain,  MPI_COMM_WORLD, &send_req[comm_counter]);
       comm_counter++;
     }
@@ -2367,7 +2367,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
     MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
     SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
-    SU2_MPI::Recv(&local_colour_values[geometry->starting_node[source]], recv_count,
+    SU2_MPI::Recv(&local_colour_values[geometry->beg_node[source]], recv_count,
                   MPI_UNSIGNED_LONG, source, rank, MPI_COMM_WORLD, &status2);
   }
   
@@ -2442,8 +2442,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
             
             PointIn[iPoint] = true;
             
-            if ((iPoint >= geometry->starting_node[rank]) &&
-                (iPoint < geometry->ending_node[rank])) {
+            if ((iPoint >= geometry->beg_node[rank]) &&
+                (iPoint < geometry->end_node[rank])) {
               
               Buffer_Send_nPointTotal++;
               
@@ -2814,8 +2814,8 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
              initial linear partitioning. We are only ever sending nodes that
              we own in the linear partitioning (no duplicate nodes are sent) ---*/
             
-            if ((iPoint >= geometry->starting_node[rank]) &&
-                (iPoint < geometry->ending_node[rank])) {
+            if ((iPoint >= geometry->beg_node[rank]) &&
+                (iPoint < geometry->end_node[rank])) {
               
               /*--- Decide whether this is an interior, periodic, or ghost node ---*/
               
@@ -2850,7 +2850,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
                 /*--- iPoint is the global index, but we store everything local
                  to this rank. So we need to subtract the starting index. All
                  ranks re-index their points from zero. ---*/
-                Buffer_Send_Coord[nDim_s[iDomain]*(PointTotal_Counter+iPointCurrent)+iDim] = geometry->node[iPoint-geometry->starting_node[rank]]->GetCoord(iDim);
+                Buffer_Send_Coord[nDim_s[iDomain]*(PointTotal_Counter+iPointCurrent)+iDim] = geometry->node[iPoint-geometry->beg_node[rank]]->GetCoord(iDim);
               }
               
               /*--- Increment our counters ---*/
@@ -5028,10 +5028,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Arrays for defining the linear partitioning. ---*/
 
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
+  beg_node   = NULL;
+  end_node   = NULL;
+  nPoint_Lin = NULL;
+  nPoint_Cum = NULL;
 
   /*--- Arrays for defining the turbomachinery structure ---*/
 
@@ -5123,6 +5123,10 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
   nDim  = geometry->GetnDim();
   nZone = geometry->GetnZone();
 
+  /*--- Recompute the linear partitioning offsets. ---*/
+
+  PrepareOffsets(geometry->GetGlobal_nPoint());
+  
   /*--- Communicate the coloring data so that each rank has a complete set
    of colors for all points that reside on it, including repeats. ---*/
 
@@ -5454,8 +5458,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   }
   jPoint = geometry->GetnPoint();
   for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
-    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) ||
-        (LocalPoints[iPoint] >= geometry->ending_node[rank])){
+    if ((LocalPoints[iPoint] <  geometry->beg_node[rank]) ||
+        (LocalPoints[iPoint] >= geometry->end_node[rank])){
       Global2Local[LocalPoints[iPoint]] = jPoint;
       jPoint++;
     }
@@ -5508,13 +5512,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
       /*--- Search for the processor that owns this neighbor. ---*/
 
-      iProcessor = jPoint/geometry->npoint_procs[0];
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (jPoint >= geometry->nPoint_Linear[iProcessor])
-        while(jPoint >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
-      else
-        while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+      iProcessor = GetLinearPartition(jPoint);
 
       /*--- If we have not visited this node yet, increment our
        number of points that must be sent to a particular proc. ---*/
@@ -5577,13 +5575,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
       /*--- Search for the processor that owns this neighbor ---*/
 
-      iProcessor = jPoint/geometry->npoint_procs[0];
-      if (iProcessor >= (unsigned long)size)
-        iProcessor = (unsigned long)size-1;
-      if (jPoint >= geometry->nPoint_Linear[iProcessor])
-        while(jPoint >= geometry->nPoint_Linear[iProcessor+1]) iProcessor++;
-      else
-        while(jPoint <  geometry->nPoint_Linear[iProcessor])   iProcessor--;
+      iProcessor = GetLinearPartition(jPoint);
 
       /*--- If we have not visited this node yet, increment our
        counters and load up the global ID and color. ---*/
@@ -6372,15 +6364,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
             /*--- Search for the processor that owns this point ---*/
 
-            iProcessor = Global_Index/geometry->npoint_procs[0];
-            if (iProcessor >= (unsigned long)size)
-              iProcessor = (unsigned long)size-1;
-            if (Global_Index >= geometry->nPoint_Linear[iProcessor])
-              while(Global_Index >= geometry->nPoint_Linear[iProcessor+1])
-                iProcessor++;
-            else
-              while(Global_Index <  geometry->nPoint_Linear[iProcessor])
-                iProcessor--;
+            iProcessor = GetLinearPartition(Global_Index);
 
             /*--- If we have not visited this element yet, increment our
              number of elements that must be sent to a particular proc. ---*/
@@ -6471,15 +6455,7 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
             /*--- Search for the processor that owns this point ---*/
 
-            iProcessor = Global_Index/geometry->npoint_procs[0];
-            if (iProcessor >= (unsigned long)size)
-              iProcessor = (unsigned long)size-1;
-            if (Global_Index >= geometry->nPoint_Linear[iProcessor])
-              while(Global_Index >= geometry->nPoint_Linear[iProcessor+1])
-                iProcessor++;
-            else
-              while(Global_Index <  geometry->nPoint_Linear[iProcessor])
-                iProcessor--;
+            iProcessor = GetLinearPartition(Global_Index);
 
             /*--- Load connectivity into the buffer for sending ---*/
 
@@ -8058,6 +8034,151 @@ void CPhysicalGeometry::CompleteComms(int nSends,
   
 }
 
+void CPhysicalGeometry::PrepareOffsets(unsigned long val_npoint_global) {
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  beg_node   = new unsigned long[size];
+  end_node   = new unsigned long[size];
+  nPoint_Lin = new unsigned long[size];
+  nPoint_Cum = new unsigned long[size+1];
+  
+  unsigned long total_points = 0;
+  for (int ii = 0; ii < size; ii++) {
+    nPoint_Lin[ii] = val_npoint_global/size;
+    total_points  += nPoint_Lin[ii];
+  }
+  
+  /*--- Get the number of remainder points after the even division. ---*/
+  
+  unsigned long remainder = val_npoint_global - total_points;
+  for (unsigned long ii = 0; ii < remainder; ii++) {
+    nPoint_Lin[ii]++;
+  }
+  
+  /*--- Store the local number of nodes on each proc in the linear
+   partitioning, the beginning/end index, and the linear partitioning
+   within an array in cumulative storage format. ---*/
+  
+  beg_node[0]   = 0;
+  end_node[0]   = beg_node[0] + nPoint_Lin[0];
+  nPoint_Cum[0] = 0;
+  for (int iProc = 1; iProc < size; iProc++) {
+    beg_node[iProc]   = end_node[iProc-1];
+    end_node[iProc]   = beg_node[iProc] + nPoint_Lin[iProc];
+    nPoint_Cum[iProc] = nPoint_Cum[iProc-1] + nPoint_Lin[iProc-1];
+  }
+  nPoint_Cum[size] = val_npoint_global;
+  
+}
+
+unsigned long CPhysicalGeometry::GetLinearPartition(unsigned long val_global_index) {
+  
+  unsigned long iProcessor = 0;
+  
+  /*--- Initial guess ---*/
+  
+  iProcessor = val_global_index/nPoint_Lin[0];
+  
+  /*--- Guard against going over size. ---*/
+  
+  if (iProcessor >= (unsigned long)size)
+    iProcessor = (unsigned long)size-1;
+  
+  /*--- Move up or down until we find the processor. ---*/
+  
+  if (val_global_index >= nPoint_Cum[iProcessor])
+    while(val_global_index >= nPoint_Cum[iProcessor+1])
+      iProcessor++;
+  else
+    while(val_global_index < nPoint_Cum[iProcessor])
+      iProcessor--;
+  
+  return iProcessor;
+  
+}
+
+void CPhysicalGeometry::PrepareAdjacency(CConfig *config) {
+  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Executing the partitioning functions." << endl;
+  
+  vector<unsigned long>::iterator it;
+  unsigned long i, j;
+  
+  /*--- Post process the adjacency information in order to get it into the
+   proper format before sending the data to ParMETIS. We need to remove
+   repeats and adjust the size of the array for each local node. ---*/
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Building the graph adjacency structure." << endl;
+  
+  unsigned long loc_adjc_size=0;
+  vector<unsigned long> adjac_vec;
+  unsigned long adj_elem_size;
+  
+  xadj = new idx_t [nPoint_Lin[rank]+1];
+  xadj[0]=0;
+  vector<unsigned long> temp_adjacency;
+  unsigned long local_count=0;
+  
+  /*--- Here, we transfer the adjacency information from a multi-dim vector
+   on a node-by-node basis into a single vector container. First, we sort
+   the entries and remove the duplicates we find for each node, then we
+   copy it into the single vect and clear memory from the multi-dim vec. ---*/
+  
+  for (i = 0; i < nPoint; i++) {
+    
+    for (j = 0; j<adj_nodes[i].size(); j++) {
+      temp_adjacency.push_back(adj_nodes[i][j]);
+    }
+    
+    sort(temp_adjacency.begin(), temp_adjacency.end());
+    it = unique(temp_adjacency.begin(), temp_adjacency.end());
+    loc_adjc_size = it - temp_adjacency.begin();
+    
+    temp_adjacency.resize(loc_adjc_size);
+    xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
+    local_count++;
+    
+    for (j = 0; j<loc_adjc_size; j++) {
+      adjac_vec.push_back(temp_adjacency[j]);
+    }
+    
+    temp_adjacency.clear();
+    adj_nodes[i].clear();
+    
+  }
+  
+  /*--- Now that we know the size, create the final adjacency array. This
+   is the array that we will feed to ParMETIS for partitioning. ---*/
+  
+  adj_elem_size = xadj[nPoint_Lin[rank]];
+  adjacency = new idx_t [adj_elem_size];
+  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
+  
+  xadj_size = nPoint_Lin[rank]+1;
+  adjacency_size = adj_elem_size;
+  
+  /*--- Free temporary memory used to build the adjacency. ---*/
+  
+  adjac_vec.clear();
+  
+  vector< vector<unsigned long> >::iterator it2;
+  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
+    it2->clear();
+  adj_nodes.clear();
+  
+#endif
+#endif
+  
+}
+
 void CPhysicalGeometry::SetSendReceive(CConfig *config) {
 
   unsigned short Counter_Send, Counter_Receive, iMarkerSend, iMarkerReceive;
@@ -8539,7 +8660,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned short nMarker_Max = config->GetnMarker_Max();
   unsigned long VTK_Type, iMarker, iChar;
   unsigned long iCount = 0;
-  unsigned long iElem_Bound = 0, iPoint = 0, ielem = 0;
+  unsigned long iElem_Bound = 0, iPoint = 0, iElem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
   vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
@@ -8562,18 +8683,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
-  unsigned long total_pt_accounted = 0;
-  unsigned long rem_points = 0;
   unsigned long element_count = 0;
   unsigned long boundary_marker_count = 0;
   unsigned long node_count = 0;
   unsigned long local_element_count = 0;
-  
-  /*--- Initialize counters for local/global points & elements ---*/
-  
-#ifdef HAVE_MPI
-  unsigned long j;
-#endif
   
   /*--- Actuator disk preprocesing ---*/
   
@@ -8587,7 +8700,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 
   vector<unsigned long long> EdgeBegin, EdgeEnd;
   
-  unsigned long AuxEdge, iEdge, jEdge, nEdges, nPointVolume, iElem;
+  unsigned long AuxEdge, iEdge, jEdge, nEdges, nPointVolume;
   unsigned long long FirstEdgeIndex, SecondEdgeIndex;
   
   vector<unsigned long> ActDiskPoint_Front, VolumePoint, PerimeterPoint;
@@ -9075,14 +9188,6 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   nelem_hexa     = 0; Global_nelem_hexa     = 0;
   nelem_prism    = 0; Global_nelem_prism    = 0;
   nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
-  
-  /*--- Allocate memory for the linear partition of the mesh. These
-   arrays are the size of the number of ranks. ---*/
-  
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
-  nPoint_Linear = new unsigned long[size+1];
 
   /*--- Open grid file ---*/
   
@@ -9243,33 +9348,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
        This is a linear partitioning with the addition of a simple load
        balancing for any remainder points. ---*/
       
-      total_pt_accounted = 0;
-      for (i = 0; i < (unsigned long)size; i++) {
-        npoint_procs[i] = nPoint/size;
-        total_pt_accounted = total_pt_accounted + npoint_procs[i];
-      }
-      
-      /*--- Get the number of remainder points after the even division ---*/
-      
-      rem_points = nPoint-total_pt_accounted;
-      for (i = 0; i<rem_points; i++) {
-        npoint_procs[i]++;
-      }
-      
-      /*--- Store the local number of nodes and the beginning/end index.
-       nPoint is always used to store the local number of points. ---*/
-      
-      nPoint = npoint_procs[rank];
-      starting_node[0] = 0;
-      ending_node[0]   = starting_node[0] + npoint_procs[0];
-      nPoint_Linear[0] = 0;
-      for (unsigned long i = 1; i < (unsigned long)size; i++) {
-        starting_node[i] = ending_node[i-1];
-        ending_node[i]   = starting_node[i] + npoint_procs[i];
-        nPoint_Linear[i] = nPoint_Linear[i-1] + npoint_procs[i-1];
-      }
-      nPoint_Linear[size] = Global_nPoint;
+      PrepareOffsets(Global_nPoint);
 
+      /*--- Store the local number of nodes.
+       nPoint is always used to store the local number of points. ---*/
+
+      nPoint = nPoint_Lin[rank];
+      
       /*--- Here we check if a point in the mesh file lies in the domain
        and if so, then store it on the local processor. We only create enough
        space in the node container for the local nodes at this point. ---*/
@@ -9301,7 +9386,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         /*--- We only read information for this node if it is owned by this
          rank based upon our initial linear partitioning. ---*/
         
-        if ((node_count >= starting_node[rank]) && (node_count < ending_node[rank])) {
+        if ((node_count >= beg_node[rank]) && (node_count < end_node[rank])) {
           switch(nDim) {
             case 2:
               GlobalIndex = node_count;
@@ -9340,10 +9425,14 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   map<unsigned long,bool> ElemIn;
   map<unsigned long, bool>::const_iterator MI;
+
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
-  /*--- Initialize a vector for the adjacency information (ParMETIS). ---*/
-  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
+  /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> >::iterator it2;
+  adj_nodes.resize(nPoint);
+  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
+    it2->resize(0);
 #endif
 #endif
   
@@ -9436,7 +9525,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_TRIANGLE; i++) {
               
-              local_index = vnodes_triangle[i]-starting_node[rank];
+              local_index = vnodes_triangle[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9502,7 +9591,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_QUADRILATERAL; i++) {
               
-              local_index = vnodes_quad[i]-starting_node[rank];
+              local_index = vnodes_quad[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9567,7 +9656,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_TETRAHEDRON; i++) {
               
-              local_index = vnodes_tetra[i]-starting_node[rank];
+              local_index = vnodes_tetra[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9633,7 +9722,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_HEXAHEDRON; i++) {
               
-              local_index = vnodes_hexa[i]-starting_node[rank];
+              local_index = vnodes_hexa[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9702,7 +9791,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_PRISM; i++) {
               
-              local_index = vnodes_prism[i]-starting_node[rank];
+              local_index = vnodes_prism[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9770,7 +9859,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             for (unsigned short i = 0; i < N_POINTS_PYRAMID; i++) {
               
-              local_index = vnodes_pyramid[i]-starting_node[rank];
+              local_index = vnodes_pyramid[i]-beg_node[rank];
               
               if ((local_index >= 0) && (local_index < (long)nPoint)) {
                 
@@ -9820,76 +9909,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   nElem = local_element_count;
   
-  /*--- Begin dealing with the partitioning by adjusting the adjacency
-   information and clear out memory where possible. ---*/
+  /*--- Prepare the adjacency information that ParMETIS will need for
+   completing the graph partitioning in parallel. ---*/
   
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
-  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Executing the partitioning functions." << endl;
-  
-  /*--- Post process the adjacency information in order to get it into the
-   proper format before sending the data to ParMETIS. We need to remove
-   repeats and adjust the size of the array for each local node. ---*/
-  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Building the graph adjacency structure." << endl;
-  
-  unsigned long loc_adjc_size=0;
-  vector<unsigned long> adjac_vec;
-  unsigned long adj_elem_size;
-  
-  xadj = new idx_t [npoint_procs[rank]+1];
-  xadj[0]=0;
-  vector<unsigned long> temp_adjacency;
-  unsigned long local_count=0;
-  
-  /*--- Here, we transfer the adjacency information from a multi-dim vector
-   on a node-by-node basis into a single vector container. First, we sort
-   the entries and remove the duplicates we find for each node, then we
-   copy it into the single vect and clear memory from the multi-dim vec. ---*/
-  
-  for (unsigned long i = 0; i < nPoint; i++) {
-    
-    for (j = 0; j<adj_nodes[i].size(); j++) {
-      temp_adjacency.push_back(adj_nodes[i][j]);
-    }
-    
-    sort(temp_adjacency.begin(), temp_adjacency.end());
-    it = unique(temp_adjacency.begin(), temp_adjacency.end());
-    loc_adjc_size = it - temp_adjacency.begin();
-    
-    temp_adjacency.resize(loc_adjc_size);
-    xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
-    local_count++;
-    
-    for (j = 0; j<loc_adjc_size; j++) {
-      adjac_vec.push_back(temp_adjacency[j]);
-    }
-    
-    temp_adjacency.clear();
-    adj_nodes[i].clear();
-    
-  }
-  
-  /*--- Now that we know the size, create the final adjacency array. This
-   is the array that we will feed to ParMETIS for partitioning. ---*/
-  
-  adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new idx_t [adj_elem_size];
-  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
-  
-  xadj_size = npoint_procs[rank]+1;
-  adjacency_size = adj_elem_size;
-  
-  /*--- Free temporary memory used to build the adjacency. ---*/
-  
-  adjac_vec.clear();
-  adj_nodes.clear();
-  
-#endif
-#endif
+  PrepareAdjacency(config);
   
   /*--- Open the mesh file again and now that we know the number of
    elements needed on each partition, allocate memory for them. ---*/
@@ -10314,7 +10337,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             if (duplicate) bound[iMarker+1] = new CPrimalGrid* [nElem_Bound[iMarker+1]];
 
-            nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; ielem = 0;
+            nelem_edge_bound = 0; nelem_triangle_bound = 0; nelem_quad_bound = 0; iElem = 0;
             for (iElem_Bound = 0; iElem_Bound < nElem_Bound[iMarker]; iElem_Bound++) {
               getline(mesh_file, text_line);
               istringstream bound_line(text_line);
@@ -10327,45 +10350,45 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   }
                   
                   bound_line >> vnodes_edge[0]; bound_line >> vnodes_edge[1];
-                  bound[iMarker][ielem] = new CLine(vnodes_edge[0], vnodes_edge[1],2);
+                  bound[iMarker][iElem] = new CLine(vnodes_edge[0], vnodes_edge[1],2);
                   
                   if (duplicate) {
                     if (ActDisk_Bool[vnodes_edge[0]]) { vnodes_edge[0] = ActDiskPoint_Back[vnodes_edge[0]]; }
                     if (ActDisk_Bool[vnodes_edge[1]]) { vnodes_edge[1] = ActDiskPoint_Back[vnodes_edge[1]]; }
-                    bound[iMarker+1][ielem] = new CLine(vnodes_edge[0], vnodes_edge[1],2);
+                    bound[iMarker+1][iElem] = new CLine(vnodes_edge[0], vnodes_edge[1],2);
                   }
                   
-                  ielem++; nelem_edge_bound++; break;
+                  iElem++; nelem_edge_bound++; break;
                   
                 case TRIANGLE:
                   bound_line >> vnodes_triangle[0]; bound_line >> vnodes_triangle[1]; bound_line >> vnodes_triangle[2];
-                  bound[iMarker][ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
+                  bound[iMarker][iElem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
                   
                   if (duplicate) {
                     if (ActDisk_Bool[vnodes_triangle[0]]) { vnodes_triangle[0] = ActDiskPoint_Back[vnodes_triangle[0]]; }
                     if (ActDisk_Bool[vnodes_triangle[1]]) { vnodes_triangle[1] = ActDiskPoint_Back[vnodes_triangle[1]]; }
                     if (ActDisk_Bool[vnodes_triangle[2]]) { vnodes_triangle[2] = ActDiskPoint_Back[vnodes_triangle[2]]; }
-                    bound[iMarker+1][ielem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
+                    bound[iMarker+1][iElem] = new CTriangle(vnodes_triangle[0], vnodes_triangle[1], vnodes_triangle[2],3);
                     
                   }
                   
-                  ielem++; nelem_triangle_bound++; break;
+                  iElem++; nelem_triangle_bound++; break;
                   
                 case QUADRILATERAL:
                   
                   bound_line >> vnodes_quad[0]; bound_line >> vnodes_quad[1]; bound_line >> vnodes_quad[2]; bound_line >> vnodes_quad[3];
                   
-                  bound[iMarker][ielem] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
+                  bound[iMarker][iElem] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
                   
                   if (duplicate) {
                     if (ActDisk_Bool[vnodes_quad[0]]) { vnodes_quad[0] = ActDiskPoint_Back[vnodes_quad[0]]; }
                     if (ActDisk_Bool[vnodes_quad[1]]) { vnodes_quad[1] = ActDiskPoint_Back[vnodes_quad[1]]; }
                     if (ActDisk_Bool[vnodes_quad[2]]) { vnodes_quad[2] = ActDiskPoint_Back[vnodes_quad[2]]; }
                     if (ActDisk_Bool[vnodes_quad[3]]) { vnodes_quad[3] = ActDiskPoint_Back[vnodes_quad[3]]; }
-                    bound[iMarker+1][ielem] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
+                    bound[iMarker+1][iElem] = new CQuadrilateral(vnodes_quad[0], vnodes_quad[1], vnodes_quad[2], vnodes_quad[3],3);
                   }
                   
-                  ielem++; nelem_quad_bound++;
+                  iElem++; nelem_quad_bound++;
                   
                   break;
                   
@@ -10426,7 +10449,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             text_line.erase (0,13); nElem_Bound[iMarker] = atoi(text_line.c_str());
             bound[iMarker] = new CPrimalGrid* [nElem_Bound[iMarker]];
             
-            nelem_vertex = 0; ielem = 0;
+            nelem_vertex = 0; iElem = 0;
             getline (mesh_file, text_line); text_line.erase (0,8);
             config->SetMarker_All_KindBC(iMarker, SEND_RECEIVE);
             config->SetMarker_All_SendRecv(iMarker, atoi(text_line.c_str()));
@@ -10436,9 +10459,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
               istringstream bound_line(text_line);
               bound_line >> VTK_Type; bound_line >> vnodes_vertex; bound_line >> transform;
               
-              bound[iMarker][ielem] = new CVertexMPI(vnodes_vertex, nDim);
-              bound[iMarker][ielem]->SetRotation_Type(transform);
-              ielem++; nelem_vertex++;
+              bound[iMarker][iElem] = new CVertexMPI(vnodes_vertex, nDim);
+              bound[iMarker][iElem]->SetRotation_Type(transform);
+              iElem++; nelem_vertex++;
             }
             
           }
@@ -10553,7 +10576,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   ifstream mesh_file;
   unsigned short VTK_Type = 0, iMarker = 0;
   unsigned short nMarker_Max = config->GetnMarker_Max();
-  unsigned long iPoint = 0, iProcessor = 0, ielem = 0, GlobalIndex = 0;
+  unsigned long iPoint = 0, iElem = 0, GlobalIndex = 0;
   unsigned long globalOffset = 0;
   nZone = val_nZone;
   
@@ -10562,7 +10585,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
   su2double Coord_cgns[3] = {0.0,0.0,0.0};
   int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
-  int *vertices = NULL, *cells = NULL, nMarkers = 0, *boundVerts = NULL, npe;
+  cgsize_t *vertices = NULL, *cells = NULL, *boundVerts = NULL;
+  int nMarkers = 0, npe;
   int interiorElems = 0, totalVerts = 0;
   int cell_dim = 0, phys_dim = 0, nbndry, parent_flag, file_type;
   char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
@@ -10596,10 +10620,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   unsigned long Local_nElem;
   unsigned long Local_nElemTri, Local_nElemQuad, Local_nElemTet;
   unsigned long Local_nElemHex, Local_nElemPrism, Local_nElemPyramid;
-  SU2_MPI::Request *send_req, *recv_req;
-  SU2_MPI::Status  status;
-  int ind;
 #endif
+  
+  SU2_MPI::Request *connSendReq = NULL, *idSendReq = NULL;
+  SU2_MPI::Request *connRecvReq = NULL, *idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
+  unsigned long iProcessor;
+  unsigned long iNode, jNode;
   
   /*--- Initialize counters for local/global points & elements ---*/
   
@@ -10614,19 +10641,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   
   /*--- Initialize some additional counters for the parallel partitioning ---*/
   
-  unsigned long total_pt_accounted = 0;
-  unsigned long rem_points         = 0;
   unsigned long element_count      = 0;
   unsigned long element_remainder  = 0;
   unsigned long total_elems        = 0;
   
   /*--- Allocate memory for the linear partitioning of the mesh. These
    arrays are the size of the number of ranks. ---*/
-  
-  starting_node = new unsigned long[size];
-  ending_node   = new unsigned long[size];
-  npoint_procs  = new unsigned long[size];
-  nPoint_Linear = new unsigned long[size+1];
 
   unsigned long *nElem_Linear  = new unsigned long[size];
   
@@ -10697,9 +10717,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     
     /*--- Initialize some data structures for  all zones. ---*/
     
-    vertices     = new int[nzones];
-    cells        = new int[nzones];
-    boundVerts   = new int[nzones];
+    vertices     = new cgsize_t[nzones];
+    cells        = new cgsize_t[nzones];
+    boundVerts   = new cgsize_t[nzones];
     coordArray   = new passivedouble*[nzones];
     gridCoords   = new passivedouble**[nzones];
     elemTypeVTK  = new int*[nzones];
@@ -10770,44 +10790,24 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
         cout << "Reading grid coordinates." << endl;
         cout << "Number of coordinate dimensions is " << ncoords << "." << endl;
       }
-      
+
       /*--- Compute the number of points that will be on each processor.
        This is a linear partitioning with the addition of a simple load
        balancing for any remainder points. ---*/
       
-      total_pt_accounted = 0;
-      for (int ii = 0; ii < size; ii++) {
-        npoint_procs[ii] = vertices[j-1]/size;
-        total_pt_accounted = total_pt_accounted + npoint_procs[ii];
-      }
+      PrepareOffsets(vertices[j-1]);
       
-      /*--- Get the number of remainder points after the even division ---*/
+      /*--- Store the local number of nodes on this rank. ---*/
       
-      rem_points = vertices[j-1]-total_pt_accounted;
-      for (unsigned long ii = 0; ii < rem_points; ii++) {
-        npoint_procs[ii]++;
-      }
-      
-      /*--- Store the local number of nodes and the beginning/end index ---*/
-      
-      nPoint = npoint_procs[rank];
-      starting_node[0] = 0;
-      ending_node[0]   = starting_node[0] + npoint_procs[0];
-      nPoint_Linear[0] = 0;
-      for (int ii = 1; ii < size; ii++) {
-        starting_node[ii] = ending_node[ii-1];
-        ending_node[ii]   = starting_node[ii] + npoint_procs[ii];
-        nPoint_Linear[ii] = nPoint_Linear[ii-1] + npoint_procs[ii-1];
-      }
-      nPoint_Linear[size] = vertices[j-1];
+      nPoint = nPoint_Lin[rank];
       
       /*--- Set the value of range_max to the total number of nodes in
        the unstructured mesh. Also allocate memory for the temporary array
        that will hold the grid coordinates as they are extracted. Note the
        +1 for CGNS convention. ---*/
       
-      range_min = (cgsize_t)starting_node[rank]+1;
-      range_max = (cgsize_t)ending_node[rank];
+      range_min = (cgsize_t)beg_node[rank]+1;
+      range_max = (cgsize_t)end_node[rank];
       coordArray[j-1] = new passivedouble[nPoint];
       
       /*--- Allocate memory for the 2-D array that will store the x, y,
@@ -11307,35 +11307,27 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
           int *nElem_Flag = new int[size];
           
-          for (int ii=0; ii < size; ii++) {
-            nElem_Send[ii] = 0;
-            nElem_Recv[ii] = 0;
-            nElem_Flag[ii]= -1;
+          for (iProc = 0; iProc < size; iProc++) {
+            nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
           }
           nElem_Send[size] = 0; nElem_Recv[size] = 0;
           
-          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
-            for ( int jj = 0; jj < nPoinPerElem[ii]; jj++ ) {
+          for (iElem = 0; iElem < (unsigned long)nElems[j-1][s-1]; iElem++) {
+            for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
               
               /*--- Get the index of the current point. ---*/
               
-              iPoint = connElemTemp[ii*connSize + jj];
+              iPoint = connElemTemp[iElem*connSize + iNode];
               
               /*--- Search for the processor that owns this point ---*/
               
-              iProcessor = iPoint/npoint_procs[0];
-              if (iProcessor >= (unsigned long)size)
-                iProcessor = (unsigned long)size-1;
-              if (iPoint >= nPoint_Linear[iProcessor])
-                while(iPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
-              else
-                while(iPoint <  nPoint_Linear[iProcessor])   iProcessor--;
+              iProcessor = GetLinearPartition(iPoint);
               
               /*--- If we have not visited this element yet, increment our
                number of elements that must be sent to a particular proc. ---*/
               
-              if (nElem_Flag[iProcessor] != ii) {
-                nElem_Flag[iProcessor] = ii;
+              if ((nElem_Flag[iProcessor] != (int)iElem)) {
+                nElem_Flag[iProcessor] = (int)iElem;
                 nElem_Send[iProcessor+1]++;
               }
               
@@ -11346,12 +11338,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            all processors. After this communication, each proc knows how
            many cells it will receive from each other processor. ---*/
           
-#ifdef HAVE_MPI
           SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
                             &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
-#else
-          nElem_Recv[1] = nElem_Send[1];
-#endif
           
           /*--- Prepare to send connectivities. First check how many
            messages we will be sending and receiving. Here we also put
@@ -11359,15 +11347,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
            communications simpler. ---*/
           
           int nSends = 0, nRecvs = 0;
-          for (int ii=0; ii < size; ii++) nElem_Flag[ii] = -1;
+          for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc] = -1;
           
-          for (int ii = 0; ii < size; ii++) {
+          for (iProc = 0; iProc < size; iProc++) {
+            if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+            if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
             
-            if ((ii != rank) && (nElem_Send[ii+1] > 0)) nSends++;
-            if ((ii != rank) && (nElem_Recv[ii+1] > 0)) nRecvs++;
-            
-            nElem_Send[ii+1] += nElem_Send[ii];
-            nElem_Recv[ii+1] += nElem_Recv[ii];
+            nElem_Send[iProc+1] += nElem_Send[iProc];
+            nElem_Recv[iProc+1] += nElem_Recv[iProc];
           }
 
           /*--- Allocate memory to hold the connectivity that we are
@@ -11377,49 +11364,45 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           unsigned long *connSend = NULL;
           connSend = new unsigned long[connSize*nElem_Send[size]];
-          for (int ii = 0; ii < connSize*nElem_Send[size]; ii++)
-            connSend[ii] = 0;
+          for (int iSend = 0; iSend < connSize*nElem_Send[size]; iSend++)
+            connSend[iSend] = 0;
           
           /*--- Create an index variable to keep track of our index
            position as we load up the send buffer. ---*/
           
           unsigned long *index = new unsigned long[size];
-          for (int ii=0; ii < size; ii++) index[ii] = connSize*nElem_Send[ii];
+          for (iProc = 0; iProc < size; iProc++)
+            index[iProc] = connSize*nElem_Send[iProc];
           
           /*--- Loop through our elements and load the elems and their
            additional data that we will send to the other procs. ---*/
           
-          for ( int ii = 0; ii < nElems[j-1][s-1]; ii++ ) {
-            for ( int jj = 0; jj < nPoinPerElem[ii]; jj++ ) {
+          for (iElem = 0; iElem < (unsigned long)nElems[j-1][s-1]; iElem++) {
+            for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
               
               /*--- Get the index of the current point. ---*/
               
-              iPoint = connElemTemp[ii*connSize + jj];
+              iPoint = connElemTemp[iElem*connSize + iNode];
               
               /*--- Search for the processor that owns this point ---*/
               
-              iProcessor = iPoint/npoint_procs[0];
-              if (iProcessor >= (unsigned long)size) iProcessor = (unsigned long)size-1;
-              if (iPoint >= nPoint_Linear[iProcessor])
-                while(iPoint >= nPoint_Linear[iProcessor+1]) iProcessor++;
-              else
-                while(iPoint <  nPoint_Linear[iProcessor])   iProcessor--;
+              iProcessor = GetLinearPartition(iPoint);
               
               /*--- Load connectivity into the buffer for sending ---*/
               
-              if (nElem_Flag[iProcessor] != ii) {
+              if (nElem_Flag[iProcessor] != (int)iElem) {
                 
-                nElem_Flag[iProcessor] = ii;
+                nElem_Flag[iProcessor] = iElem;
                 unsigned long nn = index[iProcessor];
                 
                 /*--- Load the VTK type first into the conn array,
                  then the connectivity vals, and last, the global ID. ---*/
                 
-                connSend[nn] = elemTypes[ii]; nn++;
-                for ( int kk = 0; kk < nPoinPerElem[ii]; kk++ ) {
-                  connSend[nn] = connElemTemp[ii*connSize + kk]; nn++;
+                connSend[nn] = elemTypes[iElem]; nn++;
+                for (jNode = 0; jNode < nPoinPerElem[iElem]; jNode++) {
+                  connSend[nn] = connElemTemp[iElem*connSize + jNode]; nn++;
                 }
-                connSend[nn] = (cgsize_t)elemGlobalID[ii];
+                connSend[nn] = (cgsize_t)elemGlobalID[iElem];
                 
                 /*--- Increment the index by the message length ---*/
                 
@@ -11444,77 +11427,53 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           
           unsigned long *connRecv = NULL;
           connRecv = new unsigned long[connSize*nElem_Recv[size]];
-          for (int ii = 0; ii < connSize*nElem_Recv[size]; ii++)
-            connRecv[ii] = 0;
-            
-#ifdef HAVE_MPI
-          send_req = new SU2_MPI::Request[nSends];
-          recv_req = new SU2_MPI::Request[nRecvs];
-          unsigned long iMessage = 0;
-          for (int ii=0; ii<size; ii++) {
-            if ((ii != rank) && (nElem_Recv[ii+1] > nElem_Recv[ii])) {
-              int ll     = connSize*nElem_Recv[ii];
-              int kk     = nElem_Recv[ii+1] - nElem_Recv[ii];
-              int count  = connSize*kk;
-              int source = ii;
-              int tag    = ii + 1;
-              SU2_MPI::Irecv(&(connRecv[ll]), count, MPI_UNSIGNED_LONG, source, tag,
-                        MPI_COMM_WORLD, &(recv_req[iMessage]));
-              iMessage++;
-            }
+          for (iRecv = 0; iRecv < connSize*nElem_Recv[size]; iRecv++)
+            connRecv[iRecv] = 0;
+          
+          /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+          
+          if (nSends > 0) {
+            connSendReq = new SU2_MPI::Request[nSends];
+            idSendReq   = new SU2_MPI::Request[nSends];
+          }
+          if (nRecvs > 0) {
+            connRecvReq = new SU2_MPI::Request[nRecvs];
+            idRecvReq   = new SU2_MPI::Request[nRecvs];
           }
           
-          /*--- Launch the non-blocking sends of the connectivity. ---*/
+          /*--- Launch the non-blocking sends and receives. ---*/
           
-          iMessage = 0;
-          for (int ii=0; ii<size; ii++) {
-            if ((ii != rank) && (nElem_Send[ii+1] > nElem_Send[ii])) {
-              int ll = connSize*nElem_Send[ii];
-              int kk = nElem_Send[ii+1] - nElem_Send[ii];
-              int count  = connSize*kk;
-              int dest = ii;
-              int tag    = rank + 1;
-              SU2_MPI::Isend(&(connSend[ll]), count, MPI_UNSIGNED_LONG, dest, tag,
-                        MPI_COMM_WORLD, &(send_req[iMessage]));
-              iMessage++;
-            }
-          }
-#endif
+          InitiateComms(connSend, nElem_Send, connSendReq,
+                        connRecv, nElem_Recv, connRecvReq,
+                        connSize, COMM_TYPE_UNSIGNED_LONG);
           
           /*--- Copy my own rank's data into the recv buffer directly. ---*/
           
-          int mm = connSize*nElem_Recv[rank];
-          int ll = connSize*nElem_Send[rank];
-          int kk = connSize*nElem_Send[rank+1];
-
-          for (int nn=ll; nn<kk; nn++, mm++) connRecv[mm] = connSend[nn];
+          iRecv   = connSize*nElem_Recv[rank];
+          myStart = connSize*nElem_Send[rank];
+          myFinal = connSize*nElem_Send[rank+1];
+          for (iSend = myStart; iSend < myFinal; iSend++) {
+            connRecv[iRecv] = connSend[iSend];
+            iRecv++;
+          }
           
-          /*--- Wait for the non-blocking sends and recvs to complete ---*/
+          /*--- Complete the non-blocking communications. ---*/
           
-#ifdef HAVE_MPI
-          int number = nSends;
-          for (int ii = 0; ii < nSends; ii++)
-            SU2_MPI::Waitany(number, send_req, &ind, &status);
-          
-          number = nRecvs;
-          for (int ii = 0; ii < nRecvs; ii++)
-            SU2_MPI::Waitany(number, recv_req, &ind, &status);
-          
-          delete [] send_req;
-          delete [] recv_req;
-#endif
+          CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
           
           /*--- Store the connectivity for this rank in the proper data
            structure before post-processing below. First, allocate the
            appropriate amount of memory for this section. ---*/
 
-          connElems[j-1][s-1] = new cgsize_t*[connSize];
-          for (int jj = 0; jj < connSize; jj++) {
-            connElems[j-1][s-1][jj] = new cgsize_t[nElem_Recv[size]];
-          }
-          for (int ii = 0; ii < nElem_Recv[size]; ii++) {
-            for (int jj = 0; jj < connSize; jj++) {
-              connElems[j-1][s-1][jj][ii] = (cgsize_t)connRecv[ii*connSize+jj];
+          if (nElem_Recv[size] > 0) {
+            connElems[j-1][s-1] = new cgsize_t*[connSize];
+            for (iNode = 0; iNode < connSize; iNode++) {
+              connElems[j-1][s-1][iNode] = new cgsize_t[nElem_Recv[size]];
+            }
+            for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
+              for (iNode = 0; iNode < connSize; iNode++) {
+                connElems[j-1][s-1][iNode][iElem] = (cgsize_t)connRecv[iElem*connSize+iNode];
+              }
             }
           }
           
@@ -11524,6 +11483,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           nElems[j-1][s-1] = nElem_Recv[size];
 
           /*--- Free temporary memory from communications ---*/
+          
+          if (connSendReq != NULL) delete [] connSendReq;
+          if (idSendReq   != NULL) delete [] idSendReq;
+          
+          if (connRecvReq != NULL) delete [] connRecvReq;
+          if (idRecvReq   != NULL) delete [] idRecvReq;
           
           delete [] connSend;
           delete [] connRecv;
@@ -11558,23 +11523,29 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
     if (nDim == 3) cout << "Three dimensional problem." << endl;
   }
   
-  /*--- Initialize an array for the adjacency information (ParMETIS). ---*/
-  
-  vector< vector<unsigned long> > adj_nodes(nPoint, vector<unsigned long>(0));
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> >::iterator it2;
+  adj_nodes.resize(nPoint);
+  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
+    it2->resize(0);
+#endif
+#endif
   
   /*--- Loop to check total number of elements we have locally. ---*/
   
-  ielem = 0;
+  iElem = 0;
   for (int k = 0; k < nzones; k++) {
     for (int s = 0; s < nsections; s++) {
       if (isInternal[k][s]) {
         for ( int i = 0; i < nElems[k][s]; i++) {
-          ielem++;
+          iElem++;
         }
       }
     }
   }
-  nElem = ielem;
+  nElem = iElem;
   
   /*--- Store the total number of interior elements (global). ---*/
   
@@ -11594,13 +11565,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   }
   
   /*--- Set up the global to local element mapping. ---*/
+  
   Global_to_Local_Elem.clear();
   
-  /*--- Allocate space for elements. We allocate enough for all interior
-   elements globally, but we will only instantiate our local set. ---*/
+  /*--- Allocate space for elements. We only instantiate our local set. ---*/
   
   elem = new CPrimalGrid*[nElem];
-  ielem = 0;
+  iElem = 0;
   unsigned long global_id = 0;
   
   /*--- Loop over all the internal, local volumetric elements. ---*/
@@ -11625,18 +11596,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TRIANGLE+1][i];
+              
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+              /*--- Build adjacency assuming the VTK connectivity ---*/
               for (unsigned short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
-                    if (ii!=j) {
-                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
-                    }
+                    if (ii!=j) adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[j]);
                   }
                 }
               }
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
-              ielem++; nelem_triangle++;
+#endif
+#endif
+
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
+              iElem++; nelem_triangle++;
               break;
               
             case QUADRILATERAL:
@@ -11646,20 +11622,21 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_QUADRILATERAL+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                   /*--- Build adjacency assuming the VTK connectivity ---*/
-                  
-                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
-                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
-                  
+              for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
                 }
               }
+#endif
+#endif
               
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
-              ielem++; nelem_quad++;
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
+              iElem++; nelem_quad++;
               break;
               
             case TETRAHEDRON:
@@ -11668,18 +11645,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_TETRAHEDRON+1][i];
+              
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+                    /*--- Build adjacency assuming the VTK connectivity ---*/
               for (unsigned short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
                   for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
-                    if (ii!=j) {
-                      adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[j]);
-                    }
+                    if (ii!=j) adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[j]);
                   }
                 }
               }
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
-              ielem++; nelem_tetra++;
+#endif
+#endif
+
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
+              iElem++; nelem_tetra++;
               break;
               
             case HEXAHEDRON:
@@ -11688,27 +11670,28 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_HEXAHEDRON+1][i];
-              
-              for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                   /*--- Build adjacency assuming the VTK connectivity ---*/
-                  
+              for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
                   if (ii < 4) {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
                   } else {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-3)%4+4]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-1)%4+4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-3)%4+4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-1)%4+4]);
                   }
-                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+4)%8]);
-
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+4)%8]);
                 }
               }
+#endif
+#endif
               
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
-              ielem++; nelem_hexa++;
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
+              iElem++; nelem_hexa++;
               break;
               
             case PRISM:
@@ -11718,26 +11701,27 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
               }
               global_id = connElems[k][s][N_POINTS_PRISM+1][i];
               
-              for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
-                  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                   /*--- Build adjacency assuming the VTK connectivity ---*/
-                  
+              for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
                   if (ii < 3) {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%3]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+2)%3]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%3]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+2)%3]);
                   } else {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-2)%3+3]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii-1)%3+3]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-2)%3+3]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-1)%3+3]);
                   }
-                  adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%6]);
-                  
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%6]);
                 }
               }
+#endif
+#endif
               
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
-              ielem++; nelem_prism++;
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
+              iElem++; nelem_prism++;
               break;
               
             case PYRAMID:
@@ -11746,29 +11730,30 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                 vnodes_cgns[j] = connElems[k][s][j+1][i];
               }
               global_id = connElems[k][s][N_POINTS_PYRAMID+1][i];
-              
-              for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
-                if ((vnodes_cgns[ii]>=starting_node[rank])&&(vnodes_cgns[ii]<ending_node[rank])) {
                   
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
                   /*--- Build adjacency assuming the VTK connectivity ---*/
-                  
+              for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
+                if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
                   if (ii < 4) {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[4]);
                   } else {
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[0]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[1]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[2]);
-                    adj_nodes[vnodes_cgns[ii]-starting_node[rank]].push_back(vnodes_cgns[3]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[0]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[1]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[2]);
+                    adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[3]);
                   }
-                  
                 }
               }
+#endif
+#endif
               
-              Global_to_Local_Elem[global_id]=ielem;
-              elem[ielem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
-              ielem++; nelem_pyramid++;
+              Global_to_Local_Elem[global_id]=iElem;
+              elem[iElem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
+              iElem++; nelem_pyramid++;
               break;
               
             default:
@@ -11808,64 +11793,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   Global_nelem_pyramid  = nelem_pyramid;
 #endif
 
-#ifdef HAVE_MPI
-#ifdef HAVE_PARMETIS
+  /*--- Prepare the adjacency information that ParMETIS will need for
+   completing the graph partitioning in parallel. ---*/
   
-  /*--- Post process the adjacency information in order to get it into the
-   proper format before sending the data to ParMETIS. We need to remove
-   repeats and adjust the size of the array for each local node. ---*/
-  
-  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
-    cout << "Building the graph adjacency structure." << endl;
-  
-  unsigned long loc_adjc_size=0;
-  vector<unsigned long> adjac_vec;
-  unsigned long adj_elem_size;
-  vector<unsigned long>::iterator it;
-  
-  xadj = new idx_t[npoint_procs[rank]+1];
-  xadj[0]=0;
-  vector<unsigned long> temp_adjacency;
-  unsigned long local_count=0;
-  
-  for (unsigned long i = 0; i < nPoint; i++) {
-    
-    for (unsigned long j=0; j<adj_nodes[i].size(); j++) {
-      temp_adjacency.push_back(adj_nodes[i][j]);
-    }
-    
-    sort(temp_adjacency.begin(), temp_adjacency.end());
-    it = unique( temp_adjacency.begin(), temp_adjacency.end());
-    loc_adjc_size=it - temp_adjacency.begin();
-    
-    temp_adjacency.resize( loc_adjc_size);
-    xadj[local_count+1]=xadj[local_count]+loc_adjc_size;
-    local_count++;
-    
-    for (unsigned long j=0; j<loc_adjc_size; j++) {
-      adjac_vec.push_back(temp_adjacency[j]);
-    }
-    temp_adjacency.clear();
-    adj_nodes[i].clear();
-  }
-  
-  /*--- Now that we know the size, create the final adjacency array ---*/
-  
-  adj_elem_size = xadj[npoint_procs[rank]];
-  adjacency = new idx_t [adj_elem_size];
-  copy(adjac_vec.begin(), adjac_vec.end(), adjacency);
-  
-  xadj_size = npoint_procs[rank]+1;
-  adjacency_size = adj_elem_size;
-  
-  /*--- Free temporary memory used to build the adjacency. ---*/
-  
-  adjac_vec.clear();
-  
-#endif
-#endif
-  
-  adj_nodes.clear();
+  PrepareAdjacency(config);
   
   /*--- Store the nodal coordinates from the linear partitioning. ---*/
 
@@ -11878,7 +11809,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
   iPoint = 0;
   nPointNode = nPoint;
   node = new CPoint*[nPoint];
-  GlobalIndex = starting_node[rank];
+  GlobalIndex = beg_node[rank];
   for (int k = 0; k < nzones; k++ ) {
     for (unsigned long i = 0; i < nPoint; i++ ) {
       for (int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[k][j][i];
@@ -11893,7 +11824,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       GlobalIndex++;
     }
   }
-  
+
   /*--- For now, the master node takes care of all markers. ---*/
   
   if (rank == MASTER_NODE) {
@@ -11915,7 +11846,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
           /*--- Initialize some counter variables ---*/
           
           nelem_edge_bound = 0; nelem_triangle_bound = 0;
-          nelem_quad_bound = 0; ielem = 0;
+          nelem_quad_bound = 0; iElem = 0;
           
           Marker_Tag = sectionNames[k][s];
           
@@ -11984,14 +11915,14 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                   if (nDim == 3) {
                     SU2_MPI::Error("Remove line boundary elems from the mesh.", CURRENT_FUNCTION);
                   }
-                  bound[iMarker][ielem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
-                  ielem++; nelem_edge_bound++; break;
+                  bound[iMarker][iElem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
+                  iElem++; nelem_edge_bound++; break;
                 case TRIANGLE:
-                  bound[iMarker][ielem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2],3);
-                  ielem++; nelem_triangle_bound++; break;
+                  bound[iMarker][iElem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2],3);
+                  iElem++; nelem_triangle_bound++; break;
                 case QUADRILATERAL:
-                  bound[iMarker][ielem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
-                  ielem++; nelem_quad_bound++; break;
+                  bound[iMarker][iElem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
+                  iElem++; nelem_quad_bound++; break;
               }
             }
             
@@ -12108,6 +12039,1445 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
                  string("To use CGNS, remove the -DNO_CGNS directive ") +
                  string("from the makefile and supply the correct path ") + 
                  string("to the CGNS library."), CURRENT_FUNCTION);
+#endif
+  
+}
+
+void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
+                                                  string val_mesh_filename,
+                                                  unsigned short val_iZone,
+                                                  unsigned short val_nZone,
+                                                  bool val_flag) {
+  
+  /*--- Original CGNS reader implementation by Thomas D. Economon,
+   Francisco Palacios. Improvements for mixed-element meshes generated
+   by ICEM added by Martin Spel (3D) & Shlomy Shitrit (2D), April 2014.
+   Parallel version by Thomas D. Economon, February 2015. ---*/
+  
+#ifdef HAVE_CGNS
+  
+  string text_line, Marker_Tag;
+  ifstream mesh_file;
+  unsigned short VTK_Type = 0, iMarker = 0;
+  unsigned short nMarker_Max = config->GetnMarker_Max();
+  unsigned long iPoint = 0, iElem = 0, GlobalIndex = 0;
+  unsigned long globalOffset = 0, interiorElems = 0;
+  nZone = val_nZone;
+  
+  /*--- Local variables needed when calling the CGNS mid-level API. ---*/
+  
+  unsigned long vnodes_cgns[8] = {0,0,0,0,0,0,0,0};
+  su2double Coord_cgns[3] = {0.0,0.0,0.0};
+  int fn, nbases = 0, nzones = 0, ngrids = 0, ncoords = 0, nsections = 0;
+  
+  int nMarkers = 0, npe;
+  int cell_dim = 0, phys_dim = 0, nbndry, parent_flag, file_type;
+  char basename[CGNS_STRING_SIZE], zonename[CGNS_STRING_SIZE];
+  char coordname[CGNS_STRING_SIZE];
+  
+  cgsize_t* cgsize; cgsize = new cgsize_t[3];
+  
+  ZoneType_t zonetype;
+  DataType_t datatype;
+  
+  ElementType_t elemType;
+  
+  cgsize_t range_min, range_max, startE, endE;
+  range_min = 1;
+  string currentElem;
+  
+  cgsize_t ElementDataSize = 0;
+  cgsize_t* parentData = NULL;
+  
+  /*--- Initialize counters for local/global points & elements ---*/
+  
+  SU2_MPI::Request *connSendReq = NULL, *idSendReq = NULL;
+  SU2_MPI::Request *connRecvReq = NULL, *idRecvReq = NULL;
+  int iProc, iSend, iRecv, myStart, myFinal;
+  unsigned long iProcessor;
+  unsigned long iNode, jNode;
+  unsigned long nPointCGNS, nElemCGNS, nVertexCGNS;
+
+  /*--- Initialize counters for local/global points & elements ---*/
+  
+  Global_nPoint  = 0; Global_nPointDomain   = 0;
+  Global_nElem   = 0; Global_nElemDomain    = 0;
+  nelem_edge     = 0; Global_nelem_edge     = 0;
+  nelem_triangle = 0; Global_nelem_triangle = 0;
+  nelem_quad     = 0; Global_nelem_quad     = 0;
+  nelem_tetra    = 0; Global_nelem_tetra    = 0;
+  nelem_hexa     = 0; Global_nelem_hexa     = 0;
+  nelem_prism    = 0; Global_nelem_prism    = 0;
+  nelem_pyramid  = 0; Global_nelem_pyramid  = 0;
+  
+  /*--- Initialize some additional counters for the parallel partitioning ---*/
+  
+  unsigned long element_count      = 0;
+  unsigned long element_remainder  = 0;
+  unsigned long total_elems        = 0;
+  
+  /*--- Allocate memory for the linear partitioning of the mesh. These
+   arrays are the size of the number of ranks. ---*/
+  
+  unsigned long *nElem_Linear  = new unsigned long[size];
+  
+  unsigned long *elemB = new unsigned long[size];
+  unsigned long *elemE = new unsigned long[size];
+  
+  /*--- Helper variables for controlling data layout for connectivity. ---*/
+
+  unsigned short connSize = 10;
+  int skip = 2;
+  
+  /*--- The CGNS reader assumes a single database. We use the value for
+   iZone input to the function with +1 for the 1-based indexing in CGNS. ---*/
+  
+  const int iBase = 1;
+  const int iZone = val_iZone + 1;
+  
+  /*--- Check whether the supplied file is truly a CGNS file. ---*/
+  
+  if (cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK) {
+    SU2_MPI::Error(val_mesh_filename +
+                   string(" is not a CGNS file."), CURRENT_FUNCTION);
+  }
+  
+  /*--- Open the CGNS file for reading. The value of fn returned
+   is the specific index number for this file and will be
+   repeatedly used in the function calls. ---*/
+  
+  if (cg_open(val_mesh_filename.c_str(), CG_MODE_READ, &fn)) cg_error_exit();
+  if (rank == MASTER_NODE) {
+    cout << "Reading the CGNS file: ";
+    cout << val_mesh_filename.c_str() << "." << endl;
+  }
+  
+  /*--- Get the number of databases. This is the highest node
+   in the CGNS heirarchy. ---*/
+  
+  if ( cg_nbases(fn, &nbases) ) cg_error_exit();
+  if (rank == MASTER_NODE)
+    cout << "CGNS file contains " << nbases << " database(s)." << endl;
+  
+  /*--- Check if there is more than one database. Throw an
+   error if there is because this reader can currently
+   only handle one database. ---*/
+  
+  if ( nbases > 1 ) {
+    SU2_MPI::Error("CGNS reader currently can only handle 1 database.",
+                   CURRENT_FUNCTION);
+  }
+  
+  /*--- Read the databases. Note that the CGNS indexing starts at 1. ---*/
+  
+  if (cg_base_read(fn, iBase, basename, &cell_dim, &phys_dim)) cg_error_exit();
+  
+  /*--- Get the number of zones for this base. ---*/
+  
+  if (cg_nzones(fn, iBase, &nzones)) cg_error_exit();
+  if (rank == MASTER_NODE) {
+    cout << "Database " << iBase << ", " << basename << ": " << nzones;
+    cout << " zone(s), cell dimension of " << cell_dim << ", physical ";
+    cout << "dimension of " << phys_dim << "." << endl;
+  }
+  
+  /*--- Check if there is more than one zone. Throw an
+   error if the number of zones does not match the expected number. ---*/
+  
+  if (nzones != val_nZone) {
+    SU2_MPI::Error("Mismatch in the number of zones (nzones != val_nZone)",
+                   CURRENT_FUNCTION);
+  }
+  
+  /*--- Read the basic information for this zone, including
+   the name and the number of vertices, cells, and
+   boundary cells which are stored in the cgsize variable. ---*/
+  
+  if (cg_zone_read(fn, iBase, iZone, zonename, cgsize)) cg_error_exit();
+  
+  /*--- Rename the zone size information for clarity.
+   NOTE: The number of cells here may be only the number of
+   interior elements or it may be the total. This needs to
+   be counted explicitly later. ---*/
+  
+  nPointCGNS = cgsize[0]; nElemCGNS = cgsize[1]; nVertexCGNS = cgsize[2];
+  
+  /*--- Increment the total number of vertices from all zones. ---*/
+  
+  nPoint       = nPointCGNS;
+  nPointDomain = nPointCGNS;
+  
+  /*--- Store the global counts in the normal variables. ---*/
+  
+  Global_nPoint       = nPointCGNS;
+  Global_nPointDomain = nPointCGNS;
+  
+  /*--- Print some information about the current zone. ---*/
+  
+  if (cg_zone_type(fn, iBase, iZone, &zonetype)) cg_error_exit();
+  
+  /*--- Check for an unstructured mesh. Throw an error otherwise. ---*/
+  
+  if (zonetype != Unstructured)
+    SU2_MPI::Error("Structured CGNS zone found while unstructured expected.",
+                   CURRENT_FUNCTION);
+  
+  if (rank == MASTER_NODE) {
+    cout << "Zone " << iZone << ", " << zonename << ": " << nPointCGNS;
+    cout << " vertices, " << nElemCGNS << " cells, " << nVertexCGNS;
+    cout << " boundary vertices." << endl;
+  }
+  
+  /*--- Retrieve the number of grids in this zone. For now, we know
+   this is one, but to be more general, this will need to check and
+   allow for a loop over all grids. ---*/
+  
+  if (cg_ngrids(fn, iBase, iZone, &ngrids)) cg_error_exit();
+  if (ngrids > 1) {
+    SU2_MPI::Error("CGNS reader currently handles only 1 grid per zone.",
+                   CURRENT_FUNCTION);
+  }
+  
+  /*--- Check the number of coordinate arrays stored in this zone.
+   Should be 2 for 2-D grids and 3 for 3-D grids. ---*/
+  
+  if (cg_ncoords( fn, iBase, iZone, &ncoords)) cg_error_exit();
+  if (rank == MASTER_NODE) {
+    cout << "Reading grid coordinates." << endl;
+    cout << "Number of coordinate dimensions is " << ncoords << "." << endl;
+  }
+  
+  /*--- Compute the number of points that will be on each processor.
+   This is a linear partitioning with the addition of a simple load
+   balancing for any remainder points. ---*/
+  
+  PrepareOffsets(Global_nPoint);
+  
+  /*--- Store the local number of nodes for this rank. ---*/
+  
+  nPoint = nPoint_Lin[rank];
+  
+  /*--- Read the dimension of the problem ---*/
+  
+  nDim = cell_dim;
+  if (rank == MASTER_NODE) {
+    if (nDim == 2) cout << "Two dimensional problem." << endl;
+    if (nDim == 3) cout << "Three dimensional problem." << endl;
+  }
+  
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+  /*--- Resize the vector for the adjacency information (ParMETIS). ---*/
+  vector< vector<unsigned long> >::iterator it2;
+  adj_nodes.resize(nPoint);
+  for (it2 = adj_nodes.begin(); it2 != adj_nodes.end(); it2++)
+    it2->resize(0);
+#endif
+#endif
+  
+  /*--- Set the value of range_max to the total number of nodes in
+   the unstructured mesh. Also allocate memory for the temporary array
+   that will hold the grid coordinates as they are extracted. Note the
+   +1 for CGNS convention. ---*/
+  
+  range_min = (cgsize_t)beg_node[rank]+1;
+  range_max = (cgsize_t)end_node[rank];
+
+  /*--- Create buffer to hold the grid coordinates for our rank. ---*/
+  
+  vector<vector<su2double> > gridCoords(ncoords, vector<su2double>(nPoint));
+  
+  /*--- Loop over each set of coordinates. ---*/
+  
+  for (int k = 0; k < ncoords; k++) {
+    
+    /*--- Read the coordinate info. This will retrieve the
+     data type (either RealSingle or RealDouble) as
+     well as the coordname which will specify the
+     type of data that it is based in the SIDS convention.
+     This might be "CoordinateX," for instance. ---*/
+    
+    if (cg_coord_info(fn, iBase, iZone, k+1, &datatype, coordname))
+      cg_error_exit();
+    if (rank == MASTER_NODE) {
+      cout << "Loading " << coordname;
+      if (size > SINGLE_NODE) {
+        cout << " values into linear partitions." << endl;
+      } else {
+        cout << " values." << endl;
+      }
+    }
+    
+    /*--- Check the coordinate name to decide the index for storage. ---*/
+    
+    unsigned short indC = 0;
+    if      (string(coordname) == "CoordinateX") indC = 0;
+    else if (string(coordname) == "CoordinateY") indC = 1;
+    else if (string(coordname) == "CoordinateZ") indC = 2;
+    else
+      SU2_MPI::Error(string("Unknown coordinate name, ") + coordname +
+                     string(", in the CGNS file."), CURRENT_FUNCTION);
+    
+    /*--- Now read our rank's chunk of coordinates from the file. ---*/
+    
+    switch (datatype) {
+      case RealSingle: {
+        
+        /*--- Read the coordinates with a buffer of float type. ---*/
+        
+        vector<float> coordsFloat(nPoint);
+        if (cg_coord_read(fn, iBase, iZone, coordname, datatype, &range_min,
+                          &range_max, coordsFloat.data())) cg_error_exit();
+        
+        /*--- Copy these coords into the array for storage until loading. ---*/
+        
+        for (unsigned long m = 0; m < nPoint; m++)
+          gridCoords[indC][m] = coordsFloat[m];
+        
+        break;
+      }
+        
+      case RealDouble: {
+        
+        /*--- Read the coordinates with a buffer of double type. ---*/
+
+        vector<passivedouble> coordsDouble(nPoint);
+        if ( cg_coord_read(fn, iBase, iZone, coordname, datatype, &range_min,
+                           &range_max, coordsDouble.data()) ) cg_error_exit();
+        
+        /*--- Copy these coords into the array for storage until loading. ---*/
+        
+        for (unsigned long m = 0; m < nPoint; m++)
+          gridCoords[indC][m] = coordsDouble[m];
+        
+        break;
+      }
+        
+      default: {
+        SU2_MPI::Error("CGNS coordinates must be single or double precision.",
+                       CURRENT_FUNCTION);
+        break;
+      }
+    }
+  }
+  
+  /*--- Store the nodal coordinates from the linear partitioning. ---*/
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
+    cout << Global_nPoint << " grid points before partitioning." << endl;
+  } else if (rank == MASTER_NODE) {
+    cout << Global_nPoint << " grid points." << endl;
+  }
+  
+  iPoint = 0;
+  nPointNode = nPoint;
+  node = new CPoint*[nPoint];
+  GlobalIndex = beg_node[rank];
+  for (unsigned long i = 0; i < nPoint; i++ ) {
+    for (int j = 0; j < cell_dim; j++ ) Coord_cgns[j] = gridCoords[j][i];
+    switch(nDim) {
+      case 2:
+        node[iPoint] = new CPoint(Coord_cgns[0],
+                                  Coord_cgns[1],
+                                  GlobalIndex,
+                                  config);
+        iPoint++; break;
+      case 3:
+        node[iPoint] = new CPoint(Coord_cgns[0],
+                                  Coord_cgns[1],
+                                  Coord_cgns[2],
+                                  GlobalIndex,
+                                  config);
+        iPoint++; break;
+    }
+    GlobalIndex++;
+  }
+  
+  /*--- Release the grid coordinates buffer immediately. ---*/
+  
+  for (int k = 0; k < ncoords; k++)
+      gridCoords[k].clear();
+  gridCoords.clear();
+  
+  /*--- Begin section for retrieving the connectivity info. ---*/
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE))
+    cout << "Distributing connectivity across all ranks." << endl;
+  
+  /*--- First check the number of sections. ---*/
+  
+  if (cg_nsections(fn, iBase, iZone, &nsections)) cg_error_exit();
+  if (rank == MASTER_NODE) {
+    cout << "Number of connectivity sections is ";
+    cout << nsections << "." << endl;
+  }
+  
+  /*--- Allocate several data structures to hold the various
+   pieces of information describing each section. It is
+   stored in this manner so that it can be written to
+   SU2 memory later. ---*/
+  
+  vector<int> elemTypeVTK(nsections);
+  vector<int> elemIndex(nsections);
+  vector<int> elemBegin(nsections);
+  vector<int> elemEnd(nsections);
+  vector<int> nElems(nsections);
+  vector<int> dataSize(nsections);
+  
+  vector<bool> isInternal(nsections);
+  
+  vector<vector<char> > sectionNames(nsections, vector<char>(CGNS_STRING_SIZE));
+  
+  vector<vector<cgsize_t> > connElems; connElems.resize(nsections);
+  
+  /*--- Loop over each section. This will include the main
+   connectivity information for the grid cells, as well
+   as any boundaries which were labeled before export. ---*/
+  
+  for (int s = 0; s < nsections; s++) {
+    
+    /*--- Read the connectivity details for this section.
+     Store the total number of elements in this section
+     to be used later for memory allocation. ---*/
+    
+    if (cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
+                        &elemType, &startE, &endE, &nbndry,
+                        &parent_flag)) cg_error_exit();
+    
+    /*--- Store the beginning and ending index for this section. ---*/
+    
+    elemBegin[s] = (int)startE;
+    elemEnd[s]   = (int)endE;
+    
+    /*--- Compute element linear partitioning ---*/
+    
+    element_count = (int) (endE-startE+1);
+    total_elems = 0;
+    for (int ii = 0; ii < size; ii++) {
+      nElem_Linear[ii] = element_count/size;
+      total_elems += nElem_Linear[ii];
+    }
+    
+    /*--- Get the number of remainder elements after even division ---*/
+    
+    element_remainder = element_count-total_elems;
+    for (unsigned long ii = 0; ii < element_remainder; ii++) {
+      nElem_Linear[ii]++;
+    }
+    
+    /*--- Store the number of elements that this rank is responsible for
+     in the current section. ---*/
+    
+    nElems[s] = (int)nElem_Linear[rank];
+    
+    /*--- Get starting and end element index for my rank. ---*/
+    
+    elemB[0] = startE;
+    elemE[0] = startE + nElem_Linear[0] - 1;
+    for (unsigned long ii = 1; ii < (unsigned long)size; ii++) {
+      elemB[ii] = elemE[ii-1]+1;
+      elemE[ii] = elemB[ii] + nElem_Linear[ii] - 1;
+    }
+    
+    /*--- Allocate some memory for the handling the connectivity
+     and auxiliary data that we are need to communicate. ---*/
+    
+    vector<cgsize_t> connElemCGNS(nElems[s]*connSize);
+    
+    vector<unsigned short> elemTypes(nElems[s]);
+    vector<unsigned short> nPoinPerElem(nElems[s]);
+    
+    vector<unsigned long> elemGlobalID(nElems[s]);
+    
+    vector<bool> isMixed(nElems[s]);
+    
+    for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++)
+      isMixed[iElem] = false;
+    
+    /*--- Protect against the situation where there are fewer elements
+     in a section than number of ranks, or the linear partitioning will
+     fail. For now, assume that these must be surfaces, and we will
+     avoid a parallel read and have the master read this section (the
+     master processes all of the markers anyway). ---*/
+    
+    if (nElems[s] < rank+1) {
+      
+      isInternal[s] = false;
+      
+    } else {
+      
+      /*--- Retrieve the connectivity information and store. Note that
+       we are only accessing our rank's piece of the data here in the
+       partial read function in the CGNS API. ---*/
+      
+      if (cg_elements_partial_read(fn, iBase, iZone, s+1, (cgsize_t)elemB[rank],
+                                   (cgsize_t)elemE[rank], connElemCGNS.data(),
+                                   parentData) != CG_OK) cg_error_exit();
+      
+      /*--- Find the number of nodes required to represent
+       this type of element. ---*/
+      
+      ElementType_t elmt_type;
+      if (cg_npe(elemType, &npe)) cg_error_exit();
+      
+      /*--- Loop through all of the elements in this section to get more
+       information and to decide whether it has internal elements. ---*/
+      
+      int counter = 0;
+      for (int ii = 0; ii < nElems[s]; ii++) {
+        
+        /*--- If we have a mixed element section, we need to check the elem
+         type one by one. Set the flag to true if mixed. ---*/
+        
+        if (elemType == MIXED) {
+          elmt_type = ElementType_t(connElemCGNS[counter]);
+          cg_npe(elmt_type, &npe);
+          counter++; for ( int jj = 0; jj < npe; jj++ ) counter++;
+          isMixed[ii] = true;
+        } else {
+          elmt_type = elemType;
+        }
+        
+        /*--- Store the number of verts per elem for the current elem. ---*/
+        
+        nPoinPerElem[ii] = npe;
+        
+        /*--- Store the global ID for this element. Note the -1 to move
+         from CGNS convention to SU2 convention. We also subtract off
+         an additional offset in case we have found boundary sections
+         prior to this one, in order to keep the internal element global
+         IDs indexed starting from zero. ---*/
+        
+        elemGlobalID[ii] = elemB[rank] + ii - 1 - globalOffset;
+        
+        /*--- Need to check the element type and correctly specify the
+         VTK identifier for that element. SU2 recognizes elements by
+         their VTK number. ---*/
+        
+        char buf1[100], buf2[100], buf3[100];
+        
+        switch (elmt_type) {
+          case NODE:
+            currentElem   = "Vertex";
+            elemTypes[ii] = 1;
+            break;
+          case BAR_2:
+            currentElem   = "Line";
+            elemTypes[ii] = 3;
+            break;
+          case BAR_3:
+            currentElem   = "Line";
+            elemTypes[ii] = 3;
+            break;
+          case TRI_3:
+            currentElem   = "Triangle";
+            elemTypes[ii] = 5;
+            break;
+          case QUAD_4:
+            currentElem   = "Quadrilateral";
+            elemTypes[ii] = 9;
+            break;
+          case TETRA_4:
+            currentElem   = "Tetrahedron";
+            elemTypes[ii] = 10;
+            break;
+          case HEXA_8:
+            currentElem   = "Hexahedron";
+            elemTypes[ii] = 12;
+            break;
+          case PENTA_6:
+            currentElem   = "Prism";
+            elemTypes[ii] = 13;
+            break;
+          case PYRA_5:
+            currentElem   = "Pyramid";
+            elemTypes[ii] = 14;
+            break;
+          case HEXA_20:
+            SPRINTF(buf1, "Section %d, npe=%d\n", s+1, npe);
+            SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                           string(buf1) + string(buf2), CURRENT_FUNCTION);
+            break;
+          default:
+            SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+            SPRINTF(buf2, "Section %d\n", s+1);
+            SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3), CURRENT_FUNCTION);
+            break;
+        }
+        
+        /*--- Check if the elements in this section are part
+         of the internal domain or are part of the boundary
+         surfaces. This will be used to separate the
+         internal connectivity from the boundary connectivity.
+         We will check for quad and tri elements for 3-D meshes
+         because these will be the boundaries. Similarly, line
+         elements will be boundaries to 2-D problems. ---*/
+        
+        if ( cell_dim == 2 ) {
+          
+          /*--- In 2-D check for line elements, VTK type 3. ---*/
+          
+          if (elemTypes[ii] == 3) {
+            isInternal[s] = false;
+          } else {
+            isInternal[s] = true;
+            interiorElems++;
+          }
+          
+        } else if (cell_dim == 3) {
+          
+          /*--- In 3-D check for tri/quad elements, VTK types 5 or 9. ---*/
+          
+          switch (elemTypes[ii]) {
+            case 5:
+            case 9:
+              isInternal[s] = false;
+              break;
+            default:
+              isInternal[s] = true;
+              interiorElems++;
+              break;
+          }
+          
+        }
+      }
+      
+      /*--- Print some information to the console. ---*/
+      
+      if (rank == MASTER_NODE) {
+        for (int ii = 0; ii < nElems[s]; ii++)
+          if (isMixed[ii]) {currentElem = "Mixed"; break;}
+        cout << "Loading section " << string(sectionNames[s].data());
+        cout << " of element type " << currentElem << "." << endl;
+      }
+      
+    }
+    
+    /*--- If we have found that this is a boundary section (we assume
+     that internal cells and boundary cells do not exist in the same
+     section together), the master node reads the boundary section.
+     Otherwise, we have all ranks read and communicate the internals. ---*/
+    
+    if (!isInternal[s]) {
+      
+      /*--- Master node should read this entire marker section. Free
+       the memory for the conn. from the CGNS file since we are going
+       to read the section again with the master. ---*/
+      
+      connElemCGNS.clear();
+      nPoinPerElem.clear();
+      elemGlobalID.clear();
+      elemTypes.clear();
+      isMixed.clear();
+      
+      /*--- Since we found an internal section, we should adjust the
+       element global ID offset by the total size of the section. ---*/
+      
+      globalOffset += element_count;
+      
+      if (rank == MASTER_NODE) {
+        
+        /*--- First increment the markers ---*/
+        
+        nMarkers++;
+        
+        /*--- Read the section info again ---*/
+        
+        if ( cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
+                             &elemType, &startE, &endE, &nbndry,
+                             &parent_flag) ) cg_error_exit();
+        
+        /*--- Store the number of elems (all on the master). ---*/
+        
+        nElems[s] = (int) (endE-startE+1);
+        
+        /*--- Read and store the total amount of data that will be
+         listed when reading this section. ---*/
+        
+        if (cg_ElementDataSize(fn, iBase, iZone, s+1, &ElementDataSize))
+          cg_error_exit();
+        dataSize[s] = ElementDataSize;
+        
+        /*--- Find the number of nodes required to represent
+         this type of element. ---*/
+        
+        if (cg_npe(elemType, &npe)) cg_error_exit();
+        elemIndex[s] = npe;
+        
+        /*--- Need to check the element type and correctly
+         specify the VTK identifier for that element.
+         SU2 recognizes elements by their VTK number. ---*/
+        
+        char buf1[100], buf2[100], buf3[100];
+        
+        switch (elemType) {
+          case NODE:
+            elemTypeVTK[s] = 1;
+            break;
+          case BAR_2:
+            elemTypeVTK[s] = 3;
+            break;
+          case BAR_3:
+            elemTypeVTK[s] = 3;
+            break;
+          case TRI_3:
+            elemTypeVTK[s] = 5;
+            break;
+          case QUAD_4:
+            elemTypeVTK[s] = 9;
+            break;
+          case TETRA_4:
+            elemTypeVTK[s] = 10;
+            break;
+          case HEXA_8:
+            elemTypeVTK[s] = 12;
+            break;
+          case PENTA_6:
+            elemTypeVTK[s] = 13;
+            break;
+          case PYRA_5:
+            elemTypeVTK[s] = 14;
+            break;
+          case HEXA_20:
+            SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
+            SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                           string(buf1) + string(buf2), CURRENT_FUNCTION);
+            break;
+          case MIXED:
+            currentElem = "Mixed";
+            elemTypeVTK[s] = -1;
+            break;
+          default:
+            SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+            SPRINTF(buf2, "Section %d\n", s);
+            SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3),
+                           CURRENT_FUNCTION);
+            break;
+        }
+        
+        /*--- In case of mixed data type, allocate place for 8 nodes
+         maximum (hex), plus element type. ---*/
+        
+        if (elemTypeVTK[s] == -1) elemIndex[s] = 9;
+        
+        /*--- Allocate memory for accessing the connectivity and to
+         store it in the proper data structure for post-processing. ---*/
+        
+        vector<cgsize_t> connElemTemp(dataSize[s]);
+        
+        connElems[s].resize(nElems[s]*connSize);
+        
+        /*--- Retrieve the connectivity information and store. ---*/
+        
+        if (cg_elements_read(fn, iBase, iZone, s+1,
+                             connElemTemp.data(), parentData))
+          cg_error_exit();
+        
+        /*--- Copy these values into the larger array for
+         storage until writing the SU2 file. ---*/
+        
+        if (elemTypeVTK[s] == -1) {
+          int counter = 0;
+          for ( int ii = 0; ii < nElems[s]; ii++ ) {
+            ElementType_t elmt_type = ElementType_t(connElemTemp[counter]);
+            cg_npe( elmt_type, &npe);
+            counter++;
+            connElems[s][ii*connSize+0] = 0;
+            connElems[s][ii*connSize+1] = elmt_type;
+            for ( int jj = 0; jj < npe; jj++ ) {
+              connElems[s][ii*connSize+2+jj] = connElemTemp[counter] - 1;
+              counter++;
+            }
+          }
+        } else {
+          int counter = 0;
+          for ( int ii = 0; ii < nElems[s]; ii++ ) {
+            connElems[s][ii*connSize+0] = 0;
+            connElems[s][ii*connSize+1] = elemTypeVTK[s];
+            for ( int jj = 0; jj < elemIndex[s]; jj++ ) {
+              connElems[s][ii*connSize+2+jj] = connElemTemp[counter] - 1;
+              counter++;
+            }
+          }
+        }
+        
+        connElemTemp.clear();
+        
+      } // end master
+      
+    } else {
+      
+      /*--- These are internal elems. Allocate memory on each proc. ---*/
+      
+      vector<cgsize_t> connElemTemp(nElems[s]*connSize);
+      
+      /*--- Copy these values into the larger array into a standard
+       format for the length [...] . ---*/
+      
+      int counterCGNS = 0;
+      for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++) {
+        
+        /*--- Store the conn in chunks of connSize for simplicity. ---*/
+        
+        unsigned long nn = iElem*connSize;
+        
+        /*--- First, store the global element ID and the VTK type. ---*/
+        
+        connElemTemp[nn] = (cgsize_t)elemGlobalID[iElem]; nn++;
+        connElemTemp[nn] = elemTypes[iElem]; nn++;
+        
+        /*--- Store the connectivity values. Note we subtract one from
+         the CGNS 1-based convention. We may also need to remove the first
+         entry is this is a mixed element section. ---*/
+        
+        if (isMixed[iElem]) counterCGNS++;
+        for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
+          connElemTemp[nn] = connElemCGNS[counterCGNS + iNode] - 1; nn++;
+        }
+        counterCGNS += nPoinPerElem[iElem];
+        
+      }
+      
+      /*--- Free the memory for the conn. from the CGNS file. ---*/
+      
+      connElemCGNS.clear();
+      isMixed.clear();
+      
+      /*--- We now have the connectivity stored in linearly partitioned
+       chunks. We need to loop through and decide how many elements we
+       must send to each rank in order to have all elements that
+       surround a particular "owned" node on each rank (i.e., elements
+       will appear on multiple ranks). First, initialize a counter
+       and flag. ---*/
+      
+      int *nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+      int *nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+      int *nElem_Flag = new int[size];
+      
+      for (iProc = 0; iProc < size; iProc++) {
+        nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
+      }
+      nElem_Send[size] = 0; nElem_Recv[size] = 0;
+      
+      for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++) {
+        for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
+          
+          /*--- Get the index of the current point. ---*/
+          
+          iPoint = connElemTemp[iElem*connSize + skip + iNode];
+          
+          /*--- Search for the processor that owns this point ---*/
+          
+          iProcessor = GetLinearPartition(iPoint);
+          
+          /*--- If we have not visited this element yet, increment our
+           number of elements that must be sent to a particular proc. ---*/
+          
+          if ((nElem_Flag[iProcessor] != (int)iElem)) {
+            nElem_Flag[iProcessor] = (int)iElem;
+            nElem_Send[iProcessor+1]++;
+          }
+          
+        }
+      }
+      
+      /*--- Communicate the number of cells to be sent/recv'd amongst
+       all processors. After this communication, each proc knows how
+       many cells it will receive from each other processor. ---*/
+      
+      SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                        &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+      
+      /*--- Prepare to send connectivities. First check how many
+       messages we will be sending and receiving. Here we also put
+       the counters into cumulative storage format to make the
+       communications simpler. ---*/
+      
+      int nSends = 0, nRecvs = 0;
+      for (iProc = 0; iProc < size; iProc++) nElem_Flag[iProc] = -1;
+      
+      for (iProc = 0; iProc < size; iProc++) {
+        if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+        if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
+        
+        nElem_Send[iProc+1] += nElem_Send[iProc];
+        nElem_Recv[iProc+1] += nElem_Recv[iProc];
+      }
+      
+      /*--- Allocate memory to hold the connectivity that we are
+       sending. Note that we are also sending the VTK element type
+       in the first position and also the global ID. We have assumed
+       a constant message size of a hex element + 2 extra vals. ---*/
+      
+      unsigned long *connSend = NULL;
+      connSend = new unsigned long[connSize*nElem_Send[size]];
+      for (int iSend = 0; iSend < connSize*nElem_Send[size]; iSend++)
+        connSend[iSend] = 0;
+      
+      /*--- Create an index variable to keep track of our index
+       position as we load up the send buffer. ---*/
+      
+      unsigned long *index = new unsigned long[size];
+      for (iProc = 0; iProc < size; iProc++)
+        index[iProc] = connSize*nElem_Send[iProc];
+      
+      /*--- Loop through our elements and load the elems and their
+       additional data that we will send to the other procs. ---*/
+      
+      for (iElem = 0; iElem < (unsigned long)nElems[s]; iElem++) {
+        for (iNode = 0; iNode < nPoinPerElem[iElem]; iNode++) {
+          
+          /*--- Get the index of the current point. ---*/
+          
+          iPoint = connElemTemp[iElem*connSize + skip + iNode];
+          
+          /*--- Search for the processor that owns this point ---*/
+          
+          iProcessor = GetLinearPartition(iPoint);
+          
+          /*--- Load connectivity into the buffer for sending ---*/
+          
+          if (nElem_Flag[iProcessor] != (int)iElem) {
+            
+            nElem_Flag[iProcessor] = iElem;
+            unsigned long nn = index[iProcessor];
+            
+            /*--- Load the VTK type first into the conn array,
+             then the connectivity vals, and last, the global ID. ---*/
+            
+            for (jNode = 0; jNode < connSize; jNode++) {
+              connSend[nn] = connElemTemp[iElem*connSize + jNode]; nn++;
+            }
+            
+            /*--- Increment the index by the message length ---*/
+            
+            index[iProcessor] += connSize;
+            
+          }
+        }
+      }
+      
+      /*--- Free memory after loading up the send buffer. ---*/
+      
+      connElemTemp.clear();
+      elemTypes.clear();
+      nPoinPerElem.clear();
+      elemGlobalID.clear();
+      
+      delete [] index;
+      
+      /*--- Allocate the memory that we need for receiving the conn
+       values and then cue up the non-blocking receives. Note that
+       we do not include our own rank in the communications. We will
+       directly copy our own data later. ---*/
+      
+      unsigned long *connRecv = NULL;
+      connRecv = new unsigned long[connSize*nElem_Recv[size]];
+      for (iRecv = 0; iRecv < connSize*nElem_Recv[size]; iRecv++)
+        connRecv[iRecv] = 0;
+      
+      /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+      
+      if (nSends > 0) {
+        connSendReq = new SU2_MPI::Request[nSends];
+        idSendReq   = new SU2_MPI::Request[nSends];
+      }
+      if (nRecvs > 0) {
+        connRecvReq = new SU2_MPI::Request[nRecvs];
+        idRecvReq   = new SU2_MPI::Request[nRecvs];
+      }
+      
+      /*--- Launch the non-blocking sends and receives. ---*/
+      
+      InitiateComms(connSend, nElem_Send, connSendReq,
+                    connRecv, nElem_Recv, connRecvReq,
+                    connSize, COMM_TYPE_UNSIGNED_LONG);
+      
+      /*--- Copy my own rank's data into the recv buffer directly. ---*/
+      
+      iRecv   = connSize*nElem_Recv[rank];
+      myStart = connSize*nElem_Send[rank];
+      myFinal = connSize*nElem_Send[rank+1];
+      for (iSend = myStart; iSend < myFinal; iSend++) {
+        connRecv[iRecv] = connSend[iSend];
+        iRecv++;
+      }
+      
+      /*--- Complete the non-blocking communications. ---*/
+      
+      CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
+      
+      /*--- Store the connectivity for this rank in the proper data
+       structure before post-processing below. First, allocate the
+       appropriate amount of memory for this section. ---*/
+      
+      if (nElem_Recv[size] > 0) {
+        connElems[s].resize(nElem_Recv[size]*connSize);
+        int count = 0;
+        for (iElem = 0; iElem < (unsigned long)nElem_Recv[size]; iElem++) {
+          for (iNode = 0; iNode < connSize; iNode++) {
+            connElems[s][count] = (cgsize_t)connRecv[iElem*connSize+iNode];
+            count++;
+          }
+        }
+      }
+      
+      /*--- Store the total number of elements I now have for
+       the current section after completing the communications. ---*/
+      
+      nElems[s] = nElem_Recv[size];
+      
+      /*--- Free temporary memory from communications ---*/
+      
+      if (connSendReq != NULL) delete [] connSendReq;
+      if (idSendReq   != NULL) delete [] idSendReq;
+      
+      if (connRecvReq != NULL) delete [] connRecvReq;
+      if (idRecvReq   != NULL) delete [] idRecvReq;
+      
+      delete [] connSend;
+      delete [] connRecv;
+      delete [] nElem_Recv;
+      delete [] nElem_Send;
+      delete [] nElem_Flag;
+      
+    }
+    
+  } // end section
+  
+  /*--- Close the CGNS file. ---*/
+  
+  if ( cg_close(fn) ) cg_error_exit();
+  
+  /*--- Loop to check total number of elements we have locally. This
+   number includes repeats across ranks. ---*/
+  
+  iElem = 0;
+  for (int s = 0; s < nsections; s++)
+    if (isInternal[s]) iElem += nElems[s];
+  nElem = iElem;
+  
+  /*--- Store the total number of interior elements (global). ---*/
+  
+#ifdef HAVE_MPI
+  unsigned long Local_nElem = interiorElems;
+  SU2_MPI::Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG,
+                     MPI_SUM, MPI_COMM_WORLD);
+  Global_nElemDomain = Global_nElem;
+#else
+  Global_nElem       = interiorElems;
+  Global_nElemDomain = interiorElems;
+  nElem              = Global_nElem;
+#endif
+  
+  if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
+    cout << Global_nElem << " volume elements before partitioning." << endl;
+  } else if (rank == MASTER_NODE) {
+    cout << Global_nElem << " volume elements." << endl;
+  }
+  
+  /*--- Reset the global to local element mapping. ---*/
+  
+  Global_to_Local_Elem.clear();
+  
+  /*--- Allocate space for elements. We only instantiate our local set. ---*/
+  
+  elem = new CPrimalGrid*[nElem];
+  unsigned long Global_Index_Elem = 0; iElem = 0;
+  
+  /*--- Loop over all the internal, local volumetric elements. ---*/
+  
+  for (int s = 0; s < nsections; s++) {
+    if (isInternal[s]) {
+      for (int i = 0; i < nElems[s]; i++) {
+        
+        /*--- Get the global ID for this element. ---*/
+        
+        Global_Index_Elem = connElems[s][i*connSize+0];
+        
+        /*--- Get the VTK type for this element. This is stored in the
+         first entry of the connectivity structure. ---*/
+        
+        VTK_Type = connElems[s][i*connSize+1];
+        
+        /*--- Instantiate this element and build adjacency structure. ---*/
+        
+        switch(VTK_Type) {
+            
+          case TRIANGLE:
+            
+            for ( unsigned short j = 0; j < N_POINTS_TRIANGLE; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_TRIANGLE; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                for (unsigned short j=0; j<N_POINTS_TRIANGLE; j++) {
+                  if (ii!=j) adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[j]);
+                }
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], nDim);
+            iElem++; nelem_triangle++;
+            break;
+            
+          case QUADRILATERAL:
+            
+            for ( unsigned short j = 0; j < N_POINTS_QUADRILATERAL; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_QUADRILATERAL; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], nDim);
+            iElem++; nelem_quad++;
+            break;
+            
+          case TETRAHEDRON:
+            
+            for ( unsigned short j = 0; j < N_POINTS_TETRAHEDRON; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_TETRAHEDRON; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                for (unsigned short j=0; j<N_POINTS_TETRAHEDRON; j++) {
+                  if (ii!=j) adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[j]);
+                }
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CTetrahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3]);
+            iElem++; nelem_tetra++;
+            break;
+            
+          case HEXAHEDRON:
+            
+            for ( unsigned short j = 0; j < N_POINTS_HEXAHEDRON; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_HEXAHEDRON; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                if (ii < 4) {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                } else {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-3)%4+4]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-1)%4+4]);
+                }
+                adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+4)%8]);
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CHexahedron(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5], vnodes_cgns[6], vnodes_cgns[7]);
+            iElem++; nelem_hexa++;
+            break;
+            
+          case PRISM:
+            
+            for ( unsigned short j = 0; j < N_POINTS_PRISM; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_PRISM; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                if (ii < 3) {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%3]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+2)%3]);
+                } else {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-2)%3+3]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii-1)%3+3]);
+                }
+                adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%6]);
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CPrism(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4], vnodes_cgns[5]);
+            iElem++; nelem_prism++;
+            break;
+            
+          case PYRAMID:
+            
+            for ( unsigned short j = 0; j < N_POINTS_PYRAMID; j++ ) {
+              vnodes_cgns[j] = connElems[s][i*connSize+skip + j];
+            }
+            
+#ifdef HAVE_MPI
+#ifdef HAVE_PARMETIS
+            /*--- Build adjacency assuming the VTK connectivity ---*/
+            for (unsigned short ii=0; ii<N_POINTS_PYRAMID; ii++) {
+              if ((vnodes_cgns[ii]>=beg_node[rank])&&(vnodes_cgns[ii]<end_node[rank])) {
+                if (ii < 4) {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+1)%4]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[(ii+3)%4]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[4]);
+                } else {
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[0]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[1]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[2]);
+                  adj_nodes[vnodes_cgns[ii]-beg_node[rank]].push_back(vnodes_cgns[3]);
+                }
+              }
+            }
+#endif
+#endif
+            
+            Global_to_Local_Elem[Global_Index_Elem]=iElem;
+            elem[iElem] = new CPyramid(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3], vnodes_cgns[4]);
+            iElem++; nelem_pyramid++;
+            break;
+            
+          default:
+            SU2_MPI::Error("Element type not supported!", CURRENT_FUNCTION);
+            break;
+        }
+      }
+      
+      /*--- Release the memory for holding the conn in this section. ---*/
+      
+      connElems[s].clear();
+      
+    }
+  }
+  
+#ifdef HAVE_MPI
+  unsigned long Local_nElemTri     = nelem_triangle;
+  unsigned long Local_nElemQuad    = nelem_quad;
+  unsigned long Local_nElemTet     = nelem_tetra;
+  unsigned long Local_nElemHex     = nelem_hexa;
+  unsigned long Local_nElemPrism   = nelem_prism;
+  unsigned long Local_nElemPyramid = nelem_pyramid;
+  SU2_MPI::Allreduce(&Local_nElemTri,     &Global_nelem_triangle,  1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemQuad,    &Global_nelem_quad,      1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemTet,     &Global_nelem_tetra,     1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemHex,     &Global_nelem_hexa,      1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPrism,   &Global_nelem_prism,     1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&Local_nElemPyramid, &Global_nelem_pyramid,   1,
+                     MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#else
+  Global_nelem_triangle = nelem_triangle;
+  Global_nelem_quad     = nelem_quad;
+  Global_nelem_tetra    = nelem_tetra;
+  Global_nelem_hexa     = nelem_hexa;
+  Global_nelem_prism    = nelem_prism;
+  Global_nelem_pyramid  = nelem_pyramid;
+#endif
+  
+  /*--- Prepare the adjacency information that ParMETIS will need for
+   completing the graph partitioning in parallel. ---*/
+  
+  PrepareAdjacency(config);
+  
+  /*--- For now, the master node takes care of all markers. ---*/
+  
+  if (rank == MASTER_NODE) {
+    
+    /*--- Read number of markers ---*/
+    
+    nMarker = nMarkers;
+    cout << nMarker << " surface markers." << endl;
+    config->SetnMarker_All(nMarker);
+    bound = new CPrimalGrid**[nMarker];
+    nElem_Bound = new unsigned long [nMarker];
+    Tag_to_Marker = new string [nMarker_Max];
+    
+    iMarker = 0;
+    
+    for ( int s = 0; s < nsections; s++ ) {
+      if ( !isInternal[s] ) {
+        
+        /*--- Initialize some counter variables ---*/
+        
+        nelem_edge_bound = 0; nelem_triangle_bound = 0;
+        nelem_quad_bound = 0; iElem = 0;
+        
+        Marker_Tag = string(sectionNames[s].data());
+        
+        /*--- Remove whitespaces from the marker names ---*/
+        Marker_Tag.erase(remove(Marker_Tag.begin(), Marker_Tag.end(),' '), Marker_Tag.end());
+        
+        if (Marker_Tag != "SEND_RECEIVE") {
+          nElem_Bound[iMarker] = nElems[s];
+          if (rank == MASTER_NODE) {
+            cout << nElem_Bound[iMarker]  << " boundary elements in index ";
+            cout << iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
+          }
+          bound[iMarker] = new CPrimalGrid*[nElem_Bound[iMarker]];
+          
+          for ( int i = 0; i < nElems[s]; i++ ) {
+            
+            /*--- Get the VTK type for this element. Check for mixed
+             elements. ---*/
+            
+            if (elemTypeVTK[s] == -1 ) {
+              
+              /*--- Mixed-element support. Check the elem type. ---*/
+              
+              
+              ElementType_t elmt_type = ElementType_t(connElems[s][i*connSize + 1]);
+              cg_npe( elmt_type, &npe);
+              
+              switch (elmt_type) {
+                case NODE:    VTK_Type = 1;  break;
+                case BAR_2:   VTK_Type = 3;  break;
+                case BAR_3:   VTK_Type = 3;  break;
+                case TRI_3:   VTK_Type = 5;  break;
+                case QUAD_4:  VTK_Type = 9;  break;
+                case TETRA_4: VTK_Type = 10; break;
+                case HEXA_8:  VTK_Type = 12; break;
+                case PENTA_6: VTK_Type = 13; break;
+                case PYRA_5:  VTK_Type = 14; break;
+                default:
+                  SU2_MPI::Error("Kind of element not suppported!", CURRENT_FUNCTION);
+                  break;
+              }
+              
+              /*--- Transfer the nodes for this element. ---*/
+              
+              for ( int j = 0; j < npe; j++ ) {
+                vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+              }
+              
+            } else {
+              
+              /*--- Not a mixed section. We know the element type. ---*/
+              
+              VTK_Type = connElems[s][i*connSize + 1]; //elemTypeVTK[k][s];
+              
+              /*--- Transfer the nodes for this element. ---*/
+              
+              for ( int j = 0; j < connSize-skip; j++ ) {
+                vnodes_cgns[j] = connElems[s][i*connSize + skip + j];
+              }
+              
+            }
+            
+            /*--- Instantiate the boundary elements. ---*/
+            
+            switch(VTK_Type) {
+              case LINE:
+                if (nDim == 3) {
+                  SU2_MPI::Error("Remove line boundary elems from the mesh.", CURRENT_FUNCTION);
+                }
+                bound[iMarker][iElem] = new CLine(vnodes_cgns[0], vnodes_cgns[1],2);
+                iElem++; nelem_edge_bound++; break;
+              case TRIANGLE:
+                bound[iMarker][iElem] = new CTriangle(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2],3);
+                iElem++; nelem_triangle_bound++; break;
+              case QUADRILATERAL:
+                bound[iMarker][iElem] = new CQuadrilateral(vnodes_cgns[0], vnodes_cgns[1], vnodes_cgns[2], vnodes_cgns[3],3);
+                iElem++; nelem_quad_bound++; break;
+            }
+          }
+          
+          /*--- Update config information storing the boundary information in the right place ---*/
+          
+          Tag_to_Marker[config->GetMarker_CfgFile_TagBound(Marker_Tag)] = Marker_Tag;
+          config->SetMarker_All_TagBound(iMarker, Marker_Tag);
+          config->SetMarker_All_KindBC(iMarker, config->GetMarker_CfgFile_KindBC(Marker_Tag));
+          config->SetMarker_All_Monitoring(iMarker, config->GetMarker_CfgFile_Monitoring(Marker_Tag));
+          config->SetMarker_All_GeoEval(iMarker, config->GetMarker_CfgFile_GeoEval(Marker_Tag));
+          config->SetMarker_All_Designing(iMarker, config->GetMarker_CfgFile_Designing(Marker_Tag));
+          config->SetMarker_All_Plotting(iMarker, config->GetMarker_CfgFile_Plotting(Marker_Tag));
+          config->SetMarker_All_Analyze(iMarker, config->GetMarker_CfgFile_Analyze(Marker_Tag));
+          config->SetMarker_All_ZoneInterface(iMarker, config->GetMarker_CfgFile_ZoneInterface(Marker_Tag));
+          config->SetMarker_All_DV(iMarker, config->GetMarker_CfgFile_DV(Marker_Tag));
+          config->SetMarker_All_Moving(iMarker, config->GetMarker_CfgFile_Moving(Marker_Tag));
+          config->SetMarker_All_PyCustom(iMarker, config->GetMarker_CfgFile_PyCustom(Marker_Tag));
+          config->SetMarker_All_PerBound(iMarker, config->GetMarker_CfgFile_PerBound(Marker_Tag));
+          config->SetMarker_All_SendRecv(iMarker, NONE);
+          config->SetMarker_All_Turbomachinery(iMarker, config->GetMarker_CfgFile_Turbomachinery(Marker_Tag));
+          config->SetMarker_All_TurbomachineryFlag(iMarker, config->GetMarker_CfgFile_TurbomachineryFlag(Marker_Tag));
+          config->SetMarker_All_MixingPlaneInterface(iMarker, config->GetMarker_CfgFile_MixingPlaneInterface(Marker_Tag));
+          
+        }
+        
+        /*--- Increment the marker count. ---*/
+        
+        iMarker++;
+        
+        /*--- Release the memory for holding the conn in this section. ---*/
+        
+        connElems[s].clear();
+        
+      }
+    }
+  }
+  
+  /*--- Periodic transformations are not implemented yet for CGNS.
+   Store default zeros. ---*/
+  
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  su2double* center    = new su2double[3];
+  su2double* rotation  = new su2double[3];
+  su2double* translate = new su2double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
+  delete [] center; delete [] rotation; delete [] translate;
+  
+  /*--- Deallocate temporary memory. ---*/
+  
+  delete [] nElem_Linear;
+
+  delete [] elemB;
+  delete [] elemE;
+
+  delete [] cgsize;
+  
+#else
+  SU2_MPI::Error("SU2 built without CGNS support. \nTo use CGNS, build SU2 accordingly.",
+                 CURRENT_FUNCTION);
 #endif
   
 }
@@ -16646,7 +18016,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
   
   /*--- This routine should only ever be called if we have parallel support
    with MPI and have the ParMETIS library compiled and linked. ---*/
-  
+
 #ifdef HAVE_MPI
 #ifdef HAVE_PARMETIS
   
@@ -16688,7 +18058,7 @@ void CPhysicalGeometry::SetColorGrid_Parallel(CConfig *config) {
     
     vtxdist[0] = 0;
     for (int i = 0; i < size; i++) {
-      vtxdist[i+1] = (idx_t)ending_node[i];
+      vtxdist[i+1] = (idx_t)end_node[i];
     }
     
     /*--- Calling ParMETIS ---*/
