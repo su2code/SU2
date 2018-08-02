@@ -12412,6 +12412,136 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     cout << nsections << "." << endl;
   }
   
+  /*--- First, check all sections to find the element types and to
+   classify them as either surface or volume elements. We will also
+   perform some error checks here to avoid partitioning issues. ---*/
+  
+  vector<vector<char> > sectionNames(nsections, vector<char>(CGNS_STRING_SIZE));
+
+  vector<bool> isInternal(nsections);
+  vector<bool> isMixed2(nsections);
+  
+  vector<unsigned long> elemOffset(nsections+1);
+  elemOffset[0] = 0;
+  interiorElems = 0;
+  
+  for (int s = 0; s < nsections; s++) {
+
+    /*--- Read the connectivity details for this section. ---*/
+
+    if (cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
+                        &elemType, &startE, &endE, &nbndry,
+                        &parent_flag)) cg_error_exit();
+
+    /*--- Compute the total element count in this section (global). ---*/
+
+    element_count = (endE-startE+1);
+
+    /*--- Check the cell type so that we can determine whether this is
+     a surface or volume element section. ---*/
+
+    isInternal[s] = true;
+    isMixed2[s]   = false;
+
+    unsigned short VTK = 0;
+    char buf1[100], buf2[100], buf3[100];
+
+    switch (elemType) {
+      case NODE:
+        currentElem   = "Vertex";
+        VTK = 1;
+        SU2_MPI::Error("Vertex elements detected in section " +
+                       string(sectionNames[s].data()) + ". Please remove.",
+                       CURRENT_FUNCTION);
+        break;
+      case BAR_2:
+        currentElem   = "Line";
+        VTK = 3;
+        if (nDim == 2) isInternal[s] = false;
+        if (nDim == 3)
+          SU2_MPI::Error("Line elements detected in section " +
+                         string(sectionNames[s].data()) + " for a 3D mesh." +
+                         " Please remove.", CURRENT_FUNCTION);
+        break;
+      case BAR_3:
+        currentElem   = "Line";
+        VTK = 3;
+        if (nDim == 2) isInternal[s] = false;
+        if (nDim == 3)
+          SU2_MPI::Error("Line elements detected in section " +
+                         string(sectionNames[s].data()) + " for a 3D mesh." +
+                         " Please remove.", CURRENT_FUNCTION);
+        break;
+      case TRI_3:
+        currentElem   = "Triangle";
+        VTK = 5;
+        if (nDim == 3) isInternal[s] = false;
+        break;
+      case QUAD_4:
+        currentElem   = "Quadrilateral";
+        VTK = 9;
+        if (nDim == 3) isInternal[s] = false;
+        break;
+      case TETRA_4:
+        currentElem   = "Tetrahedron";
+        VTK = 10;
+        break;
+      case HEXA_8:
+        currentElem   = "Hexahedron";
+        VTK = 12;
+        break;
+      case PENTA_6:
+        currentElem   = "Prism";
+        VTK = 13;
+        break;
+      case PYRA_5:
+        currentElem   = "Pyramid";
+        VTK = 14;
+        break;
+      case MIXED:
+        currentElem   = "Mixed";
+        VTK = 15;
+        isMixed2[s] = true;
+        break;
+      case HEXA_20:
+        SPRINTF(buf1, "Section %d, npe=%d\n", s+1, npe);
+        SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+        SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                       string(buf1) + string(buf2), CURRENT_FUNCTION);
+        break;
+      default:
+        SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+        SPRINTF(buf2, "Section %d\n", s+1);
+        SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+        SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3),
+                       CURRENT_FUNCTION);
+        break;
+    }
+
+    /*--- Print some information to the console. ---*/
+
+    if (rank == MASTER_NODE) {
+      cout << "Section " << string(sectionNames[s].data());
+      cout << " contains " << element_count << " elements";
+      cout << " of type " << currentElem << "." << endl;
+    }
+
+    if ((element_count < (unsigned long)size) && isInternal[s]) {
+      SU2_MPI::Error(string("Section contains fewer volume elements than cores.") +
+                     string("\nPlease rerun the calculation with fewer cores."),
+                     CURRENT_FUNCTION);
+    }
+    
+    /*--- Increment the global element offset for each section
+     based on whether or not this is a surface or volume section. ---*/
+    
+    elemOffset[s+1] = elemOffset[s];
+    if (!isInternal[s]) elemOffset[s+1] += element_count;
+    else interiorElems += element_count;
+
+    if (rank == MASTER_NODE)cout << " elem offset " << elemOffset[s] << " elem count " << interiorElems << endl;
+  }
+  
   /*--- Allocate several data structures to hold the various
    pieces of information describing each section. It is
    stored in this manner so that it can be written to
@@ -12425,11 +12555,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   vector<unsigned long> nElems(nsections);
   vector<unsigned long> dataSize(nsections);
   
-  vector<bool> isInternal(nsections);
-  
-  vector<vector<char> > sectionNames(nsections, vector<char>(CGNS_STRING_SIZE));
-  
   vector<vector<cgsize_t> > connElems; connElems.resize(nsections);
+  
+  /*--- Break section read into 2 loops. First, get the volume elems by all
+   ranks followed by a loop to get he markers by the master. ---*/
   
   /*--- Loop over each section. This will include the main
    connectivity information for the grid cells, as well
@@ -12437,6 +12566,13 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   
   for (int s = 0; s < nsections; s++) {
     
+    /*--- If we have found that this is a boundary section (we assume
+     that internal cells and boundary cells do not exist in the same
+     section together), the master node reads the boundary section.
+     Otherwise, we have all ranks read and communicate the internals. ---*/
+    
+    if (isInternal[s]) {
+      
     /*--- Read the connectivity details for this section.
      Store the total number of elements in this section
      to be used later for memory allocation. ---*/
@@ -12494,18 +12630,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     
     for (iElem = 0; iElem < nElems[s]; iElem++)
       isMixed[iElem] = false;
-    
-    /*--- Protect against the situation where there are fewer elements
-     in a section than number of ranks, or the linear partitioning will
-     fail. For now, assume that these must be surfaces, and we will
-     avoid a parallel read and have the master read this section (the
-     master processes all of the markers anyway). ---*/
-    
-    if (nElems[s] < (unsigned long)rank+1) {
-      
-      isInternal[s] = false;
-      
-    } else {
+
       
       /*--- Retrieve the connectivity information and store. Note that
        we are only accessing our rank's piece of the data here in the
@@ -12549,14 +12674,11 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
          prior to this one, in order to keep the internal element global
          IDs indexed starting from zero. ---*/
         
-        elemGlobalID[iElem] = elemB[rank] + iElem - 1 - globalOffset;
-        
-        /*--- Need to check the element type and correctly specify the
-         VTK identifier for that element. SU2 recognizes elements by
-         their VTK number. ---*/
+        elemGlobalID[iElem] = elemB[rank] + iElem - 1 - elemOffset[s];
+
         
         char buf1[100], buf2[100], buf3[100];
-        
+
         switch (elmt_type) {
           case NODE:
             currentElem   = "Vertex";
@@ -12608,209 +12730,15 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
             break;
         }
         
-        /*--- Check if the elements in this section are part
-         of the internal domain or are part of the boundary
-         surfaces. This will be used to separate the
-         internal connectivity from the boundary connectivity.
-         We will check for quad and tri elements for 3-D meshes
-         because these will be the boundaries. Similarly, line
-         elements will be boundaries to 2-D problems. ---*/
-        
-        if ( cell_dim == 2 ) {
-          
-          /*--- In 2-D check for line elements, VTK type 3. ---*/
-          
-          if (elemTypes[iElem] == 3) {
-            isInternal[s] = false;
-          } else {
-            isInternal[s] = true;
-            interiorElems++;
-          }
-          
-        } else if (cell_dim == 3) {
-          
-          /*--- In 3-D check for tri/quad elements, VTK types 5 or 9. ---*/
-          
-          switch (elemTypes[iElem]) {
-            case 5:
-            case 9:
-              isInternal[s] = false;
-              break;
-            default:
-              isInternal[s] = true;
-              interiorElems++;
-              break;
-          }
-          
-        }
       }
+    
       
       /*--- Print some information to the console. ---*/
       
       if (rank == MASTER_NODE) {
-        for (iElem = 0; iElem < nElems[s]; iElem++)
-          if (isMixed[iElem]) {currentElem = "Mixed"; break;}
-        cout << "Loading section " << string(sectionNames[s].data());
-        cout << " of element type " << currentElem << "." << endl;
+        cout << "Loading volume section " << string(sectionNames[s].data());
+        cout <<  "." << endl;
       }
-      
-    }
-    
-    /*--- If we have found that this is a boundary section (we assume
-     that internal cells and boundary cells do not exist in the same
-     section together), the master node reads the boundary section.
-     Otherwise, we have all ranks read and communicate the internals. ---*/
-    
-    if (!isInternal[s]) {
-      
-      /*--- Master node should read this entire marker section. Free
-       the memory for the conn. from the CGNS file since we are going
-       to read the section again with the master. ---*/
-      
-      connElemCGNS.clear();
-      nPoinPerElem.clear();
-      elemGlobalID.clear();
-      elemTypes.clear();
-      isMixed.clear();
-      
-      /*--- Since we found an internal section, we should adjust the
-       element global ID offset by the total size of the section. ---*/
-      
-      globalOffset += element_count;
-      
-      if (rank == MASTER_NODE) {
-        
-        /*--- First increment the markers ---*/
-        
-        nMarkers++;
-        
-        /*--- Read the section info again ---*/
-        
-        if ( cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
-                             &elemType, &startE, &endE, &nbndry,
-                             &parent_flag) ) cg_error_exit();
-        
-        /*--- Store the number of elems (all on the master). ---*/
-        
-        nElems[s] = (endE-startE+1);
-        
-        /*--- Read and store the total amount of data that will be
-         listed when reading this section. ---*/
-        
-        if (cg_ElementDataSize(fn, iBase, iZone, s+1, &ElementDataSize))
-          cg_error_exit();
-        dataSize[s] = ElementDataSize;
-        
-        /*--- Find the number of nodes required to represent
-         this type of element. ---*/
-        
-        if (cg_npe(elemType, &npe)) cg_error_exit();
-        elemIndex[s] = npe;
-        
-        /*--- Need to check the element type and correctly
-         specify the VTK identifier for that element.
-         SU2 recognizes elements by their VTK number. ---*/
-        
-        char buf1[100], buf2[100], buf3[100];
-        
-        switch (elemType) {
-          case NODE:
-            elemTypeVTK[s] = 1;
-            break;
-          case BAR_2:
-            elemTypeVTK[s] = 3;
-            break;
-          case BAR_3:
-            elemTypeVTK[s] = 3;
-            break;
-          case TRI_3:
-            elemTypeVTK[s] = 5;
-            break;
-          case QUAD_4:
-            elemTypeVTK[s] = 9;
-            break;
-          case TETRA_4:
-            elemTypeVTK[s] = 10;
-            break;
-          case HEXA_8:
-            elemTypeVTK[s] = 12;
-            break;
-          case PENTA_6:
-            elemTypeVTK[s] = 13;
-            break;
-          case PYRA_5:
-            elemTypeVTK[s] = 14;
-            break;
-          case HEXA_20:
-            SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
-            SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
-            SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
-                           string(buf1) + string(buf2), CURRENT_FUNCTION);
-            break;
-          case MIXED:
-            currentElem = "Mixed";
-            elemTypeVTK[s] = -1;
-            break;
-          default:
-            SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
-            SPRINTF(buf2, "Section %d\n", s);
-            SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
-            SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3),
-                           CURRENT_FUNCTION);
-            break;
-        }
-        
-        /*--- In case of mixed data type, allocate place for 8 nodes
-         maximum (hex), plus element type. ---*/
-        
-        if (elemTypeVTK[s] == -1) elemIndex[s] = 9;
-        
-        /*--- Allocate memory for accessing the connectivity and to
-         store it in the proper data structure for post-processing. ---*/
-        
-        vector<cgsize_t> connElemTemp(dataSize[s]);
-        
-        connElems[s].resize(nElems[s]*connSize);
-        
-        /*--- Retrieve the connectivity information and store. ---*/
-        
-        if (cg_elements_read(fn, iBase, iZone, s+1,
-                             connElemTemp.data(), parentData))
-          cg_error_exit();
-        
-        /*--- Copy these values into the larger array for
-         storage until writing the SU2 file. ---*/
-        
-        if (elemTypeVTK[s] == -1) {
-          int counter = 0;
-          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
-            ElementType_t elmt_type = ElementType_t(connElemTemp[counter]);
-            cg_npe( elmt_type, &npe);
-            counter++;
-            connElems[s][iElem*connSize+0] = 0;
-            connElems[s][iElem*connSize+1] = elmt_type;
-            for ( int jj = 0; jj < npe; jj++ ) {
-              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
-              counter++;
-            }
-          }
-        } else {
-          int counter = 0;
-          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
-            connElems[s][iElem*connSize+0] = 0;
-            connElems[s][iElem*connSize+1] = elemTypeVTK[s];
-            for ( int jj = 0; jj < (int)elemIndex[s]; jj++ ) {
-              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
-              counter++;
-            }
-          }
-        }
-        
-        connElemTemp.clear();
-        
-      } // end master
-      
-    } else {
       
       /*--- These are internal elems. Allocate memory on each proc. ---*/
       
@@ -13050,6 +12978,177 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
     
   } // end section
   
+  
+  /*--- Loop over each section. This will include the main
+   connectivity information for the grid cells, as well
+   as any boundaries which were labeled before export. ---*/
+  
+  for (int s = 0; s < nsections; s++) {
+    
+    /*--- If we have found that this is a boundary section (we assume
+     that internal cells and boundary cells do not exist in the same
+     section together), the master node reads the boundary section.
+     Otherwise, we have all ranks read and communicate the internals. ---*/
+    
+    if (!isInternal[s]) {
+      
+      
+      if (rank == MASTER_NODE) {
+        
+        /*--- Allocate some memory for the handling the connectivity
+         and auxiliary data that we are need to communicate. ---*/
+        
+        vector<cgsize_t> connElemCGNS(nElems[s]*connSize);
+        
+        vector<unsigned short> elemTypes(nElems[s]);
+        vector<unsigned short> nPoinPerElem(nElems[s]);
+        
+        vector<unsigned long> elemGlobalID(nElems[s]);
+        
+        vector<bool> isMixed(nElems[s]);
+        
+        for (iElem = 0; iElem < nElems[s]; iElem++)
+          isMixed[iElem] = false;
+        
+        /*--- First increment the markers ---*/
+        
+        nMarkers++;
+        
+        /*--- Read the section info again ---*/
+        
+        if ( cg_section_read(fn, iBase, iZone, s+1, sectionNames[s].data(),
+                             &elemType, &startE, &endE, &nbndry,
+                             &parent_flag) ) cg_error_exit();
+        
+        if (rank == MASTER_NODE) {
+          cout << "Loading surface section " << string(sectionNames[s].data());
+          cout <<  "." << endl;
+        }
+        
+        /*--- Store the number of elems (all on the master). ---*/
+        
+        nElems[s] = (endE-startE+1);
+        
+        /*--- Read and store the total amount of data that will be
+         listed when reading this section. ---*/
+        
+        if (cg_ElementDataSize(fn, iBase, iZone, s+1, &ElementDataSize))
+          cg_error_exit();
+        dataSize[s] = ElementDataSize;
+        
+        /*--- Find the number of nodes required to represent
+         this type of element. ---*/
+        
+        if (cg_npe(elemType, &npe)) cg_error_exit();
+        elemIndex[s] = npe;
+        
+        /*--- Need to check the element type and correctly
+         specify the VTK identifier for that element.
+         SU2 recognizes elements by their VTK number. ---*/
+        
+        char buf1[100], buf2[100], buf3[100];
+        
+        switch (elemType) {
+          case NODE:
+            elemTypeVTK[s] = 1;
+            break;
+          case BAR_2:
+            elemTypeVTK[s] = 3;
+            break;
+          case BAR_3:
+            elemTypeVTK[s] = 3;
+            break;
+          case TRI_3:
+            elemTypeVTK[s] = 5;
+            break;
+          case QUAD_4:
+            elemTypeVTK[s] = 9;
+            break;
+          case TETRA_4:
+            elemTypeVTK[s] = 10;
+            break;
+          case HEXA_8:
+            elemTypeVTK[s] = 12;
+            break;
+          case PENTA_6:
+            elemTypeVTK[s] = 13;
+            break;
+          case PYRA_5:
+            elemTypeVTK[s] = 14;
+            break;
+          case HEXA_20:
+            SPRINTF(buf1, "Section %d, npe=%d\n", s, npe);
+            SPRINTF(buf2, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string("HEXA-20 element type not supported\n") +
+                           string(buf1) + string(buf2), CURRENT_FUNCTION);
+            break;
+          case MIXED:
+            currentElem = "Mixed";
+            elemTypeVTK[s] = -1;
+            break;
+          default:
+            SPRINTF(buf1, "Unknown elem: (type %d, npe=%d)\n", elemType, npe);
+            SPRINTF(buf2, "Section %d\n", s);
+            SPRINTF(buf3, "startE %d, endE %d", (int)startE, (int)endE);
+            SU2_MPI::Error(string(buf1) + string(buf2) + string(buf3),
+                           CURRENT_FUNCTION);
+            break;
+        }
+        
+        /*--- In case of mixed data type, allocate place for 8 nodes
+         maximum (hex), plus element type. ---*/
+        
+        if (elemTypeVTK[s] == -1) elemIndex[s] = 9;
+        
+        /*--- Allocate memory for accessing the connectivity and to
+         store it in the proper data structure for post-processing. ---*/
+        
+        vector<cgsize_t> connElemTemp(dataSize[s]);
+        
+        connElems[s].resize(nElems[s]*connSize);
+        
+        /*--- Retrieve the connectivity information and store. ---*/
+        
+        if (cg_elements_read(fn, iBase, iZone, s+1,
+                             connElemTemp.data(), parentData))
+          cg_error_exit();
+        
+        /*--- Copy these values into the larger array for
+         storage until writing the SU2 file. ---*/
+        
+        if (elemTypeVTK[s] == -1) {
+          int counter = 0;
+          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
+            ElementType_t elmt_type = ElementType_t(connElemTemp[counter]);
+            cg_npe( elmt_type, &npe);
+            counter++;
+            connElems[s][iElem*connSize+0] = 0;
+            connElems[s][iElem*connSize+1] = elmt_type;
+            for ( int jj = 0; jj < npe; jj++ ) {
+              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
+              counter++;
+            }
+          }
+        } else {
+          int counter = 0;
+          for (iElem = 0; iElem < nElems[s]; iElem++ ) {
+            connElems[s][iElem*connSize+0] = 0;
+            connElems[s][iElem*connSize+1] = elemTypeVTK[s];
+            for ( int jj = 0; jj < (int)elemIndex[s]; jj++ ) {
+              connElems[s][iElem*connSize+2+jj] = connElemTemp[counter] - 1;
+              counter++;
+            }
+          }
+        }
+        
+        connElemTemp.clear();
+        
+      } // end master
+      
+    }
+    
+  } // end section
+  
   /*--- Close the CGNS file. ---*/
   
   if ( cg_close(fn) ) cg_error_exit();
@@ -13063,17 +13162,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
   nElem = iElem;
   
   /*--- Store the total number of interior elements (global). ---*/
-  
-#ifdef HAVE_MPI
-  unsigned long Local_nElem = interiorElems;
-  SU2_MPI::Allreduce(&Local_nElem, &Global_nElem, 1, MPI_UNSIGNED_LONG,
-                     MPI_SUM, MPI_COMM_WORLD);
-  Global_nElemDomain = Global_nElem;
-#else
+
   Global_nElem       = interiorElems;
   Global_nElemDomain = interiorElems;
-  nElem              = Global_nElem;
-#endif
   
   if ((rank == MASTER_NODE) && (size > SINGLE_NODE)) {
     cout << Global_nElem << " volume elements before partitioning." << endl;
