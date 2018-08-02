@@ -907,18 +907,12 @@ int rank = 0;
 
   if(rank == MASTER_NODE){
   while(!ground_flag){
+    
   	Preprocessing(iPhi, iIter);
-
-    // AD::StartPreacc();
-    // AD::SetPreaccIn(signal.P, signal.len[iPhi]);
-
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
     Attenuation(iPhi);
   	Nonlinearity(iPhi);
-
-    // AD::SetPreaccOut(signal.P, signal.len[iPhi]);
-    // AD::EndPreacc();
 
     ray_z -= dz;
 
@@ -927,7 +921,9 @@ int rank = 0;
   }
 
   if(rank == MASTER_NODE){
-    cout << iIter << ", z = " << ray_z << " m, p_peak = " << p_peak << " Pa" << endl;
+    cout.width(5); cout << iIter;
+    cout.width(12); cout.precision(6); cout << ray_z;
+    cout.width(12); cout.precision(6); cout << p_peak << endl;
     cout << "Signal propagated in " << iIter << " iterations." << endl;
   }
 
@@ -1002,6 +998,8 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
       sigFile << signal.tau[j]/w0 << "\t" << signal.P[j] << endl;
     }
     sigFile.close();
+
+    cout << " Iter" << "        z[m]" << "   p_max[Pa]" << endl;
   }
 
   else{
@@ -1032,8 +1030,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
   DetermineStepSize(iPhi);
 
-  if(iIter%100 == 0){
-    cout << iIter << ", z = " << ray_z << " m, p_peak = " << p_peak << " Pa" << endl;
+  if(iIter%10 == 0){
+    cout.width(5); cout << iIter;
+    cout.width(12); cout.precision(6); cout << ray_z;
+    cout.width(12); cout.precision(6); cout << p_peak << endl;
   }
 
 }

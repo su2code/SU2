@@ -596,7 +596,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
 
                 for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
                   if(rank == MASTER_NODE)
-                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". ";
+                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". " << endl;
                   boom.PropagateSignal(iPhi);
                 }
               }
