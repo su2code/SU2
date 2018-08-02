@@ -1914,24 +1914,28 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Aircraft altitude for boom propagation. \ingroup Config*/
   addDoubleOption("BOOM_FLT_H", Boom_flt_h, 15240.0);
 
+  /*!\brief BOOM_R0
+   *  \n DESCRIPTION: Factor for time step reduction in boom propagation (ABBOOM). \ingroup Config*/
+  addDoubleOption("BOOM_CFL_REDUCE", Boom_cfl_reduce, 1.0);
+
   /*!\brief BOOM_TOL_DPHI
-   *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation. \ingroup Config*/
+   *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation (SUBOOM). \ingroup Config*/
   addDoubleOption("BOOM_TOL_DPHI", Boom_Tol_dphi, 1.0E-3);
 
   /*!\brief BOOM_TOL_DR
-   *  \n DESCRIPTION: Tolerance for radius in boom propagation. \ingroup Config*/
+   *  \n DESCRIPTION: Tolerance for radius in boom propagation (SUBOOM). \ingroup Config*/
   addDoubleOption("BOOM_TOL_DR", Boom_Tol_dr, 1.0E-3);
 
   /*!\brief BOOM_TOL_M
-   *  \n DESCRIPTION: Tolerance for signal slope in boom propagation. \ingroup Config*/
+   *  \n DESCRIPTION: Tolerance for signal slope in boom propagation (SUBOOM). \ingroup Config*/
   addDoubleOption("BOOM_TOL_M", Boom_Tol_m, 5.0E4);
 
   /*!\brief BOOM_TOL_DP
-   *  \n DESCRIPTION: Tolerance for pressure jump in boom propagation. \ingroup Config*/
+   *  \n DESCRIPTION: Tolerance for pressure jump in boom propagation (SUBOOM). \ingroup Config*/
   addDoubleOption("BOOM_TOL_DP", Boom_Tol_dp, 1.0E-6);
 
   /*!\brief BOOM_TOL_L
-   *  \n DESCRIPTION: Tolerance for segment length in boom propagation. \ingroup Config*/
+   *  \n DESCRIPTION: Tolerance for segment length in boom propagation (SUBOOM). \ingroup Config*/
   addDoubleOption("BOOM_TOL_L", Boom_Tol_l, 1.0E-4);
   
   /* END_CONFIG_OPTIONS */

@@ -901,11 +901,12 @@ private:
   su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */
   Boom_r0,                    /*!< \brief Radius from aircraft to begin boom propagation. */
   Boom_flt_h,                 /*!< \brief Aircraft altitude for boom propagation. */
-  Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation. */
-  Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation. */
-  Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation. */
-  Boom_Tol_dp,                /*!< \brief Tolerance for pressure jump in boom propagation. */
-  Boom_Tol_l;                 /*!< \brief Tolerance for segment length in boom propagation. */
+  Boom_cfl_reduce,            /*!< \brief Factor for time step reduction in boom propagation (ABBOOM). */
+  Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation (SUBOOM). */
+  Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation (SUBOOM). */
+  Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation (SUBOOM). */
+  Boom_Tol_dp,                /*!< \brief Tolerance for pressure jump in boom propagation (SUBOOM). */
+  Boom_Tol_l;                 /*!< \brief Tolerance for segment length in boom propagation (SUBOOM). */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -7494,6 +7495,7 @@ public:
   su2double *GetBoom_phi(void);
   su2double GetBoom_r0(void);
   su2double GetBoom_flt_h(void);
+  su2double GetBoom_cfl_reduce(void);
   su2double GetBoom_Tol_dphi(void);
   su2double GetBoom_Tol_dr(void);
   su2double GetBoom_Tol_m(void);

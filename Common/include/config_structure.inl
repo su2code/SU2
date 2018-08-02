@@ -1662,6 +1662,8 @@ inline su2double CConfig::GetBoom_r0(void) {return Boom_r0;}
 
 inline su2double CConfig::GetBoom_flt_h(void) {return Boom_flt_h;}
 
+inline su2double CConfig::GetBoom_cfl_reduce(void) {return Boom_cfl_reduce;}
+
 inline su2double CConfig::GetBoom_Tol_dphi(void) {return Boom_Tol_dphi;}
 
 inline su2double CConfig::GetBoom_Tol_dr(void) {return Boom_Tol_dr;}

@@ -23,6 +23,9 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
 #endif
 
   Kind_Boom_Cost = config->GetKind_ObjFunc();
+  AD_flag = false;
+  if(config->GetAD_Mode()) AD_flag = true;
+  CFL_reduce = config->GetBoom_cfl_reduce();
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -901,15 +904,24 @@ int rank = 0;
 
   unsigned long iIter = 0;
   ground_flag = false;
-  
+
   if(rank == MASTER_NODE){
   while(!ground_flag){
   	Preprocessing(iPhi, iIter);
+
+    // AD::StartPreacc();
+    // AD::SetPreaccIn(signal.P, signal.len[iPhi]);
+
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
     Attenuation(iPhi);
   	Nonlinearity(iPhi);
+
+    // AD::SetPreaccOut(signal.P, signal.len[iPhi]);
+    // AD::EndPreacc();
+
     ray_z -= dz;
+
     iIter++;
   }
   }
@@ -970,7 +982,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/flt_U ;
   	}
-    f0 = flt_U/scale_L; // Characteristic time governed by length of signal
+    f0 = flt_U/(signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0]); // Characteristic time governed by length of signal
     w0 = 2.*M_PI*f0; 
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       signal.P[i] = signal.p_prime[iPhi][i]/p0;
@@ -1020,7 +1032,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
   DetermineStepSize(iPhi);
 
-  if(iIter%1000 == 0){
+  if(iIter%100 == 0){
     cout << iIter << ", z = " << ray_z << " m, p_peak = " << p_peak << " Pa" << endl;
   }
 
@@ -1117,8 +1129,8 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
   ray_theta = new su2double[2];
   ray_c0 = new su2double[2];
   ray_nu = new su2double[2];
-  ray_dt = 1.0E-3;
-  ray_dphi = 1.0E-3;
+  ray_dt = 1.0E-1;
+  ray_dphi = 1.0E-1;
 
   ray_theta[0] = asin(sin(flt_mu)*sin(flt_gamma) - cos(flt_mu)*cos(flt_gamma)*cos(ray_phi[iPhi]));
   ray_theta[1] = asin(sin(flt_mu)*sin(flt_gamma) - cos(flt_mu)*cos(flt_gamma)*cos(ray_phi[iPhi]+ray_dphi));
@@ -1162,14 +1174,14 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
     p_peak = max(signal.P[i]*p0, p_peak);
   }
 
-  dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+  dsigma_non = 0.9*dtau/max_dp; // dsigma < 1/max(dp/dtau)
 
-  // /*---Restrict dsigma based on thermoviscous effects---*/
-  // dsigma_tv = 0.1*Gamma/signal.len[iPhi];
+  /*---Restrict dsigma based on thermoviscous effects---*/
+  dsigma_tv = 0.1*Gamma/signal.len[iPhi];
 
-  // /*---Restrict dsigma based on relaxation---*/
-  // dsigma_relO = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_O2,2))/(C_nu_O2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_O2));
-  // dsigma_relN = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_N2,2))/(C_nu_N2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_N2));
+  /*---Restrict dsigma based on relaxation---*/
+  dsigma_relO = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_O2,2))/(C_nu_O2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_O2));
+  dsigma_relN = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_N2,2))/(C_nu_N2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_N2));
 
   /*---Restrict dsigma based on spreading---*/
   su2double dx_dz, dy_dz, ds_dz, ds, z_new;
@@ -1226,9 +1238,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
   dsigma = min(dsigma, dsigma_A);
   dsigma = min(dsigma, dsigma_rc);
   dsigma = min(dsigma, dsigma_c);
-  dsigma = min(dsigma, dsigma_old);
-  dsigma *= 0.9;
-  dsigma_old = 10.*dsigma;
+  dsigma *= CFL_reduce;
 
   /*---Check for intersection with ground plane---*/
   ds = xbar*dsigma;
