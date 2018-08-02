@@ -780,10 +780,6 @@ void CDriver::Postprocessing() {
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
 
-  /*--- Deallocate output container ---*/
-  if (output!= NULL) delete output;
-  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
-
   /*--- Output profiling information ---*/
   // Note that for now this is called only by a single thread, but all
   // necessary variables have been made thread private for safety (tick/tock)!!
@@ -802,7 +798,12 @@ void CDriver::Postprocessing() {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
-  delete [] nInst;
+  if (nInst != NULL) delete [] nInst;
+  if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
+  
+  /*--- Deallocate output container ---*/
+  if (output!= NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
@@ -2907,7 +2908,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         if (incompressible) {
           /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Upwind_Flow()) {
-            case ROE:
+            case FDS:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
@@ -4084,7 +4085,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
   /*--- Export Surface Solution File for Unsteady Simulations ---*/
   /*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
-  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
+  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0) && config_container[ZONE_0]->GetWrt_Csv_Sol()) {
       output->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0, INST_0);}
 
 }
