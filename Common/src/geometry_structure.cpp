@@ -2024,8 +2024,10 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
   delete [] neighbour_idx;
   delete [] cg_elem;
   delete [] vol_elem;
-  delete [] halo_detect;
   delete [] work_values;
+#ifdef HAVE_MPI
+  delete [] halo_detect;
+#endif
 }
 
 void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
