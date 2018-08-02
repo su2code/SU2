@@ -907,7 +907,7 @@ int rank = 0;
 
   if(rank == MASTER_NODE){
   while(!ground_flag){
-    
+
   	Preprocessing(iPhi, iIter);
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
@@ -1270,9 +1270,12 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     f_i = -0.5*pow(p_i,2);
     f_ip = -0.5*pow(p_ip,2);
     f_im = -0.5*pow(p_im,2);
-    A_ip = -0.5*(p_ip + p_i);
-    A_im = -0.5*(p_im + p_i);
 
+    if(abs(p_ip-p_i) < 1.0E-6) A_ip = -0.5*(p_ip + p_i);
+    else                       A_ip = (f_ip - f_i)/(p_ip - p_i);
+    if(abs(p_i-p_im) < 1.0E-6) A_im = -0.5*(p_im + p_i);
+    else                       A_im = (f_i - f_im)/(p_i - p_im);
+    
     f_ip = 0.5*(f_ip + f_i - abs(A_ip)*(p_ip - p_i));
     f_im = 0.5*(f_im + f_i - abs(A_im)*(p_i - p_im));
 
@@ -1291,11 +1294,14 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
 
     f_l = -0.5*pow(p_iml,2);
     f_r = -0.5*pow(p_imr,2);
-    A_im = -0.5*(p_iml + p_imr);
+    if(abs(p_imr - p_iml) < 1.0E-6) A_im = -0.5*(p_iml + p_imr);
+    else                            A_im = (f_r - f_l)/(p_imr - p_iml);
+
     f_im = 0.5*(f_l + f_r - abs(A_im)*(p_imr - p_iml));
     f_l = -0.5*pow(p_ipl,2);
     f_r = -0.5*pow(p_ipr,2);
-    A_ip = -0.5*(p_ipl + p_ipr);
+    if(abs(p_ipr - p_ipl) < 1.0E-6) A_ip = -0.5*(p_ipl + p_ipr);
+    else                            A_ip = (f_r - f_l)/(p_ipr - p_ipl);
     f_ip = 0.5*(f_l + f_r - abs(A_ip)*(p_ipr - p_ipl));
 
     signal.P[i] = signal.P[i] - dsigma/dtau*(f_ip - f_im);
