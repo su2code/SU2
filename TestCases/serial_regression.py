@@ -1034,7 +1034,7 @@ def main():
     findiff_multiple_ffd_py = TestCase('findiff_multiple_ffd_py')
     findiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     findiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
-    findiff_multiple_ffd_py.test_iter = 10
+    findiff_multiple_ffd_py.test_iter = 9
     findiff_multiple_ffd_py.su2_exec  = "finite_differences.py"
     findiff_multiple_ffd_py.timeout   = 1600
     findiff_multiple_ffd_py.reference_file = "of_grad_findiff.dat.ref"
