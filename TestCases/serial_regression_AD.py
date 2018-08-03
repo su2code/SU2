@@ -217,7 +217,7 @@ def main():
     discadj_multiple_ffd_py = TestCase('discadj_multiple_ffd_py')
     discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
-    discadj_multiple_ffd_py.test_iter = 10
+    discadj_multiple_ffd_py.test_iter = 9
     discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
     discadj_multiple_ffd_py.timeout   = 1600
     discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
@@ -241,7 +241,7 @@ def main():
     directdiff_multiple_ffd_py = TestCase('directdiff_multiple_ffd_py')
     directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
     directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
-    directdiff_multiple_ffd_py.test_iter = 10
+    directdiff_multiple_ffd_py.test_iter = 9
     directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
     directdiff_multiple_ffd_py.timeout   = 1600
     directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
