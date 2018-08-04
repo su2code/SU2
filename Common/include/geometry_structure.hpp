@@ -1802,10 +1802,16 @@ public:
   unsigned long GetLinearPartition(unsigned long val_global_index);
   
   /*!
-   * \brief Routine to prepare the adjacency for ParMETIS for graph partitioning in parallel.
+   * \brief Routine to prepare the adjacency from a CGNS mesh for ParMETIS for graph partitioning in parallel.
    * \param[in] config - Definition of the particular problem.
    */
-  void PrepareAdjacency(CConfig *config);
+  void PrepareCGNSAdjacency(CConfig *config);
+  
+  /*!
+   * \brief Routine to sort the adjacency for ParMETIS for graph partitioning in parallel.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SortAdjacency(CConfig *config);
   
   /*!
 	 * \brief Set the send receive boundaries of the grid.
@@ -1896,6 +1902,17 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void Read_CGNS_Format_Parallel_FEM(CConfig *config, string val_mesh_filename, unsigned short val_iZone, unsigned short val_nZone);
+
+  /*!
+   * \brief Parallel read of the grid points from a CGNS file into linear partitions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_fn - CGNS file identifier.
+   * \param[in] val_iBase - current CGNS database index.
+   * \param[in] val_iZone - current CGNS zone index.
+   * \param[in] val_ncoords - number of coordinate dimensions in the CGNS file.
+   */
+  void ReadCGNSPoints(CConfig *config, int val_fn, int val_iBase, int val_iZone,
+                      int val_ncoords);
   
 	/*! 
 	 * \brief Find repeated nodes between two elements to identify the common face.
