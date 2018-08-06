@@ -1060,7 +1060,7 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
   bool first_zone = true;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short dims = geometry->GetnDim();
-  enum     FileFormat { PLT = 0, SZPLT = 1 };  // NEW STI
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
@@ -1095,7 +1095,6 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       buffer = config->GetVolSens_FileName();
     }
     
-    // file << buffer << ".mesh.plt";
     file << buffer << ".mesh.szplt";
     FileFormat = SZPLT;
     FileType = GRID;
@@ -1488,7 +1487,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
-  enum     FileFormat { PLT = 0, SZPLT = 1 };  // NEW STI
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
@@ -1546,7 +1545,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
     if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))  file << "_0" << iExtIter;
     if ((int)iExtIter >= 10000)              file << iExtIter;
   }
-  // file << ".sol.plt";
+
   file << ".sol.szplt";
   FileFormat = SZPLT;
   FileType = SOLUTION;
