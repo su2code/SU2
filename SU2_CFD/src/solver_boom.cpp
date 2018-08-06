@@ -1176,6 +1176,10 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
     ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
     ds = ds_dz*dz;
     dsigma = ds/xbar;
+    /*---Get peak pressure for output---*/
+    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+      p_peak = max(signal.P[i]*p0, p_peak);
+    }
   }
 
   else{
