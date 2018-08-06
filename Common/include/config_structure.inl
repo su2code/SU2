@@ -1656,6 +1656,8 @@ inline unsigned long CConfig::GetBoom_N_prof(void) {return Boom_N_prof;}
 
 inline unsigned short CConfig::GetBoom_N_phi(void) {return Boom_N_phi;}
 
+inline unsigned short CConfig::GetBoom_step_type(void) {return Boom_step_type;}
+
 inline su2double *CConfig::GetBoom_phi(void) {return Boom_phi;}
 
 inline su2double CConfig::GetBoom_r0(void) {return Boom_r0;}
@@ -1664,9 +1666,9 @@ inline su2double CConfig::GetBoom_flt_h(void) {return Boom_flt_h;}
 
 inline su2double CConfig::GetBoom_cfl_reduce(void) {return Boom_cfl_reduce;}
 
-inline bool CConfig::GetBoom_fix_step(void) {return Boom_fix_step;}
-
 inline su2double CConfig::GetBoom_step_size(void) {return Boom_step_size;}
+
+inline su2double CConfig::GetBoom_step_growth(void) {return Boom_step_growth;}
 
 inline su2double CConfig::GetBoom_Tol_dphi(void) {return Boom_Tol_dphi;}
 

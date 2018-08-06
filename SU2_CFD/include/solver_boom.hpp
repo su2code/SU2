@@ -21,12 +21,12 @@ using namespace std;
 
 class CBoom_AugBurgers{
 public:
-  unsigned short Kind_Boom_Cost;
+  unsigned short Kind_Boom_Cost, Kind_step;
   unsigned long n_prop;
   unsigned long **pointID_original;
   su2double ***Coord_original;
-  su2double CFL_reduce, Step_size;
-  bool AD_flag, Fix_step;
+  su2double CFL_reduce, Step_size, Step_growth;
+  bool AD_flag;
 
   /*---Flight variables---*/
   su2double flt_h;
@@ -140,7 +140,7 @@ public:
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
   void CreateUniformGridSignal(unsigned short iPhi);
   void CreateInitialRayTube(unsigned short iPhi);
-  void DetermineStepSize(unsigned short iPhi);
+  void DetermineStepSize(unsigned short iPhi, unsigned long iIter);
   void Nonlinearity(unsigned short iPhi);
   void Attenuation(unsigned short iPhi);
   void Relaxation(unsigned short iPhi, unsigned long iIter);

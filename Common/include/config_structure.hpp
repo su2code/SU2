@@ -895,20 +895,21 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
 
-  unsigned short Boom_flag;   /*!< \brief Evaluate sonic boom. */
-  unsigned long Boom_N_prof;  /*!< \brief Number of points used in atmospheric profile for RK4 integration. */
-  unsigned short Boom_N_phi;  /*!< \brief Number of azimuth angles to evaluate boom. */
-  bool Boom_fix_step;         /*!< \brief Option to use fixed step size (ABBOOM). */
-  su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */
-  Boom_r0,                    /*!< \brief Radius from aircraft to begin boom propagation. */
-  Boom_flt_h,                 /*!< \brief Aircraft altitude for boom propagation. */
-  Boom_cfl_reduce,            /*!< \brief Factor for time step reduction in boom propagation (ABBOOM). */
-  Boom_step_size,             /*!< \brief Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). */
-  Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation (SUBOOM). */
-  Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation (SUBOOM). */
-  Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation (SUBOOM). */
-  Boom_Tol_dp,                /*!< \brief Tolerance for pressure jump in boom propagation (SUBOOM). */
-  Boom_Tol_l;                 /*!< \brief Tolerance for segment length in boom propagation (SUBOOM). */
+  unsigned short Boom_flag;       /*!< \brief Evaluate sonic boom. */
+  unsigned long Boom_N_prof;      /*!< \brief Number of points used in atmospheric profile for RK4 integration. */
+  unsigned short Boom_N_phi;      /*!< \brief Number of azimuth angles to evaluate boom. */
+  unsigned short Boom_step_type;  /*!< \brief Type of step size used (ABBOOM). */
+  su2double *Boom_phi,            /*!< \brief Azimuth angles to evaluate boom. */
+  Boom_r0,                        /*!< \brief Radius from aircraft to begin boom propagation. */
+  Boom_flt_h,                     /*!< \brief Aircraft altitude for boom propagation. */
+  Boom_cfl_reduce,                /*!< \brief Factor for time step reduction in boom propagation (ABBOOM). */
+  Boom_step_size,                 /*!< \brief Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). */
+  Boom_step_growth,               /*!< \brief Growth rate for expnential step size (ABBOOM). */
+  Boom_Tol_dphi,                  /*!< \brief Tolerance for azimuth angle in boom propagation (SUBOOM). */
+  Boom_Tol_dr,                    /*!< \brief Tolerance for radius in boom propagation (SUBOOM). */
+  Boom_Tol_m,                     /*!< \brief Tolerance for signal slope in boom propagation (SUBOOM). */
+  Boom_Tol_dp,                    /*!< \brief Tolerance for pressure jump in boom propagation (SUBOOM). */
+  Boom_Tol_l;                     /*!< \brief Tolerance for segment length in boom propagation (SUBOOM). */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -7494,12 +7495,13 @@ public:
   unsigned short GetBoom_flag(void);
   unsigned long GetBoom_N_prof(void);
   unsigned short GetBoom_N_phi(void);
+  unsigned short GetBoom_step_type(void);
   su2double *GetBoom_phi(void);
   su2double GetBoom_r0(void);
   su2double GetBoom_flt_h(void);
   su2double GetBoom_cfl_reduce(void);
-  bool GetBoom_fix_step(void);
   su2double GetBoom_step_size(void);
+  su2double GetBoom_step_growth(void);
   su2double GetBoom_Tol_dphi(void);
   su2double GetBoom_Tol_dr(void);
   su2double GetBoom_Tol_m(void);

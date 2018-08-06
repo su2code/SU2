@@ -1918,13 +1918,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Factor for time step reduction in boom propagation (ABBOOM). \ingroup Config*/
   addDoubleOption("BOOM_CFL_REDUCE", Boom_cfl_reduce, 1.0);
 
-  /*!\brief BOOM_FIX_STEP
-   *  \n DESCRIPTION: Option to use fixed step size (ABBOOM). \ingroup Config*/
-  addBoolOption("BOOM_FIX_STEP", Boom_fix_step, false);
+  /*!\brief BOOM_STEP_TYPE
+   *  \n DESCRIPTION: Type of step size used (ABBOOM). \ingroup Config*/
+  addBoolOption("BOOM_STEP_TYPE", Boom_step_type, Boom_Step_Map, AUTO);
 
   /*!\brief BOOM_STEP_SIZE
    *  \n DESCRIPTION: Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). \ingroup Config*/
-  addDoubleOption("BOOM_STEP_SIZE", Boom_step_size, 100.);
+  addDoubleOption("BOOM_STEP_SIZE", Boom_step_size, 0.01);
+
+  /*!\brief BOOM_STEP_GROWTH
+   *  \n DESCRIPTION: Growth rate for expnential step size (ABBOOM). \ingroup Config*/
+  addDoubleOption("BOOM_STEP_GROWTH", Boom_step_growth, 0.01);
 
   /*!\brief BOOM_TOL_DPHI
    *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation (SUBOOM). \ingroup Config*/

@@ -26,8 +26,9 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   AD_flag = false;
   if(config->GetAD_Mode()) AD_flag = true;
   CFL_reduce = config->GetBoom_cfl_reduce();
-  Fix_step = config->GetBoom_fix_step();
+  Kind_step = config->GetBoom_step_type();
   Step_size = config->GetBoom_step_size();
+  Step_growth = config->GetBoom_step_growth();
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -1030,7 +1031,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   C_nu_O2 = A_nu_O2 * f0 * xbar * theta_nu_O2;
   C_nu_N2 = A_nu_N2 * f0 * xbar * theta_nu_N2;
 
-  DetermineStepSize(iPhi);
+  DetermineStepSize(iPhi, iIter);
 
   if(iIter%10 == 0){
     cout.width(5); cout << iIter;
@@ -1163,13 +1164,13 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
  
 }
 
-void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
+void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIter){
 
   su2double dsigma_non, dsigma_tv, dsigma_relO, dsigma_relN, dsigma_A, dsigma_rc, dsigma_c;
   su2double dx_dz, dy_dz, ds_dz, ds, z_new;
   su2double uwind = 0., vwind = 0.;
 
-  if(Fix_step){
+  if(Kind_Step == FIXED){
     dz = Step_size;
     dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
     dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
@@ -1177,6 +1178,21 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
     ds = ds_dz*dz;
     dsigma = ds/xbar;
     /*---Get peak pressure for output---*/
+    p_peak = 0.;
+    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+      p_peak = max(signal.P[i]*p0, p_peak);
+    }
+  }
+
+  else if(Kind_Step == EXPONENTIAL){
+    dz = Step_size*exp(iIter*Step_growth);
+    dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
+    dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
+    ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
+    ds = ds_dz*dz;
+    dsigma = ds/xbar;
+    /*---Get peak pressure for output---*/
+    p_peak = 0.;
     for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
       p_peak = max(signal.P[i]*p0, p_peak);
     }

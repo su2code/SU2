@@ -1124,6 +1124,22 @@ static const map<string, ENUM_BOOM> Boom_Map = CCreateMap<string, ENUM_BOOM>
  * \brief types of residual criteria equations
  */
 
+/*!
+ * \brief different sonic boom step size strategies
+ */
+enum ENUM_BOOM_STEP {
+  AUTO = 0,       /*!< \brief Let abBOOM automatically compute step size. */
+  FIXED = 1,      /*!< \brief Specify a fixed step size. */
+  EXPONENTIAL = 2 /*!> \brief Specify an exponentially growing step size. */
+};
+static const map<string, ENUM_BOOM_STEP> Boom_Step_Map = CCreateMap<string, ENUM_BOOM_STEP>
+("AUTO", AUTO)
+("FIXED", FIXED)
+("EXPONENTIAL", EXPONENTIAL);
+/*!
+ * \brief types of residual criteria equations
+ */
+
 enum ENUM_RESIDUAL {
 	RHO_RESIDUAL = 1, 	      /*!< \brief Rho equation residual criteria equation. */
 	RHO_ENERGY_RESIDUAL = 2 	      /*!< \brief RhoE equation residual criteria equation. */
