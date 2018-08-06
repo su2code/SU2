@@ -859,8 +859,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND())+1;
+  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
 
+  cout<<"\n\nSteps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
   	WorkDonePerCycle.push_back(0.0);
   }
@@ -16115,8 +16116,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = SU2_TYPE::Int((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND())+1;
+  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
 
+  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
   	WorkDonePerCycle.push_back(0.0);
   }

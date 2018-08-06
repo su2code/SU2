@@ -191,7 +191,8 @@ class COutput {
   su2double EntropyGenAverage_HB,
             Power_HB,
             TotalTotalEfficiencyAverage_HB,
-            TotalStaticEfficiencyAverage_HB;
+            TotalStaticEfficiencyAverage_HB,
+			TotalWorkDone_Surface_HB;
 
   vector<su2double> WorkDonePerCycle;
   unsigned short steps_per_cycle;

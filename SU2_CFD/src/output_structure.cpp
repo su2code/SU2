@@ -5151,7 +5151,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 //                }
                 SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-				if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
+				if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
 				else SPRINTF(surface_coeff, ", %12.10f", EntropyGen[iMarker_Monitoring][nSpanWiseSections]);
 //               SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
 
@@ -5179,12 +5179,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 								//
                 SPRINTF(surface_coeff, ", %12.10f", TotalTotalEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
-				if(harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+				if(harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
 				else SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiency[iMarker_Monitoring][nSpanWiseSections]);
-//               SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
+               //SPRINTF(surface_coeff, ", %12.10f", TotalStaticEfficiencyAverage_HB);
 
 								strcat(turbo_coeff, surface_coeff);
-				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_S[iMarker_Monitoring][nSpanWiseSections]);
+			    if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_Surface_HB);
+				else SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_S[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 				SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_D[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
@@ -11144,7 +11145,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
 
         int var_tag = -1;
         /*--- Performance calculation single rows for all time instances---*/
-        sbuf_var[++var_tag] = EntropyGen       [iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
+        sbuf_var[++var_tag] = EntropyGen[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
         sbuf_var[++var_tag] = KineticEnergyLoss[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
         sbuf_var[++var_tag] = TotalPressureLoss[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
         sbuf_var[++var_tag] = EnthalpyIn[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
@@ -11163,7 +11164,7 @@ void COutput::WriteHBTurbomachineryOutput(CSolver ****solver_container, CConfig 
         sbuf_var[++var_tag] = FlowAngleOut[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)]*45/atan(1);
         sbuf_var[++var_tag] = EulerianWork[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
         sbuf_var[++var_tag] = TotalWorkDone_S[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)];
-
+        cout<<"WorkDone :: "<<TotalWorkDone_S[iMarker_PerformanceRow][config[iGeomZone*iTimeInstance]->GetnSpan_iZones(iGeomZone)]<<endl;
         /*--- Performance calculation stage for all time instances---*/
         if (nGeomZones > 1) {
           iMarker_PerformanceStage = iTimeInstance * nMarkerTurboPerf;
