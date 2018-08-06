@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -347,25 +347,6 @@ void CVariable::SetVelSolutionOldZero(void) {
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_Old[iDim+1] = 0.0;
-  
-}
-
-void CVariable::SetSolutionOldVal(unsigned short val_var, su2double val) {
-  
-    Solution_Old[val_var] = val;
-  
-}
-
-void CVariable::SetSolutionVal(unsigned short val_var, su2double val) {
-  
-    Solution[val_var] = val;
-  
-}
-
-void CVariable::SetVelSolutionOldVector(su2double *val_vector) {
-  
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_Old[iDim+1] = val_vector[iDim];
   
 }
 

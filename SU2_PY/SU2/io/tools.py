@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -213,8 +213,14 @@ def get_headerMap(nZones = 1):
                  "Avg_Press"       : "SURFACE_STATIC_PRESSURE" ,
                  "Avg_MassFlow"    : "SURFACE_MASSFLOW"        ,
                  "Avg_Mach"        : "SURFACE_MACH"            ,
+                 "Uniformity"                : "SURFACE_UNIFORMITY"            ,
+                 "Secondary_Strength"        : "SURFACE_SECONDARY"            ,
+                 "Momentum_Distortion"       : "SURFACE_MOM_DISTORTION"            ,
+                 "Secondary_Over_Uniformity" : "SURFACE_SECOND_OVER_UNIFORM"            ,
+                 "Pressure_Drop"        : "SURFACE_PRESSURE_DROP"            ,
                  "ComboObj"        : "COMBO"                   ,
                  "Time(min)"       : "TIME"                    ,
+                 'Time(min)"\n'    : "TIME"                    , # TDE hack for paraview
                  "D(CL)"           : "D_LIFT"                  ,
                  "D(CD)"           : "D_DRAG"                  ,
                  "D(CSF)"          : "D_SIDEFORCE"             ,
@@ -226,6 +232,8 @@ def get_headerMap(nZones = 1):
                  "D(CFz)"          : "D_FORCE_Z"               ,
                  "D(CL/CD)"        : "D_EFFICIENCY"            ,
                  "D(Custom_ObjFunc)" : "D_CUSTOM_OBJFUNC"      ,
+                 "D(HeatFlux_Total)" : "D_HEAT"                ,
+                 "D(HeatFlux_Maximum)" : "D_HEAT_MAX"          ,
                  "TotalPressureLoss_1"     : "TOTAL_PRESSURE_LOSS"    ,
                  "KineticEnergyLoss_1"     : "KINETIC_ENERGY_LOSS"    ,
                  "EntropyGen_" + str(getTurboPerfIndex(nZones)) : "ENTROPY_GENERATION"     ,                   
@@ -269,30 +277,35 @@ def getTurboPerfIndex(nZones = 1):
 
 # Aerodynamic Optimizer Function Names
 
-optnames_aero = [ "LIFT"                    ,
-                  "DRAG"                    ,
-                  "SIDEFORCE"               ,
-                  "MOMENT_X"                ,
-                  "MOMENT_Y"                ,
-                  "MOMENT_Z"                ,
-                  "FORCE_X"                 ,
-                  "FORCE_Y"                 ,
-                  "FORCE_Z"                 ,
-                  "EFFICIENCY"              ,
-                  "FIGURE_OF_MERIT"         ,
-                  "TORQUE"                  ,
-                  "THRUST"                  ,
-                  "SURFACE_TOTAL_PRESSURE"  ,
-                  "SURFACE_STATIC_PRESSURE" ,
-                  "SURFACE_MASSFLOW"        ,
-                  "SURFACE_MACH"            ,
-                  "EQUIVALENT_AREA"         ,
-                  "NEARFIELD_PRESSURE"      ,
-                  "INVERSE_DESIGN_PRESSURE" ,
-                  "INVERSE_DESIGN_HEATFLUX" ,
-                  "TOTAL_HEATFLUX"          ,
-                  "MAXIMUM_HEATFLUX"        ,
-                  "CUSTOM_OBJFUNC"             ,
+optnames_aero = [ "LIFT"                        ,
+                  "DRAG"                        ,
+                  "SIDEFORCE"                   ,
+                  "MOMENT_X"                    ,
+                  "MOMENT_Y"                    ,
+                  "MOMENT_Z"                    ,
+                  "FORCE_X"                     ,
+                  "FORCE_Y"                     ,
+                  "FORCE_Z"                     ,
+                  "EFFICIENCY"                  ,
+                  "FIGURE_OF_MERIT"             ,
+                  "TORQUE"                      ,
+                  "THRUST"                      ,
+                  "SURFACE_TOTAL_PRESSURE"      ,
+                  "SURFACE_STATIC_PRESSURE"     ,
+                  "SURFACE_MASSFLOW"            ,
+                  "SURFACE_MACH"                ,
+                  "SURFACE_UNIFORMITY"          ,
+                  "SURFACE_SECONDARY"           ,
+                  "SURFACE_MOM_DISTORTION"      ,
+                  "SURFACE_SECOND_OVER_UNIFORM" ,
+                  "SURFACE_PRESSURE_DROP"       ,
+                  "EQUIVALENT_AREA"             ,
+                  "NEARFIELD_PRESSURE"          ,
+                  "INVERSE_DESIGN_PRESSURE"     ,
+                  "INVERSE_DESIGN_HEATFLUX"     ,
+                  "TOTAL_HEATFLUX"              ,
+                  "MAXIMUM_HEATFLUX"            ,
+                  "CUSTOM_OBJFUNC"              ,
                   "COMBO"]
 
 # Turbo performance optimizer Function Names
@@ -398,6 +411,9 @@ grad_names_directdiff = ["D_LIFT",
                          "D_FORCE_Y",
                          "D_FORCE_Z",
                          "D_EFFICIENCY",
+                         "D_CUSTOM_OBJFUNC",
+                         "D_HEAT",
+                         "D_MAX_HEAT",
                          "D_TOTAL_PRESSURE_LOSS",
                          "D_TOTAL_EFFICIENCY",
                          "D_TOTAL_PRESSURE_LOSS",
@@ -433,6 +449,9 @@ grad_names_map.MOMENT_X="D_MOMENT_X"
 grad_names_map.SIDEFORCE = "D_SIDEFORCE"
 grad_names_map.ENTHALPY_OUT = "D_ENTHALPY_OUT"
 grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
+grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
+grad_names_map.HEAT = "D_HEAT"
+grad_names_map.MAX_HEAT = "D_MAX_HEAT"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
@@ -576,41 +595,46 @@ def get_adjointSuffix(objective_function=None):
     """ gets the adjoint suffix given an objective function """
     
     # adjoint name map
-    name_map = { "DRAG"                    : "cd"        ,
-                 "LIFT"                    : "cl"        ,
-                 "SIDEFORCE"               : "csf"       ,
-                 "MOMENT_X"                : "cmx"       ,
-                 "MOMENT_Y"                : "cmy"       ,
-                 "MOMENT_Z"                : "cmz"       ,
-                 "FORCE_X"                 : "cfx"       ,
-                 "FORCE_Y"                 : "cfy"       ,
-                 "FORCE_Z"                 : "cfz"       ,
-                 "EFFICIENCY"              : "eff"       ,
-                 "INVERSE_DESIGN_PRESSURE" : "invpress"  ,
-                 "INVERSE_DESIGN_HEAT"     : "invheat"   ,
-                 "MAXIMUM_HEATFLUX"        : "maxheat"   ,
-                 "TOTAL_HEATFLUX"          : "totheat"   ,
-                 "EQUIVALENT_AREA"         : "ea"        ,
-                 "NEARFIELD_PRESSURE"      : "nfp"       ,
-                 "THRUST"                  : "ct"        ,
-                 "TORQUE"                  : "cq"        ,
-                 "FIGURE_OF_MERIT"         : "merit"     ,
-                 "SURFACE_TOTAL_PRESSURE"  : "pt"        ,
-                 "SURFACE_STATIC_PRESSURE" : "pe"        ,
-                 "SURFACE_MASSFLOW"        : "mfr"       ,
-                 "SURFACE_MACH"            : "mach"      ,
-                 "CUSTOM_OBJFUNC"          : "custom"    ,
-                 "KINETIC_ENERGY_LOSS"     : "ke"        ,
-                 "TOTAL_PRESSURE_LOSS"     : "pl"        ,
-                 "ENTROPY_GENERATION"      : "entg"      ,
-                 "EULERIAN_WORK"           : "ew"        ,
-                 "FLOW_ANGLE_OUT"          : "fao"       ,
-                 "FLOW_ANGLE_IN"           : "fai"       ,
-                 "MASS_FLOW_OUT"           : "mfo"       ,
-                 "MASS_FLOW_IN"            : "mfi"       ,
-                 "TOTAL_EFFICIENCY"        : "teff"      ,
-                 "TOTAL_STATIC_EFFICIENCY" : "tseff"     ,
-                 "COMBO"                   : "combo"}
+    name_map = { "DRAG"                        : "cd"        ,
+                 "LIFT"                        : "cl"        ,
+                 "SIDEFORCE"                   : "csf"       ,
+                 "MOMENT_X"                    : "cmx"       ,
+                 "MOMENT_Y"                    : "cmy"       ,
+                 "MOMENT_Z"                    : "cmz"       ,
+                 "FORCE_X"                     : "cfx"       ,
+                 "FORCE_Y"                     : "cfy"       ,
+                 "FORCE_Z"                     : "cfz"       ,
+                 "EFFICIENCY"                  : "eff"       ,
+                 "INVERSE_DESIGN_PRESSURE"     : "invpress"  ,
+                 "INVERSE_DESIGN_HEAT"         : "invheat"   ,
+                 "MAXIMUM_HEATFLUX"            : "maxheat"   ,
+                 "TOTAL_HEATFLUX"              : "totheat"   ,
+                 "EQUIVALENT_AREA"             : "ea"        ,
+                 "NEARFIELD_PRESSURE"          : "nfp"       ,
+                 "THRUST"                      : "ct"        ,
+                 "TORQUE"                      : "cq"        ,
+                 "FIGURE_OF_MERIT"             : "merit"     ,
+                 "SURFACE_TOTAL_PRESSURE"      : "pt"        ,
+                 "SURFACE_STATIC_PRESSURE"     : "pe"        ,
+                 "SURFACE_MASSFLOW"            : "mfr"       ,
+                 "SURFACE_MACH"                : "mach"      ,
+                 "SURFACE_UNIFORMITY"          : "uniform"   ,
+                 "SURFACE_SECONDARY"           : "second"    ,
+                 "SURFACE_MOM_DISTORTION"      : "distort"   ,
+                 "SURFACE_SECOND_OVER_UNIFORM" : "sou"       ,
+                 "SURFACE_PRESSURE_DROP"       : "dp"        ,
+                 "CUSTOM_OBJFUNC"              : "custom"    ,
+                 "KINETIC_ENERGY_LOSS"         : "ke"        ,
+                 "TOTAL_PRESSURE_LOSS"         : "pl"        ,
+                 "ENTROPY_GENERATION"          : "entg"      ,
+                 "EULERIAN_WORK"               : "ew"        ,
+                 "FLOW_ANGLE_OUT"              : "fao"       ,
+                 "FLOW_ANGLE_IN"               : "fai"       ,
+                 "MASS_FLOW_OUT"               : "mfo"       ,
+                 "MASS_FLOW_IN"                : "mfi"       ,
+                 "TOTAL_EFFICIENCY"            : "teff"      ,
+                 "TOTAL_STATIC_EFFICIENCY"     : "tseff"     ,
+                 "COMBO"                       : "combo"}
     
     # if none or false, return map
     if not objective_function:
@@ -907,7 +931,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
 
 def get_extension(output_format):
   
-    if (output_format == "PARAVIEW")        : return ".vtk"
+    if (output_format == "PARAVIEW")        : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  
