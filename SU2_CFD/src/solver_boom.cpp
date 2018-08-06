@@ -26,6 +26,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   AD_flag = false;
   if(config->GetAD_Mode()) AD_flag = true;
   CFL_reduce = config->GetBoom_cfl_reduce();
+  Fix_step = config->GetBoom_fix_step();
+  Step_size = config->GetBoom_step_size();
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -1164,89 +1166,100 @@ void CBoom_AugBurgers::CreateInitialRayTube(unsigned short iPhi){
 void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi){
 
   su2double dsigma_non, dsigma_tv, dsigma_relO, dsigma_relN, dsigma_A, dsigma_rc, dsigma_c;
-
-  /*---Restrict dsigma to avoid multivalued waveforms---*/
-  su2double dp, max_dp = 1.0E-9, min_dp = -1.0E-9, max_p = -1E6, min_p = 1E6;
-  p_peak = 0.;
-  for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
-    dp = signal.P[i+1]-signal.P[i];
-    max_dp = max(dp, max_dp);
-    p_peak = max(signal.P[i]*p0, p_peak);
-  }
-
-  dsigma_non = 0.9*dtau/max_dp; // dsigma < 1/max(dp/dtau)
-
-  /*---Restrict dsigma based on thermoviscous effects---*/
-  dsigma_tv = 0.1*Gamma/signal.len[iPhi];
-
-  /*---Restrict dsigma based on relaxation---*/
-  dsigma_relO = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_O2,2))/(C_nu_O2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_O2));
-  dsigma_relN = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_N2,2))/(C_nu_N2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_N2));
-
-  /*---Restrict dsigma based on spreading---*/
   su2double dx_dz, dy_dz, ds_dz, ds, z_new;
   su2double uwind = 0., vwind = 0.;
-  ds = xbar*1.0E-5;
-  dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
-  dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
-  ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
-  dz = ds/ds_dz;
-  z_new = ray_z - dz;
 
-  su2double x_new[4], y_new[4], A_new;
+  if(Fix_step){
+    dz = Step_size;
+    dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
+    dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
+    ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
+    ds = ds_dz*dz;
+    dsigma = ds/xbar;
+  }
 
-  x_new[0] = ray_x[0] + dx_dz*dz;
-  y_new[0] = ray_y[0] + dy_dz*dz;
-  x_new[1] = ray_x[1] + dx_dz*dz;
-  y_new[1] = ray_y[1] + dy_dz*dz;
+  else{
+    /*---Restrict dsigma to avoid multivalued waveforms---*/
+    su2double dp, max_dp = 1.0E-9, min_dp = -1.0E-9, max_p = -1E6, min_p = 1E6;
+    p_peak = 0.;
+    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+      dp = signal.P[i+1]-signal.P[i];
+      max_dp = max(dp, max_dp);
+      p_peak = max(signal.P[i]*p0, p_peak);
+    }
 
-  dx_dz  = (c0*cos(ray_theta[1])*sin(ray_nu[1]) - uwind)/(c0*sin(ray_theta[1]));
-  dy_dz  = (c0*cos(ray_theta[1])*cos(ray_nu[1]) - vwind)/(c0*sin(ray_theta[1]));
+    dsigma_non = 0.9*dtau/max_dp; // dsigma < 1/max(dp/dtau)
 
-  x_new[2] = ray_x[2] + dx_dz*dz;
-  y_new[2] = ray_y[2] + dy_dz*dz;
-  x_new[3] = ray_x[3] + dx_dz*dz;
-  y_new[3] = ray_y[3] + dy_dz*dz;
+    /*---Restrict dsigma based on thermoviscous effects---*/
+    dsigma_tv = 0.1*Gamma/signal.len[iPhi];
 
-  su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
-  su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
-  su2double c    = (u[0]*v[1] - u[1]*v[0]);
-  su2double A_h   = 0.5*sqrt(pow(c,2));
+    /*---Restrict dsigma based on relaxation---*/
+    dsigma_relO = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_O2,2))/(C_nu_O2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_O2));
+    dsigma_relN = 0.1*(1.+signal.len[iPhi]*pow(theta_nu_N2,2))/(C_nu_N2*signal.len[iPhi])*min(1.,2.*M_PI/(sqrt(signal.len[iPhi])*theta_nu_N2));
 
-  A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);  // TODO: Add wind contribution
-  su2double dA_dsigma = (A_new-ray_A)/(1.0E-5);
+    /*---Restrict dsigma based on spreading---*/
+    ds = xbar*1.0E-5;
+    dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
+    dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
+    ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
+    dz = ds/ds_dz;
+    z_new = ray_z - dz;
 
-  dsigma_A = abs(0.05*ray_A/dA_dsigma);
+    su2double x_new[4], y_new[4], A_new;
 
-  /*---Restrict dsigma based on stratification---*/
-  su2double Tp1, cp1, pp1, rhop1, hp1;
-  AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
-  HumidityISO(z_new, pp1, Tp1, hp1);
-  cp1 *= (1+0.0016*hp1);
+    x_new[0] = ray_x[0] + dx_dz*dz;
+    y_new[0] = ray_y[0] + dy_dz*dz;
+    x_new[1] = ray_x[1] + dx_dz*dz;
+    y_new[1] = ray_y[1] + dy_dz*dz;
 
-  su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-5);
-  dsigma_rc = abs(0.05*rho0*c0/drhoc_dsigma);
+    dx_dz  = (c0*cos(ray_theta[1])*sin(ray_nu[1]) - uwind)/(c0*sin(ray_theta[1]));
+    dy_dz  = (c0*cos(ray_theta[1])*cos(ray_nu[1]) - vwind)/(c0*sin(ray_theta[1]));
 
-  su2double dc_dsigma = (cp1-c0)/(1.0E-5);
-  dsigma_c = abs(0.05*c0/dc_dsigma);
+    x_new[2] = ray_x[2] + dx_dz*dz;
+    y_new[2] = ray_y[2] + dy_dz*dz;
+    x_new[3] = ray_x[3] + dx_dz*dz;
+    y_new[3] = ray_y[3] + dy_dz*dz;
 
-  /*---Pick minimum dsigma---*/
-  dsigma = dsigma_non;
-  // dsigma = min(dsigma, dsigma_tv);
-  // dsigma = min(dsigma, dsigma_relO);
-  // dsigma = min(dsigma, dsigma_relN);
-  dsigma = min(dsigma, dsigma_A);
-  dsigma = min(dsigma, dsigma_rc);
-  dsigma = min(dsigma, dsigma_c);
-  dsigma *= CFL_reduce;
+    su2double u[2] = {x_new[2]-x_new[0], y_new[2]-y_new[0]};
+    su2double v[2] = {x_new[3]-x_new[1], y_new[3]-y_new[1]};
+    su2double c    = (u[0]*v[1] - u[1]*v[0]);
+    su2double A_h   = 0.5*sqrt(pow(c,2));
+
+    A_new = c0*A_h*tan(ray_theta[0])/(ray_c0[0]);  // TODO: Add wind contribution
+    su2double dA_dsigma = (A_new-ray_A)/(1.0E-5);
+
+    dsigma_A = abs(0.05*ray_A/dA_dsigma);
+
+    /*---Restrict dsigma based on stratification---*/
+    su2double Tp1, cp1, pp1, rhop1, hp1;
+    AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
+    HumidityISO(z_new, pp1, Tp1, hp1);
+    cp1 *= (1+0.0016*hp1);
+
+    su2double drhoc_dsigma = (rhop1*cp1-rho0*c0)/(1.0E-5);
+    dsigma_rc = abs(0.05*rho0*c0/drhoc_dsigma);
+
+    su2double dc_dsigma = (cp1-c0)/(1.0E-5);
+    dsigma_c = abs(0.05*c0/dc_dsigma);
+
+    /*---Pick minimum dsigma---*/
+    dsigma = dsigma_non;
+    // dsigma = min(dsigma, dsigma_tv);
+    // dsigma = min(dsigma, dsigma_relO);
+    // dsigma = min(dsigma, dsigma_relN);
+    dsigma = min(dsigma, dsigma_A);
+    dsigma = min(dsigma, dsigma_rc);
+    dsigma = min(dsigma, dsigma_c);
+    dsigma *= CFL_reduce;
+
+    ds = xbar*dsigma;
+    dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
+    dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
+    ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
+    dz = ds/ds_dz;
+  }
 
   /*---Check for intersection with ground plane---*/
-  ds = xbar*dsigma;
-  dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
-  dy_dz  = (c0*cos(ray_theta[0])*cos(ray_nu[0]) - vwind)/(c0*sin(ray_theta[0]));
-  ds_dz   = sqrt(pow(dx_dz,2)+pow(dy_dz,2)+1);
-  dz = ds/ds_dz;
-
   if(ray_z-dz < 0.0){
     dz = ray_z;
     ds = ds_dz*dz;

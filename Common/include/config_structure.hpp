@@ -898,10 +898,12 @@ private:
   unsigned short Boom_flag;   /*!< \brief Evaluate sonic boom. */
   unsigned long Boom_N_prof;  /*!< \brief Number of points used in atmospheric profile for RK4 integration. */
   unsigned short Boom_N_phi;  /*!< \brief Number of azimuth angles to evaluate boom. */
+  bool Boom_fix_step;         /*!< \brief Option to use fixed step size (ABBOOM). */
   su2double *Boom_phi,        /*!< \brief Azimuth angles to evaluate boom. */
   Boom_r0,                    /*!< \brief Radius from aircraft to begin boom propagation. */
   Boom_flt_h,                 /*!< \brief Aircraft altitude for boom propagation. */
   Boom_cfl_reduce,            /*!< \brief Factor for time step reduction in boom propagation (ABBOOM). */
+  Boom_step_size,             /*!< \brief Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). */
   Boom_Tol_dphi,              /*!< \brief Tolerance for azimuth angle in boom propagation (SUBOOM). */
   Boom_Tol_dr,                /*!< \brief Tolerance for radius in boom propagation (SUBOOM). */
   Boom_Tol_m,                 /*!< \brief Tolerance for signal slope in boom propagation (SUBOOM). */
@@ -7496,6 +7498,8 @@ public:
   su2double GetBoom_r0(void);
   su2double GetBoom_flt_h(void);
   su2double GetBoom_cfl_reduce(void);
+  bool GetBoom_fix_step(void);
+  su2double GetBoom_step_size(void);
   su2double GetBoom_Tol_dphi(void);
   su2double GetBoom_Tol_dr(void);
   su2double GetBoom_Tol_m(void);

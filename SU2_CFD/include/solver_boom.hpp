@@ -25,8 +25,8 @@ public:
   unsigned long n_prop;
   unsigned long **pointID_original;
   su2double ***Coord_original;
-  su2double CFL_reduce;
-  bool AD_flag;
+  su2double CFL_reduce, Step_size;
+  bool AD_flag, Fix_step;
 
   /*---Flight variables---*/
   su2double flt_h;

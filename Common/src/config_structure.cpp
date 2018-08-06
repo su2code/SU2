@@ -1914,9 +1914,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    *  \n DESCRIPTION: Aircraft altitude for boom propagation. \ingroup Config*/
   addDoubleOption("BOOM_FLT_H", Boom_flt_h, 15240.0);
 
-  /*!\brief BOOM_R0
+  /*!\brief BOOM_CFL_REDUCE
    *  \n DESCRIPTION: Factor for time step reduction in boom propagation (ABBOOM). \ingroup Config*/
   addDoubleOption("BOOM_CFL_REDUCE", Boom_cfl_reduce, 1.0);
+
+  /*!\brief BOOM_FIX_STEP
+   *  \n DESCRIPTION: Option to use fixed step size (ABBOOM). \ingroup Config*/
+  addBoolOption("BOOM_FIX_STEP", Boom_fix_step, false);
+
+  /*!\brief BOOM_STEP_SIZE
+   *  \n DESCRIPTION: Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). \ingroup Config*/
+  addDoubleOption("BOOM_STEP_SIZE", Boom_step_size, 100.);
 
   /*!\brief BOOM_TOL_DPHI
    *  \n DESCRIPTION: Tolerance for azimuth angle in boom propagation (SUBOOM). \ingroup Config*/
