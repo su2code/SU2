@@ -12381,8 +12381,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
      based on whether or not this is a surface or volume section. ---*/
     
     elemOffset[s+1] = elemOffset[s];
-    if (!isVolume[s]) elemOffset[s+1] += element_count;
-    else interiorElems += element_count;
+    if (isVolume[s]) {
+      elemOffset[s+1] += element_count;
+      interiorElems   += element_count;
+    }
     
   }
   
@@ -12549,8 +12551,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
         
       }
       
-      /*--- We now have the connectivity stored in linearly partitioned
-       chunks. We need to loop through and decide how many elements we
+      /*--- We now have the connectivity stored on the master node.
+       We need to loop through and decide how many elements we
        must send to each rank in order to have all elements that
        surround a particular "owned" node on each rank (i.e., elements
        will appear on multiple ranks). First, initialize a counter
@@ -12661,7 +12663,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config,
               
               /*--- First, store the global element ID and the VTK type. ---*/
               
-              connSend[nn] = iElem; nn++;
+              connSend[nn] = iElem + elemOffset[s]; nn++;
               connSend[nn] = elemTypes[iElem]; nn++;
               
               /*--- Store the connectivity values. Note we subtract one from
