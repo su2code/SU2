@@ -84,7 +84,7 @@ inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solv
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
-inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
+inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) { }
 
 inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
 
@@ -904,11 +904,11 @@ inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
+inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
 
-inline void CSolver::AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+inline void CSolver::AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] += val_residual; }
 
-inline su2double CSolver::GetRes_BGS(unsigned short val_var) { return Residual_RMS[val_var]; }
+inline su2double CSolver::GetRes_BGS(unsigned short val_var) { return Residual_BGS[val_var]; }
 
 inline void CSolver::SetRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; }
 
@@ -1030,6 +1030,11 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
+inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
