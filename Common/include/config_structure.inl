@@ -465,7 +465,7 @@ inline su2double CConfig::GetThermal_Expansion_Coeff(void) { return Thermal_Expa
 
 inline su2double CConfig::GetThermal_Expansion_CoeffND(void) { return Thermal_Expansion_CoeffND; }
 
-inline su2double CConfig::GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff) {return Blottner[val_Species][val_Coeff]; }
+inline su2double **CConfig::GetBlottnerCoeff(void) {return Blottner; }
 
 inline su2double CConfig::GetInc_Density_Ref(void) { return Inc_Density_Ref; }
 
@@ -830,6 +830,8 @@ inline unsigned short CConfig::GetKind_Regime(void) { return Kind_Regime; }
 inline unsigned short CConfig::GetSystemMeasurements(void) { return SystemMeasurements; }
 
 inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
+
+inline unsigned short CConfig::GetKind_TransCoeffModel(void) {return Kind_TransCoeffModel; }
 
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 

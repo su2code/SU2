@@ -62,6 +62,7 @@ using namespace std;
 class CNumerics {
 protected:
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
+  unsigned short nSpecies; /*!< \brief Number of species present in plasma */
   su2double Gamma;        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;    /*!< \brief Fluids's Gamma - 1.0  . */
   su2double Gas_Constant;         /*!< \brief Gas constant. */
@@ -79,6 +80,7 @@ public:
   su2double
   **tau,    /*!< \brief Viscous stress tensor. */
   **delta;      /*!< \brief Identity matrix. */
+  su2double **dVdU; /*!< \brief Transformation matrix from primitive variables, V, to conserved, U. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -210,7 +212,14 @@ public:
 	su2double *dPdU_i, *dPdU_j;
 	su2double *dTdU_i, *dTdU_j;
 	su2double *dTvedU_i, *dTvedU_j;
-	su2double *Ys, **dFdYj, **dFdYi, *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
+
+  su2double *hs, *Cvtr;
+  su2double *eve_i, *eve_j, *Cvve_i, *Cvve_j;
+  su2double *Ys_i, *Ys_j, *In, **dYdr_i, **dYdr_j;
+  su2double **dIdr_i, **dIdr_j, **dJdr_i, **dJdr_j;
+
+  su2double *Ys, **dFdVi, **dFdVj, **dFdYj, **dFdYi, **dVdUi, **dVdUj,
+  *sumdFdYih, *sumdFdYjh, *sumdFdYieve, *sumdFdYjeve;
   unsigned short RHOS_INDEX, T_INDEX, TVE_INDEX, VEL_INDEX, P_INDEX,
  	RHO_INDEX, H_INDEX, A_INDEX, RHOCVTR_INDEX, RHOCVVE_INDEX;
   CVariable *var;
@@ -812,13 +821,13 @@ public:
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
    * \param[in] val_eddy_conductivity - Eddy Conductivity.
    */
-
   void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
                           su2double val_eddy_viscosity,
                           su2double val_tau_wall,
                           bool val_qcr);
+
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
    * \param[in] val_primvar - Primitive variables.
@@ -830,7 +839,6 @@ public:
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
    * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
    */
-
   void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
@@ -838,16 +846,19 @@ public:
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
 
-   /*!
-    * * \brief Compute the projection of the viscous fluxes into a direction.
-    * \brief Overloaded function for multiple species viscous calculations
-    * \param[in] val_primvar - Primitive variables.
-    * \param[in] val_gradprimvar - Gradient of the primitive variables.
-    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-    * \param[in] val_laminar_viscosity - Laminar viscosity.
-    * \param[in] val_eddy_viscosity - Eddy viscosity.
-    */
- void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+  /*!
+   * \brief Compute projection of the viscous fluxes into a direction for TNE2.
+   * \brief Overloaded function for multiple species viscous calculations
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_eve - Vib-elec energy.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_diffusioncoeff- Diffusion coefficient.
+   * \param[in] val_viscosity - Laminar viscosity.
+   * \param[in] val_thermal_conductivity - Thermal Conductivity.
+   * \param[in] val_thermal_conductivity_ve -Vib-Elec mode thermal Conductivity.
+   */
+  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
                          su2double *val_eve, su2double *val_normal,
                          su2double *val_diffusioncoeff, su2double val_viscosity,
                          su2double val_therm_conductivity,
@@ -863,7 +874,6 @@ public:
    * \param[in] val_eddy_viscosity - Eddy viscosity.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    */
-
   void GetViscousIncProjFlux(su2double *val_primvar,
                                  su2double **val_gradprimvar,
                                  su2double *val_normal,
@@ -1030,10 +1040,14 @@ public:
                           su2double **val_Proj_Jac_Tensor_j);
 
   /*!
-   * \brief TSL-Approximation of Viscous NS Jacobians.
+   * \brief TApproximation of Viscous NS Jacobians in Thermochemical NonEquil.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+   * \param[in] val_Mean_Eve - Mean value of vib-elec energy.
+   * \param[in] val_Mean_Cvve - Mean value of the vib-elec Cv.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
+      * \param[in] val_thermal_conductivity_ve - Value of the thermal conductivity for vib-elec.
    * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_dS - Area of the face between two nodes.
@@ -1315,17 +1329,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-          	  	  	  	  	   su2double **val_Jacobian_j, CConfig *config) {
-
-  /*!
-   * \overload
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i,
-                               su2double **val_Jacobian_j, CConfig *config);
+          	  	  	  	  	   su2double **val_Jacobian_j, CConfig *config);
 
   /*!
    * \overload

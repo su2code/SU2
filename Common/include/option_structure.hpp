@@ -129,6 +129,7 @@ const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. 
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
 
 const su2double STANDARD_GRAVITY = 9.80665;          /*!< \brief Acceleration due to gravity at surface of earth. */
 const su2double AVOGAD_CONSTANT = 6.0221415E26;	     /*!< \brief Avogardro's constant, number of particles in one kmole. */
@@ -1354,6 +1355,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("SURFACE_SECONDARY", SURFACE_SECONDARY)
 ("SURFACE_MOM_DISTORTION", SURFACE_MOM_DISTORTION)
 ("SURFACE_SECOND_OVER_UNIFORM", SURFACE_SECOND_OVER_UNIFORM)
+("SURFACE_PRESSURE_DROP", SURFACE_PRESSURE_DROP)
 ("CUSTOM_OBJFUNC", CUSTOM_OBJFUNC)
 ("TOTAL_EFFICIENCY", TOTAL_EFFICIENCY)
 ("TOTAL_STATIC_EFFICIENCY", TOTAL_STATIC_EFFICIENCY)
