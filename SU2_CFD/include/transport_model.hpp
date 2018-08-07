@@ -401,4 +401,39 @@ public:
   
 };
 
+/*!
+ * \class CPolynomialConductivityRANS
+ * \brief Defines a non-constant thermal conductivity using polynomial function of temperature for RANS problems wioth the addition of a turbulent component based on a turbulent Prandtl number.
+ * \author T. Economon
+ */
+class CPolynomialConductivityRANS : public CConductivityModel {
+protected:
+  unsigned short nPolyCoeffs; /*!< \brief Number of coefficients in the temperature polynomial. */
+  su2double *b;               /*!< \brief Polynomial coefficients for thermal conductivity as a function of temperature. */
+  su2double Prandtl_Turb;     /*!< \brief Turbulent Prandtl number. */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialConductivityRANS(void);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CPolynomialConductivityRANS(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb);
+  
+  /*!
+   * \brief Set Thermal conductivity.
+   */
+  void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  
+};
+
 #include "transport_model.inl"
