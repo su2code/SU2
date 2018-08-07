@@ -234,3 +234,36 @@ void CPolynomialConductivity::SetConductivity(su2double T, su2double rho, su2dou
     Kt += b[iVar]*pow(T,iVar);
   
 }
+
+CPolynomialConductivityRANS::CPolynomialConductivityRANS(unsigned short val_nCoeffs, su2double* val_b, su2double pr_turb) : CConductivityModel() {
+  
+  /*--- Attributes initialization ---*/
+  
+  nPolyCoeffs = val_nCoeffs;
+  b = new su2double[nPolyCoeffs];
+  
+  for (unsigned short iVar = 0; iVar < nPolyCoeffs; iVar++)
+    b[iVar] = val_b[iVar];
+  
+  Prandtl_Turb = pr_turb;
+  
+}
+
+CPolynomialConductivityRANS::~CPolynomialConductivityRANS(void) {
+  if (b != NULL) delete [] b;
+}
+
+void CPolynomialConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+  
+  /*--- Evaluate the new Kt from the coefficients and temperature. ---*/
+  
+  Kt = b[0];
+  for (unsigned short iVar = 1; iVar < nPolyCoeffs; iVar++)
+    Kt += b[iVar]*pow(T,iVar);
+  
+  /*--- Add a component due to turbulence to compute effective conductivity. ---*/
+  
+  Kt += cp*mu_turb/Prandtl_Turb;
+  
+}
+

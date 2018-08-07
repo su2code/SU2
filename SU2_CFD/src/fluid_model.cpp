@@ -99,7 +99,11 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
       }
       break;
     case POLYNOMIAL_CONDUCTIVITY:
-      ThermalConductivity = new CPolynomialConductivity(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND());
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
+        ThermalConductivity = new CPolynomialConductivityRANS(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND(),config->GetPrandtl_Turb());
+      } else {
+        ThermalConductivity = new CPolynomialConductivity(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND());
+      }
       break;
     default:
       SU2_MPI::Error("Conductivity model not available.", CURRENT_FUNCTION);
