@@ -463,6 +463,7 @@ private:
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
+  Kind_TransCoeffModel, /*!< \brief Transport coefficient Model. */
   Kind_DensityModel,				/*!< \brief Kind of the density model for incompressible flows. */
   *Kind_GridMovement,    /*!< \brief Kind of the unsteady mesh movement. */
   Kind_Gradient_Method,		/*!< \brief Numerical method for computation of spatial gradients. */
@@ -1716,7 +1717,7 @@ public:
    * \param[in] val_Coeff - Index of the coefficient (As, Bs, Cs)
    * \return Value of the Blottner coefficient
    */
-  su2double GetBlottnerCoeff(unsigned short val_Species, unsigned short val_Coeff);
+  su2double **GetBlottnerCoeff(void);
 
   /*!
    * \brief Get the p-norm for heat-flux objective functions (adjoint problem).
@@ -3647,6 +3648,12 @@ public:
    * \return Gas model that we are using.
    */
   unsigned short GetKind_GasModel(void);
+
+  /*!
+	 * \brief Get the transport coefficient model.
+	 * \return Index of transport coefficient model.
+	 */
+	unsigned short GetKind_TransCoeffModel(void);
 
   /*!
    * \brief Fluid model that we are using.
