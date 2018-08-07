@@ -4606,7 +4606,7 @@ public:
    * \brief Set the value of the preconditioner Beta.
    * \param[in] Value of the low Mach preconditioner variable Beta
    */
-  void SetPreconditioner_Beta(double val_Beta);
+  void SetPreconditioner_Beta(su2double val_Beta);
 
   /*!
    * \brief Retrieves the value of the species density in the primitive variable vector.

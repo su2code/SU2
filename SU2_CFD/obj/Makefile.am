@@ -54,7 +54,7 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_CFD_AD
 endif
 
-noinst_LIBRARIES= 
+noinst_LIBRARIES=
 
 if BUILD_NORMAL
 noinst_LIBRARIES+= libSU2Core.a
@@ -103,6 +103,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
+  ../src/numerics_direct_tne2.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
@@ -124,6 +125,7 @@ libSU2Core_sources = \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
+  ../src/solver_direct_tne2.cpp \
   ../src/solver_direct_elasticity.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
@@ -141,6 +143,7 @@ libSU2Core_sources = \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_wave.cpp \
+  ../src/variable_direct_tne2.cpp \
   ../src/variable_direct_elasticity.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
@@ -150,7 +153,7 @@ su2_cfd_sources = \
   ../src/SU2_CFD.cpp
 
 libSU2Core_cxx_flags = -fPIC
-libSU2Core_libadd = 
+libSU2Core_libadd =
 
 su2_cfd_cxx_flags =
 su2_cfd_ldadd =
