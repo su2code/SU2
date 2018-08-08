@@ -92,7 +92,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   if (dual_time)
     solver_container[MainSolver]->SetResidual_DualTime(geometry, solver_container, config, iRKStep, iMesh, RunTime_EqSystem);
   
-  /*--- Boundary conditions that depend on other boundaries (they require MPI sincronization)---*/
+  /*--- Boundary conditions that depend on other boundaries (they require MPI comms)---*/
 
   solver_container[MainSolver]->BC_Fluid_Interface(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config);
 
