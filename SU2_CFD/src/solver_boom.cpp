@@ -1525,7 +1525,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
         E_band[j] += 0.5*(ptmp*ptmp+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-f_min[j]);
       }
       else if(i == band_edge_inds[j][1]-1){ // Interpolate end of band
-        ptmp = p_of_w[i] + (f_max[j]-w[i])*(p_of_w[i+1]-p_of_w[i])/(w[i+1]-w[i]);
+        ptmp = p_of_w[i] + (f_max[j]-w[i-1])*(p_of_w[i]-p_of_w[i-1])/(w[i]-w[i-1]);
         E_band[j] += 0.5*(ptmp*ptmp+p_of_w[i]*p_of_w[i])*(f_max[j]-w[i]);
       }
       else{
@@ -1549,45 +1549,39 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
 
   su2double t1, t2, y1, y2, m;
   su2double w_min = 1., w_max = 20.E3; // [Hz]
+  su2double p_real, p_imag;
   unsigned long N = signal.len[iPhi];
   n_sample = 400001;  // w_max * 20 + 1
 
   w = new su2double[n_sample];
   p_of_w = new su2double[n_sample];
 
-  /*---Initialize real and imaginary frequency domain signals ---*/
+  /*---Initialize frequency domain signal ---*/
 
-  su2double *p_real = new su2double[n_sample],
-            *p_imag = new su2double[n_sample];
   for(unsigned long i = 0; i < n_sample; i++){
     w[i] = w_min + i/(n_sample-1)*(w_max-w_min);
     p_of_w[i] = 0.;
-    p_real[i] = 0.;
-    p_imag[i] = 0.;
   }
 
   /*--- Transform ---*/
 
-  for(unsigned long i = 0; i < N-1; i++){
-    t1 = signal.tau[i]/w0; t2 = signal.tau[i+1]/w0;
-    y1 = signal.P[i]*p0;   y2 = signal.P[i+1]*p0;
-    m = (y2-y1)/(t2-t1);
+  for(unsigned long j = 0; j < n_sample; j++){
 
-    for(unsigned long j = 0; j < n_sample; j++){
-      p_real[j] += (m*(cos(2*M_PI*w[j]*t2) - cos(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*sin(2*M_PI*w[j]*t2) - y1*sin(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
-      p_imag[j] += (m*(-sin(2*M_PI*w[j]*t2) + sin(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*cos(2*M_PI*w[j]*t2) - y1*cos(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
+    p_real = 0.;
+    p_imag = 0.;
+
+    for(unsigned long i = 0; i < N-1; i++){
+      t1 = signal.tau[i]/w0; t2 = signal.tau[i+1]/w0;
+      y1 = signal.P[i]*p0;   y2 = signal.P[i+1]*p0;
+      m = (y2-y1)/(t2-t1);
+
+      p_real += (m*(cos(2*M_PI*w[j]*t2) - cos(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*sin(2*M_PI*w[j]*t2) - y1*sin(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
+      p_imag += (m*(-sin(2*M_PI*w[j]*t2) + sin(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*cos(2*M_PI*w[j]*t2) - y1*cos(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
     }
 
+    p_of_w[j] = sqrt(p_real*p_real + p_imag*p_imag);
+
   }
-
-  /*--- Compute magnitude ---*/
-
-  for(unsigned long j = 0; j < n_sample; j++){
-    p_of_w[j] = sqrt(p_real[j]*p_real[j] + p_imag[j]*p_imag[j]);
-  }
-
-  delete [] p_real;
-  delete [] p_imag;
 
 }
 
