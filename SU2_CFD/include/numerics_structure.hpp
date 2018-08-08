@@ -396,6 +396,13 @@ public:
   void SetTurbVar(su2double *val_turbvar_i, su2double *val_turbvar_j);
   
   /*!
+   * \brief Set the value of the scalar transport variables.
+   * \param[in] val_scalarvar_i - Value of the scalar transport variables at point i.
+   * \param[in] val_scalarvar_j - Value of the scalar transport variables at point j.
+   */
+  void SetScalarVar(su2double *val_scalarvar_i, su2double *val_scalarvar_j);
+  
+  /*!
    * \brief Set the value of the turbulent variable.
    * \param[in] val_transvar_i - Value of the turbulent variable at point i.
    * \param[in] val_transvar_j - Value of the turbulent variable at point j.
@@ -408,6 +415,13 @@ public:
    * \param[in] val_turbvar_grad_j - Gradient of the turbulent variable at point j.
    */
   void SetTurbVarGradient(su2double **val_turbvar_grad_i, su2double **val_turbvar_grad_j);
+  
+  /*!
+   * \brief Set the gradient of the scalar transport variables.
+   * \param[in] val_scalarvar_grad_i - Gradient of the scalar transport variables at point i.
+   * \param[in] val_scalarvar_grad_j - Gradient of the scalar transport variables at point j.
+   */
+  void SetScalarVarGradient(su2double **val_scalarvar_grad_i, su2double **val_scalarvar_grad_j);
   
   /*!
    * \brief Set the gradient of the turbulent variables.

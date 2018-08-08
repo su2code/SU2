@@ -405,6 +405,7 @@ private:
   unsigned short nCFL;			/*!< \brief Number of CFL, one for each multigrid level. */
   su2double
   CFLRedCoeff_Turb,		/*!< \brief CFL reduction coefficient on the LevelSet problem. */
+  CFLRedCoeff_Scalar,    /*!< \brief CFL reduction coefficient for the scalar transport equations. */
   CFLRedCoeff_AdjFlow,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLRedCoeff_AdjTurb,	/*!< \brief CFL reduction coefficient for the adjoint problem. */
   CFLFineGrid,		/*!< \brief CFL of the finest grid. */
@@ -465,6 +466,7 @@ private:
   Kind_SlopeLimit,				/*!< \brief Global slope limiter. */
   Kind_SlopeLimit_Flow,		/*!< \brief Slope limiter for flow equations.*/
   Kind_SlopeLimit_Turb,		/*!< \brief Slope limiter for the turbulence equation.*/
+  Kind_SlopeLimit_Scalar,    /*!< \brief Slope limiter for the scalar transport equations.*/
   Kind_SlopeLimit_AdjTurb,	/*!< \brief Slope limiter for the adjoint turbulent equation.*/
   Kind_SlopeLimit_AdjFlow,	/*!< \brief Slope limiter for the adjoint equation.*/
   Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
@@ -484,18 +486,21 @@ private:
   Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_AdjFlow,		/*!< \brief Centered or upwind scheme for the adjoint flow equations. */
   Kind_ConvNumScheme_Turb,	/*!< \brief Centered or upwind scheme for the turbulence model. */
+  Kind_ConvNumScheme_Scalar,  /*!< \brief Centered or upwind scheme for the scalar transport equations. */
   Kind_ConvNumScheme_AdjTurb,	/*!< \brief Centered or upwind scheme for the adjoint turbulence model. */
   Kind_ConvNumScheme_Template,	/*!< \brief Centered or upwind scheme for the level set equation. */
   Kind_Centered,				/*!< \brief Centered scheme. */
   Kind_Centered_Flow,			/*!< \brief Centered scheme for the flow equations. */
   Kind_Centered_AdjFlow,			/*!< \brief Centered scheme for the adjoint flow equations. */
   Kind_Centered_Turb,			/*!< \brief Centered scheme for the turbulence model. */
+  Kind_Centered_Scalar,      /*!< \brief Centered scheme for the scalar transport equations. */
   Kind_Centered_AdjTurb,		/*!< \brief Centered scheme for the adjoint turbulence model. */
   Kind_Centered_Template,		/*!< \brief Centered scheme for the template model. */
   Kind_Upwind,				/*!< \brief Upwind scheme. */
   Kind_Upwind_Flow,			/*!< \brief Upwind scheme for the flow equations. */
   Kind_Upwind_AdjFlow,			/*!< \brief Upwind scheme for the adjoint flow equations. */
   Kind_Upwind_Turb,			/*!< \brief Upwind scheme for the turbulence model. */
+  Kind_Upwind_Scalar,      /*!< \brief Upwind scheme for the scalar transport equations. */
   Kind_Upwind_AdjTurb,		/*!< \brief Upwind scheme for the adjoint turbulence model. */
   Kind_Upwind_Template,			/*!< \brief Upwind scheme for the template model. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
@@ -506,6 +511,7 @@ private:
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
+  MUSCL_Scalar,   /*!< \brief MUSCL scheme for the scalar transport equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
@@ -537,6 +543,7 @@ private:
   su2double Roe_Kappa;		/*!< \brief Relaxation of the Roe scheme. */
   su2double Relaxation_Factor_Flow;		/*!< \brief Relaxation coefficient of the linear solver mean flow. */
   su2double Relaxation_Factor_Turb;		/*!< \brief Relaxation coefficient of the linear solver turbulence. */
+  su2double Relaxation_Factor_Scalar;    /*!< \brief Relaxation coefficient of the linear solver for scalar transport equations. */
   su2double Relaxation_Factor_AdjFlow;		/*!< \brief Relaxation coefficient of the linear solver adjoint mean flow. */
   su2double Relaxation_Factor_CHT;  /*!< \brief Relaxation coefficient for the update of conjugate heat variables. */
   su2double AdjTurb_Linear_Error;		/*!< \brief Min error of the turbulent adjoint linear solver for the implicit formulation. */
@@ -3798,6 +3805,12 @@ public:
   su2double GetRelaxation_Factor_Turb(void);
 
   /*!
+   * \brief Get the relaxation coefficient of the linear solver for the implicit formulation.
+   * \return relaxation coefficient of the linear solver for the implicit formulation.
+   */
+  su2double GetRelaxation_Factor_Scalar(void);
+  
+  /*!
    * \brief Get the relaxation coefficient of the CHT coupling.
    * \return relaxation coefficient of the CHT coupling.
    */
@@ -4067,6 +4080,15 @@ public:
    *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
+  bool GetMUSCL_Scalar(void);
+  
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
   bool GetMUSCL_AdjFlow(void);
   
   /*!
@@ -4220,6 +4242,12 @@ public:
   
   /*!
    * \brief Get the method for limiting the spatial gradients.
+   * \return Method for limiting the spatial gradients solving the scalar transport equations.
+   */
+  unsigned short GetKind_SlopeLimit_Scalar(void);
+  
+  /*!
+   * \brief Get the method for limiting the spatial gradients.
    * \return Method for limiting the spatial gradients solving the adjoint turbulent equation.
    */
   unsigned short GetKind_SlopeLimit_AdjTurb(void);
@@ -4315,12 +4343,36 @@ public:
   
   /*!
    * \brief Get the kind of integration scheme (implicit)
-   *        for the scslar transport equations.
+   *        for the scalar transport equations.
    * \note This value is obtained from the config file, and it is constant
    *       during the computation.
    * \return Kind of integration scheme for the scalar transport equations.
    */
   unsigned short GetKind_TimeIntScheme_Scalar(void);
+  
+  /*!
+   * \brief Get the kind of convective numerical scheme for the scalar transport equations (upwind).
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of convective numerical scheme for the scalar transport equations.
+   */
+  unsigned short GetKind_ConvNumScheme_Scalar(void);
+  
+  /*!
+   * \brief Get the kind of center convective numerical scheme for the scalar transport equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of center convective numerical scheme for the scalar transport equations.
+   */
+  unsigned short GetKind_Centered_Scalar(void);
+  
+  /*!
+   * \brief Get the kind of upwind convective numerical scheme for the scalar transport equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of upwind convective numerical scheme for the scalar transport equations.
+   */
+  unsigned short GetKind_Upwind_Scalar(void);
   
   /*!
    * \brief Get the kind of integration scheme (implicit)
@@ -6357,10 +6409,16 @@ public:
   su2double GetExhaust_Pressure_Target(string val_index);
   
   /*!
-   * \brief Value of the CFL reduction in LevelSet problems.
-   * \return Value of the CFL reduction in LevelSet problems.
+   * \brief Value of the CFL reduction in turbulence problems.
+   * \return Value of the CFL reduction in turbulence problems.
    */
   su2double GetCFLRedCoeff_Turb(void);
+  
+  /*!
+   * \brief Value of the CFL reduction for scalar transport equations.
+   * \return Value of the CFL reduction for scalar transport equations.
+   */
+  su2double GetCFLRedCoeff_Scalar(void);
   
   /*!
    * \brief Get the flow direction unit vector at an inlet boundary.

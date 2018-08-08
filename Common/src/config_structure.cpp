@@ -1325,6 +1325,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addConvectOption("CONV_NUM_METHOD_TURB", Kind_ConvNumScheme_Turb, Kind_Centered_Turb, Kind_Upwind_Turb);
   
   /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_SCALAR", MUSCL_Scalar, false);
+  /*!\brief SLOPE_LIMITER_SCALAR
+   *  \n DESCRIPTION: Slope limiter  \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_SCALAR", Kind_SlopeLimit_Scalar, Limiter_Map, VENKATAKRISHNAN);
+  /*!\brief CONV_NUM_METHOD_SCALAR
+   *  \n DESCRIPTION: Convective numerical method \ingroup Config*/
+  addConvectOption("CONV_NUM_METHOD_SCALAR", Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar, Kind_Upwind_Scalar);
+  
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
   addBoolOption("MUSCL_ADJTURB", MUSCL_AdjTurb, false);
   /*!\brief SLOPE_LIMITER_ADJTURB
    *  \n DESCRIPTION: Slope limiter \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config */

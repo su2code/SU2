@@ -985,6 +985,8 @@ inline su2double CConfig::GetRelaxation_Factor_AdjFlow(void) { return Relaxation
 
 inline su2double CConfig::GetRelaxation_Factor_Turb(void) { return Relaxation_Factor_Turb; }
 
+inline su2double CConfig::GetRelaxation_Factor_Scalar(void) { return Relaxation_Factor_Scalar; }
+
 inline su2double CConfig::GetRelaxation_Factor_CHT(void) { return Relaxation_Factor_CHT; }
 
 inline su2double CConfig::GetRoe_Kappa(void) { return Roe_Kappa; }
@@ -1051,6 +1053,8 @@ inline bool CConfig::GetMUSCL_Flow(void) { return MUSCL_Flow; }
 
 inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
+inline bool CConfig::GetMUSCL_Scalar(void) { return MUSCL_Scalar; }
+
 inline bool CConfig::GetMUSCL_Heat(void) { return MUSCL_Heat; }
 
 inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
@@ -1085,6 +1089,8 @@ inline unsigned short CConfig::GetKind_SlopeLimit_Flow(void) { return Kind_Slope
 
 inline unsigned short CConfig::GetKind_SlopeLimit_Turb(void) { return Kind_SlopeLimit_Turb; }
 
+inline unsigned short CConfig::GetKind_SlopeLimit_Scalar(void) { return Kind_SlopeLimit_Scalar; }
+
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjTurb(void) { return Kind_SlopeLimit_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_SlopeLimit_AdjFlow(void) { return Kind_SlopeLimit_AdjFlow; }
@@ -1116,6 +1122,12 @@ inline su2double CConfig::GetKappa_2nd_AdjFlow(void) { return Kappa_2nd_AdjFlow;
 inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Scalar(void) { return Kind_TimeIntScheme_Scalar; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_Scalar(void) { return Kind_ConvNumScheme_Scalar; }
+
+inline unsigned short CConfig::GetKind_Centered_Scalar(void) { return Kind_Centered_Scalar; }
+
+inline unsigned short CConfig::GetKind_Upwind_Scalar(void) {  return Kind_Upwind_Scalar; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
 
@@ -1553,6 +1565,8 @@ inline su2double CConfig::GetCM_Target(void) { return CM_Target; }
 inline su2double CConfig::GetFixAzimuthalLine(void) { return FixAzimuthalLine; }
 
 inline su2double CConfig::GetCFLRedCoeff_Turb(void) { return CFLRedCoeff_Turb; }
+
+inline su2double CConfig::GetCFLRedCoeff_Scalar(void) { return CFLRedCoeff_Scalar; }
 
 inline bool CConfig::GetGrid_Movement(void) { return Grid_Movement; }
 

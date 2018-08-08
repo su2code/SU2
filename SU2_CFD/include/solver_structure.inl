@@ -2190,8 +2190,6 @@ inline void CEulerSolver::SetSlidingStateStructure(unsigned short val_marker, un
     SlidingState[val_marker][val_vertex][iVar] = new su2double[ GetnSlidingStates(val_marker, val_vertex) ];
 }
 
-
-
 inline void CTurbSolver::SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component){ 
   SlidingState[val_marker][val_vertex][val_state][donor_index] = component; 
 }
@@ -2246,6 +2244,12 @@ inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
 inline su2double CTurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
 
 inline su2double CTurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
+
+inline void CPassiveScalarSolver::SetFreeStream_Solution(CConfig *config) {
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      node[iPoint]->SetSolution(iVar, Scalar_Inf[iVar]);
+}
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 

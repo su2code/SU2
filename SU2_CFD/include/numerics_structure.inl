@@ -329,6 +329,11 @@ inline void CNumerics::SetTurbVar(su2double *val_turbvar_i, su2double *val_turbv
   TurbVar_j = val_turbvar_j;
 }
 
+inline void CNumerics::SetScalarVar(su2double *val_scalarvar_i, su2double *val_scalarvar_j) {
+  ScalarVar_i = val_scalarvar_i;
+  ScalarVar_j = val_scalarvar_j;
+}
+
 inline void CNumerics::SetTransVar(su2double *val_transvar_i, su2double *val_transvar_j) {
   TransVar_i = val_transvar_i;
   TransVar_j = val_transvar_j;
@@ -337,6 +342,11 @@ inline void CNumerics::SetTransVar(su2double *val_transvar_i, su2double *val_tra
 inline void CNumerics::SetTurbVarGradient(su2double **val_turbvar_grad_i, su2double **val_turbvar_grad_j) {
   TurbVar_Grad_i = val_turbvar_grad_i;
   TurbVar_Grad_j = val_turbvar_grad_j;
+}
+
+inline void CNumerics::SetScalarVarGradient(su2double **val_scalarvar_grad_i, su2double **val_scalarvar_grad_j) {
+  ScalarVar_Grad_i = val_scalarvar_grad_i;
+  ScalarVar_Grad_j = val_scalarvar_grad_j;
 }
 
 inline void CNumerics::SetTransVarGradient(su2double **val_transvar_grad_i, su2double **val_transvar_grad_j) {
