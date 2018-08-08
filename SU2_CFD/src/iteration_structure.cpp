@@ -515,6 +515,12 @@ void CFluidIteration::Iterate(COutput *output,
     }
     
   }
+  
+  if (config_container[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL){
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_SCALAR_SYS, ExtIter);
+    integration_container[val_iZone][val_iInst][SCALAR_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                                 config_container, RUNTIME_SCALAR_SYS, IntIter, val_iZone, val_iInst);
+  }
 
   if (config_container[val_iZone]->GetWeakly_Coupled_Heat()){
     config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_HEAT_SYS, ExtIter);
@@ -589,6 +595,15 @@ void CFluidIteration::Update(COutput *output,
     if (config_container[val_iZone]->GetKind_Trans_Model() == LM) {
       integration_container[val_iZone][val_iInst][TRANS_SOL]->SetDualTime_Solver(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0][TRANS_SOL], config_container[val_iZone], MESH_0);
       integration_container[val_iZone][val_iInst][TRANS_SOL]->SetConvergence(false);
+    }
+    
+    /*--- Update dual time solver for the scalar transport model ---*/
+    
+    if (config_container[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL) {
+      for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
+        integration_container[val_iZone][val_iInst][SCALAR_SOL]->SetDualTime_Solver(geometry_container[val_iZone][val_iInst][iMesh], solver_container[val_iZone][val_iInst][iMesh][SCALAR_SOL], config_container[val_iZone], iMesh);
+        integration_container[val_iZone][val_iInst][SCALAR_SOL]->SetConvergence(false);
+      }
     }
     
     /*--- Verify convergence criteria (based on total time) ---*/

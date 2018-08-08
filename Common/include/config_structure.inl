@@ -1596,6 +1596,8 @@ inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
+inline unsigned short CConfig::GetKind_Scalar_Model(void) { return Kind_Scalar_Model; }
+
 inline bool CConfig::GetFrozen_Visc_Cont(void) { return Frozen_Visc_Cont; }
 
 inline bool CConfig::GetFrozen_Visc_Disc(void) { return Frozen_Visc_Disc; }

@@ -418,6 +418,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_SCALAR_SYS = 22,      /*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -764,6 +765,19 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
 ("NONE", NO_TRANS_MODEL)
 ("LM", LM)
 ("BC", BC); //BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of transition models
+ */
+enum ENUM_SCALAR_MODEL {
+  NO_SCALAR_MODEL = 0,  /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR  = 1,  /*!< \brief Passive scalar transport model. */
+  CUSTOM_SCALAR   = 2   /*!< \brief Custom scalar transport model. */
+};
+static const map<string, ENUM_SCALAR_MODEL> Scalar_Model_Map = CCreateMap<string, ENUM_SCALAR_MODEL>
+("NONE", NO_SCALAR_MODEL)
+("PASSIVE_SCALAR", PASSIVE_SCALAR)
+("CUSTOM_SCALAR", CUSTOM_SCALAR);
 
 /*!
  * \brief types of hybrid RANS/LES models

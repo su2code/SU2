@@ -525,6 +525,7 @@ private:
   Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  unsigned short Kind_Scalar_Model;      /*!< \brief Scalar transport model definition. */
   unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
   Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
   unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
@@ -3988,6 +3989,12 @@ public:
    * \return Kind of the transion model.
    */
   unsigned short GetKind_Trans_Model(void);
+  
+  /*!
+   * \brief Get the kind of the scalar transport model.
+   * \return Kind of the scalar transport model.
+   */
+  unsigned short GetKind_Scalar_Model(void);
   
   /*!
    * \brief Get the kind of adaptation technique.

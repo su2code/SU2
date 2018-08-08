@@ -1145,7 +1145,7 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   /*--- Dimension of the problem --> number of transport eqns. specified. ---*/
   
-  nVar     = 1;  // TDE getnumber_eqns_scalar()
+  nVar     = 1;  // TDE
   nPrimVar = 1;
   
   nPoint       = geometry->GetnPoint();
@@ -1160,10 +1160,6 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   nDim = geometry->GetnDim();
   node = new CVariable*[nPoint];
   
-  /*--- Single grid simulation ---*/
-  
-  if (iMesh == MESH_0 || config->GetMGCycle() == FULLMG_CYCLE) {
-    
     /*--- Define some auxiliar vector related with the residual ---*/
     
     Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
@@ -1232,8 +1228,6 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
       for (iVar = 0; iVar < nVar; iVar++)
         Cvector[iVar] = new su2double [nDim];
     }
-    
-  }
   
   /*--- Initialize lower and upper limits---*/
   
@@ -1242,7 +1236,6 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   lowerlimit[0] = 1.0e-10;
   upperlimit[0] = 1.0;
-  
   
   /*--- Read farfield conditions from config ---*/
   

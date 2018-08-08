@@ -622,7 +622,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
-
+  /*!\brief KIND_SCALAR_MODEL \n DESCRIPTION: Specify scalar transport model \n Options: see \link Scalar_Model_Map \endlink \n DEFAULT: NO_SCALAR_MODEL \ingroup Config*/
+  addEnumOption("KIND_SCALAR_MODEL", Kind_Scalar_Model, Scalar_Model_Map, NO_SCALAR_MODEL);
+  /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   /*!\brief HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
@@ -6860,6 +6862,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
+      if (val_system == RUNTIME_SCALAR_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar,
+                              Kind_Upwind_Scalar, Kind_SlopeLimit_Scalar,
+                              MUSCL_Scalar);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Scalar);
+      }
       break;
     case NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
@@ -6867,6 +6875,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Flow, Kind_SlopeLimit_Flow,
                               MUSCL_Flow);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
+      }
+      if (val_system == RUNTIME_SCALAR_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar,
+                              Kind_Upwind_Scalar, Kind_SlopeLimit_Scalar,
+                              MUSCL_Scalar);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Scalar);
       }
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
@@ -6891,6 +6905,12 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
                               Kind_Upwind_Turb, Kind_SlopeLimit_Turb,
                               MUSCL_Turb);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Turb);
+      }
+      if (val_system == RUNTIME_SCALAR_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_Scalar, Kind_Centered_Scalar,
+                              Kind_Upwind_Scalar, Kind_SlopeLimit_Scalar,
+                              MUSCL_Scalar);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_Scalar);
       }
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Heat, NONE, NONE, NONE, NONE);
