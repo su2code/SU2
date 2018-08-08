@@ -931,8 +931,12 @@ int rank = 0;
   }
 
   WriteGroundPressure(iPhi);
-  if(Kind_Boom_Cost==BOOM_LOUD) PerceivedLoudness(iPhi);
-  else AcousticEnergy(iPhi);
+  if(Kind_Boom_Cost==BOOM_LOUD){
+    if(rank == MASTER_NODE) PerceivedLoudness(iPhi);
+  }
+  else{
+    if(rank == MASTER_NODE) AcousticEnergy(iPhi);
+  }
 
 }
 
@@ -1488,11 +1492,14 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   unsigned long n_sample;
 
   /*--- Compute frequency domain signal ---*/
+  cout << "Performing Fourier Transform." << endl;
   FourierTransform(iPhi, w, p_of_w, n_sample);
 
   /*--- Compute 1/3-oct bands ---*/
   su2double fc[41], f_min[41], f_max[41], E_band[41], SPL_band[41];
   unsigned long band_edge_inds[41][2];
+
+  cout << "Computing 1/3-oct band pressure levels." << endl;
 
   for(unsigned short i = 0; i < 41; i++){
     fc[i]     = pow(10.,3.)*pow(2.,-29./3.)*pow(2.,su2double(i)/3.);
@@ -1537,6 +1544,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   }
 
   /*--- Use band pressure levels to compute perceived loudness ---*/
+  cout << "Computing perceived loudness (MarkVII)." << endl;
   MarkVII(iPhi, SPL_band);
 
   /*--- Clean up ---*/
@@ -1808,8 +1816,9 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band){
 
 void CBoom_AugBurgers::AcousticEnergy(unsigned short iPhi){
 
-  PLdB[iPhi] = 0.;
+  cout << "Comupting acoustic energy." << endl;
 
+  PLdB[iPhi] = 0.;
   for(int j = 1; j < signal.len[iPhi]; j++){
     if(signal.P[j]*signal.P[j-1] < 0.0){ // if sign change, do double triangular integration
       /*--- Find root of line segment ---*/
