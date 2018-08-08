@@ -26,7 +26,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   AD_flag = false;
   if(config->GetAD_Mode()) AD_flag = true;
   CFL_reduce = config->GetBoom_cfl_reduce();
-  Kind_step = config->GetBoom_step_type();
+  Kind_Step = config->GetBoom_step_type();
   Step_size = config->GetBoom_step_size();
   Step_growth = config->GetBoom_step_growth();
 

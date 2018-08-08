@@ -21,7 +21,7 @@ using namespace std;
 
 class CBoom_AugBurgers{
 public:
-  unsigned short Kind_Boom_Cost, Kind_step;
+  unsigned short Kind_Boom_Cost, Kind_Step;
   unsigned long n_prop;
   unsigned long **pointID_original;
   su2double ***Coord_original;

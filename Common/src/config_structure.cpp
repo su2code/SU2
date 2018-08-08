@@ -1920,7 +1920,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief BOOM_STEP_TYPE
    *  \n DESCRIPTION: Type of step size used (ABBOOM). \ingroup Config*/
-  addBoolOption("BOOM_STEP_TYPE", Boom_step_type, Boom_Step_Map, AUTO);
+  addEnumOption("BOOM_STEP_TYPE", Boom_step_type, Boom_Step_Map, AUTO);
 
   /*!\brief BOOM_STEP_SIZE
    *  \n DESCRIPTION: Step size in meters for boom propagation, ignored if automatic step size used (ABBOOM). \ingroup Config*/
