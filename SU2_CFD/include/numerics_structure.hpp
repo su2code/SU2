@@ -741,6 +741,17 @@ public:
   void SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j);
 
   /*!
+	 * \brief Sets the value of Eve
+	 * \param[in] iRho_s
+	 */
+  void SetEve(su2double *val_Eve_i, su2double *val_Eve_j);
+
+  /*!
+	 * \brief Sets the value of Eve
+	 * \param[in] iRho_s
+	 */
+  void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j);
+  /*!
   * \brief Sets the values of the roe dissipation.
   * \param[in] diss_i - Dissipation value at node i
   * \param[in] diss_j - Dissipation value at node j
@@ -1424,6 +1435,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConfig *config);
+
+  /*!
+	 * \brief Residual for source term integration.
+	 * \param[out] val_residual - Pointer to the source residual containing chemistry terms.
+	 * \param[in] config - Definition of the particular problem.
+	 */
+	virtual void ComputeAxisymmetric(su2double *val_residual, su2double **val_Jacobian,
+                                   CConfig *config);
 
   /*!
    * \brief Residual for source term integration.

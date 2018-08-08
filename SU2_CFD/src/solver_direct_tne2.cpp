@@ -85,22 +85,20 @@ CTNE2EulerSolver::CTNE2EulerSolver(void) : CSolver() {
 
 CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
 
-	unsigned long iPoint, index, counter_local = 0, counter_global = 0, iVertex;
-
+	unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
 	unsigned short iVar, iDim, iMarker, iSpecies, nLineLets;
+	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 	unsigned short nZone = geometry->GetnZone();
-  unsigned short iZone = config->GetiZone();
+	unsigned short iZone = config->GetiZone();
+	bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+	bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 	unsigned short direct_diff = config->GetDirectDiff();
+	string filename_ = config->GetSolution_FlowFileName();
 
 	su2double *Mvec_Inf;
-  su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
-  su2double Alpha, Beta, dull_val;
-
-	bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  su2double Alpha, Beta;
 	bool check_infty, nonPhys;
-	bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
 
-	string filename_ = config->GetSolution_FlowFileName();
 
 	/*--- Check for a restart file to evaluate if there is a change in the AoA
 		before non-dimensionalizing ---*/
@@ -115,6 +113,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	}
 
 	/*--- Array initialization ---*/
+
 	/*--- Basic array initialization ---*/
   CD_Inv = NULL; CL_Inv = NULL; CSF_Inv = NULL;  CEff_Inv = NULL;
   CMx_Inv = NULL; CMy_Inv = NULL; CMz_Inv = NULL;
@@ -168,11 +167,11 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	nVar         = nSpecies + nDim + 2;
   nPrimVar     = nSpecies + nDim + 8;
   nPrimVarGrad = nSpecies + nDim + 8;
-	nSecondaryVar     = ????;
-	nSecondaryVarGrad = ????;
+	//nSecondaryVar     = ????;
+	//nSecondaryVarGrad = ????;
 
 	/*--- Initialize nVarGrad for deallocation ---*/
-	nVarGrad = nPrimVarGrad;
+	nVarGrad     = nPrimVarGrad;
 	nPoint       = geometry->GetnPoint();
 	nPointDomain = geometry->GetnPointDomain();
 
@@ -289,6 +288,48 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			Cvector[iVar] = new su2double [nDim];
 	}
 
+	/*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+	CharacPrimVar = new su2double** [nMarker];
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+	  CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+	  for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+	    CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+	    for (iVar = 0; iVar < nPrimVar; iVar++) {
+	      CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
+	    }
+	  }
+	}
+
+	/*--- Store the value of the primitive variables + 2 turb variables at the boundaries,
+	 used for IO with a donor cell ---*/
+	DonorPrimVar = new su2double** [nMarker];
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+	  DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+	  for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+	    if (rans) {
+	      DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+	      for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
+	        DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+	      }
+	    }
+	    else {
+	      DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+	      for (iVar = 0; iVar < nPrimVar ; iVar++) {
+	        DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
+	      }
+	    }
+	  }
+	}
+
+	/*--- Store the value of the characteristic primitive variables index at the boundaries ---*/
+	DonorGlobalIndex = new unsigned long* [nMarker];
+	for (iMarker = 0; iMarker < nMarker; iMarker++) {
+	  DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
+	  for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+	    DonorGlobalIndex[iMarker][iVertex] = 0;
+	  }
+	}
+
 	/*--- Allocate force & coefficient arrays on boundaries ---*/
 	CPressure = new su2double* [nMarker];
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -297,7 +338,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 			CPressure[iMarker][iVertex] = 0.0;
 		}
 	}
-
 
 	/*--- Non dimensional coefficients ---*/
 	ForceInviscid    = new su2double[nDim];
@@ -352,14 +392,13 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 	Total_IDR       = 0.0;    Total_IDC          = 0.0;
 
 	/*--- Read farfield conditions from the config file ---*/
-  Density_Inf        = config->GetDensity_FreeStreamND();
+	Density_Inf        = config->GetDensity_FreeStreamND();
   Pressure_Inf       = config->GetPressure_FreeStreamND();
-  Velocity_Inf       = config->GetVelocity_FreeStreamND();
-  Energy_Inf         = config->GetEnergy_FreeStreamND();
+	Velocity_Inf       = config->GetVelocity_FreeStreamND();
   Temperature_Inf    = config->GetTemperature_FreeStreamND();
   Mach_Inf           = config->GetMach();
-	Temperature_ve_Inf = config->GetTemperature_ve_FreeStreamND();
-  MassFrac_Inf       = config->GetMassFrac_FreeStreamND();
+	Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
+  MassFrac_Inf       = config->GetMassFrac_FreeStream();
 
 	/*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {
@@ -410,35 +449,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     node[iPoint] = new CTNE2EulerVariable(Pressure_Inf, MassFrac_Inf, Mvec_Inf, Temperature_Inf,
                                             Temperature_ve_Inf, nDim, nVar, nPrimVar, nPrimVarGrad,
                                             config);
-
-  /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
-  counter_local = 0;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint++) {
-
-    Density = node[iPoint]->GetSolution(0);
-
-    Velocity2 = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Velocity2 += (node[iPoint]->GetSolution(iDim+1)/Density)*(node[iPoint]->GetSolution(iDim+1)/Density);
-
-    StaticEnergy= node[iPoint]->GetSolution(nDim+1)/Density - 0.5*Velocity2;
-
-    FluidModel->SetTDState_rhoe(Density, StaticEnergy);
-    Pressure= FluidModel->GetPressure();
-    Temperature= FluidModel->GetTemperature();
-
-    /*--- Use the values at the infinity ---*/
-    if ((Pressure < 0.0) || (Density < 0.0) || (Temperature < 0.0)) {
-      Solution[0] = Density_Inf;
-      for (iDim = 0; iDim < nDim; iDim++)
-        Solution[iDim+1] = Velocity_Inf[iDim]*Density_Inf;
-      Solution[nDim+1] = Energy_Inf*Density_Inf;
-      node[iPoint]->SetSolution(Solution);
-      node[iPoint]->SetSolution_Old(Solution);
-      counter_local++;
-    }
-  }
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
@@ -660,7 +670,7 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 	su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
 	*Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
 	 int send_to, receive_from;
     SU2_MPI::Status status;
   #endif
@@ -691,7 +701,7 @@ void CTNE2EulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
 
 			/*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -814,7 +824,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution_Old(iVar);
       }
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
 
 			/*--- Send/Receive information using Sendrecv ---*/
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
@@ -1145,7 +1155,7 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig 
 
   #ifndef HAVE_MPI
     int send_to, receive_from;
-    SU2_MPI:Status status;
+    SU2_MPI::Status status;
   #endif
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -1331,76 +1341,6 @@ void CTNE2EulerSolver::Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *confi
 	}
 }
 
-void CTNE2EulerSolver::Set_MPI_Sensor(CGeometry *geometry, CConfig *config) {
-	unsigned short iMarker, MarkerS, MarkerR;
-	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-	su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
-
-
-  #ifdef HAVE_MPI
-    int send_to, receive_from;
-    SU2_MPI::Status status;
-  #endif
-
-	for (iMarker = 0; iMarker < nMarker; iMarker++) {
-
-		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-			MarkerS = iMarker;  MarkerR = iMarker+1;
-
-  #ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-  #endif
-
-			nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
-			nBufferS_Vector = nVertexS;        nBufferR_Vector = nVertexR;
-
-      /*--- Allocate Receive and send buffers  ---*/
-      Buffer_Receive_Lambda = new su2double [nBufferR_Vector];
-      Buffer_Send_Lambda = new su2double[nBufferS_Vector];
-
-      /*--- Copy the solution old that should be sended ---*/
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
-        Buffer_Send_Lambda[iVertex] = node[iPoint]->GetSensor();
-      }
-
-  #ifdef HAVE_MPI
-
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
-
-  #else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-				Buffer_Receive_Lambda[iVertex] = Buffer_Send_Lambda[iVertex];
-      }
-
-  #endif
-
-      /*--- Deallocate send buffer ---*/
-      delete [] Buffer_Send_Lambda;
-
-      /*--- Do the coordinate transformation ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
-        node[iPoint]->SetSensor(Buffer_Receive_Lambda[iVertex]);
-
-      }
-
-      /*--- Deallocate receive buffer ---*/
-      delete [] Buffer_Receive_Lambda;
-
-    }
-	}
-}
-
 void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config) {
 	unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
 	unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
@@ -1418,7 +1358,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *c
 
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-		if ((config->GetMarker_KindBC(iMarker) == SEND_RECEIVE) &&
+		if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
         (config->GetMarker_All_SendRecv(iMarker) > 0)) {
 
 			MarkerS = iMarker;  MarkerR = iMarker+1;
@@ -1812,8 +1752,10 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 													!(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center       		= ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                       		(cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
+	bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
 	bool nonPhys;
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+	bool interface        = (config->GetnMarker_InterfaceBound() != 0);
 
 	/* --- Compute interface MPI --- */
 	if (interface) {Set_MPI_Interface(geometry, config); }
@@ -1857,44 +1799,19 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 
 }
 
-void CTNE2EulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
-
-unsigned long CTNE2EulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
-
-  unsigned long iPoint, ErrorCounter = 0;
-  bool RightSol = true;
-
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-    /*--- Initialize the non-physical points vector ---*/
-
-    node[iPoint]->SetNon_Physical(false);
-
-    /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
-    RightSol = node[iPoint]->SetPrimVar_Compressible(config);
-    //node[iPoint]->SetSecondaryVar(FluidModel);
-
-    if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
-
-    /*--- Initialize the convective, source and viscous residual vector ---*/
-    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
-
-  }
-
-  return ErrorCounter;
-}
-
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                       unsigned short iMesh, unsigned long Iteration) {
 
 	su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel=0.0, Lambda, Local_Delta_Time,
-	Global_Delta_Time = 1E6;
+	Global_Delta_Time = 1E6, Global_Delta_UnstTimeND;
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
 
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-
+	bool grid_movement = config->GetGrid_Movement();
+  bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
 
 	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
@@ -2082,6 +1999,7 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
                                          CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
 	unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, jVar;
+  bool err;
 
   /*--- Set booleans based on config settings ---*/
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -2155,7 +2073,7 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CConfig *config, unsigned short iMesh) {
 	unsigned long iEdge, iPoint, jPoint;
-
+	unsigned long ExtIter = config->GetExtIter();
   unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
   unsigned short iDim, iSpecies, iVar, jVar;
 
@@ -2166,7 +2084,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
-
+  su2double counter_local=0, counter_global=0;
   su2double lim_i, lim_j, lim_ij;
 
 	/*--- Set booleans based on config settings ---*/
@@ -2175,7 +2093,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 	bool disc_adjoint = config->GetDiscrete_Adjoint();
   bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) &&
 											!(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-	bool chk_err_i, ckh_err_j;
+	bool chk_err_i, chk_err_j, err;
 
   /*--- Allocate arrays ---*/
   Primitive_i = new su2double[nPrimVar];
@@ -2395,7 +2313,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
 void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_container, CNumerics *numerics,
                                        CNumerics *second_solver, CConfig *config, unsigned short iMesh) {
-  bool err;
+
 	unsigned short iVar, jVar;
   unsigned long iPoint;
   unsigned long eAxi_local, eChm_local, eVib_local;
@@ -2403,8 +2321,8 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 	int rank = MASTER_NODE;
 
   /*--- Assign booleans ---*/
-  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  err = false;
+  bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool err = false;
 
   /*--- Initialize the error counter ---*/
   eAxi_local = 0;
@@ -2530,13 +2448,20 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 
 	unsigned long iVertex, iPoint;
-	unsigned short iDim, iMarker, Boundary, Monitoring;
+	unsigned short iDim, iMarker, Boundary, Monitoring, iMarker_Monitoring;
 	su2double Pressure, *Normal = NULL, *Coord, Area, factor, NFPressOF,
 	RefVel2, RefDensity, RefPressure;
 
   su2double MomentDist[3];
   su2double Force[3];
   su2double UnitNormal[3];
+	su2double MomentX_Force[3] = {0.0,0.0,0.0},
+						MomentY_Force[3] = {0.0,0.0,0.0},
+						MomentZ_Force[3] = {0.0,0.0,0.0};
+	su2double AxiFactor;
+  string Marker_Tag, Monitoring_Tag;
+	bool grid_movement        = config->GetGrid_Movement();
+  bool axisymmetric         = config->GetAxisymmetric();
 
   #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv,
@@ -2909,7 +2834,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex());
       }
     }
 
@@ -2942,7 +2867,7 @@ void CTNE2EulerSolver::ExplicitRK_Iteration(CGeometry *geometry,
 
   /*--- Update the solution ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = geometry-> node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     Res_TruncError = node[iPoint]->GetResTruncError();
@@ -2953,7 +2878,7 @@ void CTNE2EulerSolver::ExplicitRK_Iteration(CGeometry *geometry,
         Res = Residual[iVar] + Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex());
       }
     }
 
@@ -2990,14 +2915,12 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		local_Res_TruncError = node[iPoint]->GetResTruncError();
 
 		/*--- Read the volume ---*/
-		Vol = geometry->node[iPoint]->GetVolume();
+		Vol = geometry-> node[iPoint]->GetVolume();
 
 		/*--- Modify matrix diagonal to assure diagonal dominance ---*/
-    if (node[iPoint]->GetDelta_Time() != 0.0) {
+		if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      else {
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
+      Jacobian.AddVal2Diag(iPoint, Delta);
     }
     else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
@@ -3008,14 +2931,13 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
       }
     }
 
-
 		/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
 			LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
-			AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+			AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry-> node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
 	}
 
@@ -3084,7 +3006,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *co
 			PrimVar_j[iVar] = node[jPoint]->GetPrimVar(iVar);
 		}
 
-		Normal = geometry->edge[iEdge]->GetNormal();
+		Normal = geometry-> edge[iEdge]->GetNormal();
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
 			PrimVar_Average =  0.5 * ( PrimVar_i[iVar] + PrimVar_j[iVar] );
 			for (iDim = 0; iDim < nDim; iDim++) {
@@ -3268,7 +3190,7 @@ void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *conf
 			for (iDim = 0; iDim < nDim; iDim++) {
 				product = 0.0;
 				for (jDim = 0; jDim < nDim; jDim++)
-					product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+					product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
 				node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
 			}
 		}
@@ -3422,7 +3344,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
 	Set_MPI_Primitive_Gradient(geometry, config);
 }
 
-void CTNE2EulerSolver::SetPrimitifve_Gradient(CConfig *config) {
+void CTNE2EulerSolver::SetPrimitive_Gradient(CConfig *config) {
   unsigned long iPoint;
   unsigned short iVar;
   su2double *U, *V, **GradU, **GradV;
@@ -3445,7 +3367,7 @@ void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iVar, iDim;
   su2double dave, LimK, eps1, eps2, dm, dp, du, y, limiter;
-  su2double *Primitive, *Primitive_i, *Primitive_j, LocalMinPrimitive, *LocalMaxPrimitive,
+  su2double *Primitive, *Primitive_i, *Primitive_j, *LocalMinPrimitive, *LocalMaxPrimitive,
 						*GlobalMinPrimitive, *GlobalMaxPrimitive;
   su2double *Coord_i, *Coord_j;
   su2double **Gradient_i, **Gradient_j;
@@ -3482,7 +3404,7 @@ void CTNE2EulerSolver::SetPrimitive_Limiter(CGeometry *geometry,
 
 			/*--- Get primitive variables ---*/
 			Primitive_i = node[iPoint]->GetPrimVar();
-			Primitive_J = node[jPoint]->GetPrimVar();
+			Primitive_j = node[jPoint]->GetPrimVar();
 
 			/*--- Compute the max and min values for nodes i & j ---*/
 			for (iVar = 0; iVar < nVar; iVar++){
@@ -3695,9 +3617,9 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 	local_Mach = sqrt(node[iPoint]->GetVelocity2())/node[iPoint]->GetSoundSpeed();
 
   /*--- Weiss and Smith Preconditionng ---*/
-	Mach_infty2 = powe(config->GetMach(),2.0);
+	Mach_infty2 = pow(config->GetMach(),2.0);
 	Mach_lim2   = pow(0.00001,2.0);
-	aux         = max(pow(local_Mach,2.0),Mach_lim2)
+	aux         = max(pow(local_Mach,2.0),Mach_lim2);
 	parameter   = min(1.0, max(aux,Beta_max*Mach_infty2));
 
 	U_i = node[iPoint]->GetSolution();
@@ -3736,7 +3658,7 @@ void CTNE2EulerSolver::SetPreconditioner(CConfig *config, unsigned short iPoint)
 	}
 }
 
-void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_container,
+void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
                                      CNumerics *numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim, jDim, iSpecies, iVar, jVar, kVar;
 	unsigned long iPoint, iVertex;
@@ -3746,9 +3668,9 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
   su2double Density_b, StaticEnergy_b, Enthalpy_b, *Velocity_b, Kappa_b, Chi_b, Energy_b, VelMagnitude2_b, Pressure_b;
   su2double Density_i, *Velocity_i, ProjVelocity_i = 0.0, Energy_i, VelMagnitude2_i;
   su2double **Jacobian_b, **DubDu;
-	su2double Area, rhoCvtr, rhoCvve, rho_el, Ru;
+	su2double rhoCvtr, rhoCvve, rho_el, Ru;
   su2double rho, cs, P, rhoE, rhoEve, conc, Beta;
-  su2double *u;
+  su2double *u, *Ms, *dPdU;
 
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -3792,7 +3714,6 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solution_con
 				NormalArea[iDim] = -Normal[iDim];
 				UnitNormal[iDim] = -Normal[iDim]/Area;
 			}
-
 
 			/*--- Retrieve the pressure on the vertex ---*/
       P   = node[iPoint]->GetPressure();
@@ -3907,8 +3828,17 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
+  su2double *U_domain,*U_infty;
+  su2double Gas_Constant     = config->GetGas_ConstantND();
 
-  /*--- Set booleans from configuration parameters ---*/
+	/*--- Getting info from config ---*/
+	unsigned short VEL_INDEX     = node[0]->GetVelIndex();
+	unsigned short RHOCVTR_INDEX = node[0]->GetRhoCvtrIndex() ;
+	unsigned short RHO_INDEX     = node[0]->GetRhoIndex();
+	unsigned short A_INDEX       = node[0]->GetAIndex();
+
+
+	/*--- Set booleans from configuration parameters ---*/
   bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool viscous  = config->GetViscous();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
@@ -3972,12 +3902,11 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
       	other quantities for clarity. Project the current flow velocity vector
       	at this boundary node into the local normal direction, i.e. compute
       	v_bound.n.  ---*/
-			Vn_Bound = 0.0;
 			for (iDim = 0; iDim < nDim; iDim++){
 				Vel_Bound[iDim] = V_domain[VEL_INDEX+iDim];
 				Vn_Bound       += Vel_Bound[iDim]*UnitNormal[iDim];
 			}
-			Entropy_Bound    = V_Bound[RhoCvtrIndex]/V_Bound[RHOIndex];
+			Entropy_Bound    = V_domain[RHOCVTR_INDEX]/V_domain[RHO_INDEX];
 
 			/*--- Store the primitive variable state for the freestream. Project
       	the freestream velocity vector into the local normal direction,
@@ -3988,8 +3917,8 @@ void CTNE2EulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solution_cont
         Vn_Infty       += Vel_Infty[iDim]*UnitNormal[iDim];
       }
 			Qn_Infty         = Vn_Infty;
-			SoundSpeed_Infty = V_Infty[AIndex];
-			Entropy_Infty    = V_Infty[RhoCvtrIndex]/V_Infty[RHOIndex];
+			SoundSpeed_Infty = V_infty[A_INDEX];
+			Entropy_Infty    = V_infty[RHOCVTR_INDEX]/V_infty[RHO_INDEX];
 
 			/*--- Compute acoustic Riemann invariants: R = u.n +/- 2c/(gamma-1).
          These correspond with the eigenvalues (u+c) and (u-c), respectively,
@@ -4154,14 +4083,16 @@ void CTNE2EulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solution_containe
 	su2double Two_Gamma_M1       = 2.0/Gamma_Minus_One;
 	su2double Gas_Constant       = config->GetGas_ConstantND();
 	unsigned short Kind_Inlet = config->GetKind_Inlet();
-	string Marker_Tag         = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag         = config->GetMarker_All_TagBound(val_marker);
 	bool tkeNeeded = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
                     (config->GetKind_Turb_Model() == SST));
   bool gravity = (config->GetGravityForce());
+  bool viscous              = config->GetViscous();
 
 	su2double *U_domain = new su2double[nVar];      su2double *U_inlet = new su2double[nVar];
 	su2double *V_domain = new su2double[nPrimVar];  su2double *V_inlet = new su2double[nPrimVar];
 	su2double *Normal = new su2double[nDim];
+  su2double UnitNormal[3];
 
 	/*--- Loop over all the vertices on this boundary marker ---*/
 	for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4411,12 +4342,12 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 	bool implicit           = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   su2double Gas_Constant     = config->GetGas_ConstantND();
 	bool grid_movement      = config->GetGrid_Movement();
-	string Marker_Tag       = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag       = config->GetMarker_All_TagBound(val_marker);
 	bool viscous              = config->GetViscous();
   bool gravity = (config->GetGravityForce());
 
-	su2double *U_domain = new su2double[nVar];      dsu2ouble *U_outlet = new su2double[nVar];
-  dsu2ouble *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
+	su2double *U_domain = new su2double[nVar];      su2double *U_outlet = new su2double[nVar];
+  su2double *V_domain = new su2double[nPrimVar];  su2double *V_outlet = new su2double[nPrimVar];
 	su2double *Normal = new su2double[nDim];
 
 	/*--- Loop over all the vertices on this boundary marker ---*/
@@ -4448,7 +4379,7 @@ void CTNE2EulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solution_contain
 			/*--- Build the fictitious intlet state based on characteristics ---*/
 
       /*--- Retrieve the specified back pressure for this outlet. ---*/
-      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDART_GRAVITY;
+      if (gravity) P_Exit = config->GetOutlet_Pressure(Marker_Tag) - geometry->node[iPoint]->GetCoord(nDim-1)*STANDARD_GRAVITY;
       else P_Exit = config->GetOutlet_Pressure(Marker_Tag);
 
       /*--- Non-dim. the inputs if necessary. ---*/
@@ -4579,7 +4510,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool grid_movement  = config->GetGrid_Movement();
 	bool viscous              = config->GetViscous();
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
   su2double *U_inlet = new su2double[nVar]; su2double *U_domain = new su2double[nVar];
   su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
@@ -4828,7 +4759,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	unsigned short nZone = geometry->GetnZone();
 
 	/*--- Multi-zone restart files. ---*/
-	if (nZone > 1 && !(config->GetUnsteady_Simulation() == TIME_SPECTRAL)) {
+	if (nZone > 1 && !(config->GetUnsteady_Simulation() == DT_STEPPING_1ST)) {
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
 		sprintf (buffer, "_%d.dat", int(val_iZone));
 		UnstExt = string(buffer);
@@ -4837,7 +4768,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 
 	/*--- For the unsteady adjoint, we integrate backwards through
    physical time, so load in the direct solution files in reverse. ---*/
-	if (config->GetUnsteady_Simulation() == TIME_SPECTRAL) {
+	if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST) {
 		flowIter = val_iZone;
 		restart_filename.erase(restart_filename.end()-4, restart_filename.end());
 		if (int(val_iZone) < 10) sprintf (buffer, "_0000%d.dat", int(val_iZone));
@@ -4990,8 +4921,8 @@ void CTNE2EulerSolver::SetVolume_Output(CConfig *config, CGeometry *geometry, su
 CTNE2NSSolver::CTNE2NSSolver(void) : CTNE2EulerSolver() {
 
 	/*--- Array initialization ---*/
-	CDrag_Visc = NULL;
-	CLift_Visc = NULL;
+	CD_Visc = NULL;
+	CL_Visc = NULL;
 	CMx_Visc = NULL;
 	CMy_Visc = NULL;
 	CMz_Visc = NULL;
@@ -5024,8 +4955,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   #endif
 
 	/*--- Array initialization ---*/
-	CDrag_Visc       = NULL;
-	CLift_Visc       = NULL;
+	CD_Visc       = NULL;
+	CL_Visc       = NULL;
 	CMx_Visc         = NULL;
 	CMy_Visc         = NULL;
 	CMz_Visc         = NULL;
@@ -5162,9 +5093,9 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 			Smatrix[iDim] = new su2double [nDim];
 
 		/*--- c vector := transpose(WA)*(Wb) ---*/
-		cvector = new su2double* [nPrimVarGrad];
+		Cvector = new su2double* [nPrimVarGrad];
 		for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-			cvector[iVar] = new su2double [nDim];
+			Cvector[iVar] = new su2double [nDim];
 	}
 
 	/*--- Allocate force & coefficient arrays on boundaries ---*/
@@ -5190,9 +5121,9 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	/*--- Non dimensional coefficients ---*/
 	ForceInviscid  = new su2double[3];
 	MomentInviscid = new su2double[3];
-	CDrag_Inv      = new su2double[nMarker];
-	CLift_Inv      = new su2double[nMarker];
-	CSideForce_Inv = new su2double[nMarker];
+	CD_Inv         = new su2double[nMarker];
+	CL_Inv         = new su2double[nMarker];
+	CSF_Inv        = new su2double[nMarker];
 	CMx_Inv        = new su2double[nMarker];
 	CMy_Inv        = new su2double[nMarker];
 	CMz_Inv        = new su2double[nMarker];
@@ -5202,7 +5133,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFz_Inv        = new su2double[nMarker];
 
 	/*--- Initialize total coefficients ---*/
-	Total_CDrag = 0.0;  Total_CLift = 0.0;  Total_CSideForce = 0.0;
+	Total_CD    = 0.0;  Total_CL    = 0.0;  Total_CSF = 0.0;
   Total_CFx   = 0.0;  Total_CFy   = 0.0;  Total_CFz = 0.0;
 	Total_CMx   = 0.0;  Total_CMy   = 0.0;  Total_CMz = 0.0;
 	Total_CEff  = 0.0;
@@ -5211,8 +5142,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 
 	ForceViscous  = new su2double[3];
 	MomentViscous = new su2double[3];
-	CDrag_Visc    = new su2double[nMarker];
-	CLift_Visc    = new su2double[nMarker];
+	CD_Visc       = new su2double[nMarker];
+	CL_Visc       = new su2double[nMarker];
 	CMx_Visc      = new su2double[nMarker];
 	CMy_Visc      = new su2double[nMarker];
 	CMz_Visc      = new su2double[nMarker];
@@ -5228,11 +5159,11 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
   Temperature_Inf    = config->GetTemperature_FreeStream();
   Temperature_ve_Inf = config->GetTemperature_ve_FreeStream();
   MassFrac_Inf       = config->GetMassFrac_FreeStream();
-  Mach_Inf           = config->GetMach_FreeStreamND();
+  Mach_Inf           = config->GetMach();
 
   // Note: May need to investigate these more carefully...
 	Viscosity_Inf = config->GetViscosity_FreeStreamND();
-	Mach_Inf      = config->GetMach_FreeStreamND();
+	Mach_Inf      = config->GetMach();
 	Prandtl_Lam   = config->GetPrandtl_Lam();
 	Prandtl_Turb  = config->GetPrandtl_Turb();
 
@@ -5495,8 +5426,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 CTNE2NSSolver::~CTNE2NSSolver(void) {
 	unsigned short iMarker;
 
-	if (CDrag_Visc != NULL) delete [] CDrag_Visc;
-	if (CLift_Visc != NULL) delete [] CLift_Visc;
+	if (CD_Visc != NULL) delete [] CD_Visc;
+	if (CL_Visc != NULL) delete [] CL_Visc;
 	if (CMx_Visc != NULL) delete [] CMx_Visc;
 	if (CMy_Visc != NULL) delete [] CMy_Visc;
 	if (CMz_Visc != NULL) delete [] CMz_Visc;
@@ -5530,11 +5461,12 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
                                   unsigned short RunTime_EqSystem, bool Output) {
 	unsigned long iPoint, ErrorCounter = 0;
   bool nonPhys;
-  bool adjoint      = config->GetAdjoint();
+	unsigned long ExtIter = config->GetExtIter();
+  bool adjoint      = config->GetContinuous_Adjoint();
 	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool second_order = ((config->GetSpatialOrder_TNE2() == SECOND_ORDER) ||
-                       (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER));
-	bool limiter      = (config->GetSpatialOrder_TNE2() == SECOND_ORDER_LIMITER);
+	bool muscl        = (config->GetMUSCL_Flow());
+  bool limiter      = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+
   bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                        (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
   int rank;
@@ -5584,7 +5516,8 @@ void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_contai
   Set_MPI_Solution_Gradient(geometry, config);
   Set_MPI_Primitive_Gradient(geometry, config);
 
-  if ((second_order) && (iMesh == MESH_0) && limiter) {
+
+  if ((muscl) && (iMesh == MESH_0) && limiter) {
     SetSolution_Limiter(geometry, config);
   }
 
@@ -6293,7 +6226,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   su2double RefDensity, Density;
   su2double div_vel, RefVel2;
   su2double dTn, dTven, pnorm, HeatLoad;
-  su2double Alpha, Beta, RefLengthMoment, RefAreaCoeff, *Origin;
+  su2double Alpha, Beta, RefLength, RefArea, *Origin;
   su2double factor;
 
   su2double WallShearStress, WallDistMod, WallDist[3];
@@ -6318,9 +6251,9 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Beta  = config->GetAoS()*PI_NUMBER/180.0;
 
   /*--- Determine reference geometrical parameters ---*/
-  RefAreaCoeff    = config->GetRefAreaCoeff();
-	RefLengthMoment = config->GetRefLengthMoment();
-	Origin          = config->GetRefOriginMoment(0);
+  RefArea    = config->GetRefArea();
+	RefLength  = config->GetRefLength();
+	Origin     = config->GetRefOriginMoment(0);
 
 	/*--- Get reference values from the freestream node. ---*/
   RefVel2 = 0.0;
@@ -6330,12 +6263,12 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   }
 	RefDensity  = node_infty->GetDensity();
 
-	factor = 1.0 / (0.5*RefDensity*RefAreaCoeff*RefVel2);
+	factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
 	/*-- Initialization --*/
   AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
 	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
-	AllBound_CDrag_Visc = 0.0; AllBound_CLift_Visc = 0.0;
+	AllBound_CD_Visc = 0.0; AllBound_CL_Visc = 0.0;
 	AllBound_HeatFlux_Visc     = 0.0; AllBound_MaxHeatFlux_Visc  = 0.0;
 	AllBound_CEff_Visc  = 0.0;
 
@@ -6347,7 +6280,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 		Monitoring = config->GetMarker_All_Monitoring(iMarker);
 
     /*--- Forces initialization at each Marker ---*/
-    CDrag_Visc[iMarker] = 0.0; CLift_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
+    CD_Visc[iMarker] = 0.0; CL_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
     CMx_Visc[iMarker]   = 0.0; CMy_Visc[iMarker]   = 0.0; CMz_Visc[iMarker]  = 0.0;
     CFx_Visc[iMarker]   = 0.0; CFy_Visc[iMarker]   = 0.0; CFz_Visc[iMarker]  = 0.0;
     Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0;
@@ -6467,10 +6400,10 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					}
 
 					if (iDim == 3) {
-            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLengthMoment;
-            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLengthMoment;
+            MomentViscous[0] += (Force[2]*MomentDist[1] - Force[1]*MomentDist[2])/RefLength;
+            MomentViscous[1] += (Force[0]*MomentDist[2] - Force[2]*MomentDist[0])/RefLength;
           }
-          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLengthMoment;
+          MomentViscous[2] += (Force[1]*MomentDist[0] - Force[0]*MomentDist[1])/RefLength;
 				}
 			}
 
@@ -6478,22 +6411,22 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 			if  (Monitoring == YES) {
 
 				if (nDim == 2) {
-					CDrag_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
-					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
+					CD_Visc[iMarker] =  ForceViscous[0]*cos(Alpha) + ForceViscous[1]*sin(Alpha);
+					CL_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) + ForceViscous[1]*cos(Alpha);
 					CMz_Visc[iMarker]   = MomentViscous[2];
-					CEff_Visc[iMarker]  = CLift_Visc[iMarker]/(CDrag_Visc[iMarker]+EPS);
+					CEff_Visc[iMarker]  = CL_Visc[iMarker]/(CD_Visc[iMarker]+EPS);
 					CFx_Visc[iMarker]   = ForceViscous[0];
 					CFy_Visc[iMarker]   = ForceViscous[1];
 					CFz_Visc[iMarker]   = 0.0;
 				}
 
 				if (nDim == 3) {
-					CDrag_Visc[iMarker] = ForceViscous[0]*cos(Alpha)*cos(Beta) +
+					CD_Visc[iMarker] = ForceViscous[0]*cos(Alpha)*cos(Beta) +
                                 ForceViscous[1]*sin(Beta) +
                                 ForceViscous[2]*sin(Alpha)*cos(Beta);
-					CLift_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) +
+					CL_Visc[iMarker] = -ForceViscous[0]*sin(Alpha) +
                                  ForceViscous[2]*cos(Alpha);
-          CEff_Visc[iMarker]  = CLift_Visc[iMarker]/(CDrag_Visc[iMarker]+EPS);
+          CEff_Visc[iMarker]  = CL_Visc[iMarker]/(CD_Visc[iMarker]+EPS);
 					CMx_Visc[iMarker]   = MomentViscous[0];
 					CMy_Visc[iMarker]   = MomentViscous[1];
 					CMz_Visc[iMarker]   = MomentViscous[2];
@@ -6502,8 +6435,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFz_Visc[iMarker]   = ForceViscous[2];
 				}
 
-				AllBound_CDrag_Visc       += CDrag_Visc[iMarker];
-				AllBound_CLift_Visc       += CLift_Visc[iMarker];
+				AllBound_CD_Visc       += CD_Visc[iMarker];
+				AllBound_CL_Visc       += CL_Visc[iMarker];
         AllBound_CEff_Visc        += CEff_Visc[iMarker];
 				AllBound_CMx_Visc         += CMx_Visc[iMarker];
 				AllBound_CMy_Visc         += CMy_Visc[iMarker];
@@ -6523,8 +6456,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
   /*--- Add AllBound information using all the nodes ---*/
 
-  su2double MyAllBound_CDrag_Visc       = AllBound_CDrag_Visc;
-  su2double MyAllBound_CLift_Visc       = AllBound_CLift_Visc;
+  su2double MyAllBound_CD_Visc       = AllBound_CD_Visc;
+  su2double MyAllBound_CL_Visc       = AllBound_CL_Visc;
   su2double MyAllBound_CEff_Visc        = AllBound_CEff_Visc;
   su2double MyAllBound_CMx_Visc         = AllBound_CMx_Visc;
   su2double MyAllBound_CMy_Visc         = AllBound_CMy_Visc;
@@ -6535,8 +6468,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   su2double MyAllBound_HeatFlux_Visc    = AllBound_HeatFlux_Visc;
   su2double MyAllBound_MaxHeatFlux_Visc = AllBound_MaxHeatFlux_Visc;
 
-  AllBound_CDrag_Visc         = 0.0;
-  AllBound_CLift_Visc         = 0.0;
+  AllBound_CD_Visc         = 0.0;
+  AllBound_CL_Visc         = 0.0;
   AllBound_CEff_Visc          = 0.0;
   AllBound_CMx_Visc           = 0.0;
   AllBound_CMy_Visc           = 0.0;
@@ -6548,11 +6481,11 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   AllBound_MaxHeatFlux_Visc   = 0.0;
 
   #ifdef WINDOWS
-  MPI_Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI_DOUBLE,
+  MPI_Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE,
                 MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CLift_Visc, &AllBound_CLift_Visc, 1, MPI_DOUBLE,
+  MPI_Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE,
                 MPI_SUM, MPI_COMM_WORLD);
-  AllBound_CEff_Visc = AllBound_CLift_Visc / (AllBound_CDrag_Visc + EPS);
+  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
   MPI_Allreduce(&MyAllBound_CMx_Visc,      &AllBound_CMx_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMy_Visc,      &AllBound_CMy_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_CMz_Visc,      &AllBound_CMz_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
@@ -6562,9 +6495,9 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   MPI_Allreduce(&MyAllBound_HeatFlux_Visc,     &AllBound_HeatFlux_Visc,     1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   MPI_Allreduce(&MyAllBound_MaxHeatFlux_Visc, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   #else
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CDrag_Visc, &AllBound_CDrag_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CLift_Visc, &AllBound_CLift_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  AllBound_CEff_Visc = AllBound_CLift_Visc / (AllBound_CDrag_Visc + EPS);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  MPI::COMM_WORLD.Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI::DOUBLE, MPI::SUM);
+  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CMx_Visc,         &AllBound_CMx_Visc,         1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CMy_Visc,         &AllBound_CMy_Visc,         1, MPI::DOUBLE, MPI::SUM);
   MPI::COMM_WORLD.Allreduce(&MyAllBound_CMz_Visc,         &AllBound_CMz_Visc,         1, MPI::DOUBLE, MPI::SUM);
@@ -6576,12 +6509,12 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   #endif
   #endif
 
-	Total_CDrag   += AllBound_CDrag_Visc;
-	Total_CLift   += AllBound_CLift_Visc;
+	Total_CD   += AllBound_CD_Visc;
+	Total_CL   += AllBound_CL_Visc;
 	Total_CMx     += AllBound_CMx_Visc;
 	Total_CMy     += AllBound_CMy_Visc;
 	Total_CMz     += AllBound_CMz_Visc;
-	Total_CEff     = Total_CLift/(Total_CDrag+EPS);
+	Total_CEff     = Total_CL/(Total_CD+EPS);
 	Total_CFx     += AllBound_CFx_Visc;
 	Total_CFy     += AllBound_CFy_Visc;
 	Total_CFz     += AllBound_CFz_Visc;
@@ -6625,7 +6558,7 @@ void CTNE2NSSolver::BC_HeatFlux_Wall(CGeometry *geometry,
   pcontrol = 1.0;
 
 	/*--- Identify the boundary by string name ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -6817,7 +6750,7 @@ void CTNE2NSSolver::BC_HeatFluxCatalytic_Wall(CGeometry *geometry,
   pcontrol = 0.6;
 
 	/*--- Identify the boundary by string name ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
 	/*--- Get the specified wall heat flux from config ---*/
 	Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
@@ -7004,7 +6937,7 @@ void CTNE2NSSolver::BC_Isothermal_Wall(CGeometry *geometry,
   C = 5;
 
 	/*--- Identify the boundary ---*/
-	string Marker_Tag = config->GetMarker_All_Tag(val_marker);
+	string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
 	/*--- Retrieve the specified wall temperature ---*/
 	Twall = config->GetIsothermal_Temperature(Marker_Tag);
