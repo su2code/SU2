@@ -36,3 +36,65 @@
  */
 
 #include "../include/variable_structure.hpp"
+
+CScalarVariable::CScalarVariable(void) : CVariable() { }
+
+CScalarVariable::CScalarVariable(su2double *val_scalar,
+                                 unsigned short val_nDim,
+                                 unsigned short val_nvar,
+                                 CConfig *config) : CVariable(val_nDim,
+                                                              val_nvar,
+                                                              config) {
+  
+  unsigned short iVar, iMesh, nMGSmooth = 0;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  
+  /*--- Initialization of variables ---*/
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar]     = val_scalar[iVar];
+    Solution_Old[iVar] = val_scalar[iVar];
+  }
+  
+  /*--- Allocate and initialize solution for the dual time strategy. ---*/
+  
+  if (dual_time) {
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_time_n[iVar]     = val_scalar[iVar];
+      Solution_time_n1[iVar] = val_scalar[iVar];
+    }
+  }
+  
+  /*--- Always allocate the slope limiter and necessary aux. variables. ---*/
+  
+  Limiter = new su2double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++)
+    Limiter[iVar] = 0.0;
+  
+  Solution_Max = new su2double[nVar];
+  Solution_Min = new su2double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
+  }
+  
+  /*--- Allocate residual structures in case of multigrid. ---*/
+  
+  Res_TruncError = new su2double[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
+  
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  
+  if (nMGSmooth > 0) {
+    Residual_Sum = new su2double[nVar];
+    Residual_Old = new su2double[nVar];
+  }
+  
+}
+
+CScalarVariable::~CScalarVariable(void) { }
+

@@ -4447,6 +4447,39 @@ public:
   su2double GetCrossDiff(void);
 };
 
+/*!
+ * \class CScalarVariable
+ * \brief Main class for defining the variables of scalar transport eqns.
+ * \ingroup Scalar_Equations
+ * \author T. Economon
+ */
+class CScalarVariable : public CVariable {
+protected:
+  
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CScalarVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_scalar - Pointer to the scalar solution values.
+   * \param[in] val_nDim   - Number of dimensions of the problem.
+   * \param[in] val_nvar   - Number of variables of the problem.
+   * \param[in] config     - Definition of the particular problem.
+   */
+  CScalarVariable(su2double *val_scalar,
+                  unsigned short val_nDim,
+                  unsigned short val_nvar,
+                  CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CScalarVariable(void);
+  
+};
 
 /*!
  * \class CAdjEulerVariable
