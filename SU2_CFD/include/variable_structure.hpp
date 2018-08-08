@@ -883,6 +883,66 @@ public:
   virtual su2double GetMassFraction(unsigned short val_Species);
 
   /*!
+    * \brief A virtual member.  Retrieves index of species densities in the TNE2 solver.
+    */
+  virtual unsigned short GetRhosIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetRhoIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetPIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetTIndex(void);
+
+   /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetTveIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the velocity index in the primitive variable vector.
+ 	 * \param[in] iRho*u
+ 	 */
+  virtual unsigned short GetVelIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetHIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetAIndex(void);
+
+   /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetRhoCvtrIndex(void);
+
+  /*!
+ 	 * \brief Retrieves the value of the species density in the primitive variable vector.
+ 	 * \param[in] iRho_s
+ 	 */
+  virtual unsigned short GetRhoCvveIndex(void);
+
+
+  /*!
    * \brief A virtual member.
    * \return Value of the flow energy.
    */
@@ -1108,6 +1168,11 @@ public:
   virtual void SetEnthalpy(void);
 
   /*!
+	 * \brief A virtual member.
+	 */
+	virtual bool SetPrimVar_Compressible(CConfig *config);
+
+  /*!
    * \brief A virtual member.
    */
   virtual bool SetPrimVar(CConfig *config);
@@ -1116,6 +1181,21 @@ public:
    * \brief A virtual member.
    */
   virtual bool SetPrimVar(CFluidModel *FluidModel);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+  virtual void SetPrimVar(unsigned short val_var, su2double val_prim);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double *GetPrimVar(void);
+
+  /*!
+	 * \brief A virtual member.
+	 */
+	virtual su2double GetPrimVar(unsigned short val_var);
 
   /*!
    * \brief A virtual member.

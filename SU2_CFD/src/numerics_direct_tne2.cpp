@@ -108,8 +108,6 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
 
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
-  su2double U_i, U_j;
-
 	/*--- AD setup ---*/
 	//AD::StartPreacc();
   //AD::SetPreaccIn(V_i, nSpecies+nDim+4);
@@ -516,8 +514,8 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double Cvtrs;
   su2double Ru, rho_el_i, rho_el_j, *Ms, *xi;
-  // double dPdrhoE_i, dPdrhoE_j, dPdrhoEve_i, dPdrhoEve_j;
   su2double e_ve_i, e_ve_j;
+  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
   /*--- Compute geometric quantities ---*/
 	Area = 0;
@@ -584,7 +582,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 	mR = ProjVel_j/a_j;
 
   /*--- Calculate split numerical fluxes ---*/
-	if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
+  	if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
   else                 mLP = 0.5*(mL+fabs(mL));
 
 	if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
