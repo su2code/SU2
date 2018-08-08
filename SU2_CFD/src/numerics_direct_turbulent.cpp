@@ -38,7 +38,7 @@
 #include "../include/numerics_structure.hpp"
 #include <limits>
 
-CUpwScalar::CUpwScalar(unsigned short val_nDim,
+CUpwSca_Turb::CUpwSca_Turb(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    CConfig *config)
     : CNumerics(val_nDim, val_nVar, config) {
@@ -52,14 +52,14 @@ CUpwScalar::CUpwScalar(unsigned short val_nDim,
 
 }
 
-CUpwScalar::~CUpwScalar(void) {
+CUpwSca_Turb::~CUpwSca_Turb(void) {
 
   delete [] Velocity_i;
   delete [] Velocity_j;
 
 }
 
-void CUpwScalar::ComputeResidual(su2double *val_residual,
+void CUpwSca_Turb::ComputeResidual(su2double *val_residual,
                                        su2double **val_Jacobian_i,
                                        su2double **val_Jacobian_j,
                                        CConfig *config) {
@@ -106,7 +106,7 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
 CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
                                unsigned short val_nVar,
                                CConfig *config)
-    : CUpwScalar(val_nDim, val_nVar, config) {
+    : CUpwSca_Turb(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
@@ -126,7 +126,7 @@ void CUpwSca_TurbSA::FinishResidualCalc(su2double *val_residual, su2double **val
   }
 }
 
-CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
+CAvgGrad_Turb::CAvgGrad_Turb(unsigned short val_nDim,
                                      unsigned short val_nVar,
                                      bool correct_grad,
                                      CConfig *config)
@@ -145,7 +145,7 @@ CAvgGrad_Scalar::CAvgGrad_Scalar(unsigned short val_nDim,
 
 }
 
-CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
+CAvgGrad_Turb::~CAvgGrad_Turb(void) {
 
   delete [] Edge_Vector;
   delete [] Proj_Mean_GradTurbVar_Normal;
@@ -157,7 +157,7 @@ CAvgGrad_Scalar::~CAvgGrad_Scalar(void) {
 
 }
 
-void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
+void CAvgGrad_Turb::ComputeResidual(su2double *val_residual,
                                         su2double **Jacobian_i,
                                         su2double **Jacobian_j,
                                         CConfig *config) {
@@ -227,7 +227,7 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
 CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim,
                                  unsigned short val_nVar, bool correct_grad,
                                  CConfig *config)
-   : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
+   : CAvgGrad_Turb(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
 }
 
 CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
@@ -259,7 +259,7 @@ CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim,
                                          unsigned short val_nVar,
                                          bool correct_grad,
                                          CConfig *config)
-    : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config),
+    : CAvgGrad_Turb(val_nDim, val_nVar, correct_grad, config),
       sigma(2./3.), cn1(16.0), fn(0.0) {
 }
 
@@ -1081,7 +1081,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
                                  unsigned short val_nVar,
                                  CConfig *config)
-    : CUpwScalar(val_nDim, val_nVar, config) {
+    : CUpwSca_Turb(val_nDim, val_nVar, config) {
 }
 
 CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
@@ -1115,7 +1115,7 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
                                    unsigned short val_nVar,
                                    su2double *constants, bool correct_grad,
                                    CConfig *config)
- : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config) {
+ : CAvgGrad_Turb(val_nDim, val_nVar, correct_grad, config) {
   
   sigma_k1  = constants[0];
   sigma_om1 = constants[2];

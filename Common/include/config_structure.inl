@@ -857,6 +857,10 @@ inline su2double CConfig::GetKt_Constant(void) { return Kt_Constant; }
 
 inline su2double CConfig::GetKt_ConstantND(void) { return Kt_ConstantND; }
 
+inline su2double CConfig::GetDiffusivity_Constant(void) { return Diffusivity_Constant; }
+
+inline su2double CConfig::GetDiffusivity_ConstantND(void) { return Diffusivity_ConstantND; }
+
 inline su2double CConfig::GetMu_Ref(void) { return Mu_Ref; }
 
 inline su2double CConfig::GetMu_RefND(void) { return Mu_RefND; }
@@ -1110,6 +1114,8 @@ inline su2double CConfig::GetKappa_1st_AdjFlow(void) { return Kappa_1st_AdjFlow;
 inline su2double CConfig::GetKappa_2nd_AdjFlow(void) { return Kappa_2nd_AdjFlow; }
 
 inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow; }
+
+inline unsigned short CConfig::GetKind_TimeIntScheme_Scalar(void) { return Kind_TimeIntScheme_Scalar; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
 

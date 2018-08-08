@@ -470,6 +470,7 @@ private:
   Kind_TimeNumScheme,			/*!< \brief Global explicit or implicit time integration. */
   Kind_TimeIntScheme_Flow,	/*!< \brief Time integration for the flow equations. */
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
+  Kind_TimeIntScheme_Scalar,  /*!< \brief Time integration for the scalar transport model. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
   Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
@@ -771,6 +772,8 @@ private:
   Mu_ConstantND,   /*!< \brief Non-dimensional constant viscosity for ConstantViscosity model.  */
   Kt_Constant,     /*!< \brief Constant thermal conductivity for ConstantConductivity model.  */
   Kt_ConstantND,   /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
+  Diffusivity_Constant,   /*!< \brief Constant mass diffusivity for scalar transport.  */
+  Diffusivity_ConstantND, /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
   Mu_Ref,     /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,   /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
   Mu_Temperature_Ref,     /*!< \brief Reference temperature for Sutherland model.  */
@@ -3631,6 +3634,18 @@ public:
   su2double GetKt_ConstantND(void);
   
   /*!
+   * \brief Get the value of the constant mass diffusivity for scalar transport.
+   * \return Constant mass diffusivity.
+   */
+  su2double GetDiffusivity_Constant(void);
+  
+  /*!
+   * \brief Get the value of the non-dimensional constant mass diffusivity.
+   * \return Non-dimensional constant mass diffusivity.
+   */
+  su2double GetDiffusivity_ConstantND(void);
+  
+  /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
    * \return The reference viscosity.
    */
@@ -4297,6 +4312,15 @@ public:
    * \return Calibrated constant for the low order center method for the adjoint flow equations.
    */
   su2double GetKappa_1st_AdjFlow(void);
+  
+  /*!
+   * \brief Get the kind of integration scheme (implicit)
+   *        for the scslar transport equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the scalar transport equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Scalar(void);
   
   /*!
    * \brief Get the kind of integration scheme (implicit)
