@@ -1216,6 +1216,12 @@ public:
   virtual bool Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
                             su2double *dPdU, su2double *dTdU, su2double *dTvedU,
                             su2double *val_eves, su2double *val_Cvves);
+
+  /*!
+   * \brief Set Gradient of the primitive variables from
+   */
+  virtual bool GradCons2GradPrimVar(CConfig *config, su2double *U, su2double *V,
+                                    su2double **GradU, su2double **GradV);
   /*!
    * \brief A virtual member.
    */

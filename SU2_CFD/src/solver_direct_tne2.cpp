@@ -87,7 +87,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
 	unsigned long iPoint, counter_local = 0, counter_global = 0, iVertex;
 	unsigned short iVar, iDim, iMarker, iSpecies, nLineLets;
-	su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 	unsigned short nZone = geometry->GetnZone();
 	unsigned short iZone = config->GetiZone();
 	bool restart   = (config->GetRestart() || config->GetRestart_Flow());
@@ -99,6 +98,8 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   su2double Alpha, Beta;
 	bool check_infty, nonPhys;
 
+  // Unused Variables at the moment
+	//su2double StaticEnergy, Density, Velocity2, Pressure, Temperature;
 
 	/*--- Check for a restart file to evaluate if there is a change in the AoA
 		before non-dimensionalizing ---*/
@@ -452,7 +453,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Check that the initial solution is physical, report any non-physical nodes ---*/
   counter_local = 0;
-
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
     nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
@@ -909,7 +909,7 @@ void CTNE2EulerSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *co
 
   su2double *Limiter = new su2double[nVar];
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
     int send_to, receive_from;
     SU2_MPI::Status status;
   #endif
@@ -1034,7 +1034,7 @@ void CTNE2EulerSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) {
 
   su2double *Primitive;
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
     int send_to, receive_from;
     SU2_MPI::Status status;
   #endif
@@ -1153,7 +1153,7 @@ void CTNE2EulerSolver::Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig 
 	su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_Undivided_Laplacian = NULL, *Buffer_Send_Undivided_Laplacian = NULL;
 
-  #ifndef HAVE_MPI
+  #ifdef HAVE_MPI
     int send_to, receive_from;
     SU2_MPI::Status status;
   #endif
@@ -1753,9 +1753,11 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
   bool center       		= ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                       		(cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
 	bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-	bool nonPhys;
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+	bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 	bool interface        = (config->GetnMarker_InterfaceBound() != 0);
+
+	//Unused vars at the moment
+	//bool nonPhys;
 
 	/* --- Compute interface MPI --- */
 	if (interface) {Set_MPI_Interface(geometry, config); }
@@ -1807,12 +1809,15 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 	unsigned long iEdge, iVertex, iPoint, jPoint;
 	unsigned short iDim, iMarker;
 
-	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool grid_movement = config->GetGrid_Movement();
   bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 	Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+
+  //Unused Var at the momen t
+	//	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+	//	bool grid_movement = config->GetGrid_Movement();
+
 
 	/*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
 	for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -2003,7 +2008,9 @@ void CTNE2EulerSolver::Centered_Residual(CGeometry *geometry, CSolver **solver_c
 
   /*--- Set booleans based on config settings ---*/
 	bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool centered = ((config->GetKind_Centered_TNE2() == JST) && (iMesh == MESH_0));
+
+	//Unused at the moment
+	//bool centered = ((config->GetKind_Centered_TNE2() == JST) && (iMesh == MESH_0));
 
   /*--- Pass structure of the primitive variable vector to CNumerics ---*/
   numerics->SetRhosIndex   ( node[0]->GetRhosIndex()    );
@@ -2075,17 +2082,23 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 	unsigned long iEdge, iPoint, jPoint;
 	unsigned long ExtIter = config->GetExtIter();
   unsigned short RHO_INDEX, RHOS_INDEX, P_INDEX, TVE_INDEX;
-  unsigned short iDim, iSpecies, iVar, jVar;
+  unsigned short iDim, iVar, jVar;
 
 	su2double *U_i, *U_j, *V_i, *V_j;
   su2double **GradU_i, **GradU_j, ProjGradU_i, ProjGradU_j;
-  su2double **GradV_i, **GradV_j, ProjGradV_i, ProjGradV_j;
+  su2double **GradV_i, **GradV_j;
   su2double *Limiter_i, *Limiter_j;
   su2double *Conserved_i, *Conserved_j, *Primitive_i, *Primitive_j;
   su2double *dPdU_i, *dPdU_j, *dTdU_i, *dTdU_j, *dTvedU_i, *dTvedU_j;
   su2double *Eve_i, *Eve_j, *Cvve_i, *Cvve_j;
   su2double counter_local=0, counter_global=0;
-  su2double lim_i, lim_j, lim_ij;
+  su2double lim_i, lim_j;
+
+	//Unused at the momment
+	//unsigned short iSpecies;
+  //su2double ProjGradV_i, ProjGradV_j;
+	//su2double  lim_ij;
+
 
 	/*--- Set booleans based on config settings ---*/
 	bool implicit 		= (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -2458,10 +2471,12 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
 	su2double MomentX_Force[3] = {0.0,0.0,0.0},
 						MomentY_Force[3] = {0.0,0.0,0.0},
 						MomentZ_Force[3] = {0.0,0.0,0.0};
-	su2double AxiFactor;
   string Marker_Tag, Monitoring_Tag;
-	bool grid_movement        = config->GetGrid_Movement();
   bool axisymmetric         = config->GetAxisymmetric();
+
+ 	//unused at the moment
+  // 	bool grid_movement        = config->GetGrid_Movement();
+	//  su2double AxiFactor;
 
   #ifdef HAVE_MPI
   su2double MyAllBound_CD_Inv, MyAllBound_CL_Inv, MyAllBound_CSF_Inv,
@@ -2574,8 +2589,8 @@ void CTNE2EulerSolver::Inviscid_Forces(CGeometry *geometry, CConfig *config) {
           }
 
 					/*--- Axisymmetric simulations ---*/
-          if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
-          else AxiFactor = 1.0;
+          //if (axisymmetric) AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+          //else AxiFactor = 1.0;
 
           /*--- Compute force, note minus sign due to outward orientation of
            the normal vector ---*/
@@ -2834,7 +2849,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
     }
 
@@ -2878,7 +2893,7 @@ void CTNE2EulerSolver::ExplicitRK_Iteration(CGeometry *geometry,
         Res = Residual[iVar] + Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta*RK_AlphaCoeff);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex());
+        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
       }
     }
 
@@ -2977,8 +2992,9 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
 	unsigned long iPoint, jPoint, iEdge, iVertex;
 	unsigned short iDim, iSpecies, iVar, iMarker, RHOS_INDEX, RHO_INDEX;
-	su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average, rho_i, rho_j,
+	su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
 	Partial_Gradient, Partial_Res, *Normal;
+  su2double rho_i,rho_j;
 
 	/*--- Initialize arrays ---*/
 
@@ -3065,11 +3081,15 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *co
 
 void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
-	unsigned short iSpecies, iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
+	unsigned short iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
 	unsigned long iPoint, jPoint;
 	su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
 	r23_b, r33, rho_i, rho_j, weight, product, detR2, z11, z12, z13, z22, z23, z33;
   bool singular;
+
+	//Unused at the momemnt
+	//unsigned short iSpecies;
+	//unsigned long
 
 	/*--- Initialize arrays, Primitive variables:
    [Y1, ..., YNs, T, Tve, u, v, w, P]^T ---*/
@@ -3330,7 +3350,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry,
     for (iDim = 0; iDim < nDim; iDim++) {
       product = 0.0;
       for (jDim = 0; jDim < nDim; jDim++)
-        product += Smatrix[iDim][jDim]*cvector[iVar][jDim];
+        product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
       node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
     }
   }
@@ -4739,16 +4759,6 @@ void CTNE2EulerSolver::SetResidual_DualTime(CGeometry *geometry,
 
 void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned short val_iZone) {
 
-  unsigned short iVar;
-	int rank = MASTER_NODE;
-  #ifndef NO_MPI
-  #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  #else
-	rank = MPI::COMM_WORLD.Get_rank();
-  #endif
-  #endif
-
 	/*--- Restart the solution from file information ---*/
 	string restart_filename = config->GetSolution_FlowFileName();
 	unsigned long iPoint, index, nFlowIter, adjIter, flowIter;
@@ -4757,6 +4767,7 @@ void CTNE2EulerSolver::GetRestart(CGeometry *geometry, CConfig *config, unsigned
 	ifstream restart_file;
 	bool grid_movement = config->GetGrid_Movement();
 	unsigned short nZone = geometry->GetnZone();
+  unsigned short iVar;
 
 	/*--- Multi-zone restart files. ---*/
 	if (nZone > 1 && !(config->GetUnsteady_Simulation() == DT_STEPPING_1ST)) {
@@ -4944,16 +4955,6 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	unsigned long iPoint, index, counter_local, counter_global;
   su2double *Mvec_Inf, Alpha, Beta, dull_val;
 
-  /*--- Get MPI rank ---*/
-	int rank = MASTER_NODE;
-  #ifndef NO_MPI
-  #ifdef WINDOWS
-	MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  #else
-	rank = MPI::COMM_WORLD.Get_rank();
-  #endif
-  #endif
-
 	/*--- Array initialization ---*/
 	CD_Visc       = NULL;
 	CL_Visc       = NULL;
@@ -4965,7 +4966,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFz_Visc         = NULL;
 	CEff_Visc        = NULL;
   Heat_Visc        = NULL;
-  MaxHeatFlux_Visc = NULL;
+  MaxHF_Visc = NULL;
 	ForceViscous     = NULL;
 	MomentViscous    = NULL;
 	CSkinFriction    = NULL;
@@ -5071,7 +5072,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 		/*--- Initialization of the structure of the global Jacobian ---*/
 		if (rank == MASTER_NODE)
       cout << "Initialize jacobian structure (TNE2 Navier-Stokes). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry);
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
 
     if (config->GetKind_Linear_Solver_Prec() == LINELET) {
       nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
@@ -5151,8 +5152,8 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFx_Visc      = new su2double[nMarker];
 	CFy_Visc      = new su2double[nMarker];
 	CFz_Visc      = new su2double[nMarker];
-  Heat_Visc        = new su2double[nMarker];
-  MaxHeatFlux_Visc = new su2double[nMarker];
+  Heat_Visc     = new su2double[nMarker];
+  MaxHF_Visc    = new su2double[nMarker];
 
 	/*--- Read farfield conditions from config ---*/
 	Pressure_Inf       = config->GetPressure_FreeStream();
@@ -5197,7 +5198,7 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
    appropriately. Coarse multigrid levels will be intitially set to
    the farfield values bc the solver will immediately interpolate
    the solution from the finest mesh to the coarser levels. ---*/
-	if (!restart || geometry->GetFinestMGLevel() == false || nZone > 1) {
+	if (!restart || (iMesh != MESH_0) || nZone > 1) {
 
 		/*--- Initialize using freestream values ---*/
 		for (iPoint = 0; iPoint < nPoint; iPoint++)
@@ -5392,22 +5393,17 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
     }
   }
 
-  #ifndef NO_MPI
-  #ifdef WINDOWS
-  MPI_Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
-  #else
-  MPI::COMM_WORLD.Reduce(&counter_local, &counter_global, 1, MPI::UNSIGNED_LONG, MPI::SUM, MASTER_NODE);
-  #endif
-  #else
-
-  counter_global = counter_local;
-
-  #endif
-
-
+	/*--- Warning message about non-physical points ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    SU2_MPI::Reduce(&counter_local, &counter_global, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
+#else
+    counter_global = counter_local;
+#endif
   if ((rank == MASTER_NODE) && (counter_global != 0))
     cout << "Warning. The original solution contains "<< counter_global
          << " points that are not physical." << endl;
+  }
 
 	/*--- Define solver parameters needed for execution of destructor ---*/
 	if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES)
@@ -5436,7 +5432,7 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 	if (CFz_Visc != NULL) delete [] CFz_Visc;
 	if (CEff_Visc != NULL) delete [] CEff_Visc;
   if (Heat_Visc != NULL) delete [] Heat_Visc;
-  if (MaxHeatFlux_Visc != NULL) delete [] MaxHeatFlux_Visc;
+  if (MaxHF_Visc != NULL) delete [] MaxHF_Visc;
 	if (ForceViscous != NULL) delete [] ForceViscous;
 	if (MomentViscous != NULL) delete [] MomentViscous;
 
@@ -5456,94 +5452,64 @@ CTNE2NSSolver::~CTNE2NSSolver(void) {
 
 }
 
-void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container, CConfig *config,
+void CTNE2NSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                   unsigned short iMesh, unsigned short iRKStep,
                                   unsigned short RunTime_EqSystem, bool Output) {
-	unsigned long iPoint, ErrorCounter = 0;
-  bool nonPhys;
-	unsigned long ExtIter = config->GetExtIter();
-  bool adjoint      = config->GetContinuous_Adjoint();
+	unsigned long ErrorCounter = 0;
+
+	unsigned long ExtIter  = config->GetExtIter();
+  bool cont_adjoint      = config->GetContinuous_Adjoint();
+	bool disc_adjoint      = config->GetDiscrete_Adjoint();
 	bool implicit     = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 	bool muscl        = (config->GetMUSCL_Flow());
   bool limiter      = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
+	bool nearfield        = (config->GetnMarker_NearFieldBound() != 0);
+	bool interface        = (config->GetnMarker_InterfaceBound() != 0);
+	bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
 
-  bool center       = ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
-                       (adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
-  int rank;
   su2double *errU, *errV;
 
   errU = new su2double[nVar];
   errV = new su2double[nPrimVar];
 
-  #ifdef NO_MPI
-  rank = MASTER_NODE;
-  #else
-  #ifdef WINDOWS
-  MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-  #else
-  rank = MPI::COMM_WORLD.Get_rank();
-  #endif
-  #endif
+	/*--- Set the primitive variables ---*/
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
 
-	for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+	/*--- Compute Interface MPI ---*/
+	if (interface) { Set_MPI_Interface(geometry, config); }
 
-		/*--- Set the primitive variables incompressible (dens, vx, vy, vz, beta)
-     and compressible (temp, vx, vy, vz, press, dens, enthal, sos)---*/
-		nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
-    if (nonPhys) {
-      ErrorCounter++;
-    }
+	/*--- Compute NearField MPI ---*/
+	if (nearfield) { Set_MPI_Nearfield(geometry, config); }
 
-		/*--- Initialize the convective, source and viscous residual vector ---*/
-		if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+	/*--- Upwind second order reconstruction ---*/
+  if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
-	}
+   /*--- Gradient computation ---*/
+	 if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+		 SetPrimitive_Gradient_GG(geometry, config);
+	 }
+	 if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+		 SetPrimitive_Gradient_LS(geometry, config);
+	 }
 
-  Set_MPI_Primitive(geometry, config);
-
-	/*--- Compute gradient of the primitive variables ---*/
-  switch (config->GetKind_Gradient_Method()) {
-    case GREEN_GAUSS:
-      SetPrimVar_Gradient_GG(geometry, config);
-      SetSolution_Gradient_GG(geometry, config);
-      break;
-    case WEIGHTED_LEAST_SQUARES:
-      SetPrimVar_Gradient_LS(geometry, config);
-      SetSolution_Gradient_LS(geometry, config);
-      break;
+	 /*--- Limiter computation ---*/
+	 if (limiter && (iMesh == MESH_0)
+			 && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
   }
 
-  Set_MPI_Solution_Gradient(geometry, config);
-  Set_MPI_Primitive_Gradient(geometry, config);
-
-
-  if ((muscl) && (iMesh == MESH_0) && limiter) {
-    SetSolution_Limiter(geometry, config);
-  }
-
-  Set_MPI_Solution_Limiter(geometry, config);
-
-  /*--- Artificial dissipation ---*/
-  if (center)
-    SetMax_Eigenvalue(geometry, config);
-
-	/*--- Initialize the jacobian matrices ---*/
-	if (implicit) Jacobian.SetValZero();
+	/*--- Initialize the Jacobian matrices ---*/
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
-  #ifndef NO_MPI
-  unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
-  #ifdef WINDOWS
-  MPI_Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  #else
-  MPI::COMM_WORLD.Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI::UNSIGNED_LONG, MPI::SUM);
-  #endif
-  #endif
-  if ((ErrorCounter != 0) && (rank == MASTER_NODE))
-    cout <<"The solution contains "<< ErrorCounter << " non-physical points." << endl;
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+	 unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+	 SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+#endif
+	 if (iMesh == MESH_0) config->SetNonphysical_Points(ErrorCounter);
+ }
 
-  delete [] errU;
-  delete [] errV;
 }
 
 void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
@@ -5722,30 +5688,20 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 	}
 
   /*--- Communicate minimum and maximum time steps ---*/
-  #ifndef NO_MPI
-  su2double rbuf_time_min, rbuf_time_max, sbuf_time_min, sbuf_time_max;
-  sbuf_time_min = Min_Delta_Time;
-  sbuf_time_max = Max_Delta_Time;
-  #ifdef WINDOWS
-  MPI_Reduce(&sbuf_time_min, &rbuf_time_min, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time_min, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  MPI_Reduce(&sbuf_time_max, &rbuf_time_max, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Bcast(&rbuf_time_max, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-  MPI_Barrier(MPI_COMM_WORLD);
-  #else
-  MPI::COMM_WORLD.Reduce(&sbuf_time_min, &rbuf_time_min, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
-  MPI::COMM_WORLD.Bcast(&rbuf_time_min, 1, MPI::DOUBLE, MASTER_NODE);
-  MPI::COMM_WORLD.Barrier();
-  MPI::COMM_WORLD.Reduce(&sbuf_time_max, &rbuf_time_max, 1, MPI::DOUBLE, MPI::MAX, MASTER_NODE);
-  MPI::COMM_WORLD.Bcast(&rbuf_time_max, 1, MPI::DOUBLE, MASTER_NODE);
-  MPI::COMM_WORLD.Barrier();
-  #endif
-  Min_Delta_Time = rbuf_time_min;
-  Max_Delta_Time = rbuf_time_max;
-  #endif
+	if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
 
-
+    sbuf_time = Max_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
+#endif
+  }
 
 	/*--- Check if there is any element with only one neighbor...
    a CV that is inside another CV ---*/
@@ -5756,45 +5712,31 @@ void CTNE2NSSolver::SetTime_Step(CGeometry *geometry,
 
 	/*--- For exact time solution use the minimum delta time of the whole mesh ---*/
 	if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
-  #ifndef NO_MPI
-		su2double rbuf_time, sbuf_time;
-		sbuf_time = Global_Delta_Time;
-  #ifdef WINDOWS
-		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
-  #else
-		MPI::COMM_WORLD.Reduce(&sbuf_time, &rbuf_time, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
-		MPI::COMM_WORLD.Bcast(&rbuf_time, 1, MPI::DOUBLE, MASTER_NODE);
-		MPI::COMM_WORLD.Barrier();
-  #endif
-		Global_Delta_Time = rbuf_time;
-  #endif
-		for(iPoint = 0; iPoint < nPointDomain; iPoint++)
-			node[iPoint]->SetDelta_Time(Global_Delta_Time);
-	}
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_Time = rbuf_time;
+#endif
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+  }
 
 	/*--- Recompute the unsteady time step for the dual time stratey
 	 if the unsteady CFL is diferent from 0 ---*/
 	if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
-		Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
-  #ifndef NO_MPI
-		su2double rbuf_time, sbuf_time;
-		sbuf_time = Global_Delta_UnstTimeND;
-  #ifdef WINDOWS
-		MPI_Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
-  #else
-		MPI::COMM_WORLD.Reduce(&sbuf_time, &rbuf_time, 1, MPI::DOUBLE, MPI::MIN, MASTER_NODE);
-		MPI::COMM_WORLD.Bcast(&rbuf_time, 1, MPI::DOUBLE, MASTER_NODE);
-		MPI::COMM_WORLD.Barrier();
-  #endif
-		Global_Delta_UnstTimeND = rbuf_time;
-  #endif
-		config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
-	}
+     Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
 
+#ifdef HAVE_MPI
+		su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_UnstTimeND;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_UnstTimeND = rbuf_time;
+#endif
+    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+  }
 	/*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
 	if (dual_time)
 		for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -6062,7 +6004,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     }
   }
 
-  #ifndef NO_MPI
+  /*-#ifndef NO_MPI
   rank = MPI::COMM_WORLD.Get_rank();
   MPI::COMM_WORLD.Reduce(&eAxi_local, &eAxi_global, 1, MPI::UNSIGNED_LONG,
                          MPI::SUM, MASTER_NODE                             );
@@ -6088,6 +6030,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
     cout << "Chemical:    " << eChm_global << endl;
     cout << "Vib. Relax:  " << eVib_global << endl;
   }
+  -*/
 
   /*--- Loop over boundaries ---*/
   //  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -6213,7 +6156,7 @@ void CTNE2NSSolver::Source_Residual(CGeometry *geometry,
 
 void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
-  unsigned short Boundary, Monitoring, iMarker, iDim, jDim;
+  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
   unsigned short VEL_INDEX, T_INDEX, TVE_INDEX;
   unsigned long iVertex, iPoint, iPointNormal;
   su2double **Grad_PrimVar;
@@ -6228,6 +6171,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   su2double dTn, dTven, pnorm, HeatLoad;
   su2double Alpha, Beta, RefLength, RefArea, *Origin;
   su2double factor;
+	su2double MaxNorm = 8.0;
 
   su2double WallShearStress, WallDistMod, WallDist[3];
 
@@ -6237,6 +6181,10 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
   su2double TauElem[3];
   su2double TauTangent[3];
   su2double Tau[3][3];
+
+	#ifdef HAVE_MPI
+	  su2double MyAllBound_CD_Visc, MyAllBound_CL_Visc, MyAllBound_CSF_Visc, MyAllBound_CMx_Visc, MyAllBound_CMy_Visc, MyAllBound_CMz_Visc, MyAllBound_CoPx_Visc, MyAllBound_CoPy_Visc, MyAllBound_CoPz_Visc, MyAllBound_CFx_Visc, MyAllBound_CFy_Visc, MyAllBound_CFz_Visc, MyAllBound_CT_Visc, MyAllBound_CQ_Visc, MyAllBound_HF_Visc, MyAllBound_MaxHF_Visc, *MySurface_CL_Visc = NULL, *MySurface_CD_Visc = NULL, *MySurface_CSF_Visc = NULL, *MySurface_CEff_Visc = NULL, *MySurface_CFx_Visc = NULL, *MySurface_CFy_Visc = NULL, *MySurface_CFz_Visc = NULL, *MySurface_CMx_Visc = NULL, *MySurface_CMy_Visc = NULL, *MySurface_CMz_Visc = NULL, *MySurface_HF_Visc = NULL, *MySurface_MaxHF_Visc;
+	#endif
 
   /*--- Retrieve index information from CVariable ---*/
   VEL_INDEX = node[0]->GetVelIndex();
@@ -6266,11 +6214,11 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
 
 	/*-- Initialization --*/
-  AllBound_CMx_Visc   = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
-	AllBound_CFx_Visc   = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
-	AllBound_CD_Visc = 0.0; AllBound_CL_Visc = 0.0;
-	AllBound_HeatFlux_Visc     = 0.0; AllBound_MaxHeatFlux_Visc  = 0.0;
-	AllBound_CEff_Visc  = 0.0;
+  AllBound_CMx_Visc  = 0.0; AllBound_CMy_Visc   = 0.0; AllBound_CMz_Visc = 0.0;
+	AllBound_CFx_Visc  = 0.0; AllBound_CFy_Visc   = 0.0; AllBound_CFz_Visc = 0.0;
+	AllBound_CD_Visc   = 0.0; AllBound_CL_Visc = 0.0;
+	AllBound_HF_Visc   = 0.0; AllBound_MaxHF_Visc  = 0.0;
+	AllBound_CEff_Visc = 0.0;
 
 	/*--- Loop over the Navier-Stokes markers ---*/
 	for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -6283,7 +6231,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
     CD_Visc[iMarker] = 0.0; CL_Visc[iMarker] = 0.0; CEff_Visc[iMarker] = 0.0;
     CMx_Visc[iMarker]   = 0.0; CMy_Visc[iMarker]   = 0.0; CMz_Visc[iMarker]  = 0.0;
     CFx_Visc[iMarker]   = 0.0; CFy_Visc[iMarker]   = 0.0; CFz_Visc[iMarker]  = 0.0;
-    Heat_Visc[iMarker]  = 0.0; MaxHeatFlux_Visc[iMarker] = 0.0;
+    HF_Visc[iMarker]  = 0.0; MaxHF_Visc[iMarker] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       ForceViscous[iDim]  = 0.0;
       MomentViscous[iDim] = 0.0;
@@ -6389,7 +6337,7 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 
         HeatFlux[iMarker][iVertex] = ThermalCond*dTn + ThermalCond_ve*dTven;
         Heat_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
-        MaxHeatFlux_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], pnorm)*Area;
+        MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], pnorm)*Area;
 
 				/*--- Compute viscous forces, and moment using the stress tensor ---*/
 				if ((geometry->node[iPoint]->GetDomain()) && (Monitoring == YES)) {
@@ -6435,79 +6383,131 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 					CFz_Visc[iMarker]   = ForceViscous[2];
 				}
 
-				AllBound_CD_Visc       += CD_Visc[iMarker];
-				AllBound_CL_Visc       += CL_Visc[iMarker];
-        AllBound_CEff_Visc        += CEff_Visc[iMarker];
-				AllBound_CMx_Visc         += CMx_Visc[iMarker];
-				AllBound_CMy_Visc         += CMy_Visc[iMarker];
-				AllBound_CMz_Visc         += CMz_Visc[iMarker];
-				AllBound_CFx_Visc         += CFx_Visc[iMarker];
-				AllBound_CFy_Visc         += CFy_Visc[iMarker];
-				AllBound_CFz_Visc         += CFz_Visc[iMarker];
-        AllBound_MaxHeatFlux_Visc += MaxHeatFlux_Visc[iMarker];
-        AllBound_HeatFlux_Visc    += Heat_Visc[iMarker];
+				AllBound_CD_Visc    += CD_Visc[iMarker];
+				AllBound_CL_Visc    += CL_Visc[iMarker];
+        AllBound_CEff_Visc  += CEff_Visc[iMarker];
+				AllBound_CMx_Visc   += CMx_Visc[iMarker];
+				AllBound_CMy_Visc   += CMy_Visc[iMarker];
+				AllBound_CMz_Visc   += CMz_Visc[iMarker];
+				AllBound_CFx_Visc   += CFx_Visc[iMarker];
+				AllBound_CFy_Visc   += CFy_Visc[iMarker];
+				AllBound_CFz_Visc   += CFz_Visc[iMarker];
+        AllBound_MaxHF_Visc += MaxHF_Visc[iMarker];
+        AllBound_HF_Visc    += HF_Visc[iMarker];
 
 			}
 		}
 	}
 
+	/*--- Update some global coeffients ---*/
+  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
 
-  #ifndef NO_MPI
+	#ifdef HAVE_MPI
 
   /*--- Add AllBound information using all the nodes ---*/
+  MyAllBound_CD_Visc    = AllBound_CD_Visc;                   AllBound_CD_Visc = 0.0;
+  MyAllBound_CL_Visc    = AllBound_CL_Visc;                   AllBound_CL_Visc = 0.0;
+  MyAllBound_CSF_Visc   = AllBound_CSF_Visc;                  AllBound_CSF_Visc = 0.0;
+  AllBound_CEff_Visc    = 0.0;
+  MyAllBound_CMx_Visc   = AllBound_CMx_Visc;                  AllBound_CMx_Visc = 0.0;
+  MyAllBound_CMy_Visc   = AllBound_CMy_Visc;                  AllBound_CMy_Visc = 0.0;
+  MyAllBound_CMz_Visc   = AllBound_CMz_Visc;                  AllBound_CMz_Visc = 0.0;
+  MyAllBound_CoPx_Visc  = AllBound_CoPx_Visc;                 AllBound_CoPx_Visc = 0.0;
+  MyAllBound_CoPy_Visc  = AllBound_CoPy_Visc;                 AllBound_CoPy_Visc = 0.0;
+  MyAllBound_CoPz_Visc  = AllBound_CoPz_Visc;                 AllBound_CoPz_Visc = 0.0;
+  MyAllBound_CFx_Visc   = AllBound_CFx_Visc;                  AllBound_CFx_Visc = 0.0;
+  MyAllBound_CFy_Visc   = AllBound_CFy_Visc;                  AllBound_CFy_Visc = 0.0;
+  MyAllBound_CFz_Visc   = AllBound_CFz_Visc;                  AllBound_CFz_Visc = 0.0;
+  MyAllBound_CT_Visc    = AllBound_CT_Visc;                   AllBound_CT_Visc = 0.0;
+  MyAllBound_CQ_Visc    = AllBound_CQ_Visc;                   AllBound_CQ_Visc = 0.0;
+  AllBound_CMerit_Visc  = 0.0;
+  MyAllBound_HF_Visc    = AllBound_HF_Visc;                   AllBound_HF_Visc = 0.0;
+  MyAllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, MaxNorm);  AllBound_MaxHF_Visc = 0.0;
 
-  su2double MyAllBound_CD_Visc       = AllBound_CD_Visc;
-  su2double MyAllBound_CL_Visc       = AllBound_CL_Visc;
-  su2double MyAllBound_CEff_Visc        = AllBound_CEff_Visc;
-  su2double MyAllBound_CMx_Visc         = AllBound_CMx_Visc;
-  su2double MyAllBound_CMy_Visc         = AllBound_CMy_Visc;
-  su2double MyAllBound_CMz_Visc         = AllBound_CMz_Visc;
-  su2double MyAllBound_CFx_Visc         = AllBound_CFx_Visc;
-  su2double MyAllBound_CFy_Visc         = AllBound_CFy_Visc;
-  su2double MyAllBound_CFz_Visc         = AllBound_CFz_Visc;
-  su2double MyAllBound_HeatFlux_Visc    = AllBound_HeatFlux_Visc;
-  su2double MyAllBound_MaxHeatFlux_Visc = AllBound_MaxHeatFlux_Visc;
-
-  AllBound_CD_Visc         = 0.0;
-  AllBound_CL_Visc         = 0.0;
-  AllBound_CEff_Visc          = 0.0;
-  AllBound_CMx_Visc           = 0.0;
-  AllBound_CMy_Visc           = 0.0;
-  AllBound_CMz_Visc           = 0.0;
-  AllBound_CFx_Visc           = 0.0;
-  AllBound_CFy_Visc           = 0.0;
-  AllBound_CFz_Visc           = 0.0;
-  AllBound_HeatFlux_Visc      = 0.0;
-  AllBound_MaxHeatFlux_Visc   = 0.0;
-
-  #ifdef WINDOWS
-  MPI_Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE,
-                MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE,
-                MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CSF_Visc, &AllBound_CSF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
   AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
-  MPI_Allreduce(&MyAllBound_CMx_Visc,      &AllBound_CMx_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CMy_Visc,      &AllBound_CMy_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CMz_Visc,      &AllBound_CMz_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CFx_Visc,      &AllBound_CFx_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CFy_Visc,      &AllBound_CFy_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_CFz_Visc,      &AllBound_CFz_Visc,      1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_HeatFlux_Visc,     &AllBound_HeatFlux_Visc,     1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  MPI_Allreduce(&MyAllBound_MaxHeatFlux_Visc, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  #else
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CD_Visc, &AllBound_CD_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CL_Visc, &AllBound_CL_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  AllBound_CEff_Visc = AllBound_CL_Visc / (AllBound_CD_Visc + EPS);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMx_Visc,         &AllBound_CMx_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMy_Visc,         &AllBound_CMy_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CMz_Visc,         &AllBound_CMz_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFx_Visc,         &AllBound_CFx_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFy_Visc,         &AllBound_CFy_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_CFz_Visc,         &AllBound_CFz_Visc,         1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_HeatFlux_Visc,    &AllBound_HeatFlux_Visc,    1, MPI::DOUBLE, MPI::SUM);
-  MPI::COMM_WORLD.Allreduce(&MyAllBound_MaxHeatFlux_Visc, &AllBound_MaxHeatFlux_Visc, 1, MPI::DOUBLE, MPI::SUM);
-  #endif
-  #endif
+  SU2_MPI::Allreduce(&MyAllBound_CMx_Visc, &AllBound_CMx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CMy_Visc, &AllBound_CMy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CMz_Visc, &AllBound_CMz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CFx_Visc, &AllBound_CFx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CFy_Visc, &AllBound_CFy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CFz_Visc, &AllBound_CFz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CoPx_Visc, &AllBound_CoPx_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CoPy_Visc, &AllBound_CoPy_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CoPz_Visc, &AllBound_CoPz_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CT_Visc, &AllBound_CT_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_CQ_Visc, &AllBound_CQ_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  AllBound_CMerit_Visc = AllBound_CT_Visc / (AllBound_CQ_Visc + EPS);
+  SU2_MPI::Allreduce(&MyAllBound_HF_Visc, &AllBound_HF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(&MyAllBound_MaxHF_Visc, &AllBound_MaxHF_Visc, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  AllBound_MaxHF_Visc = pow(AllBound_MaxHF_Visc, 1.0/MaxNorm);
+
+  /*--- Add the forces on the surfaces using all the nodes ---*/
+
+  MySurface_CL_Visc    = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CD_Visc    = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CSF_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CEff_Visc  = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFx_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFy_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CFz_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMx_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMy_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_CMz_Visc   = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_HF_Visc    = new su2double[config->GetnMarker_Monitoring()];
+  MySurface_MaxHF_Visc = new su2double[config->GetnMarker_Monitoring()];
+
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+
+    MySurface_CL_Visc[iMarker_Monitoring]    = Surface_CL_Visc[iMarker_Monitoring];
+    MySurface_CD_Visc[iMarker_Monitoring]    = Surface_CD_Visc[iMarker_Monitoring];
+    MySurface_CSF_Visc[iMarker_Monitoring]   = Surface_CSF_Visc[iMarker_Monitoring];
+    MySurface_CEff_Visc[iMarker_Monitoring]  = Surface_CEff_Visc[iMarker_Monitoring];
+    MySurface_CFx_Visc[iMarker_Monitoring]   = Surface_CFx_Visc[iMarker_Monitoring];
+    MySurface_CFy_Visc[iMarker_Monitoring]   = Surface_CFy_Visc[iMarker_Monitoring];
+    MySurface_CFz_Visc[iMarker_Monitoring]   = Surface_CFz_Visc[iMarker_Monitoring];
+    MySurface_CMx_Visc[iMarker_Monitoring]   = Surface_CMx_Visc[iMarker_Monitoring];
+    MySurface_CMy_Visc[iMarker_Monitoring]   = Surface_CMy_Visc[iMarker_Monitoring];
+    MySurface_CMz_Visc[iMarker_Monitoring]   = Surface_CMz_Visc[iMarker_Monitoring];
+    MySurface_HF_Visc[iMarker_Monitoring]    = Surface_HF_Visc[iMarker_Monitoring];
+    MySurface_MaxHF_Visc[iMarker_Monitoring] = Surface_MaxHF_Visc[iMarker_Monitoring];
+
+    Surface_CL_Visc[iMarker_Monitoring]    = 0.0;
+    Surface_CD_Visc[iMarker_Monitoring]    = 0.0;
+    Surface_CSF_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CEff_Visc[iMarker_Monitoring]  = 0.0;
+    Surface_CFx_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CFy_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CFz_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CMx_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CMy_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_CMz_Visc[iMarker_Monitoring]   = 0.0;
+    Surface_HF_Visc[iMarker_Monitoring]    = 0.0;
+    Surface_MaxHF_Visc[iMarker_Monitoring] = 0.0;
+  }
+
+  SU2_MPI::Allreduce(MySurface_CL_Visc, Surface_CL_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CD_Visc, Surface_CD_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CSF_Visc, Surface_CSF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++)
+    Surface_CEff_Visc[iMarker_Monitoring] = Surface_CL_Visc[iMarker_Monitoring] / (Surface_CD_Visc[iMarker_Monitoring] + EPS);
+  SU2_MPI::Allreduce(MySurface_CFx_Visc, Surface_CFx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CFy_Visc, Surface_CFy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CFz_Visc, Surface_CFz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CMx_Visc, Surface_CMx_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CMy_Visc, Surface_CMy_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_CMz_Visc, Surface_CMz_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_HF_Visc, Surface_HF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SU2_MPI::Allreduce(MySurface_MaxHF_Visc, Surface_MaxHF_Visc, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+  delete [] MySurface_CL_Visc; delete [] MySurface_CD_Visc; delete [] MySurface_CSF_Visc;
+  delete [] MySurface_CEff_Visc;  delete [] MySurface_CFx_Visc;   delete [] MySurface_CFy_Visc;
+  delete [] MySurface_CFz_Visc;   delete [] MySurface_CMx_Visc;   delete [] MySurface_CMy_Visc;
+  delete [] MySurface_CMz_Visc;   delete [] MySurface_HF_Visc; delete [] MySurface_MaxHF_Visc;
+
+#endif
 
 	Total_CD   += AllBound_CD_Visc;
 	Total_CL   += AllBound_CL_Visc;
@@ -6518,8 +6518,8 @@ void CTNE2NSSolver::Viscous_Forces(CGeometry *geometry, CConfig *config) {
 	Total_CFx     += AllBound_CFx_Visc;
 	Total_CFy     += AllBound_CFy_Visc;
 	Total_CFz     += AllBound_CFz_Visc;
-  Total_Heat     = AllBound_HeatFlux_Visc;
-  Total_MaxHeat  = pow(AllBound_MaxHeatFlux_Visc, 1.0/pnorm);
+  Total_Heat     = AllBound_HF_Visc;
+  Total_MaxHeat  = pow(AllBound_MaxHF_Visc, 1.0/pnorm);
 }
 
 void CTNE2NSSolver::BC_Sym_Plane(CGeometry *geometry,

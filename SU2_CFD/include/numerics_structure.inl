@@ -194,6 +194,8 @@ inline void CNumerics::ComputeResidual_Axisymmetric_ad(su2double *val_residual, 
 
 inline void CNumerics::SetJacobian_Axisymmetric(su2double **val_Jacobian_i, CConfig *config) { }
 
+inline void CNumerics::ComputeAxisymmetric(su2double *val_residual, su2double **val_Jacobian, CConfig *config) { }
+
 inline void CNumerics::ComputeVibRelaxation(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
 inline void CNumerics::ComputeChemistry(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
