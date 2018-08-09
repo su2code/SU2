@@ -1487,7 +1487,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   su2double w_min = 1., w_max = 20.E3; // [Hz]
   su2double p_ref = 20.E-6;             // [Pa]
 
-  unsigned long n_sample = 40001;  // w_max * 2 + 1
+  unsigned long n_sample = 100001;  // w_max * 5 + 1
 
   su2double *w      = new su2double[n_sample], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
@@ -1525,24 +1525,26 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
     }
   }
 
+  cout << " Band" << "      E[Pa^2*s]" << endl;
+
+  /*---Note: no factor of 0.5 in trapezoidal integration because we account for even nature of frequency domain---*/
   su2double ptmp;
   for(unsigned short j = 0; j < 41; j++){
     for(unsigned long i = band_edge_inds[j][0]; i < band_edge_inds[j][1]+1; i++){
       if(i == band_edge_inds[j][0]){ // Interpolate beginning of band
-        cout << "Beginning of band" << j+1 << endl;
         ptmp = p_of_w[i] + (f_min[j]-w[i])*(p_of_w[i+1]-p_of_w[i])/(w[i+1]-w[i]);
-        E_band[j] += 0.5*(ptmp*ptmp+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-f_min[j]);
+        E_band[j] += (ptmp*ptmp+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-f_min[j]);
       }
       else if(i == band_edge_inds[j][1]-1){ // Interpolate end of band
-        cout << "End of band" << j+1 << endl;
         ptmp = p_of_w[i-1] + (f_max[j]-w[i-1])*(p_of_w[i]-p_of_w[i-1])/(w[i]-w[i-1]);
-        E_band[j] += 0.5*(ptmp*ptmp+p_of_w[i]*p_of_w[i])*(f_max[j]-w[i]);
+        E_band[j] += (ptmp*ptmp+p_of_w[i]*p_of_w[i])*(f_max[j]-w[i]);
       }
       else{
-        cout << "Middle of band" << j+1 << endl;
-        E_band[j] += 0.5*(p_of_w[i]*p_of_w[i]+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-w[i]);
+        E_band[j] += (p_of_w[i]*p_of_w[i]+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-w[i]);
       }
     }
+    cout.width(5); cout << j+1;
+    cout.width(15); cout.precision(6); cout << E_band[j] << endl;
     E_band[j] /= 0.07;  // Critical time of human ear is 0.07 s (Shepherd, 1991)
     SPL_band[j] = 10.*log10(E_band[j]/pow(p_ref,2.));
   }
