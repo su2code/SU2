@@ -1484,24 +1484,14 @@ void CBoom_AugBurgers::Scaling(unsigned short iPhi){
 
 void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
-  su2double w_min = 1., w_max = 20.E3; // [Hz]
   su2double p_ref = 20.E-6;             // [Pa]
 
-  unsigned long n_sample = 100001;  // w_max * 5 + 1
+  unsigned long n_sample = 411;  // 10 frequencies per band
 
   su2double *w      = new su2double[n_sample], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
 
-  /*--- Compute frequency domain signal ---*/
-  cout << "Performing Fourier Transform." << endl;
-  FourierTransform(iPhi, w, p_of_w, n_sample);
-
-  /*--- Compute 1/3-oct bands ---*/
   su2double fc[41], f_min[41], f_max[41], E_band[41], SPL_band[41];
-  unsigned long band_edge_inds[41][2];
-
-  cout << "Computing 1/3-oct band pressure levels." << endl;
-
   for(unsigned short i = 0; i < 41; i++){
     fc[i]     = pow(10.,3.)*pow(2.,-29./3.)*pow(2.,su2double(i)/3.);
     f_min[i]  = fc[i]/pow(2.,1./6.);
@@ -1509,39 +1499,24 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
     E_band[i] = 0.0;
   }
 
-  /*--- Compute band energies and pressure levels ---*/
-  for(unsigned short j = 0; j < 41; j++){
-    for(unsigned long i = 0; i < n_sample; i++){
-      if(w[i] > f_min[40-j]){
-        band_edge_inds[40-j][0] = i-1;
-        break;
-      }
-    }
-    for(unsigned long i = 0; i < n_sample; i++){
-      if(w[i] > f_max[j]){
-        band_edge_inds[j][1] = i;
-        break;
-      }
-    }
-  }
+  su2double w_min = f_min[0], w_max = f_max[40]; // [Hz]
 
+  /*--- Compute frequency domain signal ---*/
+  cout << "Performing Fourier Transform." << endl;
+  FourierTransform(iPhi, w, p_of_w, f_min, f_max, n_sample);
+
+  /*--- Compute 1/3-oct bands ---*/
+
+  cout << "Computing 1/3-oct band pressure levels." << endl;
   cout << " Band" << "      E[Pa^2*s]" << endl;
 
+  /*--- Compute band energies and pressure levels ---*/
   /*---Note: no factor of 0.5 in trapezoidal integration because we account for even nature of frequency domain---*/
+
   su2double ptmp;
   for(unsigned short j = 0; j < 41; j++){
-    for(unsigned long i = band_edge_inds[j][0]; i < band_edge_inds[j][1]+1; i++){
-      if(i == band_edge_inds[j][0]){ // Interpolate beginning of band
-        ptmp = p_of_w[i] + (f_min[j]-w[i])*(p_of_w[i+1]-p_of_w[i])/(w[i+1]-w[i]);
-        E_band[j] += (ptmp*ptmp+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-f_min[j]);
-      }
-      else if(i == band_edge_inds[j][1]-1){ // Interpolate end of band
-        ptmp = p_of_w[i-1] + (f_max[j]-w[i-1])*(p_of_w[i]-p_of_w[i-1])/(w[i]-w[i-1]);
-        E_band[j] += (ptmp*ptmp+p_of_w[i]*p_of_w[i])*(f_max[j]-w[i]);
-      }
-      else{
-        E_band[j] += (p_of_w[i]*p_of_w[i]+p_of_w[i+1]*p_of_w[i+1])*(w[i+1]-w[i]);
-      }
+    for(unsigned short i = 0; i < 10; i++){
+      E_band[j] += (p_of_w[j*10+i]*p_of_w[j*10+i]+p_of_w[j*10+i+1]*p_of_w[j*10+i+1])*(w[j*10+i+1]-w[j*10+i]);
     }
     cout.width(5); cout << j+1;
     cout.width(15); cout.precision(6); cout << E_band[j] << endl;
@@ -1559,19 +1534,20 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
 }
 
-void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, unsigned long &n_sample){
+void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned long n_sample){
 
   su2double t1, t2, y1, y2, m;
-  su2double w_min = 1., w_max = 20.E3; // [Hz]
   su2double p_real, p_imag;
   unsigned long N = signal.len[iPhi];
 
   /*---Initialize frequency domain signal ---*/
 
-  for(unsigned long i = 0; i < n_sample; i++){
-    w[i] = w_min + su2double(i)/(su2double(n_sample)-1.)*(w_max-w_min);
-    p_of_w[i] = 0.;
+  for(unsigned short i = 0; i < 41; i++){
+    for(unsigned short j = 0; j < 10; j++){
+      w[i*10+j] = f_min[i] + su2double(j)/10.*(f_max[i]-f_min[i]);
+    }
   }
+  w[n_sample-1] = f_max[40];
 
   /*--- Transform ---*/
 

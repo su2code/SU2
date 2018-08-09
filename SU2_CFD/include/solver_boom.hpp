@@ -146,7 +146,7 @@ public:
   void Relaxation(unsigned short iPhi, unsigned long iIter);
   void Scaling(unsigned short iPhi);
   void PerceivedLoudness(unsigned short iPhi);
-  void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, unsigned long &n_sample);
+  void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned long n_sample);
   void MarkVII(unsigned short iPhi, su2double *SPL_band);
   void AcousticEnergy(unsigned short iPhi);
   void WriteGroundPressure(unsigned short iPhi);
