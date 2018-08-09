@@ -2109,7 +2109,7 @@ inline su2double CTNE2EulerSolver::GetTotal_CFy() { return Total_CFy; }
 
 inline su2double CTNE2EulerSolver::GetTotal_CFz() { return Total_CFz; }
 
-inline su2double CTNE2EulerSolver::GetTotal_CSideForce() { return Total_CSF; }
+inline su2double CTNE2EulerSolver::GetTotal_CSF() { return Total_CSF; }
 
 inline su2double CTNE2EulerSolver::GetTotal_CEff() { return Total_CEff; }
 

@@ -2306,6 +2306,8 @@ bool CTNE2NSVariable::SetVorticity(void) {
 	Vorticity[0] = w_y-v_z;
 	Vorticity[1] = -(w_x-u_z);
 	Vorticity[2] = v_x-u_y;
+
+  return false;
 }
 
 bool CTNE2NSVariable::SetPrimVar_Compressible(CConfig *config) {
