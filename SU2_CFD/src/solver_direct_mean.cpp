@@ -859,9 +859,9 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
-
-  cout<<"\n\nSteps per cycle : "<<steps_per_cycle<<endl;
+  steps_per_cycle = 10;//round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
+  if (rank == MASTER_NODE)
+	  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
   	WorkDonePerCycle.push_back(0.0);
   }
@@ -5567,6 +5567,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           if(unsteady){
         	  su2double *Grid_Vel;
         	  Grid_Vel = geometry->node[iPoint]->GetGridVel();
+        	  //cout<<"GridVel :: "<<Grid_Vel[1]<<endl;
         	  for (iDim = 0; iDim<nDim; iDim++)
         	          		  LocalWork +=(-(Pressure) * Normal[iDim] * Grid_Vel[iDim]);
           }
@@ -16116,9 +16117,9 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
-
-  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
+  steps_per_cycle = 10;//round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
+  if (rank == MASTER_NODE)
+	  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
   	WorkDonePerCycle.push_back(0.0);
   }

@@ -3548,6 +3548,7 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
   string Marker_Tag, Moving_Tag;
   int rank;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
+  bool restart = (config->GetRestart());
 
 #ifdef HAVE_MPI
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -3700,7 +3701,8 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
             if (nDim == 2) VarCoord[nDim] = 0.0;
 
             /*--- Set node displacement for volume deformation ---*/
-            geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
+            if (!restart)
+            	geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
 
           }
         }

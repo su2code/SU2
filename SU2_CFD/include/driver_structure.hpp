@@ -483,6 +483,7 @@ public:
    */
   su2double SetVertexVarCoord(unsigned short iMarker, unsigned short iVertex);
 
+  void SetTimeSpectral_Velocities();
 };
 
 /*!

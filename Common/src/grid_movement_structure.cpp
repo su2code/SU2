@@ -2449,15 +2449,15 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
   unsigned long iPoint;
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool adjoint = config->GetContinuous_Adjoint();
+  bool restart = (config->GetRestart() || config->GetDiscrete_Adjoint());
 
-  
   /*--- Retrieve values from the config file ---*/
   deltaT = config->GetDelta_UnstTimeND(); 
   Lref   = config->GetLength_Ref();
 
   /*--- For harmonic balance, motion is the same in each zone (at each instance). ---*/
   if (harmonic_balance) {
-	  iZone = ZONE_0;
+  	  iZone = ZONE_0;
   }
 
   /*--- Pitching origin, frequency, and amplitude from config. ---*/	
@@ -2483,25 +2483,25 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
 
   /*--- Compute delta time based on physical time step ---*/
   if (adjoint) {
-    /*--- For the unsteady adjoint, we integrate backwards through
+	  /*--- For the unsteady adjoint, we integrate backwards through
      physical time, so perform mesh motion in reverse. ---*/ 
-    unsigned long nFlowIter  = config->GetnExtIter();
-    unsigned long directIter = nFlowIter - iter - 1;
-    time_new = static_cast<su2double>(directIter)*deltaT;
-    time_old = time_new;
-    if (iter != 0) time_old = (static_cast<su2double>(directIter)+1.0)*deltaT;
+	  unsigned long nFlowIter  = config->GetnExtIter();
+	  unsigned long directIter = nFlowIter - iter - 1;
+	  time_new = static_cast<su2double>(directIter)*deltaT;
+	  time_old = time_new;
+	  if (iter != 0) time_old = (static_cast<su2double>(directIter)+1.0)*deltaT;
   } else {
-    /*--- Forward time for the direct problem ---*/
-    time_new = static_cast<su2double>(iter)*deltaT;
-    if (harmonic_balance) {
-    	/*--- For harmonic balance, begin movement from the zero position ---*/
-    	time_old = 0.0;
-    } else {
-    	time_old = time_new;
-    	if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
-    }
+	  /*--- Forward time for the direct problem ---*/
+	  time_new = static_cast<su2double>(iter)*deltaT;
+	  if (harmonic_balance) {
+		  /*--- For harmonic balance, begin movement from the zero position ---*/
+		  time_old = 0.0;
+	  } else {
+		  time_old = time_new;
+		  if (iter != 0) time_old = (static_cast<su2double>(iter)-1.0)*deltaT;
+	  }
   }
-  
+
 
 	/*--- Compute delta change in the angle about the x, y, & z axes. ---*/
   
@@ -2583,8 +2583,12 @@ void CVolumetricMovement::Rigid_Pitching(CGeometry *geometry, CConfig *config, u
      Do not store the grid velocity if this is an adjoint calculation.---*/
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim]+Center[iDim]);
-      if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
+    	//if (!restart && harmonic_balance)
+    	geometry->node[iPoint]->SetCoord(iDim, rotCoord[iDim]+Center[iDim]);
+    	if (!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
+    	//if (!restart||!adjoint) geometry->node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
+    	//if (!adjoint || !config->GetDiscrete_Adjoint())
+    	//	geometry->node[iPoint]->SetGridVel(iDim,newGridVel[iDim]);
     }
   }
   

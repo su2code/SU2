@@ -62,7 +62,7 @@ if user_defined:
 elif slurm_job:
     mpi_Command = 'srun -n %i %s'
 elif not which('mpirun') is None:
-    mpi_Command = 'mpirun -n %i %s'
+    mpi_Command = 'mpirun.openmpi -n %i %s'
 elif not which('mpiexec') is None:
     mpi_Command = 'mpiexec -n %i %s'
 else:

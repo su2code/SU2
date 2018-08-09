@@ -329,7 +329,7 @@ for (iGeomZone = 0; iGeomZone < nBladesRow; iGeomZone++ ){
   for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
     EntropyGenAverage_HB    += EntropyGen[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
     TotalWorkDone_Surface_HB    += TotalWorkDone_S[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
-    cout<<"Total Work Done :: "<<TotalWorkDone_S[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]<<endl;
+    //cout<<"Total Work Done :: "<<TotalWorkDone_S[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]<<endl;
     if (iGeomZone == nBladesRow-1)
       Power_HB += MassFlowIn[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]
                   * EulerianWork[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];

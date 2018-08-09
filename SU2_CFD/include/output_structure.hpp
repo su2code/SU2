@@ -720,6 +720,8 @@ public:
    */
   su2double GetPower_HB();
 
+  su2double GetTotalWorkDone_HB();
+
   /*!
    * \brief Give the flow outlet angle  performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
