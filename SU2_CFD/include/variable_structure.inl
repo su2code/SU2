@@ -329,8 +329,6 @@ inline bool CVariable::SetPrimVar(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar(CFluidModel *FluidModel) { return true; }
 
-inline void CVariable::SetPrimVar(unsigned short val_var, su2double val_prim) { }
-
 inline void CVariable::SetSecondaryVar(CFluidModel *FluidModel) { }
 
 inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
@@ -349,9 +347,15 @@ inline su2double *CVariable::GetPrimitive(void) { return NULL; }
 
 inline su2double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
+inline su2double *CVariable::GetPrimVar(void) { return NULL; }
+
 inline void CVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { }
 
 inline void CVariable::SetPrimitive(su2double *val_prim) { }
+
+inline void CVariable::SetPrimVar(unsigned short val_var, su2double val_prim) { }
+
+inline void CVariable::SetPrimVar(su2double *val_prim) { }
 
 inline su2double CVariable::GetSecondary(unsigned short val_var) { return 0; }
 
@@ -816,6 +820,8 @@ inline void CEulerVariable::SetdPde_rho(su2double dPde_rho) {
   Secondary[1] = dPde_rho;
 }
 
+inline su2double CEulerVariable::GetPrimVar(unsigned short val_var) { return Primitive[val_var]; }
+
 inline su2double CEulerVariable::GetPrimitive(unsigned short val_var) { return Primitive[val_var]; }
 
 inline void CEulerVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { Primitive[val_var] = val_prim; }
@@ -824,6 +830,15 @@ inline void CEulerVariable::SetPrimitive(su2double *val_prim) {
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
     Primitive[iVar] = val_prim[iVar];
 }
+
+inline void CEulerVariable::SetPrimVar(unsigned short val_var, su2double val_prim) { Primitive[val_var] = val_prim; }
+
+inline void CEulerVariable::SetPrimVar(su2double *val_prim) {
+  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++)
+    Primitive[iVar] = val_prim[iVar];
+}
+
+inline su2double *CEulerVariable::GetPrimVar(void) { return Primitive; }
 
 inline su2double *CEulerVariable::GetPrimitive(void) { return Primitive; }
 

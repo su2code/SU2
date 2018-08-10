@@ -1608,16 +1608,6 @@ void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *
   U[nSpecies+nDim]   = rhoE;
   U[nSpecies+nDim+1] = rhoEve;
 
-//  unsigned short iVar;
-//  cout << "In CVariable:" << endl;
-//  cout << "U: " << endl;
-//  for (iVar = 0; iVar < nVar; iVar++)
-//    cout << U[iVar] << endl;
-//  cout << "V: " << endl;
-//  for (iVar = 0; iVar < nPrimVar; iVar++)
-//    cout << V[iVar] << endl;
-//  cin.get();
-
   return;
 }
 

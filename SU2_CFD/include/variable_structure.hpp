@@ -1188,6 +1188,11 @@ public:
   virtual void SetPrimVar(unsigned short val_var, su2double val_prim);
 
   /*!
+   * \brief A virtual member.
+   */
+  virtual void SetPrimVar(su2double *val_prim);
+
+  /*!
 	 * \brief A virtual member.
 	 */
 	virtual su2double *GetPrimVar(void);
@@ -3500,53 +3505,22 @@ public:
   void SetEnthalpy(void);
 
   /*!
+   * \brief Get the primitive variables.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the primitive variable for the index <i>val_var</i>.
+   */
+  su2double GetPrimVar(unsigned short val_var);
+
+  /*!
+   * \brief Get the primitive variables of the problem.
+   * \return Pointer to the primitive variable vector.
+   */
+  su2double *GetPrimVar(void);
+  
+  /*!
    * \brief Set gas mixture quantities
    */
   void SetGasProperties(CConfig *config);
-
-  /*!
-   * \brief Calculates vib.-el enery per mass
-   */
-  su2double CalcEve(CConfig *config, su2double val_Tve,
-                     unsigned short val_Species );
-
-  /*!
-   * \brief Returns the stored value of Eve at the specified node
-   */
-  su2double *GetEve(void);
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$h^{vib-el}_s\f$, for input species (not including KE)
-   */
-  su2double CalcHs(CConfig *config, su2double val_T, su2double val_eves,
-                                    unsigned short val_Species);
-
-  /*!
-   * \brief Calculates enthalpy per mass, \f$C^{vib-el}_{v_s}\f$, for input species (not including KE)
-   */
-  su2double CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species);
-
-  /*!
-   * \brief Returns the value of Cvve at the specified node
-   */
-  su2double *GetCvve(void);
-
-  /*!
-   * \brief Calculates partial derivative of pressure w.r.t. conserved variables \f$\frac{\partial P}{\partial U}\f$
-   * \param[in] config - Configuration settings
-   * \param[in] dPdU - Passed-by-reference array to assign the derivatives
-   */
-  void CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU);
-
-  /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void CalcdTdU(su2double *V, CConfig *config, su2double *dTdU);
-
-  /*!
-   * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  void CalcdTvedU(su2double *V, su2double *val_eves, CConfig *config, su2double *dTvedU);
 
   /*!
    * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
@@ -3610,6 +3584,16 @@ public:
    * \return Pointer to the primitive variable vector.
    */
   su2double *GetPrimitive(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  void SetPrimVar(unsigned short val_var, su2double val_prim);
+ 
+  /*!
+   * \brief A virtual member.
+   */
+  void SetPrimVar(su2double *val_prim);
 
   /*!
    * \brief Get the primitive variables.
