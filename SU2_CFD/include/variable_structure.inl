@@ -511,6 +511,26 @@ inline su2double* CVariable::GetSolution_Direct() { return NULL; }
 
 inline void CVariable::SetSolution_Direct(su2double *val_solution_direct) { }
 
+inline unsigned short CVariable::GetRhosIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetPIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetTIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetTveIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetVelIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetHIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetAIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoCvtrIndex(void) { return 0; }
+
+inline unsigned short CVariable::GetRhoCvveIndex(void) { return 0; }
+
 inline su2double* CVariable::GetGeometry_Direct() { return NULL; }
 
 inline su2double CVariable::GetGeometry_Direct(unsigned short val_dim) { return 0.0; }

@@ -2310,7 +2310,7 @@ public:
 class CUpwAUSM_TNE2 : public CNumerics {
 private:
 	bool implicit, ionization;
-	double *FcL, *FcR, *FcLR;
+	su2double *FcL, *FcR, *FcLR;
   su2double *dmLP, *dmRM, *dpLP, *dpRM;
   su2double *daL, *daR;
   su2double *rhos_i, *u_i;
@@ -3344,7 +3344,7 @@ public:
 	 * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
 	 * \param[in] config - Definition of the particular problem.
 	 */
-	void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, double **val_Jacobian_j,
+	void ComputeResidual(su2double *val_resconv, su2double *val_resvisc, su2double **val_Jacobian_i, su2double **val_Jacobian_j,
                          CConfig *config);
 };
 
