@@ -1491,15 +1491,34 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   su2double *w      = new su2double[n_sample], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
 
-  su2double fc[41], f_min[41], f_max[41], E_band[41], SPL_band[41];
-  for(unsigned short i = 0; i < 41; i++){
-    fc[i]     = pow(10.,3.)*pow(2.,-29./3.)*pow(2.,su2double(i)/3.);
-    f_min[i]  = fc[i]/pow(2.,1./6.);
-    f_max[i]  = fc[i]*pow(2.,1./6.);
-    E_band[i] = 0.0;
-  }
-
-  su2double w_min = f_min[0], w_max = f_max[40]; // [Hz]
+  su2double fc[41]    = {1.25, 1.6, 2.0, 2.5, 3.15,
+                         4., 5., 6.3, 8., 10.,
+                         12.5, 16., 20., 25., 31.5,
+                         40., 50., 63., 80., 100.,
+                         125., 160., 200., 250., 315.,
+                         400., 500., 630., 800., 1000.,
+                         1250., 1600., 2000., 2500., 3150.,
+                         4000., 5000., 6300., 8000., 10000.,
+                         12500.}, 
+            f_min[41] = {1.12, 1.41, 1.78, 2.24, 2.82,
+                         3.55, 4.47, 5.62, 7.08, 8.91,
+                         11.2, 14.1, 17.8, 22.4, 28.2,
+                         35.5, 44.7, 56.2, 70.8, 89.1,
+                         112., 141., 178., 224., 282.,
+                         355., 447., 562., 708., 891.,
+                         1120., 1410., 1780., 2240., 2820.,
+                         3550., 4470., 5620., 7080., 8910.,
+                         11200.}, 
+            f_max[41] = {1.41, 1.78, 2.24, 2.82,
+                         3.55, 4.47, 5.62, 7.08, 8.91,
+                         11.2, 14.1, 17.8, 22.4, 28.2,
+                         35.5, 44.7, 56.2, 70.8, 89.1,
+                         112., 141., 178., 224., 282.,
+                         355., 447., 562., 708., 891.,
+                         1120., 1410., 1780., 2240., 2820.,
+                         3550., 4470., 5620., 7080., 8910.,
+                         11200., 14100.},
+            E_band[41], SPL_band[41];
 
   /*--- Compute frequency domain signal ---*/
   cout << "Performing Fourier Transform." << endl;
@@ -1515,18 +1534,19 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double ptmp;
   for(unsigned short j = 0; j < 41; j++){
+    E_band[j] = 0.0;
     for(unsigned short i = 0; i < 10; i++){
       E_band[j] += (p_of_w[j*10+i]*p_of_w[j*10+i]+p_of_w[j*10+i+1]*p_of_w[j*10+i+1])*(w[j*10+i+1]-w[j*10+i]);
     }
     cout.width(5); cout << j+1;
     cout.width(15); cout.precision(6); cout << E_band[j] << endl;
     E_band[j] /= 0.07;  // Critical time of human ear is 0.07 s (Shepherd, 1991)
-    SPL_band[j] = 10.*log10(E_band[j]/pow(p_ref,2.));
+    SPL_band[j] = 10.*log10(E_band[j]/pow(p_ref,2.)) - 3.0;
   }
 
   /*--- Use band pressure levels to compute perceived loudness ---*/
   cout << "Computing perceived loudness (MarkVII)." << endl;
-  MarkVII(iPhi, SPL_band);
+  MarkVII(iPhi, SPL_band, fc);
 
   /*--- Clean up ---*/
   delete [] w;
@@ -1571,224 +1591,131 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
 
 }
 
-void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band){
+void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc){
 
-  su2double sonmax, sonsum, sonovr, sone[41];
-  su2double uppt, dnpt, chkval, sonhi, sonlo;
-  su2double f, f1, f2, s1, s2;
+  unsigned short band;
+  su2double L_eq[41], sonband;
+  su2double A, B, llb, ulb, xb, sonmax, sonsum, F;
 
-  /*--- Tables from Stevens, 1972 ---*/
+  /*--- Sone -> F factor table from Stevens, 1972 ---*/
   su2double ffactr[186] = {0.181,0.100,0.196,0.122,0.212,
-                           10.140,0.230,0.158,0.248,0.174,0.269,0.187,0.290,0.200,0.314,0.212,
-                           20.339,0.222,0.367,0.232,0.396,0.241,0.428,0.250,0.463,0.259,0.500,
-                           30.267,0.540,0.274,0.583,0.281,0.630,0.287,0.680,0.293,0.735,0.298,
-                           40.794,0.303,0.857,0.308,0.926,0.312,1.000,0.316,1.080,0.319,1.170,
-                           50.320,1.260,0.322,1.360,0.322,1.470,0.320,1.590,0.319,1.720,0.317,
-                           61.850,0.314,2.000,0.311,2.160,0.308,2.330,0.304,2.520,0.300,2.720,
-                           70.296,2.940,0.292,3.180,0.288,3.430,0.284,3.700,0.279,4.000,0.275,
-                           84.320,0.270,4.670,0.266,5.040,0.262,5.440,0.258,5.880,0.253,6.350,
-                           90.248,6.860,0.244,7.410,0.240,8.000,0.235,8.640,0.230,9.330,0.226,
-                           110.10,0.222,10.90,0.217,11.80,0.212,12.70,0.208,13.70,0.204,14.80,
-                           20.200,16.00,0.197,17.30,0.195,18.70,0.194,20.20,0.193,21.80,0.192,
-                           323.50,0.191,25.40,0.190,27.40,0.190,29.60,0.190,32.00,0.190,34.60,
-                           40.190,37.30,0.190,40.30,0.191,43.50,0.191,47.00,0.192,50.80,0.193,
-                           554.90,0.194,59.30,0.195,64.00,0.197,69.10,0.199,74.70,0.201,80.60,
-                           60.203,87.10,0.205,94.10,0.208,102.0,0.210,110.0,0.212,119.0,0.215,
-                           7128.0,0.217,138.0,0.219,149.0,0.221,161.0,0.223,174.0,0.224,188.0,
-                           80.225,203.0,0.226,219.0,0.227},
-            bpl[54]     = {48.78,24.42,51.50,28.13,55.33,
-                           133.36,60.20,40.00,65.06,45.25,66.76,49.00,70.28,54.25,73.34,
-                           258.00,77.18,63.25,79.93,67.00,82.04,69.87,85.87,75.17,89.38,
-                           378.87,94.65,84.17,98.39,87.90,103.65,93.15,107.39,96.90,110.27,
-                           499.75,115.54,105.08,119.27,108.80,124.57,114.04,128.29,117.80,
-                           5133.00,123.06,135.72,126.79,137.84,129.68,141.96,134.95,144.65,
-                           6138.68},
-            sonval[27]  = {0.3,0.4,0.6,1.0,1.5,2.0,3.0,4.0,6.0,8.0,
-                           110.0,15.0,20.0,30.0,40.0,60.0,80.0,100.0,150.0,200.0,300.0,400.0,
-                           2600.0,800.0,1000.0,1500.0,2000.0},
-            slope1[27],
-            slope2[27],
-            slope3      = -2.0,
-            slope4      = 4.0,
-            spl[135];
+                           0.140,0.230,0.158,0.248,0.174,0.269,0.187,0.290,0.200,0.314,0.212,
+                           0.339,0.222,0.367,0.232,0.396,0.241,0.428,0.250,0.463,0.259,0.500,
+                           0.267,0.540,0.274,0.583,0.281,0.630,0.287,0.680,0.293,0.735,0.298,
+                           0.794,0.303,0.857,0.308,0.926,0.312,1.000,0.316,1.080,0.319,1.170,
+                           0.320,1.260,0.322,1.360,0.322,1.470,0.320,1.590,0.319,1.720,0.317,
+                           1.850,0.314,2.000,0.311,2.160,0.308,2.330,0.304,2.520,0.300,2.720,
+                           0.296,2.940,0.292,3.180,0.288,3.430,0.284,3.700,0.279,4.000,0.275,
+                           4.320,0.270,4.670,0.266,5.040,0.262,5.440,0.258,5.880,0.253,6.350,
+                           0.248,6.860,0.244,7.410,0.240,8.000,0.235,8.640,0.230,9.330,0.226,
+                           10.10,0.222,10.90,0.217,11.80,0.212,12.70,0.208,13.70,0.204,14.80,
+                           0.200,16.00,0.197,17.30,0.195,18.70,0.194,20.20,0.193,21.80,0.192,
+                           23.50,0.191,25.40,0.190,27.40,0.190,29.60,0.190,32.00,0.190,34.60,
+                           0.190,37.30,0.190,40.30,0.191,43.50,0.191,47.00,0.192,50.80,0.193,
+                           54.90,0.194,59.30,0.195,64.00,0.197,69.10,0.199,74.70,0.201,80.60,
+                           0.203,87.10,0.205,94.10,0.208,102.0,0.210,110.0,0.212,119.0,0.215,
+                           128.0,0.217,138.0,0.219,149.0,0.221,161.0,0.223,174.0,0.224,188.0,
+                           0.225,203.0,0.226,219.0,0.227},
 
-  for(unsigned short i = 0; i < 27; i++){
-    spl[i*5]   = 160.;
-    spl[i*5+1] = bpl[i*2];
-    spl[i*5+2] = bpl[i*2+1];
-    spl[i*5+3] = bpl[i*2+1]-8.0;
-    spl[i*5+4] = bpl[i*2+1];
+  /*--- Leq -> sone table from Jackson, 1973 ---*/
+            son[140]    = {0.079, 0.087, 0.097, 0.107, 0.118,
+                           0.129, 0.141, 0.153, 0.166, 0.181,
+                           0.196, 0.212, 0.230, 0.248, 0.269,
+                           0.290, 0.314, 0.339, 0.367, 0.396,
+                           0.428, 0.463, 0.500, 0.540, 0.583,
+                           0.630, 0.680, 0.735, 0.794, 0.857,
+                           0.926, 1.000, 1.080, 1.170, 1.260,
+                           1.360, 1.470, 1.590, 1.710, 1.850,
+                           2.000, 2.160, 2.330, 2.520, 2.720,
+                           2.940, 3.180, 3.430, 3.700, 4.000,
+                           4.320, 4.670, 5.040, 5.440, 5.880,
+                           6.350, 6.860, 7.410, 8.000, 8.640,
+                           9.330, 10.10, 10.90, 11.80, 12.70,
+                           13.70, 14.80, 16.00, 17.30, 18.70,
+                           20.20, 21.80, 23.50, 25.40, 27.40,
+                           29.60, 32.00, 34.60, 37.30, 40.30,
+                           43.50, 47.00, 50.80, 54.90, 59.30,
+                           64.00, 69.10, 74.70, 80.60, 87.10,
+                           94.10, 102.0, 110.0, 119.0, 128.0,
+                           138.0, 149.0, 161.0, 174.0, 188.0,
+                           203.0, 219.0, 237.0, 256.0, 276.0,
+                           299.0, 323.0, 348.0, 376.0, 406.0,
+                           439.0, 474.0, 512.0, 553.0, 597.0,
+                           645.0, 697.0, 752.0, 813.0, 878.0,
+                           948.0, 1024.0, 1106.0, 1194.0, 1290.0,
+                           1393.0, 1505.0, 1625.0, 1756.0, 1896.0,
+                           2048.0, 2212.0, 2389.0, 2580.0, 2787.0,
+                           3010.0, 3251.0, 3511.0, 3792.0, 4096.0},
 
-    /*--- Calculate the variable slopes for the segments of contours, ---
-      --- defined as follows:                                         ---
-      ---   Between bands 1-19  : Variable slope stored in slope1     ---
-      ---   Between bands 19-26 : Variable slope stored in slope2     ---
-      ---   Between bands 26-31 : Constant                            ---
-      ---   Between bands 31-35 : -2 dB/band (slope3)                 ---
-      ---   Between bands 35-39 : Constant                            ---
-      ---   Between bands 39-41 : 4 dB/band (slope4)                  ---*/
-    slope1[i] = (spl[i*5+1]-spl[i*5])/18.;
-    slope2[i] = (spl[i*5+2]-spl[i*5+1])/7.;
-  }
+  /*--- Band limits and coefficients from Jackson, 1973 ---*/
+            ll[8]       = {86.5, 85.0, 83.5, 82.0, 80.5, 79.0, 77.5, 76.0},
+            ul[8]       = {131.5, 130.0, 128.5, 127.0, 125.5, 124.0, 122.5, 121.0},
+            X[8]        = {10.5, 9.0, 7.5, 6.0, 4.5, 3.0, 1.5, 0.0};
 
-  /*--- Now find sone value for all 1/3 oct bands ---*/
-  unsigned short l;
   for(unsigned short i = 0; i < 41; i++){
-    sone[i] = 0.0;
-    uppt = 0.0;
-    dnpt = 0.0;
-    chkval = SPL_band[i];
-    l = 0;
-
-    if(i+1 == 1){
-      if(chkval >= 160.){}
-      else{}
-    }
-
-    if(i+1 == 19){
-      if(chkval > 144.5){}
-      else{l = 1;}
-    }
-
-    if(i+1 == 41){
-      if(chkval > 138.5){}
-      else{l = 4;}
-    }
-
-    for(unsigned short j = 0; j < 26; j++){
-      dnpt = spl[j*5+l];
-      uppt = spl[(j+1)*5+l];
-      if((chkval > dnpt) && (chkval < uppt)){
-        sonlo = sonval[j]; sonhi = sonval[j+1];
-        sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
+    band = i+1;
+    if(band < 27){
+      /*--- Get band limits ---*/
+      if(band < 20){
+        llb = ll[0];
+        ulb = ul[0];
+        xb = X[0];
+        B = 160. - (160. - SPL_band[i])*log10(80.)/log10(fc[i]);
+        SPL_band[i] = B;
       }
-      else{}
-    }
+      else{
+        llb = ll[i-18];
+        ulb = ul[i-18];
+        xb = X[i-18];
+      }
 
-    if((i+1) > 1 && (i+1) < 19){
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5] + slope2[j]*(i-18);
-        uppt = spl[(j+1)*5] + slope2[j+1]*(i-18);
-        if((j+1) == 26 && chkval > uppt){}
-
-        if((chkval >= dnpt) && (chkval < uppt)){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
+      /*--- Compute equivalent loudness ---*/
+      if(SPL_band[i] <= llb){
+        A = 115. - (115. - SPL_band[i])*log10(400.)/log10(fc[i]);
+        L_eq[i] = A - 8.0;
+      }
+      else if(SPL_band[i] > ulb){
+        A = 160. - (160. - SPL_band[i])*log10(400.)/log10(fc[i]);
+        L_eq[i] = A - 8.0;
+      }
+      else{
+        L_eq[i] = SPL_band[i] - xb - 8.0;
       }
     }
-    else{}
 
-    if((i+1) > 19 && (i+1) < 26){
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5+1] + slope1[j]*i;
-        uppt = spl[(j+1)*5+1] + slope1[j+1]*i;
-        if((j+1) == 26 && chkval > uppt){}
-
-        if((chkval >= dnpt) && (chkval < uppt)){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
-      }
-    }
-    else{}
-
-    /*--- BETWEEN BANDS 26-31, THE CONTOURS ARE CONSTANT AT A GIVEN BAND PRES-SURE LEVEL FOR A GIVEN SONE VALUE ---*/
-    if((i+1) >= 26 && (i+1) <= 31){
-      if(chkval > 138.5){}
-
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5+2];
-        uppt = spl[(j+1)*5+2];
-        if(chkval >= dnpt && chkval <= uppt){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
-      }
-    }
-    else{}
-
-    /*--- BETWEEN BANDS 31-35, THE CONTOURS SLOPE DOWN WITH A SLOPE VALUE OF 2 dB/BAND (SLOPE3) - THIS IS USED IN THE FOLLOWING LOGIC ---*/
-    if((i+1) > 31 && (i+1) < 35){
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5+2] + slope3*(i-30);
-        uppt = spl[(j+1)*5+2] + slope3*(i-30);
-        if((j+1) == 26 && chkval > uppt){}
-
-        if(chkval >= dnpt && chkval <= uppt){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
-      }
-    }
-    else{}
-
-    /*--- BETWEEN BANDS 35-39, THE CONTOURS ARE CONSTANT AT A GIVEN BAND PRESSURE LEVEL FOR A GIVEN SONE VALUE ---*/
-    if((i+1) >= 35 && (i+1) <= 39){
-      if(chkval > 130.5){}
-
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5+3];
-        uppt = spl[(j+1)*5+3];
-        if(chkval >= dnpt && chkval <= uppt){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
-      }
-    }
-    else{}
-
-    /*--- BETWEEN BANDS 39-41, THE CONTOURS RISE WITH A CONSTANT SLOPE OF 4 dB/BAND (SLOPE4) - THIS VALUE IS USED IN THE FOLLOWING LOGIC ---*/
-    if((i+1) > 39 && (i+1) < 41){
-      for(unsigned short j = 0; j < 26; j++){
-        dnpt = spl[j*5+3] + slope4*(i-38);
-        uppt = spl[(j+1)*5+3] + slope4*(i-38);
-        if((j+1) == 26 && chkval > uppt){}
-
-        if(chkval >= dnpt && chkval <= uppt){
-          sonlo = sonval[j]; sonhi = sonval[j+1];
-          sone[i] = sonlo + (chkval - dnpt)*(sonhi-sonlo)/(uppt-dnpt);
-        }
-        else{}
-      }
-    }
-    else{}
-
+    /*--- Compute equivalent loudness ---*/
+    else if(band >= 27 && band <= 31) L_eq[i] = SPL_band[i] - 8.0;
+    else if(band >= 32 && band <= 34) L_eq[i] = SPL_band[i] - 2.*(35. - su2double(band));
+    else if(band >= 35 && band <= 39) L_eq[i] = SPL_band[i];
+    else                              L_eq[i] = SPL_band[i] + 4.*(39. - su2double(band));
   }
 
-  /*--- Now compute overall loudness based on all 1/3-oct bands ---*/
-  sonmax = 0.0;
+  /*--- Interpolate sone based on Leq ---*/
+  sonmax = 0.0, sonsum = 0.0;
   for(unsigned short i = 0; i < 41; i++){
-    sonsum += sone[i];
-    if(sone[i] > sonmax) sonmax = sone[i];
-  }
+    band = floor(L_eq[i]);
+    if(band > 139) sonband = son[139];
+    else if(band < 0) sonband = 0;
+    else sonband = son[band] + (son[band+1] - son[band])*(L_eq[i] - su2double(band)); // Leq in sone table increment by 1, so no division
+    
+    sonsum += sonband;
+    sonmax = max(sonmax, sonband);
+  } 
 
-  /*--- Find F factor based on maximally loud 1/3-oct band ---*/
-  if(sonmax >= 219.) f = 0.227;
-
-  for(unsigned short i = 0; i < 92; i++){
-    s1 = ffactr[i*2]; s2 = ffactr[(i+1)*2];
-    if(sonmax >= s1 && sonmax <= s2){
-      f1 = ffactr[i*2+1]; f2 = ffactr[(i+1)*2+1];
-      f = f1 + (sonmax - s1)*(f2-f1)/(s2-s1);
-      break;
-    }
-  }
-
-  sonovr = sonmax + f*(sonsum-sonmax);
-
-  /*--- PLdB = 32 + 9 log_2(sonovr) = 32 + 9*3.322 log_10(sonovr) ---*/
-  if(sonovr > 0){
-    PLdB[iPhi] = 32. + 29.897*log10(sonovr);
-  }
+  /*--- Interpolate F factor at max(sone) ---*/
+  if(sonmax >= 219.) F = 0.227;
+  else if(sonmax < ffactr[0]) sonmax = 0.;
   else{
-    PLdB[iPhi] = 0.;
+    for(unsigned short i = 0; i < 92; i++){
+      if(sonmax >= ffactr[2*i]){
+        F = ffactr[2*i+1] + (sonmax - ffactr[2*i])*(ffactr[2*i+3] - ffactr[2*i+1])/(ffactr[2*i+2] - ffactr[2*i]);
+        break;
+      }
+    }
   }
+
+  /*-- Calculate loudness ---*/
+  PLdB[iPhi] = 32. + 9.*log(sonmax + F*(sonsum - sonmax))/log(2.);
 
 }
 
