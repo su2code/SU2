@@ -1813,7 +1813,6 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   nSpecies     = config->GetnSpecies();
 
   /*--- Allocate arrays ---*/
-
   RxnConstantTable = new su2double*[6];
 	for (iVar = 0; iVar < 6; iVar++)
 		RxnConstantTable[iVar] = new su2double[5];
@@ -1840,7 +1839,7 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
   dRfok  = new su2double[nVar];
   dRbok  = new su2double[nVar];
 
-  dYdr = new double*[nSpecies];
+  dYdr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     dYdr[iSpecies] = new su2double[nSpecies];
   }
