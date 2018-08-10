@@ -329,6 +329,8 @@ inline bool CVariable::SetPrimVar(CConfig *config) { return true; }
 
 inline bool CVariable::SetPrimVar(CFluidModel *FluidModel) { return true; }
 
+inline void CVariable::SetPrimVar(unsigned short val_var, su2double val_prim) { }
+
 inline void CVariable::SetSecondaryVar(CFluidModel *FluidModel) { }
 
 inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
@@ -339,9 +341,13 @@ inline bool CVariable::SetPrimVar(su2double Density_Inf, CConfig *config) { retu
 
 inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
 
+inline bool CVariable::SetPrimVar_Compressible(CConfig *config) { return true; }
+
 inline su2double CVariable::GetPrimitive(unsigned short val_var) { return 0; }
 
 inline su2double *CVariable::GetPrimitive(void) { return NULL; }
+
+inline su2double CVariable::GetPrimVar(unsigned short val_var) { return 0; }
 
 inline void CVariable::SetPrimitive(unsigned short val_var, su2double val_prim) { }
 
@@ -358,6 +364,16 @@ inline void CVariable::SetSecondary(su2double *val_prim) { }
 inline bool CVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
                                     su2double *val_dPdU, su2double *val_dTdU,
                                     su2double *val_dTvedU) { return false; }
+
+
+inline bool CVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *V,
+                                    su2double *val_dPdU, su2double *val_dTdU,
+                                    su2double *val_dTvedU, su2double *val_eves,
+                                    su2double *val_Cvves) { return false; }
+
+inline bool CVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
+                                            su2double *V, su2double **GradU,
+                                            su2double **GradV) { return false; }
 
 inline void CVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *U) { return; }
 
@@ -397,9 +413,13 @@ inline su2double *CVariable::GetdTvedU() { return NULL; }
 
 inline su2double CVariable::CalcEve(CConfig *config, su2double val_Tve, unsigned short val_Species) { return 0; }
 
+inline su2double *CVariable::GetEve(void) { return NULL; }
+
 inline su2double CVariable::CalcHs(CConfig *config, su2double val_T, su2double val_eves, unsigned short val_Species) { return 0; }
 
 inline su2double CVariable::CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) { return 0; }
+
+inline su2double *CVariable::GetCvve(void) { return NULL; }
 
 inline void CVariable::CalcdPdU(su2double *V, su2double *val_eves, CConfig *config, su2double *dPdU) { }
 
