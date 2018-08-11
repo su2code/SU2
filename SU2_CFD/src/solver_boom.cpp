@@ -1486,7 +1486,9 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6;             // [Pa]
 
-  unsigned long n_sample = 411;  // 10 frequencies per band
+  unsigned short n_band   = 41,
+                 n_sample_per_band = 10,
+                 n_sample = n_band*n_sample_per_band+1;
 
   su2double *w      = new su2double[n_sample], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
@@ -1522,7 +1524,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Compute frequency domain signal ---*/
   cout << "Performing Fourier Transform." << endl;
-  FourierTransform(iPhi, w, p_of_w, f_min, f_max, n_sample);
+  FourierTransform(iPhi, w, p_of_w, f_min, f_max, n_band, n_sample_per_band);
 
   /*--- Compute 1/3-oct bands ---*/
 
@@ -1530,13 +1532,11 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   cout << " Band" << "      E[Pa^2*s]" << endl;
 
   /*--- Compute band energies and pressure levels ---*/
-  /*---Note: no factor of 0.5 in trapezoidal integration because we account for even nature of frequency domain---*/
-
   su2double ptmp;
-  for(unsigned short j = 0; j < 41; j++){
+  for(unsigned short j = 0; j < n_band; j++){
     E_band[j] = 0.0;
-    for(unsigned short i = 0; i < 10; i++){
-      E_band[j] += (p_of_w[j*10+i]*p_of_w[j*10+i]+p_of_w[j*10+i+1]*p_of_w[j*10+i+1])*(w[j*10+i+1]-w[j*10+i]);
+    for(unsigned short i = 0; i < n_sample_per_band; i++){
+      E_band[j] += 0.5*(p_of_w[j*n_sample_per_band+i]+p_of_w[j*n_sample_per_band+i+1])*(w[j*n_sample_per_band+i+1]-w[j*n_sample_per_band+i]);
     }
     cout.width(5); cout << j+1;
     cout.width(15); cout.precision(6); cout << E_band[j] << endl;
@@ -1546,7 +1546,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Use band pressure levels to compute perceived loudness ---*/
   cout << "Computing perceived loudness (MarkVII)." << endl;
-  MarkVII(iPhi, SPL_band, fc);
+  MarkVII(iPhi, SPL_band, fc, n_band);
 
   /*--- Clean up ---*/
   delete [] w;
@@ -1554,20 +1554,21 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
 }
 
-void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned long n_sample){
+void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band){
 
-  su2double t1, t2, y1, y2, m;
+  su2double t1, t2, y1, y2;
   su2double p_real, p_imag;
+  unsigned short n_sample = n_band*n_sample_per_band+1;
   unsigned long N = signal.len[iPhi];
 
   /*---Initialize frequency domain signal ---*/
 
-  for(unsigned short i = 0; i < 41; i++){
-    for(unsigned short j = 0; j < 10; j++){
-      w[i*10+j] = f_min[i] + su2double(j)/10.*(f_max[i]-f_min[i]);
+  for(unsigned short i = 0; i < n_band; i++){
+    for(unsigned short j = 0; j < n_sample_per_band; j++){
+      w[i*n_sample_per_band+j] = f_min[i] + su2double(j)/su2double(n_sample_per_band)*(f_max[i]-f_min[i]);
     }
   }
-  w[n_sample-1] = f_max[40];
+  w[n_sample-1] = f_max[n_band-1];
 
   /*--- Transform ---*/
 
@@ -1579,19 +1580,19 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
     for(unsigned long i = 0; i < N-1; i++){
       t1 = signal.tau[i]/w0; t2 = signal.tau[i+1]/w0;
       y1 = signal.P[i]*p0;   y2 = signal.P[i+1]*p0;
-      m = (y2-y1)/(t2-t1);
 
-      p_real += (m*(cos(2*M_PI*w[j]*t2) - cos(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*sin(2*M_PI*w[j]*t2) - y1*sin(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
-      p_imag += (m*(-sin(2*M_PI*w[j]*t2) + sin(2*M_PI*w[j]*t1)) + 2*M_PI*w[j]*((y1+m*(t2-t1))*cos(2*M_PI*w[j]*t2) - y1*cos(2*M_PI*w[j]*t1)))/pow(2*M_PI*w[j],2.);
+      p_real += 0.5*(y2*cos(2*M_PI*w[j]*t2) + y1*cos(2*M_PI*w[j]*t1))*(t2-t1);
+      p_imag -= 0.5*(y2*sin(2*M_PI*w[j]*t2) + y1*sin(2*M_PI*w[j]*t1))*(t2-t1);
+
     }
 
-    p_of_w[j] = sqrt(p_real*p_real + p_imag*p_imag);
+    p_of_w[j] = 2.*(p_real*p_real + p_imag*p_imag);
 
   }
 
 }
 
-void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc){
+void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band){
 
   unsigned short band;
   su2double L_eq[41], sonband;
@@ -1652,7 +1653,7 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
             ul[8]       = {131.5, 130.0, 128.5, 127.0, 125.5, 124.0, 122.5, 121.0},
             X[8]        = {10.5, 9.0, 7.5, 6.0, 4.5, 3.0, 1.5, 0.0};
 
-  for(unsigned short i = 0; i < 41; i++){
+  for(unsigned short i = 0; i < n_band; i++){
     band = i+1;
     if(band < 27){
       /*--- Get band limits ---*/
@@ -1692,7 +1693,7 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
 
   /*--- Interpolate sone based on Leq ---*/
   sonmax = 0.0, sonsum = 0.0;
-  for(unsigned short i = 0; i < 41; i++){
+  for(unsigned short i = 0; i < n_band; i++){
     band = floor(L_eq[i]);
     if(band > 139) sonband = son[139];
     else if(band < 0) sonband = 0;
