@@ -1487,7 +1487,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   su2double p_ref = 20.E-6;             // [Pa]
 
   unsigned short n_band   = 41,
-                 n_sample_per_band = 10,
+                 n_sample_per_band = 50,
                  n_sample = n_band*n_sample_per_band+1;
 
   su2double *w      = new su2double[n_sample], 
@@ -1594,7 +1594,7 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
 
 void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band){
 
-  unsigned short band;
+  short band;
   su2double L_eq[41], sonband;
   su2double A, B, llb, ulb, xb, sonmax, sonsum, F;
 
@@ -1663,6 +1663,7 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
         xb = X[0];
         B = 160. - (160. - SPL_band[i])*log10(80.)/log10(fc[i]);
         SPL_band[i] = B;
+        fc[i] = 80.0;
       }
       else{
         llb = ll[i-18];
@@ -1705,10 +1706,10 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
 
   /*--- Interpolate F factor at max(sone) ---*/
   if(sonmax >= 219.) F = 0.227;
-  else if(sonmax < ffactr[0]) sonmax = 0.;
+  else if(sonmax < ffactr[0]) F = 0.;
   else{
     for(unsigned short i = 0; i < 92; i++){
-      if(sonmax >= ffactr[2*i]){
+      if(sonmax >= ffactr[2*i] && sonmax <= ffactr[2*i+2]){
         F = ffactr[2*i+1] + (sonmax - ffactr[2*i])*(ffactr[2*i+3] - ffactr[2*i+1])/(ffactr[2*i+2] - ffactr[2*i]);
         break;
       }
