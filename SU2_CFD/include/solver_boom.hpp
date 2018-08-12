@@ -64,6 +64,7 @@ public:
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
         M_a,      // Acoustic Mach number
+        dx_min,   // Minimum spacing of signal
   			dsigma,			// Step size
         dsigma_old, // Previous step size
         dz,       // Change in altitude
@@ -146,7 +147,8 @@ public:
   void Relaxation(unsigned short iPhi, unsigned long iIter);
   void Scaling(unsigned short iPhi);
   void PerceivedLoudness(unsigned short iPhi);
-  void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band);
+  void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double& p_dc, unsigned short n_sample);
+  // void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band);
   void MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band);
   void AcousticEnergy(unsigned short iPhi);
   void WriteGroundPressure(unsigned short iPhi);

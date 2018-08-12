@@ -1067,7 +1067,8 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   su2double *xtmp, *ptmp;
 
   /*---Loop over signal and find smallest spacing---*/
-  su2double dx, dx_min = 1.0E3; // TODO: add min spacing input scale_L/1001.; // sBOOM gets "sufficient" results in vicinity of 10000 pts
+  su2double dx; 
+  dx_min = 1.0E3; // TODO: add min spacing input // sBOOM gets "sufficient" results in vicinity of 10000 pts
   for(unsigned long i = 1; i < signal.len[iPhi]; i++){
     dx = signal.x[iPhi][i] - signal.x[iPhi][i-1];
     dx_min = min(dx, dx_min);
@@ -1484,11 +1485,10 @@ void CBoom_AugBurgers::Scaling(unsigned short iPhi){
 
 void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
-  su2double p_ref = 20.E-6;             // [Pa]
+  su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned short n_band   = 41,
-                 n_sample_per_band = 50,
-                 n_sample = n_band*n_sample_per_band+1;
+  unsigned short n_sample = ceil(14100*signal.len[iPhi]*dx_min/(flt_U)), // fmax*N/Fs
+                 n_band = 41;
 
   su2double *w      = new su2double[n_sample], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
@@ -1524,19 +1524,56 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Compute frequency domain signal ---*/
   cout << "Performing Fourier Transform." << endl;
-  FourierTransform(iPhi, w, p_of_w, f_min, f_max, n_band, n_sample_per_band);
+  FourierTransform(iPhi, w, p_of_w, p_dc, n_sample);
 
-  /*--- Compute 1/3-oct bands ---*/
+   /*--- Interpolate power at band limits ---*/
+  su2double *wtmp = new su2double[n_sample+42], 
+            *ptmp = new su2double[n_sample+42];
+  unsigned short k = 0;
+  for(unsigned short i = 0; i < n_sample+42; i++){
+    if(i < 41){
+      wtmp[i] = f_min[i];
+      if(f_min[i] < w[0]){ // Interpolate between DC and f0
+        ptmp[i] = p_dc + f_min[i] * (p_of_w[0]-p_dc)/w[0];
+      }
+      else{
+        while(f_min[i] > w[k]){
+          k++;
+        }
+        ptmp[i] = p_of_w[k-1] + (f_min[i]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
+      }
+    }
+    else if(i == 41){
+      wtmp[i] = f_max[40];
+      while(f_max[40] > w[k]){
+        k++;
+      }
+      ptmp[i] = p_of_w[k-1] + (f_max[40]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
+    }
+    else{
+      wtmp[i] = w[i-42];
+      ptmp[i] = p_of_w[i-42];
+    }
+  }
+  n_sample = n_sample + 42;
+  MergeSort(wtmp, ptmp, 0, n_sample-1);
 
+  /*--- Compute 1/3-oct band energies and pressure levels ---*/
   cout << "Computing 1/3-oct band pressure levels." << endl;
   cout << " Band" << "      E[Pa^2*s]" << endl;
 
-  /*--- Compute band energies and pressure levels ---*/
-  su2double ptmp;
+  k = 0;
+  for(unsigned short j = 1; j < n_sample; j++){
+    if(wtmp[j] > f_min[0]){
+      k = j-1;
+      break;
+    }
+  }
   for(unsigned short j = 0; j < n_band; j++){
     E_band[j] = 0.0;
-    for(unsigned short i = 0; i < n_sample_per_band; i++){
-      E_band[j] += 0.5*(p_of_w[j*n_sample_per_band+i]+p_of_w[j*n_sample_per_band+i+1])*(w[j*n_sample_per_band+i+1]-w[j*n_sample_per_band+i]);
+    while(wtmp[k] < f_max[j]){
+      E_band[j] += 0.5*(ptmp[k]+ptmp[k+1])*(wtmp[k+1]-wtmp[k]);
+      k++;
     }
     cout.width(5); cout << j+1;
     cout.width(15); cout.precision(6); cout << E_band[j] << endl;
@@ -1551,24 +1588,21 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   /*--- Clean up ---*/
   delete [] w;
   delete [] p_of_w;
+  delete [] wtmp;
+  delete [] ptmp;
 
 }
 
-void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band){
+void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double& p_dc, unsigned short n_sample){
 
   su2double t1, t2, y1, y2;
   su2double p_real, p_imag;
-  unsigned short n_sample = n_band*n_sample_per_band+1;
   unsigned long N = signal.len[iPhi];
 
   /*---Initialize frequency domain signal ---*/
-
-  for(unsigned short i = 0; i < n_band; i++){
-    for(unsigned short j = 0; j < n_sample_per_band; j++){
-      w[i*n_sample_per_band+j] = f_min[i] + su2double(j)/su2double(n_sample_per_band)*(f_max[i]-f_min[i]);
-    }
+  for(unsigned short i = 0; i < n_sample; i++){
+    w[i] = su2double(i)*flt_U/(su2double(N)*dx_min);  // f = n*Fs/N
   }
-  w[n_sample-1] = f_max[n_band-1];
 
   /*--- Transform ---*/
 
@@ -1590,6 +1624,16 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
 
   }
 
+  /*--- DC pressure ---*/
+  p_real = 0.;
+  for(unsigned long i = 0; i < N-1; i++){
+    t1 = signal.tau[i]/w0; t2 = signal.tau[i+1]/w0;
+    y1 = signal.P[i]*p0;   y2 = signal.P[i+1]*p0;
+
+    p_real += 0.5*(y2 + y1)*(t2-t1);
+  }
+  p_dc = p_real*p_real;
+
 }
 
 void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band){
@@ -1599,24 +1643,30 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
   su2double A, B, llb, ulb, xb, sonmax, sonsum, F;
 
   /*--- Sone -> F factor table from Stevens, 1972 ---*/
-  su2double ffactr[186] = {0.181,0.100,0.196,0.122,0.212,
-                           0.140,0.230,0.158,0.248,0.174,0.269,0.187,0.290,0.200,0.314,0.212,
-                           0.339,0.222,0.367,0.232,0.396,0.241,0.428,0.250,0.463,0.259,0.500,
-                           0.267,0.540,0.274,0.583,0.281,0.630,0.287,0.680,0.293,0.735,0.298,
-                           0.794,0.303,0.857,0.308,0.926,0.312,1.000,0.316,1.080,0.319,1.170,
-                           0.320,1.260,0.322,1.360,0.322,1.470,0.320,1.590,0.319,1.720,0.317,
-                           1.850,0.314,2.000,0.311,2.160,0.308,2.330,0.304,2.520,0.300,2.720,
-                           0.296,2.940,0.292,3.180,0.288,3.430,0.284,3.700,0.279,4.000,0.275,
-                           4.320,0.270,4.670,0.266,5.040,0.262,5.440,0.258,5.880,0.253,6.350,
-                           0.248,6.860,0.244,7.410,0.240,8.000,0.235,8.640,0.230,9.330,0.226,
-                           10.10,0.222,10.90,0.217,11.80,0.212,12.70,0.208,13.70,0.204,14.80,
-                           0.200,16.00,0.197,17.30,0.195,18.70,0.194,20.20,0.193,21.80,0.192,
-                           23.50,0.191,25.40,0.190,27.40,0.190,29.60,0.190,32.00,0.190,34.60,
-                           0.190,37.30,0.190,40.30,0.191,43.50,0.191,47.00,0.192,50.80,0.193,
-                           54.90,0.194,59.30,0.195,64.00,0.197,69.10,0.199,74.70,0.201,80.60,
-                           0.203,87.10,0.205,94.10,0.208,102.0,0.210,110.0,0.212,119.0,0.215,
-                           128.0,0.217,138.0,0.219,149.0,0.221,161.0,0.223,174.0,0.224,188.0,
-                           0.225,203.0,0.226,219.0,0.227},
+  su2double ffactr[186] = {0.181, 0.100, 0.196, 0.122, 0.212, 0.140, 0.230, 0.158,
+                           0.248, 0.174, 0.269, 0.187, 0.290, 0.200, 0.314, 0.212,
+                           0.339, 0.222, 0.367, 0.232, 0.396, 0.241, 0.428, 0.250,
+                           0.463, 0.259, 0.500, 0.267, 0.540, 0.274, 0.583, 0.281,
+                           0.630, 0.287, 0.680, 0.293, 0.735, 0.298, 0.794, 0.303,
+                           0.857, 0.308, 0.926, 0.312, 1.000, 0.316, 1.080, 0.319,
+                           1.170, 0.320, 1.260, 0.322, 1.360, 0.322, 1.470, 0.320,
+                           1.590, 0.319, 1.710, 0.317, 1.850, 0.314, 2.000, 0.311,
+                           2.160, 0.308, 2.330, 0.304, 2.520, 0.300, 2.720, 0.296,
+                           2.940, 0.292, 3.180, 0.288, 3.430, 0.284, 3.700, 0.279,
+                           4.000, 0.275, 4.320, 0.270, 4.670, 0.266, 5.040, 0.262,
+                           5.440, 0.258, 5.880, 0.253, 6.350, 0.248, 6.860, 0.244,
+                           7.410, 0.240, 8.000, 0.235, 8.640, 0.230, 9.330, 0.226,
+                           10.10, 0.222, 10.90, 0.217, 11.80, 0.212, 12.70, 0.208,
+                           13.70, 0.204, 14.80, 0.200, 16.00, 0.197, 17.30, 0.195,
+                           18.70, 0.194, 20.20, 0.193, 21.80, 0.192, 23.50, 0.191,
+                           25.40, 0.190, 27.40, 0.190, 29.60, 0.190, 32.00, 0.190,
+                           34.60, 0.190, 37.30, 0.190, 40.30, 0.191, 43.50, 0.191,
+                           47.00, 0.192, 50.80, 0.193, 54.90, 0.194, 59.30, 0.195,
+                           64.00, 0.197, 69.10, 0.199, 74.70, 0.201, 80.60, 0.203,
+                           87.10, 0.205, 94.10, 0.208, 102.0, 0.210, 110.0, 0.212,
+                           119.0, 0.215, 128.0, 0.217, 138.0, 0.219, 149.0, 0.221,
+                           161.0, 0.223, 174.0, 0.224, 188.0, 0.225, 203.0, 0.226,
+                           219.0, 0.227},
 
   /*--- Leq -> sone table from Jackson, 1973 ---*/
             son[140]    = {0.079, 0.087, 0.097, 0.107, 0.118,
@@ -1643,15 +1693,15 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
                            299.0, 323.0, 348.0, 376.0, 406.0,
                            439.0, 474.0, 512.0, 553.0, 597.0,
                            645.0, 697.0, 752.0, 813.0, 878.0,
-                           948.0, 1024.0, 1106.0, 1194.0, 1290.0,
-                           1393.0, 1505.0, 1625.0, 1756.0, 1896.0,
-                           2048.0, 2212.0, 2389.0, 2580.0, 2787.0,
-                           3010.0, 3251.0, 3511.0, 3792.0, 4096.0},
+                           948.0, 1024., 1106., 1194., 1290.,
+                           1393., 1505., 1625., 1756., 1896.,
+                           2048., 2212., 2389., 2580., 2787.,
+                           3010., 3251., 3511., 3792., 4096.},
 
   /*--- Band limits and coefficients from Jackson, 1973 ---*/
-            ll[8]       = {86.5, 85.0, 83.5, 82.0, 80.5, 79.0, 77.5, 76.0},
+            ll[8]       = {86.5,  85.0,  83.5,  82.0,  80.5,  79.0,  77.5,  76.0},
             ul[8]       = {131.5, 130.0, 128.5, 127.0, 125.5, 124.0, 122.5, 121.0},
-            X[8]        = {10.5, 9.0, 7.5, 6.0, 4.5, 3.0, 1.5, 0.0};
+            X[8]        = {10.5,  9.0,   7.5,   6.0,   4.5,   3.0,   1.5,   0.0};
 
   for(unsigned short i = 0; i < n_band; i++){
     band = i+1;
@@ -1674,15 +1724,14 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
       /*--- Compute equivalent loudness ---*/
       if(SPL_band[i] <= llb){
         A = 115. - (115. - SPL_band[i])*log10(400.)/log10(fc[i]);
-        L_eq[i] = A - 8.0;
       }
       else if(SPL_band[i] > ulb){
         A = 160. - (160. - SPL_band[i])*log10(400.)/log10(fc[i]);
-        L_eq[i] = A - 8.0;
       }
       else{
-        L_eq[i] = SPL_band[i] - xb - 8.0;
+        A = SPL_band[i] - xb;
       }
+      L_eq[i] = A - 8.0;
     }
 
     /*--- Compute equivalent loudness ---*/
@@ -1697,14 +1746,15 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
   for(unsigned short i = 0; i < n_band; i++){
     band = floor(L_eq[i]);
     if(band > 139) sonband = son[139];
-    else if(band < 0) sonband = 0;
-    else sonband = son[band] + (son[band+1] - son[band])*(L_eq[i] - su2double(band)); // Leq in sone table increment by 1, so no division
+    else if(band < 1) sonband = 0;
+    else sonband = son[band-1] + (L_eq[i] - su2double(band))*(son[band] - son[band-1]); // Leq in sone table increment by 1, so no division
     
     sonsum += sonband;
     sonmax = max(sonmax, sonband);
   } 
 
   /*--- Interpolate F factor at max(sone) ---*/
+  F = 0.;
   if(sonmax >= 219.) F = 0.227;
   else if(sonmax < ffactr[0]) F = 0.;
   else{
