@@ -1487,7 +1487,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned short n_sample = ceil(14100*signal.len[iPhi]*dx_min/(flt_U)), // fmax*N/Fs
+  unsigned short n_sample = ceil(14500*signal.len[iPhi]*dx_min/(flt_U)), // fmax*N/Fs
                  n_band = 41;
 
   su2double *w      = new su2double[n_sample], 
