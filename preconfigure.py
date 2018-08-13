@@ -407,7 +407,7 @@ def configure(argument_dict,
               made_codi):
 
     # Set the base command for running configure
-    configure_base = '../configure'
+    configure_base = '../configure --disable-tecio' 
 
     # Add the arguments to the configure command
     for arg in argument_dict:

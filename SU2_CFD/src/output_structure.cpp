@@ -17330,6 +17330,8 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
+  if (rank == MASTER_NODE) cout << "WriteRestart_Parallel_ASCII: " << filename << endl;
+  
   /*--- Only the master node writes the header. ---*/
   
   if (rank == MASTER_NODE) {

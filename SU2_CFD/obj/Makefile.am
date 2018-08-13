@@ -72,6 +72,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
+  ../include/checkpointing.hpp \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
@@ -90,6 +91,7 @@ libSU2Core_sources = \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_structure.cpp \
+  ../src/driver_structure_checkpointing.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
   ../src/numerics_adjoint_turbulent.cpp \
@@ -113,6 +115,7 @@ libSU2Core_sources = \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
   ../src/python_wrapper_structure.cpp \
+  ../src/checkpointing.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \
   ../src/solver_adjoint_discrete.cpp \

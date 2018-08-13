@@ -47,6 +47,7 @@ CVariable::CVariable(void) {
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
+  Checkpoints = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
   Solution_Min = NULL;
@@ -67,6 +68,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
+  Checkpoints = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
   Solution_Min = NULL;
@@ -87,13 +89,12 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
    in the simulation ---*/
   Solution = new su2double [nVar];
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution[iVar] = 0.0;
-  
+    Solution[iVar] = 0.0;  
 }
 
 CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config) {
   
-  unsigned short iVar, iDim;
+  unsigned short iVar, iDim, iCheckpoint, iCheckpointDepth;
   
   /*--- Array initialization ---*/
   Solution = NULL;
@@ -101,6 +102,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
+  Checkpoints = NULL;
   Limiter = NULL;
   Solution_Max = NULL;
   Solution_Min = NULL;
@@ -114,6 +116,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   /*--- Initializate the number of dimension and number of variables ---*/
   nDim = val_nDim;
   nVar = val_nvar;
+
   
   /*--- Allocate solution, solution old, residual and gradient 
    which is common for all the problems, here it is also possible 
@@ -141,11 +144,28 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
 	}
+    
+    /*--- If checkpointing is used, allocate memory & initialize Checkpoints ---*/
+    if (config->GetCheckpointing()) {
+        nCheckpointDepth = config->GetCheckpointingDepth();
+        nCheckpoint = config->GetCheckpointingSnaps();
+        
+        Checkpoints = new su2double** [nCheckpoint];
+        for (iCheckpoint = 0; iCheckpoint < nCheckpoint; iCheckpoint++) {
+            Checkpoints[iCheckpoint] = new su2double* [nCheckpointDepth];
+            for (iCheckpointDepth = 0; iCheckpointDepth < nCheckpointDepth; iCheckpointDepth++) {
+                Checkpoints[iCheckpoint][iCheckpointDepth] = new su2double [nVar];
+                for (iVar = 0; iVar < nVar; iVar++) {
+                    Checkpoints[iCheckpoint][iCheckpointDepth][iVar] = 0.0;
+                }
+            }
+        }
+    }
   
 }
 
 CVariable::~CVariable(void) {
-  unsigned short iVar;
+  unsigned short iVar, iCheckpoint, iCheckpointDepth;
 
   if (Solution            != NULL) delete [] Solution;
   if (Solution_Old        != NULL) delete [] Solution_Old;
@@ -165,6 +185,16 @@ CVariable::~CVariable(void) {
     for (iVar = 0; iVar < nVar; iVar++)
       delete [] Gradient[iVar];
     delete [] Gradient;
+  }
+  
+  if (Checkpoints != NULL) {
+    for (iCheckpoint = 0; iCheckpoint < nCheckpoint; iCheckpoint++) {
+      for (iCheckpointDepth = 0; iCheckpointDepth < nCheckpointDepth; iCheckpointDepth++) {
+        delete [] Checkpoints[iCheckpoint][iCheckpointDepth];
+      }
+      delete [] Checkpoints[iCheckpoint];
+    }
+    delete [] Checkpoints;
   }
 
 }
@@ -208,6 +238,62 @@ void CVariable::Set_OldSolution(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_Old[iVar] = Solution[iVar];
   
+}
+
+void CVariable::Set_Checkpoint(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Checkpoints[iCheckpoint][0][iVar]   = Solution[iVar];
+      Checkpoints[iCheckpoint][1][iVar]   = Solution_time_n[iVar];
+      Checkpoints[iCheckpoint][2][iVar]   = Solution_time_n1[iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Restore_Checkpoint(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Solution[iVar]         = Checkpoints[iCheckpoint][0][iVar];
+      Solution_time_n[iVar]  = Checkpoints[iCheckpoint][1][iVar];
+      Solution_time_n1[iVar] = Checkpoints[iCheckpoint][2][iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Set_CheckpointSingleState(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Checkpoints[iCheckpoint][0][iVar]   = Solution[iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Restore_CheckpointSingleState(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Solution[iVar] = Checkpoints[iCheckpoint][0][iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
 }
 
 void CVariable::Set_OldSolution_Adj(void) {

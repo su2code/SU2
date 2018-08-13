@@ -144,7 +144,7 @@ public:
   CSysMatrix StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   
   CSysVector OutputVariables;    /*!< \brief vector to store the extra variables to be written. */
-  string* OutputHeadingNames; /*< \brief vector of strings to store the headings for the exra variables */
+  string* OutputHeadingNames; /*!< \brief vector of strings to store the headings for the exra variables */
   
   CVariable** node;  /*!< \brief Vector which the define the variables for each problem. */
   CVariable* node_infty; /*!< \brief CVariable storing the free stream conditions. */

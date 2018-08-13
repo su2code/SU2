@@ -178,7 +178,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   }
 
     /*--- Allocate and initialize solution for dual time strategy ---*/
-  
+// y u no use SetSolution????
   if (dual_time) {
     Solution_time_n[0] = val_density;
     Solution_time_n1[0] = val_density;

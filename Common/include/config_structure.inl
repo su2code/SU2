@@ -37,6 +37,16 @@
 
 #pragma once
 
+inline unsigned short CConfig::GetCheckpointing(void) { return Checkpointing; };
+
+inline unsigned long CConfig::GetCheckpointingSteps(void) { return CheckpointingSteps; };
+
+inline unsigned short CConfig::GetCheckpointingSnaps(void) { return CheckpointingSnaps; };
+
+inline unsigned short CConfig::GetCheckpointingSnapsInRAM(void) { return CheckpointingSnapsInRAM; };
+
+inline unsigned short CConfig::GetCheckpointingDepth(void) { return CheckpointingDepth; };
+
 inline su2double CConfig::GetHTP_Axis(unsigned short val_index) { return HTP_Axis[val_index]; }
 
 inline su2double CConfig::GetCFL_AdaptParam(unsigned short val_index) { return CFL_AdaptParam[val_index]; }
@@ -1867,6 +1877,8 @@ inline unsigned short CConfig::GetDynamic_LoadTransfer(void) { return Dynamic_Lo
 inline unsigned short CConfig::GetDirectDiff() { return DirectDiff;}
 
 inline bool CConfig::GetDiscrete_Adjoint() { return DiscreteAdjoint;}
+
+inline void CConfig::SetDiscrete_Adjoint(bool Discrete_Adjoint) { DiscreteAdjoint = Discrete_Adjoint;}
 
 inline bool CConfig::GetWeakly_Coupled_Heat(void) { return Weakly_Coupled_Heat; }
 

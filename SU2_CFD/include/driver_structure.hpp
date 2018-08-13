@@ -50,9 +50,12 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"
 
+#include "checkpointing.hpp"
+
+
 using namespace std;
 
-/*! 
+/*!
  * \class CDriver
  * \brief Parent class for driving an iteration of a single or multi-zone problem.
  * \author T. Economon
@@ -89,6 +92,7 @@ protected:
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
        fsi;                                     /*!< \brief FSI simulation flag.*/
   CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
+  Checkpointing *r;                              /*!< \brief A pointer to the Checkpointing class.*/
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
   CGeometry ****geometry_container;              /*!< \brief Geometrical definition of the problem. */
@@ -106,8 +110,8 @@ protected:
             PyWrapNodalHeatFlux[3];             /*!< \brief This is used to store the heat flux at each vertex. */
 
 public:
-	
-  /*! 
+
+  /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
@@ -128,7 +132,7 @@ public:
 
   /*!
    * \brief A virtual member.
-   */  
+   */
   virtual void Run() { };
 
   /*!
@@ -272,14 +276,74 @@ public:
   virtual void Relaxation_Tractions(unsigned short donorZone, unsigned short targetZone, unsigned long iFSIIter) {};
 
   /*!
-   * \brief A virtual member.
+   * \brief Launch the computation for all zones and all physics.
    */
-  virtual void Update() {};
+  void StartSolver();
 
   /*!
    * \brief Launch the computation for all zones and all physics.
    */
-  void StartSolver();
+  void StartSolverCP();
+
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  void StartSolverRevolve();
+
+  /*!
+   * \brief Launch the computation for all zones and all physics.
+   */
+  void StartSolverEquidistant();
+
+  /*!
+   * \brief A virtual member. Now it can be called from StartSolver routine.
+   */
+  virtual void PrimalAdvance() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Update() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreFullCheckpoint() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void StoreSingleState() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RestoreFullCheckpoint() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void RestoreSingleState() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void PrimalStep() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void PrimalUpdate() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void AdjointStep() { };
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Firsturn() { };
 
   /*!
    * \brief A virtual member.
@@ -663,8 +727,8 @@ public:
  */
 class CGeneralDriver : public CDriver {
 public:
-  
-  /*! 
+
+  /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
    * \param[in] val_nZone - Total number of zones.
@@ -683,9 +747,9 @@ public:
    */
   ~CGeneralDriver(void);
 
-  /*! 
+  /*!
    * \brief Run a single iteration of the physics within a single zone.
-   */  
+   */
   void Run();
 
   /*!
@@ -727,7 +791,7 @@ public:
  */
 class CFluidDriver : public CDriver {
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] confFile - Configuration file name.
@@ -755,7 +819,7 @@ public:
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
-  void Update();
+  virtual void Update();
 
   /*!
    * \brief Reset the convergence flag (set to false) of the multizone solver.
@@ -937,6 +1001,56 @@ public:
    * \brief Initialize the adjoint value of the objective function.
    */
   void SetAdj_ObjFunction();
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  virtual void PrimalAdvance();
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  void Update();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void StoreFullCheckpoint();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void StoreSingleState();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void RestoreFullCheckpoint();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void RestoreSingleState();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void PrimalStep();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void PrimalUpdate();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void AdjointStep();
+
+  /*!
+   * \brief A virtual member.
+   */
+  void Firsturn();
 };
 
 /*!
@@ -1033,7 +1147,7 @@ public:
    * \param[in] iZone - Current zone number.
    */
   void SetHarmonicBalance(unsigned short iZone);
-	
+
   /*!
    * \brief Precondition Harmonic Balance source term for stability
    * \author J. Howison

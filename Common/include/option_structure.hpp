@@ -373,6 +373,21 @@ static const map<string, ENUM_REGIME> Regime_Map = CCreateMap<string, ENUM_REGIM
 ("INCOMPRESSIBLE", INCOMPRESSIBLE);
 
 /*!
+ * \brief Different Checkpointing types
+ */
+enum ENUM_CHECKPOINTING {
+  NO_CHECKPOINTING = 0,     /*!< \brief No Checkpointing used. */
+  EVERYTHING = 1,			/*!< \brief All solutions are stored. */
+  EQUIDISTANT = 2,          /*!< \brief Equidistant Checkpoint distribution. */
+  BINOMIAL = 3,				/*!< \brief Offline Binomial Checkpointing. */
+};
+static const map<string, ENUM_CHECKPOINTING> Checkpointing_Map = CCreateMap<string, ENUM_CHECKPOINTING>
+("NONE", NO_CHECKPOINTING)
+("EVERYTHING", EVERYTHING)
+("EQUIDISTANT", EQUIDISTANT)
+("BINOMIAL", BINOMIAL);
+
+/*!
  * \brief different non-dimensional modes
  */
 enum ENUM_KIND_NONDIM {

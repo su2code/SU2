@@ -157,12 +157,20 @@ int main(int argc, char *argv[]) {
     
   }
 
+  bool checkpointing = config->GetCheckpointing();
   delete config;
   config = NULL;
 
   /*--- Launch the main external loop of the solver ---*/
+  cout << "Before StartSolver()." << endl;
+  if ( checkpointing ) {
+    cout << "In StartSolver() with CP." << endl;
+    driver->StartSolverRevolve();   
+  } else {
+    cout << "In StartSolver() without CP." << endl;
+    driver->StartSolver();
+  }
   
-  driver->StartSolver();
 
   /*--- Postprocess all the containers, close history file, exit SU2 ---*/
   

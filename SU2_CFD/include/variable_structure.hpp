@@ -91,6 +91,10 @@ protected:
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  su2double ***Checkpoints;   /*!< \brief Field to hold the primal Checkpoints for transient Adjoint computation. */
+  unsigned short nCheckpoint; /*!< \brief number of checkpoints stored in RAM, necessary for "delete" in Deconstructor. */
+  unsigned short nCheckpointDepth; /*!< \brief number of checkpoints stored in RAM, necessary for "delete" in Deconstructor. */
+
   
 public:
   
@@ -189,6 +193,30 @@ public:
    * \brief Set old variables to the value of the current variables.
    */
   void Set_OldSolution(void);
+  
+  /*!
+   * \brief Fill Checkpoint with the value of the current variables.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Set_Checkpoint(unsigned short iCheckpoint);
+  
+  /*!
+   * \brief Fills the primal solution of the solver container with state(s) in Checkpoint.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Restore_Checkpoint(unsigned short iCheckpoint);
+  
+  /*!
+   * \brief Fill Checkpoint with the value of the current variables.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Set_CheckpointSingleState(unsigned short iCheckpoint);
+  
+  /*!
+   * \brief Fills the primal solution of the solver container with state(s) in Checkpoint.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Restore_CheckpointSingleState(unsigned short iCheckpoint);
 
   /*!
    * \brief Set variables to the value of the old variables.
@@ -2022,6 +2050,13 @@ public:
    * \return Value of the solution for the index <i>val_var</i>.
    */
   virtual su2double GetSolution_time_n(unsigned short val_var);
+  
+   /*!
+   * \brief Get the solution at time n-1.
+   * \param[in] val_var - Index of the variable.
+   * \return Value of the solution for the index <i>val_var</i>.
+   */
+  virtual su2double GetSolution_time_n1(unsigned short val_var);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -5046,7 +5081,7 @@ public:
       */
      su2double GetSolution_Vel_time_n(unsigned short val_var);
 
-       /*!
+      /*!
       * \brief Get the solution at time n.
       * \param[in] val_var - Index of the variable.
       * \return Value of the solution for the index <i>val_var</i>.

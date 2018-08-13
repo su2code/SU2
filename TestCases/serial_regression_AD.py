@@ -48,6 +48,22 @@ def main():
 
     test_list = []
 
+    ######################################
+    ### Checkpointing                  ###
+    ######################################
+
+    # checkpointing_cylinder
+    checkpointing_cylinder           = TestCase('checkpointing_cylinder')
+    checkpointing_cylinder.cfg_dir   = "checkpointing/disc_adj_rans/cylinder"
+    checkpointing_cylinder.cfg_file  = "cylinder.cfg"
+    checkpointing_cylinder.test_iter = 9
+    checkpointing_cylinder.test_vals = [3.748070, -1.543067, -8.3443e-03, 1.3799e-05] #last 4 columns
+    checkpointing_cylinder.su2_exec  = "SU2_CFD_AD"
+    checkpointing_cylinder.timeout   = 1600
+    checkpointing_cylinder.tol       = 0.00001
+    checkpointing_cylinder.unsteady  = True
+    test_list.append(checkpointing_cylinder)
+
     #####################################
     ### Disc. adj. compressible Euler ###
     #####################################
