@@ -1327,6 +1327,23 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
   addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
 
+  /*!\brief CONV_NUM_METHOD_TNE2
+   *  \n DESCRIPTION: Convective numerical method \n OPTIONS: See \link Upwind_Map \endlink , \link Centered_Map \endlink. \ingroup Config*/
+  addConvectOption("CONV_NUM_METHOD_TNE2", Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2, Kind_Upwind_TNE2);
+  /*!\brief MUSCL_FLOW \n DESCRIPTION: Check if the MUSCL scheme should be used \ingroup Config*/
+  addBoolOption("MUSCL_TNE2", MUSCL_TNE2, true);
+  /*!\brief SLOPE_LIMITER_FLOW
+   * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
+  addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
+  default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
+  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
+  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
+  addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
+  default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
+  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
+  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
+
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
@@ -2442,8 +2459,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   if ((!MUSCL_Flow) || (Kind_ConvNumScheme_Flow == SPACE_CENTERED)) Kind_SlopeLimit_Flow = NO_LIMITER;
   if ((!MUSCL_Turb) || (Kind_ConvNumScheme_Turb == SPACE_CENTERED)) Kind_SlopeLimit_Turb = NO_LIMITER;
+  if ((!MUSCL_TNE2) || (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED)) Kind_SlopeLimit_TNE2 = NO_LIMITER;
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
   if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
+  if ((!MUSCL_AdjTNE2) || (Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED)) Kind_SlopeLimit_AdjTNE2= NO_LIMITER;
 
   /*--- Set the default for thrust in ActDisk ---*/
 
@@ -3247,7 +3266,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Initializing the size for the solutions of the Aeroelastic problem. ---*/
 
-
   if (Grid_Movement && Aeroelastic_Simulation) {
     Aeroelastic_np1.resize(nMarker_Monitoring);
     Aeroelastic_n.resize(nMarker_Monitoring);
@@ -3301,6 +3319,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Kind_Solver = RANS;
 
   if (Kind_Solver == EULER) Kind_Turb_Model = NONE;
+  if (Kind_Solver == TNE2_EULER) Kind_Turb_Model = NONE;
 
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];
@@ -3433,6 +3452,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     if (Kind_Solver == EULER) Kind_Solver = ADJ_EULER;
     if (Kind_Solver == NAVIER_STOKES) Kind_Solver = ADJ_NAVIER_STOKES;
     if (Kind_Solver == RANS) Kind_Solver = ADJ_RANS;
+    if (Kind_Solver == TNE2_EULER) Kind_Solver = ADJ_TNE2_EULER;
   }
 
   nCFL = nMGLevels+1;
@@ -3528,7 +3548,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
              ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
              ( Kind_Solver == RANS                   ) ||
              ( Kind_Solver == ADJ_RANS               ) ||
-             ( Kind_Solver == TNE2_NAVIER_STOKES     )  );
+             ( Kind_Solver == TNE2_NAVIER_STOKES     ) ||
+             ( Kind_Solver == ADJ_TNE2_NAVIER_STOKES ) );
 
   /*--- Reacting flows iniatilization ---*/
   if (( Kind_Solver == TNE2_EULER             ) ||
@@ -5235,9 +5256,17 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
+      case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible TNE2 Euler equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible TNE2 Euler equations." << endl;
+        break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+        break;
+      case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar TNE2 Navier-Stokes' equations." << endl;
+        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar TNE2 Navier-Stokes' equations." << endl;
         break;
       case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
@@ -5274,6 +5303,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     	  }
     	  break;
       case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
+      case ADJ_TNE2_EULER: cout << "Continuous TNE2 Euler adjoint equations." << endl; break;
       case ADJ_NAVIER_STOKES:
         if (Frozen_Visc_Cont)
           cout << "Continuous Navier-Stokes adjoint equations with frozen (laminar) viscosity." << endl;
@@ -5295,7 +5325,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
-          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS))
+          (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
+          (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver = ADJ_TNE2_NAVIER_STOKES) )
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
       	cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;
@@ -5810,6 +5841,67 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
+    if ( (Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ) {
+
+      if (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED) {
+        if (Kind_Centered_TNE2 == JST) {
+          cout << "Jameson-Schmidt-Turkel scheme (2nd order in space) for the flow inviscid terms."<< endl;
+          cout << "JST viscous coefficients (2nd & 4th): " << Kappa_2nd_TNE2 << ", " << Kappa_4th_TNE2 <<"." << endl;
+          cout << "The method includes a grid stretching correction (p = 0.3)."<< endl;
+        }
+        if (Kind_Centered_TNE2== LAX) {
+          cout << "Lax-Friedrich scheme (1st order in space) for the flow inviscid terms."<< endl;
+          cout << "Lax viscous coefficients (1st): " << Kappa_1st_TNE2 << "." << endl;
+          cout << "First order integration." << endl;
+        }
+      }
+
+      if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
+        if (Kind_Upwind_TNE2 == ROE)   cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == HLLC)  cout << "HLLC solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+
+        if (Kind_Regime == COMPRESSIBLE) {
+          switch (Kind_RoeLowDiss) {
+            case NO_ROELOWDISS: cout << "Standard Roe without low-dissipation function."<< endl; break;
+            case NTS: cout << "Roe with NTS low-dissipation function."<< endl; break;
+            case FD: cout << "Roe with DDES's FD low-dissipation function."<< endl; break;
+            case NTS_DUCROS: cout << "Roe with NTS low-dissipation function + Ducros shock sensor."<< endl; break;
+            case FD_DUCROS: cout << "Roe with DDES's FD low-dissipation function + Ducros shock sensor."<< endl; break;
+          }
+        }
+
+        if (MUSCL_TNE2) {
+          cout << "Second order integration in space, with slope limiter." << endl;
+            switch (Kind_SlopeLimit_TNE2) {
+              case NO_LIMITER:
+                cout << "No slope-limiting method. "<< endl;
+                break;
+              case VENKATAKRISHNAN:
+                cout << "Venkatakrishnan slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+                cout << "The reference element size is: " << RefElemLength <<". "<< endl;
+                break;
+              case VENKATAKRISHNAN_WANG:
+                cout << "Venkatakrishnan-Wang slope-limiting method, with constant: " << Venkat_LimiterCoeff <<". "<< endl;
+                break;
+              case BARTH_JESPERSEN:
+                cout << "Barth-Jespersen slope-limiting method." << endl;
+                break;
+              case VAN_ALBADA_EDGE:
+                cout << "Van Albada slope-limiting method implemented by edges." << endl;
+                break;
+            }
+        }
+        else {
+          cout << "First order integration in space." << endl;
+        }
+
+      }
+
+    }
+
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS)) {
       if (Kind_ConvNumScheme_Turb == SPACE_UPWIND) {
         if (Kind_Upwind_Turb == SCALAR_UPWIND) cout << "Scalar upwind solver for the turbulence model."<< endl;
@@ -6064,6 +6156,70 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
       }
     }
+
+    if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ) {
+      switch (Kind_TimeIntScheme_TNE2) {
+        case RUNGE_KUTTA_EXPLICIT:
+          cout << "Runge-Kutta explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << nRKStep << endl;
+          cout << "Alpha coefficients: ";
+          for (unsigned short iRKStep = 0; iRKStep < nRKStep; iRKStep++) {
+            cout << "\t" << RK_Alpha_Step[iRKStep];
+          }
+          cout << endl;
+          break;
+        case EULER_EXPLICIT:
+          cout << "Euler explicit method for the flow equations." << endl;
+          break;
+        case EULER_IMPLICIT:
+          cout << "Euler implicit method for the flow equations." << endl;
+          switch (Kind_Linear_Solver) {
+            case BCGSTAB:
+              cout << "BCGSTAB is used for solving the linear system." << endl;
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
+              }
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
+              break;
+            case FGMRES:
+            case RESTARTED_FGMRES:
+              cout << "FGMRES is used for solving the linear system." << endl;
+              switch (Kind_Linear_Solver_Prec) {
+                case ILU: cout << "Using a ILU("<< Linear_Solver_ILU_n <<") preconditioning."<< endl; break;
+                case LINELET: cout << "Using a linelet preconditioning."<< endl; break;
+                case LU_SGS: cout << "Using a LU-SGS preconditioning."<< endl; break;
+                case JACOBI: cout << "Using a Jacobi preconditioning."<< endl; break;
+              }
+              cout << "Convergence criteria of the linear solver: "<< Linear_Solver_Error <<"."<< endl;
+              cout << "Max number of linear iterations: "<< Linear_Solver_Iter <<"."<< endl;
+               break;
+            case SMOOTHER_JACOBI:
+              cout << "A Jacobi method is used for smoothing the linear system." << endl;
+              break;
+            case SMOOTHER_ILU:
+              cout << "A ILU("<< Linear_Solver_ILU_n <<") method is used for smoothing the linear system." << endl;
+              break;
+            case SMOOTHER_LUSGS:
+              cout << "A LU-SGS method is used for smoothing the linear system." << endl;
+              break;
+            case SMOOTHER_LINELET:
+              cout << "A Linelet method is used for smoothing the linear system." << endl;
+              break;
+          }
+          break;
+        case CLASSICAL_RK4_EXPLICIT:
+          cout << "Classical RK4 explicit method for the flow equations." << endl;
+          cout << "Number of steps: " << 4 << endl;
+          cout << "Time coefficients: {0.5, 0.5, 1, 1}" << endl;
+          cout << "Function coefficients: {1/6, 1/3, 1/3, 1/6}" << endl;
+          break;
+      }
+    }
+
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {
@@ -7611,6 +7767,8 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
     case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_WAVE_SYS:      return WAVE_SOL;
+    case RUNTIME_TNE2_SYS:      return TNE2_SOL;
+    case RUNTIME_ADJTNE2_SYS:   return ADJTNE2_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
@@ -7654,6 +7812,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Flow);
       }
       break;
+    case TNE2_EULER:
+      if (val_system == RUNTIME_TNE2_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              MUSCL_TNE2);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
+      }
+      break;
     case NAVIER_STOKES:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,
@@ -7666,6 +7832,14 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);
       }
       break;
+    case TNE2_NAVIER_STOKES:
+      if (val_system == RUNTIME_TNE2_SYS) {
+        SetKind_ConvNumScheme(Kind_ConvNumScheme_TNE2, Kind_Centered_TNE2,
+                              Kind_Upwind_TNE2, Kind_SlopeLimit_TNE2,
+                              MUSCL_TNE2);
+        SetKind_TimeIntScheme(Kind_TimeIntScheme_TNE2);
+      }
+        break;
     case RANS:
       if (val_system == RUNTIME_FLOW_SYS) {
         SetKind_ConvNumScheme(Kind_ConvNumScheme_Flow, Kind_Centered_Flow,

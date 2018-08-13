@@ -531,6 +531,8 @@ private:
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
+  MUSCL_TNE2,    /*!< \brief MUSCL scheme for the TNE2 equations. */
+  MUSCL_AdjTNE2, /*!< \brief MUSCL scheme for the adj TNE2 equations. */
   MUSCL_Turb,	 /*!< \brief MUSCL scheme for the turbulence equations.*/
   MUSCL_Heat,	 /*!< \brief MUSCL scheme for the (fvm) heat equation.*/
   MUSCL_AdjFlow,		/*!< \brief MUSCL scheme for the adj flow equations.*/
@@ -4142,6 +4144,24 @@ public:
    *       linearized) that is being solved.
    * \return MUSCL scheme.
    */
+  bool GetMUSCL_TNE2(void);
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
+  bool GetMUSCL_AdjTNE2(void);
+
+  /*!
+   * \brief Get if the upwind scheme used MUSCL or not.
+   * \note This is the information that the code will use, the method will
+   *       change in runtime depending of the specific equation (direct, adjoint,
+   *       linearized) that is being solved.
+   * \return MUSCL scheme.
+   */
   bool GetMUSCL_Heat(void);
 
   /*!
@@ -4510,19 +4530,19 @@ public:
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	//su2double GetKappa_2nd_AdjTNE2(void);
+	su2double GetKappa_2nd_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the high order method (center scheme).
 	 * \return Calibrated constant for the high order center method for the adjoint flow equations.
 	 */
-	//su2double GetKappa_4th_AdjTNE2(void);
+	su2double GetKappa_4th_AdjTNE2(void);
 
 	/*!
 	 * \brief Value of the calibrated constant for the low order method (center scheme).
 	 * \return Calibrated constant for the low order center method for the adjoint flow equations.
 	 */
-	//su2double GetKappa_1st_AdjTNE2(void);
+	su2double GetKappa_1st_AdjTNE2(void);
 
   /*!
    * \brief Get the kind of integration scheme (implicit)

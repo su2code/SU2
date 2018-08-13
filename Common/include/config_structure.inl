@@ -1113,9 +1113,13 @@ inline bool CConfig::GetMUSCL_Turb(void) { return MUSCL_Turb; }
 
 inline bool CConfig::GetMUSCL_Heat(void) { return MUSCL_Heat; }
 
+inline bool CConfig::GetMUSCL_TNE2(void) { return MUSCL_TNE2; }
+
 inline bool CConfig::GetMUSCL_AdjFlow(void) { return MUSCL_AdjFlow; }
 
 inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
+
+inline bool CConfig::GetMUSCL_AdjTNE2(void) { return MUSCL_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
@@ -1136,6 +1140,8 @@ inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_Sp
 inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_TransferMethod; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
+
+inline unsigned short CConfig::GetKind_ConvNumScheme_TNE2(void) { return Kind_ConvNumScheme_TNE2; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Template(void) { return Kind_ConvNumScheme_Template; }
 
