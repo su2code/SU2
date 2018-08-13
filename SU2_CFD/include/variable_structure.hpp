@@ -3532,22 +3532,7 @@ public:
    */
   void SetdTvedrhos(CConfig *config);
 
-  /*!
-   * \brief Set partial derivative of pressure w.r.t. density \f$\frac{\partial P}{\partial \rho_s}\f$
-   */
-  su2double *GetdPdU(void);
-
-  /*!
-   * \brief Set partial derivative of temperature w.r.t. density \f$\frac{\partial T}{\partial \rho_s}\f$
-   */
-  su2double *GetdTdU(void);
-
-  /*!
-   * \brief Set partial derivative of vib.-el. temperature w.r.t. density \f$\frac{\partial T^{V-E}}{\partial \rho_s}\f$
-   */
-  su2double *GetdTvedU(void);
-
-  /*!
+    /*!
    * \brief Set all the primitive variables for compressible flows.
    */
   bool SetPrimVar(CFluidModel *FluidModel);
