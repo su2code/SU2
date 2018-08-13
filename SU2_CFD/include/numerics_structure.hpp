@@ -1539,6 +1539,20 @@ public:
   virtual void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 
   /*!
+   * \brief Set the value of the radiation variable.
+   * \param[in] val_radvar_i - Value of the turbulent variable at point i.
+   * \param[in] val_radvar_j - Value of the turbulent variable at point j.
+   */
+  virtual void SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j);
+
+  /*!
+   * \brief Set the gradient of the radiation variables.
+   * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
+   * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
+   */
+  virtual void SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j);
+
+  /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
    * \param[in] config - Normal vector
    */
@@ -4305,6 +4319,139 @@ public:
 
 };
 
+/*!
+ * \class CNumericsRadiation
+ * \brief Template class for computing residual terms in radiation problems
+ * \ingroup RadiationNumerics
+ * \author R. Sanchez
+ */
+class CNumericsRadiation : public CNumerics {
+ private:
+
+ protected:
+
+  bool implicit, incompressible;
+  su2double *RadVar_i,        /*!< \brief Vector of radiation variables at point i. */
+  *RadVar_j;                  /*!< \brief Vector of radiation variables at point j. */
+  su2double **RadVar_Grad_i,  /*!< \brief Gradient of turbulent variables at point i. */
+  **RadVar_Grad_j;            /*!< \brief Gradient of turbulent variables at point j. */
+  su2double Absorption_Coeff; /*!< \brief Absorption coefficient. */
+  su2double Scattering_Coeff; /*!< \brief Scattering coefficient. */
+  su2double Refractive_Index; /*!< \brief Refractive index n = c/c_medium. */
+
+ public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CNumericsRadiation(unsigned short val_nDim, unsigned short val_nVar,
+                     CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CNumericsRadiation(void);
+
+  /*!
+   * \brief Set the value of the radiation variable.
+   * \param[in] val_radvar_i - Value of the turbulent variable at point i.
+   * \param[in] val_radvar_j - Value of the turbulent variable at point j.
+   */
+  void SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j);
+
+  /*!
+   * \brief Set the gradient of the radiation variables.
+   * \param[in] val_radvar_grad_i - Gradient of the turbulent variable at point i.
+   * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
+   */
+  void SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j);
+
+};
+
+/*!
+ * \class CAvgGrad_P1
+ * \brief Template class for computing the viscous residual in the P1 equation
+ * \ingroup RadiationNumerics
+ * \author R. Sanchez
+ */
+class CAvgGrad_P1 : public CNumericsRadiation {
+ private:
+
+ protected:
+
+  unsigned short iVar, iDim;
+  su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
+  su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
+            *Proj_Mean_GradP1Var_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
+            *Proj_Mean_GradP1Var;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
+  su2double dist_ij,                        /*!< \brief Length of the edge and face. */
+            proj_vector_ij;                 /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  su2double GammaP1;                        /*!< \brief P1 parameter */
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_P1(unsigned short val_nDim, unsigned short val_nVar,
+              CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_P1(void);
+
+  /*!
+   * \brief Compute the viscous residual of the P1 equation.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                       su2double **Jacobian_j, CConfig *config);
+
+};
+
+/*!
+ * \class CSourceP1
+ * \brief Class for the source term integration of the P1 radiation model.
+ * \ingroup RadiationNumerics
+ * \author R. Sanchez
+ */
+class CSourceP1 : public CNumericsRadiation {
+
+  su2double BlackBody_Intensity;
+  su2double Energy_i, Temperature_i;
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceP1(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceP1(void);
+
+  /*!
+   * \brief Source term integration of the P1 model.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+};
 
 /*!
  * \class CSourceNothing

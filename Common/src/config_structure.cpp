@@ -1935,6 +1935,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
 
+  /*!\par CONFIG_CATEGORY: Radiation solver \ingroup Config*/
+  /*--- Options related to the radiation solver ---*/
+
+  /* DESCRIPTION: Type of radiation model */
+  addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
+
+  /* DESCRIPTION: Absorption coefficient */
+  addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 0.5);
+  /* DESCRIPTION: Scattering coefficient */
+  addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.5);
+  /* DESCRIPTION: Refractive index */
+  addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 0.5);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/

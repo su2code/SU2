@@ -1011,6 +1011,10 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  unsigned short Kind_Radiation;  /*!< \brief Kind of radiation model used. */
+  su2double Absorption_Coeff,     /*!< \brief Absorption coefficient of the medium (radiation). */
+  Scattering_Coeff,               /*!< \brief Scattering coefficient of the medium (radiation). */
+  Refractive_Index;               /*!< \brief Refractive index of the medium (radiation). */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
@@ -8490,6 +8494,30 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
+
+  /*!
+   * \brief Get the Kind of Radiation model applied.
+   * \return Kind of radiation model used.
+   */
+   unsigned short GetKind_RadiationModel(void);
+
+  /*!
+   * \brief Get the value of the absorption coefficient of the medium.
+   * \return Value of the absorption coefficient of the medium.
+   */
+  su2double GetAbsorption_Coeff(void);
+
+  /*!
+   * \brief Get the value of the scattering coefficient of the medium.
+   * \return Value of the scattering coefficient of the medium.
+   */
+  su2double GetScattering_Coeff(void);
+
+  /*!
+   * \brief Get the value of the refractive index of the medium.
+   * \return Value of the refractive index of the medium.
+   */
+  su2double GetRefractive_Index(void);
 };
 
 #include "config_structure.inl"

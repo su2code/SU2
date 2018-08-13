@@ -580,3 +580,18 @@ inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2doubl
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
+
+
+inline void CNumerics::SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j) { }
+
+inline void CNumerics::SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j) { }
+
+inline void CNumericsRadiation::SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j) {
+  RadVar_i = val_radvar_i;
+  RadVar_j = val_radvar_j;
+}
+
+inline void CNumericsRadiation::SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j) {
+  RadVar_Grad_i = val_radvar_grad_i;
+  RadVar_Grad_j = val_radvar_grad_j;
+}
