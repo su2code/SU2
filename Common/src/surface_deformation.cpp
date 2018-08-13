@@ -3697,11 +3697,11 @@ void CSurfaceMovement::Surface_Pitching(CGeometry *geometry, CConfig *config,
 
             /*--- Calculate delta change in the x, y, & z directions ---*/
             for (iDim = 0; iDim < nDim; iDim++)
-              VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
-            if (nDim == 2) VarCoord[nDim] = 0.0;
-
+            	VarCoord[iDim] = (rotCoord[iDim]-Coord[iDim])/Lref;
+            if (nDim == 2)
+            	VarCoord[nDim] = 0.0;
             /*--- Set node displacement for volume deformation ---*/
-            if (!restart)
+            if (!restart||!config->GetDiscrete_Adjoint())
             	geometry->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
 
           }

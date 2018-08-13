@@ -253,8 +253,8 @@ void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geom
       PressureRatio[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]      = TotalPressureOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan]/TotalPressureIn[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
       TotalWorkDone_S[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections] = solver_container->GetWorkDone(iMarkerTP,iSpan);
       TotalWorkDone_D[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]   = EulerianWork[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][iSpan]*MassFlowOut[nMarkerTurboPerf*iTimeInstance + iMarkerTP][iSpan];
-      if((config->GetUnsteady_Simulation()!=NO)) TotalWorkDonePerCyc_S[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]           = solver_container->GetWorkDonePerCycle(iMarkerTP,iSpan);
-
+      if((config->GetUnsteady_Simulation()!=NO))
+    	  TotalWorkDonePerCyc_S[nMarkerTurboPerf*iTimeInstance +  iMarkerTP][nSpanWiseSections]           = solver_container->GetWorkDonePerCycle(iMarkerTP,iSpan);
     }
   }
 
@@ -327,8 +327,8 @@ void COutput::ComputeAvgTurboPerformance_HB(CConfig *config, unsigned short nTim
 
 for (iGeomZone = 0; iGeomZone < nBladesRow; iGeomZone++ ){
   for (iTimeInstance = 0; iTimeInstance < nTimeInstances; iTimeInstance++ ){
-    EntropyGenAverage_HB    += EntropyGen[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
-    TotalWorkDone_Surface_HB    += TotalWorkDone_S[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
+    EntropyGenAverage_HB        += EntropyGen[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
+    TotalWorkDone_Surface_HB    += TotalWorkDone_D[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections];
     //cout<<"Total Work Done :: "<<TotalWorkDone_S[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]<<endl;
     if (iGeomZone == nBladesRow-1)
       Power_HB += MassFlowIn[iTimeInstance * nMarkerTurboPerf + iGeomZone][nSpanWiseSections]

@@ -354,8 +354,8 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][MESH_0]->ComputeWall_Distance(config_container[iZone]);
     }
   }
-
-  //SetTimeSpectral_Velocities();
+  if(!config_container[ZONE_0]->GetDiscrete_Adjoint())
+		SetTimeSpectral_Velocities();
 
   /*---If the Grid Movement is static initialize the static mesh movment ---*/
   Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
@@ -5523,19 +5523,19 @@ void CHBMultiZoneDriver::Run() {
 
 
 //  /*--- Print residuals ---*/
-cout << "===========================" << endl;
-cout << "EXT_ITER: " <<  ExtIter << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++) {
-    if (rank == MASTER_NODE ) {
-      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
-                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
-                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
-      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-      }
-    }
-  }
+//cout << "===========================" << endl;
+//cout << "EXT_ITER: " <<  ExtIter << endl;
+//
+//  for (iZone = 0; iZone < nZone; iZone++) {
+//    if (rank == MASTER_NODE ) {
+//      cout << " Zone " << iZone << ": R[0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0))
+//                                << "  R[1]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(1))
+//                                << "  R[2]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(2)) << endl;
+//      if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
+//        cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+//      }
+//    }
+//  }
 
 }
 
@@ -5547,7 +5547,6 @@ void CHBMultiZoneDriver::SetTimeSpectral_Velocities(){
 	  su2double angular_interval = 2.0*PI_NUMBER/(su2double)(nZone);
 	  su2double *Coord;
 	  unsigned long iPoint;
-	  cout<<"Angural interval :: "<<angular_interval<<endl;
 
 	  /*--- Compute period of oscillation & compute time interval using nTimeInstances ---*/
 	  su2double period = config_container[ZONE_0]->GetHarmonicBalance_Period();//config_container[ZONE_0]->GetTimeSpectral_Period();

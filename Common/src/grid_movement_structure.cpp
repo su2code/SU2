@@ -134,6 +134,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   Screen_Output  = config->GetDeform_Output();
   Tol_Factor     = config->GetDeform_Tol_Factor();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
+  if (config->GetDiscrete_Adjoint()) Derivative=1;
   
   /*--- Disable the screen output if we're running SU2_CFD ---*/
   

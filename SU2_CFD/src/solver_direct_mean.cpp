@@ -859,7 +859,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = 10;//round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
+  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
   if (rank == MASTER_NODE)
 	  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)
@@ -5795,7 +5795,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   Total_CQ            = AllBound_CQ_Inv;
   Total_CMerit        = Total_CT / (Total_CQ + EPS);
   Total_CNearFieldOF  = AllBound_CNearFieldOF_Inv;
-  LocalWork	=	AllBound_LocalWork;
+  LocalWork			  =	AllBound_LocalWork;
   
   /*--- Update the total coefficients per surface (note that all the nodes have the same value)---*/
   
@@ -16117,7 +16117,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if((config->GetUnsteady_Simulation() != NO)){
 
-  steps_per_cycle = 10;//round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
+  steps_per_cycle = round(SU2_TYPE::GetValue((2*PI_NUMBER/config->GetPitching_Omega_Z(0))/config->GetDelta_UnstTimeND()));
   if (rank == MASTER_NODE)
 	  cout<<"Steps per cycle : "<<steps_per_cycle<<endl;
   for (unsigned int iTime=0; iTime<steps_per_cycle; iTime++)

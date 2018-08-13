@@ -5149,7 +5149,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 //                  SPRINTF(surface_coeff, ", %12.10f", Power_HB);
 //                  strcat(turbo_coeff, surface_coeff);
 //                }
-                if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", TotalWorkDone_Surface_HB);
+                if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", GetTotalWorkDone_HB());
                 else SPRINTF(surface_coeff, ", %12.10f", KineticEnergyLoss[iMarker_Monitoring][nSpanWiseSections]);
 								strcat(turbo_coeff, surface_coeff);
 				if (harmonic_balance) SPRINTF(surface_coeff, ", %12.10f", EntropyGenAverage_HB);
