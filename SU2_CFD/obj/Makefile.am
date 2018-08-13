@@ -103,6 +103,7 @@ libSU2Core_sources = \
   ../src/numerics_direct_elasticity_nonlinear.cpp \
   ../src/numerics_direct_elasticity_linear.cpp \
   ../src/numerics_direct_elasticity.cpp \
+  ../src/numerics_direct_radiation.cpp \
   ../src/numerics_structure.cpp \
   ../src/numerics_template.cpp \
   ../src/output_cgns.cpp \
@@ -125,6 +126,7 @@ libSU2Core_sources = \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_wave.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_direct_radiation.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
@@ -142,6 +144,7 @@ libSU2Core_sources = \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_wave.cpp \
   ../src/variable_direct_elasticity.cpp \
+  ../src/variable_direct_radiation.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 

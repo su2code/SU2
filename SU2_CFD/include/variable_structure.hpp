@@ -4447,6 +4447,73 @@ public:
   su2double GetCrossDiff(void);
 };
 
+/*!
+ * \class CRadVariable
+ * \brief Main class for defining the radiation variables.
+ * \ingroup Radiation_Model
+ * \author R. Sanchez.
+ */
+
+class CRadVariable : public CVariable {
+
+private:
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CRadVariable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+   * \param[in] val_muT  - The eddy viscosity
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CRadVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CRadVariable(void);
+
+};
+
+/*!
+ * \class CRadP1Variable
+ * \brief Main class for defining the radiation variables for the P1 model.
+ * \ingroup Radiation_Model
+ * \author R. Sanchez.
+ */
+
+class CRadP1Variable : public CRadVariable {
+
+private:
+
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CRadP1Variable(void);
+
+  /*!
+   * \overload
+   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
+   * \param[in] val_muT  - The eddy viscosity
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CRadP1Variable(su2double val_energy, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CRadP1Variable(void);
+
+};
 
 /*!
  * \class CAdjEulerVariable

@@ -144,6 +144,8 @@ const su2double FOUR3 = 4.0 / 3.0;  /*!< \brief Four divided by three. */
 
 const su2double PI_NUMBER = 4.0 * atan(1.0);	/*!< \brief Pi number. */
 
+const su2double STEFAN_BOLTZMANN = 5.670367E-08;  /*!< \brief Stefan-Boltzmann constant in W/(m^2*K^4). */
+
 const int MASTER_NODE = 0;			/*!< \brief Master node for MPI parallelization. */
 const int SINGLE_NODE = 1;			/*!< \brief There is only a node in the MPI parallelization. */
 const int SINGLE_ZONE = 1;			/*!< \brief There is only a zone. */
@@ -1018,6 +1020,17 @@ static const map<string, ENUM_DVFEA> DVFEA_Map = CCreateMap<string, ENUM_DVFEA>
 ("DENSITY", DENSITY_VAL)
 ("DEAD_WEIGHT", DEAD_WEIGHT)
 ("ELECTRIC_FIELD", ELECTRIC_FIELD);
+
+/*!
+ * \brief Kinds of radiation models
+ */
+enum ENUM_RADIATION {
+  NO_RADIATION = 0,      /*!< \brief No radiation model */
+  P1_MODEL = 1           /*!< \brief P1 Radiation model. */
+};
+static const map<string, ENUM_RADIATION> Radiation_Map = CCreateMap<string, ENUM_RADIATION>
+("NONE", NO_RADIATION)
+("P1", P1_MODEL);
 
 
 /*!

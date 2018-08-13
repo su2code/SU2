@@ -1901,3 +1901,11 @@ inline bool CConfig::GetQCR(void) {return QCR;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline unsigned short CConfig::GetKind_RadiationModel(void) { return Kind_Radiation; }
+
+inline su2double CConfig::GetAbsorption_Coeff(void) { return Absorption_Coeff; }
+
+inline su2double CConfig::GetScattering_Coeff(void) { return Scattering_Coeff; }
+
+inline su2double CConfig::GetRefractive_Index(void) { return Refractive_Index; }
