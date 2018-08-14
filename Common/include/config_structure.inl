@@ -473,6 +473,8 @@ inline su2double CConfig::GetThermal_Expansion_CoeffND(void) { return Thermal_Ex
 
 inline su2double **CConfig::GetBlottnerCoeff(void) {return Blottner; }
 
+inline su2double CConfig::GetPnormHeat(void) { return pnorm_heat; }
+
 inline su2double CConfig::GetInc_Density_Ref(void) { return Inc_Density_Ref; }
 
 inline su2double CConfig::GetInc_Velocity_Ref(void) { return Inc_Velocity_Ref; }
@@ -1197,19 +1199,19 @@ inline su2double CConfig::GetKappa_2nd_AdjFlow(void) { return Kappa_2nd_AdjFlow;
 
 inline su2double CConfig::GetKappa_4th_AdjFlow(void) { return Kappa_4th_AdjFlow; }
 
-//inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTNE2(void) { return Kind_TimeIntScheme_AdjTNE2; }
+inline unsigned short CConfig::GetKind_TimeIntScheme_AdjTNE2(void) { return Kind_TimeIntScheme_AdjTNE2; }
 
-//inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind_ConvNumScheme_AdjTNE2; }
+inline unsigned short CConfig::GetKind_ConvNumScheme_AdjTNE2(void) { return Kind_ConvNumScheme_AdjTNE2; }
 
-//inline unsigned short CConfig::GetKind_Centered_AdjTNE2(void) { return Kind_Centered_AdjTNE2; }
+inline unsigned short CConfig::GetKind_Centered_AdjTNE2(void) { return Kind_Centered_AdjTNE2; }
 
-//inline unsigned short CConfig::GetKind_Upwind_AdjTNE2(void) { return Kind_Upwind_AdjTNE2; }
+inline unsigned short CConfig::GetKind_Upwind_AdjTNE2(void) { return Kind_Upwind_AdjTNE2; }
 
-//inline su2double CConfig::GetKappa_1st_AdjTNE2(void) { return Kappa_1st_AdjTNE2; }
+inline su2double CConfig::GetKappa_1st_AdjTNE2(void) { return Kappa_1st_AdjTNE2; }
 
-//inline su2double CConfig::GetKappa_2nd_AdjTNE2(void) { return Kappa_2nd_AdjTNE2; }
+inline su2double CConfig::GetKappa_2nd_AdjTNE2(void) { return Kappa_2nd_AdjTNE2; }
 
-//inline su2double CConfig::GetKappa_4th_AdjTNE2(void) { return Kappa_4th_AdjTNE2; }
+inline su2double CConfig::GetKappa_4th_AdjTNE2(void) { return Kappa_4th_AdjTNE2; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Turb(void) { return Kind_TimeIntScheme_Turb; }
 

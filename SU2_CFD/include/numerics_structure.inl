@@ -230,6 +230,10 @@ inline void CNumerics::SetdTdU(su2double *val_dTdU_i, su2double *val_dTdU_j) { d
 
 inline void CNumerics::SetdTvedU(su2double *val_dTvedU_i, su2double *val_dTvedU_j) { dTvedU_i = val_dTvedU_i; dTvedU_j = val_dTvedU_j; }
 
+inline void CNumerics::SetEve(su2double *val_Eve_i, su2double *val_Eve_j) {eve_i = val_Eve_i; eve_j = val_Eve_j; }
+
+inline void CNumerics::SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j) {Cvve_i = val_Cvve_i; Cvve_j = val_Cvve_j; }
+
 inline void CNumerics::SetUndivided_Laplacian(su2double *val_und_lapl_i, su2double *val_und_lapl_j) {
   Und_Lapl_i = val_und_lapl_i;
   Und_Lapl_j = val_und_lapl_j;
