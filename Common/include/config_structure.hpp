@@ -1198,7 +1198,9 @@ private:
     //  for (int i = 0; i < size; i++) {
     //    def[i] = default_value[i];
     //  }
-
+    if (!(option_map.find(name)== option_map.end())) {
+      cout << name << endl;
+    }
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
@@ -2579,6 +2581,12 @@ public:
    * \return Value of the Froude number.
    */
   void SetTemperature_FreeStream(su2double val_temperature_freestream);
+
+  /*!
+   * \brief Set the Froude number for free surface problems.
+   * \return Value of the Froude number.
+   */
+  void SetTemperature_ve_FreeStream(su2double val_temperature_ve_freestream);
 
   /*!
    * \brief Set the Froude number for free surface problems.

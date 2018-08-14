@@ -181,11 +181,11 @@ public:
    */
   virtual void Set_MPI_Primitive(CGeometry *geometry, CConfig *config);
 
-  //  /*!
-  //   * \brief Set number of linear solver iterations.
-  //   * \param[in] val_iterlinsolver - Number of linear iterations.
-  //   */
-  //  virtual void Set_MPI_Secondary(CGeometry *geometry, CConfig *config);
+  /*!
+   * \brief Set number of linear solver iterations.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  virtual void Set_MPI_Secondary(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the value of the max residual and RMS residual.
@@ -1409,6 +1409,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
 
   /*!
    * \brief A virtual member.
@@ -4679,12 +4686,12 @@ public:
    */
   void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
 
-  //  /*!
-  //   * \brief Impose the send-receive boundary condition.
-  //   * \param[in] geometry - Geometrical definition of the problem.
-  //   * \param[in] config - Definition of the particular problem.
-  //   */
-  //  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
+  /*!
+   * \brief Impose the send-receive boundary condition.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Set the fluid solver nondimensionalization.
@@ -9352,14 +9359,14 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -9367,7 +9374,7 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
+  void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point);
 
   /*!
    * \brief A virtual member.
@@ -9878,50 +9885,6 @@ public:
 	 */
 	void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
-
-  /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  void SetRes_RMS(unsigned short val_var, su2double val_residual);
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  void AddRes_RMS(unsigned short val_var, su2double val_residual);
-
-  /*!
-   * \brief Get the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
-   */
-  su2double GetRes_RMS(unsigned short val_var);
-
-  /*!
-   * \brief Set the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   */
-  void SetRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point);
-
-  /*!
-   * \brief Adds the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \param[in] val_residual - Value of the residual to store in the position <i>val_var</i>.
-   * \param[in] val_point - Value of the point index for the max residual.
-   * \param[in] val_coord - Location (x, y, z) of the max residual point.
-   */
-  void AddRes_Max(unsigned short val_var, su2double val_residual, unsigned long val_point, su2double* val_coord);
-
-  /*!
-   * \brief Get the maximal residual, this is useful for the convergence history.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the biggest residual for the variable in the position <i>val_var</i>.
-   */
-  su2double GetRes_Max(unsigned short val_var);
 
 	/*!
 	 * \brief Load a direct flow solution for use with the adjoint solver.
