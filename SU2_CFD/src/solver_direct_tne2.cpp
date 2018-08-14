@@ -1742,25 +1742,24 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
                                      unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
 
   unsigned long ErrorCounter = 0;
-
-	unsigned long ExtIter = config->GetExtIter();
+  unsigned long ExtIter = config->GetExtIter();
   bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
-	bool implicit         = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool muscl            = (config->GetMUSCL_Flow() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == ROE));
-	bool limiter          = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) &&
+  bool implicit         = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  bool muscl            = (config->GetMUSCL_TNE2() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == ROE));
+  bool limiter          = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) &&
 													!(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center       		= ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
                       		(cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
-	bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
-	bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
-	bool interface        = (config->GetnMarker_InterfaceBound() != 0);
+  bool center_jst       = center && (config->GetKind_Centered_TNE2() == JST);
+  bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
+  bool interface        = (config->GetnMarker_InterfaceBound() != 0);
 
-	//Unused vars at the moment
-	//bool nonPhys;
+  //Unused vars at the moment
+  //bool nonPhys;
 
-	/* --- Compute interface MPI --- */
-	if (interface) {Set_MPI_Interface(geometry, config); }
+  /* --- Compute interface MPI --- */
+  if (interface) {Set_MPI_Interface(geometry, config); }
 
 	/*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
