@@ -1428,6 +1428,13 @@ public:
   virtual void SetPreconditioner(CConfig *config, unsigned long iPoint);
   
   /*!
+   * \brief A virtual member (overload).
+   * \param[in] iPoint - Index of the grid point.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -3103,6 +3110,12 @@ public:
    */
   virtual su2double GetOmega_Inf(void);
 
+  /*!
+   * \brief A virtual member.
+   * \return Value of the transported scalar.
+   */
+  virtual su2double GetScalar_Inf(unsigned short val_ivar);
+  
   /*!
    * \brief A virtual member.
    * \return Value of the sensitivity coefficient for the Young Modulus E
@@ -10047,7 +10060,9 @@ protected:
   su2double*** Inlet_ScalarVars; /*!< \brief Scalar variables at inlet profiles */
   unsigned long nMarker,         /*!< \brief Total number of markers using the grid information. */
   *nVertex;                      /*!< \brief Store nVertex at each marker for deallocation */
-  
+  unsigned short Inlet_Position; /*!< \brief Column index for scalar variables in inlet files. */
+  su2double *Scalar_Inf;         /*!< \brief Array of far-field values for the scalar variables. */
+
   /* Sliding mesh variables */
   
   su2double ****SlidingState;
@@ -10131,6 +10146,17 @@ public:
                         unsigned short iMesh,
                         unsigned short iRKStep);
   
+  
+  /*!
+   * \brief Update the solution using an implicit scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry,
+                               CSolver **solver_container,
+                               CConfig *config);
+  
   /*!
    * \brief Impose the Symmetry Plane boundary condition.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -10160,128 +10186,6 @@ public:
                      CNumerics *numerics,
                      CConfig *config,
                      unsigned short val_marker);
-  
-  /*!
-   * \brief Update the solution using an implicit scheme.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry,
-                               CSolver **solver_container,
-                               CConfig *config);
-  
-  /*!
-   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
-   * \param[in] geometry - Geometric definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   */
-  void SetResidual_DualTime(CGeometry *geometry,
-                            CSolver **solver_container,
-                            CConfig *config,
-                            unsigned short iRKStep,
-                            unsigned short iMesh,
-                            unsigned short RunTime_EqSystem);
-  
-  /*!
-   * \brief Load a solution from a restart file.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver - Container vector with all of the solvers.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_iter - Current external iteration number.
-   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
-   */
-  void LoadRestart(CGeometry **geometry,
-                   CSolver ***solver,
-                   CConfig *config,
-                   int val_iter,
-                   bool val_update_geo);
-  
-  /*!
-   * \brief Set custom scalar variables at the vertex of an inlet.
-   * \param[in] iMarker - Marker identifier.
-   * \param[in] iVertex - Vertex identifier.
-   * \param[in] iDim - Index of the scalar variable
-   * \param[in] val_turb_var - Value of the turbulence variable to be used.
-   */
-  void SetInlet_ScalarVar(unsigned short val_marker,
-                          unsigned long val_vertex,
-                          unsigned short val_dim,
-                          su2double val_scalar_var);
-  
-};
-
-/*!
- * \class CPassiveScalarSolver
- * \brief Main class for defining the passive scalar solver.
- * \ingroup Scalar_Model
- * \author T. Economon
- */
-class CPassiveScalarSolver: public CScalarSolver {
-private:
-  su2double *Scalar_Inf;
-  
-public:
-  /*!
-   * \brief Constructor of the class.
-   */
-  CPassiveScalarSolver(void);
-  
-  /*!
-   * \overload
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] FluidModel
-   */
-  CPassiveScalarSolver(CGeometry *geometry, CConfig *config,
-                       unsigned short iMesh, CFluidModel* FluidModel);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CPassiveScalarSolver(void);
-  
-  /*!
-   * \brief Restart residual and compute gradients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
-   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
-   * \param[in] Output - boolean to determine whether to print output.
-   */
-  void Preprocessing(CGeometry *geometry, CSolver **solver_container,
-                     CConfig *config, unsigned short iMesh,
-                     unsigned short iRKStep, unsigned short RunTime_EqSystem,
-                     bool Output);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Postprocessing(CGeometry *geometry, CSolver **solver_container,
-                      CConfig *config, unsigned short iMesh);
-  
-  /*!
-   * \brief Source term computation.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics - Description of the numerical method.
-   * \param[in] second_numerics - Description of the second numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iMesh - Index of the mesh in multigrid computations.
-   */
-  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
-                       CNumerics *numerics, CNumerics *second_numerics,
-                       CConfig *config, unsigned short iMesh);
   
   /*!
    * \brief Impose the Navier-Stokes wall boundary condition.
@@ -10347,6 +10251,48 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                  CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the total residual adding the term that comes from the Dual Time-Stepping Strategy.
+   * \param[in] geometry - Geometric definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   */
+  void SetResidual_DualTime(CGeometry *geometry,
+                            CSolver **solver_container,
+                            CConfig *config,
+                            unsigned short iRKStep,
+                            unsigned short iMesh,
+                            unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Load a solution from a restart file.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Container vector with all of the solvers.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_iter - Current external iteration number.
+   * \param[in] val_update_geo - Flag for updating coords and grid velocity.
+   */
+  void LoadRestart(CGeometry **geometry,
+                   CSolver ***solver,
+                   CConfig *config,
+                   int val_iter,
+                   bool val_update_geo);
+  
+  /*!
+   * \brief Set custom scalar variables at the vertex of an inlet.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \param[in] iDim - Index of the scalar variable
+   * \param[in] val_turb_var - Value of the turbulence variable to be used.
+   */
+  void SetInlet_ScalarVar(unsigned short val_marker,
+                          unsigned long val_vertex,
+                          unsigned short val_dim,
+                          su2double val_scalar_var);
   
   /*!
    * \brief Set the solution using the Freestream values.
@@ -10392,8 +10338,202 @@ public:
    * \brief Get the value of the scalar variables at the far-field.
    * \return Value of the scalar variables at the far-field.
    */
-  su2double GetScalar_Inf(void);
+  su2double GetScalar_Inf(unsigned short val_ivar);
+  
+};
 
+/*!
+ * \class CPassiveScalarSolver
+ * \brief Main class for defining the passive scalar solver.
+ * \ingroup Scalar_Model
+ * \author T. Economon
+ */
+class CPassiveScalarSolver: public CScalarSolver {
+private:
+  CFluidModel *FluidModel;  /*!< \brief Fluid model for the calar transport problem. */
+  
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPassiveScalarSolver(void);
+  
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] FluidModel
+   */
+  CPassiveScalarSolver(CGeometry *geometry, CConfig *config,
+                       unsigned short iMesh);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CPassiveScalarSolver(void);
+  
+  /*!
+   * \brief Restart residual and compute gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container,
+                     CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem,
+                     bool Output);
+  
+  /*!
+   * \brief Post-processing routine for the passive scalar model.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container,
+                      CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Compute the primitive variables (diffusivities)
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+  
+  /*!
+   * \brief Set the initial condition for the scalar transport problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                           CConfig *config, unsigned long ExtIter);
+  
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                       CNumerics *numerics, CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh);
+
+};
+
+/*!
+ * \class CCombustionScalarSolver
+ * \brief Main class for defining the combustion scalar solver.
+ * \ingroup Scalar_Model
+ * \author T. Economon
+ */
+class CCombustionScalarSolver: public CScalarSolver {
+private:
+  CFluidModel *FluidModel;  /*!< \brief Fluid model for the calar transport problem. */
+  
+public:
+  /*!
+   * \brief Constructor of the class.
+   */
+  CCombustionScalarSolver(void);
+  
+  /*!
+   * \overload
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] FluidModel
+   */
+  CCombustionScalarSolver(CGeometry *geometry, CConfig *config,
+                       unsigned short iMesh);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CCombustionScalarSolver(void);
+  
+  /*!
+   * \brief Restart residual and compute gradients.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] iRKStep - Current step of the Runge-Kutta iteration.
+   * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
+   * \param[in] Output - boolean to determine whether to print output.
+   */
+  void Preprocessing(CGeometry *geometry, CSolver **solver_container,
+                     CConfig *config, unsigned short iMesh,
+                     unsigned short iRKStep, unsigned short RunTime_EqSystem,
+                     bool Output);
+  
+  /*!
+   * \brief Post-processing routine for the passive scalar model.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Postprocessing(CGeometry *geometry, CSolver **solver_container,
+                      CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Compute the primitive variables (diffusivities)
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] Output - boolean to determine whether to print output.
+   * \return - The number of non-physical points.
+   */
+  unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+  
+  /*!
+   * \brief Set the initial condition for the scalar transport problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] ExtIter - External iteration.
+   */
+  void SetInitialCondition(CGeometry **geometry, CSolver ***solver_container,
+                           CConfig *config, unsigned long ExtIter);
+  
+  /*!
+   * \brief Compute the preconditioner for low-Mach flows.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Source term computation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] second_numerics - Description of the second numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Source_Residual(CGeometry *geometry, CSolver **solver_container,
+                       CNumerics *numerics, CNumerics *second_numerics,
+                       CConfig *config, unsigned short iMesh);
+  
 };
 
 /*!

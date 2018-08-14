@@ -477,6 +477,8 @@ inline su2double* CConfig::GetInc_Velocity_Init(void) { return Inc_Velocity_Init
 
 inline su2double CConfig::GetInc_Temperature_Init(void) { return Inc_Temperature_Init; }
 
+inline su2double CConfig::GetScalar_Init(void) { return Scalar_Init; }
+
 inline su2double CConfig::GetHeat_Flux_Ref(void) { return Heat_Flux_Ref; }
 
 inline su2double CConfig::GetWallTemperature(void) { return Wall_Temperature; }
@@ -849,6 +851,8 @@ inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_Viscos
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }
 
+inline unsigned short CConfig::GetKind_DiffusivityModel(void) { return Kind_DiffusivityModel; }
+
 inline su2double CConfig::GetMu_Constant(void) { return Mu_Constant; }
 
 inline su2double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
@@ -860,6 +864,10 @@ inline su2double CConfig::GetKt_ConstantND(void) { return Kt_ConstantND; }
 inline su2double CConfig::GetDiffusivity_Constant(void) { return Diffusivity_Constant; }
 
 inline su2double CConfig::GetDiffusivity_ConstantND(void) { return Diffusivity_ConstantND; }
+
+inline su2double CConfig::GetSchmidt_Lam(void) { return Schmidt_Lam; }
+
+inline su2double CConfig::GetSchmidt_Turb(void) { return Schmidt_Turb; }
 
 inline su2double CConfig::GetMu_Ref(void) { return Mu_Ref; }
 
@@ -882,6 +890,8 @@ inline void CConfig::SetMu_Temperature_RefND(su2double mu_Tref) {Mu_Temperature_
 inline void CConfig::SetMu_SND(su2double mu_s) {Mu_SND = mu_s; }
 
 inline void CConfig::SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+
+inline void CConfig::SetDiffusivity_ConstantND(su2double diffusivity_const) { Diffusivity_ConstantND = diffusivity_const; }
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 

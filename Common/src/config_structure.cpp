@@ -709,10 +709,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
  /* DESCRIPTION: default value for AIR */
   addDoubleOption("KT_CONSTANT", Kt_Constant , 0.0257);
 
-  /*--- Options related to scalar diffusivity ---*/
+  /*--- Options related to mass diffusivity ---*/
   
+  addEnumOption("DIFFUSIVITY_MODEL", Kind_DiffusivityModel, DiffusivityModel_Map, CONSTANT_DIFFUSIVITY);
   /* DESCRIPTION: default value for AIR */
   addDoubleOption("DIFFUSIVITY_CONSTANT", Diffusivity_Constant , 0.001);
+  /*!\brief SCHMIDT_LAM \n DESCRIPTION: Laminar Schmidt number of mass diffusion \ingroup Config*/
+  addDoubleOption("SCHMIDT_LAM", Schmidt_Lam, 1.0);
+  /*!\brief SCHMIDT_TURB \n DESCRIPTION: Turbulent Schmidt number of mass diffusion \n DEFAULT 0.90 \ingroup Config*/
+  addDoubleOption("SCHMIDT_TURB", Schmidt_Turb, 1.0);
   
   /*!\brief REYNOLDS_NUMBER \n DESCRIPTION: Reynolds number (non-dimensional, based on the free-stream values). Needed for viscous solvers. For incompressible solvers the Reynolds length will always be 1.0 \n DEFAULT: 0.0 \ingroup Config */
   addDoubleOption("REYNOLDS_NUMBER", Reynolds, 0.0);
@@ -763,6 +768,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
     /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
 
+  /*!\brief SCALAR_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
+  addDoubleOption("SCALAR_INIT", Scalar_Init, 0.0);
+  
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
@@ -1097,6 +1105,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("CFL_REDUCTION_TURB", CFLRedCoeff_Turb, 1.0);
   /* DESCRIPTION: Reduction factor of the CFL coefficient in the turbulent adjoint problem */
   addDoubleOption("CFL_REDUCTION_ADJTURB", CFLRedCoeff_AdjTurb, 1.0);
+  /* DESCRIPTION: Reduction factor of the CFL coefficient in the scalar transport problem */
+  addDoubleOption("CFL_REDUCTION_SCALAR", CFLRedCoeff_Scalar, 1.0);
   /* DESCRIPTION: Number of total iterations */
   addUnsignedLongOption("EXT_ITER", nExtIter, 999999);
   /* DESCRIPTION: External iteration offset due to restart */
@@ -1172,6 +1182,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("RELAXATION_FACTOR_FLOW", Relaxation_Factor_Flow, 1.0);
   /* DESCRIPTION: Relaxation of the turb equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_TURB", Relaxation_Factor_Turb, 1.0);
+  /* DESCRIPTION: Relaxation of the scalar transport equations solver for the implicit formulation */
+  addDoubleOption("RELAXATION_FACTOR_SCALAR", Relaxation_Factor_Scalar, 1.0);
   /* DESCRIPTION: Relaxation of the adjoint flow equations solver for the implicit formulation */
   addDoubleOption("RELAXATION_FACTOR_ADJFLOW", Relaxation_Factor_AdjFlow, 1.0);
   /* DESCRIPTION: Relaxation of the CHT coupling */
@@ -6818,6 +6830,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
+    case RUNTIME_SCALAR_SYS:    return SCALAR_SOL;
     case RUNTIME_POISSON_SYS:   return POISSON_SOL;
     case RUNTIME_WAVE_SYS:      return WAVE_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;

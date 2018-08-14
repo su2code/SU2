@@ -481,7 +481,7 @@ bool CIncNSVariable::SetStrainMag(void) {
 }
 
 
-bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel) {
       
   unsigned short iVar;
   bool check_dens = false, check_temp = false, physical = true;
@@ -496,7 +496,10 @@ bool CIncNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidMo
 
   /*--- Set the value of the temperature directly ---*/
 
-  su2double Temperature = Solution[nDim+1];
+  su2double T_flame   = 2000.0;
+  su2double T_unburnt = 300.0;
+  su2double Temperature = scalar[0]*T_flame + (1.0-scalar[0])*T_unburnt;
+  Solution[nDim+1] = Temperature;
   check_temp = SetTemperature(Temperature);
 
   /*--- Use the fluid model to compute the new value of density.

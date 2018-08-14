@@ -1,7 +1,7 @@
 /*!
  * \file transport_model.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
- * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
+ * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna, T. Economon
  * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -48,3 +48,6 @@ inline su2double CConductivityModel::Getdktdrho_T () { return dktdrho_T; }
 inline su2double CConductivityModel::GetdktdT_rho () { return dktdT_rho; }
 inline void CConductivityModel::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {}
 inline void CConductivityModel::SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp) {}
+
+inline su2double CDiffusivityModel::GetDiffusivity() { return Diffusivity; }
+inline void CDiffusivityModel::SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {}

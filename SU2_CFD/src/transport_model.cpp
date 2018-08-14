@@ -172,3 +172,63 @@ void CConstantPrandtlRANS::SetConductivity(su2double T, su2double rho, su2double
 }
 
 CConstantPrandtlRANS::~CConstantPrandtlRANS(void) { }
+
+/*-----------------------------------------------------*/
+/*---------- Species Mass Diffusivity Models ----------*/
+/*-----------------------------------------------------*/
+
+CDiffusivityModel::CDiffusivityModel(void) {
+  
+  /*--- Attributes initialization ---*/
+  
+  Diffusivity = 0.0;
+  
+}
+
+CDiffusivityModel::~CDiffusivityModel(void) { }
+
+
+CConstantDiffusivity::CConstantDiffusivity(void) : CDiffusivityModel() { }
+
+CConstantDiffusivity::CConstantDiffusivity(su2double Diff_const) : CDiffusivityModel() {
+  
+  /*--- Attributes initialization ---*/
+  
+  Diffusivity = Diff_const;
+  
+}
+
+CConstantDiffusivity::~CConstantDiffusivity(void) { }
+
+CConstantSchmidt::CConstantSchmidt(void) : CDiffusivityModel() { }
+
+CConstantSchmidt::CConstantSchmidt(su2double sc_const) : CDiffusivityModel() {
+  
+  Schmidt_const = sc_const;
+  
+}
+
+void CConstantSchmidt::SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+  
+  Diffusivity = mu_lam/(rho*Schmidt_const);
+  
+}
+
+CConstantSchmidt::~CConstantSchmidt(void) { }
+
+CConstantSchmidtRANS::CConstantSchmidtRANS(void) : CDiffusivityModel() { }
+
+CConstantSchmidtRANS::CConstantSchmidtRANS(su2double sc_lam, su2double sc_turb) : CDiffusivityModel() {
+  
+  Schmidt_Lam  = sc_lam;
+  Schmidt_Turb = sc_turb;
+  
+}
+
+void CConstantSchmidtRANS::SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+  
+  Diffusivity = mu_lam/(rho*Schmidt_Lam) + mu_turb/(rho*Schmidt_Turb);
+  
+}
+
+CConstantSchmidtRANS::~CConstantSchmidtRANS(void) { }

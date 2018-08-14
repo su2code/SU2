@@ -445,6 +445,7 @@ private:
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
+  Kind_DiffusivityModel,      /*!< \brief Kind of the mass diffusivity model*/
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
@@ -770,6 +771,7 @@ private:
   Inc_Density_Init,    /*!< \brief Initial density for incompressible flows. */
   *Inc_Velocity_Init,    /*!< \brief Initial velocity vector for incompressible flows. */
   Inc_Temperature_Init,    /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
+  Scalar_Init,    /*!< \brief Initial uniform value for scalar transport. */
   Heat_Flux_Ref,  /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
   Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
@@ -782,6 +784,9 @@ private:
   Kt_ConstantND,   /*!< \brief Non-dimensional constant thermal conductivity for ConstantConductivity model.  */
   Diffusivity_Constant,   /*!< \brief Constant mass diffusivity for scalar transport.  */
   Diffusivity_ConstantND, /*!< \brief Non-dim. constant mass diffusivity for scalar transport.  */
+  Schmidt_Lam,      /*!< \brief Laminar Schmidt number for mass diffusion.  */
+  Schmidt_Turb,     /*!< \brief Turbulent Schmidt number for mass diffusion.  */
+  Diffusivity_Ref,     /*!< \brief Reference mass diffusion for species equations.  */
   Mu_Ref,     /*!< \brief Reference viscosity for Sutherland model.  */
   Mu_RefND,   /*!< \brief Non-dimensional reference viscosity for Sutherland model.  */
   Mu_Temperature_Ref,     /*!< \brief Reference temperature for Sutherland model.  */
@@ -2039,6 +2044,12 @@ public:
    */
   su2double GetInc_Temperature_Init(void);
 
+  /*!
+   * \brief Get the initial value for a scalar transport.
+   * \return Initial value for scalar transport.
+   */
+  su2double GetScalar_Init(void);
+  
   /*!
    * \brief Get the Young's modulus of elasticity.
    * \return Value of the Young's modulus of elasticity.
@@ -3618,6 +3629,12 @@ public:
   unsigned short GetKind_ConductivityModel(void);
   
   /*!
+   * \brief Get the value of the mass diffusivity model.
+   * \return Mass diffusivity model.
+   */
+  unsigned short GetKind_DiffusivityModel(void);
+  
+  /*!
    * \brief Get the value of the constant viscosity.
    * \return Constant viscosity.
    */
@@ -3652,6 +3669,18 @@ public:
    * \return Non-dimensional constant mass diffusivity.
    */
   su2double GetDiffusivity_ConstantND(void);
+  
+  /*!
+   * \brief Get the value of the laminar Schmidt number for scalar transport.
+   * \return Laminar Schmidt number for scalar transport.
+   */
+  su2double GetSchmidt_Lam(void);
+  
+  /*!
+   * \brief Get the value of the turbulent Schmidt number for scalar transport.
+   * \return Turbulent Schmidt number for scalar transport.
+   */
+  su2double GetSchmidt_Turb(void);
   
   /*!
    * \brief Get the value of the reference viscosity for Sutherland model.
@@ -3698,6 +3727,16 @@ public:
    * \brief Set the value of the non-dimensional thermal conductivity.
    */
   void SetKt_ConstantND(su2double kt_const);
+  
+  /*!
+   * \brief Set the value of the non-dimensional constant mass diffusivity.
+   */
+  void SetDiffusivity_ConstantND(su2double diffusivity_const);
+  
+  /*!
+   * \brief Set the value of the reference mass diffusivity.
+   */
+  void SetDiffusivity_Ref(su2double diffusivity_ref);
   
   /*!
    * \brief Set the value of the non-dimensional reference viscosity for Sutherland model.

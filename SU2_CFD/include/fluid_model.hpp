@@ -85,10 +85,14 @@ su2double      StaticEnergy,      /*!< \brief Internal Energy. */
          dmudT_rho,        /*!< \brief Specific Heat Capacity at constant pressure. */
          Kt,          /*!< \brief Specific Heat Capacity at constant pressure. */
          dktdrho_T,       /*!< \brief Specific Heat Capacity at constant pressure. */
-         dktdT_rho;        /*!< \brief Specific Heat Capacity at constant pressure. */
+         dktdT_rho,        /*!< \brief Specific Heat Capacity at constant pressure. */
+       Diffusivity;   /*!< \brief Mass diffusivity for scalar transport. */
 
-CViscosityModel *LaminarViscosity;            /*!< \brief Laminar Viscosity Model */
+
+CViscosityModel *LaminarViscosity;          /*!< \brief Laminar Viscosity Model */
 CConductivityModel *ThermalConductivity;    /*!< \brief Thermal Conductivity Model */
+CDiffusivityModel *MassDiffusivity;         /*!< \brief Mass Diffusivity Model */
+
 
 public:
 
@@ -159,6 +163,12 @@ public:
 
 		su2double GetThermalConductivity ();
 
+    /*!
+     * \brief Get fluid thermal conductivity
+     */
+  
+    su2double GetMassDiffusivity ();
+  
 		/*!
 		 * \brief Get fluid pressure partial derivative.
 		 */
@@ -229,6 +239,17 @@ public:
 		 */
 		void SetThermalConductivityModel (CConfig *config);
 
+    /*!
+     * \brief Set mass diffusivity model.
+     */
+    void SetMassDiffusivityModel (CConfig *config);
+  
+    /*!
+     * \brief Set the state needed for the mass diffusivity model.
+     */
+    void SetDiffusivityState(su2double val_Temperature, su2double val_Density,
+                             su2double val_Mu, su2double val_Mu_Turb, su2double val_Cp);
+  
 		/*!
 		 * \brief virtual member that would be different for each gas model implemented
 		 * \param[in] InputSpec - Input pair for FLP calls ("e, rho").

@@ -144,6 +144,8 @@ inline void CSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config) 
 
 inline void CSolver::SetPreconditioner(CConfig *config, unsigned long iPoint) { }
 
+inline void CSolver::SetPreconditioner(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetDistance(CGeometry *geometry, CConfig *config) { };
 
 inline su2double CSolver::GetCD_Inv(unsigned short val_marker) { return 0; }
@@ -627,6 +629,8 @@ inline su2double CSolver::GetNuTilde_Inf(void) { return 0; }
 inline su2double CSolver::GetTke_Inf(void) { return 0; }
 
 inline su2double CSolver::GetOmega_Inf(void) { return 0; }
+
+inline su2double CSolver::GetScalar_Inf(unsigned short val_ivar) { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
@@ -2245,11 +2249,13 @@ inline su2double CTurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
 
 inline su2double CTurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
 
-inline void CPassiveScalarSolver::SetFreeStream_Solution(CConfig *config) {
+inline void CScalarSolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
       node[iPoint]->SetSolution(iVar, Scalar_Inf[iVar]);
 }
+
+inline su2double CScalarSolver::GetScalar_Inf(unsigned short val_ivar) { return Scalar_Inf[val_ivar]; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 

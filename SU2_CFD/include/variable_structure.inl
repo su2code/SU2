@@ -333,7 +333,7 @@ inline void CVariable::SetSecondaryVar(CFluidModel *FluidModel) { }
 
 inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
 
-inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) { return true; }
+inline bool CVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel) { return true; }
 
 inline bool CVariable::SetPrimVar(su2double Density_Inf, CConfig *config) { return true; }
 
@@ -673,7 +673,6 @@ inline void CVariable::GetAdjointSolution_Accel_time_n(su2double *adj_sol) { }
 
 inline su2double CVariable::GetSolution_New(unsigned short val_var) { return 0.0; }
 
-
 inline su2double CVariable::GetRoe_Dissipation(void) { return 0.0; }
 
 inline void CVariable::SetRoe_Dissipation_FD(su2double val_wall_dist) { }
@@ -693,6 +692,12 @@ inline void CVariable::SetRoe_Dissipation(su2double val_dissipation) { }
 inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity) { }
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
+
+inline void CVariable::SetDiffusivity(su2double val_diffusivity, unsigned short val_ivar) { }
+
+inline su2double CVariable::GetDiffusivity(unsigned short val_ivar) { return 0.0; }
+
+inline su2double* CVariable::GetDiffusivity(void) { return NULL; }
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
@@ -1302,6 +1307,12 @@ inline su2double CTurbSSTVariable::GetF1blending() { return F1; }
 inline su2double CTurbSSTVariable::GetF2blending() { return F2; }
 
 inline su2double CTurbSSTVariable::GetCrossDiff() { return CDkw; }
+
+inline su2double* CScalarVariable::GetDiffusivity() { return Diffusivity; }
+
+inline su2double CScalarVariable::GetDiffusivity(unsigned short val_ivar) { return Diffusivity[val_ivar]; }
+
+inline void CScalarVariable::SetDiffusivity(su2double val_diffusivity, unsigned short val_ivar) { Diffusivity[val_ivar] = val_diffusivity; }
 
 inline void CAdjTurbVariable::SetEddyViscSens(su2double *val_EddyViscSens, unsigned short numTotalVar) {
   for (unsigned short iVar = 0; iVar < numTotalVar; iVar++) {

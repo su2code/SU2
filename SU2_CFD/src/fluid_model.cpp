@@ -56,14 +56,16 @@ CFluidModel::CFluidModel(void) {
   Mu       = 0.0;
   Mu_Turb  = 0.0;
 
-  LaminarViscosity = NULL;
+  LaminarViscosity    = NULL;
   ThermalConductivity = NULL;
+  MassDiffusivity     = NULL;
 
 }
 
 CFluidModel::~CFluidModel(void) {
-  if (LaminarViscosity!= NULL) delete LaminarViscosity;
-  if (ThermalConductivity!= NULL) delete ThermalConductivity;
+  if (LaminarViscosity    != NULL) delete LaminarViscosity;
+  if (ThermalConductivity != NULL) delete ThermalConductivity;
+  if (MassDiffusivity     != NULL) delete MassDiffusivity;
 }
 
 void CFluidModel::SetLaminarViscosityModel (CConfig *config) {
@@ -92,6 +94,23 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
       ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
     }
     break;
+  }
+  
+}
+
+void CFluidModel::SetMassDiffusivityModel (CConfig *config) {
+  
+  switch (config->GetKind_DiffusivityModel()) {
+    case CONSTANT_DIFFUSIVITY:
+      MassDiffusivity = new CConstantDiffusivity(config->GetDiffusivity_ConstantND());
+      break;
+    case CONSTANT_SCHMIDT:
+      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) { // TDE
+        MassDiffusivity = new CConstantSchmidtRANS(config->GetSchmidt_Lam(),config->GetSchmidt_Turb());
+      } else {
+        MassDiffusivity = new CConstantSchmidt(config->GetSchmidt_Lam());
+      }
+      break;
   }
   
 }

@@ -100,3 +100,18 @@ inline void CFluidModel::SetTDState_Ps (su2double P, su2double s ) { }
 inline void CFluidModel::ComputeDerivativeNRBC_Prho (su2double P, su2double rho ){ }
 inline void CFluidModel::SetTDState_T (su2double val_Temperature) { }
 inline void CFluidModel::SetEddyViscosity (su2double val_Mu_Turb) { Mu_Turb = val_Mu_Turb; }
+
+inline void CFluidModel::SetDiffusivityState(su2double val_Temperature, su2double val_Density,
+                                             su2double val_Mu, su2double val_Mu_Turb, su2double val_Cp) {
+  Temperature = val_Temperature;
+  Density = val_Density;
+  Mu = val_Mu;
+  Mu_Turb = val_Mu_Turb;
+  Cp = val_Cp;
+}
+
+inline su2double CFluidModel::GetMassDiffusivity () {
+  MassDiffusivity->SetDiffusivity(Temperature, Density, Mu, Mu_Turb, Cp);
+  Diffusivity = MassDiffusivity->GetDiffusivity();
+  return Diffusivity;
+}

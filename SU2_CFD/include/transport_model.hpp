@@ -333,4 +333,135 @@ public:
 
 };
 
+/*!
+ * \class CDiffusivityModel
+ * \brief Defines a mass diffusivity model for species equations.
+ * \author T. Economon
+ */
+class CDiffusivityModel {
+  
+protected:
+  su2double Diffusivity;      /*!< \brief Mass diffusivity. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CDiffusivityModel(void);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiffusivityModel(void);
+  
+  /*!
+   * \brief return diffusivity value.
+   */
+  su2double GetDiffusivity(void);
+  
+  /*!
+   * \brief Set diffusivity.
+   */
+  virtual void SetDiffusivity (su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  
+};
+
+/*!
+ * \class CConstantDiffusivity
+ * \brief Defines a constant mass diffusivity model for species equations.
+ * \author T. Economon
+ */
+class CConstantDiffusivity : public CDiffusivityModel {
+  
+protected:
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantDiffusivity(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantDiffusivity(su2double diff_constant);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CConstantDiffusivity(void);
+  
+};
+
+/*!
+ * \class CDiffusivityModel
+ * \brief Defines a mass diffusivity model for species equations based on Schmidt number.
+ * \author T. Economon
+ */
+class CConstantSchmidt : public CDiffusivityModel {
+
+protected:
+  su2double Schmidt_const;  /*!< \brief Constant Schmidt number. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantSchmidt(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantSchmidt(su2double sc_const);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CConstantSchmidt(void);
+  
+  /*!
+   * \brief Set diffusivity.
+   */
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  
+};
+
+/*!
+ * \class CDiffusivityModelRANS
+ * \brief Defines a mass diffusivity model for species equations based on Schmidt numbers for RANS.
+ * \author T. Economon
+ */
+class CConstantSchmidtRANS : public CDiffusivityModel {
+  
+protected:
+  su2double Schmidt_Lam;   /*!< \brief Laminar Schmidt number. */
+  su2double Schmidt_Turb;  /*!< \brief Laminar Schmidt number. */
+
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantSchmidtRANS(void);
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CConstantSchmidtRANS(su2double sc_lam, su2double sc_turb);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CConstantSchmidtRANS(void);
+  
+  /*!
+   * \brief Set diffusivity.
+   */
+  void SetDiffusivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+  
+};
+
 #include "transport_model.inl"

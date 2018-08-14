@@ -3746,6 +3746,8 @@ void CBaselineSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
 
   if (config->GetKind_Turb_Model() == SA) { GridVel_Index += 1; }
   else if (config->GetKind_Turb_Model() == SST) { GridVel_Index += 2; }
+  if ((config->GetKind_Scalar_Model() == PASSIVE_SCALAR ) ||
+      (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE )){ GridVel_Index += 1; }
   if (config->GetKind_Regime() != INCOMPRESSIBLE) { GridVel_Index += 1; }
   
 #ifdef HAVE_MPI
@@ -3937,6 +3939,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
+  unsigned short scalar_model = config->GetKind_Scalar_Model();
 
   su2double *Coord = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++)
@@ -4020,6 +4023,11 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
           index++;
         } else if (turb_model == SST) {
           index+=2;
+        }
+        
+        if ((scalar_model == PASSIVE_SCALAR) ||
+            (scalar_model == PROGRESS_VARIABLE)) {
+          index++;
         }
         
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/

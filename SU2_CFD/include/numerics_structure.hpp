@@ -2690,12 +2690,12 @@ public:
 };
 
 /*!
- * \class CUpwScalar_Passive
+ * \class CUpwScalar_General
  * \brief Class for doing a scalar upwind solver for scalar transport eqns.
  * \ingroup ConvDiscr
  * \author T. Economon
  */
-class CUpwScalar_Passive : public CUpwScalar {
+class CUpwScalar_General : public CUpwScalar {
 private:
   
   /*!
@@ -2721,14 +2721,14 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CUpwScalar_Passive(unsigned short val_nDim,
+  CUpwScalar_General(unsigned short val_nDim,
                      unsigned short val_nVar,
                      CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CUpwScalar_Passive(void);
+  ~CUpwScalar_General(void);
 };
 
 /*!
@@ -3553,12 +3553,15 @@ public:
 };
 
 /*!
- * \class CAvgGradScalar_Passive
+ * \class CAvgGradScalar_General
  * \brief Class for computing viscous term using average of gradients for a passive scalar.
  * \ingroup ViscDiscr
  * \author T. Economon
  */
-class CAvgGradScalar_Passive : public CAvgGradScalar {
+class CAvgGradScalar_General : public CAvgGradScalar {
+protected:
+  su2double *Mean_Diffusivity;   /*!< \brief Average of mass diffusivities at cell face */
+  
 private:
   
   /*!
@@ -3584,13 +3587,13 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGradScalar_Passive(unsigned short val_nDim, unsigned short val_nVar,
+  CAvgGradScalar_General(unsigned short val_nDim, unsigned short val_nVar,
                          bool correct_grad, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CAvgGradScalar_Passive(void);
+  ~CAvgGradScalar_General(void);
 };
 
 /*!
@@ -5230,6 +5233,41 @@ public:
                        su2double **val_Jacobian_j,
                        CConfig *config);
 
+};
+
+/*!
+ * \class CSourceAxisymmetric_Scalar
+ * \brief Class for source term for solving scalar axisymmetric problems.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ */
+class CSourceAxisymmetric_Scalar : public CNumerics {
+  bool implicit, /*!< \brief Implicit calculation. */
+  viscous, /*!< \brief Viscous incompressible flows. */
+  energy; /*!< \brief computation with the energy equation. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceAxisymmetric_Scalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceAxisymmetric_Scalar(void);
+  
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+  
 };
 
 /*!

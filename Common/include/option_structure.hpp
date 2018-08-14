@@ -418,7 +418,7 @@ enum RUNTIME_TYPE {
   RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_SCALAR_SYS = 22,      /*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_SCALAR_SYS = 23,      /*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
 const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
@@ -586,6 +586,18 @@ enum ENUM_CONDUCTIVITYMODEL {
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
 ("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
+
+/*!
+ * \brief types of mass diffusivity models
+ */
+enum ENUM_DIFFUSIVITYMODEL {
+  CONSTANT_DIFFUSIVITY = 0, /*!< \brief Constant mass diffusivity for scalar transport. */
+  CONSTANT_SCHMIDT = 1      /*!< \brief Constant Schmidt number for mass diffusion in scalar transport. */
+};
+
+static const map<string, ENUM_DIFFUSIVITYMODEL> DiffusivityModel_Map = CCreateMap<string, ENUM_DIFFUSIVITYMODEL>
+("CONSTANT_DIFFUSIVITY", CONSTANT_DIFFUSIVITY)
+("CONSTANT_SCHMIDT", CONSTANT_SCHMIDT);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -770,13 +782,15 @@ static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, 
  * \brief types of transition models
  */
 enum ENUM_SCALAR_MODEL {
-  NO_SCALAR_MODEL = 0,  /*!< \brief No scalar transport model. */
-  PASSIVE_SCALAR  = 1,  /*!< \brief Passive scalar transport model. */
-  CUSTOM_SCALAR   = 2   /*!< \brief Custom scalar transport model. */
+  NO_SCALAR_MODEL = 0,     /*!< \brief No scalar transport model. */
+  PASSIVE_SCALAR  = 1,     /*!< \brief Passive scalar transport model. */
+  PROGRESS_VARIABLE  = 2,  /*!< \brief Progress variable combustion model. */
+  CUSTOM_SCALAR   = 3      /*!< \brief Custom scalar transport model. */
 };
 static const map<string, ENUM_SCALAR_MODEL> Scalar_Model_Map = CCreateMap<string, ENUM_SCALAR_MODEL>
 ("NONE", NO_SCALAR_MODEL)
 ("PASSIVE_SCALAR", PASSIVE_SCALAR)
+("PROGRESS_VARIABLE", PROGRESS_VARIABLE)
 ("CUSTOM_SCALAR", CUSTOM_SCALAR);
 
 /*!

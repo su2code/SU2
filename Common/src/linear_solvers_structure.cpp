@@ -215,7 +215,7 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysSolve::ConjugateGradient(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -358,7 +358,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
     
     /*---  System is already solved ---*/
     
-    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -486,7 +486,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysSolve::BCGSTAB(): system solved by initial guess." << endl;
     return 0;
   }
   

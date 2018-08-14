@@ -1146,7 +1146,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  virtual bool SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel);
   
   /*!
    * \brief A virtual member.
@@ -2382,6 +2382,21 @@ public:
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
 
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void SetDiffusivity(su2double val_diffusivity, unsigned short val_ivar);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double GetDiffusivity(unsigned short val_ivar);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double* GetDiffusivity(void);
+  
 };
 
 /*!
@@ -4028,7 +4043,7 @@ public:
   /*!
    * \brief Set all the primitive variables for compressible flows
    */
-  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double *scalar, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
   
   /*!
@@ -4188,7 +4203,7 @@ public:
   /*!
    * \brief Set all the primitive variables for incompressible flows
    */
-  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  bool SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double * scalar, CFluidModel *FluidModel);
   using CVariable::SetPrimVar;
   
   /*!
@@ -4455,7 +4470,8 @@ public:
  */
 class CScalarVariable : public CVariable {
 protected:
-  
+  su2double *Diffusivity;  /*!< \brief Vector of mass diffusivities for scalar transport. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -4478,6 +4494,26 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CScalarVariable(void);
+  
+  /*!
+   * \brief Set the value of the mass diffusivity
+   * \param[in] val_diffusivity - the mass diffusivity.
+   * \param[in] val_ivar - eqn. index to the mass diffusivity.
+   */
+  void SetDiffusivity(su2double val_diffusivity, unsigned short val_ivar);
+  
+  /*!
+   * \brief Get the value of the mass diffusivity
+   * \param[in] val_ivar - eqn. index to the mass diffusivity.
+   * \return Value of the mass diffusivity
+   */
+  su2double GetDiffusivity(unsigned short val_ivar);
+  
+  /*!
+   * \brief Get the value of the mass diffusivities
+   * \return Pointer to the mass diffusivities
+   */
+  su2double* GetDiffusivity(void);
   
 };
 

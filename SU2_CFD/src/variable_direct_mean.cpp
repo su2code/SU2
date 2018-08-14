@@ -706,7 +706,7 @@ void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
   
 }
 
-bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {
+bool CNSVariable::SetPrimVar(su2double eddy_visc, su2double turb_ke, su2double * scalar, CFluidModel *FluidModel) {
   
     unsigned short iVar;
   su2double density, staticEnergy;

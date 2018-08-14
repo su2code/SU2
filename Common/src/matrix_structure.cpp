@@ -1406,7 +1406,7 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   su2double norm_r = r.norm();
   su2double norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1646,7 +1646,7 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   su2double norm_r = r.norm();
   su2double norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   
@@ -1827,7 +1827,7 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   su2double norm_r = r.norm();
   su2double norm0  = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
+    if ((monitoring) && (rank == MASTER_NODE)) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
     return 0;
   }
   

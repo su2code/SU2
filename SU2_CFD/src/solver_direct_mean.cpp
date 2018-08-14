@@ -16196,8 +16196,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
 unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = NULL;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  bool scalar_model = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
   bool RightSol = true;
   
   bool tkeNeeded            = (turb_model == SST);
@@ -16215,13 +16216,17 @@ unsigned long CNSSolver::SetPrimitive_Variables(CSolver **solver_container, CCon
       }
     }
     
+    if (scalar_model) {
+      scalar = solver_container[SCALAR_SOL]->node[iPoint]->GetSolution();
+    }
+    
     /*--- Initialize the non-physical points vector ---*/
     
     node[iPoint]->SetNon_Physical(false);
     
     /*--- Compressible flow, primitive variables nDim+5, (T, vx, vy, vz, P, rho, h, c, lamMu, eddyMu, ThCond, Cp) ---*/
     
-    RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
+    RightSol = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, scalar, FluidModel);
     node[iPoint]->SetSecondaryVar(FluidModel);
 
     if (!RightSol) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }

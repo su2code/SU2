@@ -7522,8 +7522,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
   unsigned long iPoint, ErrorCounter = 0;
-  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0, *scalar = NULL;
   unsigned short turb_model = config->GetKind_Turb_Model();
+  bool scalar_model = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
   bool physical = true;
   
   bool tkeNeeded = (turb_model == SST);
@@ -7541,13 +7542,17 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
       }
     }
     
+    if (scalar_model) {
+      scalar = solver_container[SCALAR_SOL]->node[iPoint]->GetSolution();
+    }
+    
     /*--- Initialize the non-physical points vector ---*/
     
     node[iPoint]->SetNon_Physical(false);
     
     /*--- Incompressible flow, primitive variables --- */
 
-    physical = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
+    physical = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, scalar, FluidModel);
     
     /*--- Record any non-physical points. ---*/
 

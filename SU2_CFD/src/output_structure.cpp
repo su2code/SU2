@@ -4282,7 +4282,7 @@ void COutput::DeallocateSolution(CConfig *config, CGeometry *geometry) {
 }
 
 void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst) {
-  char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000];
+  char cstr[200], buffer[50], turb_resid[1000], adj_turb_resid[1000], scalar_resid[1000];
   unsigned short iMarker_Monitoring;
   string Monitoring_Tag, monitoring_coeff, aeroelastic_coeff, turbo_coeff;
   
@@ -4293,6 +4293,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool scalar   = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
@@ -4426,6 +4427,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       break;
     case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
+  switch (config->GetKind_Scalar_Model()) {
+    case PASSIVE_SCALAR: case PROGRESS_VARIABLE:
+      SPRINTF (scalar_resid, ",\"Res_Scalar[0]\"");
+      break;
+  }
   switch (config->GetKind_Turb_Model()) {
     case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
       SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\"");
@@ -4468,6 +4474,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
 
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (scalar) ConvHist_file[0] << scalar_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -4658,7 +4665,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
     begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000], scalar_resid[1000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4679,6 +4686,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+    bool scalar    = (config[val_iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool wave = (config[val_iZone]->GetKind_Solver() == WAVE_EQUATION);
@@ -4752,6 +4760,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
     *residual_turbulent    = NULL,
+    *residual_scalar       = NULL,
     *residual_transition   = NULL;
     su2double *residual_adjflow      = NULL,
     *residual_adjturbulent = NULL;
@@ -4775,7 +4784,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *Surface_CMz        = NULL;
     
     /*--- Initialize number of variables ---*/
-    unsigned short nVar_Flow = 0, nVar_Turb = 0,
+    unsigned short nVar_Flow = 0, nVar_Turb = 0, nVar_Scalar = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjTurb = 0,
     nVar_FEM = 0;
@@ -4786,6 +4795,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
+      }
+    }
+    if (scalar) {
+      switch (config[val_iZone]->GetKind_Scalar_Model()) {
+        case PASSIVE_SCALAR: case PROGRESS_VARIABLE: nVar_Scalar = 1; break;
       }
     }
     if (transition) nVar_Trans = 2;
@@ -4812,6 +4826,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
     residual_turbulent  = new su2double[nVar_Turb];
+    residual_scalar     = new su2double[nVar_Scalar];
     residual_transition = new su2double[nVar_Trans];
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
@@ -4998,6 +5013,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             residual_turbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][TURB_SOL]->GetRes_RMS(iVar);
         }
 
+        /*--- Scalar residual ---*/
+        
+        if (scalar) {
+          for (iVar = 0; iVar < nVar_Scalar; iVar++)
+            residual_scalar[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][SCALAR_SOL]->GetRes_RMS(iVar);
+        }
+        
         if (weakly_coupled_heat) {
           for (iVar = 0; iVar < nVar_Heat; iVar++) {
             residual_heat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(iVar);
@@ -5345,6 +5367,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
             }
             
+            /*--- Scalar residual ---*/
+            if (scalar) {
+              switch(nVar_Turb) {
+                case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_scalar[0])); break;
+              }
+            }
+            
             /*---- Averaged stagnation pressure at an exit ----*/
             
             if (output_surface) {
@@ -5605,8 +5634,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             //            if (!fluid_structure) {
               if (incompressible && !weakly_coupled_heat) {
-              if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
-              else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
+                if (energy) { cout << "   Res[Press]" << "     Res[Temp]";}
+                else {cout << "   Res[Press]" << "     Res[Velx]";}
+                if (scalar) cout << "   Res[Scalar]" << "   CLift(Total)" << "   CDrag(Total)" << endl;
+                else cout << "   CLift(Total)" << "   CDrag(Total)" << endl;
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
             else if (rotating_frame && nDim == 3 && !turbo) cout << "     Res[Rho]" << "     Res[RhoE]" << " CThrust(Total)" << " CTorque(Total)" << endl;
@@ -5919,7 +5950,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else {
               ConvHist_file[0] << begin << turbo_coeff << flow_resid;
             }
-            
+            if (scalar) ConvHist_file[0] << scalar_resid;
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_surface) ConvHist_file[0] << surface_outputs;
@@ -5943,9 +5974,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 if (incompressible && !weakly_coupled_heat) {
                   if (energy) {cout.width(14); cout << log10(residual_flow[nDim+1]);}
                   else {cout.width(14); cout << log10(residual_flow[1]);}
+                  if (scalar) {cout.width(14); cout << log10(residual_scalar[0]);}
                 }
                 if (incompressible && weakly_coupled_heat)  { cout.width(14); cout << log10(residual_heat[0]);}
-
               }
 
               if (rotating_frame && nDim == 3 && !turbo ) {
@@ -6010,6 +6041,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else {
               ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
             }
+            if (scalar) ConvHist_file[0] << scalar_resid;
             
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -6035,7 +6067,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               case 2: cout.width(14); cout << log10(residual_turbulent[0]);
               cout.width(15); cout << log10(residual_turbulent[1]); break;
               }
-
               if (weakly_coupled_heat) {
                 cout.width(14); cout << log10(residual_heat[0]);
               }
@@ -6300,6 +6331,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     delete [] residual_flow;
     delete [] residual_turbulent;
+    delete [] residual_scalar;
     delete [] residual_transition;
     delete [] residual_wave;
     delete [] residual_fea;
@@ -12891,8 +12923,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   unsigned short nDim = geometry->GetnDim();
 
   unsigned long iVar, jVar;
-  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE;
+  unsigned long ThirdIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Third = 0, nVar_Consv_Par = 0;
 
   su2double RefArea = config->GetRefArea();
   su2double RefVel2 = 0.0;
@@ -12906,7 +12939,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
-
+  bool scalar           = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
+  
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -12945,10 +12979,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
     default: SecondIndex = NONE; break;
   }
+  if (scalar) ThirdIndex = SCALAR_SOL;
 
   nVar_First = solver[FirstIndex]->GetnVar();
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
+  if (ThirdIndex  != NONE) nVar_Third  = solver[ThirdIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
@@ -12990,6 +13026,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Nu_Tilde");
     }
   }
+  
+  if (ThirdIndex != NONE) {
+    if (config->GetKind_Scalar_Model() == PASSIVE_SCALAR) {
+      Variable_Names.push_back("Passive_Scalar");
+    }
+    if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE) {
+      Variable_Names.push_back("Progress_Variable");
+    }
+  }
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -13016,6 +13061,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Variable_Names.push_back("Limiter_Nu_Tilde");
         }
       }
+      
+      if (ThirdIndex != NONE) {
+        if (config->GetKind_Scalar_Model() == PASSIVE_SCALAR) {
+          Variable_Names.push_back("Limiter_Passive_Scalar");
+        }
+        if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE) {
+          Variable_Names.push_back("Limiter_Progress_Variable");
+        }
+      }
+      
     }
 
     /*--- Add the residuals ---*/
@@ -13038,6 +13093,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Variable_Names.push_back("Residual_Nu_Tilde");
         }
       }
+      
+      if (ThirdIndex != NONE) {
+        if (config->GetKind_Scalar_Model() == PASSIVE_SCALAR) {
+          Variable_Names.push_back("Residual_Passive_Scalar");
+        }
+        if (config->GetKind_Scalar_Model() == PROGRESS_VARIABLE) {
+          Variable_Names.push_back("Residual_Progress_Variable");
+        }
+      }
+      
     }
 
     /*--- Add the grid velocity. ---*/
@@ -13248,6 +13313,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[SecondIndex]->node[iPoint]->GetSolution(jVar); iVar++;
         }
       }
+      
+      /*--- If we have a scalar transport model, get the solution from
+       those containers. ---*/
+      
+      if (ThirdIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Third; jVar++) {
+          Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar); iVar++;
+        }
+      }
 
       /*--- If limiters and/or residuals are requested. ---*/
       if (!config->GetLow_MemoryOutput()) {
@@ -13266,6 +13340,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
               iVar++;
             }
           }
+          /*--- Scalar limiters ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLimiter(jVar); iVar++;
+            }
+          }
         }
 
         /*--- Residuals ---*/
@@ -13280,6 +13360,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
             for (jVar = 0; jVar < nVar_Second; jVar++) {
               Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
               iVar++;
+            }
+          }
+          /*--- Scalar residuals ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, jVar); iVar++;
             }
           }
         }
@@ -18355,12 +18441,15 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
   unsigned short iMarker, iDim, iVar;
   unsigned long iPoint;
   su2double turb_val[2] = {0.0,0.0};
-
+  su2double *scalar_val = NULL;
+  
   const unsigned short nDim = geometry->GetnDim();
 
   bool turbulent = (config->GetKind_Solver() == RANS ||
                     config->GetKind_Solver() == ADJ_RANS ||
                     config->GetKind_Solver() == DISC_ADJ_RANS);
+  
+  bool scalar = (config->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
 
   unsigned short nVar_Turb = 0;
   if (turbulent)
@@ -18378,13 +18467,27 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
         SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION);
         break;
     }
+  
+  unsigned short nVar_Scalar = 0;
+  if (scalar)
+    switch (config->GetKind_Scalar_Model()) {
+      case PASSIVE_SCALAR: case PROGRESS_VARIABLE:
+        nVar_Scalar = 1;
+        scalar_val = new su2double[nVar_Scalar];
+        for (iVar = 0; iVar < nVar_Scalar; iVar++)
+          scalar_val[iVar] = solver[SCALAR_SOL]->GetScalar_Inf(iVar);
+        break;
+      default:
+        SU2_MPI::Error("Specified scalar transport model unavailable.", CURRENT_FUNCTION);
+        break;
+    }
 
   /*--- Count the number of columns that we have for this flow case.
    Here, we have nDim entries for node coordinates, 2 entries for the total
    conditions or mass flow, another nDim for the direction vector, and
    finally entries for the number of turbulence variables. ---*/
 
-  unsigned short nCol_InletFile = nDim + 2 + nDim + nVar_Turb;
+  unsigned short nCol_InletFile = nDim + 2 + nDim + nVar_Turb + nVar_Scalar;
 
   /*--- Write the inlet profile file. Note that we have already merged
    all of the information for the markers and coordinates previously
@@ -18426,12 +18529,17 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
       for (iVar = 0; iVar < nVar_Turb; iVar++) {
         node_file << "\t" << turb_val[iVar];
       }
+      for (iVar = 0; iVar < nVar_Scalar; iVar++) {
+        node_file << "\t" << scalar_val[iVar];
+      }
       node_file << endl;
     }
 
   }
   node_file.close();
 
+  if (scalar_val != NULL) delete [] scalar_val;
+  
   /*--- Print a message to inform the user about the template file. ---*/
   
   stringstream err;

@@ -101,18 +101,18 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
   
 }
 
-CUpwScalar_Passive::CUpwScalar_Passive(unsigned short val_nDim,
+CUpwScalar_General::CUpwScalar_General(unsigned short val_nDim,
                                        unsigned short val_nVar,
                                        CConfig *config)
 : CUpwScalar(val_nDim, val_nVar, config) { }
 
-CUpwScalar_Passive::~CUpwScalar_Passive(void) { }
+CUpwScalar_General::~CUpwScalar_General(void) { }
 
-void CUpwScalar_Passive::ExtraADPreaccIn() {
+void CUpwScalar_General::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+2); AD::SetPreaccIn(V_j, nDim+2);
 }
 
-void CUpwScalar_Passive::FinishResidualCalc(su2double *val_residual,
+void CUpwScalar_General::FinishResidualCalc(su2double *val_residual,
                                             su2double **val_Jacobian_i,
                                             su2double **val_Jacobian_j,
                                             CConfig *config) {
@@ -120,13 +120,13 @@ void CUpwScalar_Passive::FinishResidualCalc(su2double *val_residual,
   unsigned short iVar, jVar;
   
   for (iVar = 0; iVar < nVar; iVar++) {
-    val_residual[iVar] = (a0*Density_i*ScalarVar_i[0] +
-                          a1*Density_j*ScalarVar_j[0]);
+    val_residual[iVar] = (a0*Density_i*ScalarVar_i[iVar] +
+                          a1*Density_j*ScalarVar_j[iVar]);
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          val_Jacobian_i[iVar][jVar] = a0;
-          val_Jacobian_j[iVar][jVar] = a1;
+          val_Jacobian_i[iVar][jVar] = a0*Density_i;
+          val_Jacobian_j[iVar][jVar] = a1*Density_j;
         } else {
           val_Jacobian_i[iVar][jVar] = 0.0;
           val_Jacobian_j[iVar][jVar] = 0.0;
@@ -188,16 +188,16 @@ void CAvgGradScalar::ComputeResidual(su2double *val_residual,
   if (incompressible) {
     AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
     
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Density_i           = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
-    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
+    Eddy_Viscosity_i    = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
     
-    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Density_i           = V_i[nDim+2];            Density_j = V_j[nDim+2];
     Laminar_Viscosity_i = V_i[nDim+5];  Laminar_Viscosity_j = V_j[nDim+5];
-    Eddy_Viscosity_i = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
+    Eddy_Viscosity_i    = V_i[nDim+6];     Eddy_Viscosity_j = V_j[nDim+6];
   }
   
   /*--- Compute vector going from iPoint to jPoint ---*/
@@ -237,37 +237,47 @@ void CAvgGradScalar::ComputeResidual(su2double *val_residual,
   
 }
 
-CAvgGradScalar_Passive::CAvgGradScalar_Passive(unsigned short val_nDim,
+CAvgGradScalar_General::CAvgGradScalar_General(unsigned short val_nDim,
                                                unsigned short val_nVar, bool correct_grad,
                                                CConfig *config)
-: CAvgGradScalar(val_nDim, val_nVar, correct_grad, config) { }
+: CAvgGradScalar(val_nDim, val_nVar, correct_grad, config) {
+  
+  Mean_Diffusivity = new su2double[nVar];
+  
+}
 
-CAvgGradScalar_Passive::~CAvgGradScalar_Passive(void) { }
+CAvgGradScalar_General::~CAvgGradScalar_General(void) {
+  
+  if (Mean_Diffusivity != NULL) delete [] Mean_Diffusivity;
+  
+}
 
-void CAvgGradScalar_Passive::ExtraADPreaccIn() { }
+void CAvgGradScalar_General::ExtraADPreaccIn() { }
 
-void CAvgGradScalar_Passive::FinishResidualCalc(su2double *val_residual,
+void CAvgGradScalar_General::FinishResidualCalc(su2double *val_residual,
                                                 su2double **Jacobian_i,
                                                 su2double **Jacobian_j,
                                                 CConfig *config) {
   
   unsigned short iVar, jVar;
 
-  /*--- Get the diffusion coefficient(s). ---*/
-  
-  su2double scalar_diffusion = config->GetDiffusivity_Constant();
-
   for (iVar = 0; iVar < nVar; iVar++) {
     
-    val_residual[iVar] = scalar_diffusion*Proj_Mean_GradScalarVar[0];
+    /*--- Get the diffusion coefficient(s). ---*/
+
+    Mean_Diffusivity[iVar] = 0.5*(Diffusion_Coeff_i[iVar] + Diffusion_Coeff_j[iVar]);
+
+    /*--- Compute the viscous residual. ---*/
+    
+    val_residual[iVar] = Mean_Diffusivity[iVar]*Proj_Mean_GradScalarVar[iVar];
     
     /*--- Use TSL approx. to compute derivatives of the gradients. ---*/
 
     if (implicit) {
       for (jVar = 0; jVar < nVar; jVar++) {
         if (iVar == jVar) {
-          Jacobian_i[iVar][jVar] = -scalar_diffusion*proj_vector_ij/Density_i;
-          Jacobian_j[iVar][jVar] =  scalar_diffusion*proj_vector_ij/Density_j;
+          Jacobian_i[iVar][jVar] = -Mean_Diffusivity[iVar]*proj_vector_ij;
+          Jacobian_j[iVar][jVar] =  Mean_Diffusivity[iVar]*proj_vector_ij;
         } else {
           Jacobian_i[iVar][jVar] = 0.0;
           Jacobian_j[iVar][jVar] = 0.0;
@@ -299,8 +309,6 @@ void CSourcePieceWise_Scalar::ComputeResidual(su2double *val_residual,
   unsigned short iVar, jVar;
   
   Density_i = V_i[nDim+2];
-  if (incompressible) Laminar_Viscosity_i = V_i[nDim+4];
-  else                Laminar_Viscosity_i = V_i[nDim+5];
   
   for (iVar = 0; iVar < nVar; iVar++) {
     val_residual[iVar] = 0.0;
@@ -312,3 +320,69 @@ void CSourcePieceWise_Scalar::ComputeResidual(su2double *val_residual,
   }
   
 }
+
+CSourceAxisymmetric_Scalar::CSourceAxisymmetric_Scalar(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+  
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  energy   = config->GetEnergy_Equation();
+  viscous  = config->GetViscous();
+  
+}
+
+CSourceAxisymmetric_Scalar::~CSourceAxisymmetric_Scalar(void) { }
+
+void CSourceAxisymmetric_Scalar::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
+  
+  su2double yinv, Velocity_i[3];
+  unsigned short iDim, iVar, jVar;
+  
+  if (Coord_i[1] > EPS) {
+    yinv          = 1.0/Coord_i[1];
+    Density_i     = V_i[nDim+2];
+    
+    /*--- Set primitive variables at points iPoint. ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      Velocity_i[iDim] = V_i[iDim+1];
+    
+    /*--- Inviscid component of the source term. ---*/
+    
+    for (iVar=0; iVar < nVar; iVar++)
+      val_residual[iVar] = yinv*Volume*Density_i*ScalarVar_i[iVar]*Velocity_i[1];
+    
+    if (implicit) {
+      
+      for (iVar=0; iVar < nVar; iVar++) {
+        for (jVar=0; jVar < nVar; jVar++) {
+          if (iVar == jVar) Jacobian_i[iVar][jVar] = Velocity_i[1];
+          Jacobian_i[iVar][jVar] *= yinv*Volume*Density_i;
+        }
+      }
+      
+    }
+    
+    /*--- Add the viscous terms if necessary. ---*/
+    
+    if (viscous) {
+      
+      for (iVar=0; iVar < nVar; iVar++)
+        val_residual[iVar] -= Volume*yinv*Diffusion_Coeff_i[iVar]*ScalarVar_Grad_i[iVar][1];
+      
+    }
+    
+  } else {
+    
+    for (iVar=0; iVar < nVar; iVar++)
+      val_residual[iVar] = 0.0;
+    
+    if (implicit) {
+      for (iVar=0; iVar < nVar; iVar++) {
+        for (jVar=0; jVar < nVar; jVar++)
+          Jacobian_i[iVar][jVar] = 0.0;
+      }
+    }
+    
+  }
+  
+}
+

@@ -94,7 +94,12 @@ CScalarVariable::CScalarVariable(su2double *val_scalar,
     Residual_Old = new su2double[nVar];
   }
   
+  /*--- Allocate space for the mass diffusivity. ---*/
+  
+  Diffusivity = new su2double[nVar];
+  
 }
 
-CScalarVariable::~CScalarVariable(void) { }
-
+CScalarVariable::~CScalarVariable(void) {
+  delete [] Diffusivity;
+}

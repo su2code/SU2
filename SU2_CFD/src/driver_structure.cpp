@@ -977,6 +977,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  bool scalar, passive_scalar, progress_variable;
   
   /*--- Count the number of DOFs per solution point. ---*/
   
@@ -994,6 +995,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  scalar           = false;  passive_scalar   = false;  progress_variable = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1002,20 +1004,20 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ADJ_EULER : euler = true; adj_euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -1031,6 +1033,16 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
+  
+  /*--- Assign scalar transport model booleans ---*/
+
+  if (scalar) {
+    switch (config->GetKind_Scalar_Model()) {
+      case PASSIVE_SCALAR: passive_scalar = true; break;
+      case PROGRESS_VARIABLE: progress_variable = true; break;
+      default: SU2_MPI::Error("Specified scalar transport model unavailable.", CURRENT_FUNCTION); break;
+    }
+  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -1083,6 +1095,14 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][TRANS_SOL] = new CTransLMSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TRANS_SOL]->GetnVar();
       }
+    }
+    if (scalar) {
+      if (passive_scalar) {
+        solver_container[val_iInst][iMGlevel][SCALAR_SOL] = new CPassiveScalarSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+      } else if (progress_variable){
+        solver_container[val_iInst][iMGlevel][SCALAR_SOL] = new CCombustionScalarSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+      }
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][SCALAR_SOL]->GetnVar();
     }
     if (poisson) {
       solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[val_iInst][iMGlevel], config);
@@ -1167,6 +1187,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
   poisson, wave, heat,
   fem,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
+  bool scalar;
   int val_iter = 0;
   unsigned short iMesh;
 
@@ -1179,6 +1200,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
   fem              = false;  disc_adj_fem     = false;
   heat             = false;  disc_adj_turb    = false;
   template_solver  = false;
+  scalar           = false;
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1203,19 +1225,19 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; break;
-    case RANS : ns = true; turbulent = true; break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1242,7 +1264,9 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
     if (turbulent || adj_turb || disc_adj_turb) {
       solver_container[MESH_0][TURB_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, TURB_SOL, INLET_FLOW);
     }
-
+    if (scalar) {
+      solver_container[MESH_0][SCALAR_SOL]->LoadInletProfile(geometry, solver_container, config, val_iter, SCALAR_SOL, INLET_FLOW);
+    }
     if (template_solver) {
       no_profile = true;
     }
@@ -1275,7 +1299,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
     /*--- Uniform inlets or python-customized inlets ---*/
 
     /* --- Initialize quantities for inlet boundary
-     * This routine does not check if they python wrapper is being used to
+     * This routine does not check if the python wrapper is being used to
      * set custom boundary conditions.  This is intentional; the
      * default values for python custom BCs are initialized with the default
      * values specified in the config (avoiding non physical values) --- */
@@ -1286,6 +1310,8 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
           solver_container[iMesh][FLOW_SOL]->SetUniformInlet(config, iMarker);
         if (turbulent)
           solver_container[iMesh][TURB_SOL]->SetUniformInlet(config, iMarker);
+        if (scalar)
+          solver_container[iMesh][SCALAR_SOL]->SetUniformInlet(config, iMarker);
       }
     }
     
@@ -1301,6 +1327,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   poisson, wave, heat, heat_fvm,
   fem,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
+  bool scalar;
   int val_iter = 0;
 
   /*--- Initialize some useful booleans ---*/
@@ -1312,7 +1339,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   fem              = false;  disc_adj_fem     = false;
   heat             = false;  disc_adj_turb    = false;
   heat_fvm         = false;  template_solver  = false;
-
+  scalar           = false;
+  
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
   bool restart      = config->GetRestart();
@@ -1343,20 +1371,20 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
 
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1370,6 +1398,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     }
     if (turbulent) {
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (scalar) {
+      solver_container[val_iInst][MESH_0][SCALAR_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
@@ -1431,7 +1462,8 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_fem,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
-
+  bool scalar, passive_scalar, progress_variable;
+  
   /*--- Initialize some useful booleans ---*/
   
   euler            = false;  ns              = false;  turbulent = false;
@@ -1444,25 +1476,26 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
-
+  scalar           = false;  passive_scalar  = false; progress_variable = false;
+  
   /*--- Assign booleans ---*/
   
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -1477,6 +1510,13 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case SA_COMP: comp_spalart_allmaras = true; break;
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
     }
+  
+  if (scalar) {
+    switch (config->GetKind_Scalar_Model()) {
+      case PASSIVE_SCALAR: passive_scalar = true; break;
+      case PROGRESS_VARIABLE: progress_variable = true; break;
+    }
+  }
   
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
@@ -1512,6 +1552,13 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
         delete solver_container[val_iInst][iMGlevel][TRANS_SOL];
       }
     }
+    
+    if (scalar) {
+      if (passive_scalar || progress_variable) {
+        delete solver_container[iMGlevel][SCALAR_SOL];
+      }
+    }
+    
     if (poisson) {
       delete solver_container[val_iInst][iMGlevel][POISSON_SOL];
     }
@@ -1539,7 +1586,8 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     CGeometry ***geometry, CConfig *config, unsigned short val_iInst) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem, scalar;
+  
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
@@ -1550,24 +1598,25 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   fem 			       = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
+  scalar           = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true;  scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1579,6 +1628,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   if (ns) integration_container[val_iInst][FLOW_SOL] = new CMultiGridIntegration(config);
   if (turbulent) integration_container[val_iInst][TURB_SOL] = new CSingleGridIntegration(config);
   if (transition) integration_container[val_iInst][TRANS_SOL] = new CSingleGridIntegration(config);
+  if (scalar) integration_container[val_iInst][SCALAR_SOL] = new CMultiGridIntegration(config);
   if (poisson) integration_container[val_iInst][POISSON_SOL] = new CSingleGridIntegration(config);
   if (wave) integration_container[val_iInst][WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat || heat_fvm) integration_container[val_iInst][HEAT_SOL] = new CSingleGridIntegration(config);
@@ -1597,7 +1647,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem, scalar;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1609,24 +1659,25 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   fem              = false; disc_adj_fem     = false;
   transition       = false;
   template_solver  = false;
-
+  scalar           = false;
+  
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : euler = true; break;
-    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
-    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1637,6 +1688,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   if (euler || ns) delete integration_container[val_iInst][FLOW_SOL];
   if (turbulent) delete integration_container[val_iInst][TURB_SOL];
   if (transition) delete integration_container[val_iInst][TRANS_SOL];
+  if (scalar) delete integration_container[val_iInst][SCALAR_SOL];
   if (poisson) delete integration_container[val_iInst][POISSON_SOL];
   if (wave) delete integration_container[val_iInst][WAVE_SOL];
   if (heat || heat_fvm) delete integration_container[val_iInst][HEAT_SOL];
@@ -1662,6 +1714,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_Flow             = 0,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
+  nVar_Scalar           = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
@@ -1683,6 +1736,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   transition,
   template_solver;
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  bool scalar, passive_scalar, progress_variable;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -1699,21 +1753,22 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  scalar           = false;   passive_scalar    = false; progress_variable = false;
   
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: euler = true; break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case EULER : case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case ADJ_EULER : euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1729,6 +1784,16 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
+  /*--- Assign scalar transport model booleans. ---*/
+  
+  if (scalar) {
+    switch (config->GetKind_Scalar_Model()) {
+      case PASSIVE_SCALAR: passive_scalar = true; break;
+      case PROGRESS_VARIABLE: progress_variable = true; break;
+      default: SU2_MPI::Error("Specified scalar transport model unavailable.", CURRENT_FUNCTION); break;
+    }
+  }
+  
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
@@ -1739,6 +1804,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (ns)           nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
   if (turbulent)    nVar_Turb = solver_container[val_iInst][MESH_0][TURB_SOL]->GetnVar();
   if (transition)   nVar_Trans = solver_container[val_iInst][MESH_0][TRANS_SOL]->GetnVar();
+  if (scalar)       nVar_Scalar = solver_container[val_iInst][MESH_0][SCALAR_SOL]->GetnVar();
   if (poisson)      nVar_Poisson = solver_container[val_iInst][MESH_0][POISSON_SOL]->GetnVar();
   
   if (wave)         nVar_Wave = solver_container[val_iInst][MESH_0][WAVE_SOL]->GetnVar();
@@ -2117,6 +2183,57 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     }
   }
   
+  /*--- Solver definition for the scalar transport model problem ---*/
+  
+  if (scalar) {
+    
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    
+    switch (config->GetKind_ConvNumScheme_Scalar()) {
+      case NONE :
+        break;
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (passive_scalar || progress_variable) {
+            numerics_container[val_iInst][iMGlevel][SCALAR_SOL][CONV_TERM] = new CUpwScalar_General(nDim, nVar_Scalar, config);
+          }
+        }
+        break;
+      default :
+        SU2_MPI::Error("Convective scheme not implemented (scalar transport).", CURRENT_FUNCTION);
+        break;
+    }
+    
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (passive_scalar || progress_variable){
+        if (iMGlevel == MESH_0) numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, true, config);
+        numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, false, config);
+      }
+    }
+    
+    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+    
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (passive_scalar || progress_variable) {
+        numerics_container[val_iInst][iMGlevel][SCALAR_SOL][SOURCE_FIRST_TERM]  = new CSourcePieceWise_Scalar(nDim, nVar_Scalar, config);
+      if (config->GetAxisymmetric() == YES)
+          numerics_container[val_iInst][iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceAxisymmetric_Scalar(nDim, nVar_Scalar, config);
+      else  numerics_container[val_iInst][iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Scalar, config);
+      }
+    }
+    
+    /*--- Definition of the boundary condition method ---*/
+    
+    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+      if (passive_scalar || progress_variable) {
+        numerics_container[val_iInst][iMGlevel][SCALAR_SOL][CONV_BOUND_TERM] = new CUpwScalar_General(nDim, nVar_Scalar, config);
+        numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_BOUND_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, false, config);
+      }
+    }
+  }
+  
   /*--- Solver definition for the poisson potential problem ---*/
   if (poisson) {
     
@@ -2469,6 +2586,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   template_solver;
 
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  bool scalar, passive_scalar, progress_variable;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2481,23 +2599,23 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   spalart_allmaras = false;   neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;   heat_fvm         = false;
   template_solver  = false;
-    
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  scalar           = false;   passive_scalar    = false; progress_variable = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
-    case EULER : case DISC_ADJ_EULER: euler = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case EULER : case DISC_ADJ_EULER: euler = true; scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true;   scalar = (config->GetKind_Scalar_Model() != NONE); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true;  scalar = (config->GetKind_Scalar_Model() != NONE); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case HEAT_EQUATION: heat = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
-    case ADJ_EULER : euler = true; adj_euler = true; break;
-    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
-    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case ADJ_EULER : euler = true;  scalar = (config->GetKind_Scalar_Model() != NONE); adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE);  scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; scalar = (config->GetKind_Scalar_Model() != NONE); adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -2512,6 +2630,16 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
 
     }
+  
+  /*--- Assign scalar transport model booleans. ---*/
+  
+  if (scalar) {
+    switch (config->GetKind_Scalar_Model()) {
+      case PASSIVE_SCALAR: passive_scalar = true; break;
+      case PROGRESS_VARIABLE: progress_variable = true; break;
+      default: SU2_MPI::Error("Specified scalar transport model unavailable.", CURRENT_FUNCTION); break;
+    }
+  }
   
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
@@ -2674,6 +2802,37 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       /*--- Definition of the boundary condition method ---*/
       delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM];
     }
+  }
+  
+  /*--- Solver definition for the scalar transport model problem ---*/
+  
+  if (scalar) {
+    
+    /*--- Definition of the convective scheme for each equation and mesh level ---*/
+    
+    switch (config->GetKind_ConvNumScheme_Scalar()) {
+      case SPACE_UPWIND :
+        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+          if (passive_scalar || progress_variable)
+            delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][CONV_TERM];
+        }
+        break;
+    }
+    
+    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+    
+    if (passive_scalar || progress_variable) {
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+        delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM];
+        delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][SOURCE_FIRST_TERM];
+        delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][SOURCE_SECOND_TERM];
+        /*--- Definition of the boundary condition method ---*/
+        delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][CONV_BOUND_TERM];
+        delete numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_BOUND_TERM];
+        
+      }
+    }
+    
   }
 
   if (heat_fvm) {
@@ -3540,8 +3699,13 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
       if ((config_container[iZone]->GetKind_Solver() ==  EULER) ||
           (config_container[iZone]->GetKind_Solver() ==  NAVIER_STOKES) ||
           (config_container[iZone]->GetKind_Solver() ==  RANS) ) {
-        for (iInst = 0; iInst < nInst[iZone]; iInst++)
+        
+        bool scalar = (config_container[iZone]->GetKind_Scalar_Model() != NO_SCALAR_MODEL);
+        for (iInst = 0; iInst < nInst[iZone]; iInst++) {
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], ExtIter);
+          if (scalar)
+            solver_container[iZone][iInst][MESH_0][SCALAR_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], ExtIter);
+        }
       }
     }
   }
