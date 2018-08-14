@@ -75,6 +75,13 @@ CSysMatrix::CSysMatrix(void) {
   LyVector        = NULL;
   FzVector        = NULL;
   max_nElem       = 0;
+
+#ifdef HAVE_MKL
+  MatrixMatrixProductJitter 		= NULL;
+  MatrixVectorProductJitterBetaOne 	= NULL;
+  MatrixVectorProductJitterBetaZero 	= NULL;
+  useMKL 				= false;
+#endif
   
 }
 
@@ -126,7 +133,9 @@ CSysMatrix::~CSysMatrix(void) {
   if (FzVector != NULL)   delete [] FzVector;
 
 #ifdef HAVE_MKL
-  if ( rank == MASTER_NODE ) mkl_finalize();
+  if ( MatrixMatrixProductJitter != NULL ) 		mkl_jit_destroy( MatrixMatrixProductJitter );
+  if ( MatrixVectorProductJitterBetaZero != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
+  if ( MatrixVectorProductJitterBetaOne != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
 #endif
   
 }
@@ -220,16 +229,20 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
   /*--- Generate MKL Kernels ---*/
   
 #ifdef HAVE_MKL
-  /*--- Create MKL JIT kernel ---*/
+  /*--- Create MKL JIT kernels if not using adjoint solvers ---*/
+  if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
+  {
+    useMKL = true;
 
-  mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
-  MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
+    mkl_jit_create_dgemm( &MatrixMatrixProductJitter, MKL_ROW_MAJOR, MKL_NOTRANS, MKL_NOTRANS, nVar, nVar, nVar,  1.0, nVar, nVar, 0.0, nVar );
+    MatrixMatrixProductKernel = mkl_jit_get_dgemm_ptr( MatrixMatrixProductJitter );
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
-  MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
+    mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaZero, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 0.0, 1 );
+    MatrixVectorProductKernelBetaZero = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaZero );
 
-  mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
-  MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+    mkl_jit_create_dgemm( &MatrixVectorProductJitterBetaOne, MKL_COL_MAJOR, MKL_NOTRANS, MKL_NOTRANS, 1, nVar, nVar,  1.0, 1, nVar, 1.0, 1 );
+    MatrixVectorProductKernelBetaOne = mkl_jit_get_dgemm_ptr( MatrixVectorProductJitterBetaOne );
+  }
 
 #endif
   
@@ -553,8 +566,11 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 
 #ifdef HAVE_MKL
   // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
-  MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product );
-  return;
+  if (useMKL) 
+  {
+    MatrixVectorProductKernelBetaZero( MatrixVectorProductJitterBetaZero, vector, matrix, product );
+    return;
+  }
 #endif
   
   unsigned short iVar, jVar;
@@ -571,8 +587,11 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
 
 #ifdef HAVE_MKL
-  MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
-  return;
+  if (useMKL)
+  {
+    MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
+    return;
+  }
 #endif
   
   unsigned short iVar, jVar, kVar;
@@ -814,15 +833,15 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   else {
 
 #ifdef HAVE_MKL
+  if (useMKL) {
+      // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
+      lapack_int * ipiv = new lapack_int [ nVar ];
+      LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
+      LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
 
-  // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
-  lapack_int * ipiv = new lapack_int [ nVar ];
-  LAPACKE_dgetrf( LAPACK_ROW_MAJOR, nVar, nVar, (double *)&block[0], nVar, ipiv );
-  LAPACKE_dgetrs( LAPACK_ROW_MAJOR, 'N', nVar, 1, (double *)&block[0], nVar, ipiv, rhs, 1 );
-
-  delete [] ipiv;
-  return;
-
+      delete [] ipiv;
+      return;
+  }
 #endif
     
     /*--- Transform system in Upper Matrix ---*/
@@ -1182,14 +1201,17 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
       vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
 #ifdef HAVE_MKL
-      MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
-#else
+      if (useMKL) 
+      {
+        MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
+        continue;
+      }
+#endif
       for (iVar = 0; iVar < nVar; iVar++) {
         for (jVar = 0; jVar < nVar; jVar++) {
           prod[(unsigned long)(prod_begin+iVar)] += matrix[(unsigned long)(mat_begin+iVar*nVar+jVar)]*vec[(unsigned long)(vec_begin+jVar)];
         }
       }
-#endif
     }
   }
   
