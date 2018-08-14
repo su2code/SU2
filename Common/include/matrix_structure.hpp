@@ -105,6 +105,7 @@ private:
   dgemm_jit_kernel_t MatrixVectorProductKernelBetaZero;       	/*!< \brief MKL JIT based GEMV kernel. */
   void * MatrixVectorProductJitterBetaOne;            		/*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
   dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;        	/*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+  bool useMKL;
 #endif
 
 public:
