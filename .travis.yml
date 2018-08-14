@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tobias.kattmann@de.bosch.com
   
 branches:
     only:
-        - develop
+        - feature_checkpointing
 
 python:
     - 2.7
@@ -80,11 +80,11 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_checkpointing https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
-    - git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
+    - git clone -b feature_checkpointing https://github.com/su2code/su2code.github.io ./Tutorials
     
     # Enter the SU2/TestCases/ directory, which is now ready to run
     - cd TestCases/

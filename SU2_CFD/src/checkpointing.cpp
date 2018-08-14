@@ -35,6 +35,11 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
+ /* This is a checkpointing implementation which is based upon an existing code 
+    'revolve' by Walther & Stumm. For more information see http://www.autodiff.org/?module=Tools&tool=Treeverse%20%2F%20Revolve .
+    The current implementation is mostly a clone of 'revolve', but with the intent to further adapt/change the code more 
+    significantly over time.  */
+
 #include "../include/checkpointing.hpp"
 
 /* Methods of Checkpointing base class */
