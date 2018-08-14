@@ -872,6 +872,7 @@ private:
   *Tcb_a,   /*!< \brief Rate controlling temperature exponent (bkw) */
   *Tcb_b,   /*!< \brief Rate controlling temperature exponent (bkw) */
   *Diss;                /*!< \brief Dissociation potential. */
+  su2double pnorm_heat; /*! brief pnorm for heat-flux. */
   int ***Reactions; /*!</brief reaction map for chemically reacting flows */
   su2double ***Omega00;        /*!< \brief Collision integrals (Omega(0,0)) */
   su2double ***Omega11;                  /*!< \brief Collision integrals (Omega(1,1)) */
