@@ -338,13 +338,13 @@ void CConfig::SetPointersNull(void) {
   Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
   Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
   Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper           = NULL;
-
+  Marker_Emissivity           = NULL;
   
     /*--- Boundary Condition settings ---*/
 
   Dirichlet_Value = NULL;    Isothermal_Temperature = NULL;
   Heat_Flux       = NULL;    Displ_Value            = NULL;    Load_Value = NULL;
-  FlowLoad_Value  = NULL;    Damper_Constant        = NULL;
+  FlowLoad_Value  = NULL;    Damper_Constant        = NULL;    Wall_Emissivity = NULL;
   
   /*--- Inlet Outlet Boundary Condition settings ---*/
 
@@ -1947,6 +1947,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.5);
   /* DESCRIPTION: Refractive index */
   addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 0.5);
+
+  /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
+   * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
+  addStringDoubleListOption("MARKER_EMISSIVITY", nMarker_Emissivity, Marker_Emissivity, Wall_Emissivity);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/
@@ -3811,6 +3815,7 @@ void CConfig::SetMarkers(unsigned short val_software) {
   iMarker_DV, iMarker_Moving, iMarker_PyCustom, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet,
   iMarker_Clamped, iMarker_ZoneInterface, iMarker_CHTInterface, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine,
   iMarker_ActDiskInlet, iMarker_ActDiskOutlet,
+  iMarker_Emissivity,
   iMarker_Turbomachinery, iMarker_MixingPlaneInterface;
 
   int size = SINGLE_NODE;
@@ -4403,6 +4408,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   iMarker_Designing, iMarker_GeoEval, iMarker_Plotting, iMarker_Analyze, iMarker_DV, iDV_Value,
   iMarker_ZoneInterface, iMarker_PyCustom, iMarker_Load_Dir, iMarker_Disp_Dir, iMarker_Load_Sine, iMarker_Clamped,
   iMarker_Moving, iMarker_Supersonic_Inlet, iMarker_Supersonic_Outlet, iMarker_ActDiskInlet,
+  iMarker_Emissivity,
   iMarker_ActDiskOutlet, iMarker_MixingPlaneInterface;
   
   bool fea = ((Kind_Solver == FEM_ELASTICITY) || (Kind_Solver == DISC_ADJ_FEM));
@@ -5887,6 +5893,15 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
   }
 
+  if (nMarker_Emissivity != 0) {
+    cout << "Emissivity for the boundary marker(s): ";
+    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++) {
+      cout << Marker_Emissivity[iMarker_Emissivity] << "(" << Wall_Emissivity[iMarker_Emissivity] << ")";
+      if (iMarker_Emissivity < nMarker_Emissivity-1) cout << ", ";
+      else cout <<"."<< endl;
+    }
+  }
+
   if (nMarker_Neumann != 0) {
     cout << "Neumann boundary marker(s): ";
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
@@ -6535,6 +6550,7 @@ CConfig::~CConfig(void) {
   if (Load_Sine_Amplitude != NULL)    delete[] Load_Sine_Amplitude;
   if (Load_Sine_Frequency != NULL)    delete[] Load_Sine_Frequency;
   if (FlowLoad_Value != NULL)    delete[] FlowLoad_Value;
+  if (Wall_Emissivity != NULL)    delete[] Wall_Emissivity;
 
   /*--- related to periodic boundary conditions ---*/
   
@@ -6589,6 +6605,7 @@ CConfig::~CConfig(void) {
   if (Marker_Neumann != NULL )            delete[] Marker_Neumann;
   if (Marker_Internal != NULL )            delete[] Marker_Internal;
   if (Marker_HeatFlux != NULL )               delete[] Marker_HeatFlux;
+  if (Marker_Emissivity != NULL )         delete[] Marker_Emissivity;
 
   if (Int_Coeffs != NULL) delete [] Int_Coeffs;
   
@@ -7936,6 +7953,19 @@ su2double* CConfig::GetLoad_Sine_Dir(string val_marker) {
     if (Marker_Load_Sine[iMarker_Load_Sine] == val_marker) break;
   return Load_Sine_Dir[iMarker_Load_Sine];
 }
+
+su2double CConfig::GetWall_Emissivity(string val_marker) {
+
+  unsigned short iMarker_Emissivity = 0;
+
+  if (nMarker_Emissivity > 0) {
+    for (iMarker_Emissivity = 0; iMarker_Emissivity < nMarker_Emissivity; iMarker_Emissivity++)
+      if (Marker_Emissivity[iMarker_Emissivity] == val_marker) break;
+  }
+
+  return Wall_Emissivity[iMarker_Emissivity];
+}
+
 
 su2double CConfig::GetFlowLoad_Value(string val_marker) {
   unsigned short iMarker_FlowLoad;

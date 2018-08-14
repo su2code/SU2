@@ -974,6 +974,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, heat_fvm,
   fem, disc_adj_fem,
+  radiation, p1_rad,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
@@ -993,6 +994,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   heat             = false;  heat_fvm         = false;
   transition       = false;
   template_solver  = false;
+  radiation        = false;  p1_rad           = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
   
   bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1032,6 +1034,13 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; p1_rad = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
 
@@ -1103,6 +1112,11 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     if (fem) {
       solver_container[val_iInst][iMGlevel][FEA_SOL] = new CFEASolver(geometry[val_iInst][iMGlevel], config);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FEA_SOL]->GetnVar();
+    }
+    if (radiation) {
+      if (p1_rad) solver_container[val_iInst][iMGlevel][RAD_SOL] = new CRadP1Solver(geometry[val_iInst][iMGlevel], config);
+      else solver_container[val_iInst][iMGlevel][RAD_SOL] = new CRadSolver(geometry[val_iInst][iMGlevel], config);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][RAD_SOL]->GetnVar();
     }
     
     /*--- Allocate solution for adjoint problem ---*/
@@ -1428,6 +1442,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, heat_fvm, fem,
+  radiation,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
   template_solver, disc_adj, disc_adj_turb, disc_adj_fem,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
@@ -1441,6 +1456,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   wave             = false;  disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
   heat             = false;  heat_fvm        = false;
+  radiation        = false;
   transition       = false;
   template_solver  = false;
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
@@ -1478,6 +1494,13 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
     }
   
+    /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
   
@@ -1527,6 +1550,9 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     if (disc_adj_fem) {
       delete solver_container[val_iInst][iMGlevel][ADJFEA_SOL];
     }
+    if (radiation) {
+      delete solver_container[val_iInst][iMGlevel][RAD_SOL];
+    }
     
     delete [] solver_container[val_iInst][iMGlevel];
   }
@@ -1539,7 +1565,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     CGeometry ***geometry, CConfig *config, unsigned short val_iInst) {
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem;
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
@@ -1547,7 +1573,8 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   poisson          = false; disc_adj         = false;
   wave             = false;
   heat             = false; heat_fvm         = false;
-  fem 			       = false; disc_adj_fem     = false;
+  fem              = false; disc_adj_fem     = false;
+  radiation        = false;
   transition       = false;
   template_solver  = false;
 
@@ -1571,6 +1598,13 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
   /*--- Allocate solution for a template problem ---*/
   if (template_solver) integration_container[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
@@ -1583,6 +1617,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   if (wave) integration_container[val_iInst][WAVE_SOL] = new CSingleGridIntegration(config);
   if (heat || heat_fvm) integration_container[val_iInst][HEAT_SOL] = new CSingleGridIntegration(config);
   if (fem) integration_container[val_iInst][FEA_SOL] = new CStructuralIntegration(config);
+  if (radiation) integration_container[val_iInst][RAD_SOL] = new CSingleGridIntegration(config);
 
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[val_iInst][ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -1597,7 +1632,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+      heat, heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1607,6 +1642,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   wave             = false;
   heat             = false; heat_fvm         = false;
   fem              = false; disc_adj_fem     = false;
+  radiation        = false;
   transition       = false;
   template_solver  = false;
 
@@ -1630,6 +1666,13 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
   /*--- DeAllocate solution for a template problem ---*/
   if (template_solver) integration_container[val_iInst][TEMPLATE_SOL] = new CSingleGridIntegration(config);
 
@@ -1642,6 +1685,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   if (heat || heat_fvm) delete integration_container[val_iInst][HEAT_SOL];
   if (fem) delete integration_container[val_iInst][FEA_SOL];
   if (disc_adj_fem) delete integration_container[val_iInst][ADJFEA_SOL];
+  if (radiation) delete integration_container[val_iInst][RAD_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[val_iInst][ADJFLOW_SOL];
@@ -1666,6 +1710,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_Adj_Turb         = 0,
   nVar_Poisson          = 0,
   nVar_FEM              = 0,
+  nVar_Rad              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
   
@@ -1680,6 +1725,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   wave,
   fem,
   heat, heat_fvm,
+  radiation, p1_rad,
   transition,
   template_solver;
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
@@ -1695,6 +1741,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   heat_fvm         = false;
   fem              = false;
+  radiation        = false;   p1_rad           = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -1729,6 +1776,13 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
   
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; p1_rad = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
@@ -1745,6 +1799,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (fem)          nVar_FEM = solver_container[val_iInst][MESH_0][FEA_SOL]->GetnVar();
   if (heat)         nVar_Heat = solver_container[val_iInst][MESH_0][HEAT_SOL]->GetnVar();
   if (heat_fvm)     nVar_Heat = solver_container[val_iInst][MESH_0][HEAT_SOL]->GetnVar();
+  if (radiation)    nVar_Rad = solver_container[val_iInst][MESH_0][RAD_SOL]->GetnVar();
 
   /*--- Number of variables for adjoint problem ---*/
   
@@ -2169,6 +2224,21 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
   }
   
+  /*--- Solver definition for the radiation model problem ---*/
+
+  if (radiation) {
+    if (p1_rad){
+      /*--- Definition of the viscous scheme for each equation and mesh level ---*/
+      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM] = new CAvgGrad_P1(nDim, nVar_Rad, config);
+
+      /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
+      numerics_container[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
+
+      /*--- Definition of the boundary condition method ---*/
+      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGrad_P1(nDim, nVar_Rad, config);
+    }
+  }
+
   /*--- Solver definition for the flow adjoint problem ---*/
   
   if (adj_euler || adj_ns) {
@@ -2465,6 +2535,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   wave,
   fem,
   heat, heat_fvm,
+  radiation, p1_rad,
   transition,
   template_solver;
 
@@ -2478,6 +2549,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   poisson          = false;
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   wave             = false;   heat             = false;   fem        = false;
+  radiation        = false;   p1_rad           = false;
   spalart_allmaras = false;   neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;   heat_fvm         = false;
   template_solver  = false;
@@ -2513,6 +2585,13 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
     }
   
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; p1_rad = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
     
@@ -2700,6 +2779,16 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     }
   }
   
+  if (radiation){
+
+    if (p1_rad){
+      delete numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM];
+      delete numerics_container[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM];
+      delete numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM];
+    }
+
+  }
+
   /*--- Solver definition for the poisson potential problem ---*/
   if (poisson || heat) {
     

@@ -1015,6 +1015,9 @@ private:
   su2double Absorption_Coeff,     /*!< \brief Absorption coefficient of the medium (radiation). */
   Scattering_Coeff,               /*!< \brief Scattering coefficient of the medium (radiation). */
   Refractive_Index;               /*!< \brief Refractive index of the medium (radiation). */
+  unsigned short nMarker_Emissivity; /*!< \brief Number of markers for which the emissivity is defined. */
+  string *Marker_Emissivity;         /*!< \brief Wall markers with defined emissivity. */
+  su2double *Wall_Emissivity;        /*!< \brief Emissivity of the wall. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
@@ -8518,6 +8521,13 @@ public:
    * \return Value of the refractive index of the medium.
    */
   su2double GetRefractive_Index(void);
+
+  /*!
+   * \brief Get the wall emissivity at a boundary.
+   * \param[in] val_index - Index corresponding to the boundary.
+   * \return The wall emissivity.
+   */
+  su2double GetWall_Emissivity(string val_index);
 };
 
 #include "config_structure.inl"
