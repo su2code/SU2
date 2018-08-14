@@ -441,7 +441,7 @@ inline su2double CConfig::GetStations_Bounds(unsigned short val_var) { return St
 
 inline su2double CConfig::GetFFD_Axis(unsigned short val_var) { return FFD_Axis[val_var]; }
 
-inline int ***CConfig::GetReaction_Map(void) { return Reactions; } 
+inline int ***CConfig::GetReaction_Map(void) { return Reactions; }
 
 inline su2double ***CConfig::GetCollisionIntegral00(void) { return Omega00; }
 

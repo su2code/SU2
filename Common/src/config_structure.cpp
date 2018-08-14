@@ -747,8 +747,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("FREESTREAM_DENSITY", Density_FreeStream, -1.0);
   /*!\brief FREESTREAM_TEMPERATURE\n DESCRIPTION: Free-stream temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE", Temperature_FreeStream, 288.15);
-  /* DESCRIPTION: Free-stream vibrational-electronic temperature (273.15 K by default) */
-  addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 273.15);
 
   /*--- Options related to incompressible flow solver ---*/
 
@@ -1334,16 +1332,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("MUSCL_TNE2", MUSCL_TNE2, true);
   /*!\brief SLOPE_LIMITER_FLOW
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
-  addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_Flow, Limiter_Map, VENKATAKRISHNAN);
+  addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
-  /*!\brief JST_SENSOR_COEFF \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF", 2, Kappa_Flow, default_jst_coeff);
-  /*!\brief LAX_SENSOR_COEFF \n DESCRIPTION: 1st order artificial dissipation coefficients for the Lax–Friedrichs method. \ingroup Config*/
-  addDoubleOption("LAX_SENSOR_COEFF", Kappa_1st_Flow, 0.15);
-  default_ad_coeff_heat[0] = 0.5; default_ad_coeff_heat[1] = 0.02;
-  /*!\brief JST_SENSOR_COEFF_HEAT \n DESCRIPTION: 2nd and 4th order artificial dissipation coefficients for the JST method \ingroup Config*/
-  addDoubleArrayOption("JST_SENSOR_COEFF_HEAT", 2, Kappa_Heat, default_ad_coeff_heat);
-
+  
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
@@ -3323,6 +3314,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];
+  Kappa_2nd_TNE2    = Kappa_TNE2[0];
+  Kappa_4th_TNE2    = Kappa_TNE2[1];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
   Kappa_2nd_Heat = Kappa_Heat[0];
@@ -4428,11 +4421,17 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case EULER:
         Kind_Solver = DISC_ADJ_EULER;
         break;
+      case TNE2_EULER:
+        Kind_Solver = DISC_ADJ_TNE2_EULER;
+        break;
       case RANS:
         Kind_Solver = DISC_ADJ_RANS;
         break;
       case NAVIER_STOKES:
         Kind_Solver = DISC_ADJ_NAVIER_STOKES;
+        break;
+      case TNE2_NAVIER_STOKES:
+        Kind_Solver = DISC_ADJ_TNE2_NAVIER_STOKES;
         break;
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
@@ -6219,7 +6218,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           break;
       }
     }
-
 
     if (fea) {
       switch (Kind_TimeIntScheme_FEA) {

@@ -3078,7 +3078,7 @@ void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *co
 
 }
 
-void CTNE2EulerSolver::SetPrimVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
+void CTNE2EulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) {
 
 	unsigned short iVar, iDim, jDim, iNeigh, RHOS_INDEX, RHO_INDEX;
 	unsigned long iPoint, jPoint;

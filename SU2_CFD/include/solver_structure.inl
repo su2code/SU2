@@ -45,7 +45,7 @@ inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
 
-//inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
@@ -137,6 +137,8 @@ inline void CSolver::SetPrimitive_Gradient(CConfig *config) { }
 inline void CSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config, unsigned long val_Point) { }
 
 inline void CSolver::Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config) { }
 
