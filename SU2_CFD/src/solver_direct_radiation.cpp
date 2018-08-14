@@ -51,6 +51,7 @@ CRadSolver::CRadSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
   Scattering_Coeff = config->GetScattering_Coeff();
+  Refractive_Index = config->GetRefractive_Index();
 
   Absorption_Coeff = max(Absorption_Coeff,0.01);
 
@@ -573,11 +574,7 @@ CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
 CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver() {
 
-  FlowPrimVar_i = NULL;
-  FlowPrimVar_j = NULL;
-
-  Absorption_Coeff = config->GetAbsorption_Coeff();
-  Scattering_Coeff = config->GetScattering_Coeff();
+  nVar = 1;
 
 }
 
@@ -687,325 +684,182 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 }
 
 void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//  unsigned long iPoint, iVertex;
-//  unsigned short iVar;
-//
-//  /*--- The dirichlet condition is used only without wall function, otherwise the
-//   convergence is compromised as we are providing nu tilde values for the
-//   first point of the wall  ---*/
-//
-//  if (!config->GetWall_Functions()) {
-//
-//    for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//      iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//      /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//
-//      if (geometry->node[iPoint]->GetDomain()) {
-//
-//        /*--- Get the velocity vector ---*/
-//
-//        for (iVar = 0; iVar < nVar; iVar++)
-//          Solution[iVar] = 0.0;
-//
-//        node[iPoint]->SetSolution_Old(Solution);
-//        LinSysRes.SetBlock_Zero(iPoint);
-//
-//        /*--- Includes 1 in the diagonal ---*/
-//
-//        Jacobian.DeleteValsRowi(iPoint);
+
+  unsigned short iDim, iVar, jVar;
+  unsigned long iVertex, iPoint, total_index;
+
+  su2double Theta, Ib_w, Temperature, Radiative_Energy;
+  su2double *Normal, Area, Wall_Emissivity;
+  su2double Radiative_Heat_Flux;
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool energy        = config->GetEnergy_Equation();
+
+  /*--- Identify the boundary by string name ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Get the specified wall emissivity from config ---*/
+  Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
+
+  /*--- Compute the constant for the wall theta ---*/
+  Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      /*--- Initialize the viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Visc[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+      /*--- Retrieve temperature from the flow solver ---*/
+      Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+
+      /*--- Compute the blackbody intensity at the wall. ---*/
+      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+
+      /*--- Compute the radiative heat flux. ---*/
+      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Heat_Flux = -1.0*Theta*(Ib_w - Radiative_Energy);
+
+      /*--- Compute the Viscous contribution to the residual ---*/
+      Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+      /*--- Apply to the residual vector ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+
+//      if (implicit) {
+//        for (iVar = 1; iVar <= nDim; iVar++) {
+//          total_index = iPoint*nVar+iVar;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
 //      }
-//    }
-//  }
-//  else {
-//
-//    /*--- Evaluate nu tilde at the closest point to the surface using the wall functions ---*/
-//
-//    SetNuTilde_WF(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker);
-//
-//  }
+
+    }
+  }
 
 }
 
 void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                                        unsigned short val_marker) {
-//  unsigned long iPoint, iVertex;
-//  unsigned short iVar;
-//
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//
-//    if (geometry->node[iPoint]->GetDomain()) {
-//
-//      /*--- Get the velocity vector ---*/
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        Solution[iVar] = 0.0;
-//
-//      node[iPoint]->SetSolution_Old(Solution);
-//      LinSysRes.SetBlock_Zero(iPoint);
-//
-//      /*--- Includes 1 in the diagonal ---*/
-//
-//      Jacobian.DeleteValsRowi(iPoint);
-//    }
-//  }
+
+  unsigned short iDim, iVar, jVar;
+  unsigned long iVertex, iPoint, total_index;
+
+  su2double Theta, Ib_w, Temperature, Radiative_Energy;
+  su2double *Normal, Area, Wall_Emissivity, Twall;
+  su2double Radiative_Heat_Flux;
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool energy        = config->GetEnergy_Equation();
+
+  /*--- Identify the boundary by string name ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Retrieve the specified wall temperature ---*/
+  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+
+  /*--- Get the specified wall emissivity from config ---*/
+  Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
+
+  /*--- Compute the constant for the wall theta ---*/
+  Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      /*--- Initialize the viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Visc[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+      /*--- Retrieve temperature from the isothermal boundary condition ---*/
+      Temperature = Twall;
+
+      /*--- Compute the blackbody intensity at the wall. ---*/
+      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+
+      /*--- Compute the radiative heat flux. ---*/
+      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Heat_Flux = -1.0*Theta*(Ib_w - Radiative_Energy);
+
+      /*--- Compute the Viscous contribution to the residual ---*/
+      Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+      /*--- Apply to the residual vector ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+
+//      if (implicit) {
+//        for (iVar = 1; iVar <= nDim; iVar++) {
+//          total_index = iPoint*nVar+iVar;
+//          Jacobian.DeleteValsRowi(total_index);
+//        }
+//      }
+
+    }
+  }
 
 }
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  unsigned long iPoint, iVertex;
-//  unsigned short iVar, iDim;
-//  su2double *Normal, *V_infty, *V_domain;
-//
-//  bool grid_movement  = config->GetGrid_Movement();
-//
-//  Normal = new su2double[nDim];
-//
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-//
-//    if (geometry->node[iPoint]->GetDomain()) {
-//
-//      /*--- Allocate the value at the infinity ---*/
-//
-//      V_infty = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-//
-//      /*--- Retrieve solution at the farfield boundary node ---*/
-//
-//      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-//
-//      /*--- Grid Movement ---*/
-//
-//      if (grid_movement)
-//        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
-//
-//      conv_numerics->SetPrimitive(V_domain, V_infty);
-//
-//      /*--- Set turbulent variable at the wall, and at infinity ---*/
-//
-//      for (iVar = 0; iVar < nVar; iVar++)
-//        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-//      Solution_j[0] = nu_tilde_Inf;
-//      conv_numerics->SetTurbVar(Solution_i, Solution_j);
-//
-//      /*--- Set Normal (it is necessary to change the sign) ---*/
-//
-//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Normal[iDim] = -Normal[iDim];
-//      conv_numerics->SetNormal(Normal);
-//
-//      /*--- Compute residuals and Jacobians ---*/
-//
-//      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//
-//      /*--- Add residuals and Jacobians ---*/
-//
-//      LinSysRes.AddBlock(iPoint, Residual);
-//      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//
-//    }
-//  }
-//
-//  delete [] Normal;
 
 }
 
 void CRadP1Solver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-//
-//  unsigned short iDim;
-//  unsigned long iVertex, iPoint;
-//  su2double *V_inlet, *V_domain, *Normal;
-//
-//  Normal = new su2double[nDim];
-//
-//  bool grid_movement  = config->GetGrid_Movement();
-//  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-//
-//  /*--- Loop over all the vertices on this boundary marker ---*/
-//
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-//
-//    if (geometry->node[iPoint]->GetDomain()) {
-//
-//      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-//
-//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-//      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-//
-//      /*--- Allocate the value at the inlet ---*/
-//
-//      V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-//
-//      /*--- Retrieve solution at the farfield boundary node ---*/
-//
-//      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-//
-//      /*--- Set various quantities in the solver class ---*/
-//
-//      conv_numerics->SetPrimitive(V_domain, V_inlet);
-//
-//      /*--- Set the turbulent variable states (prescribed for an inflow) ---*/
-//
-//      Solution_i[0] = node[iPoint]->GetSolution(0);
-//
-//      /*--- Load the inlet turbulence variable (uniform by default). ---*/
-//
-//      Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-//
-//      conv_numerics->SetTurbVar(Solution_i, Solution_j);
-//
-//      /*--- Set various other quantities in the conv_numerics class ---*/
-//
-//      conv_numerics->SetNormal(Normal);
-//
-//      if (grid_movement)
-//        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-//                                  geometry->node[iPoint]->GetGridVel());
-//
-//      /*--- Compute the residual using an upwind scheme ---*/
-//
-//      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//      LinSysRes.AddBlock(iPoint, Residual);
-//
-//      /*--- Jacobian contribution for implicit integration ---*/
-//
-//      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//
-////      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-////
-////      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-////      visc_numerics->SetNormal(Normal);
-////
-////      /*--- Conservative variables w/o reconstruction ---*/
-////
-////      visc_numerics->SetPrimitive(V_domain, V_inlet);
-////
-////      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-////
-////      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-////      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-////
-////      /*--- Compute residual, and Jacobians ---*/
-////
-////      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-////
-////      /*--- Subtract residual, and update Jacobians ---*/
-////
-////      LinSysRes.SubtractBlock(iPoint, Residual);
-////      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//
-//    }
-//  }
-//
-//  /*--- Free locally allocated memory ---*/
-//  delete[] Normal;
-//
+
 }
 
 void CRadP1Solver::BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                               CConfig *config, unsigned short val_marker) {
-//  unsigned long iPoint, iVertex;
-//  unsigned short iVar, iDim;
-//  su2double *V_outlet, *V_domain, *Normal;
-//
-//  bool grid_movement  = config->GetGrid_Movement();
-//
-//  Normal = new su2double[nDim];
-//
-//  /*--- Loop over all the vertices on this boundary marker ---*/
-//
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-//    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-//
-//    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-//
-//    if (geometry->node[iPoint]->GetDomain()) {
-//
-//      /*--- Allocate the value at the outlet ---*/
-//
-//      V_outlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
-//
-//      /*--- Retrieve solution at the farfield boundary node ---*/
-//
-//      V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-//
-//      /*--- Set various quantities in the solver class ---*/
-//
-//      conv_numerics->SetPrimitive(V_domain, V_outlet);
-//
-//      /*--- Set the turbulent variables. Here we use a Neumann BC such
-//       that the turbulent variable is copied from the interior of the
-//       domain to the outlet before computing the residual.
-//       Solution_i --> TurbVar_internal,
-//       Solution_j --> TurbVar_outlet ---*/
-//
-//      for (iVar = 0; iVar < nVar; iVar++) {
-//        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-//        Solution_j[iVar] = node[iPoint]->GetSolution(iVar);
-//      }
-//      conv_numerics->SetTurbVar(Solution_i, Solution_j);
-//
-//      /*--- Set Normal (negate for outward convention) ---*/
-//
-//      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-//      for (iDim = 0; iDim < nDim; iDim++)
-//        Normal[iDim] = -Normal[iDim];
-//      conv_numerics->SetNormal(Normal);
-//
-//      if (grid_movement)
-//        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-//                                  geometry->node[iPoint]->GetGridVel());
-//
-//      /*--- Compute the residual using an upwind scheme ---*/
-//
-//      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//      LinSysRes.AddBlock(iPoint, Residual);
-//
-//      /*--- Jacobian contribution for implicit integration ---*/
-//
-//      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-//
-////      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-////
-////      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-////      visc_numerics->SetNormal(Normal);
-////
-////      /*--- Conservative variables w/o reconstruction ---*/
-////
-////      visc_numerics->SetPrimitive(V_domain, V_outlet);
-////
-////      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-////
-////      visc_numerics->SetTurbVar(Solution_i, Solution_j);
-////      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-////
-////      /*--- Compute residual, and Jacobians ---*/
-////
-////      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-////
-////      /*--- Subtract residual, and update Jacobians ---*/
-////
-////      LinSysRes.SubtractBlock(iPoint, Residual);
-////      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-//
-//    }
-//  }
-//
-//  /*--- Free locally allocated memory ---*/
-//
-//  delete[] Normal;
-//
+
 }
 
 void CRadP1Solver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
