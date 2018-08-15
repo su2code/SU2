@@ -770,6 +770,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief SCALAR_INIT \n DESCRIPTION: Initial value for scalar transport \ingroup Config*/
   addDoubleOption("SCALAR_INIT", Scalar_Init, 0.0);
+  /*!\brief SCALAR_CLIPPING \n DESCRIPTION: Activate clipping for scalar transport equations \ingroup Config*/
+  addBoolOption("SCALAR_CLIPPING", Scalar_Clipping, false);
+  /*!\brief SCALAR_CLIPPING_MAX \n DESCRIPTION: Maximum value for scalar clipping \ingroup Config*/
+  addDoubleOption("SCALAR_CLIPPING_MAX", Scalar_Clipping_Max, 1.0e15);
+  /*!\brief SCALAR_CLIPPING_MIN \n DESCRIPTION: Minimum value for scalar clipping \ingroup Config*/
+  addDoubleOption("SCALAR_CLIPPING_MIN", Scalar_Clipping_Min, -1.0e15);
+  /*!\brief LAMINAR_FLAME_SPEED \n DESCRIPTION: Laminar flame speed for combustion \ingroup Config*/
+  addDoubleOption("LAMINAR_FLAME_SPEED", Laminar_Flame_Speed, 0.0);
+  /*!\brief FLAME_TEMPERATURE \n DESCRIPTION: Flame temperature for combustion \ingroup Config*/
+  addDoubleOption("FLAME_TEMPERATURE", Flame_Temperature, 0.0);
   
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);

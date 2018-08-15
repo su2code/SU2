@@ -772,6 +772,8 @@ private:
   *Inc_Velocity_Init,    /*!< \brief Initial velocity vector for incompressible flows. */
   Inc_Temperature_Init,    /*!< \brief Initial temperature for incompressible flows w/ heat transfer. */
   Scalar_Init,    /*!< \brief Initial uniform value for scalar transport. */
+  Laminar_Flame_Speed,    /*!< \brief Value of the laminar flame speed for combustion. */
+  Flame_Temperature,    /*!< \brief Value of the flame temperature for combustion. */
   Heat_Flux_Ref,  /*!< \brief Reference heat flux for non-dim. */
   Gas_Constant_Ref, /*!< \brief Reference specific gas constant. */
   Temperature_Critical,   /*!< \brief Critical Temperature for real fluid model.  */
@@ -1027,7 +1029,10 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
-
+  bool Scalar_Clipping;            /*!< \brief Boolean that activates clipping for scalar transport. */
+  su2double Scalar_Clipping_Max,   /*!< \brief Maximum value of clipping for scalar transport. */
+  Scalar_Clipping_Min;             /*!< \brief Minimum value of clipping for scalar transport. */
+  
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -2049,6 +2054,36 @@ public:
    * \return Initial value for scalar transport.
    */
   su2double GetScalar_Init(void);
+  
+  /*!
+   * \brief Get the laminar flame speed for combustion.
+   * \return Laminar flame speed for combustion.
+   */
+  su2double GetLaminar_Flame_Speed(void);
+  
+  /*!
+   * \brief Get the flame temperature for combustion.
+   * \return Flame temperature for combustion.
+   */
+  su2double GetFlame_Temperature(void);
+  
+  /*!
+   * \brief Get the flag for activating scalar transport clipping
+   * \return Flag for scalar clipping
+   */
+  bool GetScalar_Clipping(void);
+  
+  /*!
+   * \brief Get the maximum bound for scalar transport clipping
+   * \return Maximum value for scalar clipping
+   */
+  su2double GetScalar_Clipping_Max(void);
+  
+  /*!
+   * \brief Get the minimum bound for scalar transport clipping
+   * \return Minimum value for scalar clipping
+   */
+  su2double GetScalar_Clipping_Min(void);
   
   /*!
    * \brief Get the Young's modulus of elasticity.

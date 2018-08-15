@@ -466,7 +466,7 @@ void CScalarSolver::Upwind_Residual(CGeometry *geometry,
   unsigned long iEdge, iPoint, jPoint;
   unsigned short iDim, iVar;
   
-  bool muscl         = config->GetMUSCL_Scalar();
+  bool muscl         = (config->GetMUSCL_Scalar() && (iMesh == MESH_0));
   bool limiter       = (config->GetKind_SlopeLimit_Scalar() != NO_LIMITER);
   bool grid_movement = config->GetGrid_Movement();
   
@@ -643,11 +643,11 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  su2double Delta, Vol;
+  su2double Delta, *local_Res_TruncError, Vol;
   
-  bool scalar_clipping = true;
-  su2double scalar_clipping_min =  0.0;
-  su2double scalar_clipping_max =  1.0;
+  bool scalar_clipping = config->GetScalar_Clipping();
+  su2double scalar_clipping_min = config->GetScalar_Clipping_Min();
+  su2double scalar_clipping_max = config->GetScalar_Clipping_Max();
   
   bool adjoint = ( config->GetContinuous_Adjoint() ||
                   (config->GetDiscrete_Adjoint() && config->GetFrozen_Visc_Disc()));
@@ -666,6 +666,10 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
+    /*--- Read the residual ---*/
+
+    local_Res_TruncError = node[iPoint]->GetResTruncError();
+
     /*--- Read the volume ---*/
     
     Vol = geometry->node[iPoint]->GetVolume();
@@ -679,7 +683,7 @@ void CScalarSolver::ImplicitEuler_Iteration(CGeometry *geometry,
     
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - LinSysRes[total_index];
+      LinSysRes[total_index] = - (LinSysRes[total_index] +  + local_Res_TruncError[iVar]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]),
@@ -1055,10 +1059,11 @@ void CScalarSolver::SetInletAtVertex(su2double *val_inlet,
 }
 
 su2double CScalarSolver::GetInletAtVertex(su2double *val_inlet,
-                                                 unsigned long val_inlet_point,
-                                                 unsigned short val_kind_marker,
-                                                 CGeometry *geometry,
-                                                 CConfig *config) {
+                                          unsigned long val_inlet_point,
+                                          unsigned short val_kind_marker,
+                                          string val_marker,
+                                          CGeometry *geometry,
+                                          CConfig *config) {
   
   /*--- Local variables ---*/
   
@@ -1072,7 +1077,9 @@ su2double CScalarSolver::GetInletAtVertex(su2double *val_inlet,
   if (val_kind_marker == INLET_FLOW) {
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
           
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -1593,8 +1600,8 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
     }
     
     /*--- Initialization of the structure of the whole Jacobian ---*/
-    
-    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
+  
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Passive Scalar). MG level: " << iMesh <<"." << endl;
     Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
     
     if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
@@ -1770,11 +1777,11 @@ void CPassiveScalarSolver::Preprocessing(CGeometry *geometry,
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
   
-  /*--- Upwind second order reconstruction ---*/
+  /*--- Upwind second-order reconstruction ---*/
   
-  if (limiter_scalar) SetSolution_Limiter(geometry, config);
+  if ((limiter_scalar) && (iMesh == MESH_0)) SetSolution_Limiter(geometry, config);
   
-  if (limiter_flow) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
+  if ((limiter_flow) && (iMesh == MESH_0)) solver_container[FLOW_SOL]->SetPrimitive_Limiter(geometry, config);
   
 }
 
@@ -2135,7 +2142,7 @@ CCombustionScalarSolver::CCombustionScalarSolver(CGeometry *geometry,
   
   /*--- Initialization of the structure of the whole Jacobian ---*/
   
-  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (SA model)." << endl;
+  if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Combustion Scalar). MG level: " << iMesh <<"." << endl;
   Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
   
   if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
@@ -2478,7 +2485,7 @@ void CCombustionScalarSolver::Source_Residual(CGeometry *geometry,
     
     su2double rho_u = 1.0;    //config->GetTransportedScalar_UnburntDensity();
     //su2double alpha_u = 0.01; //config->GetTransportedScalar_UnburntThermalDiffusion();
-    su2double Sl = 0.5;       //config->GetTransportedScalar_LaminarFlamespeed();
+    su2double Sl = 0.5;       //config->GetLaminarFlamespeed();
     
     su2double **ScalarVar_Grad, GradNorm2 = 0.0;
     

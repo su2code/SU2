@@ -5369,8 +5369,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             /*--- Scalar residual ---*/
             if (scalar) {
-              switch(nVar_Turb) {
-                case 1: SPRINTF (turb_resid, ", %12.10f", log10 (residual_scalar[0])); break;
+              switch(nVar_Scalar) {
+                case 1: SPRINTF (scalar_resid, ", %12.10f", log10 (residual_scalar[0])); break;
               }
             }
             
