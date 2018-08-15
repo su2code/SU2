@@ -921,6 +921,9 @@ int rank = 0;
 
     iIter++;
   }
+
+  // AD::SetPreaccOut(signal.P, signal.len[iPhi]);
+  // AD::EndPreacc();
   }
 
   if(rank == MASTER_NODE){
@@ -968,7 +971,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
     /*---First create uniform grid since algorithm requires it---*/
     CreateUniformGridSignal(iPhi);
-    dsigma_old = 0.001;
+    dsigma_old = 0.01;
     ground_flag = false;
 
   	signal.P       = new su2double[signal.len[iPhi]];
@@ -992,6 +995,9 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
       signal.tau[i] = w0*signal.t[i];
     }
     dtau = signal.tau[1] - signal.tau[0];
+
+    // AD::StartPreacc();
+    // AD::SetPreaccIn(signal.P, signal.len[iPhi]);
 
     CreateInitialRayTube(iPhi);
 
@@ -1213,7 +1219,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    dsigma_non = 0.9*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
 
     /*---Restrict dsigma based on thermoviscous effects---*/
     dsigma_tv = 0.1*Gamma/signal.len[iPhi];
@@ -1268,14 +1274,26 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
     dsigma_c = abs(0.05*c0/dc_dsigma);
 
     /*---Pick minimum dsigma---*/
-    dsigma = dsigma_non;
-    // dsigma = min(dsigma, dsigma_tv);
-    // dsigma = min(dsigma, dsigma_relO);
-    // dsigma = min(dsigma, dsigma_relN);
-    dsigma = min(dsigma, dsigma_A);
-    dsigma = min(dsigma, dsigma_rc);
-    dsigma = min(dsigma, dsigma_c);
-    dsigma *= CFL_reduce;
+    if(iIter == 0){
+      dsigma = 0.001*CFL_reduce;
+      dsigma_old = CFL_reduce;
+    }
+    else{
+      dsigma = dsigma_old;
+      dsigma = min(dsigma, dsigma_tv);
+      dsigma = min(dsigma, dsigma_relO);
+      dsigma = min(dsigma, dsigma_relN);
+      dsigma = min(dsigma, dsigma_A);
+      dsigma = min(dsigma, dsigma_rc);
+      dsigma = min(dsigma, dsigma_c);
+      while(dsigma_non < dsigma){
+        dsigma *= 0.9;
+        // int factor = ceil(dsigma/dsigma_non);
+        // dsigma /= su2double(factor);
+      }
+      dsigma *= CFL_reduce;
+      dsigma_old = 1000.*dsigma;
+    }
 
     ds = xbar*dsigma;
     dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
