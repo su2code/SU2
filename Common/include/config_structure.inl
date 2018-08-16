@@ -1057,12 +1057,6 @@ inline su2double* CConfig::GetEnthalpy_Formation(void) { return Enthalpy_Formati
 
 inline su2double CConfig::GetEnthalpy_Formation(unsigned short iSpecies) { return Enthalpy_Formation[iSpecies]; }
 
-
-
-
-
-
-
 inline void CConfig::SetKind_AdjTurb_Linear_Prec(unsigned short val_kind_prec) { Kind_AdjTurb_Linear_Prec = val_kind_prec; }
 
 inline su2double CConfig::GetAdjTurb_Linear_Error(void) { return AdjTurb_Linear_Error; }
