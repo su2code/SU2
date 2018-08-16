@@ -5202,7 +5202,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
-  LocalPoints.clear();
   Neighbors.clear();
   Color_List.clear();
 
@@ -5412,69 +5411,97 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
    points on each rank also have their color values. ---*/
 
   unsigned short iNode, jNode;
-  unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
+  unsigned long iPoint, iNeighbor, jPoint, iElem, jElem, iProcessor;
+  
+  map<unsigned long, unsigned long> Point_Map;
+  map<unsigned long, unsigned long>::iterator MI;
+  
   vector<unsigned long>::iterator it;
-
+  
   SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
   int iProc, iSend, iRecv, myStart, myFinal;
-
-  /*--- First, create a complete list of the points on this rank (including
+  
+  /*--- First, create a complete map of the points on this rank (excluding
    repeats) and their neighbors so that we can efficiently loop through the
    points and decide how to distribute the colors. ---*/
-
-  LocalPoints.clear();
+  
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-      if (find(LocalPoints.begin(), LocalPoints.end(),
-               geometry->elem[iElem]->GetNode(iNode)) == LocalPoints.end()) {
-        LocalPoints.push_back(geometry->elem[iElem]->GetNode(iNode));
-      }
+      iPoint = geometry->elem[iElem]->GetNode(iNode);
+      Point_Map[iPoint] = iPoint;
     }
   }
-
+  
   /*--- Error check to ensure that the number of points found for this
    rank matches the number in the mesh file (in serial). ---*/
-
-  if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
+  
+  if ((size == SINGLE_NODE) && (Point_Map.size() < geometry->GetnPoint())) {
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
                    +string("Please check the mesh file for correctness.\n"),
                    CURRENT_FUNCTION);
   }
-
+  
   /*--- Create a global to local mapping that includes the unowned points. ---*/
-
+  
   map<unsigned long, unsigned long> Global2Local;
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
+  
+  /*--- Find extra points that carry an index higher than nPoint. ---*/
+  
   jPoint = geometry->GetnPoint();
-  for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
-    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) ||
-        (LocalPoints[iPoint] >= geometry->ending_node[rank])){
-      Global2Local[LocalPoints[iPoint]] = jPoint;
+  for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
+    iPoint = MI->first;
+    if ((Point_Map[iPoint] <  geometry->starting_node[rank]) ||
+        (Point_Map[iPoint] >= geometry->ending_node[rank])){
+      Global2Local[Point_Map[iPoint]] = jPoint;
       jPoint++;
     }
   }
-
-  /*--- Now create the neighbor list for each owned node (self-inclusive). ---*/
-
-  Neighbors.clear();
-  Neighbors.resize(LocalPoints.size());
+  
+  /*--- Now create the neighbor map for each owned node (self-inclusive). ---*/
+  
+  vector<vector<unsigned long> > Elem_List;
+  Elem_List.resize(Point_Map.size());
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
-      for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
-        jPoint = geometry->elem[iElem]->GetNode(jNode);
-        if (find(Neighbors[iPoint].begin(), Neighbors[iPoint].end(),
-                 jPoint) == Neighbors[iPoint].end()) {
-          Neighbors[iPoint].push_back(jPoint);
-        }
+      Elem_List[iPoint].push_back(iElem);
+    }
+  }
+  
+  /*--- Now loop over all points and check their elements for neighbors. ---*/
+  
+  vector<map<unsigned long, unsigned long> > Neighbors_Temp;
+  Neighbors_Temp.resize(Point_Map.size());
+  for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
+    for (iElem = 0; iElem < Elem_List[iPoint].size(); iElem++) {
+      jElem = Elem_List[iPoint][iElem];
+      for (jNode = 0; jNode < geometry->elem[jElem]->GetnNodes(); jNode++) {
+        jPoint = geometry->elem[jElem]->GetNode(jNode);
+        Neighbors_Temp[iPoint][jPoint] = jPoint;
       }
     }
   }
-
+  
+  /*--- Loop through and set the map to be iNeighbor -> iPoint. ---*/
+  
+  Neighbors.clear();
+  Neighbors.resize(Point_Map.size());
+  for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
+    iNeighbor = 0;
+    for (MI = Neighbors_Temp[iPoint].begin();
+         MI != Neighbors_Temp[iPoint].end(); MI++) {
+      Neighbors[iPoint][iNeighbor] = MI->first;
+      iNeighbor++;
+    }
+  }
+  Elem_List.clear();
+  Neighbors_Temp.clear();
+  
   /*--- Prepare structures for communication. ---*/
 
   int *nPoint_Send = new int[size+1]; nPoint_Send[0] = 0;
@@ -7200,68 +7227,44 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   /*--- It is possible that we have repeated elements during the previous
    communications, as we mostly focus on the grid points and their colors.
-   First, loop through our local elements, count the local total for each
-   type, and build a mapping so we can avoid duplicates. ---*/
+   First, loop through our local elements and build a mapping by simply
+   overwriting the duplicate entries. ---*/
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Tria; iElem++) {
-    it = Tria_List.find(ID_Tria[iElem]);
-    if (it == Tria_List.end()) {
-      Tria_List[ID_Tria[iElem]] = iElem;
-      jElem++;
-    }
+    Tria_List[ID_Tria[iElem]] = iElem;
   }
-  nTria = jElem;
+  nTria = Tria_List.size();
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Quad; iElem++) {
-    it = Quad_List.find(ID_Quad[iElem]);
-    if (it == Quad_List.end()) {
-      Quad_List[ID_Quad[iElem]] = iElem;
-      jElem++;
-    }
+    Quad_List[ID_Quad[iElem]] = iElem;
   }
-  nQuad = jElem;
+  nQuad = Quad_List.size();
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Tetr; iElem++) {
-    it = Tetr_List.find(ID_Tetr[iElem]);
-    if (it == Tetr_List.end()) {
-      Tetr_List[ID_Tetr[iElem]] = iElem;
-      jElem++;
-    }
+    Tetr_List[ID_Tetr[iElem]] = iElem;
   }
-  nTetr = jElem;
+  nTetr = Tetr_List.size();
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Hexa; iElem++) {
-    it = Hexa_List.find(ID_Hexa[iElem]);
-    if (it == Hexa_List.end()) {
-      Hexa_List[ID_Hexa[iElem]] = iElem;
-      jElem++;
-    }
+    Hexa_List[ID_Hexa[iElem]] = iElem;
   }
-  nHexa = jElem;
+  nHexa = Hexa_List.size();
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Pris; iElem++) {
-    it = Pris_List.find(ID_Pris[iElem]);
-    if (it == Pris_List.end()) {
-      Pris_List[ID_Pris[iElem]] = iElem;
-      jElem++;
-    }
+    Pris_List[ID_Pris[iElem]] = iElem;
   }
-  nPris = jElem;
+  nPris = Pris_List.size();
   
   jElem = 0;
   for (iElem=0; iElem < nLocal_Pyra; iElem++) {
-    it = Pyra_List.find(ID_Pyra[iElem]);
-    if (it == Pyra_List.end()) {
-      Pyra_List[ID_Pyra[iElem]] = iElem;
-      jElem++;
-    }
+    Pyra_List[ID_Pyra[iElem]] = iElem;
   }
-  nPyra = jElem;
+  nPyra = Pyra_List.size();
   
   /*--- Reduce the final count of non-repeated elements on this rank. ---*/
   
