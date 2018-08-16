@@ -437,8 +437,6 @@ void CConfig::SetPointersNull(void) {
   Kappa_Flow          = NULL;
   Kappa_AdjFlow       = NULL;
   Kappa_Heat          = NULL;
-	Kappa_TNE2          = NULL;
-	Kappa_AdjTNE2       = NULL;
   Stations_Bounds     = NULL;
   ParamDV             = NULL;
   DV_Value            = NULL;
@@ -1334,7 +1332,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
    * DESCRIPTION: Slope limiter for the direct solution. \n OPTIONS: See \link Limiter_Map \endlink \n DEFAULT VENKATAKRISHNAN \ingroup Config*/
   addEnumOption("SLOPE_LIMITER_TNE2", Kind_SlopeLimit_TNE2, Limiter_Map, VENKATAKRISHNAN);
   default_jst_coeff[0] = 0.5; default_jst_coeff[1] = 0.02;
-  
+
   /*!\brief CONV_NUM_METHOD_ADJFLOW
    *  \n DESCRIPTION: Convective numerical method for the adjoint solver.
    *  \n OPTIONS:  See \link Upwind_Map \endlink , \link Centered_Map \endlink. Note: not all methods are guaranteed to be implemented for the adjoint solver. \ingroup Config */
@@ -3314,8 +3312,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   Kappa_2nd_Flow    = Kappa_Flow[0];
   Kappa_4th_Flow    = Kappa_Flow[1];
-  Kappa_2nd_TNE2    = Kappa_TNE2[0];
-  Kappa_4th_TNE2    = Kappa_TNE2[1];
   Kappa_2nd_AdjFlow = Kappa_AdjFlow[0];
   Kappa_4th_AdjFlow = Kappa_AdjFlow[1];
   Kappa_2nd_Heat = Kappa_Heat[0];
@@ -3547,10 +3543,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /*--- Reacting flows iniatilization ---*/
   if (( Kind_Solver == TNE2_EULER             ) ||
       ( Kind_Solver == TNE2_NAVIER_STOKES     )  ) {
-
-      Kappa_1st_TNE2    = Kappa_TNE2[0];
-      Kappa_2nd_TNE2    = Kappa_TNE2[1];
-      Kappa_4th_TNE2    = Kappa_TNE2[2];
 
       bool init_err;
       unsigned short maxEl = 0;
@@ -5325,7 +5317,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
           (Kind_Solver == RANS) || (Kind_Solver == ADJ_RANS) ||
-          (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver = ADJ_TNE2_NAVIER_STOKES) )
+          (Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == ADJ_TNE2_NAVIER_STOKES) )
         cout << "Reynolds number: " << Reynolds <<". Reference length "  << Length_Reynolds << "." << endl;
       if (Fixed_CL_Mode) {
       	cout << "Fixed CL mode, target value: " << Target_CL << "." << endl;

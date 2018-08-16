@@ -3565,6 +3565,11 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
         for (iInst = 0; iInst < nInst[iZone]; iInst++)
           solver_container[iZone][iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], ExtIter);
       }
+      if ((config_container[iZone]->GetKind_Solver() ==  TNE2_EULER) ||
+          (config_container[iZone]->GetKind_Solver() ==  TNE2_NAVIER_STOKES) ) {
+        for (iInst = 0; iInst < nInst[iZone]; iInst++)
+          solver_container[iZone][iInst][MESH_0][TNE2_SOL]->SetInitialCondition(geometry_container[iZone][INST_0], solver_container[iZone][iInst], config_container[iZone], ExtIter);
+      }
     }
   }
 
@@ -3620,6 +3625,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    case TNE2_EULER: case TNE2_NAVIER_STOKES:
+      StopCalc = integration_container[ZONE_0][INST_0][TNE2_SOL]->GetConvergence(); break;
     case WAVE_EQUATION:
       StopCalc = integration_container[ZONE_0][INST_0][WAVE_SOL]->GetConvergence(); break;
     case HEAT_EQUATION: case HEAT_EQUATION_FVM:
@@ -3969,8 +3976,6 @@ CTurbomachineryDriver::CTurbomachineryDriver(char* confFile,
         MPICommunicator) { }
 
 CTurbomachineryDriver::~CTurbomachineryDriver(void) { }
-
-void CTurbomachineryDriver::Run() {
 
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
@@ -4630,7 +4635,6 @@ void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
     }
   }
 }
-
 
 void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
