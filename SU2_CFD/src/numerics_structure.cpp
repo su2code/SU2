@@ -338,10 +338,6 @@ CNumerics::~CNumerics(void) {
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (var != NULL) delete [] var;
 
-  for (iVar = 0; iVar < nVar; iVar++) {
-    delete [] dVdU[iVar];
-  }
-  delete [] dVdU;
 }
 
 void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
