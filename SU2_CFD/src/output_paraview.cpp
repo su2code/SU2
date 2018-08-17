@@ -501,18 +501,18 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
       }
 
       bool isVector = false;
-      size_t found = config->fields[iField].find("X-");
+      size_t found = config->fields[iField].find("_x");
       if (found!=string::npos) {
         output_variable = true;
         isVector = true;
       }
-      found = config->fields[iField].find("Y-");
+      found = config->fields[iField].find("_y");
       if (found!=string::npos) {
         output_variable = false;
         //skip
         VarCounter++;
       }
-      found = config->fields[iField].find("Z-");
+      found = config->fields[iField].find("_z");
       if (found!=string::npos) {
         output_variable = false;
         //skip
@@ -523,7 +523,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
         /*--- Several output variables should be written as vectors. ---*/
 
-        fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+        fieldname.erase(fieldname.end()-2,fieldname.end());
 
         if (rank == MASTER_NODE) {
           Paraview_File << "\nVECTORS " << fieldname << " double\n";
@@ -2311,12 +2311,12 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     fieldname.erase(remove(fieldname.begin(), fieldname.end(), '"'), fieldname.end());
 
     bool output_variable = true, isVector = false;
-    size_t found = Variable_Names[iField].find("X-");
+    size_t found = Variable_Names[iField].find("_x");
     if (found!=string::npos) {
       output_variable = true;
       isVector = true;
     }
-    found = Variable_Names[iField].find("Y-");
+    found = Variable_Names[iField].find("_y");
     if (found!=string::npos) {
       output_variable = false;
       //skip
@@ -2326,7 +2326,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 #endif
       VarCounter++;
     }
-found = Variable_Names[iField].find("Z-");
+found = Variable_Names[iField].find("_z");
     if (found!=string::npos) {
       output_variable = false;
       //skip
@@ -2339,7 +2339,7 @@ found = Variable_Names[iField].find("Z-");
 
     if (output_variable && isVector) {
 
-      fieldname.erase(fieldname.begin(),fieldname.begin()+2);
+      fieldname.erase(fieldname.end()-2,fieldname.end());
 
       if (rank == MASTER_NODE) {
         Paraview_File << "\nVECTORS " << fieldname << " double\n";
