@@ -19,7 +19,6 @@ branches:
         - feature_checkpointing
 
 python:
-    - 2.7
     - 3.6
 
 env:
@@ -30,17 +29,9 @@ env:
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
           TEST_SCRIPT=serial_regression.py
 
-        # Parallel build and test
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER"
-          TEST_SCRIPT=parallel_regression.py
-
         # Serial build and test for AD
         - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
           TEST_SCRIPT=serial_regression_AD.py
-
-        # Parallel build and test for AD:
-        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff"
-          TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
