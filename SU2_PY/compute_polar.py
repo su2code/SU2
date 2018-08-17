@@ -378,7 +378,7 @@ def main():
                                         'SIZE': [1]}
             if 'OPT_OBJECTIVE' not in konfig:
                 obj = {}
-                obj['DRAG'] = {'SCALE':1.e-2, 'OBJTYPE':'DEFAULT'}
+                obj['DRAG'] = {'SCALE':1.e-2, 'OBJTYPE':'DEFAULT', 'MARKER': 'None'}
                 konfig.OPT_OBJECTIVE = obj
             #
             # --------- end of dummy optimization variables definition section ---------
@@ -440,7 +440,7 @@ def main():
 
             results.MOMENT_Z.append(momentz)
             if options.geomDim == 3:
-                results.MOMENT_X.append(momentz)
+                results.MOMENT_X.append(momentx)
                 results.MOMENT_Y.append(momenty)
 
             output = '  ' + str(AngleAttack) + ",   "+str(MachNumber)+", "
@@ -455,8 +455,8 @@ def main():
                 else:
                     output = output + str(force_x) + ", " + str(force_z) + ", " + str(force_y)
             if options.geomDim == 3:
-                output = output + ", " + str(momentx) + ", " + str(momenty) + ", "
-                output = output + str(momentz) + " \n"
+                output = output + ", " + str(momentx) + ", " + str(momentz) + ", "
+                output = output + str(momenty) + " \n"
             else:
                 output = output+", "+str(momentz)+" \n"
 
