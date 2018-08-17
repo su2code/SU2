@@ -5411,7 +5411,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
    points on each rank also have their color values. ---*/
 
   unsigned short iNode, jNode;
-  unsigned long iPoint, iNeighbor, jPoint, iElem, jElem, iProcessor;
+  unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
   
   map<unsigned long, unsigned long> Point_Map;
   map<unsigned long, unsigned long>::iterator MI;
@@ -5462,45 +5462,27 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
     }
   }
   
-  /*--- Now create the neighbor map for each owned node (self-inclusive). ---*/
+  /*--- Now create the neighbor list for each owned node (self-inclusive). ---*/
   
-  vector<vector<unsigned long> > Elem_List;
-  Elem_List.resize(Point_Map.size());
+  Neighbors.clear();
+  Neighbors.resize(Point_Map.size());
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
-      Elem_List[iPoint].push_back(iElem);
-    }
-  }
-  
-  /*--- Now loop over all points and check their elements for neighbors. ---*/
-  
-  vector<map<unsigned long, unsigned long> > Neighbors_Temp;
-  Neighbors_Temp.resize(Point_Map.size());
-  for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
-    for (iElem = 0; iElem < Elem_List[iPoint].size(); iElem++) {
-      jElem = Elem_List[iPoint][iElem];
-      for (jNode = 0; jNode < geometry->elem[jElem]->GetnNodes(); jNode++) {
-        jPoint = geometry->elem[jElem]->GetNode(jNode);
-        Neighbors_Temp[iPoint][jPoint] = jPoint;
+      for (jNode = 0; jNode < geometry->elem[iElem]->GetnNodes(); jNode++) {
+        jPoint = geometry->elem[iElem]->GetNode(jNode);
+        Neighbors[iPoint].push_back(jPoint);
       }
     }
   }
   
-  /*--- Loop through and set the map to be iNeighbor -> iPoint. ---*/
+  /*--- Post-process the neighbor lists. ---*/
   
-  Neighbors.clear();
-  Neighbors.resize(Point_Map.size());
   for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
-    iNeighbor = 0;
-    for (MI = Neighbors_Temp[iPoint].begin();
-         MI != Neighbors_Temp[iPoint].end(); MI++) {
-      Neighbors[iPoint][iNeighbor] = MI->first;
-      iNeighbor++;
-    }
+    sort(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
+    Neighbors[iPoint].resize(it - Neighbors[iPoint].begin());
   }
-  Elem_List.clear();
-  Neighbors_Temp.clear();
   
   /*--- Prepare structures for communication. ---*/
 
