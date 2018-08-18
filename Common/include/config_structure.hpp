@@ -1198,9 +1198,6 @@ private:
     //  for (int i = 0; i < size; i++) {
     //    def[i] = default_value[i];
     //  }
-    if (!(option_map.find(name)== option_map.end())) {
-      cout << name << endl;
-    }
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
