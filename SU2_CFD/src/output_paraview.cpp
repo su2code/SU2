@@ -1,7 +1,7 @@
 /*!
  * \file output_paraview.cpp
- * \brief Main subroutines for output solver information
- * \author F. Palacios, T. Economon
+ * \brief Main subroutines for the output of ParaView visualization files.
+ * \author F. Palacios, T. Economon, E. van der Weide
  * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -36,26 +36,40 @@
  */
 
 #include "../include/output_structure.hpp"
-#include "../../externals/endian/portable_endian.h"
 
-/*--- Subroutine to convert little endian float to big endian, which is the
- required byte ordering for ParaView binary legacy format files. ---*/
+/*--- Subroutine to swap bytes, in case we need to convert to
+ big endian, which is expected for ParaView binary legacy format. ---*/
 
-float Float2BigEndian(float val_float) {
-  union {float f; int i;} val;
-  val.f = val_float;
-  val.i = htobe32(val.i);
-  return val.f;
-}
-
-/*--- Subroutine to convert little endian int to big endian, which is the
- required byte ordering for ParaView binary legacy format files. ---*/
-
-int Int2BigEndian(int val_int) {
-  if (sizeof(val_int) == 4)
-    return htobe32(val_int);
-  if (sizeof(val_int) == 8)
-    return htobe64(val_int);
+void SwapBytes(char *buffer,
+               size_t nBytes,
+               unsigned long nVar) {
+  
+  /*--- Store half the number of bytes in kk. ---*/
+  
+  const int kk = (int)nBytes/2;
+  
+  /*--- Loop over the number of variables in the buffer. ---*/
+  
+  for (int j = 0; j < (int)nVar; j++) {
+    
+    /*--- Initialize ii and jj, which are used to store the
+     indices of the bytes to be swapped. ---*/
+    
+    int ii = j*(int)nBytes;
+    int jj = ii + (int)nBytes - 1;
+    
+    /*--- Swap the bytes. ---*/
+    
+    for (int i = 0; i < kk; i++) {
+      char tmp   = buffer[jj];
+      buffer[jj] = buffer[ii];
+      buffer[ii] = tmp;
+      
+      ii++;
+      jj--;
+      
+    }
+  }
 }
 
 string GetVTKFilename(CConfig *config, unsigned short val_iZone,
@@ -2447,6 +2461,14 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   
   strcpy(fname, filename.c_str());
   
+  /*--- Check for big endian. We have to swap bytes otherwise. ---*/
+  
+  bool BigEndian;
+  union {int i; char c[4];} val;
+  val.i = 0x76543210;
+  if (val.c[0] == 0x10) BigEndian = false;
+  else BigEndian = true;
+  
   /*--- Serial implementation in case we have not compiled with MPI. ---*/
   
 #ifndef HAVE_MPI
@@ -2500,13 +2522,15 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
     for (iDim = 0; iDim < NCOORDS; iDim++) {
       if (nDim == 2 && iDim == 2) {
-        coord_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(0.0);
+        coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
         float val = (float)SU2_TYPE::GetValue(Data[iDim][iPoint]);
-        coord_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(val);
+        coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
   }
+  if (!BigEndian) SwapBytes((char *)coord_buf, sizeof(float), 3*GlobalPoint);
+  
   fwrite(coord_buf, sizeof(float), 3*GlobalPoint, fhw);
   delete [] coord_buf;
   
@@ -2550,107 +2574,134 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
       iNode  = iElem*N_POINTS_LINE;
       iNode2 = iElem*(N_POINTS_LINE+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_LINE);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundLine_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundLine_Par[iNode+1]-1);
+      conn_buf[iNode2+0] = N_POINTS_LINE;
+      conn_buf[iNode2+1] = Conn_BoundLine_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_BoundLine_Par[iNode+1]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Line*(N_POINTS_LINE+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                nParallel_Line*(N_POINTS_LINE+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Line*(N_POINTS_LINE+1), fhw);
     
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
       iNode  = iElem*N_POINTS_TRIANGLE;
       iNode2 = iElem*(N_POINTS_TRIANGLE+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TRIANGLE);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundTria_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundTria_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_BoundTria_Par[iNode+2]-1);
+      conn_buf[iNode2+0] = N_POINTS_TRIANGLE;
+      conn_buf[iNode2+1] = Conn_BoundTria_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_BoundTria_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_BoundTria_Par[iNode+2]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_BoundTria*(N_POINTS_TRIANGLE+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                nParallel_BoundTria*(N_POINTS_TRIANGLE+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_BoundTria*(N_POINTS_TRIANGLE+1), fhw);
     
     for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
       iNode  = iElem*N_POINTS_QUADRILATERAL;
       iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_BoundQuad_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_BoundQuad_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_BoundQuad_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_BoundQuad_Par[iNode+3]-1);
+      conn_buf[iNode2+0] = N_POINTS_QUADRILATERAL;
+      conn_buf[iNode2+1] = Conn_BoundQuad_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_BoundQuad_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_BoundQuad_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_BoundQuad_Par[iNode+3]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_BoundQuad*(N_POINTS_QUADRILATERAL+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                nParallel_BoundQuad*(N_POINTS_QUADRILATERAL+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_BoundQuad*(N_POINTS_QUADRILATERAL+1), fhw);
     
   } else {
     
     for (iElem = 0; iElem < nParallel_Tria; iElem++) {
       iNode  = iElem*N_POINTS_TRIANGLE;
       iNode2 = iElem*(N_POINTS_TRIANGLE+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TRIANGLE);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Tria_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Tria_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Tria_Par[iNode+2]-1);
+      conn_buf[iNode2+0] = N_POINTS_TRIANGLE;
+      conn_buf[iNode2+1] = Conn_Tria_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Tria_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Tria_Par[iNode+2]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Tria*(N_POINTS_TRIANGLE+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Tria*(N_POINTS_TRIANGLE+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Tria*(N_POINTS_TRIANGLE+1), fhw);
     
     for (iElem = 0; iElem < nParallel_Quad; iElem++) {
       iNode  = iElem*N_POINTS_QUADRILATERAL;
       iNode2 = iElem*(N_POINTS_QUADRILATERAL+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Quad_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Quad_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Quad_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_Quad_Par[iNode+3]-1);
+      conn_buf[iNode2+0] = N_POINTS_QUADRILATERAL;
+      conn_buf[iNode2+1] = Conn_Quad_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Quad_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Quad_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_Quad_Par[iNode+3]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Quad*(N_POINTS_QUADRILATERAL+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Quad*(N_POINTS_QUADRILATERAL+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Quad*(N_POINTS_QUADRILATERAL+1), fhw);
     
     for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
       iNode  = iElem*N_POINTS_TETRAHEDRON;
       iNode2 = iElem*(N_POINTS_TETRAHEDRON+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_TETRAHEDRON);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Tetr_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Tetr_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Tetr_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_Tetr_Par[iNode+3]-1);
+      conn_buf[iNode2+0] = N_POINTS_TETRAHEDRON;
+      conn_buf[iNode2+1] = Conn_Tetr_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Tetr_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Tetr_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_Tetr_Par[iNode+3]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Tetr*(N_POINTS_TETRAHEDRON+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Tetr*(N_POINTS_TETRAHEDRON+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Tetr*(N_POINTS_TETRAHEDRON+1), fhw);
     
     for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
       iNode  = iElem*N_POINTS_HEXAHEDRON;
       iNode2 = iElem*(N_POINTS_HEXAHEDRON+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_HEXAHEDRON);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Hexa_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Hexa_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Hexa_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_Hexa_Par[iNode+3]-1);
-      conn_buf[iNode2+5] = Int2BigEndian(Conn_Hexa_Par[iNode+4]-1);
-      conn_buf[iNode2+6] = Int2BigEndian(Conn_Hexa_Par[iNode+5]-1);
-      conn_buf[iNode2+7] = Int2BigEndian(Conn_Hexa_Par[iNode+6]-1);
-      conn_buf[iNode2+8] = Int2BigEndian(Conn_Hexa_Par[iNode+7]-1);
+      conn_buf[iNode2+0] = N_POINTS_HEXAHEDRON;
+      conn_buf[iNode2+1] = Conn_Hexa_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Hexa_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Hexa_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_Hexa_Par[iNode+3]-1;
+      conn_buf[iNode2+5] = Conn_Hexa_Par[iNode+4]-1;
+      conn_buf[iNode2+6] = Conn_Hexa_Par[iNode+5]-1;
+      conn_buf[iNode2+7] = Conn_Hexa_Par[iNode+6]-1;
+      conn_buf[iNode2+8] = Conn_Hexa_Par[iNode+7]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Hexa*(N_POINTS_HEXAHEDRON+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Hexa*(N_POINTS_HEXAHEDRON+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Hexa*(N_POINTS_HEXAHEDRON+1), fhw);
     
     for (iElem = 0; iElem < nParallel_Pris; iElem++) {
       iNode  = iElem*N_POINTS_PRISM;
       iNode2 = iElem*(N_POINTS_PRISM+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_PRISM);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Pris_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Pris_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Pris_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_Pris_Par[iNode+3]-1);
-      conn_buf[iNode2+5] = Int2BigEndian(Conn_Pris_Par[iNode+4]-1);
-      conn_buf[iNode2+6] = Int2BigEndian(Conn_Pris_Par[iNode+5]-1);
+      conn_buf[iNode2+0] = N_POINTS_PRISM;
+      conn_buf[iNode2+1] = Conn_Pris_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Pris_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Pris_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_Pris_Par[iNode+3]-1;
+      conn_buf[iNode2+5] = Conn_Pris_Par[iNode+4]-1;
+      conn_buf[iNode2+6] = Conn_Pris_Par[iNode+5]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Pris*(N_POINTS_PRISM+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Pris*(N_POINTS_PRISM+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Pris*(N_POINTS_PRISM+1), fhw);
     
     for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
       iNode  = iElem*N_POINTS_PYRAMID;
       iNode2 = iElem*(N_POINTS_PYRAMID+1);
-      conn_buf[iNode2+0] = Int2BigEndian(N_POINTS_PYRAMID);
-      conn_buf[iNode2+1] = Int2BigEndian(Conn_Pyra_Par[iNode+0]-1);
-      conn_buf[iNode2+2] = Int2BigEndian(Conn_Pyra_Par[iNode+1]-1);
-      conn_buf[iNode2+3] = Int2BigEndian(Conn_Pyra_Par[iNode+2]-1);
-      conn_buf[iNode2+4] = Int2BigEndian(Conn_Pyra_Par[iNode+3]-1);
-      conn_buf[iNode2+5] = Int2BigEndian(Conn_Pyra_Par[iNode+4]-1);
-      conn_buf[iNode2+6] = Int2BigEndian(Conn_Pyra_Par[iNode+5]-1);
+      conn_buf[iNode2+0] = N_POINTS_PYRAMID;
+      conn_buf[iNode2+1] = Conn_Pyra_Par[iNode+0]-1;
+      conn_buf[iNode2+2] = Conn_Pyra_Par[iNode+1]-1;
+      conn_buf[iNode2+3] = Conn_Pyra_Par[iNode+2]-1;
+      conn_buf[iNode2+4] = Conn_Pyra_Par[iNode+3]-1;
+      conn_buf[iNode2+5] = Conn_Pyra_Par[iNode+4]-1;
+      conn_buf[iNode2+6] = Conn_Pyra_Par[iNode+5]-1;
     }
-    fwrite(conn_buf, sizeof(int), nParallel_Pyra*(N_POINTS_PYRAMID+1), fhw);
+    if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
+                              nParallel_Pyra*(N_POINTS_PYRAMID+1));
+    fwrite(conn_buf, sizeof(int),
+           nParallel_Pyra*(N_POINTS_PYRAMID+1), fhw);
     
   }
   
@@ -2670,18 +2721,24 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     type_buf = new int[nSurf_Elem_Par];
     
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
-      type_buf[iElem] = Int2BigEndian(LINE);
+      type_buf[iElem] = LINE;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Line);
     fwrite(type_buf, sizeof(int), nParallel_Line, fhw);
     
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
-      type_buf[iElem] = Int2BigEndian(TRIANGLE);
+      type_buf[iElem] = TRIANGLE;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_BoundTria);
     fwrite(type_buf, sizeof(int), nParallel_BoundTria, fhw);
     
     for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
-      type_buf[iElem] = Int2BigEndian(QUADRILATERAL);
+      type_buf[iElem] = QUADRILATERAL;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_BoundQuad);
     fwrite(type_buf, sizeof(int), nParallel_BoundQuad, fhw);
     
   } else {
@@ -2689,33 +2746,45 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     type_buf = new int[nGlobal_Elem_Par];
     
     for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-      type_buf[iElem] = Int2BigEndian(TRIANGLE);
+      type_buf[iElem] = TRIANGLE;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Tria);
     fwrite(type_buf, sizeof(int), nParallel_Tria, fhw);
     
     for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-      type_buf[iElem] = Int2BigEndian(QUADRILATERAL);
+      type_buf[iElem] = QUADRILATERAL;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Quad);
     fwrite(type_buf, sizeof(int), nParallel_Quad, fhw);
     
     for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-      type_buf[iElem] = Int2BigEndian(TETRAHEDRON);
+      type_buf[iElem] = TETRAHEDRON;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Tetr);
     fwrite(type_buf, sizeof(int), nParallel_Tetr, fhw);
     
     for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-      type_buf[iElem] = Int2BigEndian(HEXAHEDRON);
+      type_buf[iElem] = HEXAHEDRON;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Hexa);
     fwrite(type_buf, sizeof(int), nParallel_Hexa, fhw);
     
     for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-      type_buf[iElem] = Int2BigEndian(PRISM);
+      type_buf[iElem] = PRISM;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Pris);
     fwrite(type_buf, sizeof(int), nParallel_Pris, fhw);
     
     for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-      type_buf[iElem] = Int2BigEndian(PYRAMID);
+      type_buf[iElem] = PYRAMID;
     }
+    if (!BigEndian)
+      SwapBytes((char *)type_buf, sizeof(int), nParallel_Pyra);
     fwrite(type_buf, sizeof(int), nParallel_Pyra, fhw);
     
   }
@@ -2775,13 +2844,14 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       for (iPoint = 0; iPoint < GlobalPoint; iPoint++)
         for (iDim = 0; iDim < NCOORDS; iDim++) {
           if (nDim == 2 && iDim == 2) {
-            vec_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(0.0);
+            vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
             val = (float)SU2_TYPE::GetValue(Data[VarCounter+iDim][iPoint]);
-            vec_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(val);
+            vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
-      
+      if (!BigEndian)
+        SwapBytes((char *)vec_buf, sizeof(float), NCOORDS*GlobalPoint);
       fwrite(vec_buf, sizeof(float), NCOORDS*GlobalPoint, fhw);
       
       delete [] vec_buf;
@@ -2805,8 +2875,10 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       for (iPoint = 0; iPoint < GlobalPoint; iPoint++) {
         float val = (float)SU2_TYPE::GetValue(Data[VarCounter][iPoint]);
-        scalar_buf[iPoint] = Float2BigEndian(val);
+        scalar_buf[iPoint] = val;
       }
+      if (!BigEndian)
+        SwapBytes((char *)scalar_buf, sizeof(float), GlobalPoint);
       fwrite(scalar_buf, sizeof(float), GlobalPoint, fhw);
       
       delete [] scalar_buf;
@@ -2933,14 +3005,15 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   for (iPoint = 0; iPoint < myPoint; iPoint++) {
     for (iDim = 0; iDim < NCOORDS; iDim++) {
       if (nDim == 2 && iDim == 2) {
-        coord_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(0.0);
+        coord_buf[iPoint*NCOORDS + iDim] = 0.0;
       } else {
         float val = (float)SU2_TYPE::GetValue(Data[iDim][iPoint]);
-        coord_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(val);
+        coord_buf[iPoint*NCOORDS + iDim] = val;
       }
     }
   }
-  
+  if (!BigEndian) SwapBytes((char *)coord_buf, sizeof(float), myPoint*NCOORDS);
+
   /*--- We will write the point coordinates as floats. ---*/
   
   etype = MPI_FLOAT;
@@ -3080,28 +3153,28 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
       iNode  = iElem*N_POINTS_LINE;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_LINE);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_BoundLine_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_BoundLine_Par[iNode+1]-1);
+      conn_buf[iStorage+0] = N_POINTS_LINE;
+      conn_buf[iStorage+1] = Conn_BoundLine_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_BoundLine_Par[iNode+1]-1;
       iStorage += (N_POINTS_LINE+1);
     }
     
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
       iNode  = iElem*N_POINTS_TRIANGLE;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_TRIANGLE);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_BoundTria_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_BoundTria_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_BoundTria_Par[iNode+2]-1);
+      conn_buf[iStorage+0] = N_POINTS_TRIANGLE;
+      conn_buf[iStorage+1] = Conn_BoundTria_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_BoundTria_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_BoundTria_Par[iNode+2]-1;
       iStorage += (N_POINTS_TRIANGLE+1);
     }
     
     for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
       iNode  = iElem*N_POINTS_QUADRILATERAL;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_BoundQuad_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_BoundQuad_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_BoundQuad_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_BoundQuad_Par[iNode+3]-1);
+      conn_buf[iStorage+0] = N_POINTS_QUADRILATERAL;
+      conn_buf[iStorage+1] = Conn_BoundQuad_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_BoundQuad_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_BoundQuad_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_BoundQuad_Par[iNode+3]-1;
       iStorage += (N_POINTS_QUADRILATERAL+1);
     }
     
@@ -3109,74 +3182,75 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
     for (iElem = 0; iElem < nParallel_Tria; iElem++) {
       iNode  = iElem*N_POINTS_TRIANGLE;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_TRIANGLE);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Tria_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Tria_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Tria_Par[iNode+2]-1);
+      conn_buf[iStorage+0] = N_POINTS_TRIANGLE;
+      conn_buf[iStorage+1] = Conn_Tria_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Tria_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Tria_Par[iNode+2]-1;
       iStorage += (N_POINTS_TRIANGLE+1);
     }
     
     for (iElem = 0; iElem < nParallel_Quad; iElem++) {
       iNode  = iElem*N_POINTS_QUADRILATERAL;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_QUADRILATERAL);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Quad_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Quad_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Quad_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_Quad_Par[iNode+3]-1);
+      conn_buf[iStorage+0] = N_POINTS_QUADRILATERAL;
+      conn_buf[iStorage+1] = Conn_Quad_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Quad_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Quad_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_Quad_Par[iNode+3]-1;
       iStorage += (N_POINTS_QUADRILATERAL+1);
       
     }
     
     for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
       iNode  = iElem*N_POINTS_TETRAHEDRON;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_TETRAHEDRON);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Tetr_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Tetr_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Tetr_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_Tetr_Par[iNode+3]-1);
+      conn_buf[iStorage+0] = N_POINTS_TETRAHEDRON;
+      conn_buf[iStorage+1] = Conn_Tetr_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Tetr_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Tetr_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_Tetr_Par[iNode+3]-1;
       iStorage += (N_POINTS_TETRAHEDRON+1);
       
     }
     
     for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
       iNode  = iElem*N_POINTS_HEXAHEDRON;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_HEXAHEDRON);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Hexa_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Hexa_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Hexa_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_Hexa_Par[iNode+3]-1);
-      conn_buf[iStorage+5] = Int2BigEndian(Conn_Hexa_Par[iNode+4]-1);
-      conn_buf[iStorage+6] = Int2BigEndian(Conn_Hexa_Par[iNode+5]-1);
-      conn_buf[iStorage+7] = Int2BigEndian(Conn_Hexa_Par[iNode+6]-1);
-      conn_buf[iStorage+8] = Int2BigEndian(Conn_Hexa_Par[iNode+7]-1);
+      conn_buf[iStorage+0] = N_POINTS_HEXAHEDRON;
+      conn_buf[iStorage+1] = Conn_Hexa_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Hexa_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Hexa_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_Hexa_Par[iNode+3]-1;
+      conn_buf[iStorage+5] = Conn_Hexa_Par[iNode+4]-1;
+      conn_buf[iStorage+6] = Conn_Hexa_Par[iNode+5]-1;
+      conn_buf[iStorage+7] = Conn_Hexa_Par[iNode+6]-1;
+      conn_buf[iStorage+8] = Conn_Hexa_Par[iNode+7]-1;
       iStorage += (N_POINTS_HEXAHEDRON+1);
     }
     
     for (iElem = 0; iElem < nParallel_Pris; iElem++) {
       iNode  = iElem*N_POINTS_PRISM;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_PRISM);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Pris_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Pris_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Pris_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_Pris_Par[iNode+3]-1);
-      conn_buf[iStorage+5] = Int2BigEndian(Conn_Pris_Par[iNode+4]-1);
-      conn_buf[iStorage+6] = Int2BigEndian(Conn_Pris_Par[iNode+5]-1);
+      conn_buf[iStorage+0] = N_POINTS_PRISM;
+      conn_buf[iStorage+1] = Conn_Pris_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Pris_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Pris_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_Pris_Par[iNode+3]-1;
+      conn_buf[iStorage+5] = Conn_Pris_Par[iNode+4]-1;
+      conn_buf[iStorage+6] = Conn_Pris_Par[iNode+5]-1;
       iStorage += (N_POINTS_PRISM+1);
     }
     
     for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
       iNode  = iElem*N_POINTS_PYRAMID;
-      conn_buf[iStorage+0] = Int2BigEndian(N_POINTS_PYRAMID);
-      conn_buf[iStorage+1] = Int2BigEndian(Conn_Pyra_Par[iNode+0]-1);
-      conn_buf[iStorage+2] = Int2BigEndian(Conn_Pyra_Par[iNode+1]-1);
-      conn_buf[iStorage+3] = Int2BigEndian(Conn_Pyra_Par[iNode+2]-1);
-      conn_buf[iStorage+4] = Int2BigEndian(Conn_Pyra_Par[iNode+3]-1);
-      conn_buf[iStorage+5] = Int2BigEndian(Conn_Pyra_Par[iNode+4]-1);
-      conn_buf[iStorage+6] = Int2BigEndian(Conn_Pyra_Par[iNode+5]-1);
+      conn_buf[iStorage+0] = N_POINTS_PYRAMID;
+      conn_buf[iStorage+1] = Conn_Pyra_Par[iNode+0]-1;
+      conn_buf[iStorage+2] = Conn_Pyra_Par[iNode+1]-1;
+      conn_buf[iStorage+3] = Conn_Pyra_Par[iNode+2]-1;
+      conn_buf[iStorage+4] = Conn_Pyra_Par[iNode+3]-1;
+      conn_buf[iStorage+5] = Conn_Pyra_Par[iNode+4]-1;
+      conn_buf[iStorage+6] = Conn_Pyra_Par[iNode+5]-1;
       iStorage += (N_POINTS_PYRAMID+1);
     }
     
   }
+  if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int), myElemStorage);
   
   /*--- We write the connectivity with MPI_INTs. ---*/
   
@@ -3227,46 +3301,37 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   unsigned long jElem = 0;
   
   if (surf_sol) {
-    
     for (iElem = 0; iElem < nParallel_Line; iElem++) {
-      type_buf[jElem] = Int2BigEndian(LINE); jElem++;
+      type_buf[jElem] = LINE; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_BoundTria; iElem++) {
-      type_buf[jElem] = Int2BigEndian(TRIANGLE); jElem++;
+      type_buf[jElem] = TRIANGLE; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_BoundQuad; iElem++) {
-      type_buf[jElem] = Int2BigEndian(QUADRILATERAL); jElem++;
+      type_buf[jElem] = QUADRILATERAL; jElem++;
     }
-    
   } else {
-    
     for (iElem = 0; iElem < nParallel_Tria; iElem++) {
-      type_buf[jElem] = Int2BigEndian(TRIANGLE); jElem++;
+      type_buf[jElem] = TRIANGLE; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_Quad; iElem++) {
-      type_buf[jElem] = Int2BigEndian(QUADRILATERAL); jElem++;
+      type_buf[jElem] = QUADRILATERAL; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_Tetr; iElem++) {
-      type_buf[jElem] = Int2BigEndian(TETRAHEDRON); jElem++;
+      type_buf[jElem] = TETRAHEDRON; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_Hexa; iElem++) {
-      type_buf[jElem] = Int2BigEndian(HEXAHEDRON); jElem++;
+      type_buf[jElem] = HEXAHEDRON; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_Pris; iElem++) {
-      type_buf[jElem] = Int2BigEndian(PRISM); jElem++;
+      type_buf[jElem] = PRISM; jElem++;
     }
-    
     for (iElem = 0; iElem < nParallel_Pyra; iElem++) {
-      type_buf[jElem] = Int2BigEndian(PYRAMID); jElem++;
+      type_buf[jElem] = PYRAMID; jElem++;
     }
   }
-  
+  if (!BigEndian) SwapBytes((char *)type_buf, sizeof(int), myElem);
+
   /*--- We write the cell types with MPI_INTs. ---*/
   
   etype = MPI_INT;
@@ -3369,16 +3434,19 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       /*--- Load up the buffer for writing this rank's vector data. ---*/
       
       float val = 0.0;
-      for (iPoint = 0; iPoint < myPoint; iPoint++)
+      for (iPoint = 0; iPoint < myPoint; iPoint++) {
         for (iDim = 0; iDim < NCOORDS; iDim++) {
           if (nDim == 2 && iDim == 2) {
-            vec_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(0.0);
+            vec_buf[iPoint*NCOORDS + iDim] = 0.0;
           } else {
             val = (float)SU2_TYPE::GetValue(Data[VarCounter+iDim][iPoint]);
-            vec_buf[iPoint*NCOORDS + iDim] = Float2BigEndian(val);
+            vec_buf[iPoint*NCOORDS + iDim] = val;
           }
         }
-      
+      }
+      if (!BigEndian)
+        SwapBytes((char *)vec_buf, sizeof(float), myPoint*NCOORDS);
+
       /*--- We will write the point data as floats. ---*/
       
       etype = MPI_FLOAT;
@@ -3443,8 +3511,9 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       
       for (iPoint = 0; iPoint < myPoint; iPoint++) {
         float val = (float)SU2_TYPE::GetValue(Data[VarCounter][iPoint]);
-        scalar_buf[iPoint] = Float2BigEndian(val);
+        scalar_buf[iPoint] = val;
       }
+      if (!BigEndian) SwapBytes((char *)scalar_buf, sizeof(float), myPoint);
       
       /*--- We will write the point data as floats. ---*/
       
