@@ -36,6 +36,7 @@
  */
 
 #include "../include/output_structure.hpp"
+#include "../../externals/endian/portable_endian.h"
 
 /*--- Subroutine to convert little endian float to big endian, which is the
  required byte ordering for ParaView binary legacy format files. ---*/
@@ -43,9 +44,7 @@
 float Float2BigEndian(float val_float) {
   union {float f; int i;} val;
   val.f = val_float;
-#ifdef htonl
-  val.i = htonl(val.i);
-#endif
+  val.i = htobe32(val.i);
   return val.f;
 }
 
@@ -53,14 +52,14 @@ float Float2BigEndian(float val_float) {
  required byte ordering for ParaView binary legacy format files. ---*/
 
 int Int2BigEndian(int val_int) {
-#ifdef htonl
-  return htonl(val_int);
-#else
-  return val_int;
-#endif
+  if (sizeof(val_int) == 4)
+    return htobe32(val_int);
+  if (sizeof(val_int) == 8)
+    return htobe64(val_int);
 }
 
-string GetVTKFilename(CConfig *config, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+string GetVTKFilename(CConfig *config, unsigned short val_iZone,
+                      unsigned short val_nZone, bool surf_sol) {
   
   unsigned short Kind_Solver = config->GetKind_Solver();
   
