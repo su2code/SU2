@@ -12102,6 +12102,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
+    /*--- Get the file output format ---*/
+    
+    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       bool cont_adj = config[iZone]->GetContinuous_Adjoint();
@@ -12119,10 +12123,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 #ifdef HAVE_MPI
       /*--- Do not merge the connectivity or write the visualization files
-     if we are running in parallel. Force the use of SU2_SOL to merge and
-     write the viz. files in this case to save overhead. ---*/
+     if we are running in parallel, unless we are using ParaView binary.
+       Force the use of SU2_SOL to merge and write the viz. files in this
+       case to save overhead. ---*/
 
-      if (size > SINGLE_NODE) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
@@ -12254,17 +12259,13 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
                      solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
     }
-
-    /*--- Get the file output format ---*/
-    
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
     /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+    if ((Wrt_Vol || Wrt_Srf)) {
       
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
