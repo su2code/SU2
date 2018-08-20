@@ -201,7 +201,8 @@ int main(int argc, char *argv[]) {
   
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
-  if (config_container[ZONE_0]->GetVisualize_Deformation()) {
+  if (config_container[ZONE_0]->GetVisualize_Volume_Def() ||
+      config_container[ZONE_0]->GetVisualize_Surface_Def()) {
     
     output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
     
