@@ -4281,9 +4281,9 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
   
@@ -8544,7 +8544,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA_FD_Change = true;
     }
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       
     	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
@@ -16082,9 +16082,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
   bool wall_functions       = config->GetWall_Functions();
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Set the primitive variables ---*/
   
