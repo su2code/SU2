@@ -1053,17 +1053,17 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
 void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
 
-  /*---Clip signal---*/
+  /*---Find start and end of significant part of signal---*/
   unsigned long istart = 0, iend = signal.len[iPhi]-1;
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    if(abs(signal.p_prime[iPhi][i]/p_inf) > 1.0E-3){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-1){
       istart = i;
       break;
     }
   }
 
   for(unsigned long i = signal.len[iPhi]-1; i >= istart+1; i--){
-    if(abs(signal.p_prime[iPhi][i]/p_inf) > 1.0E-3){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-1){
       iend = i;
       break;
     }
@@ -1072,23 +1072,22 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   unsigned long len_new = signal.len[iPhi];
   su2double *xtmp, *ptmp;
 
-  /*---Loop over signal and find smallest spacing---*/
-  su2double dx; 
-  dx_min = 1.0E3; // TODO: add min spacing input // sBOOM gets "sufficient" results in vicinity of 10000 pts
-  for(unsigned long i = 1; i < signal.len[iPhi]; i++){
-    dx = signal.x[iPhi][i] - signal.x[iPhi][i-1];
-    dx_min = min(dx, dx_min);
+  /*---Loop over significant part of signal and find average spacing---*/
+  dx_avg = 0.;
+  for(unsigned long i = start; i < iend+1; i++){
+    dx_avg += signal.x[iPhi][i] - signal.x[iPhi][i-1];
   }
+  dx_avg /= (su2double(iend+1-istart));
 
   /*---Create new temp signal---*/
   unsigned long j = 0;
-  len_new = ceil((signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0])/dx_min);
+  len_new = ceil((signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0])/dx_avg);
   xtmp = new su2double[len_new];
   ptmp = new su2double[len_new];
   xtmp[0] = signal.x[iPhi][0];
   ptmp[0] = signal.p_prime[iPhi][0];
   for(unsigned long i = 1; i < len_new; i++){
-    xtmp[i] = xtmp[i-1] + dx_min;
+    xtmp[i] = xtmp[i-1] + dx_avg;
     if(xtmp[i] > signal.x[iPhi][j+1]) j++;
 
     if(j == (signal.len[iPhi]-1)){
@@ -1100,14 +1099,14 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
 
   /*---Store new signal---*/
   su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
-  unsigned long len_recompress = ceil(2.*scale_L/dx_min);
+  unsigned long len_recompress = ceil(2.*scale_L/dx_avg);
   signal.len[iPhi] = ceil(len_new+len_recompress*8);
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
   unsigned long i0 = floor(len_recompress*4), i1 = i0+len_new, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
-    signal.x[iPhi][i] = xtmp[0]-dx_min*su2double(i0-i);
+    signal.x[iPhi][i] = xtmp[0]-dx_avg*su2double(i0-i);
     signal.p_prime[iPhi][i] = 0.;
   }
   /*---Interpolated signal---*/
@@ -1117,18 +1116,18 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   }
   /*---Recompress aft of signal---*/
   for(unsigned long i = i1; i < i2; i++){
-    signal.x[iPhi][i] = signal.x[iPhi][i1-1]+dx_min*su2double(i+1-i1);
+    signal.x[iPhi][i] = signal.x[iPhi][i1-1]+dx_avg*su2double(i+1-i1);
     if(i-i1 < len_recompress){
-      signal.p_prime[iPhi][i] = signal.p_prime[iPhi][i-1]+dp_dx_end*dx_min;
+      signal.p_prime[iPhi][i] = signal.p_prime[iPhi][i-1]+dp_dx_end*dx_avg;
     }
     else{
       signal.p_prime[iPhi][i] = 0.;
     }
   }
 
-  cout << "Signal refined and padded, now contains " << signal.len[iPhi] << " points." << endl;
+  cout << "Signal interpolated and padded, now contains " << signal.len[iPhi] << " points." << endl;
   cout << "Length scale of waveform = " << scale_L << " m." << endl;
-  cout << "Sample frequency = " << flt_U/dx_min << " Hz." << endl;
+  cout << "Sample frequency = " << flt_U/dx_avg << " Hz." << endl;
 
   delete [] xtmp;
   delete [] ptmp;
@@ -1505,7 +1504,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned short n_sample = ceil(14500*signal.len[iPhi]*dx_min/(flt_U)), // fmax*N/Fs
+  unsigned short n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
                  n_band = 41;
 
   su2double *w      = new su2double[n_sample], 
@@ -1619,7 +1618,7 @@ void CBoom_AugBurgers::FourierTransform(unsigned short iPhi, su2double *w, su2do
 
   /*---Initialize frequency domain signal ---*/
   for(unsigned short i = 0; i < n_sample; i++){
-    w[i] = su2double(i)*flt_U/(su2double(N)*dx_min);  // f = n*Fs/N
+    w[i] = su2double(i)*flt_U/(su2double(N)*dx_avg);  // f = n*Fs/N
   }
 
   /*--- Transform ---*/

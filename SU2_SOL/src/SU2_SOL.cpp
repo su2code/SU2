@@ -725,7 +725,8 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
                 }
               }
 
-              cout << "Propagation complete." << endl;
+              if(rank == MASTER_NODE)
+                cout << "Propagation complete." << endl;
 
               if (rank == MASTER_NODE){
                 Objective_Function = 0.0;

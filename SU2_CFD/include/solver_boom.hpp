@@ -64,7 +64,7 @@ public:
   			rho0,			// Ambient density (function of altitude)
   			c0,				// Ambient sound speed (function of altitude)
         M_a,      // Acoustic Mach number
-        dx_min,   // Minimum spacing of signal
+        dx_avg,   // Average spacing of signal
   			dsigma,			// Step size
         dsigma_old, // Previous step size
         dz,       // Change in altitude
