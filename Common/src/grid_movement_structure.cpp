@@ -3039,9 +3039,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     }
     
   }
-  
-  /*--- 2D airfoil Hicks-Henne bump functions ---*/
-  
+    
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) ||
