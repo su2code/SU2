@@ -1074,7 +1074,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
 
   /*---Loop over significant part of signal and find average spacing---*/
   dx_avg = 0.;
-  for(unsigned long i = start; i < iend+1; i++){
+  for(unsigned long i = istart; i < iend+1; i++){
     dx_avg += signal.x[iPhi][i] - signal.x[iPhi][i-1];
   }
   dx_avg /= (su2double(iend+1-istart));
