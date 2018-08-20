@@ -22,7 +22,7 @@ using namespace std;
 class CBoom_AugBurgers{
 public:
   unsigned short Kind_Boom_Cost, Kind_Step;
-  unsigned long n_prop;
+  unsigned long n_prop, m_pow_2;
   unsigned long **pointID_original;
   su2double ***Coord_original;
   su2double CFL_reduce, Step_size, Step_growth;
@@ -147,6 +147,7 @@ public:
   void Relaxation(unsigned short iPhi, unsigned long iIter);
   void Scaling(unsigned short iPhi);
   void PerceivedLoudness(unsigned short iPhi);
+  void FFT(unsigned long m, su2double *x, su2double *y);
   void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double& p_dc, unsigned short n_sample);
   // void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band);
   void MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band);

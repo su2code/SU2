@@ -1078,13 +1078,14 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
     dx_avg += signal.x[iPhi][i] - signal.x[iPhi][i-1];
   }
   dx_avg /= (su2double(iend+1-istart));
-  if(flt_U/dx_avg < 14500.){ // Nyquist criterion for Mark VII
-    dx_avg = flt_U/14500.;
+  if(flt_U/dx_avg < 29000.){ // Nyquist criterion for Mark VII
+    dx_avg = flt_U/29000.;
   }
 
   /*---Create new temp signal---*/
   unsigned long j = 0;
   len_new = ceil((signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0])/dx_avg);
+  unsigned long len1 = len_new;
   xtmp = new su2double[len_new];
   ptmp = new su2double[len_new];
   xtmp[0] = signal.x[iPhi][0];
@@ -1103,10 +1104,12 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Store new signal---*/
   su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
   unsigned long len_recompress = ceil(2.*scale_L/dx_avg);
-  signal.len[iPhi] = ceil(len_new+len_recompress*4);
+  m_pow_2 = ceil(log(su2double(len_new+len_recompress*4))/log(2.));
+  len_new = pow(2,m_pow_2); // Next power of 2 (for FFT)
+  signal.len[iPhi] = len_new;
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*3), i1 = i0+len_new, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*2), i1 = i0+len1, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_avg*su2double(i0-i);
@@ -1507,10 +1510,10 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned short n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
-                 n_band = 41;
+  unsigned long n_sample = signal.len[iPhi]; //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
+  unsigned short n_band = 41;
 
-  su2double *w      = new su2double[n_sample], 
+  su2double *w      = new su2double[n_sample/2], 
             *p_of_w = new su2double[n_sample]; // Frequency domain signal
 
   su2double fc[41]    = {1.25, 1.6, 2.0, 2.5, 3.15,
@@ -1544,9 +1547,44 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Compute frequency domain signal ---*/
   cout << "Performing Fourier Transform." << endl;
-  FourierTransform(iPhi, w, p_of_w, p_dc, n_sample);
+  for(unsigned long i = 0; i < n_sample/2; i++){
+    w[i] = su2double(i)*flt_U/(su2double(n_sample)*dx_avg);
+    p_of_w[2*i] = 0.;
+    p_of_w[2*i+1] = 0.;
+  }
+  FFT(m_pow_2, signal.P, p_of_w);
+  // FourierTransform(iPhi, w, p_of_w, p_dc, n_sample);
 
    /*--- Interpolate power at band limits ---*/
+  // su2double *wtmp = new su2double[n_sample+42], 
+  //           *ptmp = new su2double[n_sample+42];
+  // unsigned short k = 0;
+  // for(unsigned short i = 0; i < n_sample+42; i++){
+  //   if(i < 41){
+  //     wtmp[i] = f_min[i];
+  //     if(f_min[i] < w[0]){ // Interpolate between DC and f0
+  //       ptmp[i] = p_dc + f_min[i] * (p_of_w[0]-p_dc)/w[0];
+  //     }
+  //     else{
+  //       while(f_min[i] > w[k]){
+  //         k++;
+  //       }
+  //       ptmp[i] = p_of_w[k-1] + (f_min[i]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
+  //     }
+  //   }
+  //   else if(i == 41){
+  //     wtmp[i] = f_max[40];
+  //     while(f_max[40] > w[k]){
+  //       k++;
+  //     }
+  //     ptmp[i] = p_of_w[k-1] + (f_max[40]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
+  //   }
+  //   else{
+  //     wtmp[i] = w[i-42];
+  //     ptmp[i] = p_of_w[i-42];
+  //   }
+  // }
+  n_sample = n_sample/2;
   su2double *wtmp = new su2double[n_sample+42], 
             *ptmp = new su2double[n_sample+42];
   unsigned short k = 0;
@@ -1554,7 +1592,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
     if(i < 41){
       wtmp[i] = f_min[i];
       if(f_min[i] < w[0]){ // Interpolate between DC and f0
-        ptmp[i] = p_dc + f_min[i] * (p_of_w[0]-p_dc)/w[0];
+        ptmp[i] = p_of_w[0] + f_min[i] * (p_of_w[1]-p_of_w[0])/w[1];
       }
       else{
         while(f_min[i] > w[k]){
@@ -1610,6 +1648,74 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   delete [] p_of_w;
   delete [] wtmp;
   delete [] ptmp;
+
+}
+
+void CBoom_AugBurgers::FFT(unsigned long m, su2double *x, su2double *y){
+
+  /*---Source: http://paulbourke.net/miscellaneous/dft---*/
+
+  long n,i,i1,j,k,i2,l,l1,l2;
+  su2double c1,c2,tx,ty,t1,t2,u1,u2,z;
+
+  /* Calculate the number of points */
+  n = 1;
+  for (i=0;i<m;i++){
+    n *= 2;
+  }
+
+  /* Do the bit reversal */
+  i2 = n >> 1;
+  j = 0;
+  for (i=0;i<n-1;i++) {
+    if (i < j) {
+       tx = x[i];
+       ty = y[i];
+       x[i] = x[j];
+       y[i] = y[j];
+       x[j] = tx;
+       y[j] = ty;
+    }
+    k = i2;
+    while (k <= j) {
+       j -= k;
+       k >>= 1;
+    }
+    j += k;
+  }
+
+  /* Compute the FFT */
+  c1 = -1.0; 
+  c2 = 0.0;
+  l2 = 1;
+  for (l=0;l<m;l++) {
+    l1 = l2;
+    l2 <<= 1;
+    u1 = 1.0; 
+    u2 = 0.0;
+    for (j=0;j<l1;j++) {
+       for (i=j;i<n;i+=l2) {
+          i1 = i + l1;
+          t1 = u1 * x[i1] - u2 * y[i1];
+          t2 = u1 * y[i1] + u2 * x[i1];
+          x[i1] = x[i] - t1; 
+          y[i1] = y[i] - t2;
+          x[i] += t1;
+          y[i] += t2;
+       }
+       z =  u1 * c1 - u2 * c2;
+       u2 = u1 * c2 + u2 * c1;
+       u1 = z;
+    }
+    c2 = -sqrt((1.0 - c1) / 2.0);
+    c1 = sqrt((1.0 + c1) / 2.0);
+  }
+
+  /* Scaling for forward transform */
+  for (i=0;i<n/2+1;i++) {
+    y[i] = 2.*(x[i]*x[i] + y[i]*y[i])*pow(p0*dtau/w0,2.);
+  }
+  y[0] /= 2;
 
 }
 
