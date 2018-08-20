@@ -1106,7 +1106,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   signal.len[iPhi] = ceil(len_new+len_recompress*4);
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*2), i1 = i0+len_new, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*3), i1 = i0+len_new, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_avg*su2double(i0-i);
