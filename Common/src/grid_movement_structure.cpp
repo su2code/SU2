@@ -4810,22 +4810,8 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
     /*--- Check that it is possible to move the control point ---*/
     
     jOrder = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++) {
-      for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
-          if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
-          if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
-          if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) return false;
-        }
-        
-      }
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
+      if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
     }
     
     /*--- Line plane intersection to find the origin of rotation ---*/
@@ -4905,6 +4891,20 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
           + l*(-b*u + a*v - v*x + u*y)*sinT;
           movement[2] = movement[2]/l2 - z;
           
+          /*--- Check that it is possible to move the control point ---*/
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
+            if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+            if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+
           FFDBox->SetControlPoints(index, movement);
           
         }
