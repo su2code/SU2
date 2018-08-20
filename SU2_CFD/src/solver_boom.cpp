@@ -1078,6 +1078,9 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
     dx_avg += signal.x[iPhi][i] - signal.x[iPhi][i-1];
   }
   dx_avg /= (su2double(iend+1-istart));
+  if(flt_U/dx_avg < 29000.){ // Nyquist criterion for Mark VII
+    dx_avg = flt_U/29000.;
+  }
 
   /*---Create new temp signal---*/
   unsigned long j = 0;
