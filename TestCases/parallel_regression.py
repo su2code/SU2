@@ -264,7 +264,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.378804, -8.130406, 0.000051, 0.055764] #last 4 columns
+    propeller.test_vals = [-3.378876, -8.397629, 0.000047, 0.055591] #last 4 columns
     propeller.su2_exec  = "parallel_computation.py -f"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
