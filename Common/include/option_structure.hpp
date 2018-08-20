@@ -1494,7 +1494,7 @@ enum ENUM_PARAM {
   FFD_THICKNESS_2D = 21,		 /*!< \brief Free form deformation for 3D design (thickness change). */
   FFD_TWIST_2D = 22,		     /*!< \brief Free form deformation for 3D design (camber change). */
   FFD_CONTROL_SURFACE = 23,	 /*!< \brief Free form deformation for 3D design (control surface). */
-  FFD_ANGLE_OF_ATTACK = 24   /*!< \brief Angle of attack for FFD problem. */
+  FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
 
   HICKS_HENNE = 30,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
   PARABOLIC = 31,		         /*!< \brief Parabolic airfoil definition as design variables. */
@@ -1514,7 +1514,7 @@ enum ENUM_PARAM {
   ROTATE_GRID = 51,          /*!< \brief Rotate the volume grid */
   SCALE_GRID = 52,           /*!< \brief Scale the volume grid. */
   
-  ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
+  ANGLE_OF_ATTACK = 101	   /*!< \brief Angle of attack for airfoils. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
