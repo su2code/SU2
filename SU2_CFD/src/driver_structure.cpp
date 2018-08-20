@@ -1448,20 +1448,21 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
                                     CConfig *config, unsigned short val_iInst) {
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
+  tne2_euler,tne2_ns,
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, heat_fvm, fem,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_turb, disc_adj_fem,
+  template_solver, disc_adj, disc_adj_tne2, disc_adj_turb, disc_adj_fem,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
   /*--- Initialize some useful booleans ---*/
 
   euler               = false;  ns               = false;  turbulent = false;
-  tne2_euler          = false;  tne2_ns          = false; 
+  tne2_euler          = false;  tne2_ns          = false;
   adj_euler           = false;  adj_ns           = false;  adj_turb  = false;
   spalart_allmaras    = false;  menter_sst       = false;  disc_adj_turb = false;
-  disc_adj_tne2       = false;  
-  poisson             = false;  neg_spaljrt_allmaras = false;
+  disc_adj_tne2       = false;
+  poisson             = false;  neg_spalart_allmaras = false;
   wave                = false;  disc_adj         = false;
   fem                 = false;  disc_adj_fem     = false;
   heat                = false;  heat_fvm         = false;
@@ -1529,12 +1530,12 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     /*--- DeAllocate solution for tne2 adjoint problem ---*/
 
     if (disc_adj_tne2) {
-      delete solver_container[val_iInst][iMGLevel][ADJTNE2_SOL];
+      delete solver_container[val_iInst][iMGlevel][ADJTNE2_SOL];
       if (disc_adj_turb) {
         delete solver_container[val_iInst][iMGlevel][ADJTURB_SOL];
       }
     }
-   
+
     /*--- DeAllocate solution for direct problem ---*/
 
     if (euler || ns) {
@@ -1579,15 +1580,15 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
 void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     CGeometry ***geometry, CConfig *config, unsigned short val_iInst) {
 
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+  bool euler, adj_euler, ns, adj_ns, tne2_euler, tne2_ns, turbulent, adj_turb, poisson, wave, fem,
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_tne2, disc_adj_fem;
   /*--- Initialize some useful booleans ---*/
   euler               = false; adj_euler        = false;
   ns                  = false; adj_ns           = false;
   tne2_euler          = false; tne2_ns          = false;
   turbulent           = false; adj_turb         = false;
   poisson             = false; disc_adj         = false;
-  wave                = false; disc_adj_tne2 = false; 
+  wave                = false; disc_adj_tne2    = false;
   heat                = false; heat_fvm         = false;
   fem 			          = false; disc_adj_fem     = false;
   transition          = false;
@@ -1599,7 +1600,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case TNE2_EULER: tne2_euler = true; break;
-    case TNE2_NAVIER_STOKES: tne2_ns = true; break; 
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
@@ -1612,7 +1613,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_TNE2_EULER: tne2_euler = true; disc_adj_tne2 =true; break;
-    case DISC_ADJ_TNE2_NAVIER_STOKES: tne2_ns = true; disc_adj_tne2 = true; break; 
+    case DISC_ADJ_TNE2_NAVIER_STOKES: tne2_ns = true; disc_adj_tne2 = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
@@ -1645,15 +1646,17 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 
 void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
-  bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
-      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_fem;
+  bool euler, tne2_euler, adj_euler, ns, tne2_ns, adj_ns, turbulent, adj_turb, poisson, wave, fem,
+      heat, heat_fvm, template_solver, transition, disc_adj, disc_adj_tne2, disc_adj_fem;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
   ns               = false; adj_ns           = false;
+  tne2_euler       = false;
+  tne2_ns          = false;
   turbulent        = false; adj_turb         = false;
   poisson          = false; disc_adj         = false;
-  wave             = false;
+  wave             = false; disc_adj_tne2    = false;
   heat             = false; heat_fvm         = false;
   fem              = false; disc_adj_fem     = false;
   transition       = false;
@@ -1663,7 +1666,9 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
+    case TNE2_EULER :tne2_euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
@@ -1675,6 +1680,8 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_TNE2_EULER : tne2_euler = true; disc_adj_tne2 = true; break;
+    case DISC_ADJ_TNE2_NAVIER_STOKES: tne2_ns = true; disc_adj_tne2 = true; break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
@@ -1684,6 +1691,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
 
   /*--- DeAllocate solution for direct problem ---*/
   if (euler || ns) delete integration_container[val_iInst][FLOW_SOL];
+  if (tne2_euler || tne2_ns) delete integration_container[val_iInst][TNE2_SOL];
   if (turbulent) delete integration_container[val_iInst][TURB_SOL];
   if (transition) delete integration_container[val_iInst][TRANS_SOL];
   if (poisson) delete integration_container[val_iInst][POISSON_SOL];
@@ -1694,6 +1702,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
 
   /*--- DeAllocate solution for adjoint problem ---*/
   if (adj_euler || adj_ns || disc_adj) delete integration_container[val_iInst][ADJFLOW_SOL];
+  if (disc_adj_tne2) integration_container[val_iInst][ADJTNE2_SOL];
   if (adj_turb) delete integration_container[val_iInst][ADJTURB_SOL];
 
   delete integration_container[val_iInst];
@@ -1725,18 +1734,10 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   su2double *constants = NULL;
 
   bool
-  euler, adj_euler,
-  ns, adj_ns,
-  tne2_euler, adj_tne2_euler,
-  tne2_ns, adj_tne2_ns,
-  turbulent, adj_turb,
+  euler, adj_euler, ns, adj_ns, tne2_euler, adj_tne2_euler,
+  tne2_ns, adj_tne2_ns, turbulent, adj_turb,
   spalart_allmaras, neg_spalart_allmaras, menter_sst,
-  poisson,
-  wave,
-  fem,
-  heat, heat_fvm,
-  transition,
-  template_solver;
+  poisson, wave, fem, heat, heat_fvm, transition, template_solver;
   bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
@@ -1745,17 +1746,17 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   bool roe_low_dissipation = config->GetKind_RoeLowDiss() != NO_ROELOWDISS;
 
   /*--- Initialize some useful booleans ---*/
-  euler            = false;   ns               = false;   turbulent        = false;
-  tne2_euler       = false;   tne2_ns          = false;
-  adj_tne2_euler   = false;   adj_tne2_ns      = false;
-  poisson          = false;
-  adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
-  wave             = false;   heat             = false;   heat_fvm         = false;
-  fem              = false;
-  spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
-  transition       = false;
-  template_solver  = false;
-  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  euler                 = false; ns       = false; turbulent = false;
+  tne2_euler            = false; tne2_ns  = false;
+  adj_euler             = false; adj_ns   = false; adj_turb  = false;
+  poisson               = false; wave     = false; fem       = false;
+  heat                  = false; heat_fvm = false;
+
+  spalart_allmaras      = false; neg_spalart_allmaras    = false;
+  transition            = false; menter_sst              = false;
+  comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  e_spalart_allmaras    = false;
+  template_solver       = false;
 
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -1763,8 +1764,8 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     case EULER : case DISC_ADJ_EULER: euler = true; break;
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case TNE2_EULER : case DISC_ADJ_TNE2_EULER: euler = true; break;
-    case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES: ns = true; break;
+    case TNE2_EULER : case DISC_ADJ_TNE2_EULER: tne2_euler = true; break;
+    case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case POISSON_EQUATION: poisson = true; break;
     case WAVE_EQUATION: wave = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
@@ -1773,9 +1774,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
-    case ADJ_TNE2_EULER : tne2_euler = true; adj_tne2_euler = true; break;
-    case ADJ_TNE2_NAVIER_STOKES : tne2_ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_tne2_ns = true; break;
-
   }
 
   /*--- Assign turbulence model booleans ---*/
