@@ -1218,7 +1218,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
 
     /*---Restrict dsigma based on thermoviscous effects---*/
     dsigma_tv = 0.1*Gamma/signal.len[iPhi];
