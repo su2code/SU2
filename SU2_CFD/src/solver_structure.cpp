@@ -3339,6 +3339,8 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       for (iMarker=0; iMarker < config->GetnMarker_All(); iMarker++) {
         if (config->GetMarker_All_KindBC(iMarker) == KIND_MARKER) {
 
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          
           /*--- Loop through the nodes on this marker. ---*/
 
           for (iVertex = 0; iVertex < geometry[iMesh]->nVertex[iMarker]; iVertex++) {
@@ -3365,7 +3367,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
             for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
               Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
               for (iVar = 0; iVar < maxCol_InletFile; iVar++) Inlet_Fine[iVar] = 0.0;
-              Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine, Point_Fine, KIND_MARKER, geometry[iMesh-1], config);
+              Area_Children = solver[iMesh-1][KIND_SOLVER]->GetInletAtVertex(Inlet_Fine, Point_Fine, KIND_MARKER, Marker_Tag, geometry[iMesh-1], config);
               for (iVar = 0; iVar < maxCol_InletFile; iVar++) {
                 Inlet_Values[iVar] += Inlet_Fine[iVar]*Area_Children/Area_Parent;
               }
