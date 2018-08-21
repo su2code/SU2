@@ -1068,8 +1068,8 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
     if (tne2_euler) {
       if (compressible) {
-        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CTNE2EulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
-        solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[val_iInst][iMGlevel][TNE2_SOL] = new CTNE2EulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        solver_container[val_iInst][iMGlevel][TNE2_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
     }
@@ -1084,9 +1084,9 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
     if (tne2_ns) {
       if (compressible) {
-        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CTNE2NSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        solver_container[val_iInst][iMGlevel][TNE2_SOL] = new CTNE2NSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
-      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TNE2_SOL]->GetnVar();
     }
     if (turbulent) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {

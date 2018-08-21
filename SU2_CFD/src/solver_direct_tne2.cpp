@@ -156,6 +156,10 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   Secondary=NULL; Secondary_i=NULL; Secondary_j=NULL;
 
+	/*--- Set the gamma value ---*/
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+
   /*--- Define geometric constants in the solver structure ---*/
 	nSpecies     = config->GetnSpecies();
   nMarker      = config->GetnMarker_All();
@@ -4176,6 +4180,8 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
   Velocity_i = new su2double[nDim];
   Jacobian_b = new su2double*[nVar];
   DubDu = new su2double*[nVar];
+	u     = new su2double[nDim];
+
   for (iVar = 0; iVar < nVar; iVar++) {
     Jacobian_b[iVar] = new su2double[nVar];
     DubDu[iVar] = new su2double[nVar];
@@ -4300,7 +4306,6 @@ void CTNE2EulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_conta
 			}
     }
 	}
-  delete [] UnitNormal;
   delete [] u;
 }
 
@@ -5074,7 +5079,12 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
 			conv_numerics->SetNormal(Normal);
 			conv_numerics->SetConservative(U_domain, U_inlet);
 			conv_numerics->SetPrimitive(V_domain, V_inlet);
-			
+
+			/*--- Pass supplementary info to CNumerics ---*/
+			conv_numerics->SetdPdU(node[iPoint]->GetdPdU(), node_infty->GetdPdU());
+			conv_numerics->SetdTdU(node[iPoint]->GetdTdU(), node_infty->GetdTdU());
+			conv_numerics->SetdTvedU(node[iPoint]->GetdTvedU(), node_infty->GetdTvedU());
+
 			if (grid_movement)
 				conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                 geometry->node[iPoint]->GetGridVel());
