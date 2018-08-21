@@ -781,7 +781,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
- 
+
   default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
   /*!\brief FREESTREAM_VELOCITY\n DESCRIPTION: Free-stream velocity (m/s) */
   addDoubleArrayOption("FREESTREAM_VELOCITY", 3, Velocity_FreeStream, default_vel_inf);
@@ -5258,16 +5258,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
         break;
       case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible TNE2 Euler equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible TNE2 Euler equations." << endl;
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Euler equations." << endl;
         break;
       case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
         break;
       case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
-        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar TNE2 Navier-Stokes' equations." << endl;
-        if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar TNE2 Navier-Stokes' equations." << endl;
+        if (Kind_Regime == COMPRESSIBLE) cout << "Compressible two-temperature thermochemical non-equilibrium Navier-Stokes equations." << endl;
         break;
       case RANS: case DISC_ADJ_RANS:
         if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
@@ -9021,7 +9019,7 @@ void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned 
       RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
 
       break;
-    
+
     case ARGON_SID:
 
       //N2 + M -> 2N + M
@@ -9032,7 +9030,7 @@ void CConfig::GetChemistryEquilConstants(su2double **RxnConstantTable, unsigned 
       RxnConstantTable[4][0] = 1.4766;  RxnConstantTable[4][1] = 1.62910; RxnConstantTable[4][2] = 1.2153;  RxnConstantTable[4][3] = -11.457; RxnConstantTable[4][4] = -0.00944;  //n = 1E18
       RxnConstantTable[5][0] = 1.4766;  RxnConstantTable[5][1] = 1.62910; RxnConstantTable[5][2] = 1.2153;  RxnConstantTable[5][3] = -11.457; RxnConstantTable[5][4] = -0.00944;  //n = 1E19
 
-      break;    
+      break;
 
     case AIR5:
 

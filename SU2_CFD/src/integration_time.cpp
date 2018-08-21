@@ -742,6 +742,32 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
 
       break;
 
+    case RUNTIME_TNE2_SYS:
+
+        /*--- Calculate the inviscid and viscous forces ---*/
+
+        solver_container[FinestMesh][TNE2_SOL]->Pressure_Forces(geometry[FinestMesh], config);
+        solver_container[FinestMesh][TNE2_SOL]->Momentum_Forces(geometry[FinestMesh], config);
+        solver_container[FinestMesh][TNE2_SOL]->Friction_Forces(geometry[FinestMesh], config);
+
+        /*--- Evaluate convergence monitor ---*/
+
+        if (config->GetConvCriteria() == CAUCHY) {
+          if (config->GetCauchy_Func_Flow() == DRAG_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CD();
+          if (config->GetCauchy_Func_Flow() == LIFT_COEFFICIENT) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CL();
+          if (config->GetCauchy_Func_Flow() == NEARFIELD_PRESSURE) (*monitor) = solver_container[FinestMesh][TNE2_SOL]->GetTotal_CNearFieldOF();
+        }
+
+        if (config->GetConvCriteria() == RESIDUAL) {
+          if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
+          else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
+            if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
+            else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
+          }
+        }
+
+        break;
+
     case RUNTIME_ADJFLOW_SYS:
 
       /*--- Calculate the inviscid and viscous sensitivities ---*/
