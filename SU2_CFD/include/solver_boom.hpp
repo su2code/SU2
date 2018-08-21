@@ -15,7 +15,7 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
-#include "../../SU2_CFD/include/SUBoom.hpp"  // For things like mergesort, AtmosISA...
+// #include "../../SU2_CFD/include/SUBoom.hpp"  // For things like mergesort, AtmosISA...
 
 using namespace std;
 
@@ -58,6 +58,7 @@ public:
   /*---ABE variables---*/
   su2double p0, 			// Reference pressure
         p_peak,   // Reference pressure for shock formation distance
+        p_peak0,  // Initial peak pressure
         f0,       // Reference frequency
   			w0,				// Reference angular frequency
         w0_g,     // Angular frequency at the ground
@@ -68,6 +69,7 @@ public:
   			dsigma,			// Step size
         dsigma_old, // Previous step size
         dz,       // Change in altitude
+        dt,       // Grid spacing (dimensional)
         dtau,     // Grid spacing
   			xbar,			// Shock formation distance of plane wave
   			beta,			// Coefficient of nonlinearity
@@ -156,3 +158,10 @@ public:
   void WriteSensitivities();
 
 };
+
+void MergeSort(su2double x[], su2double p[], int l, int r);
+void MergeSort(su2double y[], unsigned long k[], int l, int r);
+void merge(su2double x[], su2double p[], int l, int m, int r);
+void merge(su2double y[], unsigned long p[], int l, int m, int r);
+void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams);
+

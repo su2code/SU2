@@ -269,6 +269,311 @@ CBoom_AugBurgers::~CBoom_AugBurgers(void){
 
 }
 
+void MergeSort(su2double x[], su2double p[], int l, int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(x, p, l, m);
+    MergeSort(x, p, m+1, r);
+    merge(x, p, l, m, r);
+  }
+}
+
+void MergeSort(su2double y[], unsigned long k[], int l, int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(y, k, l, m);
+    MergeSort(y, k, m+1, r);
+    merge(y, k, l, m, r);
+  }
+}
+
+void merge(su2double x[], su2double p[], int l, int m, int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  su2double L[n1], R[n2], Lp[n1], Rp[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+    Lp[i] = p[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+    Rp[j] = p[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      p[k] = Lp[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      p[k] = Rp[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    p[k] = Lp[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    p[k] = Rp[j];
+    j++;
+    k++;
+  }
+}
+
+void merge(su2double x[], unsigned long p[], int l, int m, int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  su2double L[n1], R[n2];
+  unsigned long Lp[n1], Rp[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+    Lp[i] = p[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+    Rp[j] = p[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      p[k] = Lp[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      p[k] = Rp[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    p[k] = Lp[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    p[k] = Rp[j];
+    j++;
+    k++;
+  }
+}
+
+void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2double *xj, su2double *isoparams) {
+  short iDonor,iDim,k; // indices
+  su2double tmp, tmp2;
+
+  su2double x[nDim+1];
+  su2double x_tmp[nDim+1];
+  su2double Q[nDonor*nDonor];
+  su2double R[nDonor*nDonor];
+  su2double A[(nDim+1)*nDonor];
+  su2double *A2    = NULL;
+  su2double x2[nDim+1];
+  
+  bool test[nDim+1];
+  bool testi[nDim+1];
+  
+  su2double eps = 1E-10;
+  
+  short n = nDim+1;
+
+  if (nDonor>2) {
+    /*--- Create Matrix A: 1st row all 1's, 2nd row x coordinates, 3rd row y coordinates, etc ---*/
+    /*--- Right hand side is [1, \vec{x}']'---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      isoparams[iDonor]=0;
+      A[iDonor] = 1.0;
+      for (iDim=0; iDim<n; iDim++)
+        A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
+    }
+
+    x[0] = 1.0;
+    for (iDim=0; iDim<nDim; iDim++)
+      x[iDim+1]=xj[iDim];
+
+    /*--- Eliminate degenerate rows:
+     * for example, if z constant including the z values will make the system degenerate
+     * TODO: improve efficiency of this loop---*/
+    test[0]=true; // always keep the 1st row
+    for (iDim=1; iDim<n; iDim++) {
+      // Test this row against all previous
+      test[iDim]=true; // Assume that it is not degenerate
+      for (k=0; k<iDim; k++) {
+        tmp=0; tmp2=0;
+        for (iDonor=0;iDonor<nDonor;iDonor++) {
+          tmp+= A[iDim*nDonor+iDonor]*A[iDim*nDonor+iDonor];
+          tmp2+=A[k*nDonor+iDonor]*A[k*nDonor+iDonor];
+        }
+        tmp  = pow(tmp,0.5);
+        tmp2 = pow(tmp2,0.5);
+        testi[k]=false;
+        for (iDonor=0; iDonor<nDonor; iDonor++) {
+          // If at least one ratio is non-matching row iDim is not degenerate w/ row k
+          if (abs(A[iDim*nDonor+iDonor]/tmp-A[k*nDonor+iDonor]/tmp2) > eps)
+            testi[k]=true;
+        }
+        // If any of testi (k<iDim) are false, row iDim is degenerate
+        test[iDim]=(test[iDim] && testi[k]);
+      }
+      if (!test[iDim]) n--;
+    }
+
+    /*--- Initialize A2 now that we might have a smaller system --*/
+    A2 = new su2double[n*nDonor];
+    iDim=0;
+    /*--- Copy only the rows that are non-degenerate ---*/
+    for (k=0; k<n; k++) {
+      if (test[k]) {
+        for (iDonor=0;iDonor<nDonor;iDonor++ ) {
+          A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
+        }
+        x2[iDim]=x[k];
+        iDim++;
+      }
+    }
+
+    /*--- Initialize Q,R to 0 --*/
+    for (k=0; k<nDonor*nDonor; k++) {
+      Q[k]=0;
+      R[k]=0;
+    }
+    /*--- TODO: make this loop more efficient ---*/
+    /*--- Solve for rectangular Q1 R1 ---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      tmp=0;
+      for (iDim=0; iDim<n; iDim++)
+        tmp += (A2[iDim*nDonor+iDonor])*(A2[iDim*nDonor+iDonor]);
+
+      R[iDonor*nDonor+iDonor]= pow(tmp,0.5);
+      if (tmp>eps && iDonor<n) {
+        for (iDim=0; iDim<n; iDim++)
+          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/R[iDonor*nDonor+iDonor];
+      }
+      else if (tmp!=0) {
+        for (iDim=0; iDim<n; iDim++)
+          Q[iDim*nDonor+iDonor]=A2[iDim*nDonor+iDonor]/tmp;
+      }
+      for (iDim=iDonor+1; iDim<nDonor; iDim++) {
+        tmp=0;
+        for (k=0; k<n; k++)
+          tmp+=A2[k*nDonor+iDim]*Q[k*nDonor+iDonor];
+
+        R[iDonor*nDonor+iDim]=tmp;
+
+        for (k=0; k<n; k++)
+          A2[k*nDonor+iDim]=A2[k*nDonor+iDim]-Q[k*nDonor+iDonor]*R[iDonor*nDonor+iDim];
+      }
+    }
+    /*--- x_tmp = Q^T * x2 ---*/
+    for (iDonor=0; iDonor<nDonor; iDonor++)
+      x_tmp[iDonor]=0.0;
+    for (iDonor=0; iDonor<nDonor; iDonor++) {
+      for (iDim=0; iDim<n; iDim++)
+        x_tmp[iDonor]+=Q[iDim*nDonor+iDonor]*x2[iDim];
+    }
+
+    /*--- solve x_tmp = R*isoparams for isoparams: upper triangular system ---*/
+    for (iDonor = n-1; iDonor>=0; iDonor--) {
+      if (R[iDonor*nDonor+iDonor]>eps)
+        isoparams[iDonor]=x_tmp[iDonor]/R[iDonor*nDonor+iDonor];
+      else
+        isoparams[iDonor]=0;
+      for (k=0; k<iDonor; k++)
+        x_tmp[k]=x_tmp[k]-R[k*nDonor+iDonor]*isoparams[iDonor];
+    }
+  }
+  else {
+    /*-- For 2-donors (lines) it is simpler: */
+    tmp =  pow(X[0*nDonor+0]- X[0*nDonor+1],2.0);
+    tmp += pow(X[1*nDonor+0]- X[1*nDonor+1],2.0);
+    tmp = sqrt(tmp);
+
+    tmp2 = pow(X[0*nDonor+0] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+0] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[1] = tmp2/tmp;
+
+    tmp2 = pow(X[0*nDonor+1] - xj[0],2.0);
+    tmp2 += pow(X[1*nDonor+1] - xj[1],2.0);
+    tmp2 = sqrt(tmp2);
+    isoparams[0] = tmp2/tmp;
+  }
+
+  /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
+  if (nDonor==4 && nDim == 2) {
+    //-- Bilinear coordinates, bounded by [-1,1] ---
+    su2double xi, eta;
+    xi = -isoparams[0]+isoparams[1]+isoparams[2]-isoparams[3];
+    eta = 2.0*(isoparams[2]-isoparams[0]) - xi;
+    if (xi>1.0) xi=1.0;
+    if (xi<-1.0) xi=-1.0;
+    if (eta>1.0) eta=1.0;
+    if (eta<-1.0) eta=-1.0;
+    isoparams[0]=0.25*(1-xi)*(1-eta);
+    isoparams[1]=0.25*(1+xi)*(1-eta);
+    isoparams[2]=0.25*(1+xi)*(1+eta);
+    isoparams[3]=0.25*(1-xi)*(1+eta);
+  }
+  if (nDonor<4) {
+    tmp = 0.0; // value for normalization
+    tmp2=0; // check for maximum value, to be used to id nearest neighbor if necessary
+    k=0; // index for maximum value
+    for (iDonor=0; iDonor< nDonor; iDonor++) {
+      if (isoparams[iDonor]>tmp2) {
+        k=iDonor;
+        tmp2=isoparams[iDonor];
+      }
+      // [0,1]
+      if (isoparams[iDonor]<0) isoparams[iDonor]=0;
+      if (isoparams[iDonor]>1) isoparams[iDonor] = 1;
+      tmp +=isoparams[iDonor];
+    }
+    if (tmp>0)
+      for (iDonor=0; iDonor< nDonor; iDonor++)
+        isoparams[iDonor]=isoparams[iDonor]/tmp;
+    else {
+      isoparams[k] = 1.0;
+    }
+  }
+  
+  if (A2 != NULL) delete [] A2;
+
+}
+
 void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry, 
                const su2double r0, const su2double *phi){
   
@@ -915,7 +1220,9 @@ int rank = 0;
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
     Attenuation(iPhi);
-  	Nonlinearity(iPhi);
+    dsigma /= 1;
+    for(unsigned short i = 0; i < 1; i++)
+    	Nonlinearity(iPhi);
 
     ray_z -= dz;
 
@@ -971,7 +1278,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 
     /*---First create uniform grid since algorithm requires it---*/
     CreateUniformGridSignal(iPhi);
-    dsigma_old = 0.01;
+    dsigma_old = 1.0;
     ground_flag = false;
 
   	signal.P       = new su2double[signal.len[iPhi]];
@@ -983,6 +1290,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       p_peak = max(p_peak, signal.p_prime[iPhi][i]);
     }
+    p_peak0 = p_peak;
     M_a = p_peak/(rho0*pow(c0,2));
     cout << "Acoustic Mach number: " << M_a << endl;
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
@@ -994,10 +1302,8 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
       signal.P[i] = signal.p_prime[iPhi][i]/p0;
       signal.tau[i] = w0*signal.t[i];
     }
+    dt = signal.t[1] - signal.t[0];
     dtau = signal.tau[1] - signal.tau[0];
-
-    // AD::StartPreacc();
-    // AD::SetPreaccIn(signal.P, signal.len[iPhi]);
 
     CreateInitialRayTube(iPhi);
 
@@ -1013,6 +1319,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     sigFile.close();
 
     cout << " Iter" << "        z[m]" << "   p_max[Pa]" << endl;
+
   }
 
   else{
@@ -1022,12 +1329,15 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   }
 
   /*---Compute other coefficients needed for solution of ABE---*/
-  xbar = rho0*pow(c0,3)/(beta*w0*p0);
+  xbar      = rho0*pow(c0,3)/(beta*w0*p0);
   mu        = mu0*pow(T_inf/T0,1.5)*(T0+Ts)/(T_inf+Ts);
   kappa     = kappa0*pow(T_inf/T0,1.5)*(T0+Ta*exp(-Tb/T0))/(T_inf+Ta*exp(-Tb/T_inf));
   delta     = mu/rho0*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
   alpha0_tv = delta*pow(w0,2)/(2.*pow(c0,3));
   Gamma     = 1./(alpha0_tv*xbar);
+  // delta     = mu*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
+  // alpha0_tv = delta*pow(w0,2)/2.;
+  // Gamma     = beta*w0*p_peak0/(alpha0_tv);
 
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
@@ -1056,29 +1366,36 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Find start and end of significant part of signal---*/
   unsigned long istart = 0, iend = signal.len[iPhi]-1;
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-    if(abs(signal.p_prime[iPhi][i]) > 1.0E-1){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
       istart = i;
       break;
     }
   }
 
   for(unsigned long i = signal.len[iPhi]-1; i >= istart+1; i--){
-    if(abs(signal.p_prime[iPhi][i]) > 1.0E-1){
+    if(abs(signal.p_prime[iPhi][i]) > 1.0E-3){
       iend = i;
       break;
     }
   }
   scale_L = signal.x[iPhi][iend] - signal.x[iPhi][istart];
-  unsigned long len_new = signal.len[iPhi];
-  su2double *xtmp, *ptmp;
+  unsigned long len_new = iend + 1 - istart;
+  su2double *xtmp = new su2double[len_new], *ptmp = new su2double[len_new];
+  for(unsigned long i = 0; i < len_new; i++){
+    xtmp[i] = signal.x[iPhi][istart+i];
+    ptmp[i] = signal.p_prime[iPhi][istart+i];
+  }
+  signal.x[iPhi] = new su2double[len_new];
+  signal.p_prime[iPhi] = new su2double[len_new];
+  signal.len[iPhi] = len_new;
+  for(unsigned long i = 0; i < len_new; i++){
+    signal.x[iPhi][i] = xtmp[i];
+    signal.p_prime[iPhi][i] = ptmp[i];
+  }
 
   /*---Loop over significant part of signal and find average spacing---*/
-  dx_avg = 0.;
-  for(unsigned long i = istart; i < iend+1; i++){
-    dx_avg += signal.x[iPhi][i] - signal.x[iPhi][i-1];
-  }
-  dx_avg /= (su2double(iend+1-istart));
-  if(flt_U/dx_avg < 29000.){ // Nyquist criterion for Mark VII
+  dx_avg = (signal.x[iPhi][len_new-1]-signal.x[iPhi][0])/(su2double(len_new));
+  if(flt_U/dx_avg < 29000.){ // Sampling frequency for Mark VII
     dx_avg = flt_U/29000.;
   }
 
@@ -1092,10 +1409,13 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   ptmp[0] = signal.p_prime[iPhi][0];
   for(unsigned long i = 1; i < len_new; i++){
     xtmp[i] = xtmp[i-1] + dx_avg;
-    if(xtmp[i] > signal.x[iPhi][j+1]) j++;
 
-    if(j == (signal.len[iPhi]-1)){
-      j--; // Decrement to avoid potential out-of-bounds access
+    if((j < signal.len[iPhi]-1) && (xtmp[i] > signal.x[iPhi][j+1])){
+      j++;
+    }
+
+    if((i == len_new-1) || (j == (signal.len[iPhi]-1))){
+      j = signal.len[iPhi]-2; // Decrement to avoid potential out-of-bounds access
     }
     /*---Interpolate signal---*/
     ptmp[i] = signal.p_prime[iPhi][j] + (xtmp[i] - signal.x[iPhi][j]) * (signal.p_prime[iPhi][j+1]-signal.p_prime[iPhi][j])/(signal.x[iPhi][j+1]-signal.x[iPhi][j]);
@@ -1104,12 +1424,12 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Store new signal---*/
   su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
   unsigned long len_recompress = ceil(2.*scale_L/dx_avg);
-  m_pow_2 = ceil(log(su2double(len_new+len_recompress*4))/log(2.));
-  len_new = pow(2,m_pow_2); // Next power of 2 (for FFT)
+  len_new = len_new+len_recompress*6;
+  m_pow_2 = ceil(log(su2double(len_new))/log(2.)); // Next power of 2 (for FFT)
   signal.len[iPhi] = len_new;
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*2), i1 = i0+len1, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*3), i1 = i0+len1, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_avg*su2double(i0-i);
@@ -1224,7 +1544,9 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    // dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    // dsigma_non = 0.8*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
 
     /*---Restrict dsigma based on thermoviscous effects---*/
     dsigma_tv = 0.1*Gamma/signal.len[iPhi];
@@ -1279,12 +1601,13 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
     dsigma_c = abs(0.05*c0/dc_dsigma);
 
     /*---Pick minimum dsigma---*/
-    if(iIter == 0){
-      dsigma = 0.001*CFL_reduce;
-      dsigma_old = CFL_reduce;
-    }
-    else{
-      dsigma = dsigma_old;
+    // if(iIter == 0){
+    //   dsigma = 0.01*CFL_reduce;
+    //   dsigma_old = 10.*CFL_reduce;
+    // }
+    // else{
+      // dsigma = dsigma_old;
+      dsigma = 1.E5;
       dsigma = min(dsigma, dsigma_tv);
       dsigma = min(dsigma, dsigma_relO);
       dsigma = min(dsigma, dsigma_relN);
@@ -1297,8 +1620,8 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
         // dsigma /= su2double(factor);
       }
       dsigma *= CFL_reduce;
-      dsigma_old = 1000.*dsigma;
-    }
+      // dsigma_old = 100.*dsigma;
+    // }
 
     ds = xbar*dsigma;
     dx_dz  = (c0*cos(ray_theta[0])*sin(ray_nu[0]) - uwind)/(c0*sin(ray_theta[0]));
@@ -1324,6 +1647,10 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   su2double p_i, p_ip, p_im, f_i, f_ip, f_im, A_ip, A_im;
   /*---Predictor---*/
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    AD::StartPreacc();
+    AD::SetPreaccIn(signal.P[i]);
+    AD::SetPreaccIn(signal.P[i+1]);
+    AD::SetPreaccIn(signal.P[i-1]);
     p_i = signal.P[i];
     p_ip = signal.P[i+1];
     p_im = signal.P[i-1];
@@ -1341,6 +1668,8 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     f_im = 0.5*(f_im + f_i - abs(A_im)*(p_i - p_im));
 
     Ptmp[i] = p_i - dsigma/(2.*dtau)*(f_ip - f_im);
+    AD::SetPreaccOut(Ptmp[i]);
+    AD::EndPreacc();
   }
   Ptmp[0] = signal.P[0];
   Ptmp[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
@@ -1348,6 +1677,11 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   /*---Corrector---*/
   su2double p_iml, p_imr, p_ipl, p_ipr, f_l, f_r;
   for(unsigned long i = 2; i < signal.len[iPhi]-2; i++){
+    AD::StartPreacc();
+    AD::SetPreaccIn(Ptmp[i]);
+    AD::SetPreaccIn(Ptmp[i+1]);
+    AD::SetPreaccIn(Ptmp[i-1]);
+    AD::SetPreaccIn(Ptmp[i-2]);
     p_iml = Ptmp[i-1] + 0.5*(Ptmp[i-1]-Ptmp[i-2]);
     p_imr = Ptmp[i] - 0.5*(Ptmp[i]-Ptmp[i-1]);
     p_ipl = Ptmp[i] + 0.5*(Ptmp[i]-Ptmp[i-1]);
@@ -1366,6 +1700,8 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     f_ip = 0.5*(f_l + f_r - abs(A_ip)*(p_ipr - p_ipl));
 
     signal.P[i] = signal.P[i] - dsigma/dtau*(f_ip - f_im);
+    AD::SetPreaccOut(signal.P[i]);
+    AD::EndPreacc();
   }
 
   delete [] Ptmp;
@@ -1374,14 +1710,18 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
 
 void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
 
-  su2double lambda = dsigma/(2.*Gamma*pow(dtau,2));
+  su2double lambda = dsigma/(2.*Gamma*pow(dtau,2)),
+            alpha, alpha_p;
   su2double *y = new su2double[signal.len[iPhi]];
+
+  alpha = 0.5;
+  alpha_p = 1.-alpha;
 
   /*---Tridiagonal matrix-vector multiplication B_tv * Pk (see Cleveland thesis)---*/
   y[0] = signal.P[0];
   y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-    y[i] = lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*lambda)*signal.P[i];
+    y[i] = alpha_p*lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*alpha_p*lambda)*signal.P[i];
   }
 
   /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
@@ -1391,8 +1731,8 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
   ci[0] = 0.;
   di[0] = y[0];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
-    ci[i] = -lambda/((1.+2.*lambda) + lambda*ci[i-1]);
-    di[i] = (y[i] + lambda*di[i-1])/((1.+2.*lambda) + lambda*ci[i-1]);
+    ci[i] = -alpha*lambda/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
+    di[i] = (y[i] + alpha*lambda*di[i-1])/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
   }
 
   for(int i = signal.len[iPhi]-2; i >= 1; i--){
@@ -1490,7 +1830,11 @@ void CBoom_AugBurgers::Scaling(unsigned short iPhi){
   HumidityISO(z_new, pp1, Tp1, hp1);
   cp1 *= (1+0.0016*hp1);
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+    AD::StartPreacc();
+    AD::SetPreaccIn(signal.P[i]);
     signal.P[i] = sqrt((rhop1*cp1*ray_A)/(rho0*c0*A_new))*signal.P[i];
+    AD::SetPreaccOut(signal.P[i]);
+    AD::EndPreacc();
   }
 
   /*---Set new ray properties (except z, we'll do that later)---*/
@@ -1510,11 +1854,12 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned long n_sample = signal.len[iPhi]; //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
+  unsigned long n_sample = pow(2,m_pow_2); //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
   unsigned short n_band = 41;
 
   su2double *w      = new su2double[n_sample/2], 
-            *p_of_w = new su2double[n_sample]; // Frequency domain signal
+            *p_of_w = new su2double[n_sample],  // Frequency domain signal
+            *p_of_t = new su2double[n_sample];  // Zero-padded time domain signal
 
   su2double fc[41]    = {1.25, 1.6, 2.0, 2.5, 3.15,
                          4., 5., 6.3, 8., 10.,
@@ -1547,12 +1892,16 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Compute frequency domain signal ---*/
   cout << "Performing Fourier Transform." << endl;
-  for(unsigned long i = 0; i < n_sample/2; i++){
-    w[i] = su2double(i)*flt_U/(su2double(n_sample)*dx_avg);
-    p_of_w[2*i] = 0.;
-    p_of_w[2*i+1] = 0.;
+  for(unsigned long i = 0; i < n_sample; i++){
+    if(i < n_sample/2){w[i] = su2double(i)*flt_U/(su2double(n_sample)*dx_avg);}
+    p_of_w[i] = 0.;
+
+    // if(i < (n_sample - signal.len[iPhi])){p_of_t[i] = 0.;}
+    // else{p_of_t[i] = signal.P[i-signal.len[iPhi]];}
+    if(i < signal.len[iPhi]){p_of_t[i] = signal.P[i];}
+    else{p_of_t[i] = 0.;}
   }
-  FFT(m_pow_2, signal.P, p_of_w);
+  FFT(m_pow_2, p_of_t, p_of_w);
   // FourierTransform(iPhi, w, p_of_w, p_dc, n_sample);
 
    /*--- Interpolate power at band limits ---*/

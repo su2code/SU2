@@ -170,8 +170,8 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/SU2_CFD.hpp \
-	../include/solver_boom.hpp ../include/SUBoom.hpp \
-	../include/transport_model.hpp ../include/transport_model.inl \
+	../include/solver_boom.hpp ../include/transport_model.hpp \
+	../include/transport_model.inl \
 	../include/variable_structure.hpp \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
@@ -211,9 +211,8 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
 	../src/solver_template.cpp ../src/solver_boom.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -274,7 +273,6 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_structure.$(OBJEXT) \
 	../src/libSU2Core_a-solver_template.$(OBJEXT) \
 	../src/libSU2Core_a-solver_boom.$(OBJEXT) \
-	../src/libSU2Core_a-SUBoom.$(OBJEXT) \
 	../src/libSU2Core_a-transfer_physics.$(OBJEXT) \
 	../src/libSU2Core_a-transfer_structure.$(OBJEXT) \
 	../src/libSU2Core_a-transport_model.$(OBJEXT) \
@@ -317,8 +315,7 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/solver_boom.hpp \
-	../include/SUBoom.hpp ../include/transport_model.hpp \
-	../include/transport_model.inl \
+	../include/transport_model.hpp ../include/transport_model.inl \
 	../include/variable_structure.hpp \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
@@ -358,9 +355,8 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
 	../src/solver_template.cpp ../src/solver_boom.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -421,7 +417,6 @@ am__objects_4 = ../src/bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-solver_template.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-solver_boom.$(OBJEXT) \
-	../src/bin_SU2_CFD_AD-SUBoom.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-transfer_physics.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-transfer_structure.$(OBJEXT) \
 	../src/bin_SU2_CFD_AD-transport_model.$(OBJEXT) \
@@ -460,8 +455,7 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../include/output_structure.inl \
 	../include/solver_structure.hpp \
 	../include/solver_structure.inl ../include/solver_boom.hpp \
-	../include/SUBoom.hpp ../include/transport_model.hpp \
-	../include/transport_model.inl \
+	../include/transport_model.hpp ../include/transport_model.inl \
 	../include/variable_structure.hpp \
 	../include/variable_structure.inl \
 	../include/transfer_structure.hpp \
@@ -501,9 +495,8 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/solver_direct_elasticity.cpp \
 	../src/solver_error_estimate.cpp ../src/solver_structure.cpp \
 	../src/solver_template.cpp ../src/solver_boom.cpp \
-	../src/SUBoom.cpp ../src/transfer_physics.cpp \
-	../src/transfer_structure.cpp ../src/transport_model.cpp \
-	../src/variable_adjoint_mean.cpp \
+	../src/transfer_physics.cpp ../src/transfer_structure.cpp \
+	../src/transport_model.cpp ../src/variable_adjoint_mean.cpp \
 	../src/variable_adjoint_mean_inc.cpp \
 	../src/variable_adjoint_turbulent.cpp \
 	../src/variable_adjoint_discrete.cpp \
@@ -565,7 +558,6 @@ am__objects_6 =  \
 	../src/bin_SU2_CFD_DIRECTDIFF-solver_structure.$(OBJEXT) \
 	../src/bin_SU2_CFD_DIRECTDIFF-solver_template.$(OBJEXT) \
 	../src/bin_SU2_CFD_DIRECTDIFF-solver_boom.$(OBJEXT) \
-	../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.$(OBJEXT) \
 	../src/bin_SU2_CFD_DIRECTDIFF-transfer_physics.$(OBJEXT) \
 	../src/bin_SU2_CFD_DIRECTDIFF-transfer_structure.$(OBJEXT) \
 	../src/bin_SU2_CFD_DIRECTDIFF-transport_model.$(OBJEXT) \
@@ -610,7 +602,6 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-SU2_CFD.Po \
-	../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-definition_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-driver_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-fluid_model.Po \
@@ -676,7 +667,6 @@ am__depfiles_remade = ../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_template.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po \
-	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-definition_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-driver_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-fluid_model.Po \
@@ -741,7 +731,6 @@ am__depfiles_remade = ../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_direct_wave.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_structure.Po \
 	../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_template.Po \
-	../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po \
 	../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po \
 	../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po \
 	../src/$(DEPDIR)/libSU2Core_a-fluid_model.Po \
@@ -1021,7 +1010,6 @@ libSU2Core_sources = \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
   ../include/solver_boom.hpp \
-  ../include/SUBoom.hpp \
   ../include/transport_model.hpp \
   ../include/transport_model.inl \
   ../include/variable_structure.hpp \
@@ -1075,7 +1063,6 @@ libSU2Core_sources = \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/solver_boom.cpp \
-  ../src/SUBoom.cpp \
   ../src/transfer_physics.cpp \
   ../src/transfer_structure.cpp \
   ../src/transport_model.cpp \
@@ -1311,8 +1298,6 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-solver_boom.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/libSU2Core_a-SUBoom.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-transfer_physics.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-transfer_structure.$(OBJEXT):  \
@@ -1457,8 +1442,6 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_AD-solver_boom.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
-../src/bin_SU2_CFD_AD-SUBoom.$(OBJEXT): ../src/$(am__dirstamp) \
-	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_AD-transfer_physics.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_AD-transfer_structure.$(OBJEXT):  \
@@ -1593,8 +1576,6 @@ libSU2Core.a: $(libSU2Core_a_OBJECTS) $(libSU2Core_a_DEPENDENCIES) $(EXTRA_libSU
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_DIRECTDIFF-solver_boom.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
-../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.$(OBJEXT):  \
-	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_DIRECTDIFF-transfer_physics.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/bin_SU2_CFD_DIRECTDIFF-transfer_structure.$(OBJEXT):  \
@@ -1643,7 +1624,6 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-SU2_CFD.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-definition_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-driver_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-fluid_model.Po@am__quote@ # am--include-marker
@@ -1709,7 +1689,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_template.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-definition_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-driver_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-fluid_model.Po@am__quote@ # am--include-marker
@@ -1774,7 +1753,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_direct_wave.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_template.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-fluid_model.Po@am__quote@ # am--include-marker
@@ -2519,20 +2497,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/solver_boom.cpp' object='../src/libSU2Core_a-solver_boom.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-solver_boom.obj `if test -f '../src/solver_boom.cpp'; then $(CYGPATH_W) '../src/solver_boom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_boom.cpp'; fi`
-
-../src/libSU2Core_a-SUBoom.o: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-SUBoom.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Tpo -c -o ../src/libSU2Core_a-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Tpo ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/libSU2Core_a-SUBoom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-
-../src/libSU2Core_a-SUBoom.obj: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-SUBoom.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Tpo -c -o ../src/libSU2Core_a-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Tpo ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/libSU2Core_a-SUBoom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
 
 ../src/libSU2Core_a-transfer_physics.o: ../src/transfer_physics.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-transfer_physics.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-transfer_physics.Tpo -c -o ../src/libSU2Core_a-transfer_physics.o `test -f '../src/transfer_physics.cpp' || echo '$(srcdir)/'`../src/transfer_physics.cpp
@@ -3458,20 +3422,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_AD-solver_boom.obj `if test -f '../src/solver_boom.cpp'; then $(CYGPATH_W) '../src/solver_boom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_boom.cpp'; fi`
 
-../src/bin_SU2_CFD_AD-SUBoom.o: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_AD-SUBoom.o -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Tpo -c -o ../src/bin_SU2_CFD_AD-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/bin_SU2_CFD_AD-SUBoom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_AD-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-
-../src/bin_SU2_CFD_AD-SUBoom.obj: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_AD-SUBoom.obj -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Tpo -c -o ../src/bin_SU2_CFD_AD-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/bin_SU2_CFD_AD-SUBoom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_AD-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
-
 ../src/bin_SU2_CFD_AD-transfer_physics.o: ../src/transfer_physics.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_AD-transfer_physics.o -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_AD-transfer_physics.Tpo -c -o ../src/bin_SU2_CFD_AD-transfer_physics.o `test -f '../src/transfer_physics.cpp' || echo '$(srcdir)/'`../src/transfer_physics.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_AD-transfer_physics.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_AD-transfer_physics.Po
@@ -4382,20 +4332,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_DIRECTDIFF-solver_boom.obj `if test -f '../src/solver_boom.cpp'; then $(CYGPATH_W) '../src/solver_boom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/solver_boom.cpp'; fi`
 
-../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.o: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.o -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Tpo -c -o ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.o `test -f '../src/SUBoom.cpp' || echo '$(srcdir)/'`../src/SUBoom.cpp
-
-../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.obj: ../src/SUBoom.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.obj -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Tpo -c -o ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/SUBoom.cpp' object='../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/bin_SU2_CFD_DIRECTDIFF-SUBoom.obj `if test -f '../src/SUBoom.cpp'; then $(CYGPATH_W) '../src/SUBoom.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/SUBoom.cpp'; fi`
-
 ../src/bin_SU2_CFD_DIRECTDIFF-transfer_physics.o: ../src/transfer_physics.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/bin_SU2_CFD_DIRECTDIFF-transfer_physics.o -MD -MP -MF ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-transfer_physics.Tpo -c -o ../src/bin_SU2_CFD_DIRECTDIFF-transfer_physics.o `test -f '../src/transfer_physics.cpp' || echo '$(srcdir)/'`../src/transfer_physics.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-transfer_physics.Tpo ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-transfer_physics.Po
@@ -4767,7 +4703,6 @@ clean-am: clean-binPROGRAMS clean-generic clean-noinstLIBRARIES \
 distclean: distclean-am
 		-rm -f ../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-SU2_CFD.Po
-	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-fluid_model.Po
@@ -4833,7 +4768,6 @@ distclean: distclean-am
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_template.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po
-	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-fluid_model.Po
@@ -4898,7 +4832,6 @@ distclean: distclean-am
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_direct_wave.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_template.Po
-	-rm -f ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-fluid_model.Po
@@ -5010,7 +4943,6 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ../src/$(DEPDIR)/bin_SU2_CFD-SU2_CFD.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-SU2_CFD.Po
-	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-fluid_model.Po
@@ -5076,7 +5008,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_AD-variable_template.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po
-	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-fluid_model.Po
@@ -5141,7 +5072,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_direct_wave.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_structure.Po
 	-rm -f ../src/$(DEPDIR)/bin_SU2_CFD_DIRECTDIFF-variable_template.Po
-	-rm -f ../src/$(DEPDIR)/libSU2Core_a-SUBoom.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po
 	-rm -f ../src/$(DEPDIR)/libSU2Core_a-fluid_model.Po
