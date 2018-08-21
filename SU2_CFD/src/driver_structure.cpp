@@ -1555,7 +1555,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     
     if (scalar) {
       if (passive_scalar || progress_variable) {
-        delete solver_container[iMGlevel][SCALAR_SOL];
+        delete solver_container[val_iInst][iMGlevel][SCALAR_SOL];
       }
     }
     
@@ -2209,7 +2209,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (passive_scalar || progress_variable){
         if (iMGlevel == MESH_0) numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, true, config);
-        numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, false, config);
+        else numerics_container[val_iInst][iMGlevel][SCALAR_SOL][VISC_TERM] = new CAvgGradScalar_General(nDim, nVar_Scalar, false, config);
       }
     }
     

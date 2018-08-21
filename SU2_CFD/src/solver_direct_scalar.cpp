@@ -1559,74 +1559,74 @@ CPassiveScalarSolver::CPassiveScalarSolver(CGeometry *geometry,
   
   FluidModel = NULL;
   
-    /*--- Define some auxiliar vector related with the residual ---*/
-    
-    Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
-    Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
-    Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
-    Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
-    Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
-    
-    /*--- Define some structures for locating max residuals ---*/
-    
-    Point_Max = new unsigned long[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
-    Point_Max_Coord = new su2double*[nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Point_Max_Coord[iVar] = new su2double[nDim];
-      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
-    }
-    
-    /*--- Define some auxiliar vector related with the solution ---*/
-    
-    Solution = new su2double[nVar];
-    Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
-    
-    /*--- Define some auxiliar vector related with the geometry ---*/
-    
-    Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
-    
-    /*--- Define some auxiliar vector related with the flow solution ---*/
-    
-    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
-    
-    /*--- Jacobians and vector structures for implicit computations ---*/
-    
-    Jacobian_i = new su2double* [nVar];
-    Jacobian_j = new su2double* [nVar];
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Jacobian_i[iVar] = new su2double [nVar];
-      Jacobian_j[iVar] = new su2double [nVar];
-    }
-    
-    /*--- Initialization of the structure of the whole Jacobian ---*/
+  /*--- Define some auxiliar vector related with the residual ---*/
+  
+  Residual = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]  = 0.0;
+  Residual_RMS = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_i = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_i[iVar]  = 0.0;
+  Residual_j = new su2double[nVar];   for (iVar = 0; iVar < nVar; iVar++) Residual_j[iVar]  = 0.0;
+  Residual_Max = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+  
+  /*--- Define some structures for locating max residuals ---*/
+  
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+  
+  /*--- Define some auxiliar vector related with the solution ---*/
+  
+  Solution = new su2double[nVar];
+  Solution_i = new su2double[nVar]; Solution_j = new su2double[nVar];
+  
+  /*--- Define some auxiliar vector related with the geometry ---*/
+  
+  Vector_i = new su2double[nDim]; Vector_j = new su2double[nDim];
+  
+  /*--- Define some auxiliar vector related with the flow solution ---*/
+  
+  FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
+  
+  /*--- Jacobians and vector structures for implicit computations ---*/
+  
+  Jacobian_i = new su2double* [nVar];
+  Jacobian_j = new su2double* [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Jacobian_i[iVar] = new su2double [nVar];
+    Jacobian_j[iVar] = new su2double [nVar];
+  }
+  
+  /*--- Initialization of the structure of the whole Jacobian ---*/
   
   if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Passive Scalar). MG level: " << iMesh <<"." << endl;
-    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+  
+  if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+      (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+    nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+    if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+  }
+  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  
+  /*--- Computation of gradients by least squares ---*/
+  
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
     
-    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
-        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
-      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
-      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
-    }
+    /*--- c vector := transpose(WA)*(Wb) ---*/
     
-    LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
-    
-    /*--- Computation of gradients by least squares ---*/
-    
-    if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-      /*--- S matrix := inv(R)*traspose(inv(R)) ---*/
-      Smatrix = new su2double* [nDim];
-      for (iDim = 0; iDim < nDim; iDim++)
-        Smatrix[iDim] = new su2double [nDim];
-      
-      /*--- c vector := transpose(WA)*(Wb) ---*/
-      
-      Cvector = new su2double* [nVar];
-      for (iVar = 0; iVar < nVar; iVar++)
-        Cvector[iVar] = new su2double [nDim];
-    }
+    Cvector = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++)
+      Cvector[iVar] = new su2double [nDim];
+  }
   
   /*--- Initialize lower and upper limits---*/
   
@@ -1748,6 +1748,8 @@ CPassiveScalarSolver::~CPassiveScalarSolver(void) {
     delete [] SlidingStateNodes;
   }
   
+  if (FluidModel != NULL) delete FluidModel;
+
 }
 
 void CPassiveScalarSolver::Preprocessing(CGeometry *geometry,
@@ -1844,7 +1846,7 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
     if (rank == MASTER_NODE)
       cout << "Setting the convection-diffusion initial condition." << endl;
     
-    Solution = new su2double[nVar];
+    su2double *Init_Sol = new su2double[nVar];
     
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
       for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
@@ -1853,15 +1855,15 @@ void CPassiveScalarSolver::SetInitialCondition(CGeometry **geometry,
         /*--- Set the initial condition for the conv-diff problem. ---*/
         Coords = geometry[iMesh]->node[iPoint]->GetCoord();
         if (Coords[1] <= 1.0)
-          Solution[0] = 1.0;
+          Init_Sol[0] = 1.0;
         else
-          Solution[0] = 0.0;
+          Init_Sol[0] = 0.0;
         
-        solver_container[iMesh][SCALAR_SOL]->node[iPoint]->SetSolution(Solution);
+        solver_container[iMesh][SCALAR_SOL]->node[iPoint]->SetSolution(Init_Sol);
       }
       solver_container[iMesh][SCALAR_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     }
-    delete [] Solution;
+    delete [] Init_Sol;
     
   }
   
