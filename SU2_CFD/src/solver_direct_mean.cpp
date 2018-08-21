@@ -8693,6 +8693,7 @@ void CEulerSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
                                          unsigned long val_inlet_point,
                                          unsigned short val_kind_marker,
+                                         string val_marker,
                                          CGeometry *geometry,
                                          CConfig *config) {
   
@@ -8712,7 +8713,8 @@ su2double CEulerSolver::GetInletAtVertex(su2double *val_inlet,
   if (val_kind_marker == INLET_FLOW) {
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
         
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
           
