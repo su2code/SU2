@@ -127,6 +127,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     }
   }
 
+  AD::StartRecording();
+
   nPointID_proc = new unsigned long[nProcessor];
   unsigned long iPanel, panelCount, totSig, maxSig;
   unsigned long *nPanel_loc = new unsigned long[nProcessor];
@@ -218,6 +220,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
       }
     }
   }
+
+  AD::StopRecording();
 
   /*---Now write to file---*/
   if(rank == MASTER_NODE){
@@ -859,6 +863,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   }
 
     /*--- Now interpolate pressure ---*/
+  AD::StartRecording();
   for(iPoint = 0; iPoint < nNode_list; iPoint++){
     jNode = jNode_list[iPoint];
     PointID[iPhi][iPoint] = geometry->node[jNode]->GetGlobalIndex();
@@ -900,6 +905,8 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
       }
     }
   }
+
+  AD::StopRecording();
 
   nPointID[iPhi] = nNode_list;
 
@@ -1042,7 +1049,6 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
   su2double ymin = 1.0E9, ymax = -1.0E9, zmin = 1.0E9, zmax = -1.0E9;
 
   /*--- First check simple bounding box ---*/
-  //cout << "Check bounding box";
   for(int iCoord = 0; iCoord < nCoord; iCoord++){
     if(Coord_i[iCoord][1] < ymin) ymin = Coord_i[iCoord][1];
     if(Coord_i[iCoord][1] > ymax) ymax = Coord_i[iCoord][1];
@@ -1051,12 +1057,10 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
   }
 
   if(y0 < ymin || y0 > ymax || z0 < zmin || z0 > zmax){
-    //cout << "y0 = " << y0 << ", z0 = " << z0 << ", ymin = " << ymin << ", ymax = " << ymax << ", zmin = " << zmin << ", zmax = " << zmax << endl;
     return 0;
   }
 
   /*--- If inside bounding box, check sum of angles ---*/
-  //cout << "Check sum of angles" << endl;
   su2double d0, d1, d2;
   su2double a_x, a_y, b_x, b_y;
   su2double c;
@@ -1172,7 +1176,6 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
   su2double T01 = 273.16,  // Reference temperature (Humidity)
             Pr  = 101325.; // Reference pressure (Absorption)
   su2double logPsat_Pr = -6.8346*pow(T01/T_inf,1.261) + 4.6151;  // ISO standard for saturation vapor pressure
-  // su2double logPsat_Pr = 10.79586*(1. - T01/T_inf) - 5.02808 * log10(T_inf/T01) + 1.50474E-4*(1. - pow(10.,-8.29692*(T_inf/T01 - 1.))) - 4.2873E-4*(1. - pow(10.,-4.76955*(T_inf/T01 - 1.))) - 2.2195983;
 
   su2double hr_prof[2][61] = {{0, 304.8, 609.6, 914.4, 1219.2,  1524,  1828.8,  2133.6,  2438.4,  2743.2,  3048,
                                3352.8,  3657.6,  3962.4,  4267.2,  4572,  4876.8,  5181.6,  5486.4,  5791.2,  6096,  
@@ -1220,17 +1223,13 @@ int rank = 0;
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
     Attenuation(iPhi);
-    dsigma /= 1;
-    for(unsigned short i = 0; i < 1; i++)
-    	Nonlinearity(iPhi);
+   	Nonlinearity(iPhi);
 
     ray_z -= dz;
 
     iIter++;
   }
 
-  // AD::SetPreaccOut(signal.P, signal.len[iPhi]);
-  // AD::EndPreacc();
   }
 
   if(rank == MASTER_NODE){
@@ -1268,10 +1267,11 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   /*---Preprocess signal for first iteration---*/
   if(iIter == 0){
 
-    ray_z    = flt_h - ray_r0*cos(ray_phi[iPhi]);
-    AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
+    AtmosISA(flt_h, T_inf, c0, p_inf, rho0, atm_g);
     p0 = p_inf;
     flt_U = flt_M*c0;
+    ray_z    = flt_h - ray_r0*cos(ray_phi[iPhi]);
+    AtmosISA(ray_z, T_inf, c0, p_inf, rho0, atm_g);
     beta = (atm_g + 1.)/2.;
     HumidityISO(ray_z, p_inf, T_inf, h);
     c0 *= (1+0.0016*h); // Humidity correction to speed of sound
@@ -1290,18 +1290,21 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       p_peak = max(p_peak, signal.p_prime[iPhi][i]);
     }
-    p_peak0 = p_peak;
     M_a = p_peak/(rho0*pow(c0,2));
     cout << "Acoustic Mach number: " << M_a << endl;
+    AD::StartRecording();
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
-      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/flt_U ;
+      signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/flt_U;
   	}
     f0 = flt_U/(signal.x[iPhi][signal.len[iPhi]-1]-signal.x[iPhi][0]); // Characteristic time governed by length of signal
-    w0 = 2.*M_PI*f0; 
+    w0 = 2.*M_PI*f0;
+
     for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       signal.P[i] = signal.p_prime[iPhi][i]/p0;
       signal.tau[i] = w0*signal.t[i];
     }
+    AD::StopRecording();
+
     dt = signal.t[1] - signal.t[0];
     dtau = signal.tau[1] - signal.tau[0];
 
@@ -1335,9 +1338,6 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   delta     = mu/rho0*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
   alpha0_tv = delta*pow(w0,2)/(2.*pow(c0,3));
   Gamma     = 1./(alpha0_tv*xbar);
-  // delta     = mu*(4./3. + 0.6 + pow((atm_g-1.),2)*kappa/(atm_g*R*mu));
-  // alpha0_tv = delta*pow(w0,2)/2.;
-  // Gamma     = beta*w0*p_peak0/(alpha0_tv);
 
   su2double A_nu_O2 = 0.01278 * pow(T_inf/Tr,-2.5) * exp(-2239.1/T_inf);
   su2double A_nu_N2 = 0.1068  * pow(T_inf/Tr,-2.5) * exp(-3352./T_inf);
@@ -1362,6 +1362,8 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
 }
 
 void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
+
+  AD::StartRecording();
 
   /*---Find start and end of significant part of signal---*/
   unsigned long istart = 0, iend = signal.len[iPhi]-1;
@@ -1393,10 +1395,16 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
     signal.p_prime[iPhi][i] = ptmp[i];
   }
 
-  /*---Loop over significant part of signal and find average spacing---*/
+  /*---Average spacing and sampling frequency---*/
   dx_avg = (signal.x[iPhi][len_new-1]-signal.x[iPhi][0])/(su2double(len_new));
-  if(flt_U/dx_avg < 29000.){ // Sampling frequency for Mark VII
-    dx_avg = flt_U/29000.;
+  fs = flt_U/dx_avg;
+  // if(fs > 30000.){ // Nyquist criterion for Mark VII is 14500
+  //   dx_avg = flt_U/30000.;
+  //   fs = 30000.;
+  // }
+  if(fs < 7250. && len_new < 2000){ // Make sure signal is adequately (at least somewhat) refined
+    dx_avg = (signal.x[iPhi][len_new-1]-signal.x[iPhi][0])/(2000.);
+    fs = flt_U/dx_avg;
   }
 
   /*---Create new temp signal---*/
@@ -1407,29 +1415,36 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   ptmp = new su2double[len_new];
   xtmp[0] = signal.x[iPhi][0];
   ptmp[0] = signal.p_prime[iPhi][0];
+  unsigned long j0 = 0;
   for(unsigned long i = 1; i < len_new; i++){
     xtmp[i] = xtmp[i-1] + dx_avg;
 
-    if((j < signal.len[iPhi]-1) && (xtmp[i] > signal.x[iPhi][j+1])){
-      j++;
-    }
-
-    if((i == len_new-1) || (j == (signal.len[iPhi]-1))){
-      j = signal.len[iPhi]-2; // Decrement to avoid potential out-of-bounds access
-    }
     /*---Interpolate signal---*/
-    ptmp[i] = signal.p_prime[iPhi][j] + (xtmp[i] - signal.x[iPhi][j]) * (signal.p_prime[iPhi][j+1]-signal.p_prime[iPhi][j])/(signal.x[iPhi][j+1]-signal.x[iPhi][j]);
+    if(xtmp[i] > signal.x[iPhi][signal.len[iPhi]-1]){
+      j = signal.len[iPhi]-2;
+      j0 = j;
+      break;
+    }
+    else{
+      for(unsigned long j = j0; j < signal.len[iPhi]-1; j++){
+        if(xtmp[i] > signal.x[iPhi][j] && xtmp[i] < signal.x[iPhi][j+1]){
+          j0 = j;
+          break;
+        }
+      }
+    }
+    ptmp[i] = signal.p_prime[iPhi][j0] + (xtmp[i] - signal.x[iPhi][j0]) * (signal.p_prime[iPhi][j0+1]-signal.p_prime[iPhi][j0])/(signal.x[iPhi][j0+1]-signal.x[iPhi][j0]);
+    
   }
 
   /*---Store new signal---*/
-  su2double dp_dx_end = -ptmp[len_new-1]/(2.*scale_L);
-  unsigned long len_recompress = ceil(2.*scale_L/dx_avg);
-  len_new = len_new+len_recompress*6;
-  m_pow_2 = ceil(log(su2double(len_new))/log(2.)); // Next power of 2 (for FFT)
+  unsigned long len_recompress = 1024;
+  su2double dp_dx_end = -ptmp[len_new-1]/(2.*len_recompress);
+  len_new = len_new+len_recompress*4;
   signal.len[iPhi] = len_new;
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
-  unsigned long i0 = floor(len_recompress*3), i1 = i0+len1, i2 = signal.len[iPhi];
+  unsigned long i0 = floor(len_recompress*2), i1 = i0+len1, i2 = signal.len[iPhi];
   /*---Zero-pad front of signal---*/
   for(unsigned long i = 0; i < i0; i++){
     signal.x[iPhi][i] = xtmp[0]-dx_avg*su2double(i0-i);
@@ -1451,9 +1466,11 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
     }
   }
 
+  AD::StopRecording();
+
   cout << "Signal interpolated and padded, now contains " << signal.len[iPhi] << " points." << endl;
   cout << "Length scale of waveform = " << scale_L << " m." << endl;
-  cout << "Sample frequency = " << flt_U/dx_avg << " Hz." << endl;
+  cout << "Sample frequency = " << fs << " Hz." << endl;
 
   delete [] xtmp;
   delete [] ptmp;
@@ -1536,7 +1553,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
 
   else{
     /*---Restrict dsigma to avoid multivalued waveforms---*/
-    su2double dp, max_dp = 1.0E-9, min_dp = -1.0E-9, max_p = -1E6, min_p = 1E6;
+    su2double dp, max_dp = 1.0E-9;
     p_peak = 0.;
     for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
       dp = signal.P[i+1]-signal.P[i];
@@ -1544,9 +1561,8 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    // dsigma_non = 0.2*dtau/max_dp; // dsigma < 1/max(dp/dtau)
-    dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
-    // dsigma_non = 0.8*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
+    // dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
+    dsigma_non = 0.8*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
 
     /*---Restrict dsigma based on thermoviscous effects---*/
     dsigma_tv = 0.1*Gamma/signal.len[iPhi];
@@ -1607,18 +1623,19 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
     // }
     // else{
       // dsigma = dsigma_old;
-      dsigma = 1.E5;
-      dsigma = min(dsigma, dsigma_tv);
-      dsigma = min(dsigma, dsigma_relO);
-      dsigma = min(dsigma, dsigma_relN);
-      dsigma = min(dsigma, dsigma_A);
-      dsigma = min(dsigma, dsigma_rc);
-      dsigma = min(dsigma, dsigma_c);
-      while(dsigma_non < dsigma){
-        dsigma *= 0.9;
+      // dsigma = 1.E5;
+      dsigma = dsigma_non;
+      // dsigma = min(dsigma, dsigma_tv);
+      // dsigma = min(dsigma, dsigma_relO);
+      // dsigma = min(dsigma, dsigma_relN);
+      // dsigma = min(dsigma, dsigma_A);
+      // dsigma = min(dsigma, dsigma_rc);
+      // dsigma = min(dsigma, dsigma_c);
+      // while(dsigma_non < dsigma){
+        // dsigma *= 0.9;
         // int factor = ceil(dsigma/dsigma_non);
         // dsigma /= su2double(factor);
-      }
+      // }
       dsigma *= CFL_reduce;
       // dsigma_old = 100.*dsigma;
     // }
@@ -1646,6 +1663,7 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   su2double *Ptmp = new su2double[signal.len[iPhi]];
   su2double p_i, p_ip, p_im, f_i, f_ip, f_im, A_ip, A_im;
   /*---Predictor---*/
+  AD::StartRecording();
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
     AD::StartPreacc();
     AD::SetPreaccIn(signal.P[i]);
@@ -1678,6 +1696,7 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   su2double p_iml, p_imr, p_ipl, p_ipr, f_l, f_r;
   for(unsigned long i = 2; i < signal.len[iPhi]-2; i++){
     AD::StartPreacc();
+    AD::SetPreaccIn(signal.P[i]);
     AD::SetPreaccIn(Ptmp[i]);
     AD::SetPreaccIn(Ptmp[i+1]);
     AD::SetPreaccIn(Ptmp[i-1]);
@@ -1703,6 +1722,7 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     AD::SetPreaccOut(signal.P[i]);
     AD::EndPreacc();
   }
+  AD::StopRecording();
 
   delete [] Ptmp;
 
@@ -1718,10 +1738,19 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
   alpha_p = 1.-alpha;
 
   /*---Tridiagonal matrix-vector multiplication B_tv * Pk (see Cleveland thesis)---*/
-  y[0] = signal.P[0];
-  y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+  // y[0] = signal.P[0];
+  // y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+  AD::StartRecording();
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    AD::StartPreacc();
+    AD::SetPreaccIn(signal.P[i]);
+    AD::SetPreaccIn(signal.P[i+1]);
+    AD::SetPreaccIn(signal.P[i-1]);
+
     y[i] = alpha_p*lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*alpha_p*lambda)*signal.P[i];
+
+    AD::SetPreaccOut(y[i]);
+    AD::EndPreacc();
   }
 
   /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
@@ -1729,15 +1758,34 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
             *di = new su2double[signal.len[iPhi]-1];
 
   ci[0] = 0.;
-  di[0] = y[0];
+  di[0] = signal.P[0];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+    AD::StartPreacc();
+    AD::SetPreaccIn(y[i]);
+    AD::SetPreaccIn(ci[i-1]);
+    AD::SetPreaccIn(di[i-1]);
+
     ci[i] = -alpha*lambda/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
     di[i] = (y[i] + alpha*lambda*di[i-1])/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
+
+    AD::SetPreaccOut(ci[i]);
+    AD::SetPreaccOut(di[i]);
+    AD::EndPreacc();
   }
 
   for(int i = signal.len[iPhi]-2; i >= 1; i--){
+    AD::StartPreacc();
+    AD::SetPreaccIn(signal.P[i+1]);
+    AD::SetPreaccIn(ci[i]);
+    AD::SetPreaccIn(di[i]);
+
     signal.P[i] = di[i] - ci[i]*signal.P[i+1];
+
+    AD::SetPreaccOut(signal.P[i]);
+    AD::EndPreacc();
   }
+
+  AD::StopRecording();
 
   delete [] y;
   delete [] ci;
@@ -1757,10 +1805,19 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
   /*---Compute effect of different relaxation modes---*/
   for(unsigned short j = 0; j < 2; j++){
     /*---Tridiagonal matrix-vector multiplication B_nu * Pk (see Cleveland thesis)---*/
-    y[0] = signal.P[0];
-    y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+    // y[0] = signal.P[0];
+    // y[signal.len[iPhi]-1] = signal.P[signal.len[iPhi]-1];
+    AD::StartRecording();
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+      AD::StartPreacc();
+      AD::SetPreaccIn(signal.P[i]);
+      AD::SetPreaccIn(signal.P[i+1]);
+      AD::SetPreaccIn(signal.P[i-1]);
+
       y[i] = (alpha_p*lambda[j]-mur[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mur[j])*signal.P[i+1];
+
+      AD::SetPreaccOut(y[i]);
+      AD::EndPreacc();
     }
     
     a = -(alpha*lambda[j] + mur[j]);
@@ -1771,15 +1828,33 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
     ci  = new su2double[signal.len[iPhi]-1];
     di  = new su2double[signal.len[iPhi]-1];
     ci[0] = 0.;
-    di[0] = y[0];
+    di[0] = signal.P[0];
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
+      AD::StartPreacc();
+      AD::SetPreaccIn(y[i]);
+      AD::SetPreaccIn(ci[i-1]);
+      AD::SetPreaccIn(di[i-1]);
+
       ci[i] = c/(b - a*ci[i-1]);
       di[i] = (y[i] - a*di[i-1])/(b - a*ci[i-1]);
+
+      AD::SetPreaccOut(ci[i]);
+      AD::SetPreaccOut(di[i]);
+      AD::EndPreacc();
     }
 
     for(int i = signal.len[iPhi]-2; i >= 1; i--){
+      AD::StartPreacc();
+      AD::SetPreaccIn(signal.P[i+1]);
+      AD::SetPreaccIn(ci[i]);
+      AD::SetPreaccIn(di[i]);
+
       signal.P[i] = di[i] - ci[i]*signal.P[i+1];
+
+      AD::SetPreaccOut(signal.P[i]);
+      AD::EndPreacc();
     }
+    AD::StopRecording();
 
     delete [] ci;
     delete [] di;
@@ -1829,13 +1904,18 @@ void CBoom_AugBurgers::Scaling(unsigned short iPhi){
   AtmosISA(z_new, Tp1, cp1, pp1, rhop1, atm_g);
   HumidityISO(z_new, pp1, Tp1, hp1);
   cp1 *= (1+0.0016*hp1);
+
+  AD::StartRecording();
   for(unsigned long i = 0; i < signal.len[iPhi]; i++){
     AD::StartPreacc();
     AD::SetPreaccIn(signal.P[i]);
+
     signal.P[i] = sqrt((rhop1*cp1*ray_A)/(rho0*c0*A_new))*signal.P[i];
+
     AD::SetPreaccOut(signal.P[i]);
     AD::EndPreacc();
   }
+  AD::StopRecording();
 
   /*---Set new ray properties (except z, we'll do that later)---*/
   for(unsigned short i = 0; i < 4; i++){
@@ -1854,12 +1934,19 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   su2double p_ref = 20.E-6, p_dc;             // [Pa]
 
-  unsigned long n_sample = pow(2,m_pow_2); //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
-  unsigned short n_band = 41;
+  unsigned long n_sample, len_new; //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
+  unsigned short n_band = 41, N;
 
-  su2double *w      = new su2double[n_sample/2], 
-            *p_of_w = new su2double[n_sample],  // Frequency domain signal
-            *p_of_t = new su2double[n_sample];  // Zero-padded time domain signal
+  su2double *w, *p_of_w, *p_of_t;
+
+  su2double *wtmp, *ptmp;
+
+  // su2double *w      = new su2double[n_sample/2], 
+  //           *p_of_w = new su2double[n_sample],  // Frequency domain signal
+  //           *p_of_t = new su2double[n_sample];  // Zero-padded time domain signal
+
+  // su2double *wtmp = new su2double[n_sample+42], 
+  //           *ptmp = new su2double[n_sample+42];
 
   su2double fc[41]    = {1.25, 1.6, 2.0, 2.5, 3.15,
                          4., 5., 6.3, 8., 10.,
@@ -1890,52 +1977,77 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
                          11200., 14100.},
             E_band[41], SPL_band[41];
 
-  /*--- Compute frequency domain signal ---*/
-  cout << "Performing Fourier Transform." << endl;
+  /*--- Upsample if necessary ---*/
+  AD::StartRecording();
+  if(fs < 29000.){ // Nyquist criterion for Mark VII
+    cout << "Upsampling signal." << endl;
+
+    /*--- Zero-fill signal ---*/
+    N = ceil(29000./fs);
+    len_new = N*(signal.len[iPhi]-1)+1;
+    ptmp = new su2double[len_new];
+    su2double t;
+    for(unsigned long i = 0; i < signal.len[iPhi]-1; i++){
+      ptmp[i*N] = signal.P[i];
+      for(unsigned short j = 1; j < N; j++){
+        t = signal.tau[i]+su2double(j)/su2double(N)*dtau;
+        ptmp[i*N+j] = 0.;
+        /*--- Sinc interpolation ---*/
+        for(unsigned long k = 0; k < signal.len[iPhi]; k++){
+          ptmp[i*N+j] += signal.P[k]*sin(M_PI*(t-signal.tau[k])*fs/w0)/(M_PI*(t-signal.tau[k])*fs/w0);
+        }
+      }
+    }
+    ptmp[len_new-1] = signal.P[signal.len[iPhi]-1];
+
+    fs *= N;
+    dtau /= N;
+
+    /*---Write upsampled signal---*/
+    ofstream sigFile;
+    char filename [64];
+    SPRINTF (filename, "ground_sinc_%d.dat", SU2_TYPE::Int(iPhi));
+    sigFile.precision(15);
+    sigFile.open(filename, ios::out);
+    if(iPhi == 0) sigFile << "# phi, T, p" << endl;
+    for(int j = 0; j < len_new; j++){
+      sigFile << su2double(j)*dtau/w0 << "\t" << ptmp[j]*p0 << endl;
+    }
+    sigFile.close();
+
+  }
+  else{
+    len_new = signal.len[iPhi];
+    ptmp = new su2double[len_new];
+    for(unsigned long i = 0; i < signal.len[iPhi]; i++){
+      ptmp[i] = signal.P[i];
+    }
+  }
+
+  /*-- Zero-pad signal ---*/
+  cout << "Zero-padding signal." << endl;
+  m_pow_2  = ceil(log(su2double(len_new))/log(2.)); // Next power of 2 (for FFT)
+  n_sample = pow(2,m_pow_2);
+  w        = new su2double[n_sample/2];
+  p_of_w   = new su2double[n_sample];
+  p_of_t   = new su2double[n_sample];
   for(unsigned long i = 0; i < n_sample; i++){
-    if(i < n_sample/2){w[i] = su2double(i)*flt_U/(su2double(n_sample)*dx_avg);}
+    if(i < n_sample/2){w[i] = su2double(i)*fs/(su2double(n_sample));}
     p_of_w[i] = 0.;
 
-    // if(i < (n_sample - signal.len[iPhi])){p_of_t[i] = 0.;}
-    // else{p_of_t[i] = signal.P[i-signal.len[iPhi]];}
-    if(i < signal.len[iPhi]){p_of_t[i] = signal.P[i];}
+    if(i < len_new){p_of_t[i] = ptmp[i];}
     else{p_of_t[i] = 0.;}
   }
-  FFT(m_pow_2, p_of_t, p_of_w);
-  // FourierTransform(iPhi, w, p_of_w, p_dc, n_sample);
+  delete [] ptmp;
 
-   /*--- Interpolate power at band limits ---*/
-  // su2double *wtmp = new su2double[n_sample+42], 
-  //           *ptmp = new su2double[n_sample+42];
-  // unsigned short k = 0;
-  // for(unsigned short i = 0; i < n_sample+42; i++){
-  //   if(i < 41){
-  //     wtmp[i] = f_min[i];
-  //     if(f_min[i] < w[0]){ // Interpolate between DC and f0
-  //       ptmp[i] = p_dc + f_min[i] * (p_of_w[0]-p_dc)/w[0];
-  //     }
-  //     else{
-  //       while(f_min[i] > w[k]){
-  //         k++;
-  //       }
-  //       ptmp[i] = p_of_w[k-1] + (f_min[i]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
-  //     }
-  //   }
-  //   else if(i == 41){
-  //     wtmp[i] = f_max[40];
-  //     while(f_max[40] > w[k]){
-  //       k++;
-  //     }
-  //     ptmp[i] = p_of_w[k-1] + (f_max[40]-w[k-1]) * (p_of_w[k]-p_of_w[k-1])/(w[k]-w[k-1]);
-  //   }
-  //   else{
-  //     wtmp[i] = w[i-42];
-  //     ptmp[i] = p_of_w[i-42];
-  //   }
-  // }
+  /*--- Compute frequency domain signal ---*/
+  cout << "Performing Fourier Transform." << endl;
+  FFT(m_pow_2, p_of_t, p_of_w);
+
+  cout << "Interpolating signal at band edges." << endl;
   n_sample = n_sample/2;
-  su2double *wtmp = new su2double[n_sample+42], 
-            *ptmp = new su2double[n_sample+42];
+  wtmp = new su2double[n_sample+42];
+  ptmp = new su2double[n_sample+42];
   unsigned short k = 0;
   for(unsigned short i = 0; i < n_sample+42; i++){
     if(i < 41){
@@ -1995,6 +2107,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   /*--- Clean up ---*/
   delete [] w;
   delete [] p_of_w;
+  delete [] p_of_t;
   delete [] wtmp;
   delete [] ptmp;
 
@@ -2268,7 +2381,7 @@ void CBoom_AugBurgers::AcousticEnergy(unsigned short iPhi){
 }
 
 void CBoom_AugBurgers::WriteGroundPressure(unsigned short iPhi){
-  /*---Final signal and boom strength---*/
+  /*---Final signal---*/
   ofstream sigFile;
   char filename [64];
   SPRINTF (filename, "ground_%d.dat", SU2_TYPE::Int(iPhi));

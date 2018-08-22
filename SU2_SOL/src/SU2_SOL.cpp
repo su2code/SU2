@@ -588,7 +588,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
                   cout <<"Defaulting to Augmented Burgers Equation."<< endl;
               }
 
-              AD::StartRecording();
+              // AD::StartRecording();
               CBoom_AugBurgers boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
               if(rank == MASTER_NODE){
