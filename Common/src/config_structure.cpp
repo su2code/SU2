@@ -1729,7 +1729,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
 	/* DESCRIPTION: Visualize the deformation (surface grid) */
-  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, false);
+  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
   /* DESCRIPTION: Visualize the deformation (volume grid) */
   addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */

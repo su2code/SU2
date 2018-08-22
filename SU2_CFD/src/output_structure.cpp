@@ -8534,15 +8534,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 
   /*--- Read the name of the output and input file ---*/
 
-  if (rank == MASTER_NODE) {
-    if (su2_file){
+  if (su2_file) {
+    if (rank == MASTER_NODE) {
       str = config[ZONE_0]->GetMesh_Out_FileName();
       strcpy (out_file, str.c_str());
       strcpy (cstr, out_file);
       output_file.precision(15);
       output_file.open(cstr, ios::out);
-
-      if (val_nZone > 1){
+      if (val_nZone > 1) {
         output_file << "NZONE= " << val_nZone << endl;
       }
     }
@@ -8581,8 +8580,13 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
 
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        else {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot volume mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        }
         
       }
       
@@ -8591,8 +8595,13 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        else {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot surface mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        }
         
       }
       
@@ -8610,14 +8619,15 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         
         SetSTL_MeshASCII(config[iZone], geometry[iZone]);
         
-        /*--- Write a binary file with the grid coordinates alone. ---*/
-        
-        if (Wrt_Crd) {
-          if (rank == MASTER_NODE) cout <<"Writing .dat binary coordinates file." << endl;
-          WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
-        }
-        
       }
+      
+      /*--- Write a binary file with the grid coordinates alone. ---*/
+      
+      if (Wrt_Crd) {
+        if (rank == MASTER_NODE) cout <<"Writing .dat binary coordinates file." << endl;
+        WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
+      }
+
       
       /*--- Deallocate connectivity ---*/
       
