@@ -12906,6 +12906,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  bool p1_radiation = (config->GetKind_RadiationModel() == P1_MODEL);
 
   int *Local_Halo = NULL;
 
@@ -13122,6 +13123,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     nVar_Par += 1;
     Variable_Names.push_back("Density");
+
+    /*--- Add output for P1 radiative model. ---*/
+    if (p1_radiation){
+      nVar_Par += 1;
+      Variable_Names.push_back("Radiative_Energy(P1)");
+    }
 
   }
 
@@ -13356,6 +13363,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
          assuming they were registered above correctly. ---*/
 
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
+
+        /*--- Add output for P1 radiative model. ---*/
+        if (p1_radiation){
+          Local_Data[jPoint][iVar] = solver[RAD_SOL]->node[iPoint]->GetSolution(0);
+        }
 
       }
 

@@ -1034,6 +1034,17 @@ static const map<string, ENUM_RADIATION> Radiation_Map = CCreateMap<string, ENUM
 ("NONE", NO_RADIATION)
 ("P1", P1_MODEL);
 
+/*!
+ * \brief Kinds of P1 boundary conditions
+ */
+enum ENUM_BC_P1 {
+  P1_STRONG = 0,      /*!< \brief Apply */
+  P1_WEAK = 1         /*!< \brief P1 Radiation model. */
+};
+static const map<string, ENUM_BC_P1> P1_BC_Map = CCreateMap<string, ENUM_BC_P1>
+("STRONG", P1_STRONG)
+("WEAK", P1_WEAK);
+
 
 /*!
  * \brief types Riemann boundary treatments

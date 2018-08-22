@@ -1314,6 +1314,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   adj_euler, adj_ns, adj_turb,
   poisson, wave, heat, heat_fvm,
   fem,
+  radiation, p1_rad,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
 
@@ -1324,6 +1325,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   poisson          = false;
   wave             = false;  disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
+  radiation        = false;  p1_rad           = false;
   heat             = false;  disc_adj_turb    = false;
   heat_fvm         = false;  template_solver  = false;
 
@@ -1375,6 +1377,14 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   }
 
 
+  /*--- Test for radiation models ---*/
+  switch (config->GetKind_RadiationModel()){
+    case NO_RADIATION: radiation = false; break;
+    case P1_MODEL: radiation = true; p1_rad = true; break;
+    default: SU2_MPI::Error("Specified radiation model unavailable or none selected", CURRENT_FUNCTION); break;
+  }
+
+
   /*--- Load restarts for any of the active solver containers. Note that
    these restart routines fill the fine grid and interpolate to all MG levels. ---*/
 
@@ -1406,6 +1416,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     }
     if (heat) {
       no_restart = true;
+    }
+    if (radiation) {
+      solver_container[val_iInst][MESH_0][RAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (adj_euler || adj_ns) {
       solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -2229,13 +2242,13 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (radiation) {
     if (p1_rad){
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM] = new CAvgGrad_P1(nDim, nVar_Rad, config);
+      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
 
       /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
       numerics_container[val_iInst][MESH_0][RAD_SOL][SOURCE_FIRST_TERM] = new CSourceP1(nDim, nVar_Rad, config);
 
       /*--- Definition of the boundary condition method ---*/
-      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGrad_P1(nDim, nVar_Rad, config);
+      numerics_container[val_iInst][MESH_0][RAD_SOL][VISC_BOUND_TERM] = new CAvgGradCorrected_P1(nDim, nVar_Rad, config);
     }
   }
 

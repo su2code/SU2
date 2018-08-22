@@ -4385,8 +4385,7 @@ class CAvgGrad_P1 : public CNumericsRadiation {
   unsigned short iVar, iDim;
   su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
   su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
-            *Proj_Mean_GradP1Var_Normal,    /*!< \brief Mean_gradTurbVar DOT normal */
-            *Proj_Mean_GradP1Var;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
+            *Proj_Mean_GradP1Var;           /*!< \brief Mean_gradTurbVar DOT normal*/
   su2double dist_ij,                        /*!< \brief Length of the edge and face. */
             proj_vector_ij;                 /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
   su2double GammaP1;                        /*!< \brief P1 parameter */
@@ -4405,6 +4404,54 @@ class CAvgGrad_P1 : public CNumericsRadiation {
    * \brief Destructor of the class.
    */
   ~CAvgGrad_P1(void);
+
+  /*!
+   * \brief Compute the viscous residual of the P1 equation.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i,
+                       su2double **Jacobian_j, CConfig *config);
+
+};
+
+/*!
+ * \class CAvgGradCorrected_P1
+ * \brief Template class for computing the viscous residual in the P1 equation
+ * \ingroup RadiationNumerics
+ * \author R. Sanchez
+ */
+class CAvgGradCorrected_P1 : public CNumericsRadiation {
+ private:
+
+ protected:
+
+  unsigned short iVar, iDim;
+  su2double **Mean_GradP1Var;               /*!< \brief Average of gradients at cell face */
+  su2double *Edge_Vector,                   /*!< \brief Vector from node i to node j. */
+            *Proj_Mean_GradP1Var_Edge,    /*!< \brief Mean_gradTurbVar DOT normal */
+            *Proj_Mean_GradP1Var_Kappa,
+            *Proj_Mean_GradP1Var_Corrected;           /*!< \brief Mean_gradTurbVar DOT normal, corrected if required*/
+  su2double dist_ij,                        /*!< \brief Length of the edge and face. */
+            proj_vector_ij;                 /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  su2double GammaP1;                        /*!< \brief P1 parameter */
+
+ public:
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGradCorrected_P1(unsigned short val_nDim, unsigned short val_nVar,
+                       CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGradCorrected_P1(void);
 
   /*!
    * \brief Compute the viscous residual of the P1 equation.

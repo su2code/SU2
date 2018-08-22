@@ -347,16 +347,12 @@ void CRadSolver::Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config)
 
 }
 
-void CRadSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
+void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
 
   unsigned short iVar;
   unsigned long iPoint, total_index;
-  su2double Delta, Vol, *local_Res_TruncError;
-  bool flow = ((config->GetKind_Solver() == NAVIER_STOKES)
-               || (config->GetKind_Solver() == RANS)
-               || (config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES)
-               || (config->GetKind_Solver() == DISC_ADJ_RANS));
-
+  su2double Vol;
+  su2double Delta_time = 0.01, Delta;
 
   /*--- Set maximum residual to zero ---*/
 
@@ -364,14 +360,9 @@ void CRadSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
   }
-
   /*--- Build implicit system ---*/
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
-    /*--- Read the residual ---*/
-
-    local_Res_TruncError = node[iPoint]->GetResTruncError();
 
     /*--- Read the volume ---*/
 
@@ -379,23 +370,16 @@ void CRadSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
+
     if (node[iPoint]->GetDelta_Time() != 0.0) {
-
-      if(flow) {
-        Delta = Vol / node[iPoint]->GetDelta_Time();
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
-      else {
-        Delta = Vol / node[iPoint]->GetDelta_Time();
-        Jacobian.AddVal2Diag(iPoint, Delta);
-      }
-
-    } else {
+      Delta = Vol / node[iPoint]->GetDelta_Time();
+      Jacobian.AddVal2Diag(iPoint, Delta);
+    }
+    else {
       Jacobian.SetVal2Diag(iPoint, 1.0);
       for (iVar = 0; iVar < nVar; iVar++) {
         total_index = iPoint*nVar + iVar;
         LinSysRes[total_index] = 0.0;
-        local_Res_TruncError[iVar] = 0.0;
       }
     }
 
@@ -403,7 +387,7 @@ void CRadSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
+      LinSysRes[total_index] = - (LinSysRes[total_index]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
@@ -433,137 +417,143 @@ void CRadSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_c
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
 
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
+
 }
 
 void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
-  /*--- Restart the solution from file information ---*/
-
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string UnstExt, text_line;
-  ifstream restart_file;
-  string restart_filename = config->GetSolution_FlowFileName();
-
-  /*--- Modify file name for multizone problems ---*/
-  if (nZone >1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
-
-  /*--- Modify file name for an unsteady restart ---*/
-
-  if (dual_time|| time_stepping)
-    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
-
-  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
-    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
-
-  /*--- Skip flow variables ---*/
-
-  unsigned short skipVars = 0;
-
-  if (nDim == 2) skipVars += 6;
-  if (nDim == 3) skipVars += 8;
-
-  /*--- Load data from the restart into correct containers. ---*/
-
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
-
-    /*--- Retrieve local index. If this node from the restart file lives
-     on the current processor, we will load and instantiate the vars. ---*/
-
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
-
-    if (iPoint_Local > -1) {
-
-      /*--- We need to store this point's data, so jump to the correct
-       offset in the buffer of data from the restart file and load it. ---*/
-
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
-      node[iPoint_Local]->SetSolution(Solution);
-      iPoint_Global_Local++;
-
-      /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
-    }
-
-  }
-
-  /*--- Detect a wrong solution file ---*/
-
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
-
-  /*--- MPI solution and compute the eddy viscosity ---*/
-
-//TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart.
-  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-
-  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-  solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
-
-  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
-      }
-      solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
-    }
-    solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-    solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
-  }
-
-  /*--- Delete the class memory that is used to load the restart. ---*/
-
-  if (Restart_Vars != NULL) delete [] Restart_Vars;
-  if (Restart_Data != NULL) delete [] Restart_Data;
-  Restart_Vars = NULL; Restart_Data = NULL;
-
 }
+
+
+//void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
+//
+//  /*--- Restart the solution from file information ---*/
+//
+//  unsigned short iVar, iMesh;
+//  unsigned long iPoint, index, iChildren, Point_Fine;
+//  su2double Area_Children, Area_Parent, *Solution_Fine;
+//  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+//  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+//  unsigned short iZone = config->GetiZone();
+//  unsigned short nZone = config->GetnZone();
+//
+//  string UnstExt, text_line;
+//  ifstream restart_file;
+//  string restart_filename = config->GetSolution_FlowFileName();
+//
+//  /*--- Modify file name for multizone problems ---*/
+//  if (nZone >1)
+//    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+//
+//  /*--- Modify file name for an unsteady restart ---*/
+//
+//  if (dual_time|| time_stepping)
+//    restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
+//
+//  /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
+//
+//  if (config->GetRead_Binary_Restart()) {
+//    Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
+//  } else {
+//    Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
+//  }
+//
+//  int counter = 0;
+//  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
+//  unsigned long iPoint_Global_Local = 0;
+//  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+//
+//  /*--- Skip flow variables ---*/
+//
+//  unsigned short skipVars = 0;
+//
+//  if (nDim == 2) skipVars += 6;
+//  if (nDim == 3) skipVars += 8;
+//
+//  /*--- Load data from the restart into correct containers. ---*/
+//
+//  counter = 0;
+//  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+//
+//
+//    /*--- Retrieve local index. If this node from the restart file lives
+//     on the current processor, we will load and instantiate the vars. ---*/
+//
+//    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+//
+//    if (iPoint_Local > -1) {
+//
+//      /*--- We need to store this point's data, so jump to the correct
+//       offset in the buffer of data from the restart file and load it. ---*/
+//
+//      index = counter*Restart_Vars[1] + skipVars;
+//      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+//      node[iPoint_Local]->SetSolution(Solution);
+//      iPoint_Global_Local++;
+//
+//      /*--- Increment the overall counter for how many points have been loaded. ---*/
+//      counter++;
+//    }
+//
+//  }
+//
+//  /*--- Detect a wrong solution file ---*/
+//
+//  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+//
+//#ifndef HAVE_MPI
+//  rbuf_NotMatching = sbuf_NotMatching;
+//#else
+//  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
+//#endif
+//  if (rbuf_NotMatching != 0) {
+//    SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
+//                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
+//  }
+//
+//  /*--- MPI solution and compute the eddy viscosity ---*/
+//
+////TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart.
+//  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+//  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+//
+//  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+//  solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
+//
+//  /*--- Interpolate the solution down to the coarse multigrid levels ---*/
+//
+//  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+//    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+//      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+//      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+//      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+//        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+//        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+//        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+//        for (iVar = 0; iVar < nVar; iVar++) {
+//          Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
+//        }
+//      }
+//      solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
+//    }
+//    solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+//    solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+//    solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
+//  }
+//
+//  /*--- Delete the class memory that is used to load the restart. ---*/
+//
+//  if (Restart_Vars != NULL) delete [] Restart_Vars;
+//  if (Restart_Data != NULL) delete [] Restart_Data;
+//  Restart_Vars = NULL; Restart_Data = NULL;
+//
+//}
 
 CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
@@ -572,9 +562,62 @@ CRadP1Solver::CRadP1Solver(void) : CRadSolver() {
 
 }
 
-CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver() {
+CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(geometry, config) {
 
-  nVar = 1;
+  unsigned long iPoint;
+  unsigned short iVar, iDim;
+
+  nDim =          geometry->GetnDim();
+  nPoint =        geometry->GetnPoint();
+  nPointDomain =  geometry->GetnPointDomain();
+  nVar =          1;
+  node =          new CVariable*[nPoint];
+
+  /*--- Initialize nVarGrad for deallocation ---*/
+
+  nVarGrad = nVar;
+
+  Residual = new su2double[nVar]; Residual_RMS = new su2double[nVar];
+  Solution = new su2double[nVar]; Residual_Max = new su2double[nVar];
+
+  Res_Visc = new su2double[nVar];
+
+  /*--- Define some structures for locating max residuals ---*/
+
+  Point_Max = new unsigned long[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar] = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+
+  /*--- Jacobians and vector structures for implicit computations ---*/
+
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
+    }
+
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (P1 radiation equation)." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+
+  }
+
+  /*--- Solution and residual vectors ---*/
+
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  /*--- Always instantiate and initialize the variable to a zero value. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CRadP1Variable(0.0, nDim, nVar, config);
 
 }
 
@@ -655,6 +698,7 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool transition    = (config->GetKind_Trans_Model() == LM);
   bool transition_BC = (config->GetKind_Trans_Model() == BC);
 
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Conservative variables w/o reconstruction ---*/
@@ -676,7 +720,6 @@ void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
     /*--- Subtract residual and the Jacobian ---*/
 
     LinSysRes.SubtractBlock(iPoint, Residual);
-
     Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
   }
@@ -691,6 +734,9 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
   su2double *Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
+  su2double *Gradient, *Unit_Normal;
+
+  Unit_Normal = new su2double[nDim];
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -698,6 +744,8 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  unsigned short Kind_P1_BC = config->GetKind_P1_BC();
 
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
@@ -722,42 +770,95 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
 
-      /*--- Initialize the viscous residuals to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Visc[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
+      // Weak application of the boundary condition
+
+      if (Kind_P1_BC == P1_WEAK){
+
+        /*--- Initialize the viscous residuals to zero ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Visc[iVar] = 0.0;
+          if (implicit) {
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          }
         }
+
+        /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+        /*--- Retrieve temperature from the flow solver ---*/
+        Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+
+        /*--- Compute the blackbody intensity at the wall. ---*/
+        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+
+        /*--- Compute the radiative heat flux. ---*/
+        Radiative_Energy = node[iPoint]->GetSolution(0);
+        Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+
+        /*--- Compute the Viscous contribution to the residual ---*/
+        Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+        /*--- Apply to the residual vector ---*/
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+        /*--- Compute the Jacobian contribution. ---*/
+        if (implicit) {
+          Jacobian_i[0][0] = -Theta;
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+
       }
+      // Strong application of the boundary condition
+      else{
 
-      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+        unsigned long Point_Normal;
+        su2double *Coord_i, *Coord_j, Area, dist_ij;
+        su2double dEdn, Energy_Wall;
+        su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
-      /*--- Retrieve temperature from the flow solver ---*/
-      Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+        /*--- Retrieve temperature from the flow solver ---*/
+        Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
 
-      /*--- Compute the blackbody intensity at the wall. ---*/
-      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+        /*--- Compute the blackbody intensity at the wall. ---*/
+        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
 
-      /*--- Compute the radiative heat flux. ---*/
-      Radiative_Energy = node[iPoint]->GetSolution(0);
-      Radiative_Heat_Flux = -1.0*Theta*(Ib_w - Radiative_Energy);
+        /*--- Compute closest normal neighbor ---*/
 
-      /*--- Compute the Viscous contribution to the residual ---*/
-      Res_Visc[0] = Radiative_Heat_Flux*Area;
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      /*--- Apply to the residual vector ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+        Coord_i = geometry->node[iPoint]->GetCoord();
+        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        dist_ij = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+        dist_ij = sqrt(dist_ij);
 
-//      if (implicit) {
-//        for (iVar = 1; iVar <= nDim; iVar++) {
-//          total_index = iPoint*nVar+iVar;
-//          Jacobian.DeleteValsRowi(total_index);
-//        }
-//      }
+        /*--- Compute the normal gradient in temperature using Twall ---*/
+
+        dEdn = -(node[Point_Normal]->GetSolution(0) - node[iPoint]->GetSolution(0))/dist_ij;
+
+        /*--- Get energy at the wall ---*/
+
+        Energy_Wall = ((- 1.0 * GammaP1 * dEdn) / Theta) + Ib_w;
+
+        /*--- Store the solution in the Solution_Old container -> This will get updated ---*/
+        node[iPoint]->SetSolution_Old(0, Energy_Wall);
+        node[iPoint]->SetSolution(0, Energy_Wall);
+
+        /*--- Impose the value of the energy as a strong boundary
+        condition (Dirichlet). Fix the energy and remove any
+        contribution to the residual at this node. ---*/
+        LinSysRes.SetBlock_Zero(iPoint, 0);
+
+        /*--- Enforce the Dirichlet boundary condition in a strong way by
+         modifying the energy-rows of the Jacobian (1 on the diagonal). ---*/
+        if (implicit) {
+            Jacobian.DeleteValsRowi(iPoint);
+        }
+
+      }
 
     }
   }
@@ -771,8 +872,12 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned long iVertex, iPoint, total_index;
 
   su2double Theta, Ib_w, Temperature, Radiative_Energy;
-  su2double *Normal, Area, Wall_Emissivity, Twall;
+  su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
   su2double Radiative_Heat_Flux;
+  su2double Twall;
+  su2double *Gradient;
+
+  Unit_Normal = new su2double[nDim];
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -781,14 +886,16 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  /*--- Retrieve the specified wall temperature ---*/
-  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
+  unsigned short Kind_P1_BC = config->GetKind_P1_BC();
 
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
 
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
+
+    /*--- Retrieve the specified wall temperature ---*/
+  Twall = config->GetIsothermal_Temperature(Marker_Tag)/config->GetTemperature_Ref();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
@@ -807,45 +914,94 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
         Area += Normal[iDim]*Normal[iDim];
       Area = sqrt (Area);
 
-      /*--- Initialize the viscous residuals to zero ---*/
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Visc[iVar] = 0.0;
-        if (implicit) {
-          for (jVar = 0; jVar < nVar; jVar++)
-            Jacobian_i[iVar][jVar] = 0.0;
+      // Weak application of the boundary condition
+
+      if (Kind_P1_BC == P1_WEAK){
+
+        /*--- Initialize the viscous residuals to zero ---*/
+        for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Visc[iVar] = 0.0;
+          if (implicit) {
+            for (jVar = 0; jVar < nVar; jVar++)
+              Jacobian_i[iVar][jVar] = 0.0;
+          }
         }
+
+        /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+        /*--- Compute the blackbody intensity at the wall. ---*/
+        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
+
+        /*--- Compute the radiative heat flux. ---*/
+        Radiative_Energy = node[iPoint]->GetSolution(0);
+        Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+
+        /*--- Compute the Viscous contribution to the residual ---*/
+        Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+        /*--- Apply to the residual vector ---*/
+        LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+        /*--- Compute the Jacobian contribution. ---*/
+        if (implicit) {
+          Jacobian_i[0][0] = -Theta;
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        }
+
       }
+      // Strong application of the boundary condition
+      else{
 
-      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+        unsigned long Point_Normal;
+        su2double *Coord_i, *Coord_j, Area, dist_ij;
+        su2double dEdn, Energy_Wall;
+        su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
-      /*--- Retrieve temperature from the isothermal boundary condition ---*/
-      Temperature = Twall;
+        /*--- Compute the blackbody intensity at the wall. ---*/
+        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
 
-      /*--- Compute the blackbody intensity at the wall. ---*/
-      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+        /*--- Compute closest normal neighbor ---*/
 
-      /*--- Compute the radiative heat flux. ---*/
-      Radiative_Energy = node[iPoint]->GetSolution(0);
-      Radiative_Heat_Flux = -1.0*Theta*(Ib_w - Radiative_Energy);
+        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
 
-      /*--- Compute the Viscous contribution to the residual ---*/
-      Res_Visc[0] = Radiative_Heat_Flux*Area;
+        /*--- Get coordinates of i & nearest normal and compute distance ---*/
 
-      /*--- Apply to the residual vector ---*/
-      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+        Coord_i = geometry->node[iPoint]->GetCoord();
+        Coord_j = geometry->node[Point_Normal]->GetCoord();
+        dist_ij = 0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+        dist_ij = sqrt(dist_ij);
 
-      /*--- Enforce the no-slip boundary condition in a strong way by
-       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+        /*--- Compute the normal gradient at the boundary ---*/
 
-//      if (implicit) {
-//        for (iVar = 1; iVar <= nDim; iVar++) {
-//          total_index = iPoint*nVar+iVar;
-//          Jacobian.DeleteValsRowi(total_index);
-//        }
-//      }
+        dEdn = -(node[Point_Normal]->GetSolution(0) - node[iPoint]->GetSolution(0))/dist_ij;
+
+        /*--- Get energy at the wall ---*/
+
+        Energy_Wall = ((- 1.0 * GammaP1 * dEdn) / Theta) + Ib_w;
+
+        /*--- Store the solution in the Solution_Old container -> This will get updated ---*/
+        node[iPoint]->SetSolution_Old(0, Energy_Wall);
+        node[iPoint]->SetSolution(0, Energy_Wall);
+
+        /*--- Impose the value of the energy as a strong boundary
+        condition (Dirichlet). Fix the energy and remove any
+        contribution to the residual at this node. ---*/
+        LinSysRes.SetBlock_Zero(iPoint, 0);
+        //node[iPoint]->SetRes_TruncErrorZero();
+
+        /*--- Enforce the Dirichlet boundary condition in a strong way by
+         modifying the energy-rows of the Jacobian (1 on the diagonal). ---*/
+        if (implicit) {
+            Jacobian.DeleteValsRowi(iPoint);
+        }
+
+      }
 
     }
   }
+
 
 }
 
@@ -867,4 +1023,153 @@ void CRadP1Solver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
   /*--- Convective fluxes across euler wall are equal to zero. ---*/
 
+}
+
+void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                               unsigned short iMesh, unsigned long Iteration) {
+
+  unsigned short iDim, iMarker;
+  unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+  su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
+  su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
+  su2double CFL = config->GetCFL(iMesh);
+  su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+
+  /*---- Set the CFL for the radiative equation to be <=1 ---*/
+  if (CFL > 1.0) CFL = 1.0;
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  thermal_diffusivity = config->GetThermalDiffusivity_Solid();
+
+  /*--- Compute spectral radius based on thermal conductivity ---*/
+
+  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  CFL_Reduction = config->GetCFLRedCoeff_Turb();
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    node[iPoint]->SetMax_Lambda_Visc(0.0);
+  }
+
+  /*--- Loop interior edges ---*/
+
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+
+    /*--- Get the edge's normal vector to compute the edge's area ---*/
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+    /*--- Viscous contribution ---*/
+
+    Lambda = GammaP1*Area*Area;
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+
+  }
+
+  /*--- Loop boundary edges ---*/
+
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+
+      /*--- Point identification, Normal vector and area ---*/
+
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+      /*--- Viscous contribution ---*/
+
+      Lambda = GammaP1*Area*Area;
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+
+    }
+  }
+
+  /*--- Each element uses their own speed, steady state simulation ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    Vol = geometry->node[iPoint]->GetVolume();
+
+    if (Vol != 0.0) {
+
+      /*--- Time step setting method ---*/
+
+       Local_Delta_Time = CFL*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+
+      /*--- Min-Max-Logic ---*/
+
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+
+      node[iPoint]->SetDelta_Time(CFL_Reduction*Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+  }
+
+  /*--- Compute the max and the min dt (in parallel) ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
+
+    sbuf_time = Max_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
+#endif
+  }
+
+  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_Time = rbuf_time;
+#endif
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+  }
+
+  /*--- Recompute the unsteady time step for the dual time strategy
+   if the unsteady CFL is diferent from 0 ---*/
+  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_UnstTimeND;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_UnstTimeND = rbuf_time;
+#endif
+    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+  }
+
+  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+  if (dual_time)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (!implicit) {
+        cout << "Using unsteady time: " << config->GetDelta_UnstTimeND() << endl;
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
+        node[iPoint]->SetDelta_Time(Local_Delta_Time);
+      }
+  }
 }
