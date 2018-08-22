@@ -1410,7 +1410,8 @@ enum ENUM_OUTPUT {
   FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
   CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 7  		     /*!< \brief Paraview format for the solution output. */
+  PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_BINARY = 8    /*!< \brief Paraview binary format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
@@ -1419,7 +1420,8 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
 ("CSV", CSV)
 ("CGNS", CGNS_SOL)
-("PARAVIEW", PARAVIEW);
+("PARAVIEW", PARAVIEW)
+("PARAVIEW_BINARY", PARAVIEW_BINARY);
 
 /*!
  * \brief type of jump definition
