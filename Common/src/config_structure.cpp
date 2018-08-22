@@ -1941,12 +1941,15 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of radiation model */
   addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
 
+  /* DESCRIPTION: Kind of radiation application of the  */
+  addEnumOption("P1_BC_KIND", Kind_P1_BC, P1_BC_Map, P1_STRONG);
+
   /* DESCRIPTION: Absorption coefficient */
-  addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 0.5);
+  addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
   /* DESCRIPTION: Scattering coefficient */
-  addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.5);
+  addDoubleOption("SCATTERING_COEFF", Scattering_Coeff, 0.0);
   /* DESCRIPTION: Refractive index */
-  addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 0.5);
+  addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 1.0);
 
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
@@ -2582,6 +2585,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   } else {
     Wrt_Dynamic = false;
+  }
+
+  if (Kind_Radiation != NO_RADIATION) {
+    Radiation = true;
+  }
+  else{
+    Radiation = false;
   }
 
   if (Kind_Solver == ZONE_SPECIFIC) {
@@ -6837,6 +6847,7 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_ADJFLOW_SYS:   return ADJFLOW_SOL;
     case RUNTIME_ADJTURB_SYS:   return ADJTURB_SOL;
     case RUNTIME_ADJFEA_SYS:    return ADJFEA_SOL;
+    case RUNTIME_RADIATION_SYS: return RAD_SOL;
     case RUNTIME_MULTIGRID_SYS: return 0;
   }
   return 0;

@@ -10087,14 +10087,6 @@ public:
   void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Update the solution using an implicit solver.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -10156,6 +10148,15 @@ public:
    */
   void Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                       unsigned short iMesh);
+
+
+  /*!
+   * \brief Update the solution using an implicit solver.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Compute the viscous residuals for the turbulent equation.
@@ -10252,6 +10253,17 @@ public:
    */
   void BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                      unsigned short val_marker);
+
+  /*!
+   * \brief Compute the time step for solving the Radiation P1 equation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   * \param[in] Iteration - Index of the current iteration.
+   */
+  void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration);
 
 };
 

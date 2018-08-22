@@ -522,6 +522,13 @@ void CFluidIteration::Iterate(COutput *output,
                                                                      config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone, val_iInst);
   }
   
+  /*--- Incorporate a weakly-coupled radiation model to the analysis ---*/
+  if (config_container[val_iZone]->AddRadiation()){
+    config_container[val_iZone]->SetGlobalParam(RANS, RUNTIME_RADIATION_SYS, ExtIter);
+    integration_container[val_iZone][val_iInst][RAD_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                     config_container, RUNTIME_RADIATION_SYS, IntIter, val_iZone, val_iInst);
+  }
+
   /*--- Call Dynamic mesh update if AEROELASTIC motion was specified ---*/
   
   if ((config_container[val_iZone]->GetGrid_Movement()) && (config_container[val_iZone]->GetAeroelastic_Simulation()) && unsteady) {
