@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   
-  /*--- Pointer to different structures that will be used throughout 
+  /*--- Pointer to different structures that will be used throughout
    the entire code ---*/
   
   CConfig **config_container          = NULL;
@@ -68,7 +68,7 @@ int main(int argc, char *argv[]) {
   CVolumetricMovement **grid_movement = NULL;
   COutput *output                     = NULL;
 
-  /*--- Load in the number of zones and spatial dimensions in the mesh file 
+  /*--- Load in the number of zones and spatial dimensions in the mesh file
    (if no config file is specified, default.cfg is used) ---*/
   
   if (argc == 2) { strcpy(config_file_name, argv[1]); }
@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
     
     config_container[iZone] = new CConfig(config_file_name, SU2_DEF, iZone, nZone, 0, VERB_HIGH);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
-        
+    
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
     
     CGeometry *geometry_aux = NULL;
@@ -124,7 +124,7 @@ int main(int argc, char *argv[]) {
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
     /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines 
+     partitioning routines for cases with periodic BCs. The old routines
      will be entirely removed eventually in favor of the new methods. ---*/
 
     if (periodic) {
@@ -201,8 +201,9 @@ int main(int argc, char *argv[]) {
   
   /*--- Output original grid for visualization, if requested (surface and volumetric) ---*/
   
-  if (config_container[ZONE_0]->GetVisualize_Volume_Def() ||
-      config_container[ZONE_0]->GetVisualize_Surface_Def()) {
+  if ((config_container[ZONE_0]->GetVisualize_Volume_Def() ||
+       config_container[ZONE_0]->GetVisualize_Surface_Def()) &&
+      config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) {
     
     output->SetMesh_Files(geometry_container, config_container, nZone, true, false);
     
@@ -242,30 +243,32 @@ int main(int argc, char *argv[]) {
         /*--- If no volume-type deformations are requested, then this is a
          surface-based deformation or FFD set up. ---*/
         
-      if (rank == MASTER_NODE)
-        cout << endl << "--------------------- Surface grid deformation (ZONE " << iZone <<") -----------------" << endl;
-      
-      /*--- Definition and initialization of the surface deformation class ---*/
-      
-      surface_movement[iZone] = new CSurfaceMovement();
-      
-      /*--- Copy coordinates to the surface structure ---*/
-      
-      surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
-      
-      /*--- Surface grid deformation ---*/
-      
-      if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
-      surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
-      
-      if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
-        
         if (rank == MASTER_NODE)
-          cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
-        
-        if (rank == MASTER_NODE)
-          cout << "Performing the deformation of the volumetric grid." << endl;
-        grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
+          cout << endl << "--------------------- Surface grid deformation (ZONE " << iZone <<") -----------------" << endl;
+
+        /*--- Definition and initialization of the surface deformation class ---*/
+
+        surface_movement[iZone] = new CSurfaceMovement();
+
+        /*--- Copy coordinates to the surface structure ---*/
+
+        surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
+
+        /*--- Surface grid deformation ---*/
+
+        if (rank == MASTER_NODE) cout << "Performing the deformation of the surface grid." << endl;
+        surface_movement[iZone]->SetSurface_Deformation(geometry_container[iZone], config_container[iZone]);
+
+        if (config_container[iZone]->GetDesign_Variable(0) != FFD_SETTING) {
+
+          if (rank == MASTER_NODE)
+            cout << endl << "------------------- Volumetric grid deformation (ZONE " << iZone <<") ----------------" << endl;
+
+          if (rank == MASTER_NODE)
+            cout << "Performing the deformation of the volumetric grid." << endl;
+          grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false);
+          
+        }
         
       }
       
@@ -273,13 +276,11 @@ int main(int argc, char *argv[]) {
     
   }
   
-  }
-  
   /*--- Computational grid preprocesing ---*/
   
   if (rank == MASTER_NODE) cout << endl << "----------------------- Write deformed grid files -----------------------" << endl;
   
-  /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel 
+  /*--- Output deformed grid for visualization, if requested (surface and volumetric), in parallel
    requires to move all the data to the master node---*/
   
   bool NewFile = false;
@@ -368,8 +369,8 @@ int main(int argc, char *argv[]) {
   /*--- Exit the solver cleanly ---*/
   
   if (rank == MASTER_NODE)
-  cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
-
+    cout << endl << "------------------------- Exit Success (SU2_DEF) ------------------------" << endl << endl;
+  
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
