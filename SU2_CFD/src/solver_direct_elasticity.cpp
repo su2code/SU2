@@ -1432,6 +1432,18 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   }
   
   /*
+   * For topology optimization we apply a filter on the design density field to avoid
+   * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
+   * This has to be done before computing the mass matrix and the dead load terms.
+   * This filter, and the volume fraction objective function, require the element volumes,
+   * so we ask "geometry" to compute them.
+   */
+  if (config->GetTopology_Optimization()) {
+    geometry->SetElemVolume(config);
+    FilterElementDensities(geometry,config);
+  }
+  
+  /*
    * If the problem is dynamic, we need a mass matrix, which will be constant along the calculation
    * both for linear and nonlinear analysis. Only initialized once, at the first time step.
    *
@@ -1515,17 +1527,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
         break;
     }
   }
-  
-  /*
-   * For topology optimization we apply a filter on the design density field to avoid
-   * numerical issues (checkerboards), ensure mesh independence, and impose a length scale.
-   * This filter, and the volume fraction objective function, require the element volumes,
-   * so we ask "geometry" to compute them.
-   */
-  if (config->GetTopology_Optimization()) {
-    geometry->SetElemVolume(config);
-    FilterElementDensities(geometry,config);
-  }
+
 }
 
 void CFEASolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned long Iteration) { }
@@ -1800,6 +1802,9 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
   su2double Mab;
   unsigned short NelNodes, jNode;
   
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_minstiff = config->GetSIMP_MinStiffness();
+  
   /*--- Loops over all the elements ---*/
   
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
@@ -1822,6 +1827,12 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
       }
     }
     
+    /*--- In topology mode determine the penalty to apply to the mass, linear function of the physical density ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
+    }
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     
@@ -1836,7 +1847,7 @@ void CFEASolver::Compute_MassMatrix(CGeometry *geometry, CSolver **solver_contai
         Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          MassMatrix_ij[iVar][iVar] = Mab;
+          MassMatrix_ij[iVar][iVar] = simp_penalty*Mab;
         }
         
         MassMatrix.AddBlock(indexNode[iNode], indexNode[jNode], MassMatrix_ij);
@@ -1859,6 +1870,9 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
 
   su2double Mab;
   unsigned short NelNodes, jNode;
+  
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_minstiff = config->GetSIMP_MinStiffness();
 
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1887,6 +1901,12 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
       }
     }
 
+    /*--- In topology mode determine the penalty to apply to the mass, linear function of the physical density ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = simp_minstiff+(1.0-simp_minstiff)*element_properties[iElem]->GetPhysicalDensity();
+    }
+
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
 
@@ -1901,8 +1921,8 @@ void CFEASolver::Compute_MassRes(CGeometry *geometry, CSolver **solver_container
         Mab = element_container[FEA_TERM][EL_KIND]->Get_Mab(iNode, jNode);
 
         for (iVar = 0; iVar < nVar; iVar++) {
-          Residual_i[iVar] = Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
-          Residual_j[iVar] = Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
+          Residual_i[iVar] = simp_penalty * Mab * TimeRes_Aux.GetBlock(indexNode[iNode],iVar);
+          Residual_j[iVar] = simp_penalty * Mab * TimeRes_Aux.GetBlock(indexNode[jNode],iVar);
         }
 
         TimeRes.AddBlock(indexNode[iNode],Residual_i);
@@ -2058,6 +2078,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
       }
     }
     
+    /*--- Correct the stresses and reactions for topology optimization densities ---*/
+    su2double simp_penalty = element_properties[iElem]->GetPhysicalDensity();
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     
@@ -2075,12 +2098,12 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
       
       /*--- This only works if the problem is nonlinear ---*/
       Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = simp_penalty*Ta[iVar];
       
       LinSysReact.AddBlock(indexNode[iNode], Res_Stress_i);
       
       for (iStress = 0; iStress < nStress; iStress++) {
-        node[indexNode[iNode]]->AddStress_FEM(iStress,
+        node[indexNode[iNode]]->AddStress_FEM(iStress, simp_penalty *
                                               (element_container[FEA_TERM][EL_KIND]->Get_NodalStress(iNode, iStress) /
                                                geometry->node[indexNode[iNode]]->GetnElem()) );
       }
@@ -2324,6 +2347,11 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_containe
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
+    
+    /*--- Penalize the dead load, do it by default to avoid unecessary "ifs", since it
+          goes to the RHS there is no need to have a minimum value for stability ---*/
+    su2double simp_penalty = element_properties[iElem]->GetPhysicalDensity();
+    
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
     
@@ -2334,7 +2362,7 @@ void CFEASolver::Compute_DeadLoad(CGeometry *geometry, CSolver **solver_containe
     for (iNode = 0; iNode < NelNodes; iNode++) {
       
       Dead_Load = element_container[FEA_TERM][EL_KIND]->Get_FDL_a(iNode);
-      for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = Dead_Load[iVar];
+      for (iVar = 0; iVar < nVar; iVar++) Res_Dead_Load[iVar] = simp_penalty*Dead_Load[iVar];
       
       node[indexNode[iNode]]->Add_BodyForces_Res(Res_Dead_Load);
       
