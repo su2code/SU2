@@ -2450,6 +2450,11 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                             su2double           &s,
                                             su2double           &dist2Quad) {
 
+  /*--- Store the initial values of r and s. These are used when for the
+        temporary implementation when the Newton algorithm fails. */
+  const su2double rInit = r;
+  const su2double sInit = s;
+
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
   const unsigned short maxIt = 50;
@@ -2533,8 +2538,15 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   }
 
   /* Terminate if the Newton algorithm did not converge. */
-  if(itCount == maxIt)
-    SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
+  /* if(itCount == maxIt)
+    SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION); */
+
+  /* Temporary overwrite until a more fail safe algorithm is available. */
+  if(itCount == maxIt) {
+    r = rInit;
+    s = sInit;
+  }
+  /* End overwrite. */
 
   /*--- Check if the projection is inside the quadrilateral. ---*/
   if((r >= paramLowerBound) && (s >= paramLowerBound) &&
