@@ -1064,41 +1064,13 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
       i0 = nDim*elemConns[i0]; i1 = nDim*elemConns[i1];
       i2 = nDim*elemConns[i2]; i3 = nDim*elemConns[i3];
 
-      /*--- As the mapping to the standard quadrilateral contains a nonlinear
-            term, the computation of the minimum distance involves a Newton
-            algorithm. Consequently this computation is quite costly and for
-            wrapped quadrilaterals not very stable when the projection is far
-            outside the the element. Therefore in a predictor step the
-            quadrilateral is divived into two triangles, for which the mapping
-            to the standard element is linear, and it is checked if the
-            projection is inside one of these triangles. ---*/
+      /*--- Call the function Dist2ToQuadrilateral to compute the distance to the
+            quadrilateral if the projection is inside the quadrilateral. In that
+            case the function returns true. If the projection is not inside the
+            quadrilateral, false is returned and the distance to each of the lines
+            of the quadrilateral is computed and the minimum is taken. ---*/
       su2double r, s;
-      bool projectionInside = false;
-      if( Dist2ToTriangle(i0, i1, i3, coor, dist2Elem, r, s) ) {
-
-        /* Projection is inside the triangle i0, i1, i3. Compute the true
-           distance to the quadrilateral, where the parametric coordinates
-           r and s are used as initial guess. */
-        projectionInside = Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s,
-                                                dist2Elem);
-      }
-      else if( Dist2ToTriangle(i2, i3, i1, coor, dist2Elem, r, s) ) {
-
-        /* Projection is inside the triangle i2, i3, i1. Compute the true
-           distance to the quadrilateral, where the parametric coordinates
-           r and s are used as initial guess. Note that r and s must be
-           converted to the parameters of the quadrilateral. */
-        r = -r;
-        s = -s;
-
-        projectionInside = Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s,
-                                                dist2Elem);
-      }
-
-      if( !projectionInside ) {
-
-        /* The projection is outside the quadrilatral. Hence it suffices
-           to check the distance to the surrounding lines of the quad. */
+      if( !Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s, dist2Elem) ) {
         Dist2ToLine(i0, i1, coor, dist2Elem);
 
         su2double dist2Line;
@@ -2537,6 +2509,9 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   const su2double b2 = 3.0*a3;
   const su2double b1 = 2.0*a2;
   const su2double b0 =     a1;
+
+  /* Initial guess for s. */
+  s = 0.0;
 
   /*--- Newtons algorithm to solve the nonlinear equation
         a5 s^5 + a4 s^4 + a3 s^3 + a2 s^2 + a1 s + a0 = 0. ---*/
