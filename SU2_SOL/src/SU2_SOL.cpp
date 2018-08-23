@@ -544,6 +544,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
            //    /*---Write boom strength metrics to file---*/
            //    if (rank == MASTER_NODE){
            //      ofstream sigFile;
+             //    sigFile.precision(15);
   	        //     sigFile.open("boomSU2", ios::out);
   	        //     sigFile << "Objective_Function= " << Objective_Function << endl;
   			      //   sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
@@ -588,7 +589,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
                   cout <<"Defaulting to Augmented Burgers Equation."<< endl;
               }
 
-              // AD::StartRecording();
+              AD::StartRecording();
               CBoom_AugBurgers boom(solver_container[ZONE_0], config_container[ZONE_0], geometry_container[ZONE_0]);
 
               if(rank == MASTER_NODE){
@@ -614,6 +615,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               /*---Write boom strength metrics to file---*/
               if (rank == MASTER_NODE){
                 ofstream sigFile;
+                sigFile.precision(15);
                 sigFile.open("boomSU2", ios::out);
                 sigFile << "Objective_Function= " << Objective_Function << endl;
                 sigFile.close();
@@ -696,6 +698,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
            //    /*---Write boom strength metrics to file---*/
            //    if (rank == MASTER_NODE){
            //      ofstream sigFile;
+            //     sigFile.precision(15);
     	      //     sigFile.open("boomSU2", ios::out);
            //      sigFile << "Objective_Function= " << Objective_Function << endl;
         			//   sigFile << "# phi, p_max, p_rise, p_rise2, p_int2" << endl;
@@ -738,6 +741,7 @@ geometry_container[ZONE_0]->SetGlobal_to_Local_Point();
               /*---Write boom strength metrics to file---*/
               if (rank == MASTER_NODE){
                 ofstream sigFile;
+                sigFile.precision(15);
                 sigFile.open("boomSU2", ios::out);
                 sigFile << "Objective_Function= " << Objective_Function << endl;
                 sigFile.close();
