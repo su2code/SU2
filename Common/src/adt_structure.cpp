@@ -2519,7 +2519,7 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   for(itCount=0; itCount<maxIt; ++itCount) {
 
     /* Store the old value of s for determining the actual update. */
-    const double sOld = s;
+    const su2double sOld = s;
 
     /* Compute the values of s2 to s5. */
     const su2double s2 = s*s;
