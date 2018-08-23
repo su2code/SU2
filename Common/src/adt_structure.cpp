@@ -2450,8 +2450,6 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                             su2double           &s,
                                             su2double           &dist2Quad) {
 
-  const su2double sInit = s;
-
   /* Definition of the maximum number of iterations in the iterative solver
      and the tolerance level. */
   const unsigned short maxIt = 10;
