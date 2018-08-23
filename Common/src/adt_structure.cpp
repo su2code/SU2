@@ -1088,8 +1088,8 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
            distance to the quadrilateral, where the parametric coordinates
            r and s are used as initial guess. Note that r and s must be
            converted to the parameters of the quadrilateral. */
-        r = 1.0 - r;
-        s = 1.0 - s;
+        r = -r;
+        s = -s;
 
         projectionInside = Dist2ToQuadrilateral(i0, i1, i2, i3, coor, r, s,
                                                 dist2Elem);
@@ -2450,15 +2450,12 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
                                             su2double           &s,
                                             su2double           &dist2Quad) {
 
-  /*--- Store the initial values of r and s. These are used when for the
-        temporary implementation when the Newton algorithm fails. */
-  const su2double rInit = r;
   const su2double sInit = s;
 
-  /* Definition of the maximum number of iterations in the Newton solver
+  /* Definition of the maximum number of iterations in the iterative solver
      and the tolerance level. */
-  const unsigned short maxIt = 50;
-  const su2double tolNewton  = 1.e-10;
+  const unsigned short maxIt = 10;
+  const su2double tolIt      = 1.e-10;
 
   /*--- The quadrilateral is parametrized by
         X = {(1-r)*(1-s)*X0 + (1+r)*(1-s)*X1 + (1+r)*(1+s)*X2 + (1-r)*(1+s)*X3}/4,
@@ -2479,90 +2476,159 @@ bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
           -                 coorPoints[i1+k] - coorPoints[i3+k]);
   }
 
-  /*--- Newton algorithm to solve the nonlinear equations
+  /*--- The minimization problem results in the following
+        set of nonlinear equations.
         (V0 - r*V1 - s*V2 - r*s*V3).(-V1 - s*V3) = 0
         (V0 - r*V1 - s*V2 - r*s*V3).(-V2 - r*V3) = 0.
         These equations are the gradients of the distance function squared w.r.t.
-        the parametric coordinates r and s. ---*/
+        the parametric coordinates r and s. The coefficients for these equations
+        involve a couple of dot products, which are computed first.   ---*/
+  su2double V0V1 = 0.0, V0V2 = 0.0, V0V3 = 0.0, V1V1 = 0.0, V1V2 = 0.0,
+            V1V3 = 0.0, V2V2 = 0.0, V2V3 = 0.0, V3V3 = 0.0;
+  for(unsigned short k=0; k<nDim; ++k) {
+    V0V1 += V0[k]*V1[k]; V0V2 += V0[k]*V2[k]; V0V3 += V0[k]*V3[k];
+    V1V1 += V1[k]*V1[k]; V1V2 += V1[k]*V2[k]; V1V3 += V1[k]*V3[k];
+    V2V2 += V2[k]*V2[k]; V2V3 += V2[k]*V3[k]; V3V3 += V3[k]*V3[k];
+  }
+
+  /*--- The first equation given above is linear in r and can be used to
+        express r as a function of s, i.e.
+        r = (V0V1 + (V0V3-V1V2) s - V2V3 s^2)/(V1V1 + 2 V1V3 s + V3V3 s^2).
+        This is substituted in the second equation and after some rearranging
+        a fifth order equation for s is obtained, i.e.
+        a5 s^5 + a4 s^4 + a3 s^3 + a2 s^2 + a1 s + a0 = 0.
+        The coefficients for this equation are computed below. ---*/
+  const su2double t1  = V0V1 * V0V1;
+  const su2double t3  = V0V3 - V1V2;
+  const su2double t6  = V1V1 * V1V1;
+  const su2double t11 = V0V1 * V2V3 * 2.0;
+  const su2double t14 = V0V3 * V0V3;
+  const su2double t16 = V0V3 * V1V2 * 2.0;
+  const su2double t17 = V1V2 * V1V2;
+  const su2double t22 = V1V3 * V1V3;
+  const su2double t34 = V3V3 * V0V2;
+  const su2double t50 = V2V3 * V2V3;
+  const su2double t55 = V3V3 * V3V3;
+
+  su2double a0 = -V1V1 * t3 * V0V1 - t6 * V0V2 + V1V3 * t1;
+  su2double a1 = t6 * V2V2 + V1V1 * (-4.0 * V0V2 * V1V3 + t11 - t14 + t16 - t17) + t1 * V3V3;
+  su2double a2 = -4.0 * t22 * V0V2 + V1V3 * (4.0 * V1V1 * V2V2 + t11 - t14 + t16 - t17)
+               + (V0V1 * V3V3 + 3.0 * V2V3 * V1V1) * V0V3 + V1V1 * (-3.0 * V1V2 * V2V3 - 2.0 * t34)
+               - V0V1 * V1V2 * V3V3;
+  su2double a3 = 4.0 * V2V2 * t22 + V1V3 * (4.0 * V2V3 * t3 - 4.0 * t34)
+               + 2.0 * (V2V2 * V3V3 - t50) * V1V1;
+  su2double a4 = -t55 * V0V2 + V3V3 * (4.0 * V2V2 * V1V3 + V2V3 * t3) - 3.0 * t50 * V1V3;
+  su2double a5 = t55 * V2V2 - V3V3 * t50;
+
+  /* Determine the maximum of these coefficients and scale them. */
+  su2double scaleFact = max(fabs(a0),  fabs(a1));
+  scaleFact           = max(scaleFact, fabs(a2));
+  scaleFact           = max(scaleFact, fabs(a3));
+  scaleFact           = max(scaleFact, fabs(a4));
+  scaleFact           = max(scaleFact, fabs(a5));
+
+  scaleFact = 1.0/scaleFact;
+
+  a0 *= scaleFact; a1 *= scaleFact; a2 *= scaleFact;
+  a3 *= scaleFact; a4 *= scaleFact; a5 *= scaleFact;
+
+  /* The coefficients that occur in the derivative of f, i.e.
+     b4 s^4 + b3 s^3 + b2 s^2 + b1 s + b0. */
+  const su2double b4 = 5.0*a5;
+  const su2double b3 = 4.0*a4;
+  const su2double b2 = 3.0*a3;
+  const su2double b1 = 2.0*a2;
+  const su2double b0 =     a1;
+
+  /*--- Newtons algorithm to solve the nonlinear equation
+        a5 s^5 + a4 s^4 + a3 s^3 + a2 s^2 + a1 s + a0 = 0. ---*/
   unsigned short itCount;
   for(itCount=0; itCount<maxIt; ++itCount) {
 
-    /* Compute the vectors needed in the equations to be solved. */
-    su2double distVec[3], distVecDr[3], distVecDs[3];
-    for(unsigned short k=0; k<nDim; ++k) {
-      distVec[k]   =  V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
-      distVecDr[k] = -V1[k] - s*V3[k];
-      distVecDs[k] = -V2[k] - r*V3[k];
-    }
+    /* Store the old value of s for determining the actual update. */
+    const double sOld = s;
 
-    /*--- The functional to be minimized is the L2 norm (squared) of the
-          distance vector. Compute the gradients of this functional as well
-          as the elements of the Hessian matrix. ---*/
-    su2double dfdr = 0.0, dfds = 0.0, H00 = 0.0, H11 = 0.0, H01 = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      dfdr += distVec[k]  *distVecDr[k];
-      dfds += distVec[k]  *distVecDs[k];
-      H00  += distVecDr[k]*distVecDr[k];
-      H11  += distVecDs[k]*distVecDs[k];
-      H01  += distVecDr[k]*distVecDs[k] - distVec[k]*V3[k];
-    }
+    /* Compute the values of s2 to s5. */
+    const su2double s2 = s*s;
+    const su2double s3 = s2*s;
+    const su2double s4 = s3*s;
+    const su2double s5 = s4*s;
 
-    /*--- Make sure that the Hessian is positive definite. This is accomplished
-          by checking the smallest eigenvalue. If this is smaller than a certain
-          cutoff, the Hessian is modified. ---*/
-    const su2double DD    = sqrt((H00-H11)*(H00-H11) + 4.0*H01*H01);
-    const su2double lam1  = 0.5*(H00+H11 +DD);
-    su2double       lam2  = 0.5*(H00+H11 -DD);
-    const su2double thres = 1.0e-8*lam1;
+    /* Compute the value of the function and its first derivative. */
+    const su2double  f = a5*s5 + a4*s4 + a3*s3 + a2*s2 + a1*s + a0;
+    const su2double df = b4*s4 + b3*s3 + b2*s2 + b1*s  + b0;
 
-    if(lam2 < thres) {
-      lam2 = thres;
-      const su2double tmp = (H00 - H11)*(lam1 - lam2)/DD;
-
-      H00  = 0.5*(lam1 + lam2 + tmp);
-      H11  = 0.5*(lam1 + lam2 - tmp);
-      H01  = H01*(lam1 - lam2)/DD;
-    }
-
-    /*--- Compute the updates for r and s. ---*/
-    const su2double detInv = 1.0/(H00*H11 - H01*H01);
-    const su2double dr     = (dfdr*H11 - dfds*H01)*detInv;
-    const su2double ds     = (dfds*H00 - dfdr*H01)*detInv;
-
-    /*--- Compute the new values of r and s. ---*/
-    r -= dr;
+    /* Compute the value of the update and the new value of s. */
+    su2double ds = f/df;
     s -= ds;
 
+    /* Clipping, such that s is bounded to a bit outside the quadrilateral. */
+    s = max(s, -1.5);
+    s = min(s,  1.5);
+
+    /* Set the actual value of ds. */
+    ds = sOld - s;
+
     /*--- Check for convergence. ---*/
-    if(fabs(dr) <= tolNewton && fabs(ds) <= tolNewton) break;
+    if(fabs(ds) <= tolIt) break;
   }
 
-  /* Terminate if the Newton algorithm did not converge. */
-  /* if(itCount == maxIt)
-    SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION); */
-
-  /* Temporary overwrite until a more fail safe algorithm is available. */
+  /* Check if Newtons algorithm did not converge. */
   if(itCount == maxIt) {
-    r = rInit;
-    s = sInit;
-  }
-  /* End overwrite. */
 
-  /*--- Check if the projection is inside the quadrilateral. ---*/
-  if((r >= paramLowerBound) && (s >= paramLowerBound) &&
-     (r <= paramUpperBound) && (s <= paramUpperBound)) {
+    /* Newtons algorithm did not converge. The most likely reason is that there is
+       no root for s on the interval paramLowerBound to paramUpperBound. Check this.
+       First compute the function value for paramLowerBound. */
+    s = paramLowerBound;
 
-    /*--- Determine the minimum distance squared. ---*/
-    dist2Quad = 0.0;
-    for(unsigned short k=0; k<nDim; ++k) {
-      const su2double ds = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
-      dist2Quad += ds*ds;
+    su2double s2 = s*s;
+    su2double s3 = s2*s;
+    su2double s4 = s3*s;
+    su2double s5 = s4*s;
+
+    su2double f = a5*s5 + a4*s4 + a3*s3 + a2*s2 + a1*s + a0;
+
+    /* Loop over a number of sampling points to check if the sign of f changes.
+       If it does, this means that there is a root between s-ds and s. Hence
+       a break from this loop can be made. */
+    const su2double ds = (paramUpperBound - paramLowerBound)*0.1;
+    for(itCount=1; itCount<=10; ++itCount) {
+
+      const su2double fOld = f;
+      s += ds;
+
+      s2 = s*s; s3 = s2*s; s4 = s3*s; s5 = s4*s;
+      f  = a5*s5 + a4*s4 + a3*s3 + a2*s2 + a1*s + a0;
+
+      if(f*fOld <= 0.0) break;
     }
 
-    return true;
+    /* If the end of the loop is reached this means that there is no root for s
+       between the lower and upper bound. Return false. */
+    if(itCount > 10) return false;
+
+    /* Newtons algorithm did not converge, but there is a root. Do a crude approximation
+       of the root using bisection. */
+    s -= 0.5*ds;
   }
 
-  /*--- The projection of the coordinate is outside the quadrilateral.
-        Return false. ---*/
-  return false;
+  /* Check if s is inside the quadrilateral. If not, return false. */
+  if(s < paramLowerBound || s > paramUpperBound) return false;
+
+  /* Compute the corresponding value of r and check if it is inside the
+     quadrilateral. If not return false. */
+  const su2double s2 = s*s;
+
+  r = (V0V1 + (V0V3-V1V2)*s - V2V3*s2)/(V1V1 + 2.0*V1V3*s + V3V3*s2);
+  if(r < paramLowerBound || r > paramUpperBound) return false;
+
+  /*--- The projection is inside the quadrilateral. Determine the minimum distance
+        squared and return true to indicate that the projection is inside. ---*/
+  dist2Quad = 0.0;
+  for(unsigned short k=0; k<nDim; ++k) {
+    const su2double ds = V0[k] - r*V1[k] - s*V2[k] - r*s*V3[k];
+    dist2Quad += ds*ds;
+  }
+
+  return true;
 }
