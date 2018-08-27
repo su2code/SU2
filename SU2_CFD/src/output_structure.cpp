@@ -4310,6 +4310,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
 
   bool thermal = false; /* Flag for whether to print heat flux values */
   bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+  bool radiation            = config->AddRadiation();
 
   if (config->GetKind_Solver() == RANS || config->GetKind_Solver()  == NAVIER_STOKES) {
     thermal = true;
@@ -4435,6 +4436,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char wave_resid[]= ",\"Res_Wave[0]\",\"Res_Wave[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
+  char rad_resid[]= ",\"Res_P1-rad\"";
   
   /*--- End of the header ---*/
   
@@ -4469,6 +4471,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+      if (radiation) ConvHist_file[0] << rad_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
       if (output_surface) ConvHist_file[0] << surface_outputs;
@@ -4555,6 +4558,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool energy               = config[val_iZone]->GetEnergy_Equation();
   bool incload              = config[val_iZone]->GetIncrementalLoad();
   bool output_files         = true;
+
+  bool radiation            = config[val_iZone]->AddRadiation();
 
   bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
@@ -4656,7 +4661,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000], wave_coeff[1000],
+    adj_turb_resid[1000], wave_coeff[1000], rad_resid[1000],
     begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
     fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
@@ -4759,6 +4764,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fea          = NULL;
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
+    su2double *residual_rad          = NULL;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4778,7 +4784,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Wave = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjTurb = 0,
-    nVar_FEM = 0;
+    nVar_FEM = 0, nVar_Rad = 0;
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
@@ -4800,6 +4806,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     }
     
+    if (radiation) nVar_Rad = 1;
+
     /*--- Adjoint problem variables ---*/
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
@@ -4816,6 +4824,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     residual_wave       = new su2double[nVar_Wave];
     residual_heat       = new su2double[nVar_Heat];
     residual_fem        = new su2double[nVar_FEM];
+    residual_rad        = new su2double[nVar_Rad];
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
@@ -5153,6 +5162,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       Extra_Heat_Residual   = log10(solver_container[ExtraHeatOutputZone][val_iInst][FinestMesh][HEAT_SOL]->GetRes_RMS(0));
     }
     
+    if (radiation){
+      for (iVar = 0; iVar < nVar_Rad; iVar++) {
+        residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][RAD_SOL]->GetRes_RMS(iVar);
+      }
+    }
+
     /*--- Header frequency ---*/
     
     bool Unsteady = ((config[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -5406,6 +5421,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               SPRINTF (heat_resid, ", %14.8e", log10 (residual_heat[0]));
             }
             
+            if (radiation){
+              SPRINTF (rad_resid, ", %14.8e", log10 (residual_rad[0]));
+            }
+
             break;
             
           case WAVE_EQUATION:
@@ -5633,6 +5652,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout <<  "     Res[Heat]" << "   HFlux(Total)";
             }
 
+            if (radiation){
+              cout << "     Res[P1-RAD]";
+            }
+
             cout << endl;
 
             break;
@@ -5702,6 +5725,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if(extra_heat_output) {
               cout <<  "      Res[Heat]" << "   HFlux(Total)";
+            }
+
+            if (radiation){
+              cout << "     Res[P1-RAD]";
             }
 
             cout << endl;
@@ -5915,6 +5942,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
               ConvHist_file[0] << flow_resid;
               if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (radiation) ConvHist_file[0] << rad_resid;
             }
             else {
               ConvHist_file[0] << begin << turbo_coeff << flow_resid;
@@ -5983,6 +6011,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               }
 
               if (extra_heat_output) { cout.width(15); cout << Extra_Heat_Residual; cout.width(15); cout << Extra_Total_Heat; }
+              if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
             }
             cout << endl;
           }
@@ -6305,6 +6334,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     delete [] residual_fea;
     delete [] residual_fem;
     delete [] residual_heat;
+    delete [] residual_rad;
 
     delete [] residual_adjflow;
     delete [] residual_adjturbulent;
