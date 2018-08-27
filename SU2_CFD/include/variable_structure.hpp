@@ -2382,6 +2382,18 @@ public:
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
 
+  /*!
+   * \brief Virtual member: Set the Radiative source term at the node
+   * \return value of the radiative source term
+   */
+  virtual su2double *GetRadiative_SourceTerm(void);
+
+  /*!
+   * \brief  Virtual member: Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  virtual void SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm);
+
 };
 
 /*!
@@ -4458,6 +4470,10 @@ class CRadVariable : public CVariable {
 
 private:
 
+protected:
+
+  su2double *Radiative_SourceTerm;
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -4478,6 +4494,18 @@ public:
    * \brief Destructor of the class.
    */
   ~CRadVariable(void);
+
+  /*!
+   * \brief Get the Radiative source term at the node
+   * \return Radiative source term for the energy equation
+   */
+  su2double *GetRadiative_SourceTerm(void);
+
+  /*!
+   * \brief Set the Radiative source term at the node
+   * \param[in] val_RadSourceTerm - value of the radiative source term
+   */
+  void SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm);
 
 };
 

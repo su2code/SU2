@@ -1642,3 +1642,11 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
+inline su2double *CVariable::GetRadiative_SourceTerm(void) { return NULL;}
+
+inline su2double *CRadVariable::GetRadiative_SourceTerm(void) { return Radiative_SourceTerm;}
+
+inline void CVariable::SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm) { }
+
+inline void CRadVariable::SetRadiative_SourceTerm(unsigned short iVar, su2double val_RadSourceTerm) { Radiative_SourceTerm[iVar] = val_RadSourceTerm;}
+
