@@ -176,6 +176,7 @@ public:
   **TurbPsi_Grad_j;      /*!< \brief Gradient of adjoint turbulent variables at point j. */
   su2double *AuxVar_Grad_i,    /*!< \brief Gradient of an auxiliary variable at point i. */
   *AuxVar_Grad_j;        /*!< \brief Gradient of an auxiliary variable at point i. */
+  su2double *RadVar_Source;  /*!< \brief Source term from the radiative heat transfer equation. */
   su2double *Coord_i,  /*!< \brief Cartesians coordinates of point i. */
   *Coord_j,      /*!< \brief Cartesians coordinates of point j. */
   *Coord_0,      /*!< \brief Cartesians coordinates of point 0 (Galerkin method, triangle). */
@@ -1551,6 +1552,12 @@ public:
    * \param[in] val_radvar_grad_j - Gradient of the turbulent variable at point j.
    */
   virtual void SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j);
+
+  /*!
+   * \brief Set the gradient of the radiation variables.
+   * \param[in] val_radvar_source - Source term (and jacobian term) of the radiative heat transfer.
+   */
+  void SetRadVarSource(su2double *val_radvar_source);
 
   /*!
    * \brief Computes a basis of orthogonal vectors from a suppled vector
@@ -4499,6 +4506,39 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
 
 };
+
+/*!
+ * \class CSourceIncBodyForce
+ * \brief Class for the source term integration from Radiative Heat Transfer.
+ * \ingroup SourceDiscr
+ * \author R. Sanchez
+ */
+class CSourceRadiation : public CNumerics {
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceRadiation(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceRadiation(void);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+};
+
 
 /*!
  * \class CSourceNothing

@@ -586,6 +586,8 @@ inline void CNumerics::SetRadVar(su2double *val_radvar_i, su2double *val_radvar_
 
 inline void CNumerics::SetRadVarGradient(su2double **val_radvar_grad_i, su2double **val_radvar_grad_j) { }
 
+inline void CNumerics::SetRadVarSource(su2double *val_radvar_source) { RadVar_Source = val_radvar_source; }
+
 inline void CNumericsRadiation::SetRadVar(su2double *val_radvar_i, su2double *val_radvar_j) {
   RadVar_i = val_radvar_i;
   RadVar_j = val_radvar_j;

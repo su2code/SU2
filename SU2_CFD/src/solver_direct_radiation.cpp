@@ -648,6 +648,30 @@ void CRadP1Solver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
 void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh) {
 
+  unsigned long iPoint;
+  su2double Energy, Temperature;
+  su2double SourceTerm, SourceTerm_Derivative;
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Retrieve the radiative energy ---*/
+    Energy = node[iPoint]->GetSolution(0);
+
+    /*--- Retrieve temperature from the flow solver ---*/
+    Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+
+    /*--- Compute the divergence of the radiative flux ---*/
+    SourceTerm = Absorption_Coeff*(Energy - 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0));
+
+    /*--- Compute the derivative of the source term with respect to the temperature ---*/
+    SourceTerm_Derivative =  - 12.0*Absorption_Coeff*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,3.0);
+
+    /*--- Store the source term and its derivative ---*/
+    node[iPoint]->SetRadiative_SourceTerm(0, SourceTerm);
+    node[iPoint]->SetRadiative_SourceTerm(1, SourceTerm_Derivative);
+
+  }
+
 }
 
 void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
@@ -693,11 +717,6 @@ void CRadP1Solver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
 void CRadP1Solver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                     CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
-
-  bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-  bool transition    = (config->GetKind_Trans_Model() == LM);
-  bool transition_BC = (config->GetKind_Trans_Model() == BC);
-
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 

@@ -44,6 +44,11 @@ CRadVariable::CRadVariable(void) : CVariable() {
 CRadVariable::CRadVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
 : CVariable(val_nDim, val_nvar, config) {
 
+  Radiative_SourceTerm = new su2double[2];
+
+  Radiative_SourceTerm[0] = 0.0; // The first term is the source term
+  Radiative_SourceTerm[1] = 0.0; // The second term is the Jacobian
+
 }
 
 CRadVariable::~CRadVariable(void) { }
