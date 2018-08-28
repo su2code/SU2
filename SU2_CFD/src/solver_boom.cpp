@@ -1383,8 +1383,8 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Average spacing and sampling frequency---*/
   dx_avg = scale_L/su2double(len_new);
   fs = flt_U/dx_avg;
-  if(fs < 7250. && len_new < 2000){ // Make sure signal is adequately (at least somewhat) refined
-    dx_avg = scale_L/2000.;
+  if(fs < 7250. && len_new < 1000){ // Make sure signal is adequately (at least somewhat) refined
+    dx_avg = scale_L/1000.;
     fs = flt_U/dx_avg;
   }
 
@@ -1394,6 +1394,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   unsigned long len1 = len_new;
   su2double *xtmp = new su2double[len_new];
   su2double *ptmp = new su2double[len_new];
+  su2double p_max = 0.;
   xtmp[0] = signal.x[iPhi][0];
   ptmp[0] = signal.p_prime[iPhi][0];
   unsigned long j0 = 0;
@@ -1415,6 +1416,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
       }
     }
     ptmp[i] = signal.p_prime[iPhi][j0] + (xtmp[i] - signal.x[iPhi][j0]) * (signal.p_prime[iPhi][j0+1]-signal.p_prime[iPhi][j0])/(signal.x[iPhi][j0+1]-signal.x[iPhi][j0]);
+    p_max = max(p_max, abs(ptmp[i]));
     
   }
 
@@ -1422,7 +1424,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   unsigned long len_pad = 5*ceil(scale_L/dx_avg);
   su2double dp_dx_end = abs(ptmp[len_new-1]-ptmp[len_new-2])/dx_avg;
   if(ptmp[len_new-1] > 0) dp_dx_end = - dp_dx_end;
-  len_new = len_new+len_pad*3;
+  len_new = len_new+ceil(len_pad*1.25);
   signal.len[iPhi] = len_new;
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
