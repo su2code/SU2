@@ -2447,6 +2447,12 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 
   }
 
+
+  /*--- Weird MPI STUFF in old solver ---*/
+	eAxi_global = eAxi_local;
+	eChm_global = eChm_local;
+	eVib_global = eVib_local;
+	
   if ((rank == MASTER_NODE) &&
       (
        (eAxi_global != 0) ||
