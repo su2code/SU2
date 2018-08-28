@@ -6034,7 +6034,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (output_surface) ConvHist_file[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) {
               ConvHist_file[0] << d_direct_coeff;
-              ConvHist_file[0] << d_surface_outputs;
+              if (output_surface) ConvHist_file[0] << d_surface_outputs;
             }
             if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
