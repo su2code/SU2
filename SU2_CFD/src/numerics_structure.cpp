@@ -1979,13 +1979,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar, su2double **val_gradp
 
 
   unsigned short iVar, iDim, jDim;
-  su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
+  su2double heat_flux_factor, div_vel, Cp, Density;
 
   Density = val_primvar[nDim+2];
-  total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
   Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
   heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
 
+  /*--- Set new tau tensor using perturbed Reynolds stresses ---*/
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
