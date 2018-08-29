@@ -4281,9 +4281,9 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   unsigned short kind_row_dissipation = config->GetKind_RoeLowDiss();
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
   
@@ -8544,7 +8544,7 @@ void CEulerSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_contain
       AoA_FD_Change = true;
     }
     
-    if ((rank == MASTER_NODE) && (iMesh == MESH_0) && !config->GetDiscrete_Adjoint()) {
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0)) {
       
     	if (config->GetnExtIter()-Iter_dCL_dAlpha == ExtIter) {
        cout << endl << "----------------------------- Fixed CL Mode -----------------------------" << endl;
@@ -12870,15 +12870,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
       Target_Temp_Jump = GetActDisk_DeltaT(val_marker, iVertex);
       
       if (val_inlet_surface) {
-        V_inlet  = GetCharacPrimVar(val_marker, iVertex);
+        V_inlet  = node[iPoint]->GetPrimitive();
         V_outlet = GetDonorPrimVar(val_marker, iVertex);
         
-        //Temperature_out = V_outlet[0];
         Pressure_out    = V_outlet[nDim+1];
         Density_out     = V_outlet[nDim+2];
         SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
         
-        //Temperature_in = V_inlet[0];
         Pressure_in    = V_inlet[nDim+1];
         Density_in     = V_inlet[nDim+2];
         SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
@@ -12909,15 +12907,13 @@ void CEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, C
         else       { P_static = V_outlet[nDim+1] - Target_Press_Jump; T_static = V_outlet[0] - Target_Temp_Jump; }
       }
       else {
-        V_outlet = GetCharacPrimVar(val_marker, iVertex);
+        V_outlet = node[iPoint]->GetPrimitive();
         V_inlet  = GetDonorPrimVar(val_marker, iVertex);
         
-        //Temperature_out = V_outlet[0];
         Pressure_out    = V_outlet[nDim+1];
         Density_out     = V_outlet[nDim+2];
         SoundSpeed_out  = sqrt(Gamma*Pressure_out/Density_out);
         
-        //Temperature_in = V_inlet[0];
         Pressure_in    = V_inlet[nDim+1];
         Density_in     = V_inlet[nDim+2];
         SoundSpeed_in  = sqrt(Gamma*Pressure_in/Density_in);
@@ -16084,9 +16080,9 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   bool roe_low_dissipation  = (kind_row_dissipation != NO_ROELOWDISS) && (config->GetKind_Upwind_Flow() == ROE);
   bool wall_functions       = config->GetWall_Functions();
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Set the primitive variables ---*/
   
