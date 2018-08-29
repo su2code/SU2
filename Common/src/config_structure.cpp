@@ -1731,8 +1731,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-	/* DESCRIPTION: Visualize the deformation */
-  addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
+	/* DESCRIPTION: Visualize the deformation (surface grid) */
+  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
+  /* DESCRIPTION: Visualize the deformation (volume grid) */
+  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
@@ -4782,7 +4784,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -5557,7 +5559,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5606,7 +5609,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5618,7 +5622,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
+    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
+    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
     else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
