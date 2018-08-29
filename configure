@@ -651,6 +651,10 @@ REVERSE_LIBS
 REVERSE_CXX
 DIRECTDIFF_LIBS
 DIRECTDIFF_CXX
+LAPACKE_LD
+LAPACKE_CXX
+BUILD_LAPACKE_FALSE
+BUILD_LAPACKE_TRUE
 LAPACK_LD
 LAPACK_CXX
 BUILD_LAPACK_FALSE
@@ -801,6 +805,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -843,6 +848,8 @@ with_CBLAS_lib
 with_CBLAS_include
 with_LAPACK_lib
 with_LAPACK_include
+with_LAPACKE_lib
+with_LAPACKE_include
 enable_CFD
 enable_DOT
 enable_MSH
@@ -918,6 +925,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1170,6 +1178,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1307,7 +1324,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1460,6 +1477,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1553,9 +1571,13 @@ Optional Packages:
   --with-CBLAS-lib=ARG    CBLAS library directory, ARG = path to libcblas.a
   --with-CBLAS-include=ARG
                           CBLAS include directory, ARG = path to cblas.h
-  --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapacke.a
+  --with-LAPACK-lib=ARG   LAPACK library directory, ARG = path to liblapack.a
   --with-LAPACK-include=ARG
-                          LAPACK include directory, ARG = path to lapacke.h
+                          LAPACK include directory, ARG = path to lapack.h
+  --with-LAPACKE-lib=ARG  LAPACKE library directory, ARG = path to
+                          liblapacke.a
+  --with-LAPACKE-include=ARG
+                          LAPACKE include directory, ARG = path to lapacke.h
 
   --with-metis-cppflags="-D_FILE_OFFSET_BITS=64 -DNDEBUG -DNDEBUG2 -DHAVE_EXECINFO_H -DHAVE_GETLINE"
                           Specific METIS C Preprocessor flags to use
@@ -5999,6 +6021,22 @@ else
   with_LAPACK_include="no"
 fi
 
+
+# Check whether --with-LAPACKE-lib was given.
+if test "${with_LAPACKE_lib+set}" = set; then :
+  withval=$with_LAPACKE_lib; with_LAPACKE_lib=$withval
+else
+  with_LAPACKE_lib="no"
+fi
+
+
+# Check whether --with-LAPACKE-include was given.
+if test "${with_LAPACKE_include+set}" = set; then :
+  withval=$with_LAPACKE_include; with_LAPACKE_include=$withval
+else
+  with_LAPACKE_include="no"
+fi
+
 # Check whether --enable-CFD was given.
 if test "${enable_CFD+set}" = set; then :
   enableval=$enable_CFD; build_CFD=$enableval
@@ -7100,8 +7138,7 @@ fi
 
 # check for lib
 LAPACKlib=liblapack.so
-LAPACKElib=liblapacke.a
-LAPACKheader=lapacke.h
+LAPACKheader=lapack.h
 have_LAPACK="no"
 
 if test "$with_LAPACK_lib" != "no"
@@ -7183,7 +7220,7 @@ else
 fi
 
 LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
-LAPACK_LD=""$with_LAPACK_lib"/$LAPACKElib "$with_LAPACK_lib"/$LAPACKlib"
+LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
 else
  if false; then
   BUILD_LAPACK_TRUE=
@@ -7201,6 +7238,123 @@ fi
 
 ###########################
 
+# check for lib
+LAPACKElib=liblapacke.so
+LAPACKEheader=lapack.h
+have_LAPACKE="no"
+
+if test "$with_LAPACKE_lib" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_LAPACKE_lib/$LAPACKElib" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_LAPACKE_lib/$LAPACKElib" >&5
+$as_echo_n "checking for $with_LAPACKE_lib/$LAPACKElib... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_LAPACKE_lib/$LAPACKElib"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_LAPACKE="yes"
+else
+  have_LAPACKE="no"
+fi
+
+if test "$have_LAPACKE" == "no"
+then
+as_fn_error $? "LAPACKE requested but library file not found." "$LINENO" 5
+fi
+fi
+
+# check for header
+if test "$have_LAPACKE" != "no"
+then
+if test "$with_LAPACKE_include" != "no"
+then
+as_ac_File=`$as_echo "ac_cv_file_$with_LAPACKE_include/$LAPACKEheader" | $as_tr_sh`
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $with_LAPACKE_include/$LAPACKEheader" >&5
+$as_echo_n "checking for $with_LAPACKE_include/$LAPACKEheader... " >&6; }
+if eval \${$as_ac_File+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  test "$cross_compiling" = yes &&
+  as_fn_error $? "cannot check for file existence when cross compiling" "$LINENO" 5
+if test -r "$with_LAPACKE_include/$LAPACKEheader"; then
+  eval "$as_ac_File=yes"
+else
+  eval "$as_ac_File=no"
+fi
+fi
+eval ac_res=\$$as_ac_File
+	       { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_res" >&5
+$as_echo "$ac_res" >&6; }
+if eval test \"x\$"$as_ac_File"\" = x"yes"; then :
+  have_LAPACKE='yes'
+else
+  have_LAPACKE='no'
+fi
+
+if test "$have_LAPACKE" == "no"
+then
+as_fn_error $? "LAPACKE requested but header file not found." "$LINENO" 5
+fi
+else
+have_LAPACKE="no"
+fi
+fi
+
+if test "$have_LAPACKE" != "no"
+then
+ if true; then
+  BUILD_LAPACKE_TRUE=
+  BUILD_LAPACKE_FALSE='#'
+else
+  BUILD_LAPACKE_TRUE='#'
+  BUILD_LAPACKE_FALSE=
+fi
+
+LAPACKE_CXX="-DHAVE_LAPACKE -I"$with_LAPACKE_include""
+LAPACKE_LD="$with_LAPACKE_lib"/$LAPACKElib
+else
+ if false; then
+  BUILD_LAPACKE_TRUE=
+  BUILD_LAPACKE_FALSE='#'
+else
+  BUILD_LAPACKE_TRUE='#'
+  BUILD_LAPACKE_FALSE=
+fi
+
+LAPACKE_CXX=
+LAPACKE_LD=
+fi
+
+
+
+
+###########################
+
+# Check if MKL is available, enable if 2019.0 or newer.
+
+if test "${MKLROOT+set}" = set; then
+  FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" ${MKLROOT}/include/mkl_version.h | tr -dc '0-9')
+  REQUIRED_MKL_VERSION=20190000
+  if [ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]; then
+    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS"
+    have_MKL="yes"
+  fi
+fi
+
+###########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -7710,6 +7864,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_LAPACK_TRUE}" && test -z "${BUILD_LAPACK_FALSE}"; then
   as_fn_error $? "conditional \"BUILD_LAPACK\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LAPACKE_TRUE}" && test -z "${BUILD_LAPACKE_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LAPACKE\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${BUILD_LAPACKE_TRUE}" && test -z "${BUILD_LAPACKE_FALSE}"; then
+  as_fn_error $? "conditional \"BUILD_LAPACKE\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${BUILD_NORMAL_TRUE}" && test -z "${BUILD_NORMAL_FALSE}"; then
@@ -8971,8 +9133,10 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support:      $have_Jsoncpp
     BLAS support:         $have_BLAS
+    LAPACK support:       $have_LAPACK
     CBLAS support:        $have_CBLAS
-    LAPACKE support:      $have_LAPACK
+    LAPACKE support:      $have_LAPACKE
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
@@ -9062,8 +9226,10 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support:      $have_Jsoncpp
     BLAS support:         $have_BLAS
+    LAPACK support:       $have_LAPACK
     CBLAS support:        $have_CBLAS
-    LAPACKE support:      $have_LAPACK
+    LAPACKE support:      $have_LAPACKE
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
