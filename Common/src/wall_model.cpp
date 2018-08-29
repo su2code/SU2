@@ -34,10 +34,10 @@
 
 #include "../include/wall_model.hpp"
 
-/* MKL or LAPACK include files, if supported. */
+/* MKL or LAPACKE include files, if supported. */
 #ifdef HAVE_MKL
 #include "mkl.h"
-#elif HAVE_LAPACK
+#elif HAVE_LAPACKE
 #include "lapacke.h"
 #endif
 
@@ -207,11 +207,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     rhs[numPoints-1] = velExchange;
 
     // Solve the matrix problem to get the velocity field
-    //********LAPACK CALL*******
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+    //********LAPACKE CALL*******E
+#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
     LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
 #else
-    SU2_MPI::Error("Not compiled with LAPACK support", CURRENT_FUNCTION);
+    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
 #endif
 
     u = rhs;
@@ -275,11 +275,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     }
 
     // Solve the matrix problem to get the temperature field
-    // *******LAPACK CALL********
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+    // *******LAPACKE CALL********
+#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
     LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
 #else
-    SU2_MPI::Error("Not compiled with LAPACK support", CURRENT_FUNCTION);
+    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
 #endif
 
     T = rhs;
