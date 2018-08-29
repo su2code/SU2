@@ -1030,17 +1030,17 @@ def main():
 #    pass_list.append(findiff_euler_py.run_filediff())
 #    test_list.append(findiff_euler_py)
     
-    # test finite_difference.py
-    findiff_multiple_ffd_py = TestCase('findiff_multiple_ffd_py')
-    findiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
-    findiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
-    findiff_multiple_ffd_py.test_iter = 9
-    findiff_multiple_ffd_py.su2_exec  = "finite_differences.py"
-    findiff_multiple_ffd_py.timeout   = 1600
-    findiff_multiple_ffd_py.reference_file = "of_grad_findiff.dat.ref"
-    findiff_multiple_ffd_py.test_file = "FINDIFF/of_grad_findiff.dat"
-    pass_list.append(findiff_multiple_ffd_py.run_filediff())
-    test_list.append(findiff_multiple_ffd_py)
+#    # test finite_difference.py
+#    findiff_multiple_ffd_py = TestCase('findiff_multiple_ffd_py')
+#    findiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
+#    findiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
+#    findiff_multiple_ffd_py.test_iter = 9
+#    findiff_multiple_ffd_py.su2_exec  = "finite_differences.py"
+#    findiff_multiple_ffd_py.timeout   = 1600
+#    findiff_multiple_ffd_py.reference_file = "of_grad_findiff.dat.ref"
+#    findiff_multiple_ffd_py.test_file = "FINDIFF/of_grad_findiff.dat"
+#    pass_list.append(findiff_multiple_ffd_py.run_filediff())
+#    test_list.append(findiff_multiple_ffd_py)
 
     # test shape_optimization.py
     shape_opt_euler_py           = TestCase('shape_opt_euler_py')
