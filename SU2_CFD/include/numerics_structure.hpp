@@ -4027,8 +4027,7 @@ public:
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
-  void Compute_Constitutive_Matrix(void);
-  using CNumerics::Compute_Constitutive_Matrix;
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
 
   void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 

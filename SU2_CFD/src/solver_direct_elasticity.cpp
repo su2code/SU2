@@ -1591,12 +1591,21 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
         Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
         
         for (iVar = 0; iVar < nVar; iVar++) {
+          Res_Stress_i[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++) {
             Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
+            Res_Stress_i[iVar] += Jacobian_ij[iVar][jVar]*node[indexNode[jNode]]->GetSolution(jVar);
           }
         }
         
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
+        
+        /*--- Required because the way algorithmic differentiation of linear systems is handled
+        is only compatible with solution methods where each iteration is a correction, at convergence
+        the correction is 0 thereby making the adjoints of the Jacobian also 0, Solve_b assumes this.
+        Thus we need to cast the linear elasticity problem in that form by defining the RHS as a
+        residual (b-Ax). With initialization the RHS, and therefore the correction, are 0. ---*/
+        LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
         
       }
       
@@ -2111,9 +2120,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
     unsigned long iVertex;
     su2double val_Reaction;
     
-    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-    
     if (!dynamic) {
       /*--- Loop over all the markers  ---*/
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -2160,27 +2166,16 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
         case (NEWMARK_IMPLICIT):
           
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-          if (linear_analysis) {
-            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-                a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-                a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-              }
-              TimeRes_Aux.SetBlock(iPoint, Residual);
+          for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+              - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+              + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+              + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
             }
+            TimeRes_Aux.SetBlock(iPoint, Residual);
           }
-          else if (nonlinear_analysis) {
-            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-                - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-                + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-                + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-              }
-              TimeRes_Aux.SetBlock(iPoint, Residual);
-            }
-          }
+
           /*--- Once computed, compute M*TimeRes_Aux ---*/
           MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
           
@@ -3456,27 +3451,15 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
     
     
     /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-    if (linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+        - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+        + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+        + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
       }
-    }
-    else if (nonlinear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
-      }
-      
+      TimeRes_Aux.SetBlock(iPoint, Residual);
     }
     
     /*--- Once computed, compute M*TimeRes_Aux ---*/
@@ -3547,8 +3530,6 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
   
   /*--- Update solution ---*/
@@ -3558,12 +3539,8 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
     for (iVar = 0; iVar < nVar; iVar++) {
       
       /*--- Displacements component of the solution ---*/
-      
-      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-      
-      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      
-      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+       
+      node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
@@ -3781,27 +3758,17 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
     
     
     /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-    if (linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+        - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+        + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+        + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
       }
+      TimeRes_Aux.SetBlock(iPoint, Residual);
     }
-    else if (nonlinear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
-      }
-    }
+
     /*--- Once computed, compute M*TimeRes_Aux ---*/
     MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
@@ -3872,9 +3839,6 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
-  
   /*--- Update solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3883,11 +3847,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
       
       /*--- Displacements component of the solution ---*/
       
-      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-      
-      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      
-      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
