@@ -139,11 +139,17 @@ AC_ARG_WITH(CBLAS-include,
     AS_HELP_STRING([--with-CBLAS-include[=ARG]], [CBLAS include directory, ARG = path to cblas.h]),
     [with_CBLAS_include=$withval], [with_CBLAS_include="no"])
 AC_ARG_WITH(LAPACK-lib,
-    AS_HELP_STRING([--with-LAPACK-lib[=ARG]], [LAPACK library directory, ARG = path to liblapacke.a]),
+    AS_HELP_STRING([--with-LAPACK-lib[=ARG]], [LAPACK library directory, ARG = path to liblapack.a]),
     [with_LAPACK_lib=$withval], [with_LAPACK_lib="no"])
 AC_ARG_WITH(LAPACK-include,
-    AS_HELP_STRING([--with-LAPACK-include[=ARG]], [LAPACK include directory, ARG = path to lapacke.h]),
+    AS_HELP_STRING([--with-LAPACK-include[=ARG]], [LAPACK include directory, ARG = path to lapack.h]),
     [with_LAPACK_include=$withval], [with_LAPACK_include="no"])
+AC_ARG_WITH(LAPACKE-lib,
+    AS_HELP_STRING([--with-LAPACKE-lib[=ARG]], [LAPACKE library directory, ARG = path to liblapacke.a]),
+    [with_LAPACKE_lib=$withval], [with_LAPACKE_lib="no"])
+AC_ARG_WITH(LAPACKE-include,
+    AS_HELP_STRING([--with-LAPACKE-include[=ARG]], [LAPACKE include directory, ARG = path to lapacke.h]),
+    [with_LAPACKE_include=$withval], [with_LAPACKE_include="no"])
 AC_ARG_ENABLE(CFD,
    	AS_HELP_STRING([--disable-CFD], [build the SU2_CFD executable (default = yes)]),
 	[build_CFD=$enableval], [build_CFD="yes"])
@@ -531,8 +537,7 @@ AC_SUBST([CBLAS_LD])
 
 # check for lib
 LAPACKlib=liblapack.so
-LAPACKElib=liblapacke.a
-LAPACKheader=lapacke.h
+LAPACKheader=lapack.h
 have_LAPACK="no"
 
 if test "$with_LAPACK_lib" != "no"
@@ -563,7 +568,7 @@ if test "$have_LAPACK" != "no"
 then
 AM_CONDITIONAL(BUILD_LAPACK,true)
 LAPACK_CXX="-DHAVE_LAPACK -I"$with_LAPACK_include""
-LAPACK_LD=""$with_LAPACK_lib"/$LAPACKElib "$with_LAPACK_lib"/$LAPACKlib"
+LAPACK_LD="$with_LAPACK_lib"/$LAPACKlib
 else
 AM_CONDITIONAL(BUILD_LAPACK,false)
 LAPACK_CXX=
@@ -574,6 +579,65 @@ AC_SUBST([LAPACK_LD])
 
 ###########################
 
+# check for lib
+LAPACKElib=liblapacke.so
+LAPACKEheader=lapack.h
+have_LAPACKE="no"
+
+if test "$with_LAPACKE_lib" != "no"
+then
+AC_CHECK_FILE([$with_LAPACKE_lib/$LAPACKElib],[have_LAPACKE="yes"],[have_LAPACKE="no"])
+if test "$have_LAPACKE" == "no"
+then
+AC_MSG_ERROR([LAPACKE requested but library file not found.])
+fi
+fi
+
+# check for header
+if test "$have_LAPACKE" != "no"
+then
+if test "$with_LAPACKE_include" != "no"
+then
+AC_CHECK_FILE([$with_LAPACKE_include/$LAPACKEheader],[have_LAPACKE='yes'],[have_LAPACKE='no'])
+if test "$have_LAPACKE" == "no"
+then
+AC_MSG_ERROR([LAPACKE requested but header file not found.])
+fi
+else
+have_LAPACKE="no"
+fi
+fi
+
+if test "$have_LAPACKE" != "no"
+then
+AM_CONDITIONAL(BUILD_LAPACKE,true)
+LAPACKE_CXX="-DHAVE_LAPACKE -I"$with_LAPACKE_include""
+LAPACKE_LD="$with_LAPACKE_lib"/$LAPACKElib
+else
+AM_CONDITIONAL(BUILD_LAPACKE,false)
+LAPACKE_CXX=
+LAPACKE_LD=
+fi
+AC_SUBST([LAPACKE_CXX])
+AC_SUBST([LAPACKE_LD])
+
+
+###########################
+
+# Check if MKL is available, enable if 2019.0 or newer.
+
+if test "${MKLROOT+set}" = set; then
+  FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" ${MKLROOT}/include/mkl_version.h | tr -dc '0-9')
+  REQUIRED_MKL_VERSION=20190000
+  if [[ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]]; then
+    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS" 
+    have_MKL="yes"
+  fi
+fi
+
+###########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -701,8 +765,10 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support:      $have_Jsoncpp
     BLAS support:         $have_BLAS
+    LAPACK support:       $have_LAPACK
     CBLAS support:        $have_CBLAS
-    LAPACKE support:      $have_LAPACK
+    LAPACKE support:      $have_LAPACKE
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
