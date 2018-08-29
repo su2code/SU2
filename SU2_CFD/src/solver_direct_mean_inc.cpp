@@ -2367,9 +2367,9 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
   
@@ -7439,9 +7439,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Set the primitive variables ---*/
   
