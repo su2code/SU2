@@ -1038,6 +1038,8 @@ private:
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
+  bool Compute_Average; /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
@@ -8728,6 +8730,13 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
+  
+  /*!
+   * \brief Get Compute Average.
+   * \return YES if start computing averages
+   */
+  bool GetCompute_Average(void);
+
 };
 
 #include "config_structure.inl"
