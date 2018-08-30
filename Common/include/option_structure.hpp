@@ -1035,15 +1035,15 @@ static const map<string, ENUM_RADIATION> Radiation_Map = CCreateMap<string, ENUM
 ("P1", P1_MODEL);
 
 /*!
- * \brief Kinds of P1 boundary conditions
+ * \brief Kinds of P1 initialization
  */
-enum ENUM_BC_P1 {
-  P1_STRONG = 0,      /*!< \brief Apply */
-  P1_WEAK = 1         /*!< \brief P1 Radiation model. */
+enum ENUM_P1_INIT {
+  P1_INIT_ZERO = 0,      /*!< \brief Initialize the P1 model from zero values */
+  P1_INIT_TEMP = 1         /*!< \brief Initialize the P1 model from blackbody energy computed from the initial temperature. */
 };
-static const map<string, ENUM_BC_P1> P1_BC_Map = CCreateMap<string, ENUM_BC_P1>
-("STRONG", P1_STRONG)
-("WEAK", P1_WEAK);
+static const map<string, ENUM_P1_INIT> P1_Init_Map = CCreateMap<string, ENUM_P1_INIT>
+("ZERO", P1_INIT_ZERO)
+("TEMPERATURE_INIT", P1_INIT_TEMP);
 
 
 /*!

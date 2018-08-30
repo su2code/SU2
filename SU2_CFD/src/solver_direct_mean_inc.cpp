@@ -3066,6 +3066,10 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       LinSysRes.AddBlock(iPoint, Residual);
 
+      /*--- Add the implicit Jacobian contribution ---*/
+
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
     }
 
   }

@@ -615,9 +615,15 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
+  su2double init_val;
+  switch(config->GetKind_P1_Init()){
+    case P1_INIT_ZERO: init_val = 0.0; break;
+    case P1_INIT_TEMP: init_val = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(config->GetInc_Temperature_Init(),4.0); break;
+    default: init_val = 0.0; break;
+  }
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CRadP1Variable(0.0, nDim, nVar, config);
+    node[iPoint] = new CRadP1Variable(init_val, nDim, nVar, config);
 
 }
 
@@ -664,7 +670,7 @@ void CRadP1Solver::Postprocessing(CGeometry *geometry, CSolver **solver_containe
     SourceTerm = Absorption_Coeff*(Energy - 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0));
 
     /*--- Compute the derivative of the source term with respect to the temperature ---*/
-    SourceTerm_Derivative =  - 12.0*Absorption_Coeff*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,3.0);
+    SourceTerm_Derivative =  - 16.0*Absorption_Coeff*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,3.0);
 
     /*--- Store the source term and its derivative ---*/
     node[iPoint]->SetRadiative_SourceTerm(0, SourceTerm);
@@ -764,8 +770,6 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  unsigned short Kind_P1_BC = config->GetKind_P1_BC();
-
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
 
@@ -791,92 +795,37 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
       // Weak application of the boundary condition
 
-      if (Kind_P1_BC == P1_WEAK){
-
-        /*--- Initialize the viscous residuals to zero ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Visc[iVar] = 0.0;
-          if (implicit) {
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] = 0.0;
-          }
-        }
-
-        /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
-
-        /*--- Retrieve temperature from the flow solver ---*/
-        Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
-
-        /*--- Compute the blackbody intensity at the wall. ---*/
-        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
-
-        /*--- Compute the radiative heat flux. ---*/
-        Radiative_Energy = node[iPoint]->GetSolution(0);
-        Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
-
-        /*--- Compute the Viscous contribution to the residual ---*/
-        Res_Visc[0] = Radiative_Heat_Flux*Area;
-
-        /*--- Apply to the residual vector ---*/
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-        /*--- Compute the Jacobian contribution. ---*/
+      /*--- Initialize the viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Visc[iVar] = 0.0;
         if (implicit) {
-          Jacobian_i[0][0] = -Theta;
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
         }
-
       }
-      // Strong application of the boundary condition
-      else{
 
-        unsigned long Point_Normal;
-        su2double *Coord_i, *Coord_j, Area, dist_ij;
-        su2double dEdn, Energy_Wall;
-        su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
+      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
 
-        /*--- Retrieve temperature from the flow solver ---*/
-        Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
+      /*--- Retrieve temperature from the flow solver ---*/
+      Temperature = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive()[nDim+1];
 
-        /*--- Compute the blackbody intensity at the wall. ---*/
-        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
+      /*--- Compute the blackbody intensity at the wall. ---*/
+      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Temperature,4.0);
 
-        /*--- Compute closest normal neighbor ---*/
+      /*--- Compute the radiative heat flux. ---*/
+      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
 
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      /*--- Compute the Viscous contribution to the residual ---*/
+      Res_Visc[0] = Radiative_Heat_Flux*Area;
 
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
+      /*--- Apply to the residual vector ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
 
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[Point_Normal]->GetCoord();
-        dist_ij = 0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
-
-        /*--- Compute the normal gradient in temperature using Twall ---*/
-
-        dEdn = -(node[Point_Normal]->GetSolution(0) - node[iPoint]->GetSolution(0))/dist_ij;
-
-        /*--- Get energy at the wall ---*/
-
-        Energy_Wall = ((- 1.0 * GammaP1 * dEdn) / Theta) + Ib_w;
-
-        /*--- Store the solution in the Solution_Old container -> This will get updated ---*/
-        node[iPoint]->SetSolution_Old(0, Energy_Wall);
-        node[iPoint]->SetSolution(0, Energy_Wall);
-
-        /*--- Impose the value of the energy as a strong boundary
-        condition (Dirichlet). Fix the energy and remove any
-        contribution to the residual at this node. ---*/
-        LinSysRes.SetBlock_Zero(iPoint, 0);
-
-        /*--- Enforce the Dirichlet boundary condition in a strong way by
-         modifying the energy-rows of the Jacobian (1 on the diagonal). ---*/
-        if (implicit) {
-            Jacobian.DeleteValsRowi(iPoint);
-        }
-
+      /*--- Compute the Jacobian contribution. ---*/
+      if (implicit) {
+        Jacobian_i[0][0] = Theta;
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       }
 
     }
@@ -904,8 +853,6 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
   /*--- Identify the boundary by string name ---*/
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
-  unsigned short Kind_P1_BC = config->GetKind_P1_BC();
 
   /*--- Get the specified wall emissivity from config ---*/
   Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
@@ -935,92 +882,37 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       // Weak application of the boundary condition
 
-      if (Kind_P1_BC == P1_WEAK){
-
-        /*--- Initialize the viscous residuals to zero ---*/
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Visc[iVar] = 0.0;
-          if (implicit) {
-            for (jVar = 0; jVar < nVar; jVar++)
-              Jacobian_i[iVar][jVar] = 0.0;
-          }
-        }
-
-        /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
-
-        /*--- Compute the blackbody intensity at the wall. ---*/
-        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
-
-        /*--- Compute the radiative heat flux. ---*/
-        Radiative_Energy = node[iPoint]->GetSolution(0);
-        Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
-
-        /*--- Compute the Viscous contribution to the residual ---*/
-        Res_Visc[0] = Radiative_Heat_Flux*Area;
-
-        /*--- Apply to the residual vector ---*/
-        LinSysRes.SubtractBlock(iPoint, Res_Visc);
-
-        /*--- Compute the Jacobian contribution. ---*/
+      /*--- Initialize the viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Visc[iVar] = 0.0;
         if (implicit) {
-          Jacobian_i[0][0] = -Theta;
-          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
         }
-
-      }
-      // Strong application of the boundary condition
-      else{
-
-        unsigned long Point_Normal;
-        su2double *Coord_i, *Coord_j, Area, dist_ij;
-        su2double dEdn, Energy_Wall;
-        su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
-
-        /*--- Compute the blackbody intensity at the wall. ---*/
-        Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
-
-        /*--- Compute closest normal neighbor ---*/
-
-        Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-
-        /*--- Get coordinates of i & nearest normal and compute distance ---*/
-
-        Coord_i = geometry->node[iPoint]->GetCoord();
-        Coord_j = geometry->node[Point_Normal]->GetCoord();
-        dist_ij = 0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-        dist_ij = sqrt(dist_ij);
-
-        /*--- Compute the normal gradient at the boundary ---*/
-
-        dEdn = -(node[Point_Normal]->GetSolution(0) - node[iPoint]->GetSolution(0))/dist_ij;
-
-        /*--- Get energy at the wall ---*/
-
-        Energy_Wall = ((- 1.0 * GammaP1 * dEdn) / Theta) + Ib_w;
-
-        /*--- Store the solution in the Solution_Old container -> This will get updated ---*/
-        node[iPoint]->SetSolution_Old(0, Energy_Wall);
-        node[iPoint]->SetSolution(0, Energy_Wall);
-
-        /*--- Impose the value of the energy as a strong boundary
-        condition (Dirichlet). Fix the energy and remove any
-        contribution to the residual at this node. ---*/
-        LinSysRes.SetBlock_Zero(iPoint, 0);
-        //node[iPoint]->SetRes_TruncErrorZero();
-
-        /*--- Enforce the Dirichlet boundary condition in a strong way by
-         modifying the energy-rows of the Jacobian (1 on the diagonal). ---*/
-        if (implicit) {
-            Jacobian.DeleteValsRowi(iPoint);
-        }
-
       }
 
+      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+      /*--- Compute the blackbody intensity at the wall. ---*/
+      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
+
+      /*--- Compute the radiative heat flux. ---*/
+      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+
+      /*--- Compute the Viscous contribution to the residual ---*/
+      Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+      /*--- Apply to the residual vector ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      /*--- Compute the Jacobian contribution. ---*/
+      if (implicit) {
+        Jacobian_i[0][0] = Theta;
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
     }
   }
-
 
 }
 
@@ -1049,25 +941,19 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
 
   unsigned short iDim, iMarker;
   unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
-  su2double *Normal, Area, Vol, laminar_viscosity, eddy_viscosity, thermal_diffusivity, Prandtl_Lam, Prandtl_Turb, Mean_ProjVel, Mean_BetaInc2, Mean_DensityInc, Mean_SoundSpeed, Lambda;
+  su2double *Normal, Area, Vol, Lambda;
   su2double Global_Delta_Time = 1E6, Global_Delta_UnstTimeND = 0.0, Local_Delta_Time = 0.0, Local_Delta_Time_Inv, Local_Delta_Time_Visc, CFL_Reduction, K_v = 0.25;
-  su2double CFL = config->GetCFL(iMesh);
+  su2double CFL = config->GetCFL_Rad();
   su2double GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
-
-  /*---- Set the CFL for the radiative equation to be <=1 ---*/
-  if (CFL > 1.0) CFL = 1.0;
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
-  thermal_diffusivity = config->GetThermalDiffusivity_Solid();
-
   /*--- Compute spectral radius based on thermal conductivity ---*/
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
-  CFL_Reduction = config->GetCFLRedCoeff_Turb();
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     node[iPoint]->SetMax_Lambda_Visc(0.0);
@@ -1131,7 +1017,7 @@ void CRadP1Solver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
 
-      node[iPoint]->SetDelta_Time(CFL_Reduction*Local_Delta_Time);
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
     }
     else {
       node[iPoint]->SetDelta_Time(0.0);

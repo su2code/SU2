@@ -1941,8 +1941,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Type of radiation model */
   addEnumOption("RADIATION_MODEL", Kind_Radiation, Radiation_Map, NO_RADIATION);
 
-  /* DESCRIPTION: Kind of radiation application of the  */
-  addEnumOption("P1_BC_KIND", Kind_P1_BC, P1_BC_Map, P1_STRONG);
+  /* DESCRIPTION: Kind of initialization of the P1 model  */
+  addEnumOption("P1_INITIALIZATION", Kind_P1_Init, P1_Init_Map, P1_INIT_ZERO);
 
   /* DESCRIPTION: Absorption coefficient */
   addDoubleOption("ABSORPTION_COEFF", Absorption_Coeff, 1.0);
@@ -1954,6 +1954,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_EMISSIVITY", nMarker_Emissivity, Marker_Emissivity, Wall_Emissivity);
+
+  /* DESCRIPTION:  Courant-Friedrichs-Lewy condition of the finest grid in radiation solvers */
+  addDoubleOption("CFL_NUMBER_RAD", CFL_Rad, 1.0);
 
   /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
   /*--- options related to the wave solver ---*/
