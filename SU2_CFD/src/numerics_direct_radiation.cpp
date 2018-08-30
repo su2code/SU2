@@ -249,7 +249,7 @@ void CSourceP1::ComputeResidual(su2double *val_residual, su2double **val_Jacobia
 
   /*--- Contribution to the Jacobian ---*/
   if (implicit) {
-    val_Jacobian_i[0][0] = - Absorption_Coeff * Volume;
+    val_Jacobian_i[0][0] = Absorption_Coeff * Volume;
   }
 
 

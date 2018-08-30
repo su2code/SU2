@@ -4508,12 +4508,16 @@ public:
 };
 
 /*!
- * \class CSourceIncBodyForce
+ * \class CSourceRadiation
  * \brief Class for the source term integration from Radiative Heat Transfer.
  * \ingroup SourceDiscr
  * \author R. Sanchez
  */
 class CSourceRadiation : public CNumerics {
+
+private:
+
+  bool implicit;
 
 public:
 
