@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - tobias.kattmann@de.bosch.com
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_SU2SOL_segfault
+        - develop
 
 python:
     - 2.7
