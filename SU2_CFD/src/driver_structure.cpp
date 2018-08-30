@@ -1802,6 +1802,9 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   if (fem_ns)    integration_container[val_iInst][FLOW_SOL] = new CFEM_DG_Integration(config);
   //if (fem_turbulent) integration_container[val_iInst][FEM_TURB_SOL] = new CSingleGridIntegration(config);
 
+  if (fem_turbulent)
+    SU2_MPI::Error("No turbulent FEM solver yet", CURRENT_FUNCTION);
+
   /*--- Allocate solution for adjoint problem ---*/
   if (adj_euler) integration_container[val_iInst][ADJFLOW_SOL] = new CMultiGridIntegration(config);
   if (adj_ns) integration_container[val_iInst][ADJFLOW_SOL] = new CMultiGridIntegration(config);
@@ -1879,6 +1882,9 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   /*--- DeAllocate integration container for finite element flow solver. ---*/
   if (fem_euler || fem_ns) delete integration_container[val_iInst][FLOW_SOL];
   //if (fem_turbulent)     delete integration_container[val_iInst][FEM_TURB_SOL];
+
+  if (fem_turbulent)
+    SU2_MPI::Error("No turbulent FEM solver yet", CURRENT_FUNCTION);
 
   delete [] integration_container[val_iInst];
 }
