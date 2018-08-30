@@ -4122,14 +4122,14 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
       } else
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
     }
     
-    if (Kind_Solver == NAVIER_STOKES     || Kind_Solver == RANS)  {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
         if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
       } else {
@@ -4139,7 +4139,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     
     if (Kind_Solver == RANS) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Eddy_Viscosity\"";
       } else
         restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
@@ -4382,7 +4382,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
   else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
            (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+  else if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY))  SPRINTF (buffer, ".csv");
   strcat(cstr, buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4626,21 +4626,28 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
             SpecialOutput_AnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                         geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                         geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
             SpecialOutput_Distortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                     geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the equivalent area. ---*/
 
           if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
             SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
+          }
+          
+          /*--- For specific applications, evaluate and plot the cp coefficent at different stations. ---*/
+          
+          if (config[val_iZone]->GetPlot_Section_Forces()) {
+            SpecialOutput_SpanLoad(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                   geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
           
           break;
@@ -4661,8 +4668,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
       
       SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
-      
-      if ((rank == MASTER_NODE) && !(fea || fluid_structure)) cout << endl;
       
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
       
@@ -5875,7 +5880,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_Rho]";
 
               if (!frozen_visc) {
-                cout << "      Res[Psi_Turb[0]]";
+                cout << " Res[Psi_Turb[0]]";
               }
               else {
                 if (incompressible) {if (energy) {cout << "   Res[Psi_Temp]";}
@@ -8584,15 +8589,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 
   /*--- Read the name of the output and input file ---*/
 
-  if (rank == MASTER_NODE) {
-    if (su2_file){
+  if (su2_file) {
+    if (rank == MASTER_NODE) {
       str = config[ZONE_0]->GetMesh_Out_FileName();
       strcpy (out_file, str.c_str());
       strcpy (cstr, out_file);
       output_file.precision(15);
       output_file.open(cstr, ios::out);
-
-      if (val_nZone > 1){
+      if (val_nZone > 1) {
         output_file << "NZONE= " << val_nZone << endl;
       }
     }
@@ -8602,8 +8606,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol() && config[iZone]->GetVisualize_Deformation();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();
+    bool Wrt_Vol = config[iZone]->GetVisualize_Volume_Def();
+    bool Wrt_Srf = config[iZone]->GetVisualize_Surface_Def();
     bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
     
     /*--- Merge the node coordinates and connectivity if necessary. This
@@ -8629,10 +8633,19 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       if (Wrt_Vol) {
         
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
-        
+
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview volume mesh file by default." << endl;
+          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
+        }
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot volume mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        }
         
       }
       
@@ -8641,29 +8654,43 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview surface mesh file by default." << endl;
+          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
+        }
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot surface mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        }
         
       }
       
       /*--- Write a .su2 ASCII file ---*/
 
-      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
-
-      if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
-      
-      /*--- Write an stl surface file ---*/
-
-      if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
-      
-      if (su2_file) SetSTL_MeshASCII(config[iZone], geometry[iZone]);
+      if (su2_file) {
+        
+        if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
+        
+        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
+        
+        /*--- Write an stl surface file ---*/
+        
+        if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
+        
+        SetSTL_MeshASCII(config[iZone], geometry[iZone]);
+        
+      }
       
       /*--- Write a binary file with the grid coordinates alone. ---*/
       
       if (Wrt_Crd) {
-        cout <<"Writing .dat binary coordinates file." << endl;
+        if (rank == MASTER_NODE) cout <<"Writing .dat binary coordinates file." << endl;
         WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
       }
+
       
       /*--- Deallocate connectivity ---*/
       
@@ -9000,7 +9027,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           ofstream Load_File;
           if (iSection == 0) {
             
-            if (config->GetOutput_FileFormat() == PARAVIEW) {
+            if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
               Load_File.open("load_distribution.csv", ios::out);
               Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
             }
@@ -9011,14 +9038,14 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
               Load_File << "ZONE T=\"Wing load distribution\"" << endl;
             }
           } else {
-            if (config->GetOutput_FileFormat() == PARAVIEW) Load_File.open("load_distribution.csv", ios::app);
+            if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) Load_File.open("load_distribution.csv", ios::app);
             else Load_File.open("load_distribution.dat", ios::app);
           }
           
           
           /*--- CL and spanload ---*/
           
-          if (config->GetOutput_FileFormat() == PARAVIEW)
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY))
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
           else
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
@@ -10015,14 +10042,14 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
   if (output && (rank == MASTER_NODE)) {
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
+    if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) strcpy (cstr, "surface_analysis.vtk");
     else strcpy (cstr, "surface_analysis.dat");
     
     SurfFlow_file.precision(15);
 
     SurfFlow_file.open(cstr, ios::out);
     
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
       SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
       SurfFlow_file << "vtk output" << endl;
       SurfFlow_file << "ASCII" << endl;
@@ -10840,7 +10867,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
       
       if (output) {
         
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
           
           SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
           SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
@@ -11116,7 +11143,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
         (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
     else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
              (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".vtk");
+    else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW) || (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW_BINARY))  SPRINTF (buffer, ".vtk");
     strcat(cstr, buffer);
 
     FSIHist_file->open(cstr, ios::out);
@@ -12093,6 +12120,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                        (KindSolver == FEM_RANS) ||
                        (KindSolver == FEM_LES));
     
+    /*--- Get the file output format ---*/
+    
+    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       bool cont_adj = config[iZone]->GetContinuous_Adjoint();
@@ -12110,10 +12141,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 #ifdef HAVE_MPI
       /*--- Do not merge the connectivity or write the visualization files
-     if we are running in parallel. Force the use of SU2_SOL to merge and
-     write the viz. files in this case to save overhead. ---*/
+     if we are running in parallel, unless we are using ParaView binary.
+       Force the use of SU2_SOL to merge and write the viz. files in this
+       case to save overhead. ---*/
 
-      if (size > SINGLE_NODE) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
@@ -12255,18 +12287,14 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
                      solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
     }
-
-    /*--- Get the file output format ---*/
     
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
-    
-    /*--- Write the solution files iff they are requested and we are executing
+    /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf) && !fem_solver) {
-
+    if ((Wrt_Vol || Wrt_Srf) && !fem_solver) {
+      
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
       if (rank == MASTER_NODE)
@@ -12335,6 +12363,15 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
                 solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
+            
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a Paraview binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview binary volume solution file." << endl;
+            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, false);
+            break;
 
           default:
             break;
@@ -12374,6 +12411,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
                 solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
+            
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a Paraview binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview binary surface solution file." << endl;
+            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                         solver_container[iZone][iInst][MESH_0], iZone, val_nZone, true);
+            break;
+            
 
           default:
             break;
@@ -12569,7 +12616,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     Variable_Names.push_back("Mach");
     
     nVar_Par += 1;
-    if (config->GetOutput_FileFormat() == PARAVIEW){
+    if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+        (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
@@ -12578,7 +12626,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
         nVar_Par += 2;
         Variable_Names.push_back("Skin_Friction_Coefficient_x");
@@ -12607,7 +12656,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
@@ -12625,7 +12675,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (transition) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("gamma_BC");
       } else {
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
@@ -13066,7 +13117,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add Cp, Mach. ---*/
 
     nVar_Par += 2;
-    if (config->GetOutput_FileFormat() == PARAVIEW){
+    if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+        (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
@@ -13076,7 +13128,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
         nVar_Par += 2;
         Variable_Names.push_back("Skin_Friction_Coefficient_x");
@@ -13105,7 +13158,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
@@ -13123,7 +13177,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if (transition) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("gamma_BC");
       } else {
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");

@@ -614,21 +614,19 @@ private:
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
-   * \param[in]     i0        Starting index in coorPoints, where the coordinates of the
-                              first point of the quadrilateral are stored.
-   * \param[in]     i1        Starting index in coorPoints, where the coordinates of the
-                              second point of the quadrilateral are stored.
-   * \param[in]     i2        Starting index in coorPoints, where the coordinates of the
-                              third point of the quadrilateral are stored.
-   * \param[in]     i3        Starting index in coorPoints, where the coordinates of the
-                              fourth point of the quadrilateral are stored.
-   * \param[in]     coor      Coordinate for which the distance to the quadrilateral
-                              must be determined.
-   * \param[in,out] r         Parametric coordinate of the projection. On input it contains
-                              an initial guess.
-   * \param[in,out] r         Parametric coordinate of the projection. On input it contains
-                              an initial guess.
-   * \param[out]    dist2Quad Distance squared from the coordinate to the quadrilateral.
+   * \param[in]  i0        Starting index in coorPoints, where the coordinates of the
+                           first point of the quadrilateral are stored.
+   * \param[in]  i1        Starting index in coorPoints, where the coordinates of the
+                           second point of the quadrilateral are stored.
+   * \param[in]  i2        Starting index in coorPoints, where the coordinates of the
+                           third point of the quadrilateral are stored.
+   * \param[in]  i3        Starting index in coorPoints, where the coordinates of the
+                           fourth point of the quadrilateral are stored.
+   * \param[in]  coor      Coordinate for which the distance to the quadrilateral
+                           must be determined.
+   * \param[out] r         Parametric coordinate of the projection.
+   * \param[out] s         Parametric coordinate of the projection.
+   * \param[out] dist2Quad Distance squared from the coordinate to the quadrilateral.
    * \return     True if the projection is inside the quadrilateral and false otherwise.
    */
   bool Dist2ToQuadrilateral(const unsigned long i0,
