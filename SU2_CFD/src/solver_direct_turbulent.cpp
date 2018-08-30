@@ -3005,13 +3005,13 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, jDim, iVar, iNode;
   unsigned long iVertex, iPoint, iPoint_Neighbor, counter;
   
-  su2double Wall_HeatFlux, func, func_prim;
+  su2double func, func_prim;
   su2double *Normal, Area;
   su2double div_vel, UnitNormal[3];
   su2double **grad_primvar, tau[3][3];
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til_4, nu_til, cv1_3;
-  su2double T_Normal, P_Normal, M_Normal, Density_Normal;
+  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til, cv1_3;
+  su2double T_Normal, P_Normal, Density_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -3046,7 +3046,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Get the specified wall heat flux from config ---*/
   
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -3115,7 +3115,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Compute mach number ---*/
         
-        M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+        // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
         
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
         
@@ -3234,7 +3234,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
         
-        nu_til_old = 0.0; nu_til_4 = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
+        nu_til_old = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
         nu_til_old = node[iPoint]->GetSolution(0);
         counter = 0; diff = 1.0;
         
@@ -3493,6 +3493,7 @@ void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
+                                          string val_marker,
                                           CGeometry *geometry,
                                           CConfig *config) {
 
@@ -3510,7 +3511,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short position = nDim+2+nDim;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4671,6 +4674,7 @@ void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned long val_inlet_point,
                                            unsigned short val_kind_marker,
+                                           string val_marker,
                                            CGeometry *geometry,
                                            CConfig *config) {
 
@@ -4689,7 +4693,9 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short omega_position = nDim+2+nDim+1;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
