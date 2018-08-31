@@ -1074,9 +1074,6 @@ CSourceRadiation::~CSourceRadiation(void) {
 void CSourceRadiation::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
 
   unsigned short iDim, iVar;
-  su2double DensityInc_0 = 0.0;
-  su2double Force_Ref    = config->GetForce_Ref();
-  bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
 
   /*--- Zero the continuity contribution ---*/
 

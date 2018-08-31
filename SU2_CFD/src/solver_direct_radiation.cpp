@@ -614,6 +614,18 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
 
+  /*--- Define some auxiliary vectors for computing flow variable
+   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
+   c vector := transpose(WA)*(Wb) ---*/
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+
+  }
+
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   su2double init_val;
   switch(config->GetKind_P1_Init()){
