@@ -1,7 +1,7 @@
 /*!
  * \file primal_grid_structure.hpp
  * \brief Headers of the main subroutines for storing the primal grid structure.
- *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> iile.
+ *        The subroutines and functions are in the <i>primal_grid_structure.cpp</i> file.
  * \author F. Palacios
  * \version 6.1.0 "Falcon"
  *
@@ -265,7 +265,7 @@ public:
    * \return Global index of an element in a parallel computation.
    */
   void SetGlobalIndex(unsigned long val_globalindex);
-
+	
 	/*!
 	 * \brief A virtual member.
 	 * \param[in] val_domainelement Index of the domain element which has a face shared by this boundary element.
@@ -476,8 +476,8 @@ private:
 	static unsigned short nFaces;				/*!< \brief Number of faces of the element. */
 	static unsigned short nNodes;				/*!< \brief Number of nodes of the element. */
 	static unsigned short VTK_Type;				/*!< \brief Type of element using VTK nomenclature. */
-	unsigned short Rotation_Type;			/*!< \brief Definition of the rotation, translation of the
-																		 solution at the vertex. */
+	unsigned short Rotation_Type;			/*!< \brief Definition of the rotation, traslation of the
+                                                                    solution at the vertex. */
 	static unsigned short maxNodesFace;			/*!< \brief Maximum number of nodes for a face. */
 	static unsigned short nNeighbor_Elements;	/*!< \brief Number of Neighbor_Elements. */
 	

@@ -417,13 +417,13 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
 ("US", US);
 
 /*!
- * \brief different types of PDE systems
+ * \brief different types of systems
  */
 enum RUNTIME_TYPE {
-  RUNTIME_FLOW_SYS = 2,			  /*!< \brief One-physics case, the code is solving the flow equations (Euler and Navier-Stokes). */
-  RUNTIME_TURB_SYS = 3,			  /*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_POISSON_SYS = 4,    /*!< \brief One-physics case, the code is solving the poissonal potential equation. */
-  RUNTIME_ADJPOT_SYS = 5,		  /*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
+  RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
+  RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
+  RUNTIME_POISSON_SYS = 4,			/*!< \brief One-physics case, the code is solving the poissonal potential equation. */
+  RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
   RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
@@ -434,10 +434,10 @@ enum RUNTIME_TYPE {
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
-/*--- Container positions for different Physics packages (solver classes). ---*/
-const int FLOW_SOL = 0;		  /*!< \brief Position of the mean flow solution in the solver container array. */
+const int FLOW_SOL = 0;		/*!< \brief Position of the mean flow solution in the solver container array. */
 const int ADJFLOW_SOL = 1;	/*!< \brief Position of the continuous adjoint flow solution in the solver container array. */
-const int TURB_SOL = 2;		  /*!< \brief Position of the turbulence model solution in the solver container array. */
+
+const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution in the solver container array. */
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
@@ -668,6 +668,7 @@ static const map<string, ENUM_GUST_DIR> Gust_Dir_Map = CCreateMap<string, ENUM_G
 ("X_DIR", X_DIR)
 ("Y_DIR", Y_DIR);
 
+// If you add to ENUM_CENTERED, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of centered spatial discretizations
  */
@@ -683,6 +684,8 @@ static const map<string, ENUM_CENTERED> Centered_Map = CCreateMap<string, ENUM_C
 ("JST_KE", JST_KE)
 ("LAX-FRIEDRICH", LAX);
 
+
+// If you add to ENUM_UPWIND, you must also add the option to ENUM_CONVECTIVE
 /*!
  * \brief types of upwind spatial discretizations
  */
@@ -1104,7 +1107,7 @@ enum RIEMANN_TYPE {
   STATIC_PRESSURE = 3,           /*!< \brief User specifies static pressure. */
   TOTAL_SUPERSONIC_INFLOW = 4,	/*!< \brief User specifies total pressure, total temperature and Velocity components. */
   STATIC_SUPERSONIC_INFLOW_PT = 5, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
-  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static density, and Mach components. */
+  STATIC_SUPERSONIC_INFLOW_PD = 6, /*!< \brief User specifies static pressure, static temperature, and Mach components. */
   MIXING_IN = 7, /*!< \brief User does not specify anything information are retrieved from the other domain */
   MIXING_OUT = 8, /*!< \brief User does not specify anything information are retrieved from the other domain */
   SUPERSONIC_OUTFLOW = 9,
