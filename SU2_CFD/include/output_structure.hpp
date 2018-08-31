@@ -196,55 +196,63 @@ protected:
 
 protected:
 
-  int rank, 	/*!< \brief MPI Rank. */
+  int rank, 	  /*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
 
   unsigned short nDim;
   
-  unsigned short GlobalField_Counter;
+  unsigned short GlobalField_Counter; /*!< \brief Number of fields in the volume output */ 
+
+  unsigned short field_width;         /*!< \brief Width of each column for the screen output (hardcoded for now) */
   
-  // TODO: COMMENT NEW STUFF
-  unsigned short field_width;
-  string HistorySep;
+  /** \brief Enum to identify the screen output format. */
+  enum ScreenOutputFormat {           
+    FORMAT_INTEGER,         /*!< \brief Integer format. Example: 34 */
+    FORMAT_FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  };
   
-  vector<string> HistoryHeader;
-  vector<su2double> HistoryValues;
+  string HistorySep;                  /*!< \brief Character which separates values in the history file */
   
-  std::map<string, su2double> ValueMap;
-  
-  std::map<string, unsigned short> ScreenMapInt, ScreenMapFixed, ScreenMapScientific;
-  
-  std::map<string, unsigned short> HistoryMap;
+  vector<string>    HistoryHeader;    /*!< \brief Vector containing the names of the fields printed to the history file. */
+  vector<su2double> HistoryValues;    /*!< \brief Vector containing the values of the fields printed to the history file. */
  
-  enum ScreenOutputFormat {
-    FORMAT_INTEGER,
-    FORMAT_FIXED,
-    FORMAT_SCIENTIFIC
-  };
   
+  /** \brief Structure to store information for a history output field.
+   * 
+   *  The stored information is printed to the history file and to screen. 
+   * Each individual instance represents a single field (i.e. column) in the history file or on screen.   
+   */
   struct HistoryOutputField {
-    string              FieldName;
-    su2double           Value;
-    unsigned short      ScreenFormat;
-    string              HistoryOutputGroup;
-    HistoryOutputField() {}
+    string              FieldName;    /*!< \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
+    su2double           Value;        /*!< \brief The value of the field. */
+    unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
+    string              OutputGroup;  /*!< \brief The group this field belongs to. */
+    HistoryOutputField() {}           /*!< \brief Default constructor. */
     HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), HistoryOutputGroup(historyoutputgroup){}
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup){}
   };
   
+  /** \brief Structure to store information for a volume output field.
+   * 
+   *  The stored information is used to create the volume solution file.   
+   */
   struct VolumeOutputField {
-    string FieldName;
-    int    Offset;
-    string VolumeOutputGroup;
-    VolumeOutputField () {}
+    string FieldName;          /*!< \brief The name of the field, i.e. the name that is printed in the file header.*/
+    int    Offset;             /*!< \brief This value identifies the position of the values of this field at each node in the Local_Data array. */
+    string OutputGroup;        /*!< \brief The group this field belongs to. */
+    VolumeOutputField () {}    /*!< \brief Default constructor. */
     VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
-      FieldName(fieldname), Offset(offset), VolumeOutputGroup(volumeoutputgroup){}
+      FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup){}
   };
   
-  std::map<string, HistoryOutputField >         Output_Fields;
-  std::map<string, vector<HistoryOutputField> > OutputPerSurface_Fields;
-  std::map<string, VolumeOutputField >          VolumeOutput_Fields;
+  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */ 
+  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */ 
+  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */ 
+  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */ 
   
+  std::map<string, VolumeOutputField >          VolumeOutput_Map;
+  std::vector<string>                           VolumeOutput_List;
   char char_histfile[200];
 
   ofstream HistFile;
@@ -258,7 +266,7 @@ public:
   /*! 
    * \brief Destructor of the class. 
    */
-  ~COutput(void);
+  virtual ~COutput(void);
 
   /*! 
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
@@ -1009,23 +1017,23 @@ public:
   
   void PrintHistorySep(stringstream& stream);
   
-  void AddOutputField(string name, string field_name, unsigned short format, string groupname );
+  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname );
   
-  void SetOutputFieldValue(string name, su2double value);
+  void SetHistoryOutputField(string name, su2double value);
   
-  void AddOutputPerSurfaceField(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
+  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
   
-  void SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker);
+  void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker);
   
   void PreprocessHistoryOutput(CConfig *config);  
   
   void PreprocessVolumeOutput(CConfig *config, CGeometry *geometry);  
   
-  void AddVolumeOutputField(string name, string field_name, string groupname);
+  void AddVolumeOutput(string name, string field_name, string groupname);
   
   virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
   
-  void SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value);
+  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
   
   void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
       

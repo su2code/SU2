@@ -50,11 +50,11 @@ inline void COutput::SetHistoryOutputFields(CConfig *config){}
 
 inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
  
-inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { }
+inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
 
-inline bool COutput::WriteScreen_Header(CConfig *config) { }
+inline bool COutput::WriteScreen_Header(CConfig *config) { return true; }
 
-inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { }
+inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
 
 inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
@@ -93,40 +93,43 @@ inline void COutput::PrintHistorySep(stringstream& stream){
   stream << HistorySep;
 }
 
-inline void COutput::AddOutputField(string name, string field_name, unsigned short format, string groupname ){
-  Output_Fields[name] = HistoryOutputField(field_name, format, groupname);
+inline void COutput::AddHistoryOutput(string name, string field_name, unsigned short format, string groupname ){
+  HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname);
+  HistoryOutput_List.push_back(name);
 }
 
-inline void COutput::AddOutputPerSurfaceField(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
+inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
   for (unsigned short i = 0; i < marker_names.size(); i++){
-    OutputPerSurface_Fields[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
+    HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
+    HistoryOutputPerSurface_List.push_back(field_name+"("+marker_names[i]+")");
   }
 }
 
-inline void COutput::SetOutputFieldValue(string name, su2double value){
-  if (Output_Fields.count(name) > 0){
-    Output_Fields[name].Value = value;
+inline void COutput::SetHistoryOutputField(string name, su2double value){
+  if (HistoryOutput_Map.count(name) > 0){
+    HistoryOutput_Map[name].Value = value;
   } else {
     SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
   }
 }
 
-inline void COutput::SetOutputPerSurfaceFieldValue(string name, su2double value, unsigned short iMarker){
-  if (OutputPerSurface_Fields.count(name) > 0){
-    OutputPerSurface_Fields[name][iMarker].Value = value;
+inline void COutput::SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
+  if (HistoryOutputPerSurface_Map.count(name) > 0){
+    HistoryOutputPerSurface_Map[name][iMarker].Value = value;
   } else {
     SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
   }
 }
 
-inline void COutput::AddVolumeOutputField(string name, string field_name, string groupname){
-  VolumeOutput_Fields[name] = VolumeOutputField(field_name, -1, groupname);
+inline void COutput::AddVolumeOutput(string name, string field_name, string groupname){
+  VolumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname);
+  VolumeOutput_List.push_back(name);
 }
 
-inline void COutput::SetVolumeOutputFieldValue(string name, unsigned long iPoint, su2double value){
-  if (VolumeOutput_Fields.count(name) > 0){
-    if (VolumeOutput_Fields[name].Offset != -1){
-      Local_Data[iPoint][VolumeOutput_Fields[name].Offset] = value;
+inline void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+  if (VolumeOutput_Map.count(name) > 0){
+    if (VolumeOutput_Map[name].Offset != -1){
+      Local_Data[iPoint][VolumeOutput_Map[name].Offset] = value;
     }
   } else {
     SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
