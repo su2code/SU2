@@ -808,19 +808,19 @@ inline short CConfig::GetFFD_Fix_JDir(unsigned short val_index) { return FFD_Fix
 
 inline short CConfig::GetFFD_Fix_KDir(unsigned short val_index) { return FFD_Fix_KDir[val_index]; }
 
-inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {
+inline unsigned short CConfig::GetMG_PreSmooth(unsigned short val_mesh) {	
 	if (nMG_PreSmooth == 0) return 1;
-	else return MG_PreSmooth[val_mesh];
+	else return MG_PreSmooth[val_mesh]; 
 }
 
-inline unsigned short CConfig::GetMG_PostSmooth(unsigned short val_mesh) {
+inline unsigned short CConfig::GetMG_PostSmooth(unsigned short val_mesh) { 
 	if (nMG_PostSmooth == 0) return 0;
 	else return MG_PostSmooth[val_mesh];
 }
 
-inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) {
+inline unsigned short CConfig::GetMG_CorrecSmooth(unsigned short val_mesh) { 
 	if (nMG_CorrecSmooth == 0) return 0;
-	else return MG_CorrecSmooth[val_mesh];
+	else return MG_CorrecSmooth[val_mesh]; 
 }
 
 inline unsigned long CConfig::GetWrt_Sol_Freq(void) { return Wrt_Sol_Freq; }
@@ -847,7 +847,7 @@ inline unsigned short CConfig::GetKind_GasModel(void) { return Kind_GasModel; }
 
 inline unsigned short CConfig::GetKind_FluidModel(void) { return Kind_FluidModel; }
 
-inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; }
+inline unsigned short CConfig::GetKind_FreeStreamOption(void) { return Kind_FreeStreamOption; } 
 
 inline unsigned short CConfig::GetKind_DensityModel(void) { return Kind_DensityModel; } 
 

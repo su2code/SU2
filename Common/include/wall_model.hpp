@@ -2,7 +2,7 @@
  * \file wall_model.hpp
  * \brief Headers for the wall model functions for large eddy simulations.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -45,7 +45,7 @@ using namespace std;
  * \class CWallModel
  * \brief Base class for defining the LES wall model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  */
 class CWallModel {
 
