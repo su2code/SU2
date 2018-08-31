@@ -66,65 +66,249 @@ inline bool CAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualt
 void CAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
   // Iteration numbers
-  AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
+  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
   
-  AddOutputField("ADJOINT_DENSITY",    "Res[A_Rho]",  FORMAT_FIXED, "RESIDUALS");
-  AddOutputField("ADJOINT_MOMENTUM-X", "Res[A_RhoU]", FORMAT_FIXED, "RESIDUALS");
-  AddOutputField("ADJOINT_MOMENTUM-Y", "Res[A_RhoV]", FORMAT_FIXED, "RESIDUALS");
-  AddOutputField("ADJOINT_MOMENTUM-Z", "Res[A_RhoW]", FORMAT_FIXED, "RESIDUALS");
-  AddOutputField("ADJOINT_ENERGY",     "Res[A_E]",    FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("ADJOINT_DENSITY",    "Res[A_Rho]",  FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("ADJOINT_MOMENTUM-X", "Res[A_RhoU]", FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("ADJOINT_MOMENTUM-Y", "Res[A_RhoV]", FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("ADJOINT_MOMENTUM-Z", "Res[A_RhoW]", FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("ADJOINT_ENERGY",     "Res[A_E]",    FORMAT_FIXED, "RESIDUALS");
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddOutputField("ADJOINT_NU_TILDE", "Res[A_nu]", FORMAT_FIXED, "RESIDUALS");
+    AddHistoryOutput("ADJOINT_NU_TILDE", "Res[A_nu]", FORMAT_FIXED, "RESIDUALS");
     break;  
   case SST:
-    AddOutputField("ADJOINT_KINETIC_ENERGY", "Res[A_k]", FORMAT_FIXED, "RESIDUALS");
-    AddOutputField("ADJOINT_DISSIPATION",    "Res[A_w]", FORMAT_FIXED, "RESIDUALS");
+    AddHistoryOutput("ADJOINT_KINETIC_ENERGY", "Res[A_k]", FORMAT_FIXED, "RESIDUALS");
+    AddHistoryOutput("ADJOINT_DISSIPATION",    "Res[A_w]", FORMAT_FIXED, "RESIDUALS");
     break;
   default: break;
   }
-  AddOutputField("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddOutputField("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddOutputField("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddOutputField("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddOutputField("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
   
-  AddOutputField("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
   
 }
 
 inline void CAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { 
 
-  SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetOutputFieldValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  CSolver* adjflow_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL];
+  CSolver* adjturb_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL];  
   
-  SetOutputFieldValue("ADJOINT_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)));
-  SetOutputFieldValue("ADJOINT_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)));
-  SetOutputFieldValue("ADJOINT_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(2)));
+  SetHistoryOutputField("INT_ITER", config[val_iZone]->GetIntIter());
+  SetHistoryOutputField("EXT_ITER", config[val_iZone]->GetExtIter());
+  
+  SetHistoryOutputField("ADJOINT_DENSITY", log10(adjflow_solver->GetRes_RMS(0)));
+  SetHistoryOutputField("ADJOINT_MOMENTUM-X", log10(adjflow_solver->GetRes_RMS(1)));
+  SetHistoryOutputField("ADJOINT_MOMENTUM-Y", log10(adjflow_solver->GetRes_RMS(2)));
   if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
-    SetOutputFieldValue("ADJOINT_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));
-    SetOutputFieldValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(4)));
+    SetHistoryOutputField("ADJOINT_MOMENTUM-Z", log10(adjflow_solver->GetRes_RMS(3)));
+    SetHistoryOutputField("ADJOINT_ENERGY", log10(adjflow_solver->GetRes_RMS(4)));
   } else {
-    SetOutputFieldValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));    
+    SetHistoryOutputField("ADJOINT_ENERGY", log10(adjflow_solver->GetRes_RMS(3)));    
   }
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetOutputFieldValue("ADJOINT_NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
+    SetHistoryOutputField("ADJOINT_NU_TILDE", log10(adjturb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetOutputFieldValue("ADJOINT_KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
-    SetOutputFieldValue("ADJOINT_DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(1)));
+    SetHistoryOutputField("ADJOINT_KINETIC_ENERGY", log10(adjturb_solver->GetRes_RMS(0)));
+    SetHistoryOutputField("ADJOINT_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
     break;
   default: break;
   }
-  SetOutputFieldValue("SENS_GEO", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Geo());
-  SetOutputFieldValue("SENS_AOA", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_AoA());
-  SetOutputFieldValue("SENS_MACH", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Mach());
-  SetOutputFieldValue("SENS_PRESS", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Press());
-  SetOutputFieldValue("SENS_TEMP", solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetTotal_Sens_Temp());
-  SetOutputFieldValue("PHYS_TIME", timeused);
+  SetHistoryOutputField("SENS_GEO", adjflow_solver->GetTotal_Sens_Geo());
+  SetHistoryOutputField("SENS_AOA", adjflow_solver->GetTotal_Sens_AoA());
+  SetHistoryOutputField("SENS_MACH", adjflow_solver->GetTotal_Sens_Mach());
+  SetHistoryOutputField("SENS_PRESS", adjflow_solver->GetTotal_Sens_Press());
+  SetHistoryOutputField("SENS_TEMP", adjflow_solver->GetTotal_Sens_Temp());
+  SetHistoryOutputField("PHYS_TIME", timeused);
 
+}
+
+void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
+  
+  
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+  
+  // Conservative
+  AddVolumeOutput("ADJOINT_DENSITY",    "Adjoint_Density",    "CONSERVATIVE");
+  AddVolumeOutput("ADJOINT_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE");
+  AddVolumeOutput("ADJOINT_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE");
+  if (nDim == 3)
+    AddVolumeOutput("ADJOINT_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE");
+  AddVolumeOutput("ADJOINT_ENERGY", "Adjoint_Energy", "CONSERVATIVE");
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddVolumeOutput("ADJOINT_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE");
+    break;  
+  case SST:
+    AddVolumeOutput("ADJOINT_KINETIC_ENERGY", "Adjoint_TKE", "CONSERVATIVE");
+    AddVolumeOutput("ADJOINT_DISSIPATION", "Adjoint_Omega", "CONSERVATIVE");
+    break;
+  default: break;
+  }
+  
+  if (config->GetGrid_Movement()){
+    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY");
+    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY");
+    if (nDim == 3)    
+      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY");
+  }
+  
+  // Limiters
+  AddVolumeOutput("LIMITER_ADJOINT_DENSITY",    "Limiter_Adjoint_Density",    "LIMITER");
+  AddVolumeOutput("LIMITER_ADJOINT_MOMENTUM-X", "Limiter_Adjoint_Momentum_x", "LIMITER");
+  AddVolumeOutput("LIMITER_ADJOINT_MOMENTUM-Y", "Limiter_Adjoint_Momentum_y", "LIMITER");
+  if (nDim == 3)
+    AddVolumeOutput("LIMITER_ADJOINT_MOMENTUM-Z", "Limiter_Adjoint_Momentum_z", "LIMITER");
+  AddVolumeOutput("LIMITER_ADJOINT_ENERGY",       "Limiter_Adjoint_Energy",     "LIMITER");
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddVolumeOutput("LIMITER_ADJOINT_NU_TILDE", "Limiter_Adjoint_Nu_Tilde", "CONSERVATIVE");
+    break;  
+  case SST:
+    AddVolumeOutput("LIMITER_ADJOINT_KINETIC_ENERGY", "Limiter_Adjoint_TKE", "CONSERVATIVE");
+    AddVolumeOutput("LIMITER_ADJOINT_DISSIPATION",    "Limiter_Adjoint_Omega", "CONSERVATIVE");
+    break;
+  default: break;
+  }
+  
+  // Residuals
+  AddVolumeOutput("RESIDUAL_ADJOINT_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");
+  AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL");
+  AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-Y", "Residual_Adjoint_Momentum_y", "RESIDUAL");
+  if (nDim == 3)
+    AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL");
+  AddVolumeOutput("RESIDUAL_ADJOINT_ENERGY",       "Residual_Adjoint_Energy", "RESIDUAL");
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddVolumeOutput("RESIDUAL_ADJOINT_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL");
+    break;  
+  case SST:
+    AddVolumeOutput("RESIDUAL_ADJOINT_KINETIC_ENERGY", "Residual_Adjoint_TKE", "RESIDUAL");
+    AddVolumeOutput("RESIDUAL_ADJOINT_DISSIPATION", "Residual_Adjoint_Omega", "RESIDUAL");
+    break;
+  default: break;
+  }
+  
+  // Sensitivity
+  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY");
+  
+  // Dissipation Sensor
+  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED){
+    AddVolumeOutput("DISSIPATION_SENSOR", "Dissipation_Sensor", "DISSIPATION_SENSOR");
+  }
+}
+
+void CAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+  
+  CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
+  CVariable* Node_AdjTurb = NULL;
+  CPoint*    Node_Geo     = geometry->node[iPoint];
+  
+  if (config->GetKind_Turb_Model() != NONE){
+    Node_AdjTurb = solver[ADJTURB_SOL]->node[iPoint]; 
+  }
+  
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+  
+  SetVolumeOutputValue("ADJOINT_DENSITY",    iPoint, Node_AdjFlow->GetSolution(0));
+  SetVolumeOutputValue("ADJOINT_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(1));
+  SetVolumeOutputValue("ADJOINT_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(2));
+  if (nDim == 3){
+    SetVolumeOutputValue("ADJOINT_MOMENTUM-Z", iPoint, Node_AdjFlow->GetSolution(3));
+    SetVolumeOutputValue("ADJOINT_ENERGY",     iPoint, Node_AdjFlow->GetSolution(4));
+  } else {
+    SetVolumeOutputValue("ADJOINT_ENERGY",     iPoint, Node_AdjFlow->GetSolution(3));    
+  }
+  
+  // Turbulent 
+  switch(turb_model){
+  case SST:
+    SetVolumeOutputValue("ADJOINT_KINETIC_ENERGY", iPoint, Node_AdjTurb->GetSolution(0));
+    SetVolumeOutputValue("ADJOINT_DISSIPATION", iPoint, Node_AdjTurb->GetSolution(1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputValue("ADJOINT_NU_TILDE", iPoint, Node_AdjTurb->GetSolution(0));
+    break;
+  case NONE:
+    break;
+  }
+  
+  // Limiters
+  SetVolumeOutputValue("LIMITER_ADJOINT_DENSITY", iPoint, Node_AdjFlow->GetLimiter_Primitive(0));
+  SetVolumeOutputValue("LIMITER_ADJOINT_MOMENTUM-X", iPoint, Node_AdjFlow->GetLimiter_Primitive(1));
+  SetVolumeOutputValue("LIMITER_ADJOINT_MOMENTUM-Y", iPoint, Node_AdjFlow->GetLimiter_Primitive(2));
+  if (nDim == 3){
+    SetVolumeOutputValue("LIMITER_ADJOINT_MOMENTUM-Z", iPoint, Node_AdjFlow->GetLimiter_Primitive(3));
+    SetVolumeOutputValue("LIMITER_ADJOINT_ENERGY", iPoint, Node_AdjFlow->GetLimiter_Primitive(4));
+  } else {
+    SetVolumeOutputValue("LIMITER_ADJOINT_ENERGY", iPoint, Node_AdjFlow->GetLimiter_Primitive(3));   
+  }
+  
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    SetVolumeOutputValue("LIMITER_ADJOINT_TKE", iPoint, Node_AdjFlow->GetLimiter_Primitive(0));
+    SetVolumeOutputValue("LIMITER_ADJOINT_OMEGA", iPoint, Node_AdjFlow->GetLimiter_Primitive(1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputValue("LIMITER_ADJOINT_NU_TILDE", iPoint, Node_AdjFlow->GetLimiter_Primitive(0));
+    break;
+  case NONE:
+    break;
+  }
+  
+  // Residuals
+  SetVolumeOutputValue("RESIDUAL_ADJOINT_DENSITY",    iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  SetVolumeOutputValue("RESIDUAL_ADJOINT_MOMENTUM-X", iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 1));
+  SetVolumeOutputValue("RESIDUAL_ADJOINT_MOMENTUM-Y", iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 2));
+  if (nDim == 3){
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_MOMENTUM-Z", iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_ENERGY",     iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 4));
+  } else {
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_ENERGY",     iPoint, solver[ADJFLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));   
+  }
+  
+  switch(config->GetKind_Turb_Model()){
+  case SST:
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_TKE",   iPoint, solver[ADJTURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_OMEGA", iPoint, solver[ADJTURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
+    break;
+  case SA: case SA_COMP: case SA_E: 
+  case SA_E_COMP: case SA_NEG: 
+    SetVolumeOutputValue("RESIDUAL_ADJOINT_NU_TILDE", iPoint, solver[ADJTURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
+    break;
+  case NONE:
+    break;
+  }
+
+  if (config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED){
+    SetVolumeOutputValue("DISSIPATION_SENSOR", iPoint, Node_AdjFlow->GetSensor());
+  }
+  
+}
+
+void CAdjFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+  
+  SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
+  
 }
 
