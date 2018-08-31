@@ -506,9 +506,11 @@ bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) 
 
 bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header;
-  write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
+  write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) ||
+     ( (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() ==DT_STEPPING_2ND) && config->GetIntIter() == 0);
   
-  return true;
+  return write_header;
+  
 }
 
 bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
