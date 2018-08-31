@@ -3222,8 +3222,8 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
 void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2double *P, int *skip_row, int* keep_row, su2double max_diff_tol_in, bool P_transposed, int &n_polynomial)
 {
-  int n_rows, *write_row = NULL;
-  unsigned long iCount, jCount;
+  int *write_row = NULL;
+  unsigned long iCount, jCount, n_rows;
   double sum, max_diff, max_coeff, *coeff, *P_tmp = NULL;
   CSymmetricMatrix *PPT;
   double max_diff_tol = SU2_TYPE::GetValue(max_diff_tol_in);
@@ -3292,7 +3292,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
     max_diff = (abs(1-sum) > max_diff)? abs(1-sum):max_diff;
   }
   
-  for (int i=0; i<n_rows; i++) {
+  for (unsigned long i=0; i<n_rows; i++) {
     if (max_diff < max_diff_tol) { keep_row[i] = 0; }
     else {keep_row[i] = 1;}
   }
@@ -3301,7 +3301,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
   if (max_diff < max_diff_tol)
   {
     iCount = 0;
-    for (int i=0; i<n_rows; i++) {
+    for (unsigned long i=0; i<n_rows; i++) {
       
       if (i == 0) {
         iCount = i;
@@ -3312,7 +3312,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
       max_coeff = coeff[iCount];
     }
 
-    for (int i=0; i<n_rows; i++) {
+    for (unsigned long i=0; i<n_rows; i++) {
       if ( i != iCount ) {
         keep_row[i] = 1;
       }
