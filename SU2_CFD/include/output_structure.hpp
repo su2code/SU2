@@ -268,18 +268,6 @@ public:
    */
   virtual ~COutput(void);
 
-  /*! 
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                       unsigned long iExtIter, unsigned short val_nZone);
-  
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -301,102 +289,11 @@ public:
   void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file);
 
   /*!
-   * \brief Writes equivalent area.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Writes inverse design.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                         unsigned long iExtIter);
-  
-  /*!
-   * \brief Writes inverse design.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                        unsigned long iExtIter);
-  
-  /*!
-   * \brief Writes forces at different sections.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Writes one dimensional output.
-   * \author H. Kline
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Create and write the file with the flow coefficient on the surface.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-
-  /*!
-   * \brief Create and write the file with the FSI convergence history.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Solver for all physical problems.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
-                         unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
-
-  /*!
    * \brief Create and write the file with the FSI convergence history.
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
   bool PrintOutput(unsigned long iIter, unsigned long iFreq);
-
-  /*! 
-   * \brief Create and write the file with the flow coefficient on the surface.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*! 
-   * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] AdjSolution - Adjoint solution.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Merge the geometry into a data structure used for output file writing.
@@ -716,15 +613,6 @@ public:
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
-  
-  /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -755,22 +643,6 @@ public:
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute .
-   * \param[in] config - Definition of the particular problem.
-   */
-  void WriteTurboPerfConvHistory(CConfig *config);
-
-  /*!
-   * \brief Write the output file for spanwise turboperformance.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - iZone index.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_Turbo(CSolver *****solver_container, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
-
-  /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
@@ -792,16 +664,6 @@ public:
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Write the output file for harmonic balance for each time-instance.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Number of Zones.
-   * \param[in] val_iZone - Zone index.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
-
-  /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -813,51 +675,6 @@ public:
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                                 unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone, unsigned short *nInst);
   
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for incmopressible flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for generic problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.

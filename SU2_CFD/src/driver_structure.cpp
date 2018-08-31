@@ -3421,17 +3421,17 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
   for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
   
 
-  /*--- Read the target pressure ---*/
+//  /*--- Read the target pressure ---*/
 
-  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-    output[ZONE_0]->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+//    output[ZONE_0]->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
-  /*--- Read the target heat flux ---*/
+//  /*--- Read the target heat flux ---*/
 
-  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-    output[ZONE_0]->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
-        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+//    output[ZONE_0]->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS and for a non FSI simulation ---*/
 
@@ -3614,10 +3614,10 @@ void CDriver::Output(unsigned long ExtIter) {
     
   }
 
-  /*--- Export Surface Solution File for Unsteady Simulations ---*/
-  /*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
-  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
-      output[ZONE_0]->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0, INST_0);}
+//  /*--- Export Surface Solution File for Unsteady Simulations ---*/
+//  /*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
+//  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
+//      output[ZONE_0]->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0, INST_0);}
 
 }
 
@@ -4334,26 +4334,26 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
   /*--- Specific scalar objective functions ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+//  for (iZone = 0; iZone < nZone; iZone++){
+//    switch (config_container[iZone]->GetKind_Solver()) {
+//      case EULER:                   case NAVIER_STOKES:                   case RANS:
+//      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
         
-        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-          output[iZone]->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);
+//        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+//          output[iZone]->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);
         
-        if ((config_container[ZONE_0]->GetnMarker_Analyze() != 0) && compressible)
-          output[iZone]->SpecialOutput_Distortion(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if ((config_container[ZONE_0]->GetnMarker_Analyze() != 0) && compressible)
+//          output[iZone]->SpecialOutput_Distortion(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
         
-        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
-          output[iZone]->SpecialOutput_SonicBoom(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
+//          output[iZone]->SpecialOutput_SonicBoom(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
           
-        if (config_container[ZONE_0]->GetPlot_Section_Forces())
-          output[iZone]->SpecialOutput_SpanLoad(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if (config_container[ZONE_0]->GetPlot_Section_Forces())
+//          output[iZone]->SpecialOutput_SpanLoad(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
         
-        break;
-    }
-  }
+//        break;
+//    }
+//  }
 
   /*--- Surface based obj. function ---*/
 
