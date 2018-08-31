@@ -96,7 +96,7 @@ private:
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class su2_BBoxTargetClass {
 public:
@@ -332,7 +332,7 @@ private:
  * \class su2_adtElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class su2_adtElemClass : public su2_adtBaseClass {
 private:
