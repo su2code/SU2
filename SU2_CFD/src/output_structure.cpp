@@ -8523,31 +8523,33 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   
   string currentField;
    
+  bool found_field = false;
+  
   for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
     currentField = config->GetHistoryOutput_Field(iField);   
-    
+    found_field = false;
     for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
       HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
       if (currentField == Field.OutputGroup){
         AddHistoryHeaderString(Field.FieldName);
+        found_field = true;
       }
     }
-  }
-  
-  
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    currentField = config->GetHistoryOutput_Field(iField);   
     
     for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
       for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
         HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
         if (currentField == Field.OutputGroup){
           AddHistoryHeaderString(Field.FieldName);
+          found_field = true;
         }
       }
     }
+    if (!found_field){
+      SU2_MPI::Error(string("There is no history output field/group with name ") + currentField + string(" defined in the current solver."), CURRENT_FUNCTION);
+    }
   }
-  
+    
   stringstream out;
   for (unsigned short iHeader = 0; iHeader < HistoryHeader.size(); iHeader++){
     out << "\"" << HistoryHeader[iHeader] << "\"";
@@ -8685,16 +8687,19 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
       
     char buffer[50];
     
-    // Retrieve the history filename
+     /*--- Retrieve the history filename ---*/
+    
     string history_filename = config->GetConv_FileName();
     
-    // Append the zone ID
+     /*--- Append the zone ID ---*/
+    
     if(config->GetnZone() > 1){
       history_filename = config->GetMultizone_HistoryFileName(history_filename, config->GetiZone());
     }
     strcpy (char_histfile, history_filename.data());
     
-    // Append the restart iteration: if dynamic problem and restart
+     /*--- Append the restart iteration: if dynamic problem and restart ---*/
+    
     if (config->GetWrt_Unsteady() && config->GetRestart()) {
       long iExtIter = config->GetDyn_RestartIter();
       if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
@@ -8705,25 +8710,35 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
       strcat(char_histfile, buffer);
     }
     
-    // Add the correct file extension depending on the file format
+    /*--- Add the correct file extension depending on the file format ---*/
+    
     if ((config->GetOutput_FileFormat() == TECPLOT) ||
         (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
     else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
              (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
     else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
+    
+    /*--- Set the History output fields using a virtual function call to the child implementation ---*/
+    
     SetHistoryOutputFields(config);
-    // Open the history file using only the master node
+    
+    /*--- Open the history file ---*/
     
     cout << "History filename: " << char_histfile << endl;
     HistFile.open(char_histfile, ios::out);
     HistFile.precision(15);
+    
+    /*--- Add the header to the history file. ---*/
+    
     SetHistoryFile_Header(config);    
   }
   
 }
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
+  
+  /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
   SetVolumeOutputFields(config);
   
@@ -8742,7 +8757,7 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields(). 
      * If it is also defined in the config (either as part of a group or a single field), the field 
      * object gets an offset so that we know where to find the data in the Local_Data() array.
-     *  Note that the default offset is -1. ---*/
+     *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
     
     for (unsigned short iField_Output = 0; iField_Output < VolumeOutput_List.size(); iField_Output++){
       
@@ -8758,10 +8773,13 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     }
     
     if (!found_field){
-      SU2_MPI::Error(string("There is no output field/group with name ") + currentField + string(" defined in the current solver."), CURRENT_FUNCTION);
+      SU2_MPI::Error(string("There is no volume output field/group with name ") + currentField + string(" defined in the current solver."), CURRENT_FUNCTION);
     }
   }
 
+  
+  /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
+   * before writing it to file ---*/
     
   unsigned long iPoint, iVertex;
   bool Wrt_Halo, isPeriodic;
