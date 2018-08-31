@@ -572,7 +572,7 @@ private:
   Kappa_2nd_Heat,     /*!< \brief 2nd order dissipation coefficient for heat equation. */
   Kappa_4th_Heat;     /*!< \brief 4th order dissipation coefficient for heat equation. */  
   su2double Geo_Waterline_Location; /*!< \brief Location of the waterline. */
-
+  
   su2double Min_Beta_RoeTurkel,		/*!< \brief Minimum value of Beta for the Roe-Turkel low Mach preconditioner. */
   Max_Beta_RoeTurkel;		/*!< \brief Maximum value of Beta for the Roe-Turkel low Mach preconditioner. */
   unsigned long GridDef_Nonlinear_Iter, /*!< \brief Number of nonlinear increments for grid deformation. */
@@ -742,8 +742,8 @@ private:
   New_SU2_FileName,       		/*!< \brief Output SU2 mesh file converted from CGNS format. */
   SurfSens_FileName,			/*!< \brief Output file for the sensitivity on the surface (discrete adjoint). */
   VolSens_FileName;			/*!< \brief Output file for the sensitivity in the volume (discrete adjoint). */
-	bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
-  Wrt_Output,                /*!< \brief Write any output files */
+  bool Low_MemoryOutput,      /*!< \brief Write a volume solution file */
+  Wrt_Output,                 /*!< \brief Write any output files */
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
@@ -1045,15 +1045,15 @@ private:
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
-
+  
   map<string, bool> all_options;
-
+  
   /*--- brief param is a map from the option name (config file string) to its decoder (the specific child
    class of COptionBase that turns the string into a value) ---*/
-
+  
   map<string, COptionBase*> option_map;
-
-
+  
+  
   // All of the addXxxOptions take in the name of the option, and a refernce to the field of that option
   // in the option structure. Depending on the specific type, it may take in a default value, and may
   // take in extra options. The addXxxOptions mostly follow the same pattern, so please see addDoubleOption
@@ -1066,71 +1066,71 @@ private:
   //
   // List and Array options should also be able to be specified with the string "NONE" indicating that there
   // are no elements. This allows the option to be present in a config file but left blank.
-
+  
   /*!<\brief addDoubleOption creates a config file parser for an option with the given name whose
    value can be represented by a su2double.*/
-
+  
   void addDoubleOption(const string name, su2double & option_field, su2double default_value) {
     // Check if the key is already in the map. If this fails, it is coder error
     // and not user error, so throw.
     assert(option_map.find(name) == option_map.end());
-
+    
     // Add this option to the list of all the options
     all_options.insert(pair<string, bool>(name, true));
-
+    
     // Create the parser for a su2double option with a reference to the option_field and the desired
     // default value. This will take the string in the config file, convert it to a su2double, and
     // place that su2double in the memory location specified by the reference.
     COptionBase* val = new COptionDouble(name, option_field, default_value);
-
+    
     // Create an association between the option name ("CFL") and the parser generated above.
     // During configuration, the parsing script will get the option name, and use this map
     // to find how to parse that option.
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addStringOption(const string name, string & option_field, string default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionString(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addIntegerOption(const string name, int & option_field, int default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionInt(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addUnsignedLongOption(const string name, unsigned long & option_field, unsigned long default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionULong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addUnsignedShortOption(const string name, unsigned short & option_field, unsigned short default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionUShort(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addLongOption(const string name, long & option_field, long default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionLong(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addBoolOption(const string name, bool & option_field, bool default_value) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionBool(name, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   // enum types work differently than all of the others because there are a small number of valid
   // string entries for the type. One must also provide a list of all the valid strings of that type.
   template <class Tenum>
@@ -1141,8 +1141,8 @@ private:
     option_map.insert(pair<string, COptionBase *>(name, val));
     return;
   }
-
-
+  
+  
   // input_size is the number of options read in from the config file
   template <class Tenum>
   void addEnumListOption(const string name, unsigned short & input_size, unsigned short * & option_field, const map<string, Tenum> & enum_map) {
@@ -1152,62 +1152,62 @@ private:
     COptionBase* val = new COptionEnumList<Tenum>(name, enum_map, option_field, input_size);
     option_map.insert( pair<string, COptionBase*>(name, val) );
   }
-
+  
   void addDoubleArrayOption(const string name, const int size, su2double * & option_field, su2double * default_value) {
-
+    
     //  su2double * def = new su2double [size];
     //  for (int i = 0; i < size; i++) {
     //    def[i] = default_value[i];
     //  }
-
+    
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleArray(name, size, option_field, default_value);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addDoubleListOption(const string name, unsigned short & size, su2double * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionDoubleList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addShortListOption(const string name, unsigned short & size, short * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionShortList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addUShortListOption(const string name, unsigned short & size, unsigned short * & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionUShortList(name, size, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addStringListOption(const string name, unsigned short & num_marker, string* & option_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionStringList(name, num_marker, option_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addConvectOption(const string name, unsigned short & space_field, unsigned short & centered_field, unsigned short & upwind_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionConvect(name, space_field, centered_field, upwind_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addConvectFEMOption(const string name, unsigned short & space_field, unsigned short & fem_field) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionFEMConvect(name, space_field, fem_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
                             bool & Restart_Flow, const bool & Restart_Flow_default) {
@@ -1216,7 +1216,7 @@ private:
     COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addDVParamOption(const string name, unsigned short & nDV_field, su2double** & paramDV, string* & FFDTag,
                         unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
@@ -1224,7 +1224,7 @@ private:
     COptionBase* val = new COptionDVParam(name, nDV_field, paramDV, FFDTag, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addDVValueOption(const string name, unsigned short* & nDVValue_field, su2double** & valueDV, unsigned short & nDV_field,  su2double** & paramDV,
                         unsigned short* & design_variable) {
     assert(option_map.find(name) == option_map.end());
@@ -1232,21 +1232,21 @@ private:
     COptionBase* val = new COptionDVValue(name, nDVValue_field, valueDV, nDV_field, paramDV, design_variable);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addFFDDefOption(const string name, unsigned short & nFFD_field, su2double** & coordFFD, string* & FFDTag) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionFFDDef(name, nFFD_field, coordFFD, FFDTag);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addFFDDegreeOption(const string name, unsigned short & nFFD_field, unsigned short** & degreeFFD) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionFFDDegree(name, nFFD_field, degreeFFD);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addStringDoubleListOption(const string name, unsigned short & list_size, string * & string_field,
                                  su2double* & double_field) {
     assert(option_map.find(name) == option_map.end());
@@ -1254,7 +1254,7 @@ private:
     COptionBase* val = new COptionStringDoubleList(name, list_size, string_field, double_field);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addInletOption(const string name, unsigned short & nMarker_Inlet, string * & Marker_Inlet,
                       su2double* & Ttotal, su2double* & Ptotal, su2double** & FlowDir) {
     assert(option_map.find(name) == option_map.end());
@@ -1262,7 +1262,7 @@ private:
     COptionBase* val = new COptionInlet(name, nMarker_Inlet, Marker_Inlet, Ttotal, Ptotal, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   template <class Tenum>
   void addRiemannOption(const string name, unsigned short & nMarker_Riemann, string * & Marker_Riemann, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                         su2double* & var1, su2double* & var2, su2double** & FlowDir) {
@@ -1271,7 +1271,7 @@ private:
     COptionBase* val = new COptionRiemann<Tenum>(name, nMarker_Riemann, Marker_Riemann, option_field, enum_map, var1, var2, FlowDir);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   template <class Tenum>
   void addGilesOption(const string name, unsigned short & nMarker_Giles, string * & Marker_Giles, unsigned short* & option_field, const map<string, Tenum> & enum_map,
                      su2double* & var1, su2double* & var2, su2double** & FlowDir, su2double* & relaxfactor1, su2double* & relaxfactor2) {
@@ -1280,7 +1280,7 @@ private:
     COptionBase* val = new COptionGiles<Tenum>(name, nMarker_Giles, Marker_Giles, option_field, enum_map, var1, var2, FlowDir, relaxfactor1, relaxfactor2);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addExhaustOption(const string name, unsigned short & nMarker_Exhaust, string * & Marker_Exhaust,
                         su2double* & Ttotal, su2double* & Ptotal) {
     assert(option_map.find(name) == option_map.end());
@@ -1288,7 +1288,7 @@ private:
     COptionBase* val = new COptionExhaust(name, nMarker_Exhaust, Marker_Exhaust, Ttotal, Ptotal);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addPeriodicOption(const string & name, unsigned short & nMarker_PerBound,
                          string* & Marker_PerBound, string* & Marker_PerDonor,
                          su2double** & RotCenter, su2double** & RotAngles, su2double** & Translation) {
@@ -1305,7 +1305,7 @@ private:
     COptionBase* val = new COptionTurboPerformance(name, nMarker_TurboPerf, Marker_TurboBoundIn, Marker_TurboBoundOut);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addActDiskOption(const string & name,
                         unsigned short & nMarker_ActDiskInlet, unsigned short & nMarker_ActDiskOutlet, string* & Marker_ActDiskInlet, string* & Marker_ActDiskOutlet,
                         su2double** & ActDisk_PressJump, su2double** & ActDisk_TempJump, su2double** & ActDisk_Omega) {
@@ -1326,38 +1326,38 @@ private:
                                                val_IntInfo_WF, val_DoubleInfo_WF);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
   void addPythonOption(const string name) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
     COptionBase* val = new COptionPython(name);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
-
+  
 public:
-
+  
   vector<string> fields; /*!< \brief Tags for the different fields in a restart file. */
-
+  
   /*!
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
-
+  
   /*!
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software);
-
+  
   /*!
    * \brief Constructor of the class which reads the input file.
    */
   CConfig(char case_filename[MAX_STRING_SIZE], CConfig *config);
-
+  
   /*!
    * \brief Destructor of the class.
    */
   ~CConfig(void);
-
+  
   /*!
    * \brief Get the MPI communicator of SU2.
    * \return MPI communicator of SU2.
@@ -1378,7 +1378,7 @@ public:
    * \return Total number of zones in the grid file.
    */
   static unsigned short GetnZone(string val_mesh_filename, unsigned short val_format, CConfig *config);
-
+  
   /*!
    * \brief Gets the number of dimensions in the mesh file
    * \param[in] val_mesh_filename - Name of the file with the grid information.
@@ -1400,7 +1400,7 @@ public:
    * \brief Initializes pointers to null
    */
   void SetPointersNull(void);
-
+  
   /*!
    * \brief breaks an input line from the config file into a set of tokens
    * \param[in] str - the input line string
@@ -1410,70 +1410,70 @@ public:
    */
   bool TokenizeString(string & str, string & option_name,
                       vector<string> & option_value);
-
+  
   /*!
    * \brief Get reference origin for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin (in cartesians coordinates) for moment computation.
    */
   su2double *GetRefOriginMoment(unsigned short val_marker);
-
+  
   /*!
    * \brief Get reference origin x-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin x-coordinate (in cartesians coordinates) for moment computation.
    */
   su2double GetRefOriginMoment_X(unsigned short val_marker);
-
+  
   /*!
    * \brief Get reference origin y-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin y-coordinate (in cartesians coordinates) for moment computation.
    */
   su2double GetRefOriginMoment_Y(unsigned short val_marker);
-
+  
   /*!
    * \brief Get reference origin z-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \return Reference origin z-coordinate (in cartesians coordinates) for moment computation.
    */
   su2double GetRefOriginMoment_Z(unsigned short val_marker);
-
+  
   /*!
    * \brief Set reference origin x-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \param[in] val_origin - New x-coordinate of the mesh motion origin.
    */
   void SetRefOriginMoment_X(unsigned short val_marker, su2double val_origin);
-
+  
   /*!
    * \brief Set reference origin y-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \param[in] val_origin - New y-coordinate of the mesh motion origin.
    */
   void SetRefOriginMoment_Y(unsigned short val_marker, su2double val_origin);
-
+  
   /*!
    * \brief Set reference origin z-coordinate for moment computation.
    * \param[in] val_marker - the marker we are monitoring.
    * \param[in] val_origin - New z-coordinate of the mesh motion origin.
    */
   void SetRefOriginMoment_Z(unsigned short val_marker, su2double val_origin);
-
+  
   /*!
    * \brief Get index of the upper and lower horizontal plane.
    * \param[in] index - 0 means upper surface, and 1 means lower surface.
    * \return Index of the upper and lower surface.
    */
   string GetPlaneTag(unsigned short index);
-
+  
   /*!
    * \brief Get the integration limits for the equivalent area computation.
    * \param[in] index - 0 means x_min, and 1 means x_max.
    * \return Integration limits for the equivalent area computation.
    */
   su2double GetEA_IntLimit(unsigned short index);
-
+  
   /*!
    * \brief Get the integration limits for the equivalent area computation.
    * \param[in] index - 0 means x_min, and 1 means x_max.

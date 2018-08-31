@@ -1432,7 +1432,7 @@ public:
 /*!
  * \class CPrimalGridFEM
  * \brief Class to define primal grid element for the FEM solver.
- * \version 4.1.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CPrimalGridFEM : public CPrimalGrid {
 private:
@@ -1665,7 +1665,7 @@ public:
 /*!
  * \class CPrimalGridBoundFEM
  * \brief Class to define primal grid boundary element for the FEM solver.
- * \version 4.1.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CPrimalGridBoundFEM : public CPrimalGrid {
 private:
