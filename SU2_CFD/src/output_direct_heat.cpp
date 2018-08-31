@@ -66,35 +66,76 @@ inline bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime
   return true;
 }
 
-inline void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   
-  SetOutputFieldValue("EXT_ITER",     config[val_iZone]->GetExtIter());
-  SetOutputFieldValue("INT_ITER",     config[val_iZone]->GetIntIter());
+  CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];  
   
-  SetOutputFieldValue("HEATFLUX",     solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_HeatFlux());
-  SetOutputFieldValue("HEATFLUX_MAX", solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_MaxHeatFlux());
-  SetOutputFieldValue("TEMPERATURE",  solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature());
-  SetOutputFieldValue("HEAT", log10(solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetRes_RMS(0)));
+  SetHistoryOutputField("EXT_ITER",     config[val_iZone]->GetExtIter());
+  SetHistoryOutputField("INT_ITER",     config[val_iZone]->GetIntIter());
   
-  SetOutputFieldValue("PHYS_TIME", timeused);
-  SetOutputFieldValue("LINSOL_ITER", solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->GetIterLinSolver());
+  SetHistoryOutputField("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
+  SetHistoryOutputField("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
+  SetHistoryOutputField("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
+  SetHistoryOutputField("HEAT", log10(heat_solver->GetRes_RMS(0)));
+  
+  SetHistoryOutputField("PHYS_TIME", timeused);
+  SetHistoryOutputField("LINSOL_ITER", heat_solver->GetIterLinSolver());
   
 }
   
 
-inline void CHeatOutput::SetHistoryOutputFields(CConfig *config){
+void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddOutputField("EXT_ITER", "Ext_Iter", FORMAT_INTEGER, "EXT_ITER");
-  AddOutputField("INT_ITER", "Int_Iter", FORMAT_INTEGER, "INT_ITER");
+  AddHistoryOutput("EXT_ITER", "Ext_Iter", FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("INT_ITER", "Int_Iter", FORMAT_INTEGER, "INT_ITER");
   
-  AddOutputField("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
-  AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
-  AddOutputField("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT");
-  AddOutputField("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
-  AddOutputField("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
+  AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT");
+  AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
+  AddHistoryOutput("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
   
-  AddOutputField("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
   
 }
+
+
+void CHeatOutput::SetVolumeOutputFields(CConfig *config){
+  
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+  
+  // Conservative
+  AddVolumeOutput("TEMPERATURE", "Temperature", "CONSERVATIVE");
+
+  // Residuals  
+  AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
+  
+}
+
+
+void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+  
+  CVariable* Node_Heat = solver[HEAT_SOL]->node[iPoint]; 
+  
+  CPoint*    Node_Geo  = geometry->node[iPoint];
+  
+  // Grid coordinates
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+ 
+  // Conservative
+  SetVolumeOutputValue("TEMPEATURE", iPoint, Node_Heat->GetSolution(0));
+  
+  // Residuals    
+  SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
+  
+}
+
