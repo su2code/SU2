@@ -1049,7 +1049,7 @@ public:
 class CFlowOutput : public COutput {
 private:
   
-  unsigned short nVar, nDim;
+  unsigned short nVar;
 
   unsigned short turb_model;
   

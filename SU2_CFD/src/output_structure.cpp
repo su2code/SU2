@@ -10531,12 +10531,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("Skin_Friction_Coefficient_x");
         Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
+          GlobalField_Counter += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -11029,12 +11029,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if (config->GetOutput_FileFormat() == PARAVIEW){
-        nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
-        nVar_Par += 2;
+        GlobalField_Counter += 1; Variable_Names.push_back("Laminar_Viscosity");
+        GlobalField_Counter += 2;
         Variable_Names.push_back("Skin_Friction_Coefficient_x");
         Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
+          GlobalField_Counter += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         GlobalField_Counter += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -11512,8 +11512,8 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add the grid velocity. ---*/
     
     if (grid_movement) {
-      if (geometry->GetnDim() == 2) nVar_Par += 2;
-      else if (geometry->GetnDim() == 3) nVar_Par += 3;
+      if (geometry->GetnDim() == 2) GlobalField_Counter += 2;
+      else if (geometry->GetnDim() == 3) GlobalField_Counter += 3;
       Variable_Names.push_back("Grid_Velocity_x");
       Variable_Names.push_back("Grid_Velocity_y");
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
@@ -11817,7 +11817,7 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
-      nVar_Par += nVar_Consv_Par;
+      GlobalField_Counter += nVar_Consv_Par;
       Variable_Names.push_back("Residual_Displacement_x");
       Variable_Names.push_back("Residual_Displacement_y");
       if (geometry->GetnDim() == 3)
@@ -11828,20 +11828,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
     if (config->GetDynamic_Analysis() == DYNAMIC) {
       
       /*--- Velocities ---*/
-      nVar_Par += 2;
+      GlobalField_Counter += 2;
       Variable_Names.push_back("Velocity_x");
       Variable_Names.push_back("Velocity_y");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 1;
+        GlobalField_Counter += 1;
         Variable_Names.push_back("Velocity_z");
       }
       
       /*--- Accelerations ---*/
-      nVar_Par += 2;
+      GlobalField_Counter += 2;
       Variable_Names.push_back("Acceleration_x");
       Variable_Names.push_back("Acceleration_y");
       if (geometry->GetnDim() == 3) {
-        nVar_Par += 1;
+        GlobalField_Counter += 1;
         Variable_Names.push_back("Acceleration_z");
       }
     }
