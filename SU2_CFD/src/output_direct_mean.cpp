@@ -83,7 +83,7 @@ CFlowOutput::~CFlowOutput(void) {
 
 
 
-inline void CFlowOutput::SetHistoryOutputFields(CConfig *config){
+void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
   AddHistoryOutput("INT_ITER",   "Int_Iter",   FORMAT_INTEGER, "INT_ITER");

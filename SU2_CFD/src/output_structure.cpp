@@ -3135,6 +3135,14 @@ void COutput::MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolve
           if (isPeriodic) Local_Halo[iPoint] = false;
         }
       }
+<<<<<<< HEAD
+=======
+
+      /*--- Deallocate the nodal data needed for writing restarts. ---*/
+
+      DeallocateData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
+
+>>>>>>> dfdb1fdd2aa34c744e689046639ba8daa5c6ce23
     }
     
     /*--- Sum total number of nodes that belong to the domain ---*/
@@ -7814,7 +7822,6 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   delete [] buf;
 
-  delete [] Local_Halo;
   delete [] npoint_procs;
   delete [] nPoint_Linear;
 
