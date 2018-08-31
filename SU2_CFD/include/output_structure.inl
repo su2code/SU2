@@ -99,9 +99,11 @@ inline void COutput::AddHistoryOutput(string name, string field_name, unsigned s
 }
 
 inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
-  for (unsigned short i = 0; i < marker_names.size(); i++){
-    HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
-    HistoryOutputPerSurface_List.push_back(field_name+"("+marker_names[i]+")");
+  if (marker_names.size() != 0){
+    HistoryOutputPerSurface_List.push_back(name);
+    for (unsigned short i = 0; i < marker_names.size(); i++){
+      HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
+    }
   }
 }
 
