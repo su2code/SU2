@@ -387,7 +387,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Initialize the value of the total objective function ---*/
    Total_OFRefGeom = 0.0;
    Total_OFRefNode = 0.0;
-   Total_OFRefGeom = 0.0;
+   Total_OFVolFrac = 0.0;
 
    /*--- Initialize the value of the global objective function ---*/
    Global_OFRefGeom = 0.0;
