@@ -339,6 +339,7 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated[iZone] = true;
                 }
+                  config_container[iZone]->SetiInst(INST_0);
                   solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
@@ -424,6 +425,7 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated = true;
                 }
+                config_container[iZone]->SetiInst(INST_0);
                 solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
@@ -443,6 +445,7 @@ int main(int argc, char *argv[]) {
       /*--- Steady simulation: merge the single solution file. ---*/
 
       for (iZone = 0; iZone < nZone; iZone++) {
+        config_container[iZone]->SetiInst(INST_0);
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
         solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
