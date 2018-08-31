@@ -1410,10 +1410,13 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * the Jacobian matrix once, at the beginning of the simulation.
    *
    * We don't need first_iter, because there is only one iteration per time step in linear analysis.
+   * For dynamic problems we also need to recompute the Jacobian as that is where the RHS is computed
+   * as a residual (and we need that for AD).
    */
   if ((initial_calc && linear_analysis)||
       (restart && initial_calc_restart && linear_analysis) ||
-      (dynamic && disc_adj_fem)) {
+      (dynamic && disc_adj_fem) ||
+      (dynamic && linear_analysis)) {
     Jacobian.SetValZero();
   }
   
@@ -3350,7 +3353,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
@@ -3359,9 +3361,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
-  
-  bool restart = config->GetRestart();                          // Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   bool incremental_load = config->GetIncrementalLoad();
   
@@ -3429,14 +3428,11 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
      * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
      * iteration, as the Jacobian is recomputed
      *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
-     * From then on, the Jacobian is always the same matrix.
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
+     * correct differentiation the Jacobian is recomputed every time step.
      *
      */
-    
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
-        (linear_analysis && initial_calc) ||
-        (linear_analysis && restart && initial_calc_restart)) {
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
           for(iVar = 0; iVar < nVar; iVar++) {
@@ -3669,7 +3665,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
@@ -3678,9 +3673,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
-  
-  bool restart = config->GetRestart();                          // Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   su2double alpha_f = config->Get_Int_Coeffs(2);
   
@@ -3736,14 +3728,11 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
      * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
      * iteration, as the Jacobian is recomputed
      *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
-     * From then on, the Jacobian is always the same matrix.
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
+     * correct differentiation the Jacobian is recomputed every time step.
      *
      */
-    
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
-        (linear_analysis && initial_calc) ||
-        (linear_analysis && restart && initial_calc_restart)) {
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
           for(iVar = 0; iVar < nVar; iVar++) {
