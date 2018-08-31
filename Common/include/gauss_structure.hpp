@@ -123,7 +123,7 @@ public:
  * \class CElementProperty
  * \brief Main class for defining the element properties.
  * \author R. Sanchez
- * \version 4.3.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CElementProperty {
 protected:
