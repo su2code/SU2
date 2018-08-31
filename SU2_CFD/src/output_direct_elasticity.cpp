@@ -68,20 +68,16 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
                                      unsigned short val_iZone,
                                      unsigned short val_iInst) {
 
-  bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
-              (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+  CSolver* fea_solver = solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL];
+  
+  
   bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
-  bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
 
-  unsigned short iVar;
-  unsigned short nDim = geometry[val_iZone][INST_0][MESH_0]->GetnDim();
-
-  SetOutputFieldValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetOutputFieldValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputField("INT_ITER", config[val_iZone]->GetIntIter());
+  SetHistoryOutputField("EXT_ITER", config[val_iZone]->GetExtIter());
   
-  SetOutputFieldValue("PHYS_TIME", timeused);
+  SetHistoryOutputField("PHYS_TIME", timeused);
   
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -89,57 +85,57 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
 
   
   if (linear_analysis){
-    SetOutputFieldValue("UTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)));
-    SetOutputFieldValue("RTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(1)));
+    SetHistoryOutputField("UTOL", log10(fea_solver->GetRes_RMS(0)));
+    SetHistoryOutputField("RTOL", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
-      SetOutputFieldValue("ETOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(2)));    
+      SetHistoryOutputField("ETOL", log10(fea_solver->GetRes_RMS(2)));    
     }
-    SetOutputFieldValue("DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(0)));
-    SetOutputFieldValue("DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(1)));
+    SetHistoryOutputField("DISP_X", log10(fea_solver->GetRes_RMS(0)));
+    SetHistoryOutputField("DISP_Y", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
-      SetOutputFieldValue("DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_RMS(2)));    
+      SetHistoryOutputField("DISP_Z", log10(fea_solver->GetRes_RMS(2)));    
     }
   } else if (nonlinear_analysis){
-    SetOutputFieldValue("UTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(0)));
-    SetOutputFieldValue("RTOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(1)));
+    SetHistoryOutputField("UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputField("RTOL", log10(fea_solver->GetRes_FEM(1)));
     if (nVar_FEM == 3){
-      SetOutputFieldValue("ETOL", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(2)));    
+      SetHistoryOutputField("ETOL", log10(fea_solver->GetRes_FEM(2)));    
     }
-    SetOutputFieldValue("DISP_X", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(0)));
-    SetOutputFieldValue("DISP_Y", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(1)));
+    SetHistoryOutputField("DISP_X", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputField("DISP_Y", log10(fea_solver->GetRes_FEM(1)));
     if (nVar_FEM == 3){
-      SetOutputFieldValue("DISP_Z", log10(solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetRes_FEM(2)));    
+      SetHistoryOutputField("DISP_Z", log10(fea_solver->GetRes_FEM(2)));    
     }
   }
   
-  SetOutputFieldValue("VMS", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetTotal_CFEA());
-  SetOutputFieldValue("LOAD_INCREMENT", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetLoad_Increment());
-  SetOutputFieldValue("LOAD_RAMP", solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->GetForceCoeff());
+  SetHistoryOutputField("VMS", fea_solver->GetTotal_CFEA());
+  SetHistoryOutputField("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
+  SetHistoryOutputField("LOAD_RAMP", fea_solver->GetForceCoeff());
   
 }
 
 void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
-  AddOutputField("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddOutputField("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
+  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
   
   // Misc.
-  AddOutputField("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
-  AddOutputField("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
+  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
+  AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
-  AddOutputField("UTOL",   "Res[U]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("RTOL",   "Res[R]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("ETOL",   "Res[E]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_X", "Res[DispX]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_Y", "Res[DispY]", FORMAT_FIXED,  "RESIDUALS");
-  AddOutputField("DISP_Z", "Res[DispZ]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("UTOL",   "Res[U]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("RTOL",   "Res[R]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("ETOL",   "Res[E]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("DISP_X", "Res[DispX]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("DISP_Y", "Res[DispY]", FORMAT_FIXED,  "RESIDUALS");
+  AddHistoryOutput("DISP_Z", "Res[DispZ]", FORMAT_FIXED,  "RESIDUALS");
   
   
-  AddOutputField("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
-  AddOutputField("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
-  AddOutputField("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
+  AddHistoryOutput("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
+  AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
+  AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
   
 }
 
