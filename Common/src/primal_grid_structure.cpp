@@ -40,7 +40,7 @@
 unsigned short CPrimalGrid::nDim;
 
 CPrimalGrid::CPrimalGrid(void) {
-
+  
   /*--- Set the default values for the pointers ---*/
   Nodes = NULL;
   Neighbor_Elements = NULL;
@@ -50,6 +50,7 @@ CPrimalGrid::CPrimalGrid(void) {
   Coord_FaceElems_CG = NULL;
   JacobianFaceIsConstant = NULL;
   GlobalIndex = 0;
+  
 }
 
 CPrimalGrid::~CPrimalGrid() {
@@ -152,7 +153,7 @@ CVertexMPI::CVertexMPI(unsigned long val_point, unsigned short val_nDim) : CPrim
 
 CVertexMPI::~CVertexMPI() {
   unsigned short iFaces;
-
+  
     for (iFaces = 0; iFaces < nFaces; iFaces++)
       if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
     if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
@@ -206,7 +207,7 @@ CLine::CLine(unsigned long val_point_0, unsigned long val_point_1,
 
 CLine::~CLine() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
@@ -277,7 +278,7 @@ CTriangle::~CTriangle() {
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CTriangle::Change_Orientation(void) {
@@ -343,11 +344,11 @@ CQuadrilateral::CQuadrilateral(unsigned long val_point_0, unsigned long val_poin
 
 CQuadrilateral::~CQuadrilateral() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CQuadrilateral::Change_Orientation(void) {
@@ -412,11 +413,11 @@ CTetrahedron::CTetrahedron(unsigned long val_point_0, unsigned long val_point_1,
 
 CTetrahedron::~CTetrahedron() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CTetrahedron::Change_Orientation(void) {
@@ -483,11 +484,11 @@ CHexahedron::CHexahedron(unsigned long val_point_0, unsigned long val_point_1,
 
 CHexahedron::~CHexahedron() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CHexahedron::Change_Orientation(void) {
@@ -559,11 +560,11 @@ CPrism::CPrism(unsigned long val_point_0, unsigned long val_point_1,
 
 CPrism::~CPrism() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CPrism::Change_Orientation(void) {
@@ -634,11 +635,11 @@ CPyramid::CPyramid(unsigned long val_point_0, unsigned long val_point_1,
 
 CPyramid::~CPyramid() {
   unsigned short iFaces;
-
+  
   for (iFaces = 0; iFaces < nFaces; iFaces++)
     if (Coord_FaceElems_CG[iFaces] != NULL) delete[] Coord_FaceElems_CG[iFaces];
   if (Coord_FaceElems_CG != NULL) delete[] Coord_FaceElems_CG;
-
+  
 }
 
 void CPyramid::Change_Orientation(void) {
