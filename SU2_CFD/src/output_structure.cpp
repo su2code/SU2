@@ -97,7 +97,7 @@ COutput::COutput(CConfig *config) {
   Parallel_Data      = NULL;
   Parallel_Surf_Data = NULL;
 
-  /*--- Initialiize structures for storing linear partitioning offsets ---*/
+  /*--- Initialize structures for storing linear partitioning offsets ---*/
 
   nGlobalPoint_Sort = 0;
   nLocalPoint_Sort  = 0;
@@ -653,7 +653,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
             if (nDim == 3) Buffer_Send_SkinFriction_z[nVertex_Surface] = FlowSolver->GetCSkinFriction(iMarker, iVertex, 2);
             Buffer_Send_HeatTransfer[nVertex_Surface] = FlowSolver->GetHeatFlux(iMarker, iVertex);
           }
-
           nVertex_Surface++;
         }
       }
@@ -672,7 +671,6 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
     if (nDim == 3) SU2_MPI::Gather(Buffer_Send_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_SkinFriction_z, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, Buffer_Recv_HeatTransfer, MaxLocalVertex_Surface, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
   }
-
   SU2_MPI::Gather(Buffer_Send_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, MaxLocalVertex_Surface, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
   
   /*--- The master node unpacks the data and writes the surface CSV file ---*/
@@ -1660,7 +1658,7 @@ void COutput::MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, 
   vector<unsigned long> Added_Periodic;
   Added_Periodic.clear();
   
-  if (kind_SU2 != SU2_DEF){
+  if (kind_SU2 != SU2_DEF) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
         SendRecv = config->GetMarker_All_SendRecv(iMarker);
@@ -4043,20 +4041,23 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   bool grid_movement = config->GetGrid_Movement();
   bool dynamic_fem = (config->GetDynamic_Analysis() == DYNAMIC);
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
+  bool disc_adj_fem = (config->GetKind_Solver() == DISC_ADJ_FEM);
   ofstream restart_file;
   ofstream meta_file;
   string filename, meta_filename;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-
+  
   /*--- Retrieve filename from config ---*/
   
-  if ((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) {
+  if (((config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint())) && ((config->GetKind_Solver() != DISC_ADJ_FEM)))  {
     filename = config->GetRestart_AdjFileName();
     filename = config->GetObjFunc_Extension(filename);
   } else if (fem) {
     filename = config->GetRestart_FEMFileName();
+  } else if (disc_adj_fem){
+    filename = config->GetRestart_AdjFEMFileName();
   } else {
     filename = config->GetRestart_FlowFileName();
   }
@@ -4070,7 +4071,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(config->GetiInst()));
   } else if (config->GetWrt_Unsteady()) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
-  } else if ((fem) && (config->GetWrt_Dynamic())) {
+  } else if ((fem || disc_adj_fem) && (config->GetWrt_Dynamic())) {
     filename = config->GetUnsteady_FileName(filename, SU2_TYPE::Int(iExtIter));
   }
   
@@ -4092,7 +4093,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
   }
   
   for (iVar = 0; iVar < nVar_Consv; iVar++) {
-    if ( Kind_Solver == FEM_ELASTICITY )
+  if (( Kind_Solver == FEM_ELASTICITY ) || ( Kind_Solver == DISC_ADJ_FEM))
       restart_file << "\t\"Displacement_" << iVar+1<<"\"";
     else
       restart_file << "\t\"Conservative_" << iVar+1<<"\"";
@@ -4144,7 +4145,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
       } else
         restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
     }
-
+    
     if (config->GetWrt_SharpEdges()) {
       if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)))  {
         restart_file << "\t\"Sharp_Edge_Dist\"";
@@ -4464,9 +4465,10 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_resid[]= ",\"Res_Flow[0]\",\"Res_Flow[1]\",\"Res_Flow[2]\",\"Res_Flow[3]\",\"Res_Flow[4]\"";
   char adj_flow_resid[]= ",\"Res_AdjFlow[0]\",\"Res_AdjFlow[1]\",\"Res_AdjFlow[2]\",\"Res_AdjFlow[3]\",\"Res_AdjFlow[4]\"";
   switch (config->GetKind_Turb_Model()) {
-    case SA:     SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SA_NEG: SPRINTF (turb_resid, ",\"Res_Turb[0]\""); break;
-    case SST:     SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
+    case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP: 
+      SPRINTF (turb_resid, ",\"Res_Turb[0]\"");
+      break;
+    case SST:   	SPRINTF (turb_resid, ",\"Res_Turb[0]\",\"Res_Turb[1]\""); break;
   }
   switch (config->GetKind_Turb_Model()) {
     case SA:case SA_NEG:case SA_E: case SA_COMP: case SA_E_COMP:
@@ -4613,8 +4615,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
-    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) || (iExtIter == (config[val_iZone]->GetnExtIter()-1)) ||
+    if (((iExtIter % (config[val_iZone]->GetWrt_Sol_Freq())) == 0) ||
+        ((!config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-1))) ||
+        /*--- If CL mode we need to compute the complete solution at two very particular iterations ---*/
+        ((config[val_iZone]->GetFixed_CL_Mode()) && (iExtIter == (config[val_iZone]->GetnExtIter()-2))) ||
         ((config[val_iZone]->GetFixed_CL_Mode()) && (config[val_iZone]->GetnExtIter()-config[val_iZone]->GetIter_dCL_dAlpha() - 1 == iExtIter))) {
+
       
       if ((rank == MASTER_NODE) && output_files) cout << endl << "------------------------ Evaluate Special Output ------------------------";
       
@@ -4720,7 +4726,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
     bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
-    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS or config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
+    bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
     bool adjoint =  cont_adj || disc_adj;
@@ -4828,8 +4834,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:     nVar_Turb = 1; break;
-        case SA_NEG: nVar_Turb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
       }
     }
@@ -4849,8 +4854,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     if (compressible) nVar_AdjFlow = nDim+2; else nVar_AdjFlow = nDim+2;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
-        case SA:     nVar_AdjTurb = 1; break;
-        case SA_NEG: nVar_AdjTurb = 1; break;
+        case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_AdjTurb = 1; break;
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
@@ -5034,7 +5038,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         /*--- Flow Residuals ---*/
-
+        
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
@@ -5722,9 +5726,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             else cout << "      Res[Rho]";//, cout << "     Res[RhoE]";
 
             switch (config[val_iZone]->GetKind_Turb_Model()) {
-            case SA:     cout << "       Res[nu]"; break;
-            case SA_NEG: cout << "       Res[nu]"; break;
-            case SST:     cout << "     Res[kine]" << "     Res[omega]"; break;
+              case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP:        cout << "       Res[nu]"; break;
+              case SST:	      cout << "     Res[kine]" << "     Res[omega]"; break;
             }
 
             if (weakly_coupled_heat) {
@@ -8756,6 +8759,10 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
   Plane_Normal_ = new su2double[3];
   CPressure = new su2double[geometry->GetnPoint()];
   
+  if ((rank == MASTER_NODE) && (output)) {
+    cout << endl << "Writing the spanload file (load_distribution.dat).";
+  }
+  
   /*--- Compute some reference quantities and necessary values ---*/
   
   RefDensity = solver->GetDensity_Inf();
@@ -8807,6 +8814,27 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
         Plane_Normal[0] = 0.0;
         Plane_Normal[1] = -sin(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
         Plane_Normal[2] = cos(config->GetLocationStations(iSection)*PI_NUMBER/180.0);
+        
+        /*--- Apply tilt angle to the plane ---*/
+        
+        su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+        su2double Plane_NormalY_Tilt = Plane_Normal[1];
+        su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+        
+        /*--- Apply toe angle to the plane ---*/
+        
+        su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+        su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+        su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+        su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+        
+        /*--- Update normal vector ---*/
+        
+        Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+        Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+        Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+        
       }
       else {
         Plane_Normal[1] = 1.0;
@@ -8843,11 +8871,53 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           Plane_Normal_[0] = 0.0;
           Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
           Plane_Normal_[2] = cos((config->GetLocationStations(iSection) + 0.01)*PI_NUMBER/180.0);
+          
+          /*--- Apply tilt angle to the plane ---*/
+          
+          su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+          su2double Plane_NormalY_Tilt = Plane_Normal[1];
+          su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle to the plane ---*/
+          
+          su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+          su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+          su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+          
+          /*--- Update normal vector ---*/
+          
+          Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+          Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+          Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+          
         }
         else {
           Plane_Normal_[0] = 0.0;
           Plane_Normal_[1] = -sin((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
           Plane_Normal_[2] = cos((config->GetLocationStations(iSection) - 0.01)*PI_NUMBER/180.0);
+          
+          /*--- Apply tilt angle to the plane ---*/
+          
+          su2double Tilt_Angle = config->GetNacelleLocation(3)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt = Plane_Normal[0]*cos(Tilt_Angle) + Plane_Normal[2]*sin(Tilt_Angle);
+          su2double Plane_NormalY_Tilt = Plane_Normal[1];
+          su2double Plane_NormalZ_Tilt = Plane_Normal[2]*cos(Tilt_Angle) - Plane_Normal[0]*sin(Tilt_Angle);
+          
+          /*--- Apply toe angle to the plane ---*/
+          
+          su2double Toe_Angle = config->GetNacelleLocation(4)*PI_NUMBER/180;
+          su2double Plane_NormalX_Tilt_Toe = Plane_NormalX_Tilt*cos(Toe_Angle) - Plane_NormalY_Tilt*sin(Toe_Angle);
+          su2double Plane_NormalY_Tilt_Toe = Plane_NormalX_Tilt*sin(Toe_Angle) + Plane_NormalY_Tilt*cos(Toe_Angle);
+          su2double Plane_NormalZ_Tilt_Toe = Plane_NormalZ_Tilt;
+          
+          /*--- Update normal vector ---*/
+          
+          Plane_Normal[0] = Plane_NormalX_Tilt_Toe;
+          Plane_Normal[1] = Plane_NormalY_Tilt_Toe;
+          Plane_Normal[2] = Plane_NormalZ_Tilt_Toe;
+          
         }
       }
       else {
@@ -12163,7 +12233,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     
     if (rank == MASTER_NODE) cout << endl << "Writing comma-separated values (CSV) surface files." << endl;
     
-    switch (KindSolver) {
+    switch (config[iZone]->GetKind_Solver()) {
       case EULER : case NAVIER_STOKES : case RANS :
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
@@ -12696,7 +12766,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
-
+    
   }
   
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -14374,7 +14444,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
   
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
-  
+
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
@@ -14930,6 +15000,7 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
+      break;
   }
   
   /*--- Free temporary memory from communications ---*/
@@ -14966,7 +15037,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   
   int *Local_Halo = NULL;
   int *Conn_Elem  = NULL;
-
+  
 #ifdef HAVE_MPI
   SU2_MPI::Request *send_req, *recv_req;
   SU2_MPI::Status status;
@@ -15495,7 +15566,7 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
         count++;
       }
     }
-  }  
+  }
 
   /*--- Store the particular global element count in the class data,
    and set the class data pointer to the connectivity array. ---*/
@@ -15906,7 +15977,7 @@ void COutput::SortOutputData(CConfig *config, CGeometry *geometry) {
       Parallel_Data[jj][idRecv[ii]] = connRecv[ii*VARS_PER_POINT+jj];
     }
   }
-
+  
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
   
