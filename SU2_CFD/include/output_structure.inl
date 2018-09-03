@@ -36,6 +36,7 @@
  */
 
 #pragma once
+#include "output_structure.hpp"
 
 inline su2double COutput::GetEntropyGen(unsigned short iMarkerTP, unsigned short iSpan) { return EntropyGen[iMarkerTP][iSpan]; }
 
@@ -44,3 +45,100 @@ inline su2double COutput::GetFlowAngleOut(unsigned short iMarkerTP, unsigned sho
 inline su2double COutput::GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan) { return MassFlowIn[iMarkerTP][iSpan]; }
 
 inline bool COutput::PrintOutput(unsigned long iIter, unsigned long iFreq) { return (iIter % iFreq == 0); }
+
+inline void COutput::SetHistoryOutputFields(CConfig *config){}
+
+inline void COutput::SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst) { }
+ 
+inline bool COutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { return true; }
+
+inline bool COutput::WriteScreen_Header(CConfig *config) { return true; }
+
+inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { return true; }
+
+inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
+
+inline void COutput::PrintScreenFixed(stringstream& stream, su2double val) {
+  stream.precision(6); stream.setf(ios::fixed, ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(ios::fixed);
+}
+
+inline void COutput::PrintScreenScientific(stringstream& stream, su2double val) {
+  stream.precision(4); stream.setf(ios::scientific, ios::floatfield); stream.width(field_width);
+  stream << std::right << val;
+  stream.unsetf(ios::scientific);  
+}
+
+inline void COutput::PrintScreenInteger(stringstream& stream, unsigned long val) {
+  stream.width(field_width);
+  stream << std::right << val;
+}
+
+inline void COutput::PrintScreenHeaderString(stringstream& stream, string header) {
+  if (header.size() > field_width-1) header.resize(field_width-1);
+  stream << std::right << std::setw(field_width) << header; 
+}
+
+inline void COutput::AddHistoryValue(su2double val) { 
+  HistoryValues.push_back(val);
+}
+
+inline void COutput::AddHistoryHeaderString(string header) {
+  HistoryHeader.push_back(header); 
+}
+
+inline void COutput::PrintHistorySep(stringstream& stream){
+  stream << HistorySep;
+}
+
+inline void COutput::AddHistoryOutput(string name, string field_name, unsigned short format, string groupname ){
+  HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname);
+  HistoryOutput_List.push_back(name);
+}
+
+inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
+  if (marker_names.size() != 0){
+    HistoryOutputPerSurface_List.push_back(name);
+    for (unsigned short i = 0; i < marker_names.size(); i++){
+      HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
+    }
+  }
+}
+
+inline void COutput::SetHistoryOutputValue(string name, su2double value){
+  if (HistoryOutput_Map.count(name) > 0){
+    HistoryOutput_Map[name].Value = value;
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+  }
+}
+
+inline void COutput::SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker){
+  if (HistoryOutputPerSurface_Map.count(name) > 0){
+    HistoryOutputPerSurface_Map[name][iMarker].Value = value;
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);
+  }
+}
+
+inline void COutput::AddVolumeOutput(string name, string field_name, string groupname){
+  VolumeOutput_Map[name] = VolumeOutputField(field_name, -1, groupname);
+  VolumeOutput_List.push_back(name);
+}
+
+inline void COutput::SetVolumeOutputValue(string name, unsigned long iPoint, su2double value){
+  if (VolumeOutput_Map.count(name) > 0){
+    if (VolumeOutput_Map[name].Offset != -1){
+      Local_Data[iPoint][VolumeOutput_Map[name].Offset] = value;
+    }
+  } else {
+    SU2_MPI::Error(string("Cannot find output field with name ") + name, CURRENT_FUNCTION);    
+  }
+}
+inline void COutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint) {}
+
+inline void COutput::SetVolumeOutputFields(CConfig *config) {}
+
+inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {}

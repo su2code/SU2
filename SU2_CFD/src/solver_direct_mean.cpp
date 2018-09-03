@@ -16347,7 +16347,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         
       }
-      
+       
       /*--- Project forces and store the non-dimensional coefficients ---*/
       
       if (Monitoring == YES) {

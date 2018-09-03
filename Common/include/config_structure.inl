@@ -1924,3 +1924,14 @@ inline su2double CConfig::GetTime_Step(void) { return Time_Step; }
 
 inline bool CConfig::GetMultizone_Mesh(void) { return Multizone_Mesh; }
 
+inline unsigned short CConfig::GetnScreenOutput(void) { return nScreenOutput; }
+
+inline string CConfig::GetScreenOutput_Field(unsigned short iField) { return ScreenOutput[iField]; }
+
+inline unsigned short CConfig::GetnHistoryOutput(void) { return nHistoryOutput; }
+
+inline string CConfig::GetHistoryOutput_Field(unsigned short iField) { return HistoryOutput[iField]; }
+
+inline unsigned short CConfig::GetnVolumeOutput(void) { return nVolumeOutput; }
+
+inline string CConfig::GetVolumeOutput_Field(unsigned short iField) { return VolumeOutput[iField]; }
