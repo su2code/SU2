@@ -209,53 +209,53 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];  
   CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];
   
-  SetHistoryOutputField("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputField("EXT_ITER", config[val_iZone]->GetExtIter());
-  SetHistoryOutputField("PRESSURE", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputField("VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputField("VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
-  if (nDim == 3) SetHistoryOutputField("VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
+  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
+  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 3) SetHistoryOutputValue("VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
  
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputField("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputField("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputField("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
   }
   if (weakly_coupled_heat){
-    SetHistoryOutputField("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
-    SetHistoryOutputField("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
-    SetHistoryOutputField("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-    SetHistoryOutputField("HEAT",         log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
+    SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
+    SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
+    SetHistoryOutputValue("HEAT",         log10(heat_solver->GetRes_RMS(0)));
   }
   if (heat){
-    SetHistoryOutputField("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
-    SetHistoryOutputField("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
-    SetHistoryOutputField("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    if (nDim == 3) SetHistoryOutputField("HEAT",         log10(flow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputField("HEAT",         log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
+    SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
+    SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
+    if (nDim == 3) SetHistoryOutputValue("HEAT",         log10(flow_solver->GetRes_RMS(4)));
+    else           SetHistoryOutputValue("HEAT",         log10(flow_solver->GetRes_RMS(3)));
 
   }
-  SetHistoryOutputField("DRAG", flow_solver->GetTotal_CD());
-  SetHistoryOutputField("LIFT", flow_solver->GetTotal_CL());
+  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
+  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
-    SetHistoryOutputField("SIDEFORCE", flow_solver->GetTotal_CSF());
-  SetHistoryOutputField("MOMENT-X", flow_solver->GetTotal_CMx());
-  SetHistoryOutputField("MOMENT-Y", flow_solver->GetTotal_CMy());
+    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
+  SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
+  SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
   if (nDim == 3)
-    SetHistoryOutputField("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputField("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputField("FORCE-Y", flow_solver->GetTotal_CFy());
+    SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
+  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
+  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
-    SetHistoryOutputField("FORCE-Z", flow_solver->GetTotal_CFz());
+    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   
-  SetHistoryOutputField("AOA", config[val_iZone]->GetAoA());
-  SetHistoryOutputField("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
-  SetHistoryOutputField("PHYS_TIME", timeused);
-  SetHistoryOutputField("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
+  SetHistoryOutputValue("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
+  SetHistoryOutputValue("PHYS_TIME", timeused);
+  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   
   
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {

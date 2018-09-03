@@ -107,7 +107,7 @@ inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, 
   }
 }
 
-inline void COutput::SetHistoryOutputField(string name, su2double value){
+inline void COutput::SetHistoryOutputValue(string name, su2double value){
   if (HistoryOutput_Map.count(name) > 0){
     HistoryOutput_Map[name].Value = value;
   } else {

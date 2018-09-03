@@ -71,16 +71,16 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   
   CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];  
   
-  SetHistoryOutputField("EXT_ITER",     config[val_iZone]->GetExtIter());
-  SetHistoryOutputField("INT_ITER",     config[val_iZone]->GetIntIter());
+  SetHistoryOutputValue("EXT_ITER",     config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("INT_ITER",     config[val_iZone]->GetIntIter());
   
-  SetHistoryOutputField("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
-  SetHistoryOutputField("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
-  SetHistoryOutputField("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-  SetHistoryOutputField("HEAT", log10(heat_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
+  SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
+  SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
+  SetHistoryOutputValue("HEAT", log10(heat_solver->GetRes_RMS(0)));
   
-  SetHistoryOutputField("PHYS_TIME", timeused);
-  SetHistoryOutputField("LINSOL_ITER", heat_solver->GetIterLinSolver());
+  SetHistoryOutputValue("PHYS_TIME", timeused);
+  SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
   
 }
   
