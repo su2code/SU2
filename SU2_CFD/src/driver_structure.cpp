@@ -438,6 +438,7 @@ CDriver::CDriver(char* confFile,
     }
 
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
+
   }
 
   /*--- Definition of the interface and transfer conditions between different zones.
@@ -1280,9 +1281,9 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       solver_container[val_iInst][iMGlevel][FEA_SOL] = new CFEASolver(geometry[val_iInst][iMGlevel], config);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FEA_SOL]->GetnVar();
     }
-      
+    
     /*--- Allocate solution for adjoint problem ---*/
-       
+    
     if (adj_euler) {
       if (compressible) {
         solver_container[val_iInst][iMGlevel][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
@@ -1611,7 +1612,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   }
 
   /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
-
+  
 
 }
 
@@ -1626,7 +1627,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
   /*--- Initialize some useful booleans ---*/
-
+  
   euler            = false;  ns              = false;  turbulent = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
   spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
@@ -1639,7 +1640,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
 
   /*--- Assign booleans ---*/
-
+  
   switch (config->GetKind_Solver()) {
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
@@ -1665,9 +1666,9 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case DISC_ADJ_DG_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
-
+  
   /*--- Assign turbulence model booleans ---*/
-
+  
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
     case SA:     spalart_allmaras = true;     break;
@@ -1677,20 +1678,20 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case SA_COMP: comp_spalart_allmaras = true; break;
     case SA_E_COMP: e_comp_spalart_allmaras = true; break;
     }
-
+  
   /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
    and potential are incompatible, they use the same position in sol container ---*/
-
+  
   for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
+    
     /*--- DeAllocate solution for a template problem ---*/
-
+    
     if (template_solver) {
       delete solver_container[val_iInst][iMGlevel][TEMPLATE_SOL];
     }
 
     /*--- DeAllocate solution for adjoint problem ---*/
-
+    
     if (adj_euler || adj_ns || disc_adj) {
       delete solver_container[val_iInst][iMGlevel][ADJFLOW_SOL];
       if (disc_adj_turb || adj_turb) {
@@ -1699,7 +1700,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     }
 
     /*--- DeAllocate solution for direct problem ---*/
-
+    
     if (euler || ns) {
       delete solver_container[val_iInst][iMGlevel][FLOW_SOL];
     }
@@ -1894,7 +1895,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
                                      CConfig *config, unsigned short val_iInst) {
 
   unsigned short iMGlevel, iSol, nDim,
-
+  
   nVar_Template         = 0,
   nVar_Flow             = 0,
   nVar_Trans            = 0,
@@ -1905,9 +1906,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_FEM              = 0,
   nVar_Wave             = 0,
   nVar_Heat             = 0;
-
+  
   su2double *constants = NULL;
-
+  
   bool
   euler, adj_euler,
   ns, adj_ns,
@@ -1958,7 +1959,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
-
+  
   /*--- Assign turbulence model booleans ---*/
 
   if (turbulent || fem_turbulent)
@@ -1971,7 +1972,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       case SST:    menter_sst = true; constants = solver_container[val_iInst][MESH_0][TURB_SOL]->GetConstants(); break;
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
-
+  
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
@@ -2018,10 +2019,10 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         numerics_container[val_iInst][iMGlevel][iSol] = new CNumerics* [MAX_TERMS];
     }
   }
-
+  
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Template()) {
       case SPACE_CENTERED : case SPACE_UPWIND :
@@ -2030,7 +2031,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         break;
       default : SU2_MPI::Error("Convective scheme not implemented (template_solver).", CURRENT_FUNCTION); break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
       numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][VISC_TERM] = new CViscous_Template(nDim, nVar_Template, config);
@@ -2043,18 +2044,18 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM] = new CConvective_Template(nDim, nVar_Template, config);
     }
-
+    
   }
-
+  
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((euler) || (ns)) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
       case NO_CONVECTIVE :
         SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
-
+        
       case SPACE_CENTERED :
         if (compressible) {
           /*--- Compressible flow ---*/
@@ -2098,27 +2099,27 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
               if (ideal_gas) {
-
+                
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                   numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, roe_low_dissipation);
                   numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
                 }
               } else {
-
+                
                 for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                   numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
                   numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwGeneralRoe_Flow(nDim, nVar_Flow, config);
                 }
               }
               break;
-
+              
             case AUSM:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
               }
               break;
-
+              
             case TURKEL:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwTurkel_Flow(nDim, nVar_Flow, config);
@@ -2167,14 +2168,14 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
                 }
               }
               break;
-
+              
             case MSW:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwMSW_Flow(nDim, nVar_Flow, config);
               }
               break;
-
+              
             case CUSP:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwCUSP_Flow(nDim, nVar_Flow, config);
@@ -2184,7 +2185,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
               
             default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
-
+          
         }
         if (incompressible) {
           /*--- Incompressible flow, use artificial compressibility method ---*/
@@ -2200,16 +2201,16 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
           }
         }
         break;
-
+        
       default :
         SU2_MPI::Error("Convective scheme not implemented (Euler and Navier-Stokes).", CURRENT_FUNCTION);
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
       if (ideal_gas) {
-
+        
         /*--- Compressible flow Ideal gas ---*/
         numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrected_Flow(nDim, nVar_Flow, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2220,7 +2221,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
           numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_Flow(nDim, nVar_Flow, config);
         
       } else {
-
+        
         /*--- Compressible flow Realgas ---*/
         numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CGeneralAvgGradCorrected_Flow(nDim, nVar_Flow, config);
         for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
@@ -2242,10 +2243,10 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
+      
       if (config->GetBody_Force() == YES)
         if (incompressible) numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
         else numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
@@ -2265,7 +2266,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       
       numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
-
+    
   }
 
   /*--- Riemann solver definition for the Potential, Euler, Navier-Stokes problems ---*/
@@ -2342,11 +2343,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
 
   /*--- Solver definition for the turbulent model problem ---*/
-
+  
   if (turbulent) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NONE :
         break;
@@ -2362,9 +2363,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         SU2_MPI::Error("Convective scheme not implemented (turbulent).", CURRENT_FUNCTION);
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras){
         numerics_container[val_iInst][iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA(nDim, nVar_Turb, true, config);
@@ -2372,9 +2373,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else if (neg_spalart_allmaras) numerics_container[val_iInst][iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSA_Neg(nDim, nVar_Turb, true, config);
       else if (menter_sst) numerics_container[val_iInst][iMGlevel][TURB_SOL][VISC_TERM] = new CAvgGrad_TurbSST(nDim, nVar_Turb, constants, true, config);
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA(nDim, nVar_Turb, config);
       else if (e_spalart_allmaras) numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSA_E(nDim, nVar_Turb, config);
@@ -2384,9 +2385,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else if (menter_sst) numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TurbSST(nDim, nVar_Turb, constants, config);
       numerics_container[val_iInst][iMGlevel][TURB_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Turb, config);
     }
-
+    
     /*--- Definition of the boundary condition method ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
         numerics_container[val_iInst][iMGlevel][TURB_SOL][CONV_BOUND_TERM] = new CUpwSca_TurbSA(nDim, nVar_Turb, config);
@@ -2402,10 +2403,10 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       }
     }
   }
-
+  
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NONE :
@@ -2419,27 +2420,27 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         SU2_MPI::Error("Convective scheme not implemented (transition).", CURRENT_FUNCTION);
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
       numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
     }
-
+    
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
     }
   }
-
+  
   /*--- Solver definition for the poisson potential problem ---*/
   if (poisson) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
     
@@ -2479,7 +2480,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
   /*--- Solver definition for the poisson potential problem ---*/
   if (heat) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     numerics_container[val_iInst][MESH_0][HEAT_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Heat, config);
     
@@ -2488,31 +2489,31 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     numerics_container[val_iInst][MESH_0][HEAT_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Heat, config);
     
   }
-
+  
   /*--- Solver definition for the flow adjoint problem ---*/
-
+  
   if (adj_euler || adj_ns) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case NO_CONVECTIVE :
         SU2_MPI::Error("No convective scheme.", CURRENT_FUNCTION);
         break;
-
+        
       case SPACE_CENTERED :
-
+        
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case NO_CENTERED : cout << "No centered scheme." << endl; break;
             case LAX : numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             case JST : numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM] = new CCentJST_AdjFlow(nDim, nVar_Adj_Flow, config); break;
             default : SU2_MPI::Error("Centered scheme not implemented.", CURRENT_FUNCTION); break;
           }
-
+          
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM] = new CCentLax_AdjFlow(nDim, nVar_Adj_Flow, config);
           
@@ -2520,21 +2521,21 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
             numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_AdjFlow(nDim, nVar_Adj_Flow, config);
           
         }
-
+        
         if (incompressible) {
 
           SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
 
         }
-
+        
         break;
-
+        
       case SPACE_UPWIND :
-
+        
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Upwind_AdjFlow()) {
             case NO_UPWIND : cout << "No upwind scheme." << endl; break;
             case ROE:
@@ -2546,24 +2547,24 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
             default : SU2_MPI::Error("Upwind scheme not implemented.", CURRENT_FUNCTION); break;
           }
         }
-
+        
         if (incompressible) {
           
           SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
 
         }
-
+        
         break;
-
+        
       default :
         SU2_MPI::Error("Convective scheme not implemented (adj_euler and adj_ns).", CURRENT_FUNCTION);
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
+    
     if (compressible) {
-
+      
       /*--- Compressible flow ---*/
       
       numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][VISC_TERM] = new CAvgGradCorrected_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -2573,23 +2574,23 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
         numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM] = new CAvgGrad_AdjFlow(nDim, nVar_Adj_Flow, config);
       }
-
+      
     }
-
+    
     if (incompressible) {
       
       SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
 
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
+      
       /*--- Note that RANS is incompatible with Axisymmetric or Rotational (Fix it!) ---*/
-
+      
       if (compressible) {
-
+        
         if (adj_ns) {
           
           numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceViscous_AdjFlow(nDim, nVar_Adj_Flow, config);
@@ -2600,9 +2601,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
             numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceConservative_AdjFlow(nDim, nVar_Adj_Flow, config);
           
         }
-
+        
         else {
-
+          
           if (config->GetRotating_Frame() == YES)
             numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM] = new CSourceRotatingFrame_AdjFlow(nDim, nVar_Adj_Flow, config);
           else if (config->GetAxisymmetric() == YES)
@@ -2613,19 +2614,19 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
           numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Adj_Flow, config);
           
         }
-
+        
       }
-
+      
       if (incompressible) {
         
         SU2_MPI::Error("Schemes not implemented for incompressible continuous adjoint.", CURRENT_FUNCTION);
 
       }
-
+      
     }
-
+    
   }
-
+  
   /*--- Solver definition for the turbulent adjoint problem ---*/
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
@@ -2647,7 +2648,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
         SU2_MPI::Error("Convective scheme not implemented (adj_turb).", CURRENT_FUNCTION);
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
@@ -2660,7 +2661,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else if (comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC SA turbulence model not implemented.", CURRENT_FUNCTION);}
       else if (e_comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC Edward's SA turbulence model not implemented.", CURRENT_FUNCTION);}
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
@@ -2673,7 +2674,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else if (comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC SA turbulence model not implemented.", CURRENT_FUNCTION);}
       else if (e_comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC Edward's SA turbulence model not implemented.", CURRENT_FUNCTION);}
     }
-
+    
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) numerics_container[val_iInst][iMGlevel][ADJTURB_SOL][CONV_BOUND_TERM] = new CUpwLin_AdjTurb(nDim, nVar_Adj_Turb, config);
@@ -2683,7 +2684,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else if (comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC SA turbulence model not implemented.", CURRENT_FUNCTION);}
       else if (e_comp_spalart_allmaras) {SU2_MPI::Error("Adjoint CC Edward's SA turbulence model not implemented.", CURRENT_FUNCTION);}
     }
-
+    
   }
 
   /*--- Solver definition for the wave problem ---*/
@@ -2774,8 +2775,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
                                       CConfig *config, unsigned short val_iInst) {
   
   unsigned short iMGlevel, iSol;
-
-
+  
+  
   bool
   euler, adj_euler,
   ns, adj_ns,
@@ -2793,7 +2794,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-
+  
   /*--- Initialize some useful booleans ---*/
   euler            = false; ns     = false; turbulent     = false;
   fem_euler        = false; fem_ns = false; fem_turbulent = false;
@@ -2825,7 +2826,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
   }
-
+  
   /*--- Assign turbulence model booleans ---*/
 
   if (turbulent || fem_turbulent)
@@ -2838,10 +2839,10 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       case SA_E_COMP: e_comp_spalart_allmaras = true; break;
 
     }
-
+  
   /*--- Solver definition for the template problem ---*/
   if (template_solver) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Template()) {
       case SPACE_CENTERED : case SPACE_UPWIND :
@@ -2849,7 +2850,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_TERM];
         break;
     }
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
       delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][VISC_TERM];
@@ -2858,18 +2859,18 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       /*--- Definition of the boundary condition method ---*/
       delete numerics_container[val_iInst][iMGlevel][TEMPLATE_SOL][CONV_BOUND_TERM];
     }
-
+    
   }
-
+  
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((euler) || (ns)) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Flow()) {
-
+        
       case SPACE_CENTERED :
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
           switch (config->GetKind_Centered_Flow()) {
             case LAX : case JST :  case JST_KE : delete numerics_container[val_iInst][MESH_0][FLOW_SOL][CONV_TERM]; break;
@@ -2897,7 +2898,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         }
         break;
       case SPACE_UPWIND :
-
+        
         if (compressible) {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
@@ -2906,10 +2907,10 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
               }
-
+              
               break;
           }
-
+          
         }
         if (incompressible) {
           /*--- Incompressible flow, use preconditioning method ---*/
@@ -2922,10 +2923,10 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
               break;
           }
         }
-
+        
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible||incompressible) {
       /*--- Compressible flow Ideal gas ---*/
@@ -2938,13 +2939,13 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
       
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
       delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
     }
-
+    
   }
 
   /*--- DG-FEM solver definition for Euler, Navier-Stokes problems ---*/
@@ -2979,11 +2980,11 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   }
 
   /*--- Solver definition for the turbulent model problem ---*/
-
+  
   if (turbulent) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -2992,7 +2993,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         }
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     
       if (spalart_allmaras || neg_spalart_allmaras ||menter_sst|| comp_spalart_allmaras || e_spalart_allmaras || e_comp_spalart_allmaras){
@@ -3006,12 +3007,12 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
       }
     }
-
+    
   }
-
+  
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case SPACE_UPWIND :
@@ -3020,7 +3021,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         }
         break;
     }
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       /*--- Definition of the viscous scheme for each equation and mesh level ---*/
       delete numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM];
@@ -3058,7 +3059,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   
   /*--- Solver definition for the poisson potential problem ---*/
   if (poisson || heat) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM];
     
@@ -3067,26 +3068,26 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     delete numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_SECOND_TERM];
     
   }
-
+  
   /*--- Solver definition for the flow adjoint problem ---*/
-
+  
   if (adj_euler || adj_ns ) {
-
+    
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
-
+    
     switch (config->GetKind_ConvNumScheme_AdjFlow()) {
       case SPACE_CENTERED :
-
+        
         if (compressible) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
               delete numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM];
               break;
           }
-
+          
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
           
@@ -3094,16 +3095,16 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
             delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
           
         }
-
+        
         if (incompressible) {
-
+          
           /*--- Incompressible flow, use artificial compressibility method ---*/
-
+          
           switch (config->GetKind_Centered_AdjFlow()) {
             case LAX : case JST:
               delete numerics_container[val_iInst][MESH_0][ADJFLOW_SOL][CONV_TERM]; break;
           }
-
+          
           for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
             delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_TERM];
           
@@ -3111,15 +3112,15 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
             delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][CONV_BOUND_TERM];
           
         }
-
+        
         break;
-
+        
       case SPACE_UPWIND :
-
+        
         if (compressible || incompressible) {
-
+          
           /*--- Compressible flow ---*/
-
+          
           switch (config->GetKind_Upwind_AdjFlow()) {
             case ROE:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
@@ -3129,26 +3130,26 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
               break;
           }
         }
-
+        
         break;
     }
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
+    
     if (compressible || incompressible) {
-
+      
       /*--- Compressible flow ---*/
       for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
         delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_TERM];
         delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][VISC_BOUND_TERM];
       }
     }
-
+    
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-
+      
+      
       if (compressible || incompressible) {
         
         delete numerics_container[val_iInst][iMGlevel][ADJFLOW_SOL][SOURCE_FIRST_TERM];
@@ -3156,15 +3157,15 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         
       }
     }
-
+    
   }
-
-
+  
+  
   /*--- Solver definition for the turbulent adjoint problem ---*/
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
-
+        
       case SPACE_UPWIND :
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
           if (spalart_allmaras) {
@@ -3172,8 +3173,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           }
         break;
     }
-
-
+    
+    
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       if (spalart_allmaras) {
         /*--- Definition of the viscous scheme for each equation and mesh level ---*/
@@ -3186,18 +3187,18 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
       }
     }
   }
-
+  
   /*--- Solver definition for the wave problem ---*/
   if (wave) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[val_iInst][MESH_0][WAVE_SOL][VISC_TERM];
     
   }
-
+  
   /*--- Solver definition for the FEA problem ---*/
   if (fem) {
-
+    
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     delete numerics_container[val_iInst][MESH_0][FEA_SOL][FEA_TERM];
     
@@ -3383,7 +3384,7 @@ void CDriver::Interface_Preprocessing() {
             markTarget = iMarkerTarget;
 
             break;
-        }
+        } 
         }
 
 #ifdef HAVE_MPI
@@ -3423,7 +3424,7 @@ void CDriver::Interface_Preprocessing() {
 
 #else
       Donor_check  = markDonor;
-      Target_check = markTarget;
+      Target_check = markTarget;  
 #endif
 
       /* --- Check ifzones are actually sharing the interface boundary, if not skip ---*/        
@@ -3436,7 +3437,7 @@ void CDriver::Interface_Preprocessing() {
       fluid_target      = false; 
       structural_target = false;
 
-      fluid_donor       = false;
+      fluid_donor       = false; 
       structural_donor  = false;
 
       heat_donor        = false;
@@ -3493,7 +3494,7 @@ void CDriver::Interface_Preprocessing() {
 
         /*--- If the mesh is matching: match points ---*/
       if ( config_container[donorZone]->GetMatchingMesh() ) {
-        if (rank == MASTER_NODE)
+        if (rank == MASTER_NODE) 
             cout << "between matching meshes. " << endl;
         geometry_container[donorZone][INST_0][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], donorZone, nZone);
         }
@@ -3622,9 +3623,10 @@ void CDriver::Interface_Preprocessing() {
   }
 
 #ifdef HAVE_MPI
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE) 
   delete [] Buffer_Recv_mark;
 #endif
+
 }
 
 void CDriver::InitStaticMeshMovement(){
@@ -3854,7 +3856,9 @@ void CDriver::StartSolver(){
       Run();
 
       /*--- Update the solution for dual time stepping strategy ---*/
+
       Update();
+
     }
     
     /*--- In the FSIDriver case, mesh and solution updates are already included into the Run function ---*/
@@ -3869,12 +3873,15 @@ void CDriver::StartSolver(){
     if (config_container[ZONE_0]->GetJacobian_Spatial_Discretization_Only()) break;
 
     /*--- Monitor the computations after each iteration. ---*/
+
     Monitor(ExtIter);
 
     /*--- Output the solution in files. ---*/
+
     Output(ExtIter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
+
     if (StopCalc) break;
 
     ExtIter++;
@@ -3890,7 +3897,7 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
   /*--- Set the value of the external iteration. ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetExtIter(ExtIter);
-
+  
 
   /*--- Read the target pressure ---*/
 
@@ -3938,15 +3945,15 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
   
   /*--- Check if there is any change in the runtime parameters ---*/
-
+  
   CConfig *runtime = NULL;
   strcpy(runtime_file_name, "runtime.dat");
   runtime = new CConfig(runtime_file_name, config_container[ZONE_0]);
   runtime->SetExtIter(ExtIter);
   delete runtime;
-
+  
   /*--- Update the convergence history file (serial and parallel computations). ---*/
-
+  
   if (!fsi) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (iInst = 0; iInst < nInst[iZone]; iInst++)
@@ -3965,7 +3972,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
 
   /*--- Check whether the current simulation has reached the specified
    convergence criteria, and set StopCalc to true, if so. ---*/
-
+  
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
@@ -3980,9 +3987,9 @@ bool CDriver::Monitor(unsigned long ExtIter) {
     case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
-
+  
   return StopCalc;
-
+  
 }
 
 void CDriver::Output(unsigned long ExtIter) {
@@ -4184,7 +4191,7 @@ void CFluidDriver::Run() {
    at the beginning of the computation ---*/
 
   if ( unsteady ) {
-    for (iZone = 0; iZone < nZone; iZone++) {
+    for (iZone = 0; iZone < nZone; iZone++) {   
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
         interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
@@ -4193,7 +4200,7 @@ void CFluidDriver::Run() {
 
   /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
 
-  if (unsteady)
+  if (unsteady) 
     nIntIter = config_container[MESH_0]->GetUnst_nIntIter();
   else
     nIntIter = 1;
@@ -4201,7 +4208,7 @@ void CFluidDriver::Run() {
   for (IntIter = 0; IntIter < nIntIter; IntIter++) {
 
     /*--- At each pseudo time-step updates transfer data ---*/
-    for (iZone = 0; iZone < nZone; iZone++)
+    for (iZone = 0; iZone < nZone; iZone++)   
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
           Transfer_Data(iZone, jZone);
