@@ -1564,9 +1564,14 @@ public:
   void Relaxation();
 
   /*!
-   * \brief Run one iteration in all physical zones.
+   * \brief Run a Block Gauss-Seidel iteration in all physical zones.
    */
-  void Run();
+  void Run_GaussSeidel();
+
+  /*!
+   * \brief Run a Block-Jacobi iteration in all physical zones.
+   */
+  void Run_Jacobi();
 
   /*!
    * \brief Update the dual-time solution within multiple zones.

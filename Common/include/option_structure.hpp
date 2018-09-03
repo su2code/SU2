@@ -250,21 +250,13 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
  * \brief different solver types for the multizone environment component
  */
 enum ENUM_MULTIZONE {
-  MZ_NO_SOLVER = 0,                     /*!< \brief Definition of no multizone solver. */
-  MZ_FLUID_STRUCTURE_INTERACTION = 1,   /*!< \brief Definition of a FSI solver. */
-  MZ_TURBOMACHINERY = 2,                /*!< \brief Definition of a Turbomachinery solver. */
-  MZ_SLIDING_MESH = 3,                  /*!< \brief Definition of a Multizone Sliding mesh solver. */
-  MZ_CONJUGATE_HEAT = 4,                /*!< \brief Definition of a Conjugate Heat solver. */
-  MZ_GENERIC = 5                        /*!< \brief Definition of a Generic Multizone solver. */
+  MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
+  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM_MULTIZONE>
-("NONE", MZ_NO_SOLVER)
-("FLUID_STRUCTURE_INTERACTION", MZ_FLUID_STRUCTURE_INTERACTION)
-("TURBOMACHINERY", MZ_TURBOMACHINERY)
-("SLIDING_MESH", MZ_SLIDING_MESH)
-("CONJUGATE_HEAT", MZ_CONJUGATE_HEAT)
-("GENERIC", MZ_GENERIC);
+("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
+("BLOCK_JACOBI", MZ_BLOCK_JACOBI);
 
 /*!
  * \brief types of fluid solvers
