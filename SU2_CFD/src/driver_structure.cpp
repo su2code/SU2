@@ -3506,7 +3506,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {
     for (iZone = 0; iZone < nZone; iZone++){
       if (!(config_container[iZone]->GetMultizone_Problem())) // This needs to be changed everywhere in the code, in a future PR
-        output->SetCFL_Number(solver_container, config_container, iZone);
+        output[iZone]->SetCFL_Number(solver_container, config_container, iZone);
     }
   }
 
@@ -5647,7 +5647,7 @@ void CFSIDriver::Update() {
   /*-------------------- Update fluid solver ------------------------*/
   /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_FLOW][INST_0]->Update(output, integration_container, geometry_container,
+  iteration_container[ZONE_FLOW][INST_0]->Update(output[ZONE_FLOW], integration_container, geometry_container,
                        solver_container, numerics_container, config_container,
                        surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
@@ -5655,7 +5655,7 @@ void CFSIDriver::Update() {
   /*----------------- Update structural solver ----------------------*/
   /*-----------------------------------------------------------------*/
 
-  iteration_container[ZONE_STRUCT][INST_0]->Update(output, integration_container, geometry_container,
+  iteration_container[ZONE_STRUCT][INST_0]->Update(output[ZONE_STRUCT], integration_container, geometry_container,
                          solver_container, numerics_container, config_container,
                          surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
 
@@ -6293,7 +6293,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
 
   config_container[ZONE_FLOW]->SetIntIter(0);
 
-  direct_iteration[ZONE_FLOW]->Iterate(output[iZone], integration_container, geometry_container,
+  direct_iteration[ZONE_FLOW]->Iterate(output[ZONE_FLOW], integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, ZONE_FLOW, INST_0);
 
@@ -6330,7 +6330,7 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
   /*--------------- Iterate the structural solver -------------------*/
   /*-----------------------------------------------------------------*/
 
-  direct_iteration[ZONE_STRUCT]->Iterate(output[iZone], integration_container, geometry_container,
+  direct_iteration[ZONE_STRUCT]->Iterate(output[ZONE_STRUCT], integration_container, geometry_container,
                                         solver_container, numerics_container, config_container,
                                         surface_movement, grid_movement, FFDBox, ZONE_STRUCT, INST_0);
 
