@@ -3513,6 +3513,7 @@ void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
+                                          string val_marker,
                                           CGeometry *geometry,
                                           CConfig *config) {
 
@@ -3530,7 +3531,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short position = nDim+2+nDim;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4709,6 +4712,7 @@ void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned long val_inlet_point,
                                            unsigned short val_kind_marker,
+                                           string val_marker,
                                            CGeometry *geometry,
                                            CConfig *config) {
 
@@ -4727,7 +4731,9 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short omega_position = nDim+2+nDim+1;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
