@@ -96,7 +96,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
-    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION_FVM:
       heat_zone = true;
       break;
     }
@@ -182,15 +182,15 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-    if (config_container[iZone]->GetInvDesign_Cp() == YES)
-      output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+//    if (config_container[iZone]->GetInvDesign_Cp() == YES)
+//      output[iZone]->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
 
     /*--- Read the target heat flux ----------------------------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-    if (config_container[iZone]->GetInvDesign_HeatFlux() == YES)
-      output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+//    if (config_container[iZone]->GetInvDesign_HeatFlux() == YES)
+//      output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
@@ -209,7 +209,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Predictor(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
@@ -261,7 +261,7 @@ void CMultizoneDriver::Run() {
       }
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Iterate_Block(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A relaxation step can help preventing numerical instabilities ---*/
@@ -282,7 +282,7 @@ void CMultizoneDriver::Run() {
 void CMultizoneDriver::Relaxation() {
 
     if (config_container[iZone]->GetRelaxation())
-      iteration_container[iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Relaxation(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
 }
@@ -381,9 +381,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
       if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
       if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
     }
-    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-        config_container, integration_container, 0,
-        ZONE_FLOW, ZONE_FEA, false);
+ //   output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+ //       config_container, integration_container, 0,
+ //       ZONE_FLOW, ZONE_FEA, false);
   }
 
   return Convergence;
@@ -409,7 +409,7 @@ void CMultizoneDriver::Update() {
         }
       }
 
-    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
