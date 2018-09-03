@@ -307,6 +307,17 @@ COutput::COutput(CConfig *config) {
       }
     }
   }
+  
+  nHistoryOutput = config->GetnHistoryOutput();
+  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
+    HistoryFields.push_back(config->GetHistoryOutput_Field(iField));
+  }
+  
+  nScreenOutput = config->GetnScreenOutput();
+  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+    ScreenFields.push_back(config->GetScreenOutput_Field(iField));
+  }
+  
 }
 
 COutput::~COutput(void) {
@@ -8529,11 +8540,11 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
   }
   
   string currentField;
-   
+  
   bool found_field = false;
   
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    currentField = config->GetHistoryOutput_Field(iField);   
+  for (unsigned short iField = 0; iField <nHistoryOutput; iField++){
+    currentField = HistoryFields[iField];   
     found_field = false;
     for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
       HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
@@ -8584,8 +8595,8 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   
   HistoryValues.clear();
   
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    currentField = config->GetHistoryOutput_Field(iField);   
+  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
+    currentField = HistoryFields[iField];   
     
     for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
       HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
@@ -8596,8 +8607,8 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   }
   
   
-  for (unsigned short iField = 0; iField < config->GetnHistoryOutput(); iField++){
-    currentField = config->GetHistoryOutput_Field(iField);   
+  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
+    currentField = HistoryFields[iField];   
     
     for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
       for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
@@ -8619,15 +8630,18 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
   HistFile.flush();
 }
 
-void COutput::SetScreen_Header(CConfig *config) { 
-  
+void COutput::SetScreen_Header(CConfig *config) {
+
+  const std::string sep = " |" ;
+  const int total_width = field_width*nScreenOutput + sep.size() * nScreenOutput ;
+  const std::string line = sep + std::string( total_width-1, '-' ) + '|' ;
   stringstream out;
   string currentField;
   // Insert line break
-  out << endl;
+  out << line << '\n' << sep;
   // Evaluate the requested output
-  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
-    currentField = config->GetScreenOutput_Field(iField);  
+  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+    currentField = ScreenFields[iField];  
     if (HistoryOutput_Map.count(currentField) > 0){
       PrintScreenHeaderString(out, HistoryOutput_Map[currentField].FieldName);
     } else {
@@ -8651,8 +8665,9 @@ void COutput::SetScreen_Output(CConfig *config) {
   stringstream out;
   string currentField;
   
-  for (unsigned short iField = 0; iField < config->GetnScreenOutput(); iField++){
-    currentField = config->GetScreenOutput_Field(iField); 
+  
+  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+    currentField = ScreenFields[iField]; 
     if (HistoryOutput_Map.count(currentField) > 0){  
       switch (HistoryOutput_Map[currentField].ScreenFormat) {
       case FORMAT_INTEGER:

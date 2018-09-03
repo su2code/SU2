@@ -253,9 +253,15 @@ protected:
   
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
+  
+  std::vector<string> HistoryFields;
+  unsigned short nHistoryOutput;
+  std::vector<string> ScreenFields;
+  unsigned short nScreenOutput;
   char char_histfile[200];
 
   ofstream HistFile;
+  
 public:
 
   /*! 

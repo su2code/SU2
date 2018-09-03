@@ -68,7 +68,22 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
   RefDensity  = solver[FLOW_SOL]->GetDensity_Inf();
   RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
   factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
-
+  
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+  
+  if (nHistoryOutput == 0){
+    HistoryFields.push_back("EXT_ITER");
+    HistoryFields.push_back("RESIDUALS");
+    nHistoryOutput = HistoryFields.size();
+  }
+  if (nScreenOutput == 0){
+    ScreenFields.push_back("EXT_ITER");
+    ScreenFields.push_back("DENSITY");
+    ScreenFields.push_back("MOMENTUM-X");
+    ScreenFields.push_back("MOMENTUM-Y");
+    ScreenFields.push_back("ENERGY");
+    nScreenOutput = ScreenFields.size();
+  }
 }
 
 CFlowOutput::~CFlowOutput(void) {
