@@ -7047,6 +7047,21 @@ fi
 
 
 ###########################
+
+# Check if MKL is available, enable if 2019.0 or newer.
+
+if test "${MKLROOT+set}" = set; then
+  FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" ${MKLROOT}/include/mkl_version.h | tr -dc '0-9')
+  REQUIRED_MKL_VERSION=20190000
+  if [ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]; then
+    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS"
+    have_MKL="yes"
+  fi
+fi
+
+###########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -8801,6 +8816,7 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
@@ -8890,6 +8906,7 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX
