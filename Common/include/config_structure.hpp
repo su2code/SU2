@@ -8206,7 +8206,7 @@ public:
   void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
   
   /*!
-   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai¿s in order),
+   * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai's in order),
    and given the array y2a[1..n], which is the output from spline above, and given a value of
    x, this routine returns a cubic-spline interpolated value y.
    Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
