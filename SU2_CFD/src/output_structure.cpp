@@ -8684,11 +8684,11 @@ void COutput::SetScreen_Header(CConfig *config) {
     if (HistoryOutputPerSurface_Map.count(currentField) > 0){
       PrintScreenHeaderString(out, HistoryOutputPerSurface_Map[currentField][0].FieldName);      
     }
+    out << sep;
   }
   
-  
   // Insert line break
-  out << endl;
+  out << '\n' << line << '\n';
   cout << out.str();
   
 }
@@ -8696,9 +8696,13 @@ void COutput::SetScreen_Header(CConfig *config) {
 
 void COutput::SetScreen_Output(CConfig *config) {
   
+  const std::string sep = " |" ;
+  const int total_width = field_width*nScreenOutput + sep.size() * nScreenOutput ;
+  const std::string line = sep + std::string( total_width-1, '-' ) + '|' ;
   stringstream out;
   string currentField;
   
+  out << sep;
   
   for (unsigned short iField = 0; iField < nScreenOutput; iField++){
     currentField = ScreenFields[iField]; 
@@ -8728,12 +8732,13 @@ void COutput::SetScreen_Output(CConfig *config) {
         break;   
       }
     }    
+    out << sep;
   }
-    
+  out << '\n';
   // Insert line break
   cout << out.str();
-  cout << endl;
 }
+
 
 void COutput::PreprocessHistoryOutput(CConfig *config){
   
