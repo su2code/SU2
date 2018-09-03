@@ -74,10 +74,10 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
   bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
 
-  SetHistoryOutputField("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputField("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
+  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
   
-  SetHistoryOutputField("PHYS_TIME", timeused);
+  SetHistoryOutputValue("PHYS_TIME", timeused);
   
   /*--- Residuals: ---*/
   /*--- Linear analysis: RMS of the displacements in the nDim coordinates ---*/
@@ -85,32 +85,32 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
 
   
   if (linear_analysis){
-    SetHistoryOutputField("UTOL", log10(fea_solver->GetRes_RMS(0)));
-    SetHistoryOutputField("RTOL", log10(fea_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("UTOL", log10(fea_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RTOL", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputField("ETOL", log10(fea_solver->GetRes_RMS(2)));    
+      SetHistoryOutputValue("ETOL", log10(fea_solver->GetRes_RMS(2)));    
     }
-    SetHistoryOutputField("DISP_X", log10(fea_solver->GetRes_RMS(0)));
-    SetHistoryOutputField("DISP_Y", log10(fea_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("DISP_X", log10(fea_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("DISP_Y", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputField("DISP_Z", log10(fea_solver->GetRes_RMS(2)));    
+      SetHistoryOutputValue("DISP_Z", log10(fea_solver->GetRes_RMS(2)));    
     }
   } else if (nonlinear_analysis){
-    SetHistoryOutputField("UTOL", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputField("RTOL", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("UTOL", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("RTOL", log10(fea_solver->GetRes_FEM(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputField("ETOL", log10(fea_solver->GetRes_FEM(2)));    
+      SetHistoryOutputValue("ETOL", log10(fea_solver->GetRes_FEM(2)));    
     }
-    SetHistoryOutputField("DISP_X", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputField("DISP_Y", log10(fea_solver->GetRes_FEM(1)));
+    SetHistoryOutputValue("DISP_X", log10(fea_solver->GetRes_FEM(0)));
+    SetHistoryOutputValue("DISP_Y", log10(fea_solver->GetRes_FEM(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputField("DISP_Z", log10(fea_solver->GetRes_FEM(2)));    
+      SetHistoryOutputValue("DISP_Z", log10(fea_solver->GetRes_FEM(2)));    
     }
   }
   
-  SetHistoryOutputField("VMS", fea_solver->GetTotal_CFEA());
-  SetHistoryOutputField("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
-  SetHistoryOutputField("LOAD_RAMP", fea_solver->GetForceCoeff());
+  SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
+  SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
+  SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
   
 }
 

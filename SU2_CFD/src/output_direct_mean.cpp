@@ -439,63 +439,66 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
   
-  SetHistoryOutputField("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputField("EXT_ITER", config[val_iZone]->GetExtIter());  
-  SetHistoryOutputField("PHYS_TIME", timeused);
+  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
+  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());  
+  SetHistoryOutputValue("PHYS_TIME", timeused);
   
-  SetHistoryOutputField("DENSITY", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputField("MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputField("MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
+  SetHistoryOutputValue("DENSITY", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 2)
-    SetHistoryOutputField("ENERGY", log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("ENERGY", log10(flow_solver->GetRes_RMS(3)));
   else {
-    SetHistoryOutputField("MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
-    SetHistoryOutputField("ENERGY", log10(flow_solver->GetRes_RMS(4)));
+    SetHistoryOutputValue("MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("ENERGY", log10(flow_solver->GetRes_RMS(4)));
   }
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputField("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputField("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputField("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
   default: break;
   }
   
-  SetHistoryOutputField("DRAG", flow_solver->GetTotal_CD());
-  SetHistoryOutputField("LIFT", flow_solver->GetTotal_CL());
+  SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
+  SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
-    SetHistoryOutputField("SIDEFORCE", flow_solver->GetTotal_CSF());
-  SetHistoryOutputField("MOMENT-X", flow_solver->GetTotal_CMx());
-  SetHistoryOutputField("MOMENT-Y", flow_solver->GetTotal_CMy());
+    SetHistoryOutputValue("SIDEFORCE", flow_solver->GetTotal_CSF());
+  if (nDim == 3){
+    SetHistoryOutputValue("MOMENT-X", flow_solver->GetTotal_CMx());
+    SetHistoryOutputValue("MOMENT-Y", flow_solver->GetTotal_CMy());
+  }
+  SetHistoryOutputValue("MOMENT-Z", flow_solver->GetTotal_CMz());
+  SetHistoryOutputValue("FORCE-X", flow_solver->GetTotal_CFx());
+  SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
-    SetHistoryOutputField("MOMENT-Z", flow_solver->GetTotal_CMz());
-  SetHistoryOutputField("FORCE-X", flow_solver->GetTotal_CFx());
-  SetHistoryOutputField("FORCE-Y", flow_solver->GetTotal_CFy());
-  if (nDim == 3)
-    SetHistoryOutputField("FORCE-Z", flow_solver->GetTotal_CFz());
-  
+    SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
+  SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
   
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("LIFT_ON_SURFACE", flow_solver->GetSurface_CL(iMarker_Monitoring), iMarker_Monitoring);
     if (nDim == 3)
       SetHistoryOutputPerSurfaceValue("SIDEFORCE_ON_SURFACE", flow_solver->GetSurface_CSF(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
-    SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
-    if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
+    if (nDim == 3){
+      SetHistoryOutputPerSurfaceValue("MOMENT-X_ON_SURFACE", flow_solver->GetSurface_CMx(iMarker_Monitoring), iMarker_Monitoring);
+      SetHistoryOutputPerSurfaceValue("MOMENT-Y_ON_SURFACE", flow_solver->GetSurface_CMy(iMarker_Monitoring), iMarker_Monitoring);
+    }
+    SetHistoryOutputPerSurfaceValue("MOMENT-Z_ON_SURFACE", flow_solver->GetSurface_CMz(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("FORCE-X_ON_SURFACE", flow_solver->GetSurface_CFx(iMarker_Monitoring), iMarker_Monitoring);
     SetHistoryOutputPerSurfaceValue("FORCE-Y_ON_SURFACE", flow_solver->GetSurface_CFy(iMarker_Monitoring), iMarker_Monitoring);
     if (nDim == 3)
-      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);    
+      SetHistoryOutputPerSurfaceValue("FORCE-Z_ON_SURFACE", flow_solver->GetSurface_CFz(iMarker_Monitoring), iMarker_Monitoring);   
+    
+    SetHistoryOutputPerSurfaceValue("EFFICIENCY_ON_SURFACE", flow_solver->GetSurface_CEff(iMarker_Monitoring), iMarker_Monitoring);
   }
   
-  SetHistoryOutputField("AOA", config[val_iZone]->GetAoA());
-  SetHistoryOutputField("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
-  SetHistoryOutputField("LINSOL_ITER", flow_solver->GetIterLinSolver());
+  SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
+  SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[val_iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {  
     SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW",               config[val_iZone]->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);

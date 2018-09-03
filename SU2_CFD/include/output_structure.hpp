@@ -852,7 +852,7 @@ public:
   
   void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname );
   
-  void SetHistoryOutputField(string name, su2double value);
+  void SetHistoryOutputValue(string name, su2double value);
   
   void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
   
