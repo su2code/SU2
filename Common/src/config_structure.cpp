@@ -619,7 +619,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
-  addEnumOption("MULTIZONE_PROBLEM", Kind_MZSolver, Multizone_Map, MZ_NO_SOLVER);
+  addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -2548,15 +2548,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   else { FSI_Problem = false; }
 
   if (Kind_Solver == MULTIZONE) {
-    /*--- Initialize the derivative values ---*/
-    switch (Kind_MZSolver) {
-      case MZ_FLUID_STRUCTURE_INTERACTION:
-        FSI_Problem = true;
-        break;
-      default:
-        /*--- All other cases are handled in the specific solver ---*/
-        break;
-      }
     Multizone_Problem = true;
   }
   else{
