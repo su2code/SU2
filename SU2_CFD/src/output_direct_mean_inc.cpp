@@ -73,6 +73,21 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
   factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+  
+  if (nHistoryOutput == 0){
+    HistoryFields.push_back("EXT_ITER");
+    HistoryFields.push_back("RESIDUALS");
+    nHistoryOutput = HistoryFields.size();
+  }
+  
+  if (nScreenOutput == 0){
+    ScreenFields.push_back("EXT_ITER");
+    ScreenFields.push_back("PRESSURE");
+    ScreenFields.push_back("VELOCITY-X");
+    ScreenFields.push_back("VELOCITY-Y");
+    nScreenOutput = ScreenFields.size();
+  }
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {
