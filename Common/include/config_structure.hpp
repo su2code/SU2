@@ -1013,13 +1013,8 @@ private:
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
-  bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
-  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
-  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
-  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
-  Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
-  su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
-  bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
+==== BASE ====
+==== BASE ====
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8563,6 +8558,37 @@ public:
    * \return YES if multiple zones can be contained in the mesh file.
    */
   bool GetMultizone_Mesh(void);
+
+  /*!
+   * \brief Get the number of screen output variables requested (maximum 6)
+   */
+  unsigned short GetnScreenOutput(void);
+
+  /*
+  * \brief Get the screen output field iField
+  */
+  string GetScreenOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnHistoryOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetHistoryOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnVolumeOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetVolumeOutput_Field(unsigned short iField);
+
 };
 
 #include "config_structure.inl"

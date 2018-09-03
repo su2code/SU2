@@ -66,6 +66,8 @@ using namespace std;
  */
 class COutput {
 
+protected:
+
   unsigned long nGlobal_Poin;   // Global number of nodes with halos
   unsigned long nSurf_Poin;   // Global number of nodes of the surface
   unsigned long nGlobal_Doma;   // Global number of nodes without halos
@@ -117,12 +119,12 @@ class COutput {
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
   
-  unsigned short nVar_Par;
   su2double **Local_Data;
   su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
   su2double **Parallel_Data;        // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   su2double **Parallel_Surf_Data;   // node i (x, y, z) = (Coords[0][i], Coords[1][i], Coords[2][i])
   vector<string> Variable_Names;
+  int* Local_Halo;
 
   su2double **Data;
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
@@ -194,33 +196,84 @@ class COutput {
 
 protected:
 
-  int rank, 	/*!< \brief MPI Rank. */
+  int rank, 	  /*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
 
+  unsigned short nDim;
+  
+  unsigned short GlobalField_Counter; /*!< \brief Number of fields in the volume output */ 
+
+  unsigned short field_width;         /*!< \brief Width of each column for the screen output (hardcoded for now) */
+  
+  /** \brief Enum to identify the screen output format. */
+  enum ScreenOutputFormat {           
+    FORMAT_INTEGER,         /*!< \brief Integer format. Example: 34 */
+    FORMAT_FIXED,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  };
+  
+  string HistorySep;                  /*!< \brief Character which separates values in the history file */
+  
+  vector<string>    HistoryHeader;    /*!< \brief Vector containing the names of the fields printed to the history file. */
+  vector<su2double> HistoryValues;    /*!< \brief Vector containing the values of the fields printed to the history file. */
+ 
+  
+  /** \brief Structure to store information for a history output field.
+   * 
+   *  The stored information is printed to the history file and to screen. 
+   * Each individual instance represents a single field (i.e. column) in the history file or on screen.   
+   */
+  struct HistoryOutputField {
+    string              FieldName;    /*!< \brief The name of the field, i.e. the name that is printed in the screen or file header.*/
+    su2double           Value;        /*!< \brief The value of the field. */
+    unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
+    string              OutputGroup;  /*!< \brief The group this field belongs to. */
+    HistoryOutputField() {}           /*!< \brief Default constructor. */
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup){}
+  };
+  
+  /** \brief Structure to store information for a volume output field.
+   * 
+   *  The stored information is used to create the volume solution file.   
+   */
+  struct VolumeOutputField {
+    string FieldName;          /*!< \brief The name of the field, i.e. the name that is printed in the file header.*/
+    int    Offset;             /*!< \brief This value identifies the position of the values of this field at each node in the Local_Data array. */
+    string OutputGroup;        /*!< \brief The group this field belongs to. */
+    VolumeOutputField () {}    /*!< \brief Default constructor. */
+    VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
+      FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup){}
+  };
+  
+  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */ 
+  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */ 
+  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */ 
+  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */ 
+  
+  std::map<string, VolumeOutputField >          VolumeOutput_Map;
+  std::vector<string>                           VolumeOutput_List;
+  
+  std::vector<string> HistoryFields;
+  unsigned short nHistoryOutput;
+  std::vector<string> ScreenFields;
+  unsigned short nScreenOutput;
+  char char_histfile[200];
+
+  ofstream HistFile;
+  
 public:
 
   /*! 
    * \brief Constructor of the class. 
    */
-  COutput(CConfig *congig);
+  COutput(CConfig *config);
 
   /*! 
    * \brief Destructor of the class. 
    */
-  ~COutput(void);
+  virtual ~COutput(void);
 
-  /*! 
-   * \brief Writes and organizes the all the output files, except the history one, for serial computations.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Total number of domains in the grid file.
-   * \param[in] val_nZone - Total number of domains in the grid file.
-   */
-  void SetResult_Files(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                       unsigned long iExtIter, unsigned short val_nZone);
-  
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -242,102 +295,11 @@ public:
   void SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone, bool new_file, bool su2_file);
 
   /*!
-   * \brief Writes equivalent area.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SonicBoom(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Writes inverse design.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetCp_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                         unsigned long iExtIter);
-  
-  /*!
-   * \brief Writes inverse design.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] iExtIter - Current external (time) iteration.
-   */
-  void SetHeatFlux_InverseDesign(CSolver *solver_container, CGeometry *geometry, CConfig *config,
-                        unsigned long iExtIter);
-  
-  /*!
-   * \brief Writes forces at different sections.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Writes one dimensional output.
-   * \author H. Kline
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_AnalyzeSurface(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-  
-  /*!
-   * \brief Create and write the file with the flow coefficient on the surface.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
-
-  /*!
-   * \brief Create and write the file with the FSI convergence history.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Solver for all physical problems.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
-                         unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
-
-  /*!
    * \brief Create and write the file with the FSI convergence history.
    * \param[in] iIter - Current iteration.
    * \param[in] iFreq - Frequency of output printing.
    */
   bool PrintOutput(unsigned long iIter, unsigned long iFreq);
-
-  /*! 
-   * \brief Create and write the file with the flow coefficient on the surface.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
-
-  /*! 
-   * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] AdjSolution - Adjoint solution.
-   * \param[in] FlowSolution - Flow solution.
-   * \param[in] iExtIter - Current external (time) iteration.
-   * \param[in] val_iZone - Current zone number in the grid file.
-   */
-  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Merge the geometry into a data structure used for output file writing.
@@ -647,14 +609,13 @@ public:
   
   /*! 
    * \brief Write the header of the history file.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
+
+  virtual void SetConvHistory_Header(CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*! 
    * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
@@ -663,17 +624,8 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+  virtual void SetConvHistory_Body(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                               CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
-  
-  /*!
-   * \brief Write the history file and the convergence on the screen for serial computations.
-   * \param[in] solver - Container vector with all the solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -707,22 +659,6 @@ public:
   void ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Compute .
-   * \param[in] config - Definition of the particular problem.
-   */
-  void WriteTurboPerfConvHistory(CConfig *config);
-
-  /*!
-   * \brief Write the output file for spanwise turboperformance.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - iZone index.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_Turbo(CSolver *****solver_container, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
-
-  /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
    * \param[in] iMarkerTP - Marker turbo-performance.
    * \param[in] iSpan - span section.
@@ -744,16 +680,6 @@ public:
   su2double GetMassFlowIn(unsigned short iMarkerTP, unsigned short iSpan);
 
   /*!
-   * \brief Write the output file for harmonic balance for each time-instance.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_nZone - Number of Zones.
-   * \param[in] val_iZone - Zone index.
-   * \param[in] output - Create output files.
-   */
-  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
-
-  /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -763,53 +689,8 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone, unsigned short *nInst);
+                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone, unsigned short *nInst);
   
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for incmopressible flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_iZone - iZone index.
-   */
-  void LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for elasticity problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-  
-  /*!
-   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for generic problems.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
-
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
@@ -901,6 +782,514 @@ public:
    * \param[in] val_direction - Controls the slice direction (0 for constant x/vertical, 1 for constant y/horizontal.
    */
   void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
+
+  /*!
+   * \brief Load the output data to the containers in each subclass
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  virtual void SetHistoryOutputFields(CConfig *config);
+  
+  
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Header(CConfig *config);
+
+  /*!
+   * \brief Write the history file output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetHistoryFile_Output(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteScreen_Header(CConfig *config);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Write the screen header.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Header(CConfig *config);
+
+
+  /*!
+   * \brief Write the screen output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetScreen_Output(CConfig *config);
+
+  void PrintScreenFixed(stringstream &stream, su2double val);
+
+  void PrintScreenScientific(stringstream &stream, su2double val);
+  
+  void PrintScreenInteger(stringstream &stream, unsigned long val);
+  
+  void PrintScreenHeaderString(stringstream &stream, string header);
+  
+  void AddHistoryValue(su2double val);
+
+  void AddHistoryHeaderString(string header);
+  
+  void PrintHistorySep(stringstream& stream);
+  
+  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname );
+  
+  void SetHistoryOutputValue(string name, su2double value);
+  
+  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
+  
+  void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker);
+  
+  void PreprocessHistoryOutput(CConfig *config);  
+  
+  void PreprocessVolumeOutput(CConfig *config, CGeometry *geometry);  
+  
+  void AddVolumeOutput(string name, string field_name, string groupname);
+  
+  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
+  
+  void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
+  
+  void CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** solver);
+      
+  virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  virtual void SetVolumeOutputFields(CConfig *config);
+};
+
+/*! \class CFlowOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez.
+ *  \date May 30, 2018.
+ */
+class CFlowOutput : public COutput {
+private:
+  
+  unsigned short nVar;
+
+  unsigned short turb_model;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFlowOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFlowOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+};
+
+/*! \class CFlowOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez.
+ *  \date May 30, 2018.
+ */
+class CIncFlowOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+  unsigned short nDim;
+  unsigned short turb_model;
+  bool heat, weakly_coupled_heat;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+ 
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CIncFlowOutput(void);
+  
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+};
+
+/*! \class CFEAOutput
+ *  \brief Output class for FEA problems.
+ *  \author R. Sanchez.
+ *  \date May 24, 2018.
+ */
+class CFEAOutput : public COutput {
+private:
+
+protected:
+
+  unsigned short nVar_FEM;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFEAOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  void SetHistoryOutputFields(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+
+};
+
+/*! \class CHeatOutput
+ *  \brief Output class for heat problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CHeatOutput : public COutput {
+private:
+
+  char char_histfile[200];
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CHeatOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+  void SetHistoryOutputFields(CConfig *config);
+   
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+ 
+};
+
+/*! \class CAdjFlowOutput
+ *  \brief Output class for flow continuous adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CAdjFlowOutput : public COutput {
+private:
+
+  unsigned short nDim, turb_model;
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CAdjFlowOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void SetHistoryOutputFields(CConfig *config);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+    
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+};
+
+/*! \class CDiscAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CDiscAdjFlowOutput : public COutput {
+private:
+
+  unsigned short nDim, turb_model;
+  
+public:
+
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFlowOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+
+};
+
+/*! \class CDiscAdjFEAOutput
+ *  \brief Output class for elasticity discrete adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CDiscAdjFEAOutput : public COutput {
+private:
+  unsigned short nVar_FEM, nDim;
+  char char_histfile[200];
+
+public:
+
+  ofstream HistFile;
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFEAOutput(void);
+
+  void SetHistoryOutputFields(CConfig *config);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
 
 };
 

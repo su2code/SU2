@@ -111,6 +111,14 @@ libSU2Core_sources = \
   ../src/output_fieldview.cpp \
   ../src/output_su2.cpp \
   ../src/output_paraview.cpp \
+  ../src/output_direct_elasticity.cpp \
+  ../src/output_direct_mean.cpp \
+  ../src/output_direct_mean_inc.cpp \
+  ../src/output_direct_heat.cpp \
+  ../src/output_adjoint_elasticity.cpp \
+  ../src/output_adjoint_discrete.cpp \
+  ../src/output_adjoint_mean.cpp \
+  ../src/output_driver.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \
