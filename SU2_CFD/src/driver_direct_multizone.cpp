@@ -146,7 +146,7 @@ void CMultizoneDriver::StartSolver() {
 
     /*--- Run a BGS iteration of the multizone problem. ---*/
 
-    Run();
+    Run_GaussSeidel();
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -231,7 +231,53 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run() {
+void CMultizoneDriver::Run_GaussSeidel() {
+
+  unsigned long iOuter_Iter;
+  unsigned short jZone;
+  bool UpdateMesh = false;
+  unsigned long ExtIter = 0;
+  bool Convergence = false;
+
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
+
+  /*--- Loop over the number of outer iterations ---*/
+  for (iOuter_Iter = 0; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+
+    /*--- Loop over the number of zones (IZONE) ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Set the OuterIter ---*/
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+      /*--- Transfer from all the remaining zones ---*/
+      for (jZone = 0; jZone < nZone; jZone++){
+        /*--- The target zone is iZone ---*/
+        if (jZone != iZone){
+          UpdateMesh = Transfer_Data(jZone, iZone);
+          /*--- If a mesh update is required due to the transfer of data ---*/
+          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+        }
+      }
+
+      /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+      /*--- A relaxation step can help preventing numerical instabilities ---*/
+      Relaxation();
+
+    }
+
+    Convergence = OuterConvergence(iOuter_Iter);
+
+    if (Convergence) break;
+
+  }
+
+}
+
+void CMultizoneDriver::Run_Jacobi() {
 
   unsigned long iOuter_Iter;
   unsigned short jZone;
