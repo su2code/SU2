@@ -642,7 +642,7 @@ void CDriver::Postprocessing() {
   for (iZone = 0; iZone < nZone; iZone++) {
 	for (iInst = 0; iInst < nInst[iZone]; iInst++)
     delete iteration_container[iZone][iInst];
-    delete iteration_container[iZone];
+    delete [] iteration_container[iZone];
   }
   delete [] iteration_container;
   if (rank == MASTER_NODE) cout << "Deleted CIteration container." << endl;
@@ -684,7 +684,7 @@ void CDriver::Postprocessing() {
         for (unsigned short iMGlevel = 0; iMGlevel < config_container[iZone]->GetnMGLevels()+1; iMGlevel++) {
           if (geometry_container[iZone][iInst][iMGlevel] != NULL) delete geometry_container[iZone][iInst][iMGlevel];
         }
-        if (geometry_container[iZone][iInst] != NULL) delete geometry_container[iZone][iInst];
+        if (geometry_container[iZone][iInst] != NULL) delete [] geometry_container[iZone][iInst];
       }
       delete [] geometry_container[iZone];
     }
@@ -708,7 +708,7 @@ void CDriver::Postprocessing() {
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
       if (grid_movement[iZone][iInst] != NULL) delete grid_movement[iZone][iInst];
     }
-    if (grid_movement[iZone] != NULL) delete grid_movement[iZone];
+    if (grid_movement[iZone] != NULL) delete [] grid_movement[iZone];
   }
   delete [] grid_movement;
   if (rank == MASTER_NODE) cout << "Deleted CVolumetricMovement class." << endl;
@@ -723,6 +723,9 @@ void CDriver::Postprocessing() {
   }
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
+  if (nInst != NULL) delete [] nInst;
+  if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
+  
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
@@ -1474,10 +1477,10 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
       delete solver_container[val_iInst][iMGlevel][ADJFEA_SOL];
     }
     
-    delete solver_container[val_iInst][iMGlevel];
+    delete [] solver_container[val_iInst][iMGlevel];
   }
   
-  delete solver_container[val_iInst];
+  delete [] solver_container[val_iInst];
 
 }
 
@@ -1581,7 +1584,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   if (adj_euler || adj_ns || disc_adj) delete integration_container[val_iInst][ADJFLOW_SOL];
   if (adj_turb) delete integration_container[val_iInst][ADJTURB_SOL];
 
-  delete integration_container[val_iInst];
+  delete [] integration_container[val_iInst];
   
 
 }
@@ -2474,7 +2477,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         if (incompressible) {
           /*--- Incompressible flow, use preconditioning method ---*/
           switch (config->GetKind_Upwind_Flow()) {
-            case ROE:
+            case FDS:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
@@ -3565,7 +3568,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
   /*--- Export Surface Solution File for Unsteady Simulations ---*/
   /*--- When calculate mean/fluctuation option will be available, delete the following part ---*/
-  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0)) {
+  if ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) && (ExtIter % config_container[ZONE_0]->GetWrt_Surf_Freq_DualTime() == 0) && config_container[ZONE_0]->GetWrt_Csv_Sol()) {
       output->SetSurfaceCSV_Flow(config_container[ZONE_0], geometry_container[ZONE_0][INST_0][MESH_0], solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], ExtIter, ZONE_0, INST_0);}
 
 }
