@@ -1237,14 +1237,14 @@ public:
 	          x1 < x2 < . . . < xN , and given values yp1 and ypn for the first derivative of the interpolating
 	          function at points 1 and n, respectively, this routine returns an array y2[1..n] that contains
 	          the second derivatives of the interpolating function at the tabulated points xi. If yp1 and/or
-	          ypn are equal to 1 � 1030 or larger, the routine is signaled to set the corresponding boundary
+	          ypn are equal to 1 × 1030 or larger, the routine is signaled to set the corresponding boundary
 	          condition for a natural spline, with zero second derivative on that boundary.
 						Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
 	 */
 	void SetSpline(vector<su2double> &x, vector<su2double> &y, unsigned long n, su2double yp1, su2double ypn, vector<su2double> &y2);
 	
 	/*!
-	 * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai's in order), 
+	 * \brief Given the arrays xa[1..n] and ya[1..n], which tabulate a function (with the xai’s in order), 
 	          and given the array y2a[1..n], which is the output from spline above, and given a value of 
 	          x, this routine returns a cubic-spline interpolated value y.
          	  Numerical Recipes: The Art of Scientific Computing, Third Edition in C++.
