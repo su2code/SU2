@@ -820,6 +820,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -852,9 +854,20 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        if (incompressible){
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+        }
+        else{
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        }
         
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -928,7 +941,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node i for the SST model ---*/
       
       if (config->GetKind_Turb_Model() == SST) {
-        Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -944,7 +958,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node j for the SST model ---*/
       
       if (config->GetKind_Turb_Model() == SST) {
-        Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetDensity(); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -984,7 +999,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         /*--- Multiply by density at node i for the SST model ---*/
         
         if (config->GetKind_Turb_Model() == SST) {
-          Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
+          else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         } else {
@@ -1023,9 +1039,20 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        if (incompressible){
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+        }
+        else{
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        }
         
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -3486,6 +3513,7 @@ void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
+                                          string val_marker,
                                           CGeometry *geometry,
                                           CConfig *config) {
 
@@ -3503,7 +3531,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short position = nDim+2+nDim;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -4682,6 +4712,7 @@ void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned long val_inlet_point,
                                            unsigned short val_kind_marker,
+                                           string val_marker,
                                            CGeometry *geometry,
                                            CConfig *config) {
 
@@ -4700,7 +4731,9 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short omega_position = nDim+2+nDim+1;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
