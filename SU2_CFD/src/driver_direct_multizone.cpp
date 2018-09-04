@@ -269,7 +269,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A relaxation step can help preventing numerical instabilities ---*/
-      Relaxation();
+      Relaxation(iZone);
 
     }
 
@@ -323,7 +323,7 @@ void CMultizoneDriver::Run_Jacobi() {
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A relaxation step can help preventing numerical instabilities ---*/
-      Relaxation();
+      Relaxation(iZone);
 
     }
 
@@ -335,13 +335,11 @@ void CMultizoneDriver::Run_Jacobi() {
 
 }
 
+void CMultizoneDriver::Relaxation(unsigned short val_iZone) {
 
-
-void CMultizoneDriver::Relaxation() {
-
-    if (config_container[iZone]->GetRelaxation())
-      iteration_container[iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+    if (config_container[val_iZone]->GetRelaxation())
+      iteration_container[val_iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+          numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
 }
 
