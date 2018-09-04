@@ -15427,7 +15427,8 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         su2double eInt    = rhoInv*solInt[nVar-1] - 0.5*vel2Mag;
 
         FluidModel->SetTDState_rhoe(solInt[0], eInt);
-        const su2double Pressure = FluidModel->GetPressure();
+        //const su2double Pressure = FluidModel->GetPressure();
+        const su2double LaminarViscosity= FluidModel->GetLaminarViscosity();
 
         /* Subtract the prescribed wall velocity, i.e. grid velocity
            from the velocity in the exchange point. */
@@ -15450,7 +15451,19 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         /* Compute the wall shear stress and heat flux vector using
            the wall model. */
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
-        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, Pressure,
+        
+        // Debugging output
+        //for(unsigned short m=0; m<nVar; m++){
+        //  cout << solInt[m] << ", ";
+        //}
+        //cout << FluidModel->GetLaminarViscosity() << ", ";
+        //cout << velTan << ", ";
+        //for(unsigned short m=0; m<nDim; m++)
+        //  cout << normals[m] << ", ";
+        //cout << endl;
+
+        //wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, Pressure,
+        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, LaminarViscosity,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
                                               tauWall, qWall, ViscosityWall, kOverCvWall);

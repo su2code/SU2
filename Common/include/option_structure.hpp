@@ -868,7 +868,8 @@ enum ENUM_WALL_FUNCTIONS {
   ADAPTIVE_WALL_FUNCTION    = 2,   /*!< \brief Adaptive wall function. Formulation depends on y+. */
   SCALABLE_WALL_FUNCTION    = 3,   /*!< \brief Scalable wall function. */
   EQUILIBRIUM_WALL_MODEL    = 4,   /*!< \brief Equilibrium wall model for LES. */
-  NONEQUILIBRIUM_WALL_MODEL = 5    /*!< \brief Non-equilibrium wall model for LES. */
+  NONEQUILIBRIUM_WALL_MODEL = 5,   /*!< \brief Non-equilibrium wall model for LES. */
+  LOGARITHMIC_WALL_MODEL    = 6    /*!< \brief Logarithmic law-of-the-wall model for LES. */
 };
 static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<string, ENUM_WALL_FUNCTIONS>
 ("NO_WALL_FUNCTION",          NO_WALL_FUNCTION)
@@ -876,7 +877,8 @@ static const map<string, ENUM_WALL_FUNCTIONS> Wall_Functions_Map = CCreateMap<st
 ("ADAPTIVE_WALL_FUNCTION",    ADAPTIVE_WALL_FUNCTION)
 ("SCALABLE_WALL_FUNCTION",    SCALABLE_WALL_FUNCTION)
 ("EQUILIBRIUM_WALL_MODEL",    EQUILIBRIUM_WALL_MODEL)
-("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL);
+("NONEQUILIBRIUM_WALL_MODEL", NONEQUILIBRIUM_WALL_MODEL)
+("LOGARITHMIC_WALL_MODEL", LOGARITHMIC_WALL_MODEL);
 
 /*!
  * \brief type of time integration schemes
@@ -3865,6 +3867,7 @@ public:
       switch( typeWF ) {
         case EQUILIBRIUM_WALL_MODEL:    counter += 3; break;
         case NONEQUILIBRIUM_WALL_MODEL: counter += 2; break;
+        case LOGARITHMIC_WALL_MODEL: counter += 3; break;
         default: break;
       }
 
@@ -3969,6 +3972,30 @@ public:
             return badValue(option_value, "su2double", this->name);
           }
 
+          break;
+        }
+        case LOGARITHMIC_WALL_MODEL: {
+          
+          /* LES Logarithmic law-of-the-wall model. The exchange distance, stretching
+           factor and number of points in the wall model must be specified. */
+          this->intInfo[i]    = new unsigned short[1];
+          this->doubleInfo[i] = new su2double[2];
+          
+          istringstream ss_1st(option_value[counter++]);
+          if (!(ss_1st >> this->doubleInfo[i][0])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+          
+          istringstream ss_2nd(option_value[counter++]);
+          if (!(ss_2nd >> this->doubleInfo[i][1])) {
+            return badValue(option_value, "su2double", this->name);
+          }
+          
+          istringstream ss_3rd(option_value[counter++]);
+          if (!(ss_3rd >> this->intInfo[i][0])) {
+            return badValue(option_value, "unsigned short", this->name);
+          }
+          
           break;
         }
 
