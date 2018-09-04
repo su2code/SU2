@@ -177,8 +177,9 @@ am__libSU2Core_a_SOURCES_DIST = ../include/definition_structure.hpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
-	../src/driver_direct_multizone.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp \
+	../src/driver_direct_multizone.cpp \
+	../src/driver_direct_singlezone.cpp \
+	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_poisson.cpp \
@@ -232,6 +233,7 @@ am__objects_1 = ../src/libSU2Core_a-definition_structure.$(OBJEXT) \
 	../src/libSU2Core_a-integration_structure.$(OBJEXT) \
 	../src/libSU2Core_a-integration_time.$(OBJEXT) \
 	../src/libSU2Core_a-driver_direct_multizone.$(OBJEXT) \
+	../src/libSU2Core_a-driver_direct_singlezone.$(OBJEXT) \
 	../src/libSU2Core_a-driver_structure.$(OBJEXT) \
 	../src/libSU2Core_a-iteration_structure.$(OBJEXT) \
 	../src/libSU2Core_a-numerics_adjoint_mean.$(OBJEXT) \
@@ -327,8 +329,9 @@ am_____bin_SU2_CFD_AD_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
-	../src/driver_direct_multizone.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp \
+	../src/driver_direct_multizone.cpp \
+	../src/driver_direct_singlezone.cpp \
+	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_poisson.cpp \
@@ -383,6 +386,7 @@ am__objects_4 =  \
 	../src/___bin_SU2_CFD_AD-integration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-integration_time.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-driver_direct_multizone.$(OBJEXT) \
+	../src/___bin_SU2_CFD_AD-driver_direct_singlezone.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-driver_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-iteration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_AD-numerics_adjoint_mean.$(OBJEXT) \
@@ -468,8 +472,9 @@ am_____bin_SU2_CFD_DIRECTDIFF_SOURCES_DIST = ../include/SU2_CFD.hpp \
 	../src/fluid_model_pig.cpp ../src/fluid_model_pvdw.cpp \
 	../src/fluid_model_ppr.cpp ../src/fluid_model_inc.cpp \
 	../src/integration_structure.cpp ../src/integration_time.cpp \
-	../src/driver_direct_multizone.cpp ../src/driver_structure.cpp \
-	../src/iteration_structure.cpp \
+	../src/driver_direct_multizone.cpp \
+	../src/driver_direct_singlezone.cpp \
+	../src/driver_structure.cpp ../src/iteration_structure.cpp \
 	../src/numerics_adjoint_mean.cpp \
 	../src/numerics_adjoint_turbulent.cpp \
 	../src/numerics_direct_poisson.cpp \
@@ -523,6 +528,7 @@ am__objects_6 = ../src/___bin_SU2_CFD_DIRECTDIFF-definition_structure.$(OBJEXT) 
 	../src/___bin_SU2_CFD_DIRECTDIFF-integration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-integration_time.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.$(OBJEXT) \
+	../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-driver_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-iteration_structure.$(OBJEXT) \
 	../src/___bin_SU2_CFD_DIRECTDIFF-numerics_adjoint_mean.$(OBJEXT) \
@@ -844,6 +850,7 @@ libSU2Core_sources = \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_direct_multizone.cpp \
+  ../src/driver_direct_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
@@ -998,6 +1005,8 @@ clean-noinstLIBRARIES:
 ../src/libSU2Core_a-integration_time.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-driver_direct_multizone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/libSU2Core_a-driver_direct_singlezone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2Core_a-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
@@ -1185,6 +1194,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-driver_direct_multizone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_AD-driver_direct_singlezone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_AD-iteration_structure.$(OBJEXT):  \
@@ -1319,6 +1330,8 @@ clean-binPROGRAMS:
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.$(OBJEXT):  \
+	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-driver_structure.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/___bin_SU2_CFD_DIRECTDIFF-iteration_structure.$(OBJEXT):  \
@@ -1445,6 +1458,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_multizone.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_AD-fluid_model_inc.Po@am__quote@
@@ -1510,6 +1524,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-SU2_CFD.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-fluid_model_inc.Po@am__quote@
@@ -1574,6 +1589,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-variable_template.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-definition_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_direct_multizone.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-driver_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-fluid_model.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2Core_a-fluid_model_inc.Po@am__quote@
@@ -1778,6 +1794,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_multizone.cpp' object='../src/libSU2Core_a-driver_direct_multizone.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_direct_multizone.obj `if test -f '../src/driver_direct_multizone.cpp'; then $(CYGPATH_W) '../src/driver_direct_multizone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_multizone.cpp'; fi`
+
+../src/libSU2Core_a-driver_direct_singlezone.o: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_direct_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Tpo -c -o ../src/libSU2Core_a-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/libSU2Core_a-driver_direct_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+
+../src/libSU2Core_a-driver_direct_singlezone.obj: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_direct_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Tpo -c -o ../src/libSU2Core_a-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/libSU2Core_a-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/libSU2Core_a-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2Core_a-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
 
 ../src/libSU2Core_a-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2Core_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2Core_a-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/libSU2Core_a-driver_structure.Tpo -c -o ../src/libSU2Core_a-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
@@ -2703,6 +2733,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-driver_direct_multizone.obj `if test -f '../src/driver_direct_multizone.cpp'; then $(CYGPATH_W) '../src/driver_direct_multizone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_multizone.cpp'; fi`
 
+../src/___bin_SU2_CFD_AD-driver_direct_singlezone.o: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Tpo -c -o ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/___bin_SU2_CFD_AD-driver_direct_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+
+../src/___bin_SU2_CFD_AD-driver_direct_singlezone.obj: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Tpo -c -o ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/___bin_SU2_CFD_AD-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_AD-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+
 ../src/___bin_SU2_CFD_AD-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_AD_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_AD-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo -c -o ../src/___bin_SU2_CFD_AD-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_AD-driver_structure.Po
@@ -3612,6 +3656,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_multizone.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_multizone.obj `if test -f '../src/driver_direct_multizone.cpp'; then $(CYGPATH_W) '../src/driver_direct_multizone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_multizone.cpp'; fi`
+
+../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.o: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.o `test -f '../src/driver_direct_singlezone.cpp' || echo '$(srcdir)/'`../src/driver_direct_singlezone.cpp
+
+../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.obj: ../src/driver_direct_singlezone.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.obj -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Tpo ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/driver_direct_singlezone.cpp' object='../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_direct_singlezone.obj `if test -f '../src/driver_direct_singlezone.cpp'; then $(CYGPATH_W) '../src/driver_direct_singlezone.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/driver_direct_singlezone.cpp'; fi`
 
 ../src/___bin_SU2_CFD_DIRECTDIFF-driver_structure.o: ../src/driver_structure.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(___bin_SU2_CFD_DIRECTDIFF_CXXFLAGS) $(CXXFLAGS) -MT ../src/___bin_SU2_CFD_DIRECTDIFF-driver_structure.o -MD -MP -MF ../src/$(DEPDIR)/___bin_SU2_CFD_DIRECTDIFF-driver_structure.Tpo -c -o ../src/___bin_SU2_CFD_DIRECTDIFF-driver_structure.o `test -f '../src/driver_structure.cpp' || echo '$(srcdir)/'`../src/driver_structure.cpp
