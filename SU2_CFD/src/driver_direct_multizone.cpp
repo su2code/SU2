@@ -144,9 +144,13 @@ void CMultizoneDriver::StartSolver() {
 
     Preprocess(TimeIter);
 
-    /*--- Run a BGS iteration of the multizone problem. ---*/
+    /*--- Run a block iteration of the multizone problem. ---*/
 
-    Run_GaussSeidel();
+    switch (driver_config->GetKind_MZSolver()){
+      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      default: Run_GaussSeidel(); break;
+    }
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -290,7 +294,7 @@ void CMultizoneDriver::Run_Jacobi() {
   /*--- Loop over the number of outer iterations ---*/
   for (iOuter_Iter = 0; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
-    /*--- Loop over the number of zones (IZONE) ---*/
+    /*--- Transfer from all zones ---*/
     for (iZone = 0; iZone < nZone; iZone++){
 
       /*--- Set the OuterIter ---*/
@@ -299,12 +303,20 @@ void CMultizoneDriver::Run_Jacobi() {
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
-        if (jZone != iZone){
+        if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
           UpdateMesh = Transfer_Data(jZone, iZone);
           /*--- If a mesh update is required due to the transfer of data ---*/
           if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
         }
       }
+
+    }
+
+      /*--- Loop over the number of zones (IZONE) ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Set the OuterIter ---*/
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
       iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
