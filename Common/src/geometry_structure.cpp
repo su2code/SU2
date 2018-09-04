@@ -618,6 +618,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
   
+  AD_BEGIN_PASSIVE
+  
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
   long Next_Edge = 0;
@@ -701,7 +703,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
           AveXCoord += node[iPoint]->GetCoord(0);
           AveYCoord += node[iPoint]->GetCoord(1);
-          AveZCoord += node[iPoint]->GetCoord(2);
+          if (nDim == 3) AveZCoord += node[iPoint]->GetCoord(2);
         }
         
         AveXCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
@@ -1341,6 +1343,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     }
     
   }
+  
+  AD_END_PASSIVE
   
 }
 
