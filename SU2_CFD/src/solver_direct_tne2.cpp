@@ -2452,7 +2452,7 @@ void CTNE2EulerSolver::Source_Residual(CGeometry *geometry, CSolver **solution_c
 	eAxi_global = eAxi_local;
 	eChm_global = eChm_local;
 	eVib_global = eVib_local;
-	
+
   if ((rank == MASTER_NODE) &&
       (
        (eAxi_global != 0) ||
@@ -3683,7 +3683,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
 
   Pressure_FreeStream     = config->GetPressure_FreeStream();
-  Density_FreeStream      = config->GetDensity_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
   Gas_Constant  				  = config->GetGas_Constant();
 
@@ -3708,7 +3707,15 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
     ModVel_FreeStream += config->GetVelocity_FreeStream()[iDim]*config->GetVelocity_FreeStream()[iDim];
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
-  /*--- Viscous initialization ---*/
+	/*--- Compute the density ---*/
+	Velocity_Reynolds    = ModVel_FreeStream;
+	Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
+	Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
+
+
+
+
+	/*--- Viscous initialization ---*/
 
   if (viscous) {
 
