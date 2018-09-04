@@ -1571,7 +1571,7 @@ public:
   /*!
    * \brief Use a relaxation step to prevent convergence issues.
    */
-  void Relaxation();
+  void Relaxation(unsigned short val_iZone);
 
   /*!
    * \brief Run a Block Gauss-Seidel iteration in all physical zones.
