@@ -40,7 +40,51 @@
 #ifdef HAVE_MPI
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
-  if (Rank == 0){
+
+  /* Set MinRankError to Rank, as the error message is called on this rank. */
+  MinRankError = Rank;
+
+  /* Find out whether the error call is collective via MPI_Ibarrier. */
+  Request barrierRequest;
+  MPI_Ibarrier(currentComm, &barrierRequest);
+
+  /* Try to complete the non-blocking barrier call for half a second. */
+  double startTime = MPI_Wtime();
+  int flag;
+  while( true ) {
+
+    MPI_Test(&barrierRequest, &flag, MPI_STATUS_IGNORE);
+    if( flag ) break;
+
+    double currentTime = MPI_Wtime();
+    if(currentTime > startTime + 0.5) break;
+  }
+
+  if( flag ) {
+    /* The barrier is completed and hence the error call is collective.
+       Set MinRankError to 0. */
+    MinRankError = 0;
+  }
+  else {
+    /* The error call is not collective and the minimum rank must be
+       determined by one sided communication. Loop over the lower numbered
+       ranks to check if they participate in the error message. */
+    for(int i=0; i<Rank; ++i) {
+
+      int MinRankErrorOther;
+      MPI_Win_lock(MPI_LOCK_SHARED, i, 0, winMinRankError);
+      MPI_Get(&MinRankErrorOther, 1, MPI_INT, i, 0, 1, MPI_INT, winMinRankError);
+      MPI_Win_unlock(i, winMinRankError);
+
+      if(MinRankErrorOther < MinRankError) {
+        MinRankError = MinRankErrorOther;
+        break;
+      }
+    }
+  }
+
+  /* Check if this rank must write the error message and do so. */
+  if (Rank == MinRankError){
     std::cout << std::endl << std::endl;
     std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
