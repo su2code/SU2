@@ -343,3 +343,85 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     j++;
   }
 }
+
+void CWallModelLogLaw::Initialize(const unsigned short *intInfo,
+                                const su2double      *doubleInfo){
+  
+  /* Copy the data from the arguments into the member variables. */
+  numPoints      = intInfo[0];
+  thickness      = doubleInfo[0];
+  expansionRatio = doubleInfo[1];
+  
+  /* Allocate the memory for the coordinates of the grid points used
+   in the 1D equilibrium wall model. */
+  coorGridPoints.resize(numPoints);
+  
+  /* Determine the scaled version of the normal coordinates, where the
+   first normal coordinate is simply 1.0. */
+  su2double currentHeight = 1.0;
+  coorGridPoints[0] = 0.0;
+  
+  for(unsigned short i=1; i<numPoints; ++i) {
+    coorGridPoints[i] = coorGridPoints[i-1] + currentHeight;
+    currentHeight    *= expansionRatio;
+  }
+  
+  /* Determine the scaling factor of the normal coordinates and
+   apply the scaling to obtain the correct coordinates. */
+  const su2double scaleFact = thickness/coorGridPoints[numPoints-1];
+  
+  for(unsigned short i=0; i<numPoints; ++i)
+    coorGridPoints[i] *= scaleFact;
+}
+
+void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
+                                                const su2double velExchange,
+                                                const su2double pExchange,
+                                                const su2double Wall_HeatFlux,
+                                                const bool      HeatFlux_Prescribed,
+                                                const su2double Wall_Temperature,
+                                                const bool      Temperature_Prescribed,
+                                                su2double &tauWall,
+                                                su2double &qWall,
+                                                su2double &ViscosityWall,
+                                                su2double &kOverCvWall) {
+  
+
+  // Note: I replaced pExchange by muExchange
+  su2double fval, fprime, newton_step, y_plus, u_tau = 0.0;
+  su2double k = 0.38;
+  su2double C = 4.1;
+  su2double u_tau0 = 0.001;
+  su2double nuExchange = pExchange / rhoExchange;
+  
+  su2double R = 287.058;
+  su2double gamma = 1.4;
+  su2double Pr_lam = 0.7;
+  su2double Pr_turb = 0.9;
+  su2double c_p = (gamma*R)/(gamma-1);
+  su2double c_v = R/(gamma-1);
+  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? su2double(0.0): gamma/Pr_lam;
+  unsigned short maxIter = 50, counter = -1;
+  
+  for (unsigned short i=0; i < maxIter; i++){
+    counter += 1;
+    y_plus = thickness * u_tau0 / nuExchange;
+    fval = (velExchange /u_tau0) - ((1.0/k) * log(y_plus) + C);
+    fprime = -velExchange/pow(u_tau0,2) - 1.0/(k*u_tau0);
+    newton_step = fval/fprime;
+    
+    u_tau = u_tau0 - newton_step;
+    
+    if (abs(u_tau - u_tau0) < 1e-6){
+      break;
+    }
+    u_tau0 = u_tau;
+  }
+  //cout << counter << " " <<  u_tau0 << " " << u_tau << endl;
+  
+  tauWall = rhoExchange * pow(u_tau,2.0);
+  qWall = 0.0;
+  ViscosityWall = pExchange;
+  kOverCvWall = ViscosityWall * factHeatFlux_Lam;
+
+}

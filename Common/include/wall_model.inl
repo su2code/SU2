@@ -64,3 +64,11 @@ inline CWallModel1DEQ::CWallModel1DEQ(void) : CWallModel(){
 }
 
 inline CWallModel1DEQ::~CWallModel1DEQ(void){}
+
+inline CWallModelLogLaw::CWallModelLogLaw(void) : CWallModel(){
+  expansionRatio = 0.0;
+  numPoints      = 0;
+}
+
+inline CWallModelLogLaw::~CWallModelLogLaw(void){}
+

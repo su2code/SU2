@@ -6301,7 +6301,13 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
               boundaries[iMarker].wallModel = new CWallModel1DEQ;
               break;
             }
-
+            case LOGARITHMIC_WALL_MODEL: {
+              if(rank == MASTER_NODE)
+                cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
+              
+              boundaries[iMarker].wallModel = new CWallModelLogLaw;
+              break;
+            }
             default: {
               SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
             }
