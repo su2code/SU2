@@ -3642,7 +3642,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
       }
 
