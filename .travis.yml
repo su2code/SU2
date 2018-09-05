@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - e.t.a.vanderweide@utwente.nl
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_error_message
+        - develop
 
 python:
     - 2.7
