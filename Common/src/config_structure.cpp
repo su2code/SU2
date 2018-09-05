@@ -3864,9 +3864,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Make sure that implicit time integration is disabled
         for the FEM fluid solver (numerics). ---*/
-  if ((Kind_Solver == FEM_EULER) ||
+  if ((Kind_Solver == FEM_EULER)         ||
       (Kind_Solver == FEM_NAVIER_STOKES) ||
-      (Kind_Solver == FEM_RANS)) {
+      (Kind_Solver == FEM_RANS)          ||
+      (Kind_Solver == FEM_LES)) {
      Kind_TimeIntScheme_Flow = Kind_TimeIntScheme_FEM_Flow;
   }
 
