@@ -43,15 +43,14 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
 
   /* Set MinRankError to Rank, as the error message is called on this rank. */
   MinRankError = Rank;
+  int flag = 0;
 
+#ifdef HAVE_MPI_NB_COLLECTIVE
   /* Find out whether the error call is collective via MPI_Ibarrier. */
   Request barrierRequest;
   MPI_Ibarrier(currentComm, &barrierRequest);
 
   /* Try to complete the non-blocking barrier call for half a second. */
-  int flag = 0;
-
-#ifdef HAVE_NB_COL
   double startTime = MPI_Wtime();
   while( true ) {
 
