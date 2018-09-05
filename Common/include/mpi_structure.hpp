@@ -45,6 +45,7 @@
 
 #include "./datatype_structure.hpp"
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef HAVE_MPI
 
