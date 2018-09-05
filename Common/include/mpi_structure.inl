@@ -49,8 +49,10 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
   MPI_Ibarrier(currentComm, &barrierRequest);
 
   /* Try to complete the non-blocking barrier call for half a second. */
+  int flag = 0;
+
+#ifdef HAVE_NB_COL
   double startTime = MPI_Wtime();
-  int flag;
   while( true ) {
 
     MPI_Test(&barrierRequest, &flag, MPI_STATUS_IGNORE);
@@ -59,6 +61,9 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     double currentTime = MPI_Wtime();
     if(currentTime > startTime + 0.5) break;
   }
+#else
+  sleep(1);
+#endif
 
   if( flag ) {
     /* The barrier is completed and hence the error call is collective.
