@@ -265,7 +265,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       }
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -319,7 +319,7 @@ void CMultizoneDriver::Run_Jacobi() {
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/

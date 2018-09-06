@@ -1571,6 +1571,11 @@ public:
   void Update();
 
   /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output(unsigned long ExtIter);
+
+  /*!
    * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
