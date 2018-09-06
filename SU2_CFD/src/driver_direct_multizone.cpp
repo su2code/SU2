@@ -273,6 +273,9 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
     }
 
+    /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
+    Monitor(iOuter_Iter);
+
     Convergence = OuterConvergence(iOuter_Iter);
 
     if (Convergence) break;
@@ -474,6 +477,104 @@ void CMultizoneDriver::Update() {
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
     }
+  }
+
+}
+
+void CMultizoneDriver::Output(unsigned long TimeIter) {
+
+  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
+  bool output_files = false;
+
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
+
+  if (
+
+      /*--- General if statements to print output statements ---*/
+
+      (TimeIter+1 >= config_container[ZONE_0]->GetnTime_Iter()) || (StopCalc) ||
+
+      /*--- Unsteady problems ---*/
+
+      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+       ((TimeIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+
+      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                           ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+
+      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
+       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+
+      /*--- No inlet profile file found. Print template. ---*/
+
+      (config_container[ZONE_0]->GetWrt_InletFile())
+
+      ) {
+
+    output_files = true;
+
+  }
+
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
+  }
+
+  /*--- write the solution ---*/
+
+  if (output_files) {
+
+    /*--- Time the output for performance benchmarking. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeCompute += StopTime-StartTime;
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+
+    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
+
+
+    /*--- Execute the routine for writing special output. ---*/
+    output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+
+
+    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+    /*--- Store output time and restart the timer for the compute phase. ---*/
+#ifndef HAVE_MPI
+    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StopTime = MPI_Wtime();
+#endif
+    UsedTimeOutput += StopTime-StartTime;
+    OutputCount++;
+    BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
+#ifndef HAVE_MPI
+    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+    StartTime = MPI_Wtime();
+#endif
+
   }
 
 }
