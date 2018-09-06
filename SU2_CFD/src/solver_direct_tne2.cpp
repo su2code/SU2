@@ -3708,14 +3708,11 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   ModVel_FreeStream = sqrt(ModVel_FreeStream); config->SetModVel_FreeStream(ModVel_FreeStream);
 
 	/*--- Compute the density ---*/
-	Velocity_Reynolds    = ModVel_FreeStream;
-	Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
-	Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
+	Density_FreeStream = Pressure_FreeStream/(Gas_Constant*Temperature_FreeStream);
+  config->SetDensity_FreeStream(Density_FreeStream);
 
 
-
-
-	/*--- Viscous initialization ---*/
+  /*--- Viscous initialization ---*/
 
   if (viscous) {
 
@@ -3753,6 +3750,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 		 Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 		 Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
 		 Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
+     Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
     }
 
     /*--- Turbulence kinetic energy ---*/
@@ -3763,6 +3761,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
     /*--- For inviscid flow, energy is calculated from the specified
        FreeStream quantities using the proper gas law. ---*/
+    Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
 
   }
 
