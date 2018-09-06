@@ -1940,10 +1940,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("INNER_ITER", Inner_Iter, 1);
   /* DESCRIPTION: Number of time steps solved in the multizone problem. */
   addUnsignedLongOption("TIME_ITER", Time_Iter, 1);
+  /* DESCRIPTION: Number of iterations in each single-zone block. */
+  addUnsignedLongOption("ITER", Iter, 1000);
   /* DESCRIPTION: Restart iteration in the multizone problem. */
   addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("TIME_STEP", Time_Step, 0.0);
+  /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
+  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
 
   /*!\par KIND_INTERPOLATION \n
@@ -2584,9 +2592,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    Relaxation = true;  // For FSI problems, the relaxation stage is always called
-    if (Dynamic_Analysis == STATIC)
-	nExtIter = 1;
+    if (FSI_Problem) Relaxation = true;  // For FSI problems, the relaxation stage is always called
+    if (Dynamic_Analysis == STATIC) nExtIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
