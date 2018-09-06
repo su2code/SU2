@@ -2367,9 +2367,9 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
 
   /*--- Set the primitive variables ---*/
   
@@ -4898,6 +4898,7 @@ void CIncEulerSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CIncEulerSolver::GetInletAtVertex(su2double *val_inlet,
                                             unsigned long val_inlet_point,
                                             unsigned short val_kind_marker,
+                                            string val_marker,
                                             CGeometry *geometry,
                                             CConfig *config) {
   
@@ -4917,7 +4918,8 @@ su2double CIncEulerSolver::GetInletAtVertex(su2double *val_inlet,
   if (val_kind_marker == INLET_FLOW) {
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
         
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
           
@@ -7437,9 +7439,9 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool fixed_cl             = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
-  /*--- Update the angle of attack at the far-field for fixed CL calculations. ---*/
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
-  if (fixed_cl) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
   
   /*--- Set the primitive variables ---*/
   
