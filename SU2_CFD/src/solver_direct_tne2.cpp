@@ -3685,7 +3685,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
   Pressure_FreeStream     = config->GetPressure_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
   Gas_Constant  				  = config->GetGas_Constant();
-
+	cout << Pressure_FreeStream << endl;
+	cout << Gas_Constant << endl;
 	Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
