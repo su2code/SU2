@@ -743,6 +743,7 @@ bool CFluidIteration::Monitor(COutput *output,
 
   bool StopCalc = false;
   bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
 
 #ifndef HAVE_MPI
   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
@@ -755,7 +756,12 @@ bool CFluidIteration::Monitor(COutput *output,
   StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
 
   /*--- Write the convergence history for the fluid (only screen output) ---*/
-  if (steady && !StopCalc) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+
+  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
 
   return StopCalc;
 
@@ -1363,7 +1369,8 @@ bool CHeatIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     {
+}
 void CHeatIteration::Postprocess(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
