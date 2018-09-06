@@ -1193,7 +1193,7 @@ public:
  * \author R. Sanchez.
  * \version 4.2.0 "Cardinal"
  */
-class CDiscAdjFSIDriver : public CFSIDriver {
+class CDiscAdjFSIDriver : public CDriver {
 
   CIteration** direct_iteration;
   unsigned short RecordingState;
@@ -1462,6 +1462,20 @@ public:
    * \brief Overload, does nothing but avoids dynamic mesh updates in adjoint FSI problems before the iteration
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
+
+  /*!
+   * \brief Transfer the displacements computed on the structural solver into the fluid solver.
+   * \param[in] donorZone - zone in which the displacements will be transferred.
+   * \param[in] targetZone - zone which receives the tractions transferred.
+   */
+  void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Transfer the tractions computed on the fluid solver into the structural solver.
+   * \param[in] donorZone - zone from which the tractions will be transferred.
+   * \param[in] targetZone - zone which receives the tractions transferred.
+   */
+  void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone);
 
 };
 
