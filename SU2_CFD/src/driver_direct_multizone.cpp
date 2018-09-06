@@ -144,9 +144,13 @@ void CMultizoneDriver::StartSolver() {
 
     Preprocess(TimeIter);
 
-    /*--- Run a BGS iteration of the multizone problem. ---*/
+    /*--- Run a block iteration of the multizone problem. ---*/
 
-    Run();
+    switch (driver_config->GetKind_MZSolver()){
+      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      default: Run_GaussSeidel(); break;
+    }
 
     /*--- Update the solution for dual time stepping strategy ---*/
 
@@ -231,7 +235,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
 }
 
-void CMultizoneDriver::Run() {
+void CMultizoneDriver::Run_GaussSeidel() {
 
   unsigned long iOuter_Iter;
   unsigned short jZone;
@@ -264,8 +268,8 @@ void CMultizoneDriver::Run() {
       iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-      /*--- A relaxation step can help preventing numerical instabilities ---*/
-      Relaxation();
+      /*--- A corrector step can help preventing numerical instabilities ---*/
+      Corrector(iZone);
 
     }
 
@@ -277,13 +281,65 @@ void CMultizoneDriver::Run() {
 
 }
 
+void CMultizoneDriver::Run_Jacobi() {
 
+  unsigned long iOuter_Iter;
+  unsigned short jZone;
+  bool UpdateMesh = false;
+  unsigned long ExtIter = 0;
+  bool Convergence = false;
 
-void CMultizoneDriver::Relaxation() {
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
-    if (config_container[iZone]->GetRelaxation())
-      iteration_container[iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+  /*--- Loop over the number of outer iterations ---*/
+  for (iOuter_Iter = 0; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+
+    /*--- Transfer from all zones ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Set the OuterIter ---*/
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+      /*--- Transfer from all the remaining zones ---*/
+      for (jZone = 0; jZone < nZone; jZone++){
+        /*--- The target zone is iZone ---*/
+        if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
+          UpdateMesh = Transfer_Data(jZone, iZone);
+          /*--- If a mesh update is required due to the transfer of data ---*/
+          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+        }
+      }
+
+    }
+
+      /*--- Loop over the number of zones (IZONE) ---*/
+    for (iZone = 0; iZone < nZone; iZone++){
+
+      /*--- Set the OuterIter ---*/
+      config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+      /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+      iteration_container[iZone][INST_0]->Iterate_Block(output, integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+      /*--- A corrector step can help preventing numerical instabilities ---*/
+      Corrector(iZone);
+
+    }
+
+    Convergence = OuterConvergence(iOuter_Iter);
+
+    if (Convergence) break;
+
+  }
+
+}
+
+void CMultizoneDriver::Corrector(unsigned short val_iZone) {
+
+    if (config_container[val_iZone]->GetRelaxation())
+      iteration_container[val_iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+          numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
 }
 
