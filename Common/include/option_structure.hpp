@@ -129,7 +129,6 @@ const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. 
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
 const unsigned int ZONE_1 = 1; /*!< \brief Definition of the second grid domain. */
-const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
@@ -310,21 +309,6 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
 ("NEARLY_INCOMPRESSIBLE", NEARLY_INCOMPRESSIBLE_MAT)
 ("INCOMPRESSIBLE", INCOMPRESSIBLE_MAT);
 
-
-/*------New option for pressure-based system-------*/
-/*!
- * \brief Type of incompressible solver
- */
-enum ENUM_INCOMP_SYSTEM {
-  DENSITY_BASED = 0,		/*!< \brief Density-based. */
-  PRESSURE_BASED = 1,        /*!< \brief Pressure-based. */
-};
-static const map<string, ENUM_INCOMP_SYSTEM> Incomp_Map = CCreateMap<string, ENUM_INCOMP_SYSTEM>
-("DENSITY_BASED", DENSITY_BASED)
-("PRESSURE_BASED", PRESSURE_BASED);
-/*------New option for pressure-based system-------*/
-
-
 /*!
  * \brief types of interpolators
  */
@@ -440,7 +424,7 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
-const int POISSON_SOL = 6;		/*!< \brief Position of the electronic potential solution in the solver container array. */
+const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
 const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
 
