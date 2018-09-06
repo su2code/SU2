@@ -2592,7 +2592,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (FSI_Problem) Relaxation = true;  // For FSI problems, the relaxation stage is always called
     if (Dynamic_Analysis == STATIC) nExtIter = 1;
   }
 
@@ -5475,7 +5474,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
-    cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    if (SinglezoneDriver){
+      cout << "Maximum number of solver subiterations: " << Iter <<"."<< endl;
+      cout << "Maximum number of physical time-steps: " << Time_Iter <<"."<< endl;
+    }
+    else{
+      cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    }
 
     if (!fea){
 
@@ -8137,6 +8142,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
       break;
     case FEM_ELASTICITY:
       structural_zone = true;
+      Relaxation = true;
       break;
     }
   }
