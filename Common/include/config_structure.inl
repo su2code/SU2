@@ -1932,9 +1932,16 @@ inline unsigned long CConfig::GetnOuter_Iter(void) { return Outer_Iter; }
 
 inline unsigned long CConfig::GetnTime_Iter(void) { return Time_Iter; }
 
+inline unsigned long CConfig::GetnIter(void) { return Iter; }
+
 inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
 
 inline su2double CConfig::GetTime_Step(void) { return Time_Step; }
 
 inline bool CConfig::GetMultizone_Mesh(void) { return Multizone_Mesh; }
 
+inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
+
+inline bool CConfig::GetSpecial_Output(void) { return SpecialOutput; }
+
+inline bool CConfig::GetWrt_ForcesBreakdown(void) { return Wrt_ForcesBreakdown; }

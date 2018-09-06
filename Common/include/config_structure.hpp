@@ -1024,9 +1024,13 @@ private:
   unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
   Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
   Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
+  bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
+  Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8602,6 +8606,12 @@ public:
   unsigned long GetnTime_Iter(void);
 
   /*!
+   * \brief Get the number of pseudo-time iterations
+   * \return Number of pseudo-time steps run for the single-zone problem
+   */
+  unsigned long GetnIter(void);
+
+  /*!
    * \brief Get the restart iteration
    * \return Iteration for the restart of multizone problems
    */
@@ -8618,6 +8628,24 @@ public:
    * \return YES if multiple zones can be contained in the mesh file.
    */
   bool GetMultizone_Mesh(void);
+
+  /*!
+   * \brief Check if the (new) single-zone driver is to be used (temporary)
+   * \return YES if the (new) single-zone driver is to be used.
+   */
+  bool GetSinglezone_Driver(void);
+
+  /*!
+   * \brief Check if the special output is written
+   * \return YES if the special output is written.
+   */
+  bool GetSpecial_Output(void);
+
+  /*!
+   * \brief Check if the forces breakdown file is written
+   * \return YES if the forces breakdown file is written.
+   */
+  bool GetWrt_ForcesBreakdown(void);
 };
 
 #include "config_structure.inl"
