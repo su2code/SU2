@@ -1415,7 +1415,8 @@ enum ENUM_OUTPUT {
   FIELDVIEW_BINARY = 4,  /*!< \brief FieldView binary format for the solution output. */
   CSV = 5,			         /*!< \brief Comma-separated values format for the solution output. */
   CGNS_SOL = 6,  	     	 /*!< \brief CGNS format for the solution output. */
-  PARAVIEW = 7  		     /*!< \brief Paraview format for the solution output. */
+  PARAVIEW = 7,  		     /*!< \brief Paraview ASCII format for the solution output. */
+  PARAVIEW_BINARY = 8    /*!< \brief Paraview binary format for the solution output. */
 };
 static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPUT>
 ("TECPLOT", TECPLOT)
@@ -1424,7 +1425,8 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("FIELDVIEW_BINARY", FIELDVIEW_BINARY)
 ("CSV", CSV)
 ("CGNS", CGNS_SOL)
-("PARAVIEW", PARAVIEW);
+("PARAVIEW", PARAVIEW)
+("PARAVIEW_BINARY", PARAVIEW_BINARY);
 
 /*!
  * \brief type of jump definition
@@ -1479,41 +1481,47 @@ static const map<string, ENUM_OUTPUT_VARS> Output_Vars_Map = CCreateMap<string, 
  * \brief types of design parameterizations
  */
 enum ENUM_PARAM {
-  TRANSLATION = 0,		       /*!< \brief Surface movement as design variable. */
-  ROTATION = 1,			         /*!< \brief Surface rotation as design variable. */
-  SCALE = 2,			           /*!< \brief Surface rotation as design variable. */
-  FFD_SETTING = 3,		       /*!< \brief No surface deformation. */
-  FFD_CONTROL_POINT = 4,	   /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_NACELLE = 5,	         /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_GULL = 6,	             /*!< \brief Free form deformation for 3D design (change a control point). */
-  FFD_CAMBER = 7,		         /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_TWIST = 8,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
-  FFD_THICKNESS = 9,		     /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_DIHEDRAL_ANGLE = 10,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
-  FFD_ROTATION = 11,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
-  FFD_CONTROL_POINT_2D = 12, /*!< \brief Free form deformation for 2D design (change a control point). */
-  FFD_CAMBER_2D = 13,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_THICKNESS_2D = 14,		 /*!< \brief Free form deformation for 3D design (thickness change). */
-  FFD_TWIST_2D = 15,		     /*!< \brief Free form deformation for 3D design (camber change). */
-  FFD_CONTROL_SURFACE = 16,	 /*!< \brief Free form deformation for 3D design (control surface). */
-  HICKS_HENNE = 17,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
-  PARABOLIC = 18,		         /*!< \brief Parabolic airfoil definition as design variables. */
-  NACA_4DIGITS = 19,	       /*!< \brief The four digits NACA airfoil family as design variables. */
-  AIRFOIL = 20,		           /*!< \brief Airfoil definition as design variables. */
-  CST = 21,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
-  SURFACE_BUMP = 22,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
-  SURFACE_FILE = 23,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
-  NO_DEFORMATION = 24,		   /*!< \brief No Deformation. */
-  DV_EFIELD = 30,            /*!< \brief Electric field in deformable membranes. */
-  DV_YOUNG = 31,
-  DV_POISSON = 32,
-  DV_RHO = 33,
-  DV_RHO_DL = 34,
-  TRANSLATE_GRID = 35,       /*!< \brief Translate the volume grid. */
-  ROTATE_GRID = 36,          /*!< \brief Rotate the volume grid */
-  SCALE_GRID = 37,           /*!< \brief Scale the volume grid. */
-  ANGLE_OF_ATTACK = 101,	   /*!< \brief Angle of attack for airfoils. */
-  FFD_ANGLE_OF_ATTACK = 102	 /*!< \brief Angle of attack for FFD problem. */
+  NO_DEFORMATION = 0,       /*!< \brief No deformation. */
+
+  TRANSLATION = 1,		       /*!< \brief Surface movement as design variable. */
+  ROTATION = 2,			         /*!< \brief Surface rotation as design variable. */
+  SCALE = 3,			           /*!< \brief Surface rotation as design variable. */
+  
+  FFD_SETTING = 10,		       /*!< \brief No surface deformation. */
+  FFD_CONTROL_POINT = 11,	   /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_NACELLE = 12,	         /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_GULL = 13,	             /*!< \brief Free form deformation for 3D design (change a control point). */
+  FFD_CAMBER = 14,		         /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_TWIST = 15,		         /*!< \brief Free form deformation for 3D design (change the twist angle of a section). */
+  FFD_THICKNESS = 16,		     /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_DIHEDRAL_ANGLE = 17,	 /*!< \brief Free form deformation for 3D design (change the dihedral angle). */
+  FFD_ROTATION = 18,		     /*!< \brief Free form deformation for 3D design (rotation around a line). */
+  FFD_CONTROL_POINT_2D = 19, /*!< \brief Free form deformation for 2D design (change a control point). */
+  FFD_CAMBER_2D = 20,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_THICKNESS_2D = 21,		 /*!< \brief Free form deformation for 3D design (thickness change). */
+  FFD_TWIST_2D = 22,		     /*!< \brief Free form deformation for 3D design (camber change). */
+  FFD_CONTROL_SURFACE = 23,	 /*!< \brief Free form deformation for 3D design (control surface). */
+  FFD_ANGLE_OF_ATTACK = 24,   /*!< \brief Angle of attack for FFD problem. */
+
+  HICKS_HENNE = 30,	         /*!< \brief Hicks-Henne bump function for airfoil deformation. */
+  PARABOLIC = 31,		         /*!< \brief Parabolic airfoil definition as design variables. */
+  NACA_4DIGITS = 32,	       /*!< \brief The four digits NACA airfoil family as design variables. */
+  AIRFOIL = 33,		           /*!< \brief Airfoil definition as design variables. */
+  CST = 34,                  /*!< \brief CST method with Kulfan parameters for airfoil deformation. */
+  SURFACE_BUMP = 35,	       /*!< \brief Surfacebump function for flat surfaces deformation. */
+  SURFACE_FILE = 36,		     /*!< \brief Nodal coordinates for surface set using a file (external parameterization). */
+  
+  DV_EFIELD = 40,            /*!< \brief Electric field in deformable membranes. */
+  DV_YOUNG = 41,
+  DV_POISSON = 42,
+  DV_RHO = 43,
+  DV_RHO_DL = 44,
+  
+  TRANSLATE_GRID = 50,       /*!< \brief Translate the volume grid. */
+  ROTATE_GRID = 51,          /*!< \brief Rotate the volume grid */
+  SCALE_GRID = 52,           /*!< \brief Scale the volume grid. */
+  
+  ANGLE_OF_ATTACK = 101	   /*!< \brief Angle of attack for airfoils. */
 };
 static const map<string, ENUM_PARAM> Param_Map = CCreateMap<string, ENUM_PARAM>
 ("FFD_SETTING", FFD_SETTING)
