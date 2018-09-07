@@ -4093,14 +4093,14 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     
     if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"Pressure_Coefficient\"\t\"Mach\"";
       } else
         restart_file << "\t\"Pressure\"\t\"Temperature\"\t\"C<sub>p</sub>\"\t\"Mach\"";
     }
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         if (nDim == 2) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Heat_Flux\"\t\"Y_Plus\"";
         if (nDim == 3) restart_file << "\t\"Laminar_Viscosity\"\t\"Skin_Friction_Coefficient_X\"\t\"Skin_Friction_Coefficient_Y\"\t\"Skin_Friction_Coefficient_Z\"\t\"Heat_Flux\"\t\"Y_Plus\"";
       } else {
@@ -4110,7 +4110,7 @@ void COutput::SetRestart(CConfig *config, CGeometry *geometry, CSolver **solver,
     }
     
     if (Kind_Solver == RANS) {
-      if (config->GetOutput_FileFormat() == PARAVIEW) {
+      if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
         restart_file << "\t\"Eddy_Viscosity\"";
       } else
         restart_file << "\t\"<greek>m</greek><sub>t</sub>\"";
@@ -4339,7 +4339,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
   else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
            (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-  else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+  else if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY))  SPRINTF (buffer, ".csv");
   strcat(cstr, buffer);
   
   ConvHist_file->open(cstr, ios::out);
@@ -4369,6 +4369,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char d_thermal_coeff[] = ",\"D(HeatFlux_Total)\",\"D(HeatFlux_Maximum)\"";
   char d_engine[] = ",\"D(NetThrust)\",\"D(Power)\",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
   char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
+  char d_surface_outputs[]= ",\"D(Uniformity)\",\"D(Secondary_Strength)\",\"D(Momentum_Distortion)\",\"D(Secondary_Over_Uniformity)\",\"D(Pressure_Drop)\"";
 
   /*--- Find the markers being monitored and create a header for them ---*/
   
@@ -4477,6 +4478,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
         else        ConvHist_file[0] << d_turbo_coeff;
         if (engine || actuator_disk) ConvHist_file[0] << d_engine;
         if (thermal) ConvHist_file[0] << d_thermal_coeff;
+        if (output_surface) ConvHist_file[0] << d_surface_outputs;
       }
       if (output_comboObj) ConvHist_file[0] << combo_obj;
       ConvHist_file[0] << end;
@@ -4587,21 +4589,28 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
           if (config[val_iZone]->GetnMarker_Analyze() != 0) {
             SpecialOutput_AnalyzeSurface(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                         geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                         geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the surface. ---*/
 
           if ((config[val_iZone]->GetnMarker_Analyze() != 0) && compressible) {
             SpecialOutput_Distortion(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                     geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                     geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
 
           /*--- For specific applications, evaluate and plot the equivalent area. ---*/
 
           if (config[val_iZone]->GetnMarker_NearFieldBound() != 0) {
             SpecialOutput_SonicBoom(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
-                                    geometry[val_iZone][val_iInst][MESH_0], config[ZONE_0], output_files);
+                                    geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
+          }
+          
+          /*--- For specific applications, evaluate and plot the cp coefficent at different stations. ---*/
+          
+          if (config[val_iZone]->GetPlot_Section_Forces()) {
+            SpecialOutput_SpanLoad(solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL],
+                                   geometry[val_iZone][val_iInst][MESH_0], config[val_iZone], output_files);
           }
           
           break;
@@ -4622,8 +4631,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       /*--- Output a file with the forces breakdown. ---*/
       
       SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
-      
-      if ((rank == MASTER_NODE) && !(fea || fluid_structure)) cout << endl;
       
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
       
@@ -4658,7 +4665,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000], wave_coeff[1000],
     begin_fem[1000], fem_coeff[1000], wave_resid[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
 
     su2double dummy = 0.0, *Coord;
     unsigned short iVar, iMarker_Monitoring;
@@ -4747,7 +4754,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double D_Total_CL = 0.0, D_Total_CD = 0.0, D_Total_CSF = 0.0, D_Total_CMx = 0.0, D_Total_CMy = 0.0, D_Total_CMz = 0.0, D_Total_CEff = 0.0, D_Total_CFx = 0.0,
         D_Total_CFy = 0.0, D_Total_CFz = 0.0, D_Total_NetThrust = 0.0, D_Total_Power = 0.0, D_Total_AeroCD = 0.0, D_Total_SolidCD = 0.0, D_Total_IDR = 0.0, D_Total_IDC = 0.0, D_Total_Custom_ObjFunc = 0.0, D_Total_Heat = 0.0, D_Total_MaxHeat = 0.0,
         D_TotalPressure_Loss = 0.0, D_FlowAngle_Out = 0.0, D_TotalStaticEfficiency = 0.0,
-        D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0;
+        D_TotalTotalEfficiency = 0.0, D_EntropyGen = 0.0, 
+        D_Surface_Uniformity = 0.0, D_Surface_SecondaryStrength = 0.0, D_Surface_MomentumDistortion = 0.0, D_Surface_SecondOverUniform = 0.0, D_Surface_PressureDrop = 0.0;
     
     /*--- Residual arrays ---*/
     su2double *residual_flow         = NULL,
@@ -4984,6 +4992,13 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Surface_TotalPressure = config[ZONE_0]->GetSurface_TotalPressure(iMarker_Analyze);
           Surface_PressureDrop = config[ZONE_0]->GetSurface_PressureDrop(iMarker_Analyze);
 
+          if (direct_diff != NO_DERIVATIVE){
+            D_Surface_Uniformity = SU2_TYPE::GetDerivative(Surface_Uniformity);
+            D_Surface_SecondaryStrength = SU2_TYPE::GetDerivative(Surface_SecondaryStrength);
+            D_Surface_MomentumDistortion = SU2_TYPE::GetDerivative(Surface_MomentumDistortion);
+            D_Surface_SecondOverUniform = SU2_TYPE::GetDerivative(Surface_SecondOverUniform);
+            D_Surface_PressureDrop = SU2_TYPE::GetDerivative(Surface_PressureDrop);
+          }
         }
         
         /*--- Flow Residuals ---*/
@@ -5349,6 +5364,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             
             if (output_surface) {
               SPRINTF( surface_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Surface_MassFlow, Surface_Mach, Surface_Temperature, Surface_Pressure, Surface_Density, Surface_Enthalpy, Surface_NormalVelocity, Surface_Uniformity, Surface_SecondaryStrength, Surface_MomentumDistortion, Surface_SecondOverUniform, Surface_TotalTemperature, Surface_TotalPressure, Surface_PressureDrop);
+
+              if (direct_diff != NO_DERIVATIVE) {
+                SPRINTF( d_surface_outputs, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", 
+                        D_Surface_Uniformity, D_Surface_SecondaryStrength, D_Surface_MomentumDistortion, D_Surface_SecondOverUniform, D_Surface_PressureDrop);
+              }
             }
             
             /*--- Transition residual ---*/
@@ -5829,7 +5849,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               else cout << "     Res[Psi_Rho]";
 
               if (!frozen_visc) {
-                cout << "      Res[Psi_Turb[0]]";
+                cout << " Res[Psi_Turb[0]]";
               }
               else {
                 if (incompressible) {if (energy) {cout << "   Res[Psi_Temp]";}
@@ -5923,7 +5943,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_surface) ConvHist_file[0] << surface_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (direct_diff != NO_DERIVATIVE) {
+              ConvHist_file[0] << d_direct_coeff;
+              if (output_surface) ConvHist_file[0] << d_surface_outputs;
+            }
             if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -6014,7 +6037,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
             if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
             if (output_surface) ConvHist_file[0] << surface_outputs;
-            if (direct_diff != NO_DERIVATIVE) ConvHist_file[0] << d_direct_coeff;
+            if (direct_diff != NO_DERIVATIVE) {
+              ConvHist_file[0] << d_direct_coeff;
+              if (output_surface) ConvHist_file[0] << d_surface_outputs;
+            }
             if (output_comboObj) ConvHist_file[0] << combo_obj;
             ConvHist_file[0] << end;
             ConvHist_file[0].flush();
@@ -8529,15 +8555,14 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
 
   /*--- Read the name of the output and input file ---*/
 
-  if (rank == MASTER_NODE) {
-    if (su2_file){
+  if (su2_file) {
+    if (rank == MASTER_NODE) {
       str = config[ZONE_0]->GetMesh_Out_FileName();
       strcpy (out_file, str.c_str());
       strcpy (cstr, out_file);
       output_file.precision(15);
       output_file.open(cstr, ios::out);
-
-      if (val_nZone > 1){
+      if (val_nZone > 1) {
         output_file << "NZONE= " << val_nZone << endl;
       }
     }
@@ -8547,8 +8572,8 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
     
     /*--- Flags identifying the types of files to be written. ---*/
     
-    bool Wrt_Vol = config[iZone]->GetWrt_Vol_Sol() && config[iZone]->GetVisualize_Deformation();
-    bool Wrt_Srf = config[iZone]->GetWrt_Srf_Sol() && config[iZone]->GetVisualize_Deformation();
+    bool Wrt_Vol = config[iZone]->GetVisualize_Volume_Def();
+    bool Wrt_Srf = config[iZone]->GetVisualize_Surface_Def();
     bool Wrt_Crd = config[iZone]->GetWrt_Crd_Sol();
     
     /*--- Merge the node coordinates and connectivity if necessary. This
@@ -8574,10 +8599,19 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
       if (Wrt_Vol) {
         
         if (rank == MASTER_NODE) cout <<"Writing volume mesh file." << endl;
-        
+
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview volume mesh file by default." << endl;
+          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, false, new_file);
+        }
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot volume mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, false, new_file);
+        }
         
       }
       
@@ -8586,29 +8620,43 @@ void COutput::SetMesh_Files(CGeometry **geometry, CConfig **config, unsigned sho
         if (rank == MASTER_NODE) cout <<"Writing surface mesh file." << endl;
         
         /*--- Write a Tecplot ASCII file ---*/
-        if (config[iZone]->GetOutput_FileFormat()==PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true,new_file);
-        else SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        
+        if (config[iZone]->GetOutput_FileFormat() == PARAVIEW) SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == PARAVIEW_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII paraview surface mesh file by default." << endl;
+          SetParaview_MeshASCII(config[iZone], geometry[iZone], iZone,  val_nZone, true, new_file);
+        }
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT) SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        else if (config[iZone]->GetOutput_FileFormat() == TECPLOT_BINARY) {
+          if (rank == MASTER_NODE) cout <<"Writing ASCII tecplot surface mesh file by default." << endl;
+          SetTecplotASCII_Mesh(config[iZone], geometry[iZone], iZone, true, new_file);
+        }
         
       }
       
       /*--- Write a .su2 ASCII file ---*/
 
-      if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
-
-      if (su2_file) SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
-      
-      /*--- Write an stl surface file ---*/
-
-      if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
-      
-      if (su2_file) SetSTL_MeshASCII(config[iZone], geometry[iZone]);
+      if (su2_file) {
+        
+        if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
+        
+        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
+        
+        /*--- Write an stl surface file ---*/
+        
+        if (rank == MASTER_NODE) cout <<"Writing .stl surface file." << endl;
+        
+        SetSTL_MeshASCII(config[iZone], geometry[iZone]);
+        
+      }
       
       /*--- Write a binary file with the grid coordinates alone. ---*/
       
       if (Wrt_Crd) {
-        cout <<"Writing .dat binary coordinates file." << endl;
+        if (rank == MASTER_NODE) cout <<"Writing .dat binary coordinates file." << endl;
         WriteCoordinates_Binary(config[iZone], geometry[iZone], iZone);
       }
+
       
       /*--- Deallocate connectivity ---*/
       
@@ -9012,7 +9060,7 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
           ofstream Load_File;
           if (iSection == 0) {
             
-            if (config->GetOutput_FileFormat() == PARAVIEW) {
+            if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
               Load_File.open("load_distribution.csv", ios::out);
               Load_File << "\"Percent Semispan\",\"Sectional C_L\",\"Spanload (c C_L / c_ref) \",\"Elliptic Spanload\"" << endl;
             }
@@ -9023,14 +9071,14 @@ void COutput::SpecialOutput_SpanLoad(CSolver *solver, CGeometry *geometry, CConf
               Load_File << "ZONE T=\"Wing load distribution\"" << endl;
             }
           } else {
-            if (config->GetOutput_FileFormat() == PARAVIEW) Load_File.open("load_distribution.csv", ios::app);
+            if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) Load_File.open("load_distribution.csv", ios::app);
             else Load_File.open("load_distribution.dat", ios::app);
           }
           
           
           /*--- CL and spanload ---*/
           
-          if (config->GetOutput_FileFormat() == PARAVIEW)
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY))
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << ", " << CL_Inv  << ", " << Chord*CL_Inv / RefLength <<", " << Elliptic_Spanload   << endl;
           else
             Load_File << 100.0*Ycoord_Airfoil[0]/(0.5*B) << " " << CL_Inv  << " " << Chord*CL_Inv / RefLength <<" " << Elliptic_Spanload   << endl;
@@ -10027,14 +10075,14 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
 
   if (output && (rank == MASTER_NODE)) {
 
-    if (config->GetOutput_FileFormat() == PARAVIEW) strcpy (cstr, "surface_analysis.vtk");
+    if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) strcpy (cstr, "surface_analysis.vtk");
     else strcpy (cstr, "surface_analysis.dat");
     
     SurfFlow_file.precision(15);
 
     SurfFlow_file.open(cstr, ios::out);
     
-    if (config->GetOutput_FileFormat() == PARAVIEW) {
+    if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
       SurfFlow_file << "# vtk DataFile Version 3.0" << endl;
       SurfFlow_file << "vtk output" << endl;
       SurfFlow_file << "ASCII" << endl;
@@ -10852,7 +10900,7 @@ void COutput::SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CCo
       
       if (output) {
         
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
           
           SurfFlow_file << "\nDATASET UNSTRUCTURED_GRID" << endl;
           SurfFlow_file <<"POINTS " << nAngle*nStation << " float" << endl;
@@ -11128,7 +11176,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
         (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
     else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == TECPLOT_BINARY) ||
              (config[ZONE_FLOW]->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".vtk");
+    else if ((config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW) || (config[ZONE_FLOW]->GetOutput_FileFormat() == PARAVIEW_BINARY))  SPRINTF (buffer, ".vtk");
     strcat(cstr, buffer);
 
     FSIHist_file->open(cstr, ios::out);
@@ -11422,14 +11470,14 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     fieldnames.push_back("\"x\"");
     fieldnames.push_back("\"y\"");
     if (nDim == 3) {
-      fieldnames.push_back("\"z\",");
+      fieldnames.push_back("\"z\"");
     }
     fieldnames.push_back("\"Sensitivity_x\"");
     fieldnames.push_back("\"Sensitivity_y\"");
     if (nDim == 3) {
       fieldnames.push_back("\"Sensitivity_z\"");
     }
-    fieldnames.push_back("\"Sensitivity\"");
+    fieldnames.push_back("\"Surface_Sensitivity\"");
 
     solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
 
@@ -12098,6 +12146,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
     
+    /*--- Get the file output format ---*/
+    
+    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       bool cont_adj = config[iZone]->GetContinuous_Adjoint();
@@ -12115,10 +12167,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
 #ifdef HAVE_MPI
       /*--- Do not merge the connectivity or write the visualization files
-     if we are running in parallel. Force the use of SU2_SOL to merge and
-     write the viz. files in this case to save overhead. ---*/
+     if we are running in parallel, unless we are using ParaView binary.
+       Force the use of SU2_SOL to merge and write the viz. files in this
+       case to save overhead. ---*/
 
-      if (size > SINGLE_NODE) {
+      if ((size > SINGLE_NODE) && (FileFormat != PARAVIEW_BINARY)) {
         Wrt_Vol = false;
         Wrt_Srf = false;
       }
@@ -12250,17 +12303,13 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       WriteCSV_Slice(config[iZone], geometry[iZone][iInst][MESH_0],
                      solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, 1);
     }
-
-    /*--- Get the file output format ---*/
-    
-    unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
     /*--- Write the solution files if they are requested and we are executing
      with a single rank (all data on one proc and no comm. overhead). Once we
      have parallel binary versions of Tecplot / ParaView / CGNS / etc., we
      can allow the write of the viz. files as well. ---*/
 
-    if ((size == SINGLE_NODE) && (rank == MASTER_NODE) && (Wrt_Vol || Wrt_Srf)) {
+    if ((Wrt_Vol || Wrt_Srf)) {
       
       /*--- First, sort all connectivity into linearly partitioned chunks of elements. ---*/
 
@@ -12323,6 +12372,15 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
                 solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
             break;
+            
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a Paraview binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview binary volume solution file." << endl;
+            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, false);
+            break;
 
           default:
             break;
@@ -12362,6 +12420,16 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
                 solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
             break;
+            
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a Paraview binary file ---*/
+            
+            if (rank == MASTER_NODE) cout << "Writing Paraview binary surface solution file." << endl;
+            WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
+                                         solver_container[iZone][iInst][MESH_0], iZone, val_nZone, true);
+            break;
+            
 
           default:
             break;
@@ -12471,9 +12539,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   nVar_Par += nVar_Consv_Par;
   
   Variable_Names.push_back("Density");
-  Variable_Names.push_back("X-Momentum");
-  Variable_Names.push_back("Y-Momentum");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Momentum");
+  Variable_Names.push_back("Momentum_x");
+  Variable_Names.push_back("Momentum_y");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Momentum_z");
   Variable_Names.push_back("Energy");
   
   if (SecondIndex != NONE) {
@@ -12497,9 +12565,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += nVar_Consv_Par;
       
       Variable_Names.push_back("Limiter_Density");
-      Variable_Names.push_back("Limiter_X-Momentum");
-      Variable_Names.push_back("Limiter_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Momentum");
+      Variable_Names.push_back("Limiter_Momentum_x");
+      Variable_Names.push_back("Limiter_Momentum_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Momentum_z");
       Variable_Names.push_back("Limiter_Energy");
       
       if (SecondIndex != NONE) {
@@ -12519,9 +12587,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += nVar_Consv_Par;
       
       Variable_Names.push_back("Residual_Density");
-      Variable_Names.push_back("Residual_X-Momentum");
-      Variable_Names.push_back("Residual_Y-Momentum");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Momentum");
+      Variable_Names.push_back("Residual_Momentum_x");
+      Variable_Names.push_back("Residual_Momentum_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Momentum_z");
       Variable_Names.push_back("Residual_Energy");
       
       if (SecondIndex != NONE) {
@@ -12541,9 +12609,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
       
-      Variable_Names.push_back("X-Grid_Velocity");
-      Variable_Names.push_back("Y-Grid_Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
     
     
@@ -12557,7 +12625,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     Variable_Names.push_back("Mach");
     
     nVar_Par += 1;
-    if (config->GetOutput_FileFormat() == PARAVIEW){
+    if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+        (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
@@ -12566,13 +12635,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
     
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
         nVar_Par += 2;
-        Variable_Names.push_back("X-Skin_Friction_Coefficient");
-        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
+        Variable_Names.push_back("Skin_Friction_Coefficient_x");
+        Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         nVar_Par += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -12595,7 +12665,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
@@ -12613,7 +12684,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     if (transition) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("gamma_BC");
       } else {
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
@@ -12976,9 +13048,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   /*--- The incompressible solver uses primitives as the working variables. ---*/
 
   Variable_Names.push_back("Pressure");
-  Variable_Names.push_back("X-Velocity");
-  Variable_Names.push_back("Y-Velocity");
-  if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Velocity");
+  Variable_Names.push_back("Velocity_x");
+  Variable_Names.push_back("Velocity_y");
+  if (geometry->GetnDim() == 3) Variable_Names.push_back("Velocity_z");
   Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
@@ -13002,9 +13074,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
 
       Variable_Names.push_back("Limiter_Pressure");
-      Variable_Names.push_back("Limiter_X-Velocity");
-      Variable_Names.push_back("Limiter_Y-Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Z-Velocity");
+      Variable_Names.push_back("Limiter_Velocity_x");
+      Variable_Names.push_back("Limiter_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Velocity_z");
       Variable_Names.push_back("Limiter_Temperature");
 
       if (SecondIndex != NONE) {
@@ -13024,9 +13096,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
 
       Variable_Names.push_back("Residual_Pressure");
-      Variable_Names.push_back("Residual_X-Velocity");
-      Variable_Names.push_back("Residual_Y-Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Z-Velocity");
+      Variable_Names.push_back("Residual_Velocity_x");
+      Variable_Names.push_back("Residual_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
       Variable_Names.push_back("Residual_Temperature");
 
       if (SecondIndex != NONE) {
@@ -13046,15 +13118,16 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
 
-      Variable_Names.push_back("X-Grid_Velocity");
-      Variable_Names.push_back("Y-Grid_Velocity");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Z-Grid_Velocity");
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
 
     /*--- Add Cp, Mach. ---*/
 
     nVar_Par += 2;
-    if (config->GetOutput_FileFormat() == PARAVIEW){
+    if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+        (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
@@ -13064,13 +13137,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         nVar_Par += 1; Variable_Names.push_back("Laminar_Viscosity");
         nVar_Par += 2;
-        Variable_Names.push_back("X-Skin_Friction_Coefficient");
-        Variable_Names.push_back("Y-Skin_Friction_Coefficient");
+        Variable_Names.push_back("Skin_Friction_Coefficient_x");
+        Variable_Names.push_back("Skin_Friction_Coefficient_y");
         if (geometry->GetnDim() == 3) {
-          nVar_Par += 1; Variable_Names.push_back("Z-Skin_Friction_Coefficient");
+          nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
         nVar_Par += 2;
         Variable_Names.push_back("Heat_Flux");
@@ -13093,7 +13167,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if (Kind_Solver == RANS) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
@@ -13111,7 +13186,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if (transition) {
       nVar_Par += 1;
-      if (config->GetOutput_FileFormat() == PARAVIEW){
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
         Variable_Names.push_back("gamma_BC");
       } else {
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
@@ -13447,16 +13523,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
 
   if (incompressible) {
     Variable_Names.push_back("Adjoint_Pressure");
-    Variable_Names.push_back("Adjoint_X-Velocity");
-    Variable_Names.push_back("Adjoint_Y-Velocity");
-    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Z-Velocity");
+    Variable_Names.push_back("Adjoint_Velocity_x");
+    Variable_Names.push_back("Adjoint_Velocity_y");
+    if (geometry->GetnDim() == 3) Variable_Names.push_back("Adjoint_Velocity_z");
     Variable_Names.push_back("Adjoint_Temperature");
   } else {
     Variable_Names.push_back("Adjoint_Density");
-    Variable_Names.push_back("Adjoint_X-Momentum");
-    Variable_Names.push_back("Adjoint_Y-Momentum");
+    Variable_Names.push_back("Adjoint_Momentum_x");
+    Variable_Names.push_back("Adjoint_Momentum_y");
     if (geometry->GetnDim() == 3)
-      Variable_Names.push_back("Adjoint_Z-Momentum");
+      Variable_Names.push_back("Adjoint_Momentum_z");
     Variable_Names.push_back("Adjoint_Energy");
   }
   if (SecondIndex != NONE) {
@@ -13493,16 +13569,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Limiter_Adjoint_Pressure");
-        Variable_Names.push_back("Limiter_Adjoint_X-Velocity");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Velocity");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Limiter_Adjoint_Velocity_x");
+        Variable_Names.push_back("Limiter_Adjoint_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Adjoint_Velocity_z");
         Variable_Names.push_back("Limiter_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Limiter_Adjoint_Density");
-        Variable_Names.push_back("Limiter_Adjoint_X-Momentum");
-        Variable_Names.push_back("Limiter_Adjoint_Y-Momentum");
+        Variable_Names.push_back("Limiter_Adjoint_Momentum_x");
+        Variable_Names.push_back("Limiter_Adjoint_Momentum_y");
         if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Limiter_Adjoint_Z-Momentum");
+          Variable_Names.push_back("Limiter_Adjoint_Momentum_z");
         Variable_Names.push_back("Limiter_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
@@ -13522,16 +13598,16 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
       nVar_Par += nVar_Consv_Par;
       if (incompressible) {
         Variable_Names.push_back("Residual_Adjoint_Pressure");
-        Variable_Names.push_back("Residual_Adjoint_X-Velocity");
-        Variable_Names.push_back("Residual_Adjoint_Y-Velocity");
-        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Z-Velocity");
+        Variable_Names.push_back("Residual_Adjoint_Velocity_x");
+        Variable_Names.push_back("Residual_Adjoint_Velocity_y");
+        if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Adjoint_Velocity_z");
         Variable_Names.push_back("Residual_Adjoint_Temperature");
       } else {
         Variable_Names.push_back("Residual_Adjoint_Density");
-        Variable_Names.push_back("Residual_Adjoint_X-Momentum");
-        Variable_Names.push_back("Residual_Adjoint_Y-Momentum");
+        Variable_Names.push_back("Residual_Adjoint_Momentum_x");
+        Variable_Names.push_back("Residual_Adjoint_Momentum_y");
         if (geometry->GetnDim() == 3)
-          Variable_Names.push_back("Residual_Adjoint_Z-Momentum");
+          Variable_Names.push_back("Residual_Adjoint_Momentum_z");
         Variable_Names.push_back("Residual_Adjoint_Energy");
       }
       if (SecondIndex != NONE) {
@@ -13550,9 +13626,9 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
     if (grid_movement) {
       if (geometry->GetnDim() == 2) nVar_Par += 2;
       else if (geometry->GetnDim() == 3) nVar_Par += 3;
-      Variable_Names.push_back("Grid_Velx");
-      Variable_Names.push_back("Grid_Vely");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velz");
+      Variable_Names.push_back("Grid_Velocity_x");
+      Variable_Names.push_back("Grid_Velocity_y");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
     
     /*--- All adjoint solvers write the surface sensitivity. ---*/
@@ -13840,34 +13916,24 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
    names. Names can be set alternatively by using the commented code
    below. ---*/
   
-  Variable_Names.push_back("Displacement_1");
-  Variable_Names.push_back("Displacement_2");
+  Variable_Names.push_back("Displacement_x");
+  Variable_Names.push_back("Displacement_y");
   if (geometry->GetnDim() == 3)
-    Variable_Names.push_back("Displacement_3");
+    Variable_Names.push_back("Displacement_z");
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
   if (!config->GetLow_MemoryOutput()) {
     
-    /*--- Add the limiters ---*/
-    
-    if (config->GetWrt_Limiters()) {
-      nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Limiter_Displacement_1");
-      Variable_Names.push_back("Limiter_Displacement_2");
-      if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Limiter_Displacement_3");
-    }
-    
     /*--- Add the residuals ---*/
     
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-      Variable_Names.push_back("Residual_Displacement_1");
-      Variable_Names.push_back("Residual_Displacement_2");
+      Variable_Names.push_back("Residual_Displacement_x");
+      Variable_Names.push_back("Residual_Displacement_y");
       if (geometry->GetnDim() == 3)
-        Variable_Names.push_back("Residual_Displacement_3");
+        Variable_Names.push_back("Residual_Displacement_z");
     }
     
     /*--- If the analysis is dynamic... ---*/
@@ -13875,20 +13941,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       
       /*--- Velocities ---*/
       nVar_Par += 2;
-      Variable_Names.push_back("Velocity_1");
-      Variable_Names.push_back("Velocity_2");
+      Variable_Names.push_back("Velocity_x");
+      Variable_Names.push_back("Velocity_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1;
-        Variable_Names.push_back("Velocity_3");
+        Variable_Names.push_back("Velocity_z");
       }
       
       /*--- Accelerations ---*/
       nVar_Par += 2;
-      Variable_Names.push_back("Acceleration_1");
-      Variable_Names.push_back("Acceleration_2");
+      Variable_Names.push_back("Acceleration_x");
+      Variable_Names.push_back("Acceleration_y");
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1;
-        Variable_Names.push_back("Acceleration_3");
+        Variable_Names.push_back("Acceleration_z");
       }
     }
     
@@ -13993,12 +14059,6 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
       }
       
       if (!config->GetLow_MemoryOutput()) {
-        if (config->GetWrt_Limiters()) {
-          for (jVar = 0; jVar < nVar_First; jVar++) {
-            Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetLimiter(jVar);
-            iVar++;
-          }
-        }
         if (config->GetWrt_Residuals()) {
           for (jVar = 0; jVar < nVar_First; jVar++) {
             Local_Data[jPoint][iVar] = solver[FirstIndex]->LinSysRes.GetBlock(iPoint, jVar);
