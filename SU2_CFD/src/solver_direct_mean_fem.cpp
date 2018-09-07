@@ -6189,6 +6189,15 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
             BC_Sym_Plane(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
                          numerics[CONV_BOUND_TERM], workArray);
             break;
+          case SUPERSONIC_INLET: /* Use far field for this. When a more detailed state
+                                    needs to be specified, use a Riemann boundary. */
+            BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                         numerics[CONV_BOUND_TERM], workArray);
+            break;
+          case SUPERSONIC_OUTLET:
+            BC_Supersonic_Outlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
+                                 numerics[CONV_BOUND_TERM], workArray);
+            break;
           case INLET_FLOW:
             BC_Inlet(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
                      numerics[CONV_BOUND_TERM], iMarker, workArray);
@@ -8304,6 +8313,70 @@ void CFEM_DG_EulerSolver::BC_Sym_Plane(CConfig                  *config,
         break;
       }
     }
+
+    /* The remainder of the contribution of this boundary face to the residual
+       is the same for all boundary conditions. Hence a generic function can
+       be used to carry out this task. */
+    ResidualInviscidBoundaryFace(config, llEnd, NPad, conv_numerics, &surfElem[l],
+                                 solIntL, solIntR, work, resFaces, indResFaces);
+
+    /* Update the value of the counter l to the end index of the
+       current chunk. */
+    l = lEnd;
+  }
+}
+
+void CFEM_DG_EulerSolver::BC_Supersonic_Outlet(CConfig                  *config,
+                                               const unsigned long      surfElemBeg,
+                                               const unsigned long      surfElemEnd,
+                                               const CSurfaceElementFEM *surfElem,
+                                               su2double                *resFaces,
+                                               CNumerics                *conv_numerics,
+                                               su2double                *workArray) {
+
+  /* Initialization of the counter in resFaces. */
+  unsigned long indResFaces = 0;
+
+  /* Determine the number of faces that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nFaceSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     corresponds to 64 byte alignment. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
+
+  /*--- Loop over the requested range of surface faces. Multiple faces
+        are treated simultaneously to improve the performance of the matrix
+        multiplications. As a consequence, the update of the counter l
+        happens at the end of this loop section. ---*/
+  for(unsigned long l=surfElemBeg; l<surfElemEnd;) {
+
+    /* Determine the end index for this chunk of faces and the padded
+       N value in the gemm computations. */
+    unsigned long lEnd;
+    unsigned short ind, llEnd, NPad;
+
+    MetaDataChunkOfElem(surfElem, l, surfElemEnd, nFaceSimul,
+                        nPadMin, lEnd, ind, llEnd, NPad);
+
+    /* Get the necessary data from the standard face. */
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    /*--- Set the pointers for the local arrays. ---*/
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
+
+    /* Compute the left states in the integration points of the chunk of
+       faces. The array work is used as temporary storage inside the
+       function LeftStatesIntegrationPointsBoundaryFace. */
+    LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
+                                            work, solIntL);
+
+    /* Set the right state in the integration points to the left state, i.e.
+       no boundary condition is applied for a supersonic outlet. */
+    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
 
     /* The remainder of the contribution of this boundary face to the residual
        is the same for all boundary conditions. Hence a generic function can
@@ -14675,6 +14748,72 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
     ResidualViscousBoundaryFace(config, conv_numerics, llEnd, NPad, &surfElem[l],
                                 solIntL, solIntR, gradSolInt, fluxes, viscFluxes,
                                 viscosityInt, kOverCvInt, resFaces, indResFaces);
+
+    /* Update the value of the counter l to the end index of the
+       current chunk. */
+    l = lEnd;
+  }
+}
+
+void CFEM_DG_NSSolver::BC_Supersonic_Outlet(CConfig                  *config,
+                                            const unsigned long      surfElemBeg,
+                                            const unsigned long      surfElemEnd,
+                                            const CSurfaceElementFEM *surfElem,
+                                            su2double                *resFaces,
+                                            CNumerics                *conv_numerics,
+                                            su2double                *workArray){
+
+  /* Initialization of the counter in resFaces. */
+  unsigned long indResFaces = 0;
+
+  /* Determine the number of faces that are treated simultaneously
+     in the matrix products to obtain good gemm performance. */
+  const unsigned short nPadInput  = config->GetSizeMatMulPadding();
+  const unsigned short nFaceSimul = nPadInput/nVar;
+
+  /* Determine the minimum padded size in the matrix multiplications, which
+     corresponds to 64 byte alignment. */
+  const unsigned short nPadMin = 64/sizeof(passivedouble);
+
+  /*--- Loop over the requested range of surface faces. Multiple faces
+        are treated simultaneously to improve the performance of the matrix
+        multiplications. As a consequence, the update of the counter l
+        happens at the end of this loop section. ---*/
+  for(unsigned long l=surfElemBeg; l<surfElemEnd;) {
+
+    /* Determine the end index for this chunk of faces and the padded
+       N value in the gemm computations. */
+    unsigned long lEnd;
+    unsigned short ind, llEnd, NPad;
+
+    MetaDataChunkOfElem(surfElem, l, surfElemEnd, nFaceSimul,
+                        nPadMin, lEnd, ind, llEnd, NPad);
+
+    /*--- Get the information from the standard element, which is the same
+          for all the faces in the chunks considered. ---*/
+    const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+    /*--- Set the pointers for the local arrays. ---*/
+    su2double *solIntL = workArray;
+    su2double *solIntR = solIntL + NPad*nInt;
+    su2double *work    = solIntR + NPad*nInt;
+
+    /* Compute the left states in the integration points of the chunk of
+       faces. The array workarray is used as temporary storage inside the
+       function LeftStatesIntegrationPointsBoundaryFace. */
+    LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
+                                            work, solIntL);
+
+    /* Set the right state in the integration points to the left state, i.e.
+       no boundary condition is applied for a supersonic outlet. */
+    memcpy(solIntR, solIntL, NPad*nInt*sizeof(su2double));
+
+    /* The remainder of the boundary treatment is the same for all
+       boundary conditions (except the symmetry plane). */
+    ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
+                                    0.0, false, 0.0, false, &surfElem[l],
+                                    solIntL, solIntR, work, resFaces,
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
