@@ -73,6 +73,7 @@ void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
 
 void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                                 const su2double velExchange,
+                                                const su2double muExchange,
                                                 const su2double pExchange,
                                                 const su2double Wall_HeatFlux,
                                                 const bool      HeatFlux_Prescribed,
@@ -149,7 +150,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
         rho[i] = pExchange / (R*T[i]);
 
         // Set the viscosity profile, based on Sutherland's law
-        mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S);
+        //mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S);
+        mu[i] = muExchange;
         nu[i] = mu[i]/rho[i];
       }
       // Set the initial friction length based on wall shear with linear
@@ -287,7 +289,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     // Update solution with new u and T profiles
     for(unsigned short i=0; i<numPoints; i++){
       rho[i] = pExchange / (R*T[i]);
-      mu[i] = C_1 * pow(T[i],1.5)/(T[i] + S);
+      mu[i] = muExchange;
       nu[i] = mu[i]/rho[i];
     }
 
@@ -376,6 +378,7 @@ void CWallModelLogLaw::Initialize(const unsigned short *intInfo,
 
 void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                                 const su2double velExchange,
+                                                const su2double muExchange,
                                                 const su2double pExchange,
                                                 const su2double Wall_HeatFlux,
                                                 const bool      HeatFlux_Prescribed,
@@ -392,7 +395,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   su2double k = 0.38;
   su2double C = 4.1;
   su2double u_tau0 = 0.001;
-  su2double nuExchange = pExchange / rhoExchange;
+  su2double nuExchange = muExchange / rhoExchange;
   
   su2double R = 287.058;
   su2double gamma = 1.4;
@@ -421,7 +424,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   
   tauWall = rhoExchange * pow(u_tau,2.0);
   qWall = 0.0;
-  ViscosityWall = pExchange;
+  ViscosityWall = muExchange;
   kOverCvWall = ViscosityWall * factHeatFlux_Lam;
 
 }

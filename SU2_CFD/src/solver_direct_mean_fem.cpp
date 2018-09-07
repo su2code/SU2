@@ -15278,6 +15278,12 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                                       viscosityInt, kOverCvInt);
   }
 
+  // Debug
+  //cout << fluxes[0] << " " << gradSolInt[0] << " " <<  viscFluxes[0] << " " << viscosityInt[0] << " " << kOverCvInt[0] << " " << endl;
+  //cout << fluxes[1] << " " << gradSolInt[1] << " " <<  viscFluxes[1] << " " << viscosityInt[1] << " " << kOverCvInt[1] << " " << endl;
+  
+  // end Debug
+  
   /* The remainder of the boundary condition treatment is the same for all
      types of boundary conditions, including the symmetry plane and the
      wall function treatment. The function ResidualViscousBoundaryFace will
@@ -15427,7 +15433,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         su2double eInt    = rhoInv*solInt[nVar-1] - 0.5*vel2Mag;
 
         FluidModel->SetTDState_rhoe(solInt[0], eInt);
-        //const su2double Pressure = FluidModel->GetPressure();
+        const su2double Pressure = FluidModel->GetPressure();
         const su2double LaminarViscosity= FluidModel->GetLaminarViscosity();
 
         /* Subtract the prescribed wall velocity, i.e. grid velocity
@@ -15462,8 +15468,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         //  cout << normals[m] << ", ";
         //cout << endl;
 
-        //wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, Pressure,
-        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, LaminarViscosity,
+        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, LaminarViscosity, Pressure,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
                                               tauWall, qWall, ViscosityWall, kOverCvWall);
