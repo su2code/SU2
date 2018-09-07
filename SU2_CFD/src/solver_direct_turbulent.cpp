@@ -3335,19 +3335,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         Spalart
         1997
         ---*/
-        maxDelta=0.;      
-        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
-          jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          coord_j = geometry->node[jPoint]->GetCoord();
-          
-          deltaAux = 0.;
-          for (iDim = 0;iDim < nDim; iDim++){
-            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
-          }
-          
-          maxDelta = max(maxDelta,sqrt(deltaAux));
-        }
         
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
         distDES         = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
                 
@@ -3359,18 +3348,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Theoretical and Computational Fluid Dynamics - 2006
          ---*/
             
-        maxDelta = 0.0;      
-        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
-          jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          coord_j = geometry->node[jPoint]->GetCoord();
-        
-          deltaAux = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++){
-            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
-          }
-          
-          maxDelta = max(maxDelta,sqrt(deltaAux));
-        }
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
         
         r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
@@ -3385,17 +3363,14 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Theoretical and Computational Fluid Dynamics - 2012
          ---*/
         
-        deltaDDES = 0.0;
         for (iNeigh = 0; iNeigh < nNeigh; iNeigh++){
             jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             coord_j = geometry->node[jPoint]->GetCoord();
-            deltaAuxDDES = 0.0;
             for ( iDim = 0; iDim < nDim; iDim++){
               deltaAux       = abs(coord_j[iDim] - coord_i[iDim]);
               delta[iDim]     = max(delta[iDim], deltaAux);
-              deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
             }
-            deltaDDES = max(deltaDDES,sqrt(deltaAuxDDES));
+            deltaDDES = geometry->node[iPoint]->GetMaxLength();
         }
         
         omega = sqrt(vorticity[0]*vorticity[0] + 
@@ -3444,12 +3419,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
           coord_j = geometry->node[jPoint]->GetCoord();
-          deltaAuxDDES = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
             delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);            
-            deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
-          deltaDDES=max(deltaDDES,sqrt(deltaAuxDDES));
+          deltaDDES = geometry->node[iPoint]->GetMaxLength();
           ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
           ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];

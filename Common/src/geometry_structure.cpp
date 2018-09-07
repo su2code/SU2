@@ -1381,6 +1381,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  geometry_container[MESH_0]->SetMaxLength();
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
@@ -14955,6 +14956,34 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
       if (Area == 0.0) for (iDim = 0; iDim < nDim; iDim++) NormalFace[iDim] = EPS*EPS;
     }
   
+}
+
+void CPhysicalGeometry::SetMaxLength(void) {
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+    const unsigned short nNeigh = node[iPoint]->GetnPoint();
+    const su2double* Coord_i = node[iPoint]->GetCoord();
+
+    su2double max_delta=0;
+    for (unsigned short iNeigh = 0;iNeigh < nNeigh; iNeigh++) {
+
+      /*-- Calculate the cell-center to cell-center length ---*/
+
+      const unsigned long jPoint  = node[iPoint]->GetPoint(iNeigh);
+      const su2double* Coord_j = node[jPoint]->GetCoord();
+
+      su2double delta_aux = 0;
+      for (unsigned short iDim = 0;iDim < nDim; iDim++){
+        delta_aux += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
+      }
+
+      /*--- Only keep the maximum length ---*/
+
+      max_delta = max(max_delta, sqrt(delta_aux));
+    }
+
+    node[iPoint]->SetMaxLength(max_delta);
+  }
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
