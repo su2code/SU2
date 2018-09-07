@@ -492,6 +492,11 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void SetMaxLength(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
@@ -1737,6 +1742,11 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \param[in] action - Allocate or not the new elements.
 	 */
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
+
+        /*!
+         * \brief Set the maximum cell-center to cell-center distance for CVs.
+         */
+        void SetMaxLength(void);
 
 	/*! 
 	 * \brief Set the Tecplot file.
