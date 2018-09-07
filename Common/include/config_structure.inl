@@ -1938,6 +1938,8 @@ inline unsigned long CConfig::GetRestart_Iter(void) { return Restart_Iter; }
 
 inline su2double CConfig::GetTime_Step(void) { return Time_Step; }
 
+inline su2double CConfig::GetMax_Time(void) { return Max_Time; }
+
 inline bool CConfig::GetMultizone_Mesh(void) { return Multizone_Mesh; }
 
 inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
