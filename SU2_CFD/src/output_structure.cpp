@@ -12136,8 +12136,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        unsigned short val_nZone) {
   
   unsigned short iZone, iVar, iInst;
-  unsigned short nInst = config[iZone]->GetnTimeInstances();
   unsigned long iPoint;
+  unsigned short nInst = 1;
   bool compressible = true;
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -12145,6 +12145,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Get the file output format ---*/
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    nInst = config[iZone]->GetnTimeInstances();
     
     for (iInst = 0; iInst < nInst; iInst++){
 
