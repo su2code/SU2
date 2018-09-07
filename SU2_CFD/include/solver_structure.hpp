@@ -13923,6 +13923,27 @@ public:
                             su2double                *workArray);
 
   /*!
+   * \brief Impose the supersonic outlet boundary condition. It is a virtual
+            function, because for Navier-Stokes it is overwritten.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
+   */
+  virtual void BC_Supersonic_Outlet(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics,
+                                    su2double                *workArray);
+
+  /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
    * \param[in]  config        - Definition of the particular problem.
@@ -15060,6 +15081,26 @@ public:
                     su2double                *resFaces,
                     CNumerics                *conv_numerics,
                     su2double                *workArray);
+
+ /*!
+   * \brief Impose the supersonic outlet boundary condition.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
+   */
+  void BC_Supersonic_Outlet(CConfig                  *config,
+                            const unsigned long      surfElemBeg,
+                            const unsigned long      surfElemEnd,
+                            const CSurfaceElementFEM *surfElem,
+                            su2double                *resFaces,
+                            CNumerics                *conv_numerics,
+                            su2double                *workArray);
 
   /*!
    * \brief Impose the subsonic inlet boundary condition.
