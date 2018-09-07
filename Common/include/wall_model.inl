@@ -48,6 +48,7 @@ inline void CWallModel::Initialize(const unsigned short *intInfo,
 
 inline void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
                                                    const su2double velExchange,
+                                                   const su2double muExchange,
                                                    const su2double pExchange,
                                                    const su2double Wall_HeatFlux,
                                                    const bool      HeatFlux_Prescribed,
