@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - thomas.economon@us.bosch.com    #su2code-dev@lists.stanford.edu
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - fix_sorting
+        - develop
 
 python:
     - 2.7
