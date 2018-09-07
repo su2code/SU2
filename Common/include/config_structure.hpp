@@ -1027,6 +1027,7 @@ private:
   Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
   Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
   su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
+  su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
   bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
@@ -8622,6 +8623,12 @@ public:
    * \return Time step for multizone problems, it is set on all the zones
    */
   su2double GetTime_Step(void);
+
+  /*!
+   * \brief Get the maximum simulation time for time-domain problems
+   * \return Simulation time for multizone problems, it is set on all the zones
+   */
+  su2double GetMax_Time(void);
 
   /*!
    * \brief Check if the mesh read supports multiple zones.

@@ -1946,6 +1946,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("TIME_STEP", Time_Step, 0.0);
+  /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
+  addDoubleOption("MAX_TIME", Max_Time, 1.0);
   /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
   addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
   /* DESCRIPTION: Determines if the special output is written out */
