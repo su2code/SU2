@@ -4554,7 +4554,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
   bool disc_adj             = config[val_iZone]->GetDiscrete_Adjoint();
   bool energy               = config[val_iZone]->GetEnergy_Equation();
   bool incload              = config[val_iZone]->GetIncrementalLoad();
-  bool output_files         = false;
+  bool output_files         = true;
 
   bool compressible = (config[val_iZone]->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config[val_iZone]->GetKind_Regime() == INCOMPRESSIBLE);
@@ -4625,6 +4625,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       if (config[val_iZone]->GetBoolTurbomachinery()) {
         SpecialOutput_Turbo(solver_container, geometry, config, val_iZone, output_files);
       }
+      
+      /*--- Output a file with the forces breakdown. ---*/
+      
+      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, val_iZone, output_files);
       
       if ((rank == MASTER_NODE) && output_files) cout << "-------------------------------------------------------------------------" << endl << endl;
       
