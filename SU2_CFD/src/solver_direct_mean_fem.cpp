@@ -13379,10 +13379,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem
                                                    su2double         *viscosityInt,
                                                    su2double         *kOverCvInt) {
 
-  /* Constant factor present in the heat flux vector. Set it to zero if the heat
-     flux is prescribed, such that no if statements are needed in the loop. */
-  const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Lam;
-  const su2double factHeatFlux_Turb = HeatFlux_Prescribed ? su2double(0.0): Gamma/Prandtl_Turb;
+  /* Multiplication factor for the heat flux. It is set to zero if the wall heat flux
+     is prescribed, such that the computed heat flux is zero, and to one otherwise. */
+  const su2double factHeatFlux = HeatFlux_Prescribed ? su2double(0.0): su2double(1.0);
 
   /* Set the value of the prescribed heat flux for the same reason. */
   const su2double HeatFlux = HeatFlux_Prescribed ? Wall_HeatFlux : su2double(0.0);
@@ -13448,8 +13447,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem
         su2double Viscosity, kOverCv;
 
         ViscousNormalFluxIntegrationPoint_2D(sol, solGradCart, normal, HeatFlux,
-                                             factHeatFlux_Lam, factHeatFlux_Turb,
-                                             wallDist, lenScale_LES,
+                                             factHeatFlux, wallDist, lenScale_LES,
                                              Viscosity, kOverCv, normalFlux);
 
         const unsigned short ind = indFaceChunk*nInt + i;
@@ -13523,8 +13521,7 @@ void CFEM_DG_NSSolver::ViscousNormalFluxFace(const CVolumeElementFEM *adjVolElem
         su2double Viscosity, kOverCv;
 
         ViscousNormalFluxIntegrationPoint_3D(sol, solGradCart, normal, HeatFlux,
-                                             factHeatFlux_Lam, factHeatFlux_Turb,
-                                             wallDist, lenScale_LES,
+                                             factHeatFlux, wallDist, lenScale_LES,
                                              Viscosity, kOverCv, normalFlux);
 
         const unsigned short ind = indFaceChunk*nInt + i;
@@ -13541,13 +13538,17 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
                                                             const su2double solGradCart[4][2],
                                                             const su2double *normal,
                                                             const su2double HeatFlux,
-                                                            const su2double factHeatFlux_Lam,
-                                                            const su2double factHeatFlux_Turb,
+                                                            const su2double factHeatFlux,
                                                             const su2double wallDist,
                                                             const su2double lenScale_LES,
                                                                   su2double &Viscosity,
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
+
+  /* Constant factor present in the heat flux vector, namely the ratio of
+     thermal conductivity and viscosity. */
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Compute the velocities and static energy in this integration point. ---*/
   const su2double rhoInv = 1.0/sol[0];
@@ -13595,13 +13596,15 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_2D(const su2double *sol
   const su2double lambda     = -TWO3*Viscosity;
   const su2double lamDivTerm =  lambda*divVel;
 
-  /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+  /*--- Compute the viscous stress tensor and minus the heatflux vector.
+        The heat flux vector is multiplied by factHeatFlux, such that the
+        case of a prescribed heat flux is treated correctly. ---*/
   const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
   const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
   const su2double tauxy = Viscosity*(dudy + dvdx);
 
-  const su2double qx = kOverCv*dStaticEnergyDx;
-  const su2double qy = kOverCv*dStaticEnergyDy;
+  const su2double qx = factHeatFlux*kOverCv*dStaticEnergyDx;
+  const su2double qy = factHeatFlux*kOverCv*dStaticEnergyDy;
 
   /* Compute the unscaled normal vector. */
   const su2double nx = normal[0]*normal[2];
@@ -13621,13 +13624,17 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
                                                             const su2double solGradCart[5][3],
                                                             const su2double *normal,
                                                             const su2double HeatFlux,
-                                                            const su2double factHeatFlux_Lam,
-                                                            const su2double factHeatFlux_Turb,
+                                                            const su2double factHeatFlux,
                                                             const su2double wallDist,
                                                             const su2double lenScale_LES,
                                                                   su2double &Viscosity,
                                                                   su2double &kOverCv,
                                                                   su2double *normalFlux) {
+
+  /* Constant factor present in the heat flux vector, namely the ratio of
+     thermal conductivity and viscosity. */
+  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
+  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
 
   /*--- Compute the velocities and static energy in this integration point. ---*/
   const su2double rhoInv = 1.0/sol[0];
@@ -13687,7 +13694,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
   const su2double lambda     = -TWO3*Viscosity;
   const su2double lamDivTerm =  lambda*divVel;
 
-  /*--- Compute the viscous stress tensor and minus the heatflux vector. ---*/
+  /*--- Compute the viscous stress tensor and minus the heatflux vector.
+        The heat flux vector is multiplied by factHeatFlux, such that the
+        case of a prescribed heat flux is treated correctly. ---*/
   const su2double tauxx = 2.0*Viscosity*dudx + lamDivTerm;
   const su2double tauyy = 2.0*Viscosity*dvdy + lamDivTerm;
   const su2double tauzz = 2.0*Viscosity*dwdz + lamDivTerm;
@@ -13696,9 +13705,9 @@ void CFEM_DG_NSSolver::ViscousNormalFluxIntegrationPoint_3D(const su2double *sol
   const su2double tauxz = Viscosity*(dudz + dwdx);
   const su2double tauyz = Viscosity*(dvdz + dwdy);
 
-  const su2double qx = kOverCv*dStaticEnergyDx;
-  const su2double qy = kOverCv*dStaticEnergyDy;
-  const su2double qz = kOverCv*dStaticEnergyDz;
+  const su2double qx = factHeatFlux*kOverCv*dStaticEnergyDx;
+  const su2double qy = factHeatFlux*kOverCv*dStaticEnergyDy;
+  const su2double qz = factHeatFlux*kOverCv*dStaticEnergyDz;
 
   /* Compute the unscaled normal vector. */
   const su2double nx = normal[0]*normal[3];
@@ -14347,11 +14356,6 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray){
 
-  /* Constant factor present in the heat flux vector, namely the ratio of
-     thermal conductivity and viscosity. */
-  const su2double factHeatFlux_Lam  = Gamma/Prandtl_Lam;
-  const su2double factHeatFlux_Turb = Gamma/Prandtl_Turb;
-
   /* Easier storage of the number of bytes to copy in the memcpy calls. */
   const unsigned long nBytes = nVar*sizeof(su2double);
 
@@ -14570,12 +14574,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
             su2double viscFluxL[4], viscFluxR[4];
             su2double Viscosity, kOverCv;
 
-            ViscousNormalFluxIntegrationPoint_2D(UR, URGradCart, normals, 0.0,
-                                                 factHeatFlux_Lam, factHeatFlux_Turb,
+            ViscousNormalFluxIntegrationPoint_2D(UR, URGradCart, normals, 0.0, 1.0,
                                                  wallDist, lenScale_LES, Viscosity,
                                                  kOverCv, viscFluxR);
-            ViscousNormalFluxIntegrationPoint_2D(UL, ULGradCart, normals, 0.0,
-                                                 factHeatFlux_Lam, factHeatFlux_Turb,
+            ViscousNormalFluxIntegrationPoint_2D(UL, ULGradCart, normals, 0.0, 1.0,
                                                  wallDist, lenScale_LES, Viscosity,
                                                  kOverCv, viscFluxL);
             viscosityInt[nInt*llRel+i] = Viscosity;
@@ -14718,12 +14720,10 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
             su2double viscFluxL[5], viscFluxR[5];
             su2double Viscosity, kOverCv;
 
-            ViscousNormalFluxIntegrationPoint_3D(UR, URGradCart, normals, 0.0,
-                                                 factHeatFlux_Lam, factHeatFlux_Turb,
+            ViscousNormalFluxIntegrationPoint_3D(UR, URGradCart, normals, 0.0, 1.0,
                                                  wallDist, lenScale_LES, Viscosity,
                                                  kOverCv, viscFluxR);
-            ViscousNormalFluxIntegrationPoint_3D(UL, ULGradCart, normals, 0.0,
-                                                 factHeatFlux_Lam, factHeatFlux_Turb,
+            ViscousNormalFluxIntegrationPoint_3D(UL, ULGradCart, normals, 0.0, 1.0,
                                                  wallDist, lenScale_LES, Viscosity,
                                                  kOverCv, viscFluxL);
             viscosityInt[nInt*llRel+i] = Viscosity;
