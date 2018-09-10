@@ -43,6 +43,8 @@ COutput::COutput(CConfig *config) {
   size = SU2_MPI::GetSize();
   
   field_width = 12;
+  
+  ConvergenceTable = new TablePrinter(&std::cout);
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
@@ -8665,78 +8667,46 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 }
 
 void COutput::SetScreen_Header(CConfig *config) {
-
-  const std::string sep = " |" ;
-  const int total_width = field_width*nScreenOutput + sep.size() * nScreenOutput ;
-  const std::string line = sep + std::string( total_width-1, '-' ) + '|' ;
-  stringstream out;
-  string currentField;
-  // Insert line break
-  out << line << '\n' << sep;
-  // Evaluate the requested output
-  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
-    currentField = ScreenFields[iField];  
-    if (HistoryOutput_Map.count(currentField) > 0){
-      PrintScreenHeaderString(out, HistoryOutput_Map[currentField].FieldName);
-    } else {
-//      SU2_MPI::Error(string("Requested screen output field not found: ") + currentField, CURRENT_FUNCTION);
-    }
-    if (HistoryOutputPerSurface_Map.count(currentField) > 0){
-      PrintScreenHeaderString(out, HistoryOutputPerSurface_Map[currentField][0].FieldName);      
-    }
-    out << sep;
-  }
-  
-  // Insert line break
-  out << '\n' << line << '\n';
-  cout << out.str();
-  
+  ConvergenceTable->PrintHeader();
 }
 
 
 void COutput::SetScreen_Output(CConfig *config) {
   
-  const std::string sep = " |" ;
-  const int total_width = field_width*nScreenOutput + sep.size() * nScreenOutput ;
-  const std::string line = sep + std::string( total_width-1, '-' ) + '|' ;
-  stringstream out;
+
   string currentField;
   
-  out << sep;
-  
   for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+    stringstream out;
     currentField = ScreenFields[iField]; 
     if (HistoryOutput_Map.count(currentField) > 0){  
       switch (HistoryOutput_Map[currentField].ScreenFormat) {
-      case FORMAT_INTEGER:
-        PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[currentField].Value));
-        break;
-      case FORMAT_FIXED:
-        PrintScreenFixed(out, HistoryOutput_Map[currentField].Value);
-        break;
-      case FORMAT_SCIENTIFIC:
-        PrintScreenScientific(out, HistoryOutput_Map[currentField].Value);
-        break;      
+        case FORMAT_INTEGER:
+          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[currentField].Value));
+          break;
+        case FORMAT_FIXED:
+          PrintScreenFixed(out, HistoryOutput_Map[currentField].Value);
+          break;
+        case FORMAT_SCIENTIFIC:
+          PrintScreenScientific(out, HistoryOutput_Map[currentField].Value);
+          break;      
       }
     }
     if (HistoryOutputPerSurface_Map.count(currentField) > 0){
       switch (HistoryOutputPerSurface_Map[currentField][0].ScreenFormat) {
-      case FORMAT_INTEGER:
-        PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[currentField][0].Value));
-        break;
-      case FORMAT_FIXED:
-        PrintScreenFixed(out, HistoryOutputPerSurface_Map[currentField][0].Value);
-        break;
-      case FORMAT_SCIENTIFIC:
-        PrintScreenScientific(out, HistoryOutputPerSurface_Map[currentField][0].Value);
-        break;   
+        case FORMAT_INTEGER:
+          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[currentField][0].Value));
+          break;
+        case FORMAT_FIXED:
+          PrintScreenFixed(out, HistoryOutputPerSurface_Map[currentField][0].Value);
+          break;
+        case FORMAT_SCIENTIFIC:
+          PrintScreenScientific(out, HistoryOutputPerSurface_Map[currentField][0].Value);
+          break;   
       }
-    }    
-    out << sep;
+    }      
+    (*ConvergenceTable) << out.str();
   }
-  out << '\n';
-  // Insert line break
-  cout << out.str();
 }
 
 
@@ -8793,6 +8763,23 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     /*--- Add the header to the history file. ---*/
     
     SetHistoryFile_Header(config);    
+    
+    string currentField;
+  
+    /*--- Set screen convergence output header ---*/
+    
+    // Evaluate the requested output
+    for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+      currentField = ScreenFields[iField];  
+      if (HistoryOutput_Map.count(currentField) > 0){ 
+        ConvergenceTable->AddColumn(HistoryOutput_Map[currentField].FieldName, field_width);
+      } else {
+  //      SU2_MPI::Error(string("Requested screen output field not found: ") + currentField, CURRENT_FUNCTION);
+      }
+      if (HistoryOutputPerSurface_Map.count(currentField) > 0){
+        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[currentField][0].FieldName, field_width);
+      }
+    }
   }
   
 }
