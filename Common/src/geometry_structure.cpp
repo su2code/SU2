@@ -37,6 +37,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
+#include "../include/tools.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -20653,8 +20654,23 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
   }
   else {
     if (rank == MASTER_NODE) {
-      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<" -> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
-      cout <<"MG level: "<< iMesh <<" -> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+      TablePrinter MGTable(&std::cout);
+      MGTable.AddColumn("MG Level", 10);
+      MGTable.AddColumn("CVs", 10);
+      MGTable.AddColumn("Aggl. Rate", 10);
+      MGTable.AddColumn("CFL", 10);
+      MGTable.set_flush_right();
+      
+      if (iMesh == 1){
+        MGTable.PrintHeader();
+        MGTable << iMesh - 1 << Global_nPointFine << "1/1.00" << config->GetCFL(iMesh -1);
+      }
+      stringstream ss;
+      ss << "1/" << std::setprecision(3) << ratio;
+      MGTable << iMesh << Global_nPointCoarse << ss.str() << CFL;
+      if (iMesh == config->GetnMGLevels()){
+        MGTable.PrintFooter();
+      }
     }
   }
  
