@@ -45,12 +45,12 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
   MinRankError = Rank;
   int flag = 0;
 
-#ifdef HAVE_MPI_NB_COLLECTIVE
+#if MPI_VERSION >= 3
   /* Find out whether the error call is collective via MPI_Ibarrier. */
   Request barrierRequest;
   MPI_Ibarrier(currentComm, &barrierRequest);
 
-  /* Try to complete the non-blocking barrier call for half a second. */
+  /* Try to complete the non-blocking barrier call for a second. */
   double startTime = MPI_Wtime();
   while( true ) {
 
@@ -58,9 +58,11 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     if( flag ) break;
 
     double currentTime = MPI_Wtime();
-    if(currentTime > startTime + 0.5) break;
+    if(currentTime > startTime + 1.0) break;
   }
 #else
+  /* MPI_Ibarrier function is not supported. Simply wait for one
+     second to give other ranks the opportunity to reach this point. */
   sleep(1);
 #endif
 
