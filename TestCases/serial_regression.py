@@ -375,11 +375,11 @@ def main():
     fem_ns_sphere.cfg_dir   = "hom_navierstokes/SphereViscous/nPoly3_QuadDominant"
     fem_ns_sphere.cfg_file  = "fem_Sphere_reg.cfg"
     fem_ns_sphere.test_iter = 10
-    fem_ns_sphere.test_vals = [0.441637,0.963217,-0.000022,67.293720] #last 4 columns
+    fem_ns_sphere.test_vals = [-0.288121,0.240324,0.000258,21.797363] #last 4 columns
     fem_ns_sphere.su2_exec  = "SU2_CFD"
     fem_ns_sphere.timeout   = 1600
     fem_ns_sphere.tol       = 0.00001
-    test_list.append(fem_ns_cylinder)
+    test_list.append(fem_ns_sphere)
 
     #########################
     ###    Transition     ###
