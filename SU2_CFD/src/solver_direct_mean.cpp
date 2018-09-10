@@ -3846,149 +3846,144 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
     
     cout <<"-- Input conditions:"<< endl;
     
-    TablePrinter NonDimTableIn(&std::cout);
+    TablePrinter NonDimTable(&std::cout);
     stringstream Unit;    
     
-    NonDimTableIn.AddColumn("Name", 18);
-    NonDimTableIn.AddColumn("Dim. value", 14, 10);
-    NonDimTableIn.AddColumn("Ref. value", 14, 10);
-    NonDimTableIn.AddColumn("Unit", 10);
-    NonDimTableIn.AddColumn("Non-dim. value", 14, 10);
-    
-    NonDimTableIn.PrintHeader();
+    NonDimTable.AddColumn("Name", 18);
+    NonDimTable.AddColumn("Dim. value", 14);
+    NonDimTable.AddColumn("Ref. value", 14);
+    NonDimTable.AddColumn("Unit", 10);
+    NonDimTable.AddColumn("Non-dim. value", 14);
+    NonDimTable.set_flush_right();
+    NonDimTable.PrintHeader();
     
     if (viscous){
       if (config->GetKind_ViscosityModel() == CONSTANT_VISCOSITY){
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        NonDimTableIn << "Viscosity" << config->GetMu_Constant() << config->GetMu_ConstantND()/config->GetMu_Constant() << Unit.str() << config->GetMu_ConstantND();
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_ConstantND()/config->GetMu_Constant() << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
+        NonDimTable.PrintFooter();
       }
 
       if (config->GetKind_ViscosityModel() == SUTHERLAND){
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        NonDimTableIn << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
+        NonDimTable << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
         Unit.str("");
         if      (config->GetSystemMeasurements() == SI) Unit << "K";
         else if (config->GetSystemMeasurements() == US) Unit << "R";
-        NonDimTableIn << "Sutherland Temp." << config->GetMu_Temperature_Ref() <<  config->GetTemperature_Ref() << Unit.str() << config->GetMu_Temperature_RefND();
+        NonDimTable << "Sutherland Temp." << config->GetMu_Temperature_Ref() <<  config->GetTemperature_Ref() << Unit.str() << config->GetMu_Temperature_RefND();
         Unit.str("");
         if      (config->GetSystemMeasurements() == SI) Unit << "K";
         else if (config->GetSystemMeasurements() == US) Unit << "R";
-        NonDimTableIn << "Sutherland Const." << config->GetMu_S() << config->GetTemperature_Ref() << Unit.str() << config->GetMu_SND();
+        NonDimTable << "Sutherland Const." << config->GetMu_S() << config->GetTemperature_Ref() << Unit.str() << config->GetMu_SND();
         Unit.str("");
+        NonDimTable.PrintFooter();
       }
-      NonDimTableIn.PrintFooter();
+
       if (config->GetKind_ConductivityModel() == CONSTANT_PRANDTL){
-        NonDimTableIn << "Prandtl (Lam.)" << "-" << "-" << "-" << config->GetPrandtl_Lam();         
+        NonDimTable << "Prandtl (Lam.)" << "-" << "-" << "-" << config->GetPrandtl_Lam();         
         Unit.str("");
-        NonDimTableIn << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
+        NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
         Unit.str("");
+        NonDimTable.PrintFooter();
       }
       if (config->GetKind_ConductivityModel() == CONSTANT_CONDUCTIVITY){
         Unit << "W/m^2.K";
-        NonDimTableIn << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_ConstantND()/config->GetKt_Constant() << Unit.str() << config->GetKt_ConstantND();         
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_ConstantND()/config->GetKt_Constant() << Unit.str() << config->GetKt_ConstantND();         
         Unit.str("");
+        NonDimTable.PrintFooter();
       }
     }
-    NonDimTableIn.PrintFooter();
     
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTableIn << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
+    NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
-    NonDimTableIn << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
+    NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
     Unit.str("");
     
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
-        NonDimTableIn << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
+        NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
         Unit << "K";
-        NonDimTableIn << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
+        NonDimTable << "Critical Temperature" << config->GetTemperature_Critical() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_Critical() /config->GetTemperature_Ref();
         Unit.str("");
     }
+    NonDimTable.PrintFooter();
     if (unsteady){
-      NonDimTableIn.PrintFooter();
-      NonDimTableIn << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
       Unit.str("");
-      NonDimTableIn << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
       Unit.str("");
+      NonDimTable.PrintFooter();
     }
-    NonDimTableIn.PrintFooter();
     
     cout <<"-- Free-stream conditions:"<< endl;
     
-    TablePrinter NonDimTableFS(&std::cout);
-    
-    NonDimTableFS.AddColumn("Name", 18);
-    NonDimTableFS.AddColumn("Dim. value", 14, 10);
-    NonDimTableFS.AddColumn("Ref. value", 14, 10);
-    NonDimTableFS.AddColumn("Unit", 10);
-    NonDimTableFS.AddColumn("Non-dim. value", 14, 10);
-    
-    NonDimTableFS.set_flush_right();
-    NonDimTableFS.PrintHeader();
+    NonDimTable.PrintHeader();
 
     if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
     else if (config->GetSystemMeasurements() == US) Unit << "psf";
-    NonDimTableFS << "Static Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
+    NonDimTable << "Static Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "kg/m^3";
     else if (config->GetSystemMeasurements() == US) Unit << "slug/ft^3";
-    NonDimTableFS << "Density" << config->GetDensity_FreeStream() << config->GetDensity_Ref() << Unit.str() << config->GetDensity_FreeStreamND();
+    NonDimTable << "Density" << config->GetDensity_FreeStream() << config->GetDensity_Ref() << Unit.str() << config->GetDensity_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "K";
     else if (config->GetSystemMeasurements() == US) Unit << "R";
-    NonDimTableFS << "Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
+    NonDimTable << "Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
     else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
-    NonDimTableFS << "Total Energy" << config->GetEnergy_FreeStream() << config->GetEnergy_Ref() << Unit.str() << config->GetEnergy_FreeStreamND();
+    NonDimTable << "Total Energy" << config->GetEnergy_FreeStream() << config->GetEnergy_Ref() << Unit.str() << config->GetEnergy_FreeStreamND();
     Unit.str("");
     if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
     else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
-    NonDimTableFS << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
-    NonDimTableFS << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
+    NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
+    NonDimTable << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
     if (nDim == 3){
-      NonDimTableFS << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
+      NonDimTable << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
     }
-    NonDimTableFS << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
+    NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
     Unit.str("");
 
     if (viscous){
+      NonDimTable.PrintFooter();
       if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-      NonDimTableFS << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
+      NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
       Unit.str("");
       if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
-      NonDimTableFS << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
       Unit.str("");
       if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
         else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
-        NonDimTableFS << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
+        NonDimTable << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
         Unit.str("");
         if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
         else if (config->GetSystemMeasurements() == US) Unit << "1/s";
-        NonDimTableFS << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
         Unit.str("");
       }
     }
     
-    NonDimTableFS.PrintFooter();
-    NonDimTableFS << "Mach Number" << "-" << "-" << "-" << config->GetMach();
+    NonDimTable.PrintFooter();
+    NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
     if (viscous){
-      NonDimTableFS << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
+      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
     }
     if (gravity) {
-      NonDimTableFS << "Froude Number" << "-" << "-" << "-" << Froude;      
-      NonDimTableFS << "Wave Length"   << "-" << "-" << "-" << 2.0*PI_NUMBER*Froude*Froude;
+      NonDimTable << "Froude Number" << "-" << "-" << "-" << Froude;      
+      NonDimTable << "Wave Length"   << "-" << "-" << "-" << 2.0*PI_NUMBER*Froude*Froude;
     }
-    NonDimTableFS.PrintFooter();
+    NonDimTable.PrintFooter();
     
     cout << endl;
     
