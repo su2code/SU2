@@ -10279,6 +10279,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
         bool duplicate = false;
         iMarker=0;
+        TablePrinter BoundaryTable(&std::cout);
+        BoundaryTable.AddColumn("Index", 6);
+        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Elements", 14);
+        if (rank == MASTER_NODE){
+          BoundaryTable.PrintHeader();
+        }
         do {
           
           getline (mesh_file, text_line);
@@ -10309,8 +10316,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             if (duplicate)  nElem_Bound[iMarker+1]  = nElem_Bound[iMarker];
 
             if (rank == MASTER_NODE) {
-              cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-              if (duplicate)  cout << nElem_Bound[iMarker+1]  << " boundary elements in index "<< iMarker+1 <<" (Marker = " <<Marker_Tag_Duplicate<< ")." << endl;
+              BoundaryTable << iMarker << Marker_Tag << nElem_Bound[iMarker];
+              if (duplicate){
+                BoundaryTable << iMarker+1 << Marker_Tag_Duplicate << nElem_Bound[iMarker+1];                
+              }
             }
             
             /*--- Allocate space for elements ---*/
@@ -10452,7 +10461,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           iMarker++;
           
         } while (iMarker < nMarker);
-        
+        if (rank == MASTER_NODE){
+          BoundaryTable.PrintFooter();
+        }
         if (boundary_marker_count == nMarker) break;
         
       }
