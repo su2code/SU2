@@ -13923,6 +13923,27 @@ public:
                             su2double                *workArray);
 
   /*!
+   * \brief Impose the supersonic outlet boundary condition. It is a virtual
+            function, because for Navier-Stokes it is overwritten.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
+   */
+  virtual void BC_Supersonic_Outlet(CConfig                  *config,
+                                    const unsigned long      surfElemBeg,
+                                    const unsigned long      surfElemEnd,
+                                    const CSurfaceElementFEM *surfElem,
+                                    su2double                *resFaces,
+                                    CNumerics                *conv_numerics,
+                                    su2double                *workArray);
+
+  /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
             function, because for Navier-Stokes it is overwritten.
    * \param[in]  config        - Definition of the particular problem.
@@ -15061,6 +15082,26 @@ public:
                     CNumerics                *conv_numerics,
                     su2double                *workArray);
 
+ /*!
+   * \brief Impose the supersonic outlet boundary condition.
+   * \param[in]  config        - Definition of the particular problem.
+   * \param[in]  surfElemBeg   - Start index in the list of surface elements.
+   * \param[in]  surfElemEnd   - End index (not included) in the list of surface elements.
+   * \param[in]  surfElem      - Array of surface elements for which the boundary
+                                 conditions must be imposed.
+   * \param[out] resFaces      - Array where the residual contribution from the
+                                 surface elements must be stored.
+   * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[out] workArray     - Work array.
+   */
+  void BC_Supersonic_Outlet(CConfig                  *config,
+                            const unsigned long      surfElemBeg,
+                            const unsigned long      surfElemEnd,
+                            const CSurfaceElementFEM *surfElem,
+                            su2double                *resFaces,
+                            CNumerics                *conv_numerics,
+                            su2double                *workArray);
+
   /*!
    * \brief Impose the subsonic inlet boundary condition.
    * \param[in]  config        - Definition of the particular problem.
@@ -15691,29 +15732,25 @@ private:
   /*!
    * \brief Function to compute the viscous normal flux in one integration point for a
             2D simulation.
-   * \param[in]  sol               - Conservative variables.
-   * \param[in]  solGradCart       - Cartesian gradients of the conservative variables.
-   * \param[in]  normal            - Normal vector
-   * \param[in]  HeatFlux          - Value of the prescribed heat flux. If not
-                                     prescribed, this value should be zero.
-   * \param[in]  factHeatFlux_Lam  - Laminar thermal conductivity divided by viscosity,
-                                     which appears in the heat flux vector. If the heat
-                                     flux vector is prescribed, factHeatFlux_Lam must be zero.
-   * \param[in]  factHeatFlux_Turb - Turbulent thermal conductivity divided by viscosity,
-                                     which appears in the heat flux vector. If the heat
-                                     flux vector is prescribed, factHeatFlux_Turb must be zero.
-   * \param[in]  wallDist          - Distance to the nearest viscous wall, if appropriate.
-   * \param[in   lenScale_LES      - LES length scale, if appropriate.
-   * \param[out] Viscosity         - Total viscosity, to be computed.
-   * \param[out] kOverCv           - Total thermal conductivity over Cv, to be computed.
-   * \param[out] normalFlux        - Viscous normal flux, to be computed.
+   * \param[in]  sol            - Conservative variables.
+   * \param[in]  solGradCart   - Cartesian gradients of the conservative variables.
+   * \param[in]  normal        - Normal vector
+   * \param[in]  HeatFlux      - Value of the prescribed heat flux. If not
+                                 prescribed, this value should be zero.
+   * \param[in]  factHeatFlux  - Multiplication factor for the heat flux. It is zero
+                                 when the heat flux is prescribed and one when it has
+                                 to be computed.
+   * \param[in]  wallDist      - Distance to the nearest viscous wall, if appropriate.
+   * \param[in   lenScale_LES  - LES length scale, if appropriate.
+   * \param[out] Viscosity     - Total viscosity, to be computed.
+   * \param[out] kOverCv       - Total thermal conductivity over Cv, to be computed.
+   * \param[out] normalFlux    - Viscous normal flux, to be computed.
    */
   void ViscousNormalFluxIntegrationPoint_2D(const su2double *sol,
                                             const su2double solGradCart[4][2],
                                             const su2double *normal,
                                             const su2double HeatFlux,
-                                            const su2double factHeatFlux_Lam,
-                                            const su2double factHeatFlux_Turb,
+                                            const su2double factHeatFlux,
                                             const su2double wallDist,
                                             const su2double lenScale_LES,
                                                   su2double &Viscosity,
@@ -15723,29 +15760,25 @@ private:
   /*!
    * \brief Function to compute the viscous normal flux in one integration point for a
             3D simulation.
-   * \param[in]  sol               - Conservative variables.
-   * \param[in]  solGradCart       - Cartesian gradients of the conservative variables.
-   * \param[in]  normal            - Normal vector
-   * \param[in]  HeatFlux          - Value of the prescribed heat flux. If not
-                                     prescribed, this value should be zero.
-   * \param[in]  factHeatFlux_Lam  - Laminar thermal conductivity divided by viscosity,
-                                     which appears in the heat flux vector. If the heat
-                                     flux vector is prescribed, factHeatFlux_Lam must be zero.
-   * \param[in]  factHeatFlux_Turb - Turbulent thermal conductivity divided by viscosity,
-                                     which appears in the heat flux vector. If the heat
-                                     flux vector is prescribed, factHeatFlux_Turb must be zero.
-   * \param[in]  wallDist          - Distance to the nearest viscous wall, if appropriate.
-   * \param[in   lenScale_LES      - LES length scale, if appropriate.
-   * \param[out] Viscosity         - Total viscosity, to be computed.
-   * \param[out] kOverCv           - Total thermal conductivity over Cv, to be computed.
-   * \param[out] normalFlux        - Viscous normal flux, to be computed.
+   * \param[in]  sol           - Conservative variables.
+   * \param[in]  solGradCart   - Cartesian gradients of the conservative variables.
+   * \param[in]  normal        - Normal vector
+   * \param[in]  HeatFlux      - Value of the prescribed heat flux. If not
+                                 prescribed, this value should be zero.
+   * \param[in]  factHeatFlux  - Multiplication factor for the heat flux. It is zero
+                                 when the heat flux is prescribed and one when it has
+                                 to be computed.
+   * \param[in]  wallDist      - Distance to the nearest viscous wall, if appropriate.
+   * \param[in   lenScale_LES  - LES length scale, if appropriate.
+   * \param[out] Viscosity     - Total viscosity, to be computed.
+   * \param[out] kOverCv       - Total thermal conductivity over Cv, to be computed.
+   * \param[out] normalFlux    - Viscous normal flux, to be computed.
    */
   void ViscousNormalFluxIntegrationPoint_3D(const su2double *sol,
                                             const su2double solGradCart[5][3],
                                             const su2double *normal,
                                             const su2double HeatFlux,
-                                            const su2double factHeatFlux_Lam,
-                                            const su2double factHeatFlux_Turb,
+                                            const su2double factHeatFlux,
                                             const su2double wallDist,
                                             const su2double lenScale_LES,
                                                   su2double &Viscosity,
