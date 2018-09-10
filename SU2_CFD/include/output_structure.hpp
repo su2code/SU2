@@ -56,6 +56,8 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
+#include "../../Common/include/tools.hpp"
+
 using namespace std;
 
 /*! 
@@ -261,6 +263,8 @@ protected:
   char char_histfile[200];
 
   ofstream HistFile;
+  
+  TablePrinter* ConvergenceTable;
   
 public:
 
