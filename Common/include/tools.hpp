@@ -19,7 +19,7 @@ public:
   void set_flush_left();
   void set_flush_right();
 
-  void AddColumn(const std::string & header_name, int column_width, int precision = 0);
+  void AddColumn(const std::string & header_name, int column_width);
   void PrintHeader();
   void PrintFooter();
 
@@ -114,7 +114,6 @@ private:
   std::vector<std::string> column_headers_;
   std::vector<int> column_widths_;
   std::string separator_;
-  std::vector<int> precision_;
 
   int i_; // index of current row
   int j_; // index of current column

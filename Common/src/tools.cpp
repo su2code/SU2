@@ -41,14 +41,9 @@ void TablePrinter::set_flush_right(){
  ** \param header_name Name to be print for the header
  ** \param column_width the width of the column (has to be >=5)
  ** */
-void TablePrinter::AddColumn(const std::string & header_name, int column_width, int precision){
+void TablePrinter::AddColumn(const std::string & header_name, int column_width){
   if (column_width < 4){
     throw std::invalid_argument("Column size has to be >= 4");
-  }
-  if (precision == 0){
-    precision_.push_back(column_width);
-  } else {
-    precision_.push_back(precision);
   }
 
   column_headers_.push_back(header_name);
