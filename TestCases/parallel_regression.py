@@ -355,7 +355,7 @@ def main():
     fem_ns_flatplate.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate.cfg_file  = "lam_flatplate_reg.cfg"
     fem_ns_flatplate.test_iter = 25
-    fem_ns_flatplate.test_vals = [1.325847,3.141486,0.037730,0.223626] #last 4 columns
+    fem_ns_flatplate.test_vals = [1.383727,3.175247,0.058387,0.257951] #last 4 columns
     fem_ns_flatplate.su2_exec  = "mpirun -n 2 SU2_CFD"
     fem_ns_flatplate.timeout   = 1600
     fem_ns_flatplate.tol       = 0.00001
@@ -366,7 +366,7 @@ def main():
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
     fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
     fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.441637,0.963217,-0.000022,67.293720] #last 4 columns
+    fem_ns_cylinder.test_vals = [0.454960,0.979123,-0.000028,79.984799] #last 4 columns
     fem_ns_cylinder.su2_exec  = "mpirun -n 2 SU2_CFD"
     fem_ns_cylinder.timeout   = 1600
     fem_ns_cylinder.tol       = 0.00001
