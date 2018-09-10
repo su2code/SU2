@@ -430,6 +430,7 @@ private:
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
+  string DV_Sens_Filename;      /*!< \brief Provide a file of sensitivities from an external adjoint. */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -7881,6 +7882,12 @@ public:
    * \return File name of the arbitrary mesh motion input file.
    */
   string GetDV_Filename(void);
+  
+  /*!
+   * \brief Get name of the external sensitivities file.
+   * \return File name of the external sensitivities file.
+   */
+  string GetDV_Sens_Filename(void);
   
   /*!
    * \brief Set the config options.

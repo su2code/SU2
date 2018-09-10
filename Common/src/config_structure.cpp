@@ -1818,6 +1818,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
   addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
+  /* DESCRIPTION: Provide a file of sensitivities from an external adjoint. */
+  addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("external_sens.dat"));
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -5144,6 +5146,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           (Design_Variable[iDV] != SCALE_GRID) &&
           (Design_Variable[iDV] != TRANSLATE_GRID) &&
           (Design_Variable[iDV] != ROTATE_GRID) &&
+          (Design_Variable[iDV] != EXTERNAL_SENSITIVITY) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
         
         if (iDV == 0)
