@@ -19103,187 +19103,114 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   
   ifstream restart_file;
-  string filename;
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
-  bool grid_movement = config->GetGrid_Movement();
-  bool frozen_visc = config->GetFrozen_Visc_Disc();
-  su2double Sens, dull_val, AoASens;
-  su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist_local, maxdist_global;
-  
-  unsigned short nExtIter, iDim;
-  unsigned long iPoint, index;
-  string::size_type position;
+  string filename, text_line;
+  su2double *Coord_i, Coord_j[3], Ext_Sens[3], dist = 0.0;
+  unsigned short iDim;
+  unsigned long iPoint, unmatched;
   int counter = 0;
   
-  Sensitivity = new su2double[nPoint*nDim];
-  unsigned long *DonorPoint  = new unsigned long[nPoint];
-  
-  if (config->GetUnsteady_Simulation()) {
-    nExtIter = config->GetnExtIter();
-  }else {
-    nExtIter = 1;
-  }
-  
   if (rank == MASTER_NODE)
-    cout << "Reading in external sensitivity."<< endl;
+  cout << "Reading in external sensitivity."<< endl;
   
-  unsigned short skipVar = nDim, skipMult = 1;
+  /*--- Allocate space for the sensitivity and initialize. ---*/
   
-  if (incompressible)      { skipVar += skipMult*(nDim+2); }
-  if (compressible)        { skipVar += skipMult*(nDim+2); }
-  if (sst && !frozen_visc) { skipVar += skipMult*2;}
-  if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
-  
-  /*--- Read all lines in the restart file ---*/
-  long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
-  
-  
+  Sensitivity = new su2double[nPoint*nDim];
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iDim = 0; iDim < nDim; iDim++) {
       Sensitivity[iPoint*nDim+iDim] = 0.0;
     }
   }
   
-  iPoint_Global = 0;
+  /*--- Get the filename for the external sensitivity file input. ---*/
   
   filename = config->GetDV_Sens_Filename();
-  
   restart_file.open(filename.data(), ios::in);
   if (restart_file.fail()) {
-    SU2_MPI::Error(string("There is no external sensitivity file ") + filename, CURRENT_FUNCTION);
+    SU2_MPI::Error(string("There is no external sensitivity file ") +
+                   filename, CURRENT_FUNCTION);
   }
   
-  /*--- The first line is the header ---*/
+  /*--- Initialize the min distance for each point to a large number. ---*/
   
-  map<unsigned long, unsigned long> FoundPoints;
-  
-  vector<unsigned long> AllPoints;
+  vector<su2double> MinDistance(nPoint);
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    AllPoints.push_back(iPoint);
+    MinDistance[iPoint] = 1e6;
   }
-  map<unsigned long, unsigned long>::iterator MI;
   
-  unsigned long unmatched = 0;
-  su2double old_min = 0.0;
   counter = 0;
-  int count2 = 0;
   while (getline (restart_file, text_line)) {
     
-    // first check that the line has 6 entries, otherwise throw out
-    unsigned short count = 0;
-    string next;
-    istringstream point_line(text_line);
-//    while(getline (point_line, next, ' ')) {
-//      cout << next << endl;
-//      count++;
-//    }
+    /*--- First, check that the line has 6 entries, otherwise throw out. ---*/
     
-    //std::istringstream iss(text);
+    istringstream point_line(text_line);
     vector<string> results((istream_iterator<string>(point_line)),
-                                     istream_iterator<string>());
+                           istream_iterator<string>());
     
     if (results.size() == 6) {
       
+      counter++;
+      
       istringstream point_line(text_line);
-
-      count2++;
-      //cout<<" Line " << count2 << ": " << text_line<<endl;
-    
-    for (iDim = 0; iDim < nDim; iDim++) { point_line >> Coord_j[iDim];}
-    
-    mindist = 1E6;
       
-    //for (iPoint = 0; iPoint < nPoint; iPoint++ ) {
-    
-    for (unsigned long jPoint = AllPoints.size()-1; (int)jPoint >= 0; jPoint--) {
+      /*--- Get the coordinates and sensitivity for this line. ---*/
       
-      iPoint = AllPoints[jPoint];
-      //      MI = FoundPoints.find(iPoint);
-      //      if (MI == FoundPoints.end()) {
+      for (iDim = 0; iDim < nDim; iDim++) point_line >> Coord_j[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) point_line >> Ext_Sens[iDim];
       
-      Coord_i = node[iPoint]->GetCoord();
+      /*--- Check every owned node for the match (brute search). ---*/
       
-      /*--- Compute the distance ---*/
-      
-      dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-        dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-      } dist = sqrt(dist);
-      
-      if ((dist < mindist)) {
-        old_min = mindist;
-        mindist = dist;
-        DonorPoint[counter] = iPoint;
-        FoundPoints[counter] = jPoint;
-        if (dist < 1.0e-10) break;
+      for (iPoint = 0; iPoint < nPoint; iPoint++) {
+        
+        Coord_i = node[iPoint]->GetCoord();
+        
+        /*--- Compute the distance ---*/
+        
+        dist = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
+        }
+        dist = sqrt(dist);
+        
+        /*--- Store if distance is a new minimum. ---*/
+        
+        if (dist < MinDistance[iPoint]) {
+          MinDistance[iPoint] = dist;
+          
+          /*--- Store the intermediate value of the sensitivities,
+           although we may find a better match later in the loop. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Sensitivity[iPoint*nDim+iDim] = Ext_Sens[iDim];
+          }
+        }
+        
       }
+      
     }
-    
-    AllPoints.erase(AllPoints.begin()+FoundPoints[counter]);
-    if (mindist > 1.0e-10) unmatched++;
-    if ((counter % 10000 == 0) || (mindist > 1.0e-10))
-      cout << " Matched " << counter << " with point " << DonorPoint[counter] << " dist: " <<mindist<< " 2nd min dist: "<< old_min<< " unmatched: " << unmatched << endl;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      point_line >> Sens;
-      Sensitivity[DonorPoint[counter]*nDim+iDim] = Sens;
+  }
+  
+  /*--- We have not received all nodes in the input file. Throw an error. ---*/
+  
+  if ((counter < (int)GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
+    SU2_MPI::Error(string("Received only ") + to_string(counter) +
+                   string(" external points from file. Expected ") +
+                   to_string(GetGlobal_nPointDomain()) +
+                   string(" global points."), CURRENT_FUNCTION);
+  }
+  
+  /*--- Print a final number of unmatched points as a warning. ---*/
+  
+  unmatched = 0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    if (MinDistance[iPoint] > 1e-10) {
+      unmatched++;
     }
-    
-    counter++;
   }
+  unsigned long myUnmatched = unmatched; unmatched = 0;
+  SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  if ((unmatched > 0) && (rank == MASTER_NODE)) {
+   cout << " Warning: there are " << unmatched << " points with a match distance > 1e-10." << endl;
   }
-//  restart_file.close();
-//
-//  // write a globally ordered file in SU2 restart format
-//
-//  filename = config->GetSolution_AdjFileName();
-//
-//  filename = config->GetObjFunc_Extension(filename);
-//
-//  if (config->GetUnsteady_Simulation()) {
-//    filename = config->GetUnsteady_FileName(filename, nExtIter-1);
-//  }
-//
-//  if (config->GetnZone() > 1){
-//    filename = config->GetMultizone_FileName(filename, config->GetiZone());
-//  }
-//
-//  ofstream out_file;
-//
-//  out_file.open(filename.c_str(), ios::out);
-//  if (out_file.fail()) {
-//    SU2_MPI::Error(string("There is no adjoint restart file ") + filename, CURRENT_FUNCTION);
-//  }
-//
-//  out_file << "header line \n";
-//
-//  out_file.precision(15);
-//  /*--- The first line is the header ---*/
-//
-//  for (iPoint = 0; iPoint < nPoint; iPoint++ ) {
-//
-//    out_file << iPoint << "\t";
-//
-//    Coord_i = node[iPoint]->GetCoord(); mindist = 1E6;;
-//
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      out_file << scientific << Coord_i[iDim] << "\t";
-//    }
-//
-//    for (iDim = 0; iDim < 5; iDim++) {
-//      out_file << scientific << 0.0 << "\t";
-//    }
-//
-//    for (iDim = 0; iDim < nDim; iDim++) {
-//      out_file << scientific << Sensitivity[iPoint*nDim+iDim] << "\t";
-//    }
-//    out_file << "\n";
-//
-//  }
-//
-//  out_file.close();
   
 }
 

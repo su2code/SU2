@@ -312,3 +312,76 @@ void COutput::WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsi
   
 }
 
+void COutput::WriteExternalSensitivity(CConfig *config,
+                                       CGeometry *geometry,
+                                       unsigned short val_iZone,
+                                       unsigned short val_nZone) {
+  
+  unsigned short iVar;
+  unsigned long iPoint, iElem, iNode;
+  unsigned long *LocalIndex = NULL;
+  bool *SurfacePoint = NULL;
+  string filename, fieldname;
+  
+  filename = config->GetDV_Sens_Filename();
+  
+  /*--- Open external sensitiviy file. Note that we are overwriting the
+   volume sensitivity file that was the original input for projection. ---*/
+  
+  ofstream Sens_File;
+  Sens_File.open(filename.c_str(), ios::out);
+  Sens_File.precision(15);
+  
+  /*--- This is surface output, so print only the points
+   that are in the element list. Change the numbering. ---*/
+  
+  LocalIndex   = new unsigned long [nGlobal_Poin+1];
+  SurfacePoint = new bool [nGlobal_Poin+1];
+  
+  for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++)
+  SurfacePoint[iPoint] = false;
+  
+  for (iElem = 0; iElem < nGlobal_Line; iElem++) {
+    iNode = iElem*N_POINTS_LINE;
+    SurfacePoint[Conn_Line[iNode+0]] = true;
+    SurfacePoint[Conn_Line[iNode+1]] = true;
+  }
+  for (iElem = 0; iElem < nGlobal_BoundTria; iElem++) {
+    iNode = iElem*N_POINTS_TRIANGLE;
+    SurfacePoint[Conn_BoundTria[iNode+0]] = true;
+    SurfacePoint[Conn_BoundTria[iNode+1]] = true;
+    SurfacePoint[Conn_BoundTria[iNode+2]] = true;
+  }
+  for (iElem = 0; iElem < nGlobal_BoundQuad; iElem++) {
+    iNode = iElem*N_POINTS_QUADRILATERAL;
+    SurfacePoint[Conn_BoundQuad[iNode+0]] = true;
+    SurfacePoint[Conn_BoundQuad[iNode+1]] = true;
+    SurfacePoint[Conn_BoundQuad[iNode+2]] = true;
+    SurfacePoint[Conn_BoundQuad[iNode+3]] = true;
+  }
+  
+  nSurf_Poin = 0;
+  for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
+    LocalIndex[iPoint] = 0;
+    if (SurfacePoint[iPoint]) { nSurf_Poin++; LocalIndex[iPoint] = nSurf_Poin; }
+  }
+  
+  /*--- Write surface x,y,z and surface dJ/dx, dJ/dy, dJ/dz data. ---*/
+  
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    
+    if (LocalIndex[iPoint+1] != 0) {
+      
+      /*--- Write the node coordinates and the sensitivities. Note that
+       we subtract 2 from the fields list to ignore the initial ID and
+       final sens.normal value in the Data array. ---*/
+      
+      for (iVar = 0; iVar < config->fields.size()-2; iVar++)
+      Sens_File << scientific << Data[iVar][iPoint] << "\t";
+      Sens_File << scientific << "\n";
+      
+    }    
+  }
+  
+}
+

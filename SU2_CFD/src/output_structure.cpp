@@ -8532,8 +8532,14 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
           default:
             break;
           }
+          
         }
-
+        
+        if ((config[iZone]->GetKind_SU2() == SU2_DOT) &&
+            (config[iZone]->GetDesign_Variable(0) == EXTERNAL_SENSITIVITY)) {
+          WriteExternalSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
+        }
+        
         if (FileFormat == TECPLOT_BINARY) {
           if (!wrote_base_file)
             DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
