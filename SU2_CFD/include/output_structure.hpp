@@ -646,6 +646,15 @@ public:
   void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
+   * \brief Write a file with the adjoint sensitivities projected onto each surface node.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void WriteExternalSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  
+  /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
