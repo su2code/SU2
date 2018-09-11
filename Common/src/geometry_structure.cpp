@@ -41,6 +41,8 @@
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iterator>
+
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
