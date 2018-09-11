@@ -279,7 +279,7 @@ int main(int argc, char *argv[]) {
 
       /*--- Read in sensitivities from file. ---*/
       if (config_container[ZONE_0]->GetDesign_Variable(0) == EXTERNAL_SENSITIVITY)
-        geometry_container[iZone]->ReadExternalSensitivity(config_container[iZone]);
+        geometry_container[iZone]->ReadExternalSensitivity(config_container[iZone], true);
       else
         geometry_container[iZone]->SetSensitivity(config_container[iZone]);
 >>>>>>> 0e5f9ca5e... Some clean up for external sensitivity input. Working in serial only so far.

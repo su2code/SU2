@@ -19194,10 +19194,7 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   /*--- We have not received all nodes in the input file. Throw an error. ---*/
   
   if ((counter < (int)GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
-    SU2_MPI::Error(string("Received only ") + to_string(counter) +
-                   string(" external points from file. Expected ") +
-                   to_string(GetGlobal_nPointDomain()) +
-                   string(" global points."), CURRENT_FUNCTION);
+    SU2_MPI::Error("Not enough points in the input sensitivity file.", CURRENT_FUNCTION);
   }
   
   /*--- Print a final number of unmatched points as a warning. ---*/
@@ -19212,6 +19209,130 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
   if ((unmatched > 0) && (rank == MASTER_NODE)) {
    cout << " Warning: there are " << unmatched << " points with a match distance > 1e-10." << endl;
+  }
+  
+}
+
+void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config, bool flag) {
+  
+  unsigned long iPoint, pointID;
+  unsigned short iDim;
+  su2double dist;
+  int rankID;
+  
+  ifstream restart_file;
+  string filename, text_line;
+  su2double Coor_External[3], Sens_External[3];
+  unsigned long unmatched = 0;
+  int iPoint_Ext = 0;
+  
+  if (rank == MASTER_NODE)
+  cout << "Reading in external sensitivity."<< endl;
+  
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  
+  Sensitivity = new su2double[nPoint*nDim];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sensitivity[iPoint*nDim+iDim] = 0.0;
+    }
+  }
+  
+  /*--- Get the filename for the external sensitivity file input. ---*/
+  
+  filename = config->GetDV_Sens_Filename();
+  restart_file.open(filename.data(), ios::in);
+  if (restart_file.fail()) {
+    SU2_MPI::Error(string("There is no external sensitivity file ") +
+                   filename, CURRENT_FUNCTION);
+  }
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+   and its local ID. ---*/
+  
+  vector<su2double>     Coords(nDim*nPoint);
+  vector<unsigned long> PointIDs(nPoint);
+  
+  /*--- Retrieve and store the coordinates of owned interior nodes
+   and their local point IDs. ---*/
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    PointIDs[iPoint] = iPoint;
+    for (iDim = 0; iDim < nDim; iDim++)
+    Coords[iPoint*nDim + iDim] = node[iPoint]->GetCoord(iDim);
+  }
+  
+  /*--- Build the ADT of all interior nodes. ---*/
+  
+  su2_adtPointsOnlyClass VertexADT(nDim, nPoint,
+                                   Coords.data(), PointIDs.data());
+  
+  /*--- Loop over all interior mesh nodes owned by this rank and find the
+   matching point with minimum distance. Once we have the match, store the
+   external sensitivity from the file for that node. ---*/
+  
+  if (VertexADT.IsEmpty()) {
+    
+    SU2_MPI::Error("No external points given to ADT.", CURRENT_FUNCTION);
+  
+  } else {
+    
+    /*--- Read the input sensitivity file and locate the point matches
+     using the ADT search, line-by-line. ---*/
+    int iPoint_Found = 0;
+    iPoint_Ext  = 0;
+    while (getline (restart_file, text_line)) {
+      
+      /*--- First, check that the line has 6 entries, otherwise throw out. ---*/
+      
+      istringstream point_line(text_line);
+      vector<string> results((istream_iterator<string>(point_line)),
+                             istream_iterator<string>());
+      
+      if (results.size() == 6) {
+        
+        istringstream point_line(text_line);
+        
+        /*--- Get the coordinates and sensitivity for this line. ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) point_line >> Coor_External[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) point_line >> Sens_External[iDim];
+        
+        /*--- Locate the nearest node to this external point. If it is on
+         our rank, then store the sensitivity value. ---*/
+        
+        VertexADT.DetermineNearestNode(&Coor_External[0], dist,
+                                       pointID, rankID);
+        
+        if (rankID == rank) {
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
+          }
+          iPoint_Found++;
+          /*--- Keep track of points with poor matches for reporting. ---*/
+          if (dist > 1e-10) unmatched++;
+          
+        }
+        
+        iPoint_Ext++;
+        
+      }
+    }
+    
+    cout << " Rank " << rank << ": " << iPoint_Found << " points found, " << nPointDomain << " domain points, " << nPoint << " total local points." <<endl;
+    /*--- We have not received all nodes in the input file. Throw an error. ---*/
+    
+    if ((iPoint_Ext < (int)GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
+      SU2_MPI::Error("Not enough points in the input sensitivity file.", CURRENT_FUNCTION);
+    }
+    
+    unsigned long myUnmatched = unmatched; unmatched = 0;
+    SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    if ((unmatched > 0) && (rank == MASTER_NODE)) {
+      cout << " Warning: there are " << unmatched << " points with a match distance > 1e-10." << endl;
+    }
+    
   }
   
 }

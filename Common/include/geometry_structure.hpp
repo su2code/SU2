@@ -1327,6 +1327,12 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void ReadExternalSensitivity(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
    * \param iPoint - Point
    * \param iDim - Dimension
    */
@@ -2465,6 +2471,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief Read the sensitivity from adjoint solution file and store it.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReadExternalSensitivity(CConfig *config);
 
   /*!
    * \brief Get the Sensitivity at a specific point.
