@@ -3616,7 +3616,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
             /* Loop over the faces of the element to determine which one is
                the boundary face. */
             unsigned long ii;
-            bool outwardPointing;
+            bool outwardPointing = true;   /* Initialized to avoid compiler warning. */
             for(ii=0; ii<nFaces; ++ii) {
 
               /* Create an object of FaceOfElementClass to store the information.
