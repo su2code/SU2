@@ -2135,7 +2135,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
-
+  
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
 
@@ -2149,7 +2149,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("URLX", urlx, 0.1);
 
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
-  addBoolOption("PERMUTE", permute, false); 
+  addBoolOption("PERMUTE", permute, false);
+
   /* END_CONFIG_OPTIONS */
 
 }

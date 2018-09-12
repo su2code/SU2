@@ -1913,4 +1913,3 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetURLX(void) {return urlx; }
 
 inline bool CConfig::GetPermute(void) { return permute; }
-
