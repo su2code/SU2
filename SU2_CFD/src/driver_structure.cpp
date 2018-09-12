@@ -2275,10 +2275,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     switch (config->GetRiemann_Solver_FEM()) {
       case NO_UPWIND : cout << "Riemann solver disabled." << endl; break;
       case ROE:
-          for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-            numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
-            numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwRoe_Flow(nDim, nVar_Flow, config, false);
-          }
+      case LAX_FRIEDRICH:
+        /* Hard coded optimized implementation is used in the DG solver. No need to allocate the
+           corresponding entry in numerics. */
         break;
 
       case AUSM:
