@@ -570,7 +570,8 @@ private:
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
-  bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool Visualize_Surface_Def;  /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
+  bool Visualize_Volume_Def; /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
   su2double Mach;		/*!< \brief Mach number. */
   su2double Reynolds;	/*!< \brief Reynolds number. */
@@ -836,6 +837,7 @@ private:
   unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
+  unsigned short iInst;       /*!< \brief Current instance value */
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
@@ -920,6 +922,7 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  bool Wall_Functions;         /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
@@ -2929,7 +2932,7 @@ public:
    * \return Restart iteration number for dynamic structural simulations.
    */
   long GetDyn_RestartIter(void);
-  
+
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
    * \return: Number of periodic time instances for Harmonic Balance.
@@ -3912,10 +3915,16 @@ public:
   unsigned short GetDeform_Stiffness_Type(void);
   
   /*!
-   * \brief Creates a teot file to visualize the deformation made by the MDC software.
+   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
    * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
    */
-  bool GetVisualize_Deformation(void);
+  bool GetVisualize_Volume_Def(void);
+  
+  /*!
+   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
+   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   */
+  bool GetVisualize_Surface_Def(void);
   
   /*!
    * \brief Define the FFD box with a symetry plane.
@@ -5172,6 +5181,18 @@ public:
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
   
+  /*!
+   * \brief Append the instance index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultiInstance_FileName(string val_filename, int val_iInst);
+
+  /*!
+   * \brief Append the instance index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst);
+
   /*!
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
@@ -8196,6 +8217,18 @@ public:
   su2double GetCurrent_DynTime(void);
   
   /*!
+   * \brief Get the current instance.
+   * \return Current instance identifier.
+   */
+  unsigned short GetiInst(void);
+
+  /*!
+   * \brief Set the current instance.
+   * \param[in] iInst - current instance identifier.
+   */
+  void SetiInst(unsigned short val_iInst);
+
+  /*!
    * \brief Get information about writing dynamic structural analysis headers and file extensions.
    * \return 	<code>TRUE</code> means that dynamic structural analysis solution files will be written.
    */
@@ -8375,6 +8408,11 @@ public:
    */
   inline unsigned short GetKindInterpolation(void);
   
+  /*!
+   * \brief Get information about whether to use wall functions.
+   * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
+   */
+  bool GetWall_Functions(void);
   /*!
    * \brief Get the AD support.
    */
