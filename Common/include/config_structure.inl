@@ -883,6 +883,8 @@ inline void CConfig::SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_c
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
+inline unsigned short CConfig::GetKind_GridMovement(void) { return Kind_GridMovement[0]; }
+
 inline void CConfig::SetKind_GridMovement(unsigned short val_iZone, unsigned short motion_Type) { Kind_GridMovement[val_iZone] = motion_Type; }
 
 inline su2double CConfig::GetMach_Motion(void) { return Mach_Motion; }

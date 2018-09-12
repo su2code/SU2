@@ -107,6 +107,25 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
   /*--- If the problem has CHT properties ---*/
   if (fluid_zone && heat_zone) cht = true;
 
+  /*----------------------------------------------------*/
+  /*- Define if a prefixed motion is imposed in a zone -*/
+  /*----------------------------------------------------*/
+
+  prefixed_motion = new bool[nZone];
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_GridMovement()){
+      case RIGID_MOTION: case DEFORMING:
+      case EXTERNAL: case EXTERNAL_ROTATION:
+      case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
+      case ELASTICITY:
+        prefixed_motion[iZone] = true; break;
+      case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
+      case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
+      case NO_MOVEMENT: case GUST: default:
+        prefixed_motion[iZone] = false; break;
+    }
+  }
+
 }
 
 CMultizoneDriver::~CMultizoneDriver(void) {
@@ -221,13 +240,11 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   DynamicMeshUpdate(TimeIter);
 
-  /*--- Updating zone interface communication patterns, needed only for unsteady simulation
-   * since for steady problems this is done once in the interpolator_container constructor
-   * at the beginning of the computation ---*/
+  /*--- Updating zone interface communication patterns for unsteady problems with pre-fixed motion in the config file ---*/
   if ( unsteady ) {
     for (iZone = 0; iZone < nZone; iZone++) {
       for (unsigned short jZone = 0; jZone < nZone; jZone++){
-        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL)
+        if(jZone != iZone && interpolator_container[iZone][jZone] != NULL && prefixed_motion[iZone])
           interpolator_container[iZone][jZone]->Set_TransferCoeff(config_container);
       }
     }
@@ -238,8 +255,8 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 void CMultizoneDriver::Run_GaussSeidel() {
 
   unsigned long iOuter_Iter;
-  unsigned short jZone;
-  bool UpdateMesh = false;
+  unsigned short jZone, UpdateMesh;
+  bool DeformMesh = false;
   unsigned long ExtIter = 0;
   bool Convergence = false;
 
@@ -251,6 +268,9 @@ void CMultizoneDriver::Run_GaussSeidel() {
     /*--- Loop over the number of zones (IZONE) ---*/
     for (iZone = 0; iZone < nZone; iZone++){
 
+      /*--- In principle, the mesh does not need to be updated ---*/
+      UpdateMesh = 0;
+
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
@@ -258,11 +278,12 @@ void CMultizoneDriver::Run_GaussSeidel() {
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          UpdateMesh = Transfer_Data(jZone, iZone);
-          /*--- If a mesh update is required due to the transfer of data ---*/
-          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+          DeformMesh = Transfer_Data(jZone, iZone);
+          if (DeformMesh) UpdateMesh+=1;
         }
       }
+      /*--- If a mesh update is required due to the transfer of data ---*/
+      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
       iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
@@ -287,8 +308,8 @@ void CMultizoneDriver::Run_GaussSeidel() {
 void CMultizoneDriver::Run_Jacobi() {
 
   unsigned long iOuter_Iter;
-  unsigned short jZone;
-  bool UpdateMesh = false;
+  unsigned short jZone, UpdateMesh;
+  bool DeformMesh = false;
   unsigned long ExtIter = 0;
   bool Convergence = false;
 
@@ -300,6 +321,9 @@ void CMultizoneDriver::Run_Jacobi() {
     /*--- Transfer from all zones ---*/
     for (iZone = 0; iZone < nZone; iZone++){
 
+      /*--- In principle, the mesh does not need to be updated ---*/
+      UpdateMesh = 0;
+
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
@@ -307,11 +331,12 @@ void CMultizoneDriver::Run_Jacobi() {
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone && transfer_container[iZone][jZone] != NULL){
-          UpdateMesh = Transfer_Data(jZone, iZone);
-          /*--- If a mesh update is required due to the transfer of data ---*/
-          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+          DeformMesh = Transfer_Data(jZone, iZone);
+          if (DeformMesh) UpdateMesh+=1;
         }
       }
+      /*--- If a mesh update is required due to the transfer of data ---*/
+      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
     }
 
@@ -451,22 +476,25 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
 
 void CMultizoneDriver::Update() {
 
-  unsigned short jZone;
-  bool UpdateMesh;
+  unsigned short jZone, UpdateMesh;
+  bool DeformMesh = false;
 
   /*--- For enabling a consistent restart, we need to update the mesh with the interface information that introduces displacements --*/
   /*--- Loop over the number of zones (IZONE) ---*/
   for (iZone = 0; iZone < nZone; iZone++){
 
+    UpdateMesh = 0;
+
       /*--- Transfer from all the remaining zones (JZONE != IZONE)---*/
       for (jZone = 0; jZone < nZone; jZone++){
         /*--- The target zone is iZone ---*/
         if (jZone != iZone){
-          UpdateMesh = Transfer_Data(jZone, iZone);
-          /*--- If a mesh update is required due to the transfer of data ---*/
-          if (UpdateMesh) DynamicMeshUpdate(iZone, ExtIter);
+          DeformMesh = Transfer_Data(jZone, iZone);
+          if (DeformMesh) UpdateMesh += 1;
         }
       }
+    /*--- If a mesh update is required due to the transfer of data ---*/
+    if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
     iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,

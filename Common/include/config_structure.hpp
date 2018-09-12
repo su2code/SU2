@@ -5435,6 +5435,12 @@ public:
   unsigned short GetKind_GridMovement(unsigned short val_iZone);
   
   /*!
+   * \brief Get the type of dynamic mesh motion. Each zone gets a config file.
+   * \return Type of dynamic mesh motion.
+   */
+  unsigned short GetKind_GridMovement();
+
+  /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
