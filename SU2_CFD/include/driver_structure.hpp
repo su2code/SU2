@@ -1621,6 +1621,8 @@ protected:
             structure_criteria,
             structure_criteria_rel;
 
+  bool *prefixed_motion;     /*!< \brief Determines if a fixed motion is imposed in the config file. */
+
 public:
 
   /*!

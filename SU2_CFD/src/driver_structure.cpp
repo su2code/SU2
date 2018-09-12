@@ -2994,10 +2994,6 @@ void CDriver::Interface_Preprocessing() {
     Buffer_Recv_mark = new int[nProcessor];
 #endif
 
-  if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2 && rank == MASTER_NODE) {
-    SU2_MPI::Error("Error, cannot run the FSI solver on more than 2 zones!", CURRENT_FUNCTION);
-  }
-
   /*--- Coupling between zones ---*/
   // There's a limit here, the interface boundary must connect only 2 zones
 
@@ -3153,7 +3149,7 @@ void CDriver::Interface_Preprocessing() {
       if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
         /*--- Match Zones ---*/
-      if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
+      if (rank == MASTER_NODE) cout << "Setting coupling ";
 
         /*--- If the mesh is matching: match points ---*/
       if ( config_container[donorZone]->GetMatchingMesh() ) {

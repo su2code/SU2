@@ -1924,7 +1924,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
-  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+  addBoolOption("MATCHING_MESH", MatchingMesh, false);
 
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
