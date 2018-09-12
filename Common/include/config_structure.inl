@@ -1025,7 +1025,9 @@ inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRa
 
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
-inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
+inline bool CConfig::GetVisualize_Volume_Def(void) { return Visualize_Volume_Def; }
+
+inline bool CConfig::GetVisualize_Surface_Def(void) { return Visualize_Surface_Def; }
 
 inline bool CConfig::GetFFD_Symmetry_Plane(void) { return FFD_Symmetry_Plane; }
 
@@ -1714,6 +1716,8 @@ inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = 
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
+inline bool CConfig::GetWall_Functions(void) { return Wall_Functions; }
+
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
@@ -1785,6 +1789,10 @@ inline su2double CConfig::GetDelta_DynTime(void) { return Delta_DynTime; }
 inline su2double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
 
 inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
+
+inline unsigned short CConfig::GetiInst(void) { return iInst; }
+
+inline void CConfig::SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
 
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
