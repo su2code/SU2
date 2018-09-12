@@ -3191,7 +3191,6 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
     }
 }
 
-
 CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
 
 CSourceNothing::~CSourceNothing(void) { }

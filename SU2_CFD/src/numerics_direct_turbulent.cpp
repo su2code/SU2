@@ -1184,7 +1184,7 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
 
 void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
-
+  
   AD::StartPreacc();
   AD::SetPreaccIn(StrainMag_i);
   AD::SetPreaccIn(TurbVar_i, nVar);
@@ -1277,9 +1277,9 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    val_Jacobian_i[1][0] = 0.0;
    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
-
- AD::SetPreaccOut(val_residual, nVar);
- AD::EndPreacc();
+  
+  AD::SetPreaccOut(val_residual, nVar);
+  AD::EndPreacc();
 
 }
 
