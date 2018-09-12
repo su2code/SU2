@@ -140,6 +140,8 @@ CMultizoneDriver::~CMultizoneDriver(void) {
   delete [] residual;
   delete [] residual_rel;
 
+  delete [] prefixed_motion;
+
 }
 
 void CMultizoneDriver::StartSolver() {
