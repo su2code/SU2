@@ -183,12 +183,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-  	nZone = config->GetnTimeInstances();
-  }
-
   return (unsigned short) nZone;
 }
 
@@ -626,7 +620,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
@@ -1735,8 +1728,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-	/* DESCRIPTION: Visualize the deformation */
-  addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
+	/* DESCRIPTION: Visualize the deformation (surface grid) */
+  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
+  /* DESCRIPTION: Visualize the deformation (volume grid) */
+  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
@@ -2346,6 +2341,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions ---*/
+
+  Wall_Functions = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+        Wall_Functions = true;
+      
+      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
+        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+
+        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+    }
+  }
+  
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
@@ -3630,7 +3642,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
       }
 
@@ -4736,7 +4748,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -5510,7 +5522,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5559,7 +5572,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5571,7 +5585,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
+    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
+    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
     else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
@@ -6686,6 +6701,32 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
         SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
         multizone_filename.append(string(buffer));
     }
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
     return multizone_filename;
 }
 
