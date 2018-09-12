@@ -244,6 +244,10 @@ def aerodynamics( config, state=None ):
     if config['OBJECTIVE_FUNCTION'] == 'NOISE':
         pull.append( 'Observer_Locations.dat')
 
+    if config['OBJECTIVE_FUNCTION'] == 'NOISE_SNG':
+        pull.append( 'NoiseSourceRegionDef.dat')
+        pull.append( 'RandNumFile')
+
     # output redirection
     with redirect_folder( 'DIRECT', pull, link ) as push:
         with redirect_output(log_direct):     

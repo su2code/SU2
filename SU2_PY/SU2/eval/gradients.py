@@ -265,6 +265,10 @@ def adjoint( func_name, config, state=None ):
     if config['OBJECTIVE_FUNCTION'] == "NOISE":
         pull.append("Observer_Locations.dat")
 
+    if config['OBJECTIVE_FUNCTION'] == 'NOISE_SNG':
+        pull.append( 'NoiseSourceRegionDef.dat')
+        pull.append( 'RandNumFile')
+
     # output redirection
     with redirect_folder( ADJ_NAME, pull, link ) as push:
         with redirect_output(log_adjoint):        
@@ -701,6 +705,11 @@ def findiff( config, state=None ):
     # files: target heat flux distribution
     if 'INV_DESIGN_HEATFLUX' in special_cases and 'TARGET_HEATFLUX' in files:
         pull.append(files['TARGET_HEATFLUX'])
+
+
+    if config['OBJECTIVE_FUNCTION'] == 'NOISE_SNG':
+        pull.append( 'NoiseSourceRegionDef.dat')
+        pull.append( 'RandNumFile')
 
        
     # output redirection

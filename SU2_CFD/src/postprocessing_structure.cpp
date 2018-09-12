@@ -1016,6 +1016,8 @@ void FWHSolver::Extract_NoiseSources(CSolver *solver, CConfig *config, CGeometry
                       rho = solver->node[iPoint]->GetSolution(nDim);
                       rho_ux = solver->node[iPoint]->GetSolution(nDim+1);
                       rho_uy = solver->node[iPoint]->GetSolution(nDim+2);
+
+
                       if (nDim==3)  rho_uz = solver->node[iPoint]->GetSolution(nDim+3);
                       rho_E = solver->node[iPoint]->GetSolution(2*nDim+1);
                       TKE = 0.0;
@@ -1321,7 +1323,7 @@ void FWHSolver::FFT_SourceTermsR2(){
 //     for (iPanel=0; iPanel<nPanel; iPanel++){
 //       for (iSample=0; iSample<nSample; iSample++){
 //               AD::RegisterInput(U[i][iPanel][iSample]);
-//         }
+//         }w
 //    }
 //  }
 //}
@@ -1923,4 +1925,1046 @@ void FWHSolver::Write_Sensitivities(CSolver *solver, CConfig *config, CGeometry 
 
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+SNG::SNG(CConfig *config,CGeometry *geometry) {
+
+    unsigned long  i, iDim, iPoint, iSNGPt, SNGPtCount, nF, iT;
+    su2double *Coord;
+    su2double FreeStreamTemperature,FreeStreamPressure,FreeStreamDensity,M, AOA;
+    su2double pi=3.141592653589793;
+    su2double R = 287.058;
+
+    nDim = geometry->GetnDim();
+
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+//     cout<<"Entered SNG Constructor"<<endl;
+
+    /* Reading in SNG boundary points -- change to config option later! */
+    string  text_line;
+    ifstream SNG_BoundaryFile;
+    string filename = "NoiseSourceRegionDef.dat";
+    SNG_BoundaryFile.open(filename.data() , ios::in);
+    if (SNG_BoundaryFile.fail()) {
+        cout << "There is no file!!! " <<  filename.data()  << "."<< endl;
+      exit(EXIT_FAILURE);
+    }
+
+    NoiseSourceZone = new su2double* [2];
+
+    for(i = 0;  i <2  ;  i++)
+    {
+       NoiseSourceZone[i] = new su2double[nDim];
+       for (iDim=0; iDim < nDim; iDim++){
+         NoiseSourceZone[i][iDim]= 0.0;
+       }
+    }
+
+    i=0;
+    getline (SNG_BoundaryFile, text_line);
+    istringstream point_line(text_line);
+    point_line >> f_min >> f_max >> NF >> GenNewRand;
+    getline (SNG_BoundaryFile, text_line);
+    istringstream point_line2(text_line);
+    point_line2 >> dt >> NT>> N_Tij_Out;
+    getline (SNG_BoundaryFile, text_line);
+    istringstream point_line3(text_line);
+    point_line3 >> Type_JBBN;
+    while (getline (SNG_BoundaryFile, text_line)) {
+        istringstream point_line(text_line);
+        if (nDim==2){
+        point_line >> NoiseSourceZone[i][0]>> NoiseSourceZone[i][1];
+          }
+        if (nDim==3){
+        point_line >> NoiseSourceZone[i][0]>> NoiseSourceZone[i][1]>> NoiseSourceZone[i][2];
+          }
+        i++;
+    }
+
+
+
+  //   cout<<"Finished Reading Bounds"<<endl;
+
+   if (rank==MASTER_NODE)  cout<<"f_min= "<<f_min<<", f_max= "<<f_max<<", N_F= "<<NF<<endl;
+   if (rank==MASTER_NODE)  cout<<"dt= "<<dt<<", NT= "<<NT<<", Tij Ouput= "<<N_Tij_Out<<endl;
+
+   T_ij_OutputIdx = new unsigned long [N_Tij_Out];
+   for (int i=0; i<N_Tij_Out; i++){
+    T_ij_OutputIdx[i] = NT/N_Tij_Out*(i);
+//    if (rank==MASTER_NODE)  cout<<"i= "<<i<<", T_ij_OutputIdx[i]= "<<T_ij_OutputIdx[i]<<endl;
+   }
+
+    nSNGPts = 0;
+    SNGPtCount = 0;
+    //Go over the whole mesh and identify the points within the SNG zone
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+            if( geometry->node[iPoint]->GetDomain()){
+        Coord = geometry->node[iPoint]->GetCoord();
+
+        if (SU2_TYPE::GetValue(Coord[0])>NoiseSourceZone[0][0] &&  SU2_TYPE::GetValue(Coord[0])<NoiseSourceZone[1][0] && SU2_TYPE::GetValue(Coord[1])>NoiseSourceZone[0][1] && SU2_TYPE::GetValue(Coord[1])<NoiseSourceZone[1][1]){
+//            cout<<"x= "<<SU2_TYPE::GetValue(Coord[0])<<"; y= "<<SU2_TYPE::GetValue(Coord[1]) <<endl;
+//          SNG_Coords[SNGPtCount][0] = SU2_TYPE::GetValue(Coord[0]);
+//          SNG_Coords[SNGPtCount][1] = SU2_TYPE::GetValue(Coord[1]);
+
+          SNGPtCount++;
+        }
+
+      }
+     }
+    nSNGPts = SNGPtCount;
+    cout<<"Process "<<rank<<" contains "<<nSNGPts <<" SNG Points."<<endl;
+
+
+    SNG_Coords = new su2double* [nSNGPts];
+    for(iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+    {
+       SNG_Coords[iSNGPt] = new su2double[3];
+       SNG_Coords[iSNGPt][0]= 0.0;
+       SNG_Coords[iSNGPt][1]= 0.0;
+       SNG_Coords[iSNGPt][2]= 0.0;
+    }
+
+    TKE = new su2double [nSNGPts];
+    omega = new su2double [nSNGPts];
+    SNG_CellVol = new su2double [nSNGPts];
+    PointID = new unsigned long [nSNGPts];
+    for(iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+    {
+       TKE [iSNGPt] = 0.0;
+       omega [iSNGPt] = 0.0;
+       SNG_CellVol [iSNGPt] = 0.0;
+       PointID[iSNGPt] = 0;
+    }
+
+
+    k_n = new su2double* [NF];
+    sigma_n = new su2double* [NF];
+    Psi_n = new su2double [NF];
+    for(nF = 0; nF<NF; nF++)
+    {
+       k_n[nF] = new su2double[3];
+       sigma_n[nF] = new su2double[3];
+       Psi_n[nF] = 0.0;
+       for (iDim=0; iDim < 3; iDim++){
+         k_n[nF][iDim]= 0.0;
+         sigma_n[nF][iDim]= 0.0;
+       }
+    }
+
+
+
+    M = config->GetMach();
+    FreeStreamPressure=config->GetPressure_FreeStream();
+    FreeStreamTemperature = config->GetTemperature_FreeStream();
+    FreeStreamDensity = FreeStreamPressure/R/FreeStreamTemperature;
+    a_inf = sqrt(config->GetGamma()*FreeStreamPressure / FreeStreamDensity);
+    AOA = config->GetAoA();
+    U1 = M*a_inf*cos(AOA*pi/180) ;
+    U2 = M*a_inf*sin(AOA*pi/180) ;
+    U3 = 0.0;    //FIX THIS LATER!!!
+
+    //Multiplicative factors to re-dimensionalize TKE and omega
+    //Missing Gamma=1.4 factor but this is how TKE and omega are nondimensionalized in SU2 RANS
+    TKE_ReDimFac = R*FreeStreamTemperature;
+    omega_ReDimFac = sqrt(TKE_ReDimFac);
+
+
+
+    if (rank==MASTER_NODE) cout<<U1<<",  "<<U2<<",  "<<M<<",  "<<a_inf<<",  "<<FreeStreamPressure<<", "<<FreeStreamDensity<<", "<<FreeStreamTemperature<<endl;
+
+//    if (rank==MASTER_NODE)  cout<<"FS Turb Intensity= "<<config->GetTurbulenceIntensity_FreeStream()<<endl;
+//    if (rank==MASTER_NODE)  cout<<"FS Ux= "<<config->GetVelocity_FreeStream()[0]<<", FS Uy= "<<config->GetVelocity_FreeStream()[1]<<endl;
+//    if (rank==MASTER_NODE)  cout<<"FS Ux_ND= "<<config->GetVelocity_FreeStreamND()[0]<<", FS Uy_ND= "<<config->GetVelocity_FreeStreamND()[1]<<endl;
+//    if (rank==MASTER_NODE)  cout<<"FS p_ND= "<<config->GetPressure_FreeStreamND()<<", FS p_ref= "<<config->GetPressure_Ref()<<endl;
+//    if (rank==MASTER_NODE)  cout<<"FS mu= "<<config->GetViscosity_FreeStream()<<", FS mu_ND= "<<config->GetViscosity_FreeStreamND()<<", FS mu_ref= "<<config->GetViscosity_Ref()<<endl;
+
+
+    u_turb = new su2double**[nSNGPts];
+    for (iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+    {
+        u_turb[iSNGPt] = new su2double*[nDim];
+        for(iDim = 0; iDim<nDim; iDim++)
+        {
+            u_turb[iSNGPt][iDim] = new su2double [NT];
+            for(iT=0; iT<NT; iT++){
+                u_turb[iSNGPt][iDim][iT] = 0.0;
+            }
+        }
+    }
+
+
+    T_tilda = new su2double**[nSNGPts];
+    T_tilda_mean = new su2double*[nSNGPts];
+    for (iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+    {
+        T_tilda[iSNGPt] = new su2double*[3*(nDim-1)];
+        T_tilda_mean[iSNGPt] = new su2double[3*(nDim-1)];
+        for(iDim = 0; iDim<3*(nDim-1); iDim++)
+        {
+            T_tilda_mean[iSNGPt][iDim] = 0.0;
+            T_tilda[iSNGPt][iDim] = new su2double [NT];
+            for(iT=0; iT<NT; iT++){
+                T_tilda[iSNGPt][iDim][iT] = 0.0;
+            }
+        }
+    }
+
+    J_BBN = 0.0;
+
+    dJBBN_dU = new su2double* [nDim+2];
+    for(int iDim = 0; iDim < nDim+2 ; iDim++)
+    {
+        dJBBN_dU[iDim] = new su2double[nSNGPts];
+        for (iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+        {
+               dJBBN_dU[iDim][iSNGPt]= 0.0;
+        }
+    }
+
+
+
+//        dJBBN_dU = new su2double[nSNGPts];
+//        for (iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+//        {
+//               dJBBN_dU[iSNGPt]= 0.0;
+//        }
+
+
+
+
+
+}
+
+
+
+
+
+
+SNG::~SNG(void) {
+
+}
+
+
+
+void SNG::SetSNG_Analysis(CSolver *solver, CConfig *config,CGeometry *geometry ){
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+//    cout<<"In SetSNG_Analysis"<<endl;
+
+    //Extract TKE, omega, cell volume and cell coordinates within the SNG zone from the RANS solution
+    Extract_RANS(solver, config, geometry );
+    if (rank == MASTER_NODE) cout<<"Finished RANS Extraction"<<endl;
+
+    //Set all NF random Fourier modes
+    SetRandomFourierModes();
+
+
+
+}
+
+
+
+void SNG::Perform_SNG_Analysis(){
+
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+   if (rank == MASTER_NODE) cout<<"Performing SNG Analysis"<<endl;
+
+
+    //Synthesize turbulent velocity fields
+    Compute_TurbVelocity();
+    if (rank == MASTER_NODE) cout<<"u_turb synthesized"<<endl;
+
+    //Compute broadband noise source
+    Compute_BroadBandNoiseSource();
+    if (rank == MASTER_NODE) cout<<"Tij Computed"<<endl;
+
+    //Compute broadband noise objective function
+     Compute_BBN_ObjFunc();
+   if (rank == MASTER_NODE) cout<<"J_BBN Computed"<<endl;
+
+    //Merge broadband noise source to root and write out required snapshots
+   if (rank == MASTER_NODE) cout<<"Writing BBN Source to file"<<endl;
+    Write_BroadBandNoiseSource();
+
+}
+
+
+
+
+
+void SNG::SetRandomFourierModes(){
+  unsigned long  nF;
+  su2double pi =  acos(-1.0);
+  su2double f_n, k_mod_n, Phi_n, Theta_n,Phi_n1, Theta_n1, kt0, kt1, kt2, kcoef, sig1, sig2, sig3, sig_mag;
+  ofstream RandNum_File_OUT; ifstream RandNum_File_IN;
+  string  text_line;
+
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+
+    srand(time(NULL));
+    if (rank == MASTER_NODE){
+    if (GenNewRand){
+      cout<<"Generating a new set of random angles for SNG" << endl;
+      RandNum_File_OUT.open("RandNumFile", ios::out);
+    }
+    else{
+       cout<<"Reading pre-generated random angles for SNG" << endl;
+       RandNum_File_IN.open("RandNumFile", ios::in);
+       if (RandNum_File_IN.fail()) {
+           cout << "There is no RandNumFile!!! "<< endl;
+         exit(EXIT_FAILURE);
+      }
+    }
+     for(nF = 0; nF<NF; nF++)
+     {
+       f_n = f_min + (f_max-f_min)/(NF-1)*nF;
+       k_mod_n = 2*pi*f_n/a_inf;
+
+       //Read random angles from a pre-generated file.
+       if (!GenNewRand){
+          getline (RandNum_File_IN, text_line);
+          istringstream point_line(text_line);
+          point_line >> Psi_n[nF] >> Phi_n >>Theta_n >> Phi_n1 >>Theta_n1;
+       }
+
+       //Random generation of Psi_n
+       if (GenNewRand)Psi_n[nF] = ((double)rand()/(double)RAND_MAX)*2.0*pi - pi;
+
+
+       //Random generation of Phi_n and Theta_n
+       if (GenNewRand){
+       Phi_n = ((double)rand()/(double)RAND_MAX)*pi;
+       Theta_n = ((double)rand()/(double)RAND_MAX)*2*pi;
+       }
+
+       //Convert k_mod_n, Phi_n and Theta_n in spherical coord to cartesian coord for k_n
+       k_n[nF][0]= k_mod_n*sin(Theta_n)*cos(Phi_n);
+       k_n[nF][1]= k_mod_n*sin(Theta_n)*sin(Phi_n);
+       k_n[nF][2]= k_mod_n*cos(Theta_n);
+
+       //Random generation of Phi_n1 and Theta_n1
+       if (GenNewRand){
+       Phi_n1 = ((double)rand()/(double)RAND_MAX)*pi;
+       Theta_n1 = ((double)rand()/(double)RAND_MAX)*2*pi;
+       }
+
+       //Compute sigma_n by projecting the unit vector defined by Phi_n1 and Theta_n1 onto a plane orthogonal to k_n
+       kt0 = sin(Theta_n1)*cos(Phi_n1);
+       kt1 = sin(Theta_n1)*sin(Phi_n1);
+       kt2 = cos(Theta_n1);
+       kcoef = (k_n[nF][0]*kt0 + k_n[nF][1]*kt1 + k_n[nF][2]*kt2)/k_mod_n/k_mod_n;
+       sig1 = kt0 - k_n[nF][0]*kcoef;
+       sig2 = kt1 - k_n[nF][1]*kcoef;
+       sig3 = kt2 - k_n[nF][2]*kcoef;
+       sig_mag = sqrt(sig1*sig1+sig2*sig2+sig3*sig3);
+       //scale to unit vector
+       sigma_n[nF][0]= sig1/sig_mag;
+       sigma_n[nF][1]= sig2/sig_mag;
+       sigma_n[nF][2]= sig3/sig_mag;
+
+       if (GenNewRand) RandNum_File_OUT<< std::setprecision(15) << Psi_n[nF]<<"  "<<Phi_n<<"  "<<Theta_n<<"  "<<Phi_n1<<"  "<<Theta_n1<<endl;
+     }
+      if (GenNewRand) RandNum_File_OUT.close();
+      else RandNum_File_IN.close();
+
+    }
+
+
+    //Broadcast to all other processes
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(Psi_n, NF, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+    for (int i = 0; i<NF; i++) SU2_MPI::Bcast(k_n[i], 3, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+    for (int i = 0; i<NF; i++) SU2_MPI::Bcast(sigma_n[i], 3, MPI_DOUBLE,  MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+
+//    for (int i=0; i<nProcessor; i++){
+//            if (rank==i){
+//    //            cout<<"Printing Psi_n of Processor "<<rank<<endl;
+//                cout<<"Printing k_n of Processor "<<rank<<endl;
+//    for(nF = 0; nF<NF; nF++){
+//        for(int iDim=0; iDim<3; iDim++){
+//            cout<< std::setprecision(15)<<k_n[nF][iDim]<<" ";
+//        }
+//        cout<<endl;
+//    }
+//     cout<<"Printing sigma_n of Processor "<<rank<<endl;
+//    for(nF = 0; nF<NF; nF++){
+//        for(int iDim=0; iDim<3; iDim++){
+//            cout<< std::setprecision(15)<<sigma_n[nF][iDim]<<" ";
+//        }
+//        cout<<endl;
+//    }
+//            }
+//    }
+
+
+
+}
+
+
+
+
+
+
+
+void SNG::Extract_RANS(CSolver *solver, CConfig *config, CGeometry *geometry){
+    unsigned long   i, iPoint,  SNGPtCount;
+    su2double *Coord;
+    su2double Turb_Kinetic_Energy, x_coord, y_coord, z_coord, Specific_Dissip_Rate;
+
+#ifdef HAVE_MPI
+  int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+     MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+    Turb_Kinetic_Energy = 0.0;
+    Specific_Dissip_Rate=0.0;
+    SNGPtCount = 0;
+    //Go over the whole mesh and identify the points within the SNG zone
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+            if( geometry->node[iPoint]->GetDomain()){
+        Coord = geometry->node[iPoint]->GetCoord();
+
+        if (SU2_TYPE::GetValue(Coord[0])>NoiseSourceZone[0][0] &&  SU2_TYPE::GetValue(Coord[0])<NoiseSourceZone[1][0] && SU2_TYPE::GetValue(Coord[1])>NoiseSourceZone[0][1] && SU2_TYPE::GetValue(Coord[1])<NoiseSourceZone[1][1]){
+          x_coord = SU2_TYPE::GetValue(Coord[0]);
+          y_coord = SU2_TYPE::GetValue(Coord[1]);
+          if(nDim==3) z_coord = SU2_TYPE::GetValue(Coord[2]);
+      //    SNG_CellVol[SNGPtCount] = geometry->node[iPoint]->GetVolume();
+          SNG_CellVol[SNGPtCount] = 1.0;
+     //     cout<<"i= "<< SNGPtCount<<", Cell Vol= "<<geometry->node[iPoint]->GetVolume()<<",  "<<geometry->node[iPoint]->GetVolume_n() <<endl;
+          Turb_Kinetic_Energy =  solver->node[iPoint]->GetSolution(2*nDim+2);
+          Specific_Dissip_Rate =  solver->node[iPoint]->GetSolution(2*nDim+3);
+
+
+          if (config->GetAD_Mode()){
+          AD::RegisterInput(x_coord);
+          AD::RegisterInput(y_coord);
+          if(nDim==3)AD::RegisterInput(z_coord);
+          AD::RegisterInput(Turb_Kinetic_Energy);
+          AD::RegisterInput(Specific_Dissip_Rate);
+          }
+
+          SNG_Coords[SNGPtCount][0] = x_coord;
+          SNG_Coords[SNGPtCount][1] = y_coord;
+          if(nDim==3)SNG_Coords[SNGPtCount][2] = z_coord;
+
+          TKE[SNGPtCount] = Turb_Kinetic_Energy;
+          omega[SNGPtCount] = Specific_Dissip_Rate;
+
+          PointID[SNGPtCount] = geometry->node[iPoint]->GetGlobalIndex();
+//          cout<<"Registering TKE and omega, pass: "<< SNGPtCount<<", TKE= "<<Turb_Kinetic_Energy<<endl;
+          SNGPtCount++;
+        }
+
+      }
+     }
+
+
+    if (nProcessor==1){
+    ofstream SNG_file;
+    SNG_file.open("SNG");
+
+    for (i=0;i<nSNGPts; i++){
+
+        SNG_file<< std::setprecision(15) << SNG_Coords[i][0]  <<"  "<<SNG_Coords[i][1]<<"  "<<TKE[i]<<"  "<<omega[i]<<endl;
+
+     }
+    SNG_file.close();
+    }
+
+    Write_ExtractedRANS();
+
+
+
+}
+
+
+
+
+void SNG::Compute_TurbVelocity(){
+    su2double A = 1.453;
+    su2double c1 = 1.0;
+    su2double beta = 0.09;
+    su2double nu = 1.57E-5; //kinematic viscosity of air at 25 deg Celsius
+    su2double pi =  acos(-1.0);
+    unsigned long nF, iSNGPt, iT;
+    su2double u_n, E_kn, del_kn, f_n, k_mod_n, k_e, k_eta, epsilon, L_T, u_prime;
+    su2double *convection_term, dot_prod, t;
+
+    convection_term = new su2double[nDim];
+    for (int iDim=0; iDim<nDim; iDim++) convection_term[iDim] = 0.0;
+
+    del_kn = (f_max-f_min)/(NF-1);
+
+    for(nF=0; nF<NF; nF++){
+        f_n = f_min + (f_max-f_min)/(NF-1)*nF;
+        k_mod_n = 2*pi*f_n/a_inf;
+    //    cout<<k_mod_n<<", "<<pi<<", "<<f_n<<", "<<a_inf<<endl;
+        for(iSNGPt=0; iSNGPt<nSNGPts; iSNGPt++){
+
+            //Compute epsilon from TKE and omega
+            epsilon = beta*TKE[iSNGPt]*TKE_ReDimFac*omega[iSNGPt]*omega_ReDimFac;
+
+            //Compute k_e and k_eta
+            u_prime = sqrt(2.0*TKE[iSNGPt]*TKE_ReDimFac/3.0);
+            L_T = c1*pow(u_prime,3.0)/epsilon;
+            k_e = 0.747/L_T;
+            k_eta = pow(epsilon,0.25)*pow(nu,-0.75);
+
+            //Compute E at k_n
+            E_kn = 2.0*A/3.0*TKE[iSNGPt]*TKE_ReDimFac/k_e*pow(k_mod_n/k_e,4.0)*exp(-2*pow(k_mod_n/k_eta,2.0))*pow(1.0+pow(k_mod_n/k_e,2.0),-17.0/6.0);
+
+            //Compute velocity magnitude u_n
+            u_n = sqrt(E_kn*del_kn);
+
+            for(iT=0; iT<NT; iT++){
+                t = dt*iT;
+                convection_term[0] = SNG_Coords[iSNGPt][0] - U1*t;
+                convection_term[1] = SNG_Coords[iSNGPt][1] - U2*t;
+                if (nDim==3) convection_term[2] = SNG_Coords[iSNGPt][2] - U3*t;
+                dot_prod = 0.0;
+                for (int iDim=0; iDim<nDim; iDim++) dot_prod += k_n[nF][iDim]*convection_term[iDim];
+                u_turb[iSNGPt][0][iT] += 2*u_n*cos(dot_prod+Psi_n[nF])*sigma_n[nF][0];
+                u_turb[iSNGPt][1][iT] += 2*u_n*cos(dot_prod+Psi_n[nF])*sigma_n[nF][1];
+                if (nDim==3) u_turb[iSNGPt][2][iT] += 2*u_n*cos(dot_prod+Psi_n[nF])*sigma_n[nF][2];
+            }
+        //    cout<<dot_prod<<", "<<u_n<<", "<<epsilon<<", "<<k_mod_n<<", "<< convection_term[0]<<", "<<convection_term[1]<<", "<< t <<endl;
+
+        }
+
+    }
+
+
+}
+
+
+
+void SNG::Compute_BroadBandNoiseSource(){
+    unsigned long iSNGPt, iT,idx_out,iVar, idx;
+    ofstream T_tilde_File;
+        char buffer [50];
+#ifdef HAVE_MPI
+    int rank, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+    for(iT=0; iT<NT; iT++){
+        for (iSNGPt=0; iSNGPt<nSNGPts; iSNGPt++){
+            T_tilda[iSNGPt][0][iT] = u_turb[iSNGPt][0][iT]*u_turb[iSNGPt][0][iT];  //T_11 = u1*u1
+            T_tilda[iSNGPt][1][iT] = u_turb[iSNGPt][0][iT]*u_turb[iSNGPt][1][iT];  //T_12 = u1*u2
+            T_tilda[iSNGPt][2][iT] = u_turb[iSNGPt][1][iT]*u_turb[iSNGPt][1][iT];  //T_22 = u2*u2
+            T_tilda_mean[iSNGPt][0] += T_tilda[iSNGPt][0][iT]/NT;
+            T_tilda_mean[iSNGPt][1] += T_tilda[iSNGPt][1][iT]/NT;
+            T_tilda_mean[iSNGPt][2] += T_tilda[iSNGPt][2][iT]/NT;
+            if (nDim == 3){
+                T_tilda[iSNGPt][3][iT] = u_turb[iSNGPt][0][iT]*u_turb[iSNGPt][2][iT];  //T_13 = u1*u3
+                T_tilda[iSNGPt][4][iT] = u_turb[iSNGPt][1][iT]*u_turb[iSNGPt][2][iT];  //T_23 = u2*u3
+                T_tilda[iSNGPt][5][iT] = u_turb[iSNGPt][2][iT]*u_turb[iSNGPt][2][iT];  //T_33 = u3*u3
+                T_tilda_mean[iSNGPt][3] += T_tilda[iSNGPt][3][iT]/NT;
+                T_tilda_mean[iSNGPt][4] += T_tilda[iSNGPt][4][iT]/NT;
+                T_tilda_mean[iSNGPt][5] += T_tilda[iSNGPt][5][iT]/NT;
+            }
+        }
+    }
+
+
+    //Write out T_ij files only if it is in serial
+    if (nProcessor==1){
+        for (idx=0; idx<N_Tij_Out; idx++){
+            idx_out = T_ij_OutputIdx[idx];
+                  char cstr [200];
+            SPRINTF (cstr, "Tij_Master");
+            if ((SU2_TYPE::Int(idx_out) >= 0)    && (SU2_TYPE::Int(idx_out) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(idx_out));
+            if ((SU2_TYPE::Int(idx_out) >= 10)   && (SU2_TYPE::Int(idx_out) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(idx_out));
+            if ((SU2_TYPE::Int(idx_out) >= 100)  && (SU2_TYPE::Int(idx_out) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(idx_out));
+            if ((SU2_TYPE::Int(idx_out) >= 1000) && (SU2_TYPE::Int(idx_out) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(idx_out));
+            if (SU2_TYPE::Int(idx_out) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(idx_out));
+            strcat (cstr, buffer);
+            cout<<cstr<<endl;
+            T_tilde_File.precision(15);
+            T_tilde_File.open(cstr, ios::out);
+            for (iSNGPt=0; iSNGPt<nSNGPts; iSNGPt++){
+                for(iVar=0; iVar<3*(nDim-1); iVar++){
+                 T_tilde_File <<scientific<< T_tilda[iSNGPt][iVar][idx_out] << "  ";
+                }
+                 T_tilde_File <<endl;
+            }
+                 T_tilde_File.close();
+        }
+
+
+        ofstream Tij_Mean_file;
+        Tij_Mean_file.open("Tij_Master_Mean");
+        Tij_Mean_file.precision(15);
+        for (iSNGPt=0; iSNGPt<nSNGPts; iSNGPt++){
+            for(iVar=0; iVar<3*(nDim-1); iVar++){
+             Tij_Mean_file <<scientific<< T_tilda_mean[iSNGPt][iVar] << "  ";
+            }
+             Tij_Mean_file <<endl;
+        }
+             Tij_Mean_file.close();
+
+
+    }
+}
+
+
+
+void SNG::Compute_BBN_ObjFunc(){
+    unsigned long iSNGPt, nVar,iVar;
+    su2double TotCellVol_Local;
+    su2double TotCellVol_Global;
+    TotCellVol_Local=0.0;
+    TotCellVol_Global = 0.0;
+    su2double Max_T22_Local=-1e16;
+    su2double Max_T22_Global=0.0;
+
+#ifdef HAVE_MPI
+   int rank, nProcessor;
+   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+   MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+#endif
+
+
+
+
+    nVar = 3*(nDim-1);
+    su2double *T_tilda_mean_VolAvg_Local = new su2double [nVar];
+    su2double *T_tilda_mean_VolAvg_Global = new su2double [nVar];
+    for (iVar=0; iVar <nVar; iVar++){
+      T_tilda_mean_VolAvg_Local[iVar] = 0.0;
+      T_tilda_mean_VolAvg_Global[iVar] = 0.0;
+    }
+
+    for (iSNGPt=0; iSNGPt<nSNGPts; iSNGPt++){
+        for (iVar=0; iVar <nVar; iVar++){
+            T_tilda_mean_VolAvg_Local[iVar] +=  T_tilda_mean[iSNGPt][iVar]*SNG_CellVol [iSNGPt];
+        }
+        TotCellVol_Local += SNG_CellVol [iSNGPt];
+        if(T_tilda_mean[iSNGPt][2]>Max_T22_Local) Max_T22_Local = T_tilda_mean[iSNGPt][2];
+    }
+
+
+#ifdef HAVE_MPI
+    SU2_MPI::Reduce(T_tilda_mean_VolAvg_Local ,T_tilda_mean_VolAvg_Global, nVar,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+    SU2_MPI::Reduce( &TotCellVol_Local, &TotCellVol_Global, 1, MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+    SU2_MPI::Reduce( &Max_T22_Local, &Max_T22_Global, 1, MPI_DOUBLE,MPI_MAX,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+
+    if (rank == MASTER_NODE){
+    for (iVar=0; iVar <nVar; iVar++){
+        T_tilda_mean_VolAvg_Global[iVar] = T_tilda_mean_VolAvg_Global[iVar]/TotCellVol_Global;
+    }
+
+       cout<<"Time-averaged over "<<NT<<" samples & spatially-averaged: T11= "<<  T_tilda_mean_VolAvg_Global[0] <<", T12= "<<  T_tilda_mean_VolAvg_Global[1] <<", T22= "<<  T_tilda_mean_VolAvg_Global[2]<<endl;
+       cout<<"T22_Max= "<< Max_T22_Global<<endl;
+
+       //BBN Objective is the MAX (in space) of T22 component of the time-averaged Lighthill's stress tensor
+       if (Type_JBBN==-1){
+           J_BBN = Max_T22_Global;
+           cout<<"J_BBN set to spatial max of T22. J_BBN= "<<J_BBN<<endl;
+       }
+
+       //BBN Objective is the Frobenius norm of the time and spatially-averaged Lighthill's stress tensor
+       if (Type_JBBN== 0) {
+           for (iVar=0; iVar <nVar; iVar++) J_BBN += T_tilda_mean_VolAvg_Global[iVar];
+           J_BBN = sqrt(J_BBN);
+           cout<<"J_BBN set to Frobenius norm of the time and spatially-averaged Lighthill's stress tensor. J_BBN= "<<J_BBN<<endl;
+       }
+
+       //BBN Objective is the magnitude of one component of the time and spatially-averaged Lighthill's stress tensor
+       //Type_JBBN=1 -> J=|T11|, Type_JBBN=2 -> J=|T12|, Type_JBBN=3 -> J=|T22|
+       else{
+           J_BBN = abs(T_tilda_mean_VolAvg_Global[Type_JBBN-1]);
+           cout<<"J_BBN set to magnitude of component "<<  Type_JBBN-1<<  " of the time and spatially-averaged Lighthill's stress tensor. J_BBN= " <<J_BBN<<endl;
+       }
+
+
+       ofstream J_BBN_file;
+       J_BBN_file.open("J_BBN");
+       J_BBN_file.precision(15);
+            J_BBN_file <<scientific<< J_BBN<<endl;
+            J_BBN_file.close();
+
+    }
+}
+
+
+
+
+void SNG::Write_ExtractedRANS(){
+    unsigned long  iSNGPts, Max_nSNGPts, Tot_nSNGPts;
+      ofstream ExtractedRANS_Merged;
+
+
+    int rank, iProcessor, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    unsigned long Buffer_Send_nSNGPts[1], *Buffer_Recv_nSNGPts = NULL;
+
+
+
+    if (rank == MASTER_NODE) Buffer_Recv_nSNGPts= new unsigned long [nProcessor];
+
+     Buffer_Send_nSNGPts[0]= nSNGPts;
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(&Buffer_Send_nSNGPts, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSNGPts, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+      SU2_MPI::Allreduce(&nSNGPts,&Max_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+      SU2_MPI::Reduce(&nSNGPts,&Tot_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (SNGPtss)
+#endif
+
+cout<<"Max nSNGPts for all processes: "<<Max_nSNGPts<<",  nSNGPTs of Process "<<rank<<": "<<nSNGPts<<", Total Num of SNG Pts: " <<Tot_nSNGPts<<endl;
+
+
+      /* pack sensitivity values in each processor and send to root */
+      su2double *Buffer_Send_xCoord = new su2double [Max_nSNGPts];
+      su2double *Buffer_Send_yCoord = new su2double [Max_nSNGPts];
+      su2double *Buffer_Send_TKE = new su2double [Max_nSNGPts];
+      su2double *Buffer_Send_omega = new su2double [Max_nSNGPts];
+
+      //zero send buffers
+      for (int i=0; i <Max_nSNGPts; i++){
+       Buffer_Send_xCoord[i]=0.0;
+       Buffer_Send_yCoord[i]=0.0;
+       Buffer_Send_TKE[i]=0.0;
+       Buffer_Send_omega[i]=0.0;
+      }
+
+      su2double *Buffer_Recv_xCoord = NULL;
+      su2double *Buffer_Recv_yCoord = NULL;
+      su2double *Buffer_Recv_TKE = NULL;
+      su2double *Buffer_Recv_omega = NULL;
+
+      if (rank == MASTER_NODE) {
+       Buffer_Recv_xCoord = new su2double [nProcessor*Max_nSNGPts];
+       Buffer_Recv_yCoord = new su2double [nProcessor*Max_nSNGPts];
+       Buffer_Recv_TKE = new su2double [nProcessor*Max_nSNGPts];
+       Buffer_Recv_omega = new su2double [nProcessor*Max_nSNGPts];
+      }
+
+      for(iSNGPts=0; iSNGPts<nSNGPts; iSNGPts++){
+          Buffer_Send_xCoord[iSNGPts] = SNG_Coords[iSNGPts][0];
+          Buffer_Send_yCoord[iSNGPts] = SNG_Coords[iSNGPts][1];
+          Buffer_Send_TKE[iSNGPts] = TKE[iSNGPts];
+          Buffer_Send_omega[iSNGPts] = omega[iSNGPts];
+      }
+
+
+#ifdef HAVE_MPI
+     SU2_MPI::Gather(Buffer_Send_xCoord, Max_nSNGPts, MPI_DOUBLE, Buffer_Recv_xCoord,  Max_nSNGPts , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+     SU2_MPI::Gather(Buffer_Send_yCoord, Max_nSNGPts, MPI_DOUBLE, Buffer_Recv_yCoord,  Max_nSNGPts , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+     SU2_MPI::Gather(Buffer_Send_TKE, Max_nSNGPts, MPI_DOUBLE, Buffer_Recv_TKE,  Max_nSNGPts , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+     SU2_MPI::Gather(Buffer_Send_omega, Max_nSNGPts, MPI_DOUBLE, Buffer_Recv_omega,  Max_nSNGPts , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+     /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
+      if (rank == MASTER_NODE){
+      char cstr [200];
+
+      SPRINTF (cstr, "ExtractedRANS_Merged");
+
+      ExtractedRANS_Merged.precision(15);
+      ExtractedRANS_Merged.open(cstr, ios::out);
+
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      unsigned long Total_Index;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSNGPts = 0; iSNGPts < Buffer_Recv_nSNGPts[iProcessor]; iSNGPts++) {
+
+
+
+          /*--- Current index position and global index ---*/
+          Total_Index  = iProcessor*Max_nSNGPts + iSNGPts;
+
+          /*--- Write to file---*/
+          ExtractedRANS_Merged << scientific <<  Buffer_Recv_xCoord[Total_Index]   << "  "<<  Buffer_Recv_yCoord[Total_Index]   << "  "<<  Buffer_Recv_TKE[Total_Index]   << "  "<<  Buffer_Recv_omega[Total_Index]   << "  "  << endl;
+
+         }
+      }
+
+      ExtractedRANS_Merged.close();
+      delete [] Buffer_Recv_xCoord;
+      delete [] Buffer_Recv_yCoord;
+      delete [] Buffer_Recv_TKE;
+      delete [] Buffer_Recv_omega;
+       }
+      delete [] Buffer_Send_xCoord;
+      delete [] Buffer_Send_yCoord;
+      delete [] Buffer_Send_TKE;
+      delete [] Buffer_Send_omega;
+
+}
+
+
+
+
+
+void SNG::Write_BroadBandNoiseSource(){
+
+    unsigned long iVar, idx, idx_out, iSNGPts, Max_nSNGPts, Tot_nSNGPts,nVar;
+      ofstream T_tilde_File;  ofstream T_tilde_Mean_File;
+    char buffer [50];
+    int rank, iProcessor, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    unsigned long Buffer_Send_nSNGPts[1], *Buffer_Recv_nSNGPts = NULL;
+
+
+
+    if (rank == MASTER_NODE) Buffer_Recv_nSNGPts= new unsigned long [nProcessor];
+
+      Buffer_Send_nSNGPts[0]=nSNGPts;
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(&Buffer_Send_nSNGPts, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSNGPts, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+      SU2_MPI::Allreduce(&nSNGPts,&Max_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+      SU2_MPI::Reduce(&nSNGPts,&Tot_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+      cout<<"Max nSNGPts for all processes: "<<Max_nSNGPts<<",  nSNGPTs of Process "<<rank<<": "<<nSNGPts<<", Total Num of SNG Pts: " <<Tot_nSNGPts<<endl;
+
+
+      nVar = 3*(nDim-1);
+
+
+
+      /* Loop the list of Tij Output Indices */
+      for (idx=0; idx<N_Tij_Out; idx++){
+
+      idx_out = T_ij_OutputIdx[idx];
+
+      /* pack sensitivity values in each processor and send to root */
+      su2double *Buffer_Send_Tij = new su2double [Max_nSNGPts*nVar];
+      su2double *Buffer_Send_Tij_Mean = new su2double [Max_nSNGPts*nVar];
+
+      //zero send buffers
+      for (int i=0; i <Max_nSNGPts*nVar; i++){
+       Buffer_Send_Tij[i]=0.0;
+       if (idx==0)  Buffer_Send_Tij_Mean[i]=0.0;
+      }
+
+      su2double *Buffer_Recv_Tij = NULL;
+      su2double *Buffer_Recv_Tij_Mean = NULL;
+
+      if (rank == MASTER_NODE) {
+       Buffer_Recv_Tij = new su2double [nProcessor*Max_nSNGPts*nVar];
+       if (idx==0) Buffer_Recv_Tij_Mean = new su2double [nProcessor*Max_nSNGPts*nVar];
+      }
+
+      for (iVar=0; iVar<nVar; iVar++){
+          for(iSNGPts=0; iSNGPts<nSNGPts; iSNGPts++){
+              Buffer_Send_Tij[iVar*nSNGPts+iSNGPts] = T_tilda[iSNGPts][iVar][idx_out];
+              if (idx==0)Buffer_Send_Tij_Mean[iVar*nSNGPts+iSNGPts]= T_tilda_mean[iSNGPts][iVar];
+            }
+      }
+
+
+
+#ifdef HAVE_MPI
+     SU2_MPI::Gather(Buffer_Send_Tij, Max_nSNGPts*nVar, MPI_DOUBLE, Buffer_Recv_Tij,  Max_nSNGPts*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+     if (idx==0) SU2_MPI::Gather(Buffer_Send_Tij_Mean, Max_nSNGPts*nVar, MPI_DOUBLE, Buffer_Recv_Tij_Mean,  Max_nSNGPts*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+
+#endif
+
+     /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
+      if (rank == MASTER_NODE){
+      char cstr [200];
+      if (idx==0){
+          char cstr2 [200];
+          SPRINTF (cstr2, "Tij_Merged_Mean");
+          cout<<"Writing Merged File: "<<cstr2<<endl;
+          T_tilde_Mean_File.precision(15);
+          T_tilde_Mean_File.open(cstr2, ios::out);
+      }
+      SPRINTF (cstr, "Tij_Merged");
+      if ((SU2_TYPE::Int(idx_out) >= 0)    && (SU2_TYPE::Int(idx_out) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(idx_out));
+      if ((SU2_TYPE::Int(idx_out) >= 10)   && (SU2_TYPE::Int(idx_out) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(idx_out));
+      if ((SU2_TYPE::Int(idx_out) >= 100)  && (SU2_TYPE::Int(idx_out) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(idx_out));
+      if ((SU2_TYPE::Int(idx_out) >= 1000) && (SU2_TYPE::Int(idx_out) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(idx_out));
+      if (SU2_TYPE::Int(idx_out) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(idx_out));
+      strcat (cstr, buffer);
+      cout<<"Writing Merged File: "<<cstr<<endl;
+      T_tilde_File.precision(15);
+      T_tilde_File.open(cstr, ios::out);
+
+
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      unsigned long Total_Index;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSNGPts = 0; iSNGPts < Buffer_Recv_nSNGPts[iProcessor]; iSNGPts++) {
+
+           for (iVar = 0; iVar < nVar; iVar++){
+
+          /*--- Current index position and global index ---*/
+          Total_Index  = iProcessor*Max_nSNGPts*nVar + iVar*Buffer_Recv_nSNGPts[iProcessor]  + iSNGPts;
+
+          /*--- Write to file---*/
+          T_tilde_File << scientific <<  Buffer_Recv_Tij[Total_Index]   << "\t";
+         if (idx==0) T_tilde_Mean_File << scientific <<  Buffer_Recv_Tij_Mean[Total_Index]   << "\t";
+           }
+           T_tilde_File  << endl;
+           if (idx==0)T_tilde_Mean_File  << endl;
+         }
+      }
+
+      T_tilde_File.close();
+      if (idx==0) T_tilde_Mean_File.close();
+      delete [] Buffer_Recv_Tij;
+      if (idx==0) delete [] Buffer_Recv_Tij_Mean;
+       }
+      delete [] Buffer_Send_Tij;
+      if (idx==0) delete [] Buffer_Send_Tij_Mean;
+    }
+
+}
+
+
+
+
+
+
+void SNG::Write_SNGSensitivities(){
+
+
+    unsigned long iVar, iSNGPts, Max_nSNGPts, Tot_nSNGPts,nVar,Global_Index;
+       ofstream dJBBN_dU_File;
+
+    int rank, iProcessor, nProcessor;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
+    unsigned long Buffer_Send_nSNGPts[1], *Buffer_Recv_nSNGPts = NULL;
+
+
+
+    if (rank == MASTER_NODE) Buffer_Recv_nSNGPts= new unsigned long [nProcessor];
+
+      Buffer_Send_nSNGPts[0]=nSNGPts;
+#ifdef HAVE_MPI
+      SU2_MPI::Gather(&Buffer_Send_nSNGPts, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nSNGPts, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
+      SU2_MPI::Allreduce(&nSNGPts,&Max_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+      SU2_MPI::Reduce(&nSNGPts,&Tot_nSNGPts,1,MPI_UNSIGNED_LONG,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD); //find the total num of vertices (panels)
+#endif
+
+      cout<<"Max nSNGPts for all processes: "<<Max_nSNGPts<<",  nSNGPTs of Process "<<rank<<": "<<nSNGPts<<", Total Num of SNG Pts: " <<Tot_nSNGPts<<endl;
+
+
+      nVar = nDim+2;
+
+      /* pack sensitivity values in each processor and send to root */
+      su2double *Buffer_Send_dJBBN_dU = new su2double [Max_nSNGPts*nVar];
+      unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nSNGPts];
+
+      //zero send buffers
+      for (int i=0; i <Max_nSNGPts*nVar; i++){
+             Buffer_Send_dJBBN_dU[i]=0.0;
+      }
+      for (int i=0; i <Max_nSNGPts; i++){
+       Buffer_Send_GlobalIndex[i]=0;
+      }
+
+
+      su2double *Buffer_Recv_dJBBN_dU = NULL;
+      unsigned long *Buffer_Recv_GlobalIndex = NULL;
+
+
+      if (rank == MASTER_NODE) {
+          Buffer_Recv_dJBBN_dU = new su2double [nProcessor*Max_nSNGPts*nVar];
+          Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nSNGPts];
+      }
+
+      for (iVar=0; iVar<nVar; iVar++){
+          for(iSNGPts=0; iSNGPts<nSNGPts; iSNGPts++){
+               Buffer_Send_dJBBN_dU[iVar*nSNGPts+iSNGPts]= dJBBN_dU[iVar][iSNGPts];
+            }
+      }
+
+
+      for (iSNGPts=0; iSNGPts<nSNGPts; iSNGPts++){
+         Buffer_Send_GlobalIndex[iSNGPts] = PointID[iSNGPts];
+        }
+
+#ifdef HAVE_MPI
+     SU2_MPI::Gather(Buffer_Send_dJBBN_dU, Max_nSNGPts*nVar, MPI_DOUBLE, Buffer_Recv_dJBBN_dU,  Max_nSNGPts*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+     SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nSNGPts, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nSNGPts , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+#endif
+
+     /* root opens a file at each time step and write out the merged dJdU values at that time step into the file */
+      if (rank == MASTER_NODE){
+
+          char cstr [200];
+          SPRINTF (cstr, "dJBBN_dU");
+          cout<<"Writing Merged File: "<<cstr<<endl;
+          dJBBN_dU_File.precision(15);
+          dJBBN_dU_File.open(cstr, ios::out);
+
+
+      /*--- Loop through all of the collected data and write each node's values ---*/
+      unsigned long Total_Index;
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for (iSNGPts = 0; iSNGPts < Buffer_Recv_nSNGPts[iProcessor]; iSNGPts++) {
+            Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nSNGPts+iSNGPts ];
+            dJBBN_dU_File  << scientific << Global_Index << "\t";
+           for (iVar = 0; iVar < nVar; iVar++){
+
+          /*--- Current index position and global index ---*/
+          Total_Index  = iProcessor*Max_nSNGPts*nVar + iVar*Buffer_Recv_nSNGPts[iProcessor]  + iSNGPts;
+
+          /*--- Write to file---*/
+            dJBBN_dU_File << scientific <<  Buffer_Recv_dJBBN_dU[Total_Index]   << "\t";
+           }
+            dJBBN_dU_File  << endl;
+         }
+      }
+
+         dJBBN_dU_File.close();
+         delete [] Buffer_Recv_dJBBN_dU;
+         delete [] Buffer_Recv_GlobalIndex;
+       }
+        delete [] Buffer_Send_dJBBN_dU;
+        delete [] Buffer_Send_GlobalIndex;
+
+}
+
+
+
+
+
 

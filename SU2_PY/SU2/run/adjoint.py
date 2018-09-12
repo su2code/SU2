@@ -89,9 +89,15 @@ def adjoint( config ):
        konfig['AUTO_DIFF'] = "NO"
        konfig['MATH_PROBLEM'] = 'DISCRETE_ADJOINT'
        konfig['RESTART_SOL'] = "NO"
-
-    konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
+       konfig['EXT_ITER'] = konfig['ITER_AVERAGE_OBJ']
     
+    if konfig['OBJECTIVE_FUNCTION'] == 'NOISE_SNG':
+       konfig['MATH_PROBLEM'] = "DIRECT"
+       konfig['AUTO_DIFF'] = "YES"
+       su2merge(konfig)
+       konfig['AUTO_DIFF'] = "NO"
+       konfig['MATH_PROBLEM'] = 'DISCRETE_ADJOINT'
+
     # Run Solution
     SU2_CFD(konfig)
     

@@ -1851,10 +1851,18 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
   /* read in dJ/dU here */  // iExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0 
   if (Direct_Iter % config_container[val_iZone]-> GetWrt_Sol_Freq_DualTime() == 0 && config_container[val_iZone]->GetExtIter()<config_container[val_iZone]->GetIter_Avg_Objective() && config_container[val_iZone]->GetKind_ObjFunc()==NOISE){
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractCAA_Sensitivity(geometry_container[val_iZone][MESH_0], config_container[val_iZone], Direct_Iter);
-    }
+  }
   solver_container[val_iZone][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
+  if (config_container[val_iZone]->GetKind_ObjFunc()==NOISE_SNG){
+   //   cout<<"Calling ExtractSNG_Sensitivity in ADJFLOW_SOL"<<endl;
+     solver_container[val_iZone][MESH_0][ADJFLOW_SOL]-> ExtractSNG_Sensitivity(geometry_container[val_iZone][MESH_0] );
+  }
   if (turbulent && !config_container[val_iZone]->GetFrozen_Visc_Disc()){
     solver_container[val_iZone][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][MESH_0], solver_container[val_iZone][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
+    if (config_container[val_iZone]->GetKind_ObjFunc()==NOISE_SNG){
+    //   cout<<"Calling ExtractSNG_Sensitivity in ADJTURB_SOL"<<endl;
+       solver_container[val_iZone][MESH_0][ADJTURB_SOL]-> ExtractSNG_Sensitivity(geometry_container[val_iZone][MESH_0] );
+    }
   }
 
   

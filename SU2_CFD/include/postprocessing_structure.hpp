@@ -125,5 +125,42 @@ class FWHSolver {
 };
 
 
+class SNG {
+  public:
+  unsigned long  nDim, nSNGPts, NF, NT, N_Tij_Out;
+  long Type_JBBN;
+  su2double f_min, f_max, dt, U1, U2, U3, a_inf, TKE_ReDimFac, omega_ReDimFac;
+  unsigned long *T_ij_OutputIdx;
+  su2double **NoiseSourceZone;
+  su2double **SNG_Coords, *TKE, *omega, *SNG_CellVol;
+  su2double **k_n, *Psi_n, **sigma_n;
+  su2double ***u_turb, ***T_tilda, **T_tilda_mean;
+  bool GenNewRand;
+  su2double J_BBN;
+  su2double **dJBBN_dU;
+  unsigned long *PointID;
+    /*!
+     * \brief Constructor of the  class.
+     */
+    SNG(CConfig *config, CGeometry *geometry);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    ~SNG(void);
+
+
+    void SetSNG_Analysis(CSolver *solver, CConfig *config, CGeometry *geometry );
+    void Perform_SNG_Analysis();
+    void Extract_RANS(CSolver *solver, CConfig* config, CGeometry *geometry);
+    void Write_ExtractedRANS();
+    void SetRandomFourierModes();
+    void Compute_TurbVelocity();
+    void Compute_BroadBandNoiseSource();
+    void Compute_BBN_ObjFunc();
+    void Write_BroadBandNoiseSource();
+    void Write_SNGSensitivities();
+
+};
 
 #include "postprocessing_structure.inl"

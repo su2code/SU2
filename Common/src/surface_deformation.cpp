@@ -1701,7 +1701,7 @@ bool CSurfaceMovement::SetFFDCPChange(CGeometry *geometry, CConfig *config, CFre
 
     if (config->GetnDV_Value(iDV) == 1) {
 
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
 
       movement[0] = config->GetParamDV(iDV, 4)*Ampl;
       movement[1] = config->GetParamDV(iDV, 5)*Ampl;
@@ -1855,7 +1855,7 @@ bool CSurfaceMovement::SetFFDGull(CGeometry *geometry, CConfig *config, CFreeFor
 
     /*--- Compute deformation ---*/
 
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
 
     movement[0] = 0.0;
     movement[1] = 0.0;
@@ -1912,7 +1912,7 @@ bool CSurfaceMovement::SetFFDNacelle(CGeometry *geometry, CConfig *config, CFree
 
     /*--- Compute deformation ---*/
 
-    Ampl = config->GetDV_Value(iDV);
+    Ampl = config->GetDV_Value(iDV)*Scale;
 
     movement[0] = config->GetParamDV(iDV, 4)*Ampl;
     movement[1] = 0.0;
@@ -2166,7 +2166,7 @@ bool CSurfaceMovement::SetFFDCamber(CGeometry *geometry, CConfig *config, CFreeF
 
     for (kIndex = 0; kIndex < 2; kIndex++) {
 
-      Ampl = config->GetDV_Value(iDV);
+      Ampl = config->GetDV_Value(iDV)*Scale;
 
       index[0] = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
       index[1] = SU2_TYPE::Int(config->GetParamDV(iDV, 2));
@@ -3253,6 +3253,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0}, *Coord;
   su2double movement[3] = {0.0,0.0,0.0}, x, y, z;
+  su2double Scale = config->GetOpt_RelaxFactor();
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -3280,7 +3281,7 @@ void CSurfaceMovement::SetRotation(CGeometry *boundary, CConfig *config, unsigne
 
   /*--- The angle of rotation. ---*/
 
-  su2double theta = config->GetDV_Value(iDV)*PI_NUMBER/180.0;
+  su2double theta = config->GetDV_Value(iDV)*Scale*PI_NUMBER/180.0;
 
   /*--- An intermediate value used in computations. ---*/
 
@@ -3324,7 +3325,8 @@ void CSurfaceMovement::SetTranslation(CGeometry *boundary, CConfig *config, unsi
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0};
-  su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 
@@ -3358,7 +3360,8 @@ void CSurfaceMovement::SetScale(CGeometry *boundary, CConfig *config, unsigned s
   unsigned long iVertex;
   unsigned short iMarker;
   su2double VarCoord[3] = {0.0,0.0,0.0}, x, y, z, *Coord;
-  su2double Ampl = config->GetDV_Value(iDV);
+  su2double Scale = config->GetOpt_RelaxFactor();
+  su2double Ampl = config->GetDV_Value(iDV)*Scale;
 
   /*--- Reset airfoil deformation if first deformation or if it required by the solver ---*/
 

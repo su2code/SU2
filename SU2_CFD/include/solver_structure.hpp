@@ -649,7 +649,7 @@ public:
   
 
   virtual void ExtractCAA_Sensitivity(CGeometry *geometry,  CConfig *config, int iExtIter);
-
+  virtual void ExtractSNG_Sensitivity(CGeometry *geometry);
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -12089,6 +12089,8 @@ private:
   su2double **dJdU_CAA;
   unsigned long nPanel;
   short *LocalPointIndex;
+  su2double **dJdU_SNG;
+  unsigned long nSNGPts;
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
   
@@ -12312,6 +12314,8 @@ public:
   void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output);
 
   void ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config, int iExtIter);
+
+  void ExtractSNG_Sensitivity(CGeometry *geometry);
 
   /*!
    * \brief Load a solution from a restart file.

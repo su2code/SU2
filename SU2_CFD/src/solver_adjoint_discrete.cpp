@@ -192,6 +192,115 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
 
 
+ //if (KindDirect_Solver == RUNTIME_TURB_SYS   ){
+  if (config->GetKind_ObjFunc() == NOISE_SNG){
+       if (KindDirect_Solver == RUNTIME_FLOW_SYS) cout<<"initializing for flow"<<endl;
+      if (KindDirect_Solver == RUNTIME_TURB_SYS) cout<<"initializing for turb"<<endl;
+  unsigned long  i,iSNGPt, SNGPtCount, iPoint;
+  su2double *Coord;
+  /* Reading in SNG boundary points -- change to config option later! */
+  string  text_line;
+  ifstream SNG_BoundaryFile;
+  string filename = "NoiseSourceRegionDef.dat";
+  SNG_BoundaryFile.open(filename.data() , ios::in);
+  if (SNG_BoundaryFile.fail()) {
+      cout << "There is no file!!! " <<  filename.data()  << "."<< endl;
+    exit(EXIT_FAILURE);
+  }
+
+  su2double **NoiseSourceZone;
+  su2double f_min,f_max,dt;
+  unsigned long NF, NT, N_Tij_Out;
+  bool GenNewRand;
+  long Type_JBBN;
+  NoiseSourceZone = new su2double* [2];
+
+  for(i = 0;  i <2  ;  i++)
+  {
+     NoiseSourceZone[i] = new su2double[nDim];
+     for (iDim=0; iDim < nDim; iDim++){
+       NoiseSourceZone[i][iDim]= 0.0;
+     }
+  }
+
+  i=0;
+  getline (SNG_BoundaryFile, text_line);
+  istringstream point_line(text_line);
+  point_line >> f_min >> f_max >> NF >> GenNewRand;
+  getline (SNG_BoundaryFile, text_line);
+  istringstream point_line2(text_line);
+  point_line2 >> dt >> NT>> N_Tij_Out;
+  getline (SNG_BoundaryFile, text_line);
+  istringstream point_line3(text_line);
+  point_line3 >> Type_JBBN;
+  while (getline (SNG_BoundaryFile, text_line)) {
+      istringstream point_line(text_line);
+      if (nDim==2){
+      point_line >> NoiseSourceZone[i][0]>> NoiseSourceZone[i][1];
+        }
+      if (nDim==3){
+      point_line >> NoiseSourceZone[i][0]>> NoiseSourceZone[i][1]>> NoiseSourceZone[i][2];
+        }
+      i++;
+  }
+
+
+
+
+
+ if (rank==MASTER_NODE)  cout<<"f_min= "<<f_min<<", f_max= "<<f_max<<", N_F= "<<NF<<endl;
+ if (rank==MASTER_NODE)  cout<<"dt= "<<dt<<", NT= "<<NT<<", Tij Ouput= "<<N_Tij_Out<<endl;
+
+  nSNGPts = 0;
+  SNGPtCount = 0;
+  //Go over the whole mesh and identify the points within the SNG zone
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+          if( geometry->node[iPoint]->GetDomain()){
+      Coord = geometry->node[iPoint]->GetCoord();
+
+      if (SU2_TYPE::GetValue(Coord[0])>NoiseSourceZone[0][0] &&  SU2_TYPE::GetValue(Coord[0])<NoiseSourceZone[1][0] && SU2_TYPE::GetValue(Coord[1])>NoiseSourceZone[0][1] && SU2_TYPE::GetValue(Coord[1])<NoiseSourceZone[1][1]){
+        SNGPtCount++;
+      }
+
+    }
+   }
+  nSNGPts = SNGPtCount;
+  cout<<"Process "<<rank<<" contains "<<nSNGPts <<" SNG Points."<<endl;
+
+
+  dJdU_SNG = new su2double* [nDim+2];
+  for(int iDim = 0; iDim < nDim+2 ; iDim++)
+  {
+      dJdU_SNG[iDim] = new su2double[nSNGPts];
+      for (iSNGPt = 0; iSNGPt<nSNGPts; iSNGPt++)
+      {
+             dJdU_SNG[iDim][iSNGPt]= 0.0;
+      }
+  }
+
+  LocalPointIndex = new short[nPoint];
+
+  for(int iPoint = 0;  iPoint< nPoint; iPoint++)
+  {
+     LocalPointIndex[iPoint] = -1;
+  }
+
+
+
+
+//}
+}
+
+
+
+
+
+
+
+
+
+
+
 
 }
 
@@ -738,6 +847,14 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint;
   int Direct_Iter;
 
+
+//  if (KindDirect_Solver == RUNTIME_FLOW_SYS   ) cout<<"RUNTIME_FLOW_SYS, nVAR= "<<nVar<<endl;
+//  if (KindDirect_Solver == RUNTIME_TURB_SYS   ) cout<<"RUNTIME_TURB_SYS, nVAR= "<<nVar<<endl;
+
+//    cout<<"GetUnst_AdjointIter()= "<<SU2_TYPE::Int(config->GetUnst_AdjointIter())<<endl;
+//    cout<<"GetExtIter()= "<<SU2_TYPE::Int(config->GetExtIter())<<endl;
+
+
     Direct_Iter = SU2_TYPE::Int(config->GetUnst_AdjointIter()) - SU2_TYPE::Int(config->GetExtIter()) - 2;
 
     if (dual_time) {
@@ -759,8 +876,12 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
 
+
+
     // FWH
     if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+//        if (Direct_Iter % config-> GetWrt_Sol_Freq_DualTime() == 0) cout<<"Condition 1"<<endl;
+//        if (config->GetExtIter()<config->GetIter_Avg_Objective())cout<<"Condition 2"<<endl;
     if (Direct_Iter % config-> GetWrt_Sol_Freq_DualTime() == 0 && config->GetExtIter()<config->GetIter_Avg_Objective()){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
@@ -770,6 +891,15 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
       }
 
+    if (KindDirect_Solver == RUNTIME_TURB_SYS && config->GetKind_ObjFunc() == NOISE_SNG  ){
+
+
+    if (LocalPointIndex[iPoint] >= 0){
+        for (iVar = 0; iVar < nVar; iVar++){
+            Solution[iVar] += dJdU_SNG[iVar+nDim][LocalPointIndex[iPoint]] ;
+         }
+    }
+      }
 
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
@@ -816,12 +946,18 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
   bool time_stepping = (config->GetUnsteady_Simulation() != STEADY);
 
+ //           cout<< "adding dJ/dx " <<  endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     Coord = geometry->node[iPoint]->GetCoord();
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
+
+      /* add dJ/dx to mesh adjoint */
+      if (config->GetKind_ObjFunc()==NOISE_SNG){
+          Sensitivity += dJdU_SNG[iDim][LocalPointIndex[iPoint]];
+      }
 
       /*--- Set the index manually to zero. ---*/
 
@@ -1168,6 +1304,95 @@ void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config
   delete [] Global2Local;
 
 }
+
+
+
+void CDiscAdjSolver::ExtractSNG_Sensitivity(CGeometry *geometry){
+   unsigned long iPoint, iVar, iPanel;
+   string  text_line;
+   ifstream SNG_AdjointFile;
+   string filename = "dJBBN_dU";
+
+   int rank ;
+#ifdef HAVE_MPI
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+
+
+//   if (rank == MASTER_NODE)   cout<<" Accessing SNG Adjoint file: "<<filename <<endl;
+   SNG_AdjointFile.open(filename.data() , ios::in);
+
+   if (SNG_AdjointFile.fail()) {
+     if (rank == MASTER_NODE){
+       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
+     }
+     exit(EXIT_FAILURE);
+   }
+
+
+  /*--- In case this is a parallel simulation, we need to perform the
+   Global2Local index transformation first. ---*/
+
+  long *Global2Local = NULL;
+  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
+  /*--- First, set all indices to a negative value by default ---*/
+  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
+    Global2Local[iPoint] = -1;
+  }
+
+  /*--- Now fill array with the transform values only for local points ---*/
+
+  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
+    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+  }
+
+  /*--- Read all lines in the restart file ---*/
+
+  long iPoint_Local = 0;
+  unsigned long iPoint_Global = 0;
+  iPanel=0;
+
+
+  /*--- The first line is the header ---*/
+  while (getline (SNG_AdjointFile, text_line)) {
+
+     istringstream point_line(text_line);
+     point_line >> iPoint_Global ;
+
+    /*--- Retrieve local index. If this node from the restart file lives
+     on a different processor, the value of iPoint_Local will be -1, as
+     initialized above. Otherwise, the local index for this node on the
+     current processor will be returned and used to instantiate the vars. ---*/
+
+    iPoint_Local = Global2Local[iPoint_Global];
+
+    if (iPoint_Local >= 0) {
+      LocalPointIndex[iPoint_Local] =  iPanel;
+
+      for (iVar=0; iVar<nDim+2; iVar++){
+          point_line >> dJdU_SNG[iVar][iPanel];
+        }
+
+     iPanel++;
+
+    }
+
+
+  }
+
+  /*--- Close the restart file ---*/
+
+  SNG_AdjointFile.close();
+
+  /*--- Free memory needed for the transformation ---*/
+
+  delete [] Global2Local;
+
+}
+
+
+
+
 
 
 void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){

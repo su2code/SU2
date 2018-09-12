@@ -68,7 +68,9 @@ int main(int argc, char *argv[]) {
 	CSolver **solver_container     = NULL;
 	CConfig **config_container     = NULL;
 	FWHSolver **FWH_container      = NULL;
-	
+    SNG **SNG_container      = NULL;
+
+
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
   
@@ -201,16 +203,32 @@ geometry_container[ZONE_0]->SetCoord_CG();
 /*--- Create the dual control volume structures ---*/
 
 if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);  //added for SNG because cell vol is required to compute J
 geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
   geometry_container[ZONE_0 ]->MatchNearField(config_container[ZONE_0 ]);
 
-      FWH_container = new FWHSolver* [nZone];
+  //bool CAA_FWH = 0;
+ // bool CAA_SNG = 1;
+
+ if (config_container[ZONE_0]->GetKind_ObjFunc() == NOISE){
+ FWH_container = new FWHSolver* [nZone];
 for (iZone = 0; iZone < nZone; iZone++) {
 
    FWH_container[iZone]  = new FWHSolver(config_container[iZone],geometry_container[iZone]);
 
 }
+ }
+
+
+ if (config_container[ZONE_0]->GetKind_ObjFunc() == NOISE_SNG){
+SNG_container = new SNG* [nZone];
+for (iZone = 0; iZone < nZone; iZone++) {
+
+SNG_container[iZone]  = new SNG(config_container[iZone],geometry_container[iZone]);
+
+}
+ }
 
 
     /*--- Store the global to local mapping after preprocessing. ---*/
@@ -486,6 +504,8 @@ for (iZone = 0; iZone < nZone; iZone++) {
     
     else {
 
+              if (config_container[ZONE_0]->GetAD_Mode())  AD::StartRecording();
+
 			  /*--- Steady simulation: merge the single solution file. ---*/
 
 			  for (iZone = 0; iZone < nZone; iZone++) {
@@ -494,7 +514,14 @@ for (iZone = 0; iZone < nZone; iZone++) {
         solver_container[iZone]->LoadRestart(geometry_container, &solver_container, config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 			  }
 
-			  output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
+              output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
+
+              //cout<<"In SU2_SOL, entering SetSNG_Analysis"<<endl;
+
+          if (config_container[ZONE_0]->GetKind_ObjFunc() == NOISE_SNG)     SNG_container[ZONE_0]->SetSNG_Analysis(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
+
+
+              if (config_container[ZONE_0]->GetAD_Mode()) AD::StopRecording();
 
 		  }
 
@@ -502,6 +529,8 @@ for (iZone = 0; iZone < nZone; iZone++) {
 
 
 
+
+      if (config_container[ZONE_0]->GetKind_ObjFunc() == NOISE){   //For now, completely by-pass the FWH branch; Put in a config option in the future!
 
        if (rank == MASTER_NODE) cout<<"Type= "<<   config_container[ZONE_0]->GetDiscrete_Adjoint() <<endl;  //  <--- returns 1! (cont adj)
 
@@ -554,10 +583,55 @@ for (iZone = 0; iZone < nZone; iZone++) {
              FWH_container[ZONE_0]->Compute_FarfieldNoise(solver_container[ZONE_0],config_container[ZONE_0],geometry_container[ZONE_0]);
            }
 
+        }
 
 
 
+      if (config_container[ZONE_0]->GetKind_ObjFunc() == NOISE_SNG){
 
+
+          if (config_container[ZONE_0]->GetAD_Mode()){
+          if (rank == MASTER_NODE)
+            cout << endl <<"------------------------- Computing Broadband Noise Source using SNG (Primal+Adjoint) -----------------------" << endl;
+                       AD::StartRecording();
+           SNG_container[ZONE_0]->Perform_SNG_Analysis();
+           Objective_Function = SNG_container[ZONE_0]->J_BBN;
+            if (rank == MASTER_NODE) cout<<"Primal Part Finished"<<endl;
+            if (rank==MASTER_NODE){
+                cout<<"Setting JBar. Obj= "<< std::setprecision(15) <<Objective_Function<<endl;
+            SU2_TYPE::SetDerivative(Objective_Function,1.0);
+              }else{
+                SU2_TYPE::SetDerivative(Objective_Function,0.0);
+              }
+            AD::StopRecording();
+            AD::ComputeAdjoint();
+
+            if (rank == MASTER_NODE) cout<<"Finished Computing SNG Adjoint"<<endl;
+
+
+            su2double extracted_derivative;
+
+
+            for (int iSNGPT=0; iSNGPT<SNG_container[ZONE_0]->nSNGPts; iSNGPT++){
+                 for (int iVar =0; iVar< SNG_container[ZONE_0]->nDim+2; iVar++){
+                SNG_container[ZONE_0]-> dJBBN_dU[iVar][iSNGPT]=SU2_TYPE::GetDerivative(extracted_derivative);
+         //   if ( SNG_container[ZONE_0]->PointID[iSNGPT]==1158)      cout<<"dJdU= "<<SNG_container[ZONE_0]-> dJBBN_dU[iVar][iSNGPT]<<", iVar= "<<iVar<<", iSNGPT= "<<iSNGPT<<", x= "<<SNG_container[ZONE_0]->SNG_Coords[iSNGPT][0]<<", TKE= "<<SNG_container[ZONE_0]->TKE[iSNGPT]<<endl;
+                   }
+            }
+
+
+
+           if (rank == MASTER_NODE) cout<<"Finished Extracting"<<endl;
+
+           SNG_container[ZONE_0]-> Write_SNGSensitivities();
+
+         }else{
+              if (rank == MASTER_NODE)
+                cout << endl <<"------------------------- Computing Broadband Noise Source using SNG (Primal Only) -----------------------" << endl;
+               SNG_container[ZONE_0]->Perform_SNG_Analysis();
+         }
+
+      }
 
 
 

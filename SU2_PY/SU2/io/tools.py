@@ -291,6 +291,7 @@ optnames_aero = [ "LIFT"                    ,
                   "RADIAL_DISTORTION"              ,
                   "CIRCUMFERENTIAL_DISTORTION"              ,
                   "COMBO"                   ,
+                  "NOISE_SNG"      ,
                   "NOISE",    
                   "CUSTOM_OBJFUNC"]
 
@@ -594,6 +595,7 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                  : "ct"        ,
                  "TORQUE"                  : "cq"        ,
                  "FIGURE_OF_MERIT"         : "merit"     ,
+                 "NOISE_SNG"               : "nosng"     ,    
                  "NOISE"                   : "no"        ,
                  "SURFACE_TOTAL_PRESSURE"  : "pt"        ,
                  "SURFACE_STATIC_PRESSURE" : "pe"        ,

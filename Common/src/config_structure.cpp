@@ -6326,7 +6326,8 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
       case TOTAL_HEATFLUX:          AdjExt = "_totheat";  break;
       case MAXIMUM_HEATFLUX:        AdjExt = "_maxheat";  break;
       case FIGURE_OF_MERIT:         AdjExt = "_merit";    break;
-      case NOISE:                   AdjExt = "_no";        break;
+      case NOISE_SNG:               AdjExt = "_nosng";    break;
+      case NOISE:                   AdjExt = "_no";       break;
       case SURFACE_TOTAL_PRESSURE:  AdjExt = "_pt";       break;
       case SURFACE_STATIC_PRESSURE: AdjExt = "_pe";       break;
       case SURFACE_MASSFLOW:        AdjExt = "_mfr";      break;

@@ -2955,6 +2955,7 @@ void CDriver::StartSolver() {
       DynamicMeshUpdate(ExtIter);
 
       /*--- Run a single iteration of the problem (fluid, elasticity, wave, heat, ...). ---*/
+      //cout<<"Calling RUN, ExtIter= "<<ExtIter <<endl;
 
       Run();
 
@@ -3675,7 +3676,7 @@ void CDiscAdjFluidDriver::Run() {
 
   for (IntIter = 0; IntIter < nIntIter; IntIter++) {
 
-
+//    cout<<"Entering InitializeAdjoint, IntIter= "<<IntIter<< endl;
     /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
    *    of the previous iteration. The values are passed to the AD tool. ---*/
 
@@ -3759,6 +3760,7 @@ void CDiscAdjFluidDriver::Run() {
     /*--- Extract the computed sensitivity values. ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
+  //    cout<<"Calling SetSensitivity, ExtIter= "<<ExtIter <<endl;
       solver_container[iZone][MESH_0][ADJFLOW_SOL]->SetSensitivity(geometry_container[iZone][MESH_0],config_container[iZone]);
     }
 

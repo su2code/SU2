@@ -106,6 +106,11 @@ def direct ( config ):
     history      = su2io.read_history( history_filename, config.NZONES )
     aerodynamics = su2io.read_aerodynamics( history_filename ,config.NZONES, special_cases, final_avg )
 
+    if config.get('OBJECTIVE_FUNCTION',"") == 'NOISE_SNG':
+      noise_file = open('J_BBN')
+      noise = noise_file.readline()
+      aerodynamics['NOISE_SNG'] = float(noise)
+
     if config.get('OBJECTIVE_FUNCTION',"") == 'NOISE':
       noise_file = open('pp_FWH')
       noise = noise_file.readline().split(",")[1]

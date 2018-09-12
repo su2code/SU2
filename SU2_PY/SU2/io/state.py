@@ -249,12 +249,12 @@ class State(ordered_bunch):
 
                   if found:
                     files[label] = filename
-                    print('Found: %s' % filename)
+                    print('Found1: %s' % filename)
 
                 else:
                   if os.path.exists(filename):
                       files[label] = filename
-                      print('Found: %s' % filename)
+                      print('Found2: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
@@ -278,7 +278,7 @@ class State(ordered_bunch):
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
         
         # equivalent area
-        if 'EQUIV_AREA' in special_cases:
+        if 'EQUIV_AREA' in special_cases: 
             register_file('TARGET_EA',targetea_name)
         
         # pressure inverse design
@@ -287,7 +287,13 @@ class State(ordered_bunch):
 
         if config['OBJECTIVE_FUNCTION']== "NOISE":
           register_file('NOISE', 'Observer_Locations.dat')
-            
+
+        if config['OBJECTIVE_FUNCTION']== "NOISE_SNG":
+          register_file('NOISE_SNG1', 'NoiseSourceRegionDef.dat')
+
+        if config['OBJECTIVE_FUNCTION']== "NOISE_SNG":
+          register_file('NOISE_SNG2', 'RandNumFile')
+
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:
           register_file('TARGET_HEATFLUX',targetheatflux_name)

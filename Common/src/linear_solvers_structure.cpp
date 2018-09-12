@@ -319,7 +319,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
 
   /*---  Check the subspace size ---*/
   
-  if (m > 1000) {
+  if (m > 5000) {
     char buf[100];
     SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
