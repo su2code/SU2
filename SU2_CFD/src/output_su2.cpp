@@ -325,7 +325,7 @@ void COutput::WriteExternalSensitivity(CConfig *config,
   
   filename = config->GetDV_Sens_Filename();
   
-  /*--- Open external sensitiviy file. Note that we are overwriting the
+  /*--- Open external sensitivity file. Note that we are overwriting the
    volume sensitivity file that was the original input for projection. ---*/
   
   ofstream Sens_File;
@@ -339,7 +339,7 @@ void COutput::WriteExternalSensitivity(CConfig *config,
   SurfacePoint = new bool [nGlobal_Poin+1];
   
   for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++)
-  SurfacePoint[iPoint] = false;
+    SurfacePoint[iPoint] = false;
   
   for (iElem = 0; iElem < nGlobal_Line; iElem++) {
     iNode = iElem*N_POINTS_LINE;
@@ -380,7 +380,7 @@ void COutput::WriteExternalSensitivity(CConfig *config,
       Sens_File << scientific << Data[iVar][iPoint] << "\t";
       Sens_File << scientific << "\n";
       
-    }    
+    }
   }
   
 }
