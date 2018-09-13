@@ -40,6 +40,13 @@
 CIteration::CIteration(CConfig *config) {
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  nInst = config->GetnTimeInstances();
+  nZone = config->GetnZone();
+
+  multizone = config->GetMultizone_Problem();
+  singlezone = !(config->GetMultizone_Problem());
+
 }
 
 CIteration::~CIteration(void) { }
@@ -390,7 +397,7 @@ void CIteration::Iterate(COutput *output,
                          CFreeFormDefBox*** FFDBox,
                          unsigned short val_iZone,
                          unsigned short val_iInst) { }
-void CIteration::Iterate_Block(COutput *output,
+void CIteration::Solve(COutput *output,
                          CIntegration ****integration_container,
                          CGeometry ****geometry_container,
                          CSolver *****solver_container,
@@ -434,8 +441,88 @@ void CIteration::Relaxation(COutput *output,
                         CFreeFormDefBox*** FFDBox,
                         unsigned short val_iZone,
                         unsigned short val_iInst)      { }
-void CIteration::Monitor()     { }
-void CIteration::Output()      { }
+bool CIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     { }
+void CIteration::Output(COutput *output,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CConfig **config_container,
+    unsigned long Iter,
+    bool StopCalc,
+    unsigned short val_iZone,
+    unsigned short val_iInst)      {
+
+  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
+  bool output_files = false;
+
+  /*--- Determine whether a solution needs to be written
+   after the current iteration ---*/
+
+  if (
+
+      /*--- General if statements to print output statements ---*/
+
+//      (ExtIter+1 >= nExtIter) || (StopCalc) ||
+
+      /*--- Fixed CL problem ---*/
+
+      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
+       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
+
+      /*--- Steady problems ---*/
+
+      ((Iter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (Iter != 0) &&
+       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+
+      /*--- No inlet profile file found. Print template. ---*/
+
+      (config_container[ZONE_0]->GetWrt_InletFile())
+
+      ) {
+
+    output_files = true;
+
+  }
+
+  /*--- Determine whether a solution doesn't need to be written
+   after the current iteration ---*/
+
+  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
+    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
+    if (config_container[ZONE_0]->GetnExtIter() - 1 == Iter) output_files = true;
+  }
+
+  /*--- write the solution ---*/
+
+  if (output_files) {
+
+    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, nZone);
+
+    /*--- Execute the routine for writing special output. ---*/
+    output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
+
+
+    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+  }
+
+}
 void CIteration::Postprocess(COutput *output,
                              CIntegration ****integration_container,
                              CGeometry ****geometry_container,
@@ -642,8 +729,44 @@ void CFluidIteration::Update(COutput *output,
   
 }
 
-void CFluidIteration::Monitor()     { }
-void CFluidIteration::Output()      { }
+bool CFluidIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     {
+
+  bool StopCalc = false;
+  bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
+  bool output_history = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
+
+  /*--- Write the convergence history for the fluid (only screen output) ---*/
+
+  /*--- The logic is right now case dependent ----*/
+  /*--- This needs to be generalized when the new output structure comes ---*/
+  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+
+  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+
+  return StopCalc;
+
+
+}
 void CFluidIteration::Postprocess(COutput *output,
                                   CIntegration ****integration_container,
                                   CGeometry ****geometry_container,
@@ -656,7 +779,7 @@ void CFluidIteration::Postprocess(COutput *output,
                                   unsigned short val_iZone,
                                   unsigned short val_iInst) { }
 
-void CFluidIteration::Iterate_Block(COutput *output,
+void CFluidIteration::Solve(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
                                  CSolver *****solver_container,
@@ -673,7 +796,23 @@ void CFluidIteration::Iterate_Block(COutput *output,
   bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
   unsigned short Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
-  bool StopCalc_Flow = false;
+  bool StopCalc = false;
+
+  /*--- Synchronization point before a single solver iteration. Compute the
+   wall clock time required. ---*/
+
+#ifndef HAVE_MPI
+  StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StartTime = MPI_Wtime();
+#endif
+
+  /*--- If the problem is multizone, the block iterates on the number of internal iterations ---*/
+  /*--- If the problem is single zone, the block iterates on the number of iterations (pseudo-time)---*/
+  if (multizone)
+    nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
+  else
+    nInner_Iter = config_container[val_iZone]->GetnIter();
 
   /*--- Preprocess the solver ---*/
   Preprocess(output, integration_container, geometry_container,
@@ -695,23 +834,28 @@ void CFluidIteration::Iterate_Block(COutput *output,
         if (unsteady) config_container[val_iZone]->SetIntIter(config_container[val_iZone]->GetOuterIter());
       }
 
+      /*--- Run a single iteration of the solver ---*/
       Iterate(output, integration_container, geometry_container,
           solver_container, numerics_container, config_container,
           surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-      /*--- Write the convergence history for the fluid (only screen output) ---*/
-      if (steady) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+      /*--- Monitor the pseudo-time ---*/
+      StopCalc = Monitor(output, integration_container, geometry_container,
+                         solver_container, numerics_container, config_container,
+                         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-      /*--- If convergence was reached in every zone --*/
-      StopCalc_Flow = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
-      if (StopCalc_Flow) break;
+      /*--- Output files at intermediate time positions if the problem is single zone ---*/
+
+      if (singlezone) Output(output, geometry_container, solver_container, config_container,
+                             Inner_Iter, StopCalc, val_iZone, val_iInst);
+
+      /*--- If the iteration has converged, break the loop ---*/
+      if (StopCalc) break;
 
     }
 
     /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
-    integration_container[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-
-    //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
+    if (multizone) integration_container[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
 
 }
 
@@ -1076,8 +1220,18 @@ void CHeatIteration::Update(COutput *output,
       integration_container[val_iZone][val_iInst][HEAT_SOL]->SetConvergence(true);
   }
 }
-void CHeatIteration::Monitor()     { }
-void CHeatIteration::Output()      { }
+bool CHeatIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     {
+}
 void CHeatIteration::Postprocess(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
@@ -1090,7 +1244,7 @@ void CHeatIteration::Postprocess(COutput *output,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) { }
 
-void CHeatIteration::Iterate_Block(COutput *output,
+void CHeatIteration::Solve(COutput *output,
                              CIntegration ****integration_container,
                              CGeometry ****geometry_container,
                              CSolver *****solver_container,
@@ -1537,8 +1691,17 @@ void CFEAIteration::Relaxation(COutput *output,
 
 }
 
-void CFEAIteration::Monitor()     { }
-void CFEAIteration::Output()      { }
+bool CFEAIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     { }
 void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ****integration_container,
                                           CGeometry ****geometry_container,
@@ -1551,7 +1714,7 @@ void CFEAIteration::Postprocess(COutput *output,
                                           unsigned short val_iZone,
                                           unsigned short val_iInst) { }
 
-void CFEAIteration::Iterate_Block(COutput *output,
+void CFEAIteration::Solve(COutput *output,
                                 CIntegration ****integration_container,
                                 CGeometry ****geometry_container,
                                 CSolver *****solver_container,
@@ -1564,13 +1727,15 @@ void CFEAIteration::Iterate_Block(COutput *output,
                                 unsigned short val_iInst
                                 ) {
 
+  bool multizone = config_container[val_iZone]->GetMultizone_Problem();
+
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
-  output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+  if (multizone) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
   integration_container[val_iZone][INST_0][FEA_SOL]->SetConvergence(false);
@@ -1782,8 +1947,17 @@ void CAdjFluidIteration::Update(COutput *output,
   }
 }
 
-void CAdjFluidIteration::Monitor()     { }
-void CAdjFluidIteration::Output()      { }
+bool CAdjFluidIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     { }
 void CAdjFluidIteration::Postprocess(COutput *output,
                                      CIntegration ****integration_container,
                                      CGeometry ****geometry_container,
@@ -2216,8 +2390,17 @@ void CDiscAdjFluidIteration::Update(COutput *output,
     }
   }
 }
-void CDiscAdjFluidIteration::Monitor()     { }
-void CDiscAdjFluidIteration::Output()      { }
+bool CDiscAdjFluidIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     { }
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,
@@ -2872,8 +3055,17 @@ void CDiscAdjFEAIteration::Update(COutput *output,
                                        CFreeFormDefBox*** FFDBox,
                                        unsigned short val_iZone,
                                        unsigned short val_iInst)      { }
-void CDiscAdjFEAIteration::Monitor()     { }
-void CDiscAdjFEAIteration::Output()      { }
+bool CDiscAdjFEAIteration::Monitor(COutput *output,
+    CIntegration ****integration_container,
+    CGeometry ****geometry_container,
+    CSolver *****solver_container,
+    CNumerics ******numerics_container,
+    CConfig **config_container,
+    CSurfaceMovement **surface_movement,
+    CVolumetricMovement ***grid_movement,
+    CFreeFormDefBox*** FFDBox,
+    unsigned short val_iZone,
+    unsigned short val_iInst)     { }
 void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ****integration_container,
     CGeometry ****geometry_container,
