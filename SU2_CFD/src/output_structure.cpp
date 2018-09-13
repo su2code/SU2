@@ -12341,7 +12341,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       /*--- Sort the surface data and renumber if for writing. ---*/
 
-      SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
+      if (Wrt_Srf) SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
@@ -12462,11 +12462,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         /*--- Clean up the connectivity data that was allocated for output. ---*/
 
         DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], false);
-        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
+        if (Wrt_Srf) DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
 
         /*--- Clean up the surface data that was only needed for output. ---*/
 
-        DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
+        if (Wrt_Srf) DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       }
 
