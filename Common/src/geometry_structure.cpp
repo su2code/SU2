@@ -37,6 +37,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
+#include "../include/tools.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -10279,6 +10280,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
         bool duplicate = false;
         iMarker=0;
+        TablePrinter BoundaryTable(&std::cout);
+        BoundaryTable.AddColumn("Index", 6);
+        BoundaryTable.AddColumn("Marker", 14);
+        BoundaryTable.AddColumn("Elements", 14);
+        if (rank == MASTER_NODE){
+          BoundaryTable.PrintHeader();
+        }
         do {
           
           getline (mesh_file, text_line);
@@ -10309,8 +10317,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             if (duplicate)  nElem_Bound[iMarker+1]  = nElem_Bound[iMarker];
 
             if (rank == MASTER_NODE) {
-              cout << nElem_Bound[iMarker]  << " boundary elements in index "<< iMarker <<" (Marker = " <<Marker_Tag<< ")." << endl;
-              if (duplicate)  cout << nElem_Bound[iMarker+1]  << " boundary elements in index "<< iMarker+1 <<" (Marker = " <<Marker_Tag_Duplicate<< ")." << endl;
+              BoundaryTable << iMarker << Marker_Tag << nElem_Bound[iMarker];
+              if (duplicate){
+                BoundaryTable << iMarker+1 << Marker_Tag_Duplicate << nElem_Bound[iMarker+1];                
+              }
             }
             
             /*--- Allocate space for elements ---*/
@@ -10452,7 +10462,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           iMarker++;
           
         } while (iMarker < nMarker);
-        
+        if (rank == MASTER_NODE){
+          BoundaryTable.PrintFooter();
+        }
         if (boundary_marker_count == nMarker) break;
         
       }
@@ -20654,8 +20666,23 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
   }
   else {
     if (rank == MASTER_NODE) {
-      if (iMesh == 1) cout <<"MG level: "<< iMesh-1 <<" -> CVs: " << Global_nPointFine << ". Agglomeration rate 1/1.00. CFL "<< config->GetCFL(iMesh-1) <<"." << endl;
-      cout <<"MG level: "<< iMesh <<" -> CVs: " << Global_nPointCoarse << ". Agglomeration rate 1/" << ratio <<". CFL "<< CFL <<"." << endl;
+      TablePrinter MGTable(&std::cout);
+      MGTable.AddColumn("MG Level", 10);
+      MGTable.AddColumn("CVs", 10);
+      MGTable.AddColumn("Aggl. Rate", 10);
+      MGTable.AddColumn("CFL", 10);
+      MGTable.set_flush_right();
+      
+      if (iMesh == 1){
+        MGTable.PrintHeader();
+        MGTable << iMesh - 1 << Global_nPointFine << "1/1.00" << config->GetCFL(iMesh -1);
+      }
+      stringstream ss;
+      ss << "1/" << std::setprecision(3) << ratio;
+      MGTable << iMesh << Global_nPointCoarse << ss.str() << CFL;
+      if (iMesh == config->GetnMGLevels()){
+        MGTable.PrintFooter();
+      }
     }
   }
  
