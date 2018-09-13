@@ -670,6 +670,16 @@ public:
    */
   map<string, string> GetAllBoundaryMarkersType();
 
+  /*!
+   * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
+   */
+  virtual void Run_GaussSeidel(){};
+
+  /*!
+   * \brief A virtual member to run a Block-Jacobi iteration in multizone problems.
+   */
+  virtual void Run_Jacobi(){};
+
 };
 
 /*!
@@ -1188,7 +1198,7 @@ public:
  * \author R. Sanchez.
  * \version 4.2.0 "Cardinal"
  */
-class CDiscAdjFSIDriver : public CFSIDriver {
+class CDiscAdjFSIDriver : public CDriver {
 
   CIteration** direct_iteration;
   unsigned short RecordingState;
@@ -1458,6 +1468,20 @@ public:
    */
   void DynamicMeshUpdate(unsigned long ExtIter);
 
+  /*!
+   * \brief Transfer the displacements computed on the structural solver into the fluid solver.
+   * \param[in] donorZone - zone in which the displacements will be transferred.
+   * \param[in] targetZone - zone which receives the tractions transferred.
+   */
+  void Transfer_Displacements(unsigned short donorZone, unsigned short targetZone);
+
+  /*!
+   * \brief Transfer the tractions computed on the fluid solver into the structural solver.
+   * \param[in] donorZone - zone from which the tractions will be transferred.
+   * \param[in] targetZone - zone which receives the tractions transferred.
+   */
+  void Transfer_Tractions(unsigned short donorZone, unsigned short targetZone);
+
 };
 
 /*!
@@ -1511,6 +1535,74 @@ public:
 };
 
 /*!
+ * \class CSinglezoneDriver
+ * \brief Class for driving single-zone solvers.
+ * \author R. Sanchez
+ * \version 6.0.1 "Falcon"
+ */
+class CSinglezoneDriver : public CDriver {
+protected:
+
+  unsigned long TimeIter;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CSinglezoneDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             bool val_periodic,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSinglezoneDriver(void);
+
+  /*!
+   * \brief [Overload] Launch the computation for single-zone problems.
+   */
+  void StartSolver();
+
+  /*!
+   * \brief Preprocess the single-zone iteration
+   */
+  void Preprocess(unsigned long TimeIter);
+
+  /*!
+   * \brief Run the iteration for ZONE_0.
+   */
+  void Run();
+
+  /*!
+   * \brief Use a corrector step to prevent convergence issues.
+   */
+  void Corrector();
+
+  /*!
+   * \brief Update the dual-time solution within multiple zones.
+   */
+  void Update();
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output(unsigned long ExtIter);
+
+  /*!
+   * \brief Perform a dynamic mesh deformation, included grid velocity computation and the update of the multigrid structure.
+   */
+  void DynamicMeshUpdate(unsigned long ExtIter);
+
+
+};
+
+/*!
  * \class CMultizoneDriver
  * \brief Class for driving zone-specific iterations.
  * \author R. Sanchez, O. Burghardt
@@ -1533,6 +1625,8 @@ protected:
             flow_criteria_rel,
             structure_criteria,
             structure_criteria_rel;
+
+  bool *prefixed_motion;     /*!< \brief Determines if a fixed motion is imposed in the config file. */
 
 public:
 
@@ -1564,19 +1658,29 @@ public:
   void Preprocess(unsigned long TimeIter);
 
   /*!
-   * \brief Use a relaxation step to prevent convergence issues.
+   * \brief Use a corrector step to prevent convergence issues.
    */
-  void Relaxation();
+  void Corrector(unsigned short val_iZone);
 
   /*!
-   * \brief Run one iteration in all physical zones.
+   * \brief Run a Block Gauss-Seidel iteration in all physical zones.
    */
-  void Run();
+  void Run_GaussSeidel();
+
+  /*!
+   * \brief Run a Block-Jacobi iteration in all physical zones.
+   */
+  void Run_Jacobi();
 
   /*!
    * \brief Update the dual-time solution within multiple zones.
    */
   void Update();
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output(unsigned long TimeIter);
 
   /*!
    * \brief Check the convergence at the outer level.

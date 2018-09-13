@@ -2830,10 +2830,6 @@ void CDriver::Interface_Preprocessing() {
     Buffer_Recv_mark = new int[nProcessor];
 #endif
 
-  if (config_container[ZONE_0]->GetFSI_Simulation() && nZone != 2 && rank == MASTER_NODE) {
-    SU2_MPI::Error("Error, cannot run the FSI solver on more than 2 zones!", CURRENT_FUNCTION);
-  }
-
   /*--- Coupling between zones ---*/
   // There's a limit here, the interface boundary must connect only 2 zones
 
@@ -2989,7 +2985,7 @@ void CDriver::Interface_Preprocessing() {
       if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
         /*--- Match Zones ---*/
-      if (rank == MASTER_NODE) cout << "Setting coupling "<<endl;
+      if (rank == MASTER_NODE) cout << "Setting coupling ";
 
         /*--- If the mesh is matching: match points ---*/
       if ( config_container[donorZone]->GetMatchingMesh() ) {
@@ -5676,7 +5672,7 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
                                      unsigned short val_nZone,
                                      unsigned short val_nDim,
                                      bool val_periodic,
-                                     SU2_Comm MPICommunicator) : CFSIDriver(confFile,
+                                     SU2_Comm MPICommunicator) : CDriver(confFile,
                                                                             val_nZone,
                                                                             val_nDim,
                                                                             val_periodic,
@@ -6845,8 +6841,6 @@ void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
 
 }
 
-
-
 bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
                                                    unsigned short ZONE_FLOW,
                                                    unsigned short ZONE_STRUCT,
@@ -7320,6 +7314,106 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
 
 
 }
+
+void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
+
+  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
+
+  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+
+  switch (config_container[targetZone]->GetKind_TransferMethod()) {
+  case BROADCAST_DATA:
+    if (MatchingMesh) {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                                    config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
+
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                                       config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
+    }
+    break;
+  case SCATTER_DATA:
+    if (MatchingMesh) {
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                         config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
+      }
+      else {
+        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
+    }
+    break;
+  case ALLGATHER_DATA:
+    if (MatchingMesh) {
+        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                           config_container[donorZone], config_container[targetZone]);
+      /*--- Set the volume deformation for the fluid zone ---*/
+      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
+    }
+    break;
+  }
+
+}
+
+void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
+
+  bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
+
+  /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
+  unsigned long ExtIter = config_container[targetZone]->GetExtIter();
+  config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
+
+  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
+
+  switch (config_container[donorZone]->GetKind_TransferMethod()) {
+  case BROADCAST_DATA:
+    if (MatchingMesh) {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                                    config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                                       config_container[donorZone], config_container[targetZone]);
+    }
+    break;
+  case SCATTER_DATA:
+    if (MatchingMesh) {
+        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                         config_container[donorZone], config_container[targetZone]);
+      }
+      else {
+        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
+    }
+    break;
+  case ALLGATHER_DATA:
+    if (MatchingMesh) {
+        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
+      }
+      else {
+        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                           config_container[donorZone], config_container[targetZone]);
+    }
+    break;
+  }
+
+}
+
 
 CMultiphysicsZonalDriver::CMultiphysicsZonalDriver(char* confFile,
                                                    unsigned short val_nZone,

@@ -619,7 +619,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
   /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
-  addEnumOption("MULTIZONE_PROBLEM", Kind_MZSolver, Multizone_Map, MZ_NO_SOLVER);
+  addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -1909,7 +1909,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
-  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+  addBoolOption("MATCHING_MESH", MatchingMesh, false);
 
   /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
   /*--- Options related to multizone problems ---*/
@@ -1925,10 +1925,20 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addUnsignedLongOption("INNER_ITER", Inner_Iter, 1);
   /* DESCRIPTION: Number of time steps solved in the multizone problem. */
   addUnsignedLongOption("TIME_ITER", Time_Iter, 1);
+  /* DESCRIPTION: Number of iterations in each single-zone block. */
+  addUnsignedLongOption("ITER", Iter, 1000);
   /* DESCRIPTION: Restart iteration in the multizone problem. */
   addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
   /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
   addDoubleOption("TIME_STEP", Time_Step, 0.0);
+  /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
+  addDoubleOption("MAX_TIME", Max_Time, 1.0);
+  /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
+  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
 
   /*!\par KIND_INTERPOLATION \n
@@ -2537,15 +2547,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   else { FSI_Problem = false; }
 
   if (Kind_Solver == MULTIZONE) {
-    /*--- Initialize the derivative values ---*/
-    switch (Kind_MZSolver) {
-      case MZ_FLUID_STRUCTURE_INTERACTION:
-        FSI_Problem = true;
-        break;
-      default:
-        /*--- All other cases are handled in the specific solver ---*/
-        break;
-      }
     Multizone_Problem = true;
   }
   else{
@@ -2571,9 +2572,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    Relaxation = true;  // For FSI problems, the relaxation stage is always called
-    if (Dynamic_Analysis == STATIC)
-	nExtIter = 1;
+    if (Dynamic_Analysis == STATIC) nExtIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -3674,7 +3673,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
       }
 
@@ -5446,7 +5445,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
-    cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    if (SinglezoneDriver){
+      cout << "Maximum number of solver subiterations: " << Iter <<"."<< endl;
+      cout << "Maximum number of physical time-steps: " << Time_Iter <<"."<< endl;
+    }
+    else{
+      cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    }
 
     if (!fea){
 
@@ -8094,6 +8099,7 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
       break;
     case FEM_ELASTICITY:
       structural_zone = true;
+      Relaxation = true;
       break;
     }
   }
