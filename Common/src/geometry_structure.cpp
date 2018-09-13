@@ -14964,7 +14964,15 @@ void CPhysicalGeometry::SetMaxLength(void) {
     const unsigned short nNeigh = node[iPoint]->GetnPoint();
     const su2double* Coord_i = node[iPoint]->GetCoord();
 
-    su2double max_delta=0;
+    /*--- If using AD, computing the maximum grid length can generate
+     * a lot of unnecessary overhead since we would store all computations
+     * of each grid length, even though we only need the maximum value.
+     * We solve that by finding the neighbor that's furthest away
+     * (corresponding to the maximum distance) using passive calculations,
+     * then set the max using the AD datatype. ---*/
+
+    passivedouble passive_max_delta=0;
+    unsigned short max_neighbor;
     for (unsigned short iNeigh = 0;iNeigh < nNeigh; iNeigh++) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
@@ -14972,15 +14980,30 @@ void CPhysicalGeometry::SetMaxLength(void) {
       const unsigned long jPoint  = node[iPoint]->GetPoint(iNeigh);
       const su2double* Coord_j = node[jPoint]->GetCoord();
 
-      su2double delta_aux = 0;
+      passivedouble delta_aux = 0;
       for (unsigned short iDim = 0;iDim < nDim; iDim++){
         delta_aux += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
       }
 
       /*--- Only keep the maximum length ---*/
 
-      max_delta = max(max_delta, sqrt(delta_aux));
+      if (delta_aux > passive_max_delta) {
+        passive_max_delta = delta_aux;
+        max_neighbor = iNeigh;
+      }
     }
+
+    /*--- Now that we know where the maximum distance is, repeat
+     * calculation with the AD-friendly su2double datatype ---*/
+
+    const unsigned long jPoint  = node[iPoint]->GetPoint(max_neighbor);
+    const su2double* Coord_j = node[jPoint]->GetCoord();
+
+    su2double max_delta = 0;
+    for (unsigned short iDim = 0;iDim < nDim; iDim++) {
+      max_delta += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
+    }
+    max_delta = sqrt(max_delta);
 
     node[iPoint]->SetMaxLength(max_delta);
   }
