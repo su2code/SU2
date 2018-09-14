@@ -117,7 +117,11 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
     fileroot = config->GetHeat_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+    if (surf_sol)
+      fileroot = config->GetSurfFlowCoeff_FileName().c_str();
+    else
+      fileroot = config->GetHeat_FileName().c_str();
+
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -237,7 +241,10 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     filename = config->GetHeat_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+    if (surf_sol)
+      filename = config->GetSurfFlowCoeff_FileName().c_str();
+    else
+      filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -1230,7 +1237,10 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
     filename = config->GetHeat_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+    if (surf_sol)
+      filename = config->GetSurfFlowCoeff_FileName().c_str();
+    else
+      filename = config->GetHeat_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
   if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
@@ -2037,7 +2047,10 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
     filename = config->GetHeat_FileName().c_str();
 
   if (Kind_Solver == HEAT_EQUATION_FVM)
-    filename = config->GetHeat_FileName().c_str();
+    if (surf_sol)
+      filename = config->GetSurfFlowCoeff_FileName().c_str();
+    else
+      filename = config->GetHeat_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
