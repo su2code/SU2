@@ -14972,8 +14972,8 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
      * then set the max using the AD datatype. ---*/
 
     passivedouble passive_max_delta=0;
-    unsigned short max_neighbor;
-    for (unsigned short iNeigh = 0;iNeigh < nNeigh; iNeigh++) {
+    unsigned short max_neighbor = 0;
+    for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
 
       /*-- Calculate the cell-center to cell-center length ---*/
 
@@ -14982,7 +14982,7 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
       passivedouble delta_aux = 0;
       for (unsigned short iDim = 0;iDim < nDim; iDim++){
-        delta_aux += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
+        delta_aux += pow(SU2_TYPE::GetValue(Coord_j[iDim])-SU2_TYPE::GetValue(Coord_i[iDim]), 2.);
       }
 
       /*--- Only keep the maximum length ---*/
@@ -17510,7 +17510,7 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 
 void CPhysicalGeometry::Set_MPI_MaxLength(CConfig *config) {
 
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned short iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS, nBufferR;
   su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
 
