@@ -4069,19 +4069,22 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        CConfig **config,
                                        unsigned long iExtIter,
                                        unsigned short iZone,
-                                       unsigned short val_nZone,
-                                       unsigned short *nInst) {
+                                       unsigned short val_nZone) {
   
   unsigned short iVar, iInst;
   unsigned long iPoint;
   bool compressible = true;
+  
+  unsigned short nInst = config[iZone]->GetnTimeInstances();
 
     /*--- Get the file output format ---*/
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
     
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+    for (iInst = 0; iInst < nInst; iInst++){
 
+      config[iZone]->SetiInst(iInst);
+      
       bool cont_adj = config[iZone]->GetContinuous_Adjoint();
       bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
 
@@ -4245,7 +4248,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
 
           case FIELDVIEW:
@@ -4265,7 +4268,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -4282,7 +4285,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
             
           case PARAVIEW_BINARY:
@@ -4291,7 +4294,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             
             if (rank == MASTER_NODE) cout << "Writing Paraview binary volume solution file." << endl;
             WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, false);
+                                        solver_container[iZone][iInst][MESH_0], iZone, val_nZone, nInst, false);
             break;
 
           default:
@@ -4310,7 +4313,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
 
           case TECPLOT_BINARY:
@@ -4321,7 +4324,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
 
           case PARAVIEW:
@@ -4330,7 +4333,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
 
           case PARAVIEW_BINARY:
@@ -4339,7 +4342,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             
             if (rank == MASTER_NODE) cout << "Writing Paraview binary surface solution file." << endl;
             WriteParaViewBinary_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                                         solver_container[iZone][iInst][MESH_0], iZone, val_nZone, true);
+                                         solver_container[iZone][iInst][MESH_0], iZone, val_nZone, nInst, true);
             break;
             
 

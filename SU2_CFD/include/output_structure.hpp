@@ -441,7 +441,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nInst, bool surf_sol);
   
   /*!
    * \brief Write a Tecplot ASCII solution file.
@@ -693,7 +693,7 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone, unsigned short *nInst);
+                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone);
   
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.

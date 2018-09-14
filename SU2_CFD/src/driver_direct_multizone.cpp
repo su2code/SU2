@@ -352,7 +352,7 @@ void CMultizoneDriver::Run_Jacobi() {
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -371,7 +371,7 @@ void CMultizoneDriver::Run_Jacobi() {
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
     if (config_container[val_iZone]->GetRelaxation())
-      iteration_container[val_iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+      iteration_container[val_iZone][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
 }
@@ -584,11 +584,11 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
+    output[ZONE_0]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, ZONE_0, nZone);
 
 
     /*--- Execute the routine for writing special output. ---*/
-    output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+   // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
 
 
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;

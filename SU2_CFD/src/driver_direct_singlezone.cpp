@@ -118,15 +118,15 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Read the target pressure for inverse design. ---------------------------------------------*/
   /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-    output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
+//  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+//    output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
 
-  /*--- Read the target heat flux ----------------------------------------------------------------*/
-  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-    output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
+//  /*--- Read the target heat flux ----------------------------------------------------------------*/
+//  /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
+//  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+//    output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//        geometry_container[ZONE_0][INST_0][MESH_0], config_container[iZone], TimeIter);
 
   /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
   if ((config_container[ZONE_0]->GetKind_Solver() ==  EULER) ||
@@ -141,7 +141,7 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
   /*--- Run a predictor step ---*/
   if (config_container[ZONE_0]->GetPredictor())
-    iteration_container[ZONE_0][INST_0]->Predictor(output, integration_container, geometry_container, solver_container,
+    iteration_container[ZONE_0][INST_0]->Predictor(output[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- Perform a dynamic mesh update if required. ---*/
@@ -160,7 +160,7 @@ void CSinglezoneDriver::Run() {
   config_container[ZONE_0]->SetOuterIter(OuterIter);
 
   /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-  iteration_container[ZONE_0][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
+  iteration_container[ZONE_0][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
   /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -172,7 +172,7 @@ void CSinglezoneDriver::Run() {
 void CSinglezoneDriver::Corrector() {
 
     if (config_container[ZONE_0]->GetRelaxation())
-      iteration_container[ZONE_0][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+      iteration_container[ZONE_0][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
 }
@@ -182,7 +182,7 @@ void CSinglezoneDriver::Update() {
   unsigned short jZone;
   bool UpdateMesh;
 
-  iteration_container[ZONE_0][INST_0]->Update(output, integration_container, geometry_container,
+  iteration_container[ZONE_0][INST_0]->Update(output[ZONE_0], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
 
@@ -258,11 +258,11 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
+    output[ZONE_0]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, ZONE_0, nZone);
 
 
     /*--- Execute the routine for writing special output. ---*/
-    output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+   //output[ZONE_0]->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
 
 
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
