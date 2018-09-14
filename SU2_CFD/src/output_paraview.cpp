@@ -115,6 +115,9 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
   
   if (Kind_Solver == HEAT_EQUATION)
     fileroot = config->GetHeat_FileName().c_str();
+
+  if (Kind_Solver == HEAT_EQUATION_FVM)
+    filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -129,7 +132,7 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
@@ -232,6 +235,9 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
+
+  if (Kind_Solver == HEAT_EQUATION_FVM)
+    filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
@@ -246,7 +252,7 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
         (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
@@ -1222,12 +1228,15 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
+
+  if (Kind_Solver == HEAT_EQUATION_FVM)
+    filename = config->GetHeat_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
   if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -2027,6 +2036,9 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   if (Kind_Solver == HEAT_EQUATION)
     filename = config->GetHeat_FileName().c_str();
 
+  if (Kind_Solver == HEAT_EQUATION_FVM)
+    filename = config->GetHeat_FileName().c_str();
+
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
       filename = config->GetSurfSens_FileName();
@@ -2040,7 +2052,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
-  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
+  if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY || Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) && (config->GetUnsteady_Simulation() != HARMONIC_BALANCE)) {
 
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
