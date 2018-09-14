@@ -967,6 +967,7 @@ private:
   unsigned long Wrt_Surf_Freq_DualTime;	/*!< \brief Writing surface solution frequency for Dual Time. */
   su2double Const_DES;   /*!< \brief Detached Eddy Simulation Constant. */
   unsigned short Kind_HybridRANSLES; /*!< \brief Kind of Hybrid RANS/LES. */
+  su2double MinLowDissipation;   /*!< \brief Min low dissipation constant for DDES simulations. */
   unsigned short Kind_RoeLowDiss;    /*!< \brief Kind of Roe scheme with low dissipation for unsteady flows. */
   bool QCR;                   /*!< \brief Spalart-Allmaras with Quadratic Constitutive Relation, 2000 version (SA-QCR2000) . */
   su2double *default_vel_inf, /*!< \brief Default freestream velocity array for the COption class. */
@@ -8459,7 +8460,13 @@ public:
    * \return Value of Low dissipation approach.
    */
    unsigned short GetKind_RoeLowDiss(void);
-    
+  
+  /*!
+   * \brief Get the lower bound of low dissipation parameter.
+   * \return Value of lower bound of the low dissipation parameter.
+   */
+  su2double GetMinLowDissipation(void);
+  
   /*!
    * \brief Get the DES Constant.
    * \return Value of DES constant.

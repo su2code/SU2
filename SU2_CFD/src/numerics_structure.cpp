@@ -2752,6 +2752,7 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
                                       su2double& Dissipation_ij, CConfig *config){
   unsigned short iDim;
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+  su2double min_low_diss = config->GetMinLowDissipation();
   
   su2double Ducros_ij, Delta, Aaux, phi1, phi2;
   static const su2double ch1 = 3.0, ch2 = 1.0, phi_max = 1.0;
@@ -2760,9 +2761,9 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
   su2double phi_hybrid_i, phi_hybrid_j;
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
-
-    Dissipation_ij = max(0.05,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
     
+    Dissipation_ij = max(min_low_diss,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
+
     if (roe_low_diss == FD_DUCROS){
       
       /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
@@ -2770,7 +2771,7 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
       if (0.5*(Sensor_i + Sensor_j) > 0.65)
         Ducros_ij = 1.0;
       else
-        Ducros_ij = 0.05;
+        Ducros_ij = min_low_diss;
       
       Dissipation_ij = max(Ducros_ij, Dissipation_ij);
     }
@@ -2789,13 +2790,13 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
     phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
     
     if (roe_low_diss == NTS){
-      Dissipation_ij = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
+      Dissipation_ij = max(0.5*(phi_hybrid_i+phi_hybrid_j), min_low_diss);
     } else if (roe_low_diss == NTS_DUCROS){
       
       phi1 = 0.5*(Sensor_i+Sensor_j);
       phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
       
-      Dissipation_ij = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
+      Dissipation_ij = min(max(phi1 + phi2 - (phi1*phi2), min_low_diss),1.0);
       
     }
   }

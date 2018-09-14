@@ -1898,6 +1898,8 @@ inline unsigned short CConfig::GetKind_RoeLowDiss(void) {return Kind_RoeLowDiss;
 
 inline su2double CConfig::GetConst_DES(void) {return Const_DES; }
 
+inline su2double CConfig::GetMinLowDissipation(void) {return MinLowDissipation; }
+
 inline bool CConfig::GetQCR(void) {return QCR;}
 
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
