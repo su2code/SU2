@@ -17548,6 +17548,7 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {
 
       const su2double delta = geometry->node[iPoint]->GetMaxLength();
+      assert(delta > 0); // Delta must be initialized and non-negative
       node[iPoint]->SetRoe_Dissipation_NTS(delta, config->GetConst_DES());
     }
   }
