@@ -2413,6 +2413,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
                                            CSolver **solver,
                                            unsigned short val_iZone,
                                            unsigned short val_nZone,
+                                           unsigned short val_nInst,
                                            bool surf_sol) {
   
   unsigned short iDim, nDim = geometry->GetnDim();

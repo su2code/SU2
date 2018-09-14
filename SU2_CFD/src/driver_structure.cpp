@@ -3607,7 +3607,7 @@ void CDriver::Output(unsigned long ExtIter) {
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
     for (iZone = 0; iZone < nZone; iZone++)
-      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, iZone, nZone, nInst);
+      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, ExtIter, iZone, nZone);
     
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
     

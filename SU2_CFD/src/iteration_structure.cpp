@@ -512,10 +512,10 @@ void CIteration::Output(COutput *output,
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, nZone);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, ZONE_0, nZone);
 
     /*--- Execute the routine for writing special output. ---*/
-    output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
+    //output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
 
 
     if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -761,7 +761,7 @@ bool CFluidIteration::Monitor(COutput *output,
   /*--- This needs to be generalized when the new output structure comes ---*/
   output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
 
-  if (output_history) output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+  if (output_history) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
 
   return StopCalc;
 
