@@ -4569,6 +4569,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
     if (fea || fluid_structure) output_files = false;
+    if (config[val_iZone]->GetMultizone_Problem()) output_files = false;
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
