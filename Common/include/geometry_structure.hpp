@@ -492,8 +492,9 @@ public:
 
   /*!
    * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
    */
-  virtual void SetMaxLength(void);
+  virtual void SetMaxLength(CConfig* config);
 
   /*!
    * \brief A virtual member.
@@ -743,6 +744,12 @@ public:
     * \param[in] config - Definition of the particular problem.
     */
   virtual void Set_MPI_OldCoord(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_MPI_MaxLength(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1745,8 +1752,9 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 
   /*!
    * \brief Set the maximum cell-center to cell-center distance for CVs.
+   * \param[in] config - Definition of the particular problem.
    */
-  void SetMaxLength(void);
+  void SetMaxLength(CConfig* config);
 
 	/*! 
 	 * \brief Set the Tecplot file.
@@ -1832,6 +1840,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    */
   void Set_MPI_OldCoord(CConfig *config);
   
+  /*!
+   * \brief Perform the MPI communication for the max grid spacing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_MaxLength(CConfig *config);
+
   /*!
    * \brief Set the periodic boundary conditions.
    * \param[in] config - Definition of the particular problem.
