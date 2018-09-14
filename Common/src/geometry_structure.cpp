@@ -1381,7 +1381,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
-  geometry_container[MESH_0]->SetMaxLength();
+  geometry_container[MESH_0]->SetMaxLength(config);
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
@@ -14958,7 +14958,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   
 }
 
-void CPhysicalGeometry::SetMaxLength(void) {
+void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     const unsigned short nNeigh = node[iPoint]->GetnPoint();
@@ -15007,6 +15007,8 @@ void CPhysicalGeometry::SetMaxLength(void) {
 
     node[iPoint]->SetMaxLength(max_delta);
   }
+
+  Set_MPI_MaxLength(config);
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
@@ -17503,6 +17505,79 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
   }
 
   /*--------------------------------------------------------------------------------------------------*/
+
+}
+
+void CPhysicalGeometry::Set_MPI_MaxLength(CConfig *config) {
+
+  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS, nBufferR;
+  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
+      nBufferS = nVertexS;          nBufferR = nVertexR;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive = new su2double [nBufferR];
+      Buffer_Send = new su2double[nBufferS];
+
+      /*--- Copy the grid velocity that should be sent ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = vertex[MarkerS][iVertex]->GetNode();
+        const su2double max_length = node[iPoint]->GetMaxLength();
+        Buffer_Send[iVertex] = max_length;
+      }
+
+#ifdef HAVE_MPI
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send, nBufferS, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive, nBufferR, MPI_DOUBLE, receive_from, 0,
+                        MPI_COMM_WORLD, &status);
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        Buffer_Receive[iVertex] = Buffer_Send[iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send;
+
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = vertex[MarkerR][iVertex]->GetNode();
+        node[iPoint]->SetMaxLength(Buffer_Receive[iVertex]);
+      }
+
+      /*--- Deallocate receive buffer ---*/
+
+      delete [] Buffer_Receive;
+
+    }
+
+  }
 
 }
 
