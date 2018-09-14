@@ -3424,6 +3424,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
 
     switch (config->GetMarker_All_KindBC(iMarker)) {
+      case EULER_WALL:
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
@@ -3569,6 +3570,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
 
     switch (config->GetMarker_All_KindBC(iMarker)) {
+      case EULER_WALL:
       case ISOTHERMAL:
       case HEAT_FLUX: {
         const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);

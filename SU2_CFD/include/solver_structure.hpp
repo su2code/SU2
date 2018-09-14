@@ -13870,6 +13870,7 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
    * \param[out] workArray     - Work array.
    */
   virtual void BC_Euler_Wall(CConfig                  *config,
@@ -13878,6 +13879,7 @@ public:
                              const CSurfaceElementFEM *surfElem,
                              su2double                *resFaces,
                              CNumerics                *conv_numerics,
+                             unsigned short           val_marker,
                              su2double                *workArray);
 
   /*!
@@ -15011,6 +15013,7 @@ public:
    * \param[out] resFaces      - Array where the residual contribution from the
                                  surface elements must be stored.
    * \param[in]  conv_numerics - Description of the numerical method.
+   * \param[in]  val_marker    - Surface marker where the boundary condition is applied.
    * \param[out] workArray - Work array.
    */
   void BC_Euler_Wall(CConfig                  *config,
@@ -15019,6 +15022,7 @@ public:
                      const CSurfaceElementFEM *surfElem,
                      su2double                *resFaces,
                      CNumerics                *conv_numerics,
+                     unsigned short           val_marker,
                      su2double                *workArray);
 
   /*!

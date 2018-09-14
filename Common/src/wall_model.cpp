@@ -101,7 +101,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
   // Set some constants, assuming air at standard conditions
   // TO DO: Get these values from solver or config classes
-  su2double C_1 = 1.458e-6;
+  su2double C_1 = 1.716E-5;
+  su2double T_ref = 273.15;
   su2double S = 110.4;
   su2double R = 287.058;
   su2double kappa = 0.41;
@@ -150,8 +151,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
         rho[i] = pExchange / (R*T[i]);
 
         // Set the viscosity profile, based on Sutherland's law
-        //mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S);
-        mu[i] = muExchange;
+        //mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S); //Paul
+        mu[i] = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
+        // mu[i] = muExchange;
+        cout << mu[i] << " " << muExchange << endl;
+        
         nu[i] = mu[i]/rho[i];
       }
       // Set the initial friction length based on wall shear with linear
@@ -218,7 +222,6 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
 
     u = rhs;
 
-
     lower.assign(numPoints-1,0.0);
     upper.assign(numPoints-1,0.0);
     diagonal.assign(numPoints,0.0);
@@ -275,6 +278,20 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
       diagonal[numPoints-1] = 1.0;
       rhs[numPoints-1] = tExchange;
     }
+    else {
+      // Euler wall: above statements are false.
+      // What is the correct approach? Assume no temperature variation in the boundary layer?
+      // Temperature specified at wall is also specified by exchange
+      // cout << Temperature_Prescribed << " " << HeatFlux_Prescribed << endl;
+      diagonal[0] = 1.0;
+      rhs[0] = tExchange;
+      
+      // Temperature specified by exchange
+      diagonal[numPoints-1] = 1.0;
+      rhs[numPoints-1] = tExchange;
+
+    }
+    
 
     // Solve the matrix problem to get the temperature field
     // *******LAPACK CALL********
@@ -289,7 +306,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     // Update solution with new u and T profiles
     for(unsigned short i=0; i<numPoints; i++){
       rho[i] = pExchange / (R*T[i]);
-      mu[i] = muExchange;
+      mu[i] = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
+      //mu[i] = muExchange;
       nu[i] = mu[i]/rho[i];
     }
 
@@ -312,7 +330,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     }
 
     su2double residual = norm_diff_mu_turb/norm_mu_turb;
-
+    //cout << residual << endl;
     muTurb = muTurb_new;
 
     if(residual < 0.000001){
@@ -325,20 +343,20 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
     else if(j == 50){
       cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Wall Model did not converge" << endl;
       //      // Debugging output
-      //      cout << "tauWall = " << tauWall << endl;
-      //      cout << "qWall = " << qWall << endl;
-      //      cout << "ViscosityWall = " << ViscosityWall << endl;
-      //      cout << "kOverCvWall = " << kOverCvWall << endl;
-      //      cout << "y, u, T, mu, muTurb, rho" << endl;
-      //      for(unsigned short i=0; i<numPoints; i++){
-      //        cout << y[i] << ", ";
-      //        cout << u[i] << ", ";
-      //        cout << T[i] << ", ";
-      //        cout << mu[i] << ", ";
-      //        cout << muTurb[i] << ", ";
-      //        cout << rho[i] << ", ";
-      //        cout << endl;
-      //	  }
+            cout << "tauWall = " << tauWall << endl;
+            cout << "qWall = " << qWall << endl;
+            cout << "ViscosityWall = " << ViscosityWall << endl;
+            cout << "kOverCvWall = " << kOverCvWall << endl;
+            cout << "y, u, T, mu, muTurb, rho" << endl;
+            for(unsigned short i=0; i<numPoints; i++){
+              cout << y[i] << ", ";
+              cout << u[i] << ", ";
+              cout << T[i] << ", ";
+              cout << mu[i] << ", ";
+              cout << muTurb[i] << ", ";
+              cout << rho[i] << ", ";
+              cout << endl;
+      	  }
       SU2_MPI::Error("Did not converge", CURRENT_FUNCTION);
     }
 
@@ -409,8 +427,15 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   for (unsigned short i=0; i < maxIter; i++){
     counter += 1;
     y_plus = thickness * u_tau0 / nuExchange;
-    fval = (velExchange /u_tau0) - ((1.0/k) * log(y_plus) + C);
-    fprime = -velExchange/pow(u_tau0,2) - 1.0/(k*u_tau0);
+    //fval = (velExchange /u_tau0) - ((1.0/k) * log(y_plus) + C);
+    //fprime = -velExchange/pow(u_tau0,2) - 1.0/(k*u_tau0);
+
+    fval = velExchange/u_tau0 - (C - 1.0*log(k)/k)*(1.0 - exp(-0.0909090909090909*u_tau*thickness/nuExchange) - 0.0909090909090909*u_tau0*thickness*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/nuExchange) - 1.0*log(k*u_tau*thickness/nuExchange + 1.0)/k;
+    
+    //-u_pw/u_tau**2 - (C - 1.0*log(k)/k)*(-0.0909090909090909*y*exp(-0.333333333333333*u_tau*y/nu)/nu + 0.0909090909090909*y*exp(-0.0909090909090909*u_tau*y/nu)/nu + 0.0303030303030303*u_tau*y**2*exp(-0.333333333333333*u_tau*y/nu)/nu**2) - 1.0*y/(nu*(k*u_tau*y/nu + 1.0))
+    
+    fprime = -velExchange/pow(u_tau0,2.0) - (C - 1.0*log(k)/k)*(-0.0909090909090909*thickness*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/nuExchange + 0.0909090909090909*thickness*exp(-0.0909090909090909*u_tau0*thickness/nuExchange)/nuExchange + 0.0303030303030303*u_tau0*pow(thickness,2.0)*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/pow(nuExchange, 2.0)) - 1.0*thickness/(nuExchange*(k*u_tau0*thickness/nuExchange + 1.0));
+    
     newton_step = fval/fprime;
     
     u_tau = u_tau0 - newton_step;
@@ -425,6 +450,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   tauWall = rhoExchange * pow(u_tau,2.0);
   qWall = 0.0;
   ViscosityWall = muExchange;
-  kOverCvWall = ViscosityWall * factHeatFlux_Lam;
+  //kOverCvWall = ViscosityWall * factHeatFlux_Lam;
+  kOverCvWall = c_p / c_v * (muExchange/Pr_lam);
 
 }
