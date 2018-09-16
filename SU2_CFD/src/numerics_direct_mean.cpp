@@ -1281,7 +1281,7 @@ void CUpwSLAU2_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
   
   /*--- Pressure Flux ---*/
-  if (Dissipation_ij < 0.1) cout << Dissipation_ij << endl;
+
   pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + Dissipation_ij * sqrt(aux_slau/2.0) * (BetaL + BetaR - 1.0) * aF * 0.5 * (Density_i + Density_j);
   
   val_residual[0] = 0.5*(mF+fabs(mF)) + 0.5*(mF-fabs(mF));
