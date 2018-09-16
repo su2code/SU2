@@ -219,27 +219,6 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     }
   }
 
-  /*---Now write to file---*/
-  if(rank == MASTER_NODE){
-    nPanel_tot = 0;
-    ofstream sigFile;
-    sigFile.precision(15);
-    sigFile.open("signal_original.dat");
-    sigFile << "# phi, x, p" << endl;
-    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-      for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-        sigFile << scientific << ray_phi[iPhi] << "\t";
-        sigFile << scientific << signal.x[iPhi][iPanel] << "\t";
-        sigFile << scientific << signal.p_prime[iPhi][iPanel]   << "\t";
-        sigFile << endl;
-      }
-      nPanel_tot += nPanel[iPhi];
-    }
-    sigFile.close();
-    cout << "Signal written. Total nPanel = " << nPanel_tot << "." << endl;
-
-  }
-
   /*---Initialize sensitivities---*/
   if(config->GetAD_Mode()){
     dJdU = new su2double**[ray_N_phi];

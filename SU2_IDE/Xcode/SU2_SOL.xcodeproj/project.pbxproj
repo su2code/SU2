@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		022E3BD4214EB15200FEFCD0 /* solver_boom.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 022E3BD3214EB15200FEFCD0 /* solver_boom.cpp */; };
 		0506980C1AA61B4500FF4F07 /* output_fieldview.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */; };
 		05755F0C1A54B2AF00600019 /* output_su2.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05755F0B1A54B2AF00600019 /* output_su2.cpp */; };
 		05E6DBA417EB61EC00FA1F7E /* config_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05E6DB9B17EB61EC00FA1F7E /* config_structure.cpp */; };
@@ -43,6 +44,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		022E3BD3214EB15200FEFCD0 /* solver_boom.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = solver_boom.cpp; path = ../../SU2_CFD/src/solver_boom.cpp; sourceTree = "<group>"; };
+		022E3BD5214EB17000FEFCD0 /* solver_boom.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = solver_boom.hpp; path = ../../SU2_CFD/include/solver_boom.hpp; sourceTree = "<group>"; };
 		0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_fieldview.cpp; path = ../../SU2_CFD/src/output_fieldview.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05755F0B1A54B2AF00600019 /* output_su2.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = output_su2.cpp; path = ../../SU2_CFD/src/output_su2.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		0593D54416F2A810007C1809 /* SU2_SOL */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SU2_SOL; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -143,6 +146,7 @@
 		0593D55016F2A84B007C1809 /* Include */ = {
 			isa = PBXGroup;
 			children = (
+				022E3BD5214EB17000FEFCD0 /* solver_boom.hpp */,
 				05E6DBAD17EB621B00FA1F7E /* SU2_SOL.hpp */,
 				05E6DC6017EB656100FA1F7E /* output_structure.hpp */,
 				05E6DC6117EB656100FA1F7E /* solver_structure.hpp */,
@@ -197,6 +201,7 @@
 				05E6DC6A17EB658F00FA1F7E /* output_tecplot.cpp */,
 				0506980B1AA61B4500FF4F07 /* output_fieldview.cpp */,
 				05755F0B1A54B2AF00600019 /* output_su2.cpp */,
+				022E3BD3214EB15200FEFCD0 /* solver_boom.cpp */,
 				05E6DC6317EB657400FA1F7E /* solver_structure.cpp */,
 				05E6DC6517EB657B00FA1F7E /* variable_structure.cpp */,
 				05E6DB9B17EB61EC00FA1F7E /* config_structure.cpp */,
@@ -291,6 +296,7 @@
 				E941BC0E1B71DC05005C6C06 /* mpi_structure.cpp in Sources */,
 				05E6DBA617EB61EC00FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DBA717EB61EC00FA1F7E /* grid_adaptation_structure.cpp in Sources */,
+				022E3BD4214EB15200FEFCD0 /* solver_boom.cpp in Sources */,
 				E941BC0D1B71DC05005C6C06 /* linear_solvers_structure_b.cpp in Sources */,
 				05E6DBA817EB61EC00FA1F7E /* grid_movement_structure.cpp in Sources */,
 				05E6DBA917EB61EC00FA1F7E /* linear_solvers_structure.cpp in Sources */,

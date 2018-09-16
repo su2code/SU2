@@ -15,7 +15,6 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
-// #include "../../SU2_CFD/include/SUBoom.hpp"  // For things like mergesort, AtmosISA...
 
 using namespace std;
 
@@ -60,32 +59,32 @@ public:
         p_peak,   // Reference pressure for shock formation distance
         f0,       // Reference frequency
         fs,       // Sampling frequency
-  			w0,				// Reference angular frequency
+        w0,				// Reference angular frequency
         w0_g,     // Angular frequency at the ground
-  			rho0,			// Ambient density (function of altitude)
-  			c0,				// Ambient sound speed (function of altitude)
+        rho0,			// Ambient density (function of altitude)
+        c0,				// Ambient sound speed (function of altitude)
         M_a,      // Acoustic Mach number
         dx_avg,   // Average spacing of signal
-  			dsigma,			// Step size
+        dsigma,			// Step size
         dsigma_old, // Previous step size
         dz,       // Change in altitude
         dt,       // Grid spacing (dimensional)
         dtau,     // Grid spacing
-  			xbar,			// Shock formation distance of plane wave
-  			beta,			// Coefficient of nonlinearity
-  			C_nu_O2,		// Dispersion parameter for O2 (dimensionless)
-  			C_nu_N2,		// Dispersion parameter for N2 (dimensionless)
-  			theta_nu_O2,	// Relaxation time parameter for O2 (dimensionless)
-  			theta_nu_N2,	// Relaxation time parameter for N2 (dimensionless)
-  			m_nu_O2,		// Dispersion parameter for O2 (dimensionless)
-  			m_nu_N2,		// Dispersion parameter for N2 (dimensionless)
-  			tau_nu_O2,		// Relaxation time for O2 (dimensionless)
-  			tau_nu_N2,		// Relaxation time for N2 (dimensionless)
-  			alpha0_tv,		// Thermoviscous attenuation coefficient
-  			delta,			// Diffusivity of sound
-  			Gamma,			// Thermoviscous parameter (dimensionless)
-  			mu,				// Viscosity
-  			kappa;			// Thermal conduction coefficient
+        xbar,			// Shock formation distance of plane wave
+        beta,			// Coefficient of nonlinearity
+        C_nu_O2,		// Dispersion parameter for O2 (dimensionless)
+        C_nu_N2,		// Dispersion parameter for N2 (dimensionless)
+        theta_nu_O2,	// Relaxation time parameter for O2 (dimensionless)
+        theta_nu_N2,	// Relaxation time parameter for N2 (dimensionless)
+        m_nu_O2,		// Dispersion parameter for O2 (dimensionless)
+        m_nu_N2,		// Dispersion parameter for N2 (dimensionless)
+        tau_nu_O2,		// Relaxation time for O2 (dimensionless)
+        tau_nu_N2,		// Relaxation time for N2 (dimensionless)
+        alpha0_tv,		// Thermoviscous attenuation coefficient
+        delta,			// Diffusivity of sound
+        Gamma,			// Thermoviscous parameter (dimensionless)
+        mu,				// Viscosity
+        kappa;			// Thermal conduction coefficient
 
   /*---Cost function---*/
   su2double *PLdB;
@@ -151,7 +150,6 @@ public:
   void PerceivedLoudness(unsigned short iPhi);
   void FFT(unsigned long m, su2double *x, su2double *y);
   void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double& p_dc, unsigned short n_sample);
-  // void FourierTransform(unsigned short iPhi, su2double *w, su2double *p_of_w, su2double *f_min, su2double *f_max, unsigned short n_band, unsigned short n_sample_per_band);
   void MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band);
   void AcousticEnergy(unsigned short iPhi);
   void WriteGroundPressure(unsigned short iPhi);
