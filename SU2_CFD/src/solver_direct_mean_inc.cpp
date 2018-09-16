@@ -78,6 +78,9 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   jPoint_UndLapl = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+
+  ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
+
   Smatrix = NULL; Cvector = NULL;
   Preconditioner = NULL;
 
@@ -185,6 +188,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   jPoint_UndLapl = NULL;
   Primitive = NULL; Primitive_i = NULL; Primitive_j = NULL;
   CharacPrimVar = NULL;
+
+  ActDisk_DeltaP = NULL; ActDisk_DeltaT = NULL;
+
   Smatrix = NULL; Cvector = NULL;
   Preconditioner = NULL;
 
@@ -347,6 +353,26 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
   }
   
+  /*--- Store the value of the Delta P at the Actuator Disk ---*/
+  
+  ActDisk_DeltaP = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ActDisk_DeltaP[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      ActDisk_DeltaP[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Delta T at the Actuator Disk ---*/
+  
+  ActDisk_DeltaT = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    ActDisk_DeltaT[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      ActDisk_DeltaT[iMarker][iVertex] = 0;
+    }
+  }
+
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
   CPressure = new su2double* [nMarker];
@@ -670,6 +696,18 @@ CIncEulerSolver::~CIncEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
+  }
+
+  if (ActDisk_DeltaP != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_DeltaP[iMarker];
+    delete [] ActDisk_DeltaP;
+  }
+
+  if (ActDisk_DeltaT != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++)
+      delete [] ActDisk_DeltaT[iMarker];
+    delete [] ActDisk_DeltaT;
   }
 
   if (Inlet_Ttotal != NULL) {
@@ -1717,6 +1755,355 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
+void CIncEulerSolver::Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config) {
+  
+  unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
+  Buffer_Send_nPointTotal = 0;
+  long iGlobalIndex, iGlobal;
+  unsigned short iVar, iMarker, jMarker;
+  long nDomain = 0, iDomain, jDomain;
+  //bool ActDisk_Perimeter;
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
+  
+  unsigned short nPrimVar_ = nPrimVar;
+  if (rans) nPrimVar_ += 2; // Add two extra variables for the turbulence.
+  
+#ifdef HAVE_MPI
+  
+  /*--- MPI status and request arrays for non-blocking communications ---*/
+  
+  SU2_MPI::Status status;
+  
+#endif
+  
+  /*--- Define buffer vector interior domain ---*/
+  
+  su2double *Buffer_Send_PrimVar = NULL;
+  long      *Buffer_Send_Data    = NULL;
+  
+  unsigned long *nPointTotal_s = new unsigned long[size];
+  unsigned long *nPointTotal_r = new unsigned long[size];
+  su2double *iPrimVar = new su2double [nPrimVar_];
+  
+  unsigned long Buffer_Size_PrimVar = 0;
+  unsigned long Buffer_Size_Data    = 0;
+  
+  unsigned long PointTotal_Counter = 0;
+  
+  /*--- Allocate the memory that we only need if we have MPI support ---*/
+  
+  su2double *Buffer_Receive_PrimVar = NULL;
+  long      *Buffer_Receive_Data    = NULL;
+  
+  /*--- Basic dimensionalization ---*/
+  
+  nDomain = size;
+  
+  /*--- This loop gets the array sizes of points for each
+   rank to send to each other rank. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Loop over the markers to perform the dimensionalizaton
+     of the domain variables ---*/
+    
+    Buffer_Send_nPointTotal = 0;
+    
+    /*--- Loop over all of the markers and count the number of each
+     type of point and element that needs to be sent. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            Buffer_Send_nPointTotal++;
+          }
+        }
+      }
+    }
+    
+    /*--- Store the counts on a partition by partition basis. ---*/
+    
+    nPointTotal_s[iDomain] = Buffer_Send_nPointTotal;
+    
+    /*--- Total counts for allocating send buffers below ---*/
+    
+    Buffer_Size_PrimVar += nPointTotal_s[iDomain]*(nPrimVar_);
+    Buffer_Size_Data += nPointTotal_s[iDomain]*(3);
+    
+  }
+  
+  /*--- Allocate the buffer vectors in the appropiate domain (master, iDomain) ---*/
+  
+  Buffer_Send_PrimVar = new su2double[Buffer_Size_PrimVar];
+  Buffer_Send_Data    = new long[Buffer_Size_Data];
+  
+  /*--- Now that we know the sizes of the point, we can
+   allocate and send the information in large chunks to all processors. ---*/
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- A rank does not communicate with itself through MPI ---*/
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the counts to iDomain with non-blocking sends ---*/
+      
+      SU2_MPI::Bsend(&nPointTotal_s[iDomain], 1, MPI_UNSIGNED_LONG, iDomain, iDomain, MPI_COMM_WORLD);
+      
+#endif
+      
+    } else {
+      
+      /*--- If iDomain = rank, we simply copy values into place in memory ---*/
+      
+      nPointTotal_r[iDomain] = nPointTotal_s[iDomain];
+      
+    }
+    
+    /*--- Receive the counts. All processors are sending their counters to
+     iDomain up above, so only iDomain needs to perform the recv here from
+     all other ranks. ---*/
+    
+    if (rank == iDomain) {
+      
+      for (jDomain = 0; jDomain < size; jDomain++) {
+        
+        /*--- A rank does not communicate with itself through MPI ---*/
+        
+        if (rank != jDomain) {
+          
+#ifdef HAVE_MPI
+          
+          /*--- Recv the data by probing for the current sender, jDomain,
+           first and then receiving the values from it. ---*/
+          
+          SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
+          
+#endif
+          
+        }
+      }
+      
+    }
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Initialize the counters for the larger send buffers (by domain) ---*/
+  
+  PointTotal_Counter  = 0;
+  
+  for (iDomain = 0; iDomain < nDomain; iDomain++) {
+    
+    /*--- Set the value of the interior geometry. Initialize counters. ---*/
+    
+    iPointTotal = 0;
+    
+    /*--- Load up the actual values into the buffers for sending. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          jDomain = geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          //ActDisk_Perimeter = geometry->vertex[iMarker][iVertex]->GetActDisk_Perimeter();
+          
+//          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain()) && (!ActDisk_Perimeter)) {
+          if ((iDomain == jDomain) && (geometry->node[iPoint]->GetDomain())) {
+            
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetPrimitive(iVar);
+            }
+            if (rans) {
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+nPrimVar] = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+              Buffer_Send_PrimVar[(nPrimVar_)*(PointTotal_Counter+iPointTotal)+(nPrimVar+1)] = 0.0;
+            }
+            
+            iGlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+            jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
+            jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
+            
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(0)]  = iGlobalIndex;
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(1)] = jVertex;
+            Buffer_Send_Data[(3)*(PointTotal_Counter+iPointTotal)+(2)]  = jMarker;
+            
+            iPointTotal++;
+            
+          }
+          
+        }
+        
+      }
+      
+    }
+    
+    /*--- Send the buffers with the geometrical information ---*/
+    
+    if (iDomain != rank) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Communicate the coordinates, global index, colors, and element
+       date to iDomain with non-blocking sends. ---*/
+      
+      SU2_MPI::Bsend(&Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)],
+                     nPointTotal_s[iDomain]*(nPrimVar_), MPI_DOUBLE, iDomain,
+                     iDomain,  MPI_COMM_WORLD);
+      
+      SU2_MPI::Bsend(&Buffer_Send_Data[PointTotal_Counter*(3)],
+                     nPointTotal_s[iDomain]*(3), MPI_LONG, iDomain,
+                     iDomain+nDomain,  MPI_COMM_WORLD);
+      
+#endif
+      
+    }
+    
+    else {
+      
+      /*--- Allocate local memory for the local recv of the elements ---*/
+      
+      Buffer_Receive_PrimVar            = new su2double[nPointTotal_s[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Data               = new long[nPointTotal_s[iDomain]*(3)];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(nPrimVar_); iter++)
+        Buffer_Receive_PrimVar[iter] = Buffer_Send_PrimVar[PointTotal_Counter*(nPrimVar_)+iter];
+      
+      for (iter = 0; iter < nPointTotal_s[iDomain]*(3); iter++)
+        Buffer_Receive_Data[iter] = Buffer_Send_Data[PointTotal_Counter*(3)+iter];
+      
+      
+      /*--- Recv the point data from ourselves (same procedure as above) ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar_)+iVar];
+        
+        iGlobal       =  Buffer_Receive_Data[iPoint*(3)+(0)];
+        iVertex      =  Buffer_Receive_Data[iPoint*(3)+(1)];
+        iMarker      = Buffer_Receive_Data[iPoint*(3)+(2)];
+        
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Data;
+      
+    }
+    
+    /*--- Increment the counters for the send buffers (iDomain loop) ---*/
+    
+    PointTotal_Counter += iPointTotal;
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- The next section begins the recv of all data for the interior
+   points/elements in the mesh. First, create the domain structures for
+   the points on this rank. First, we recv all of the point data ---*/
+  
+  for (iDomain = 0; iDomain < size; iDomain++) {
+    
+    if (rank != iDomain) {
+      
+#ifdef HAVE_MPI
+      
+      /*--- Allocate the receive buffer vector. Send the colors so that we
+       know whether what we recv is an owned or halo node. ---*/
+      
+      Buffer_Receive_PrimVar            = new su2double [nPointTotal_r[iDomain]*(nPrimVar_)];
+      Buffer_Receive_Data               = new long [nPointTotal_r[iDomain]*(3)];
+      
+      /*--- Receive the buffers with the coords, global index, and colors ---*/
+      
+      SU2_MPI::Recv(Buffer_Receive_PrimVar, nPointTotal_r[iDomain]*(nPrimVar_) , MPI_DOUBLE,
+                    iDomain, rank, MPI_COMM_WORLD, &status);
+      
+      SU2_MPI::Recv(Buffer_Receive_Data, nPointTotal_r[iDomain]*(3) , MPI_LONG,
+                    iDomain, rank+nDomain, MPI_COMM_WORLD, &status);
+      
+      /*--- Loop over all of the points that we have recv'd and store the
+       coords, global index vertex and markers ---*/
+      
+      for (iPoint = 0; iPoint < nPointTotal_r[iDomain]; iPoint++) {
+        
+        iGlobal      = Buffer_Receive_Data[iPoint*(3)+(0)];
+        iVertex      = Buffer_Receive_Data[iPoint*(3)+(1)];
+        iMarker      = Buffer_Receive_Data[iPoint*(3)+(2)];
+        
+        for (iVar = 0; iVar < nPrimVar_; iVar++)
+          iPrimVar[iVar] = Buffer_Receive_PrimVar[iPoint*(nPrimVar_)+iVar];
+        
+        for (iVar = 0; iVar < nPrimVar_; iVar++) {
+          SetDonorPrimVar(iMarker, iVertex, iVar, iPrimVar[iVar]);
+        }
+        
+        SetDonorGlobalIndex(iMarker, iVertex, iGlobal);
+        
+      }
+      
+      /*--- Delete memory for recv the point stuff ---*/
+      
+      delete [] Buffer_Receive_PrimVar;
+      delete [] Buffer_Receive_Data;
+      
+#endif
+      
+    }
+    
+  }
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+#ifdef HAVE_MPI
+  
+  SU2_MPI::Barrier(MPI_COMM_WORLD);
+  
+#endif
+  
+  /*--- Free all of the memory used for communicating points and elements ---*/
+  
+  delete[] Buffer_Send_PrimVar;
+  delete[] Buffer_Send_Data;
+  
+  /*--- Release all of the temporary memory ---*/
+  
+  delete [] nPointTotal_s;
+  delete [] nPointTotal_r;
+  delete [] iPrimVar;
+  
+}
+
 void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
@@ -2364,6 +2751,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool limiter          = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool center           = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
+  bool actuator_disk    = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
 
@@ -2375,6 +2763,14 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
   
+  /*--- Compute the actuator disk properties and distortion levels ---*/
+
+  if (actuator_disk) {
+    Set_MPI_ActDisk(solver_container, geometry, config);
+    GetPower_Properties(geometry, config, iMesh, Output);
+    SetActDisk_BCThrust(geometry, solver_container, config, iMesh, Output);
+  }
+
   /*--- Upwind second order reconstruction ---*/
   
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
@@ -4043,6 +4439,451 @@ void CIncEulerSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMz[iMarker_Monitoring]  += Surface_CMz_Mnt[iMarker_Monitoring];
   }
 
+}
+
+void CIncEulerSolver::SetActDisk_BCThrust(CGeometry *geometry, CSolver **solver_container,
+                                       CConfig *config, unsigned short iMesh, bool Output) {
+  
+  su2double Massflow = 0.0 , Target_Massflow = 0.0, DragMinusThrust = 0.0 , Target_DragMinusThrust = 0.0, Target_NetThrust = 0.0, BCThrust = 0.0, BCThrust_inc = 0.0;
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  su2double  *V_inlet = NULL, Pressure,
+  Density, T0_Ti, ATerm, BTerm, LHS, RHS, RHS_PDelta, RHS_MDelta, F, DF_DLa, CTerm_, DTerm_,
+  ETerm, La, La_old, TotalArea, To_Ti, DeltaT, Po_Pi, DeltaP, Area, Velocity_Normal,
+  SoundSpeed2, Force_Normal,
+  RefDensity, RefArea, RefVel2, Factor, Ref;
+  unsigned short iter;
+  string Marker_Tag;
+  su2double Target_Force, Force, Target_Power, Power, NetThrust, BCThrust_old, Initial_BCThrust;
+  bool ActDisk_Info;
+  su2double MyBCThrust, BCThrust_Init;
+  
+  su2double dNetThrust_dBCThrust        = config->GetdNetThrust_dBCThrust();
+  unsigned short Kind_ActDisk           = config->GetKind_ActDisk();
+  bool ratio                            = (config->GetActDisk_Jump() == RATIO);
+  unsigned long Update_BCThrust         = config->GetUpdate_BCThrust();
+  unsigned long Iter_Fixed_NetThrust    = config->GetIter_Fixed_NetThrust();
+  unsigned long ExtIter                 = config->GetExtIter();
+  bool Update_BCThrust_Bool             = false;
+  bool restart                          = (config->GetRestart() || config->GetRestart_Flow());
+  su2double Fan_Poly_Eff                = config->GetFan_Poly_Eff();
+  su2double PolyCoeff                   = 1.0/(1.0-((Gamma-1.0)/Gamma)/Fan_Poly_Eff);
+  
+  RefDensity   = Density_Inf;
+  RefArea = config->GetRefArea();
+  RefVel2 = 0.0;  for (iDim = 0; iDim < nDim; iDim++) RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  
+  Factor = (0.5*RefDensity*RefArea*RefVel2);
+  Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
+  
+  /*--- Delta P and delta T are inputs ---*/
+  
+  if (Kind_ActDisk == VARIABLES_JUMP) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+          (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+        
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        
+        if (ratio) {
+          if (config->GetMach()  < 0.5) {
+            DeltaP       = config->GetActDisk_PressJump(Marker_Tag, 0);
+            DeltaT       = config->GetActDisk_TempJump(Marker_Tag, 0);
+          }
+          else {
+            DeltaP       = config->GetActDisk_PressJump(Marker_Tag, 1);
+            DeltaT       = config->GetActDisk_TempJump(Marker_Tag, 1);
+          }
+        }
+        else {
+          if (config->GetMach()  < 0.5) {
+            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 0) / config->GetPressure_Ref());
+            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 0) / config->GetTemperature_Ref());
+          }
+          else {
+            DeltaP       = max(0.0, config->GetActDisk_PressJump(Marker_Tag, 1) / config->GetPressure_Ref());
+            DeltaT       = max(0.0, config->GetActDisk_TempJump(Marker_Tag, 1) / config->GetTemperature_Ref());
+          }
+        }
+        
+        /*--- Set the Delta P, Delta T values at each discrete point (uniform distribution)  ---*/
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          SetActDisk_DeltaP(iMarker, iVertex, DeltaP);
+          SetActDisk_DeltaT(iMarker, iVertex, DeltaT);
+        }
+        
+      }
+    }
+  }
+  
+  /*--- Iteration using BCThrust ---*/
+  
+  else {
+    
+    if (ExtIter == 0) BCThrust_Counter = 0;
+    
+    /*--- Only the fine mesh level should check the convergence criteria ---*/
+    
+    if ((iMesh == MESH_0) && Output) {
+      
+      /*--- Initialize the update flag to false ---*/
+      
+      Update_BCThrust_Bool = false;
+      
+      /*--- Reevaluate BCThrust at a fix number of iterations ---*/
+      
+      if ((ExtIter % Iter_Fixed_NetThrust == 0) && (ExtIter != 0)) {
+        BCThrust_Counter++;
+        if ((BCThrust_Counter != 0) &&
+            (BCThrust_Counter != 1) &&
+            (BCThrust_Counter != Update_BCThrust) &&
+            (BCThrust_Counter != Update_BCThrust + 2) &&
+            (BCThrust_Counter != Update_BCThrust + 4) ) Update_BCThrust_Bool = true;
+        else Update_BCThrust_Bool = false;
+      }
+      
+      /*--- Store the update boolean for use on other mesh levels in the MG ---*/
+      
+      config->SetUpdate_BCThrust_Bool(Update_BCThrust_Bool);
+      
+    }
+    
+    else {
+      Update_BCThrust_Bool = config->GetUpdate_BCThrust_Bool();
+    }
+    
+    
+    /*--- If it is the first iteration, set the BCThrust to a meaning full target value,
+     * this can be done at an initialization level, for the time being it is OK here ---*/
+    
+    if (ExtIter == 0) {
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+            (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          
+          if (Kind_ActDisk == NET_THRUST) {
+            if (restart)
+              Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
+            else {
+              if (config->GetMach() < 0.5) Initial_BCThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+              else Initial_BCThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
+            }
+            config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
+          }
+          
+          if (Kind_ActDisk == BC_THRUST) {
+            if (restart)
+              Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
+            else {
+              if (config->GetMach() < 0.5) Initial_BCThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+              else Initial_BCThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
+            }
+            config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
+          }
+          
+          if (Kind_ActDisk == POWER) {
+            Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
+            config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
+          }
+          
+          if (Kind_ActDisk == DRAG_MINUS_THRUST) {
+            Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
+            config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
+          }
+          
+          if (Kind_ActDisk == MASSFLOW) {
+            Initial_BCThrust = config->GetInitial_BCThrust() / Ref;
+            config->SetActDisk_BCThrust(Marker_Tag, Initial_BCThrust);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, Initial_BCThrust);
+          }
+          
+        }
+      }
+    }
+    
+    /*--- Typical iteration to set the value of BC Thrust at each actuator disk ---*/
+    
+    if (Update_BCThrust_Bool && Output) {
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        
+        if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+            (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+          
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          
+          if (Kind_ActDisk == NET_THRUST) {
+            
+            if (config->GetMach() < 0.5) Target_NetThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+            else Target_NetThrust = fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
+            NetThrust    = config->GetActDisk_NetThrust(Marker_Tag);
+            BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
+            BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_NetThrust - NetThrust);
+
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
+            else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
+            if (iMesh == MESH_0) {
+              config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
+              BCThrust_Init = BCThrust*Ref;
+              config->SetInitial_BCThrust(BCThrust_Init);
+            }
+            
+          }
+          
+          if (Kind_ActDisk == BC_THRUST) {
+            
+            if (config->GetMach() < 0.5) Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / Ref);
+            else Target_Force =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / Ref);
+            Force        = -config->GetActDisk_Force(Marker_Tag);
+            BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
+            BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Force - Force);
+            
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
+            else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
+            if (iMesh == MESH_0) {
+              config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
+              BCThrust_Init = BCThrust*Ref;
+              config->SetInitial_BCThrust(BCThrust_Init);
+            }
+            
+          }
+          
+          if (Kind_ActDisk == POWER) {
+            
+            if (config->GetMach() < 0.5) Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 0) / (Ref * config->GetVelocity_Ref() /  550.0));
+            else Target_Power =  fabs( config->GetActDisk_PressJump(Marker_Tag, 1) / (Ref * config->GetVelocity_Ref() /  550.0));
+            Power        = config->GetActDisk_Power(Marker_Tag);
+            BCThrust_old = config->GetActDisk_BCThrust_Old(Marker_Tag);
+            BCThrust_inc = (1.0/dNetThrust_dBCThrust)*(Target_Power - Power);
+            
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
+            else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
+            if (iMesh == MESH_0) {
+              config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
+              BCThrust_Init = BCThrust*Ref;
+              config->SetInitial_BCThrust(BCThrust_Init);
+            }
+            
+          }
+          
+          if (Kind_ActDisk == DRAG_MINUS_THRUST) {
+            
+            if (config->GetMach() < 0.5) Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 0)) * Factor;
+            else Target_DragMinusThrust  =  -fabs(config->GetActDisk_PressJump(Marker_Tag, 1)) * Factor;
+            DragMinusThrust = GetTotal_CD() * Factor;
+            BCThrust_old    = config->GetActDisk_BCThrust_Old(Marker_Tag);
+            BCThrust_inc    = -(1.0/dNetThrust_dBCThrust)*(Target_DragMinusThrust - DragMinusThrust);
+            
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
+            else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            
+            if (iMesh == MESH_0) {
+              config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
+              BCThrust_Init = BCThrust*Ref;
+              config->SetInitial_BCThrust(BCThrust_Init);
+            }
+            
+          }
+          
+          if (Kind_ActDisk == MASSFLOW) {
+            
+            if (config->GetMach() < 0.5) {
+              Target_Massflow  =  fabs(config->GetActDisk_PressJump(Marker_Tag, 0) / (config->GetDensity_Ref() * config->GetVelocity_Ref()));
+              if (config->GetSystemMeasurements() == US) Target_Massflow /= 32.174;
+            }
+            else {
+              Target_Massflow  =  fabs(config->GetActDisk_PressJump(Marker_Tag, 1) / (config->GetDensity_Ref() * config->GetVelocity_Ref()));
+              if (config->GetSystemMeasurements() == US) Target_Massflow /= 32.174;
+            }
+            
+            Massflow = config->GetActDisk_MassFlow(Marker_Tag);
+            BCThrust_old    = config->GetActDisk_BCThrust_Old(Marker_Tag);
+            BCThrust_inc    = (1.0/dNetThrust_dBCThrust)*(Target_Massflow - Massflow);
+            if (iMesh == MESH_0) BCThrust = max(0.0,(BCThrust_old + BCThrust_inc));
+            else BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            if (iMesh == MESH_0) {
+              config->SetActDisk_BCThrust(Marker_Tag, BCThrust);
+              BCThrust_Init = BCThrust*Ref;
+              config->SetInitial_BCThrust(BCThrust_Init);
+            }
+            
+          }
+          
+        }
+        
+      }
+      
+      /*--- After a complete update of BC_Thrust
+       update the value of BC Thrust (old) for future iterations ---*/
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+            (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if ((Kind_ActDisk == NET_THRUST) || (Kind_ActDisk == BC_THRUST) ||
+              (Kind_ActDisk == POWER) || (Kind_ActDisk == DRAG_MINUS_THRUST) ||
+              (Kind_ActDisk == MASSFLOW)) {
+            BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+            config->SetActDisk_BCThrust_Old(Marker_Tag, BCThrust);
+          }
+        }
+      }
+      
+    }
+    
+    /*--- Evaluate the pressure jump at each node using the total thrust ---*/
+    
+    if ((Update_BCThrust_Bool && Output) || (ExtIter == 0)) {
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        
+        if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+            (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+          
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          RefDensity  = Density_Inf;
+          RefArea = config->GetRefArea();
+          RefVel2 = 0.0; for (iDim = 0; iDim < nDim; iDim++) RefVel2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+          
+          Factor = (0.5*RefDensity*RefArea*RefVel2);
+          Ref = config->GetDensity_Ref() * config->GetVelocity_Ref() * config->GetVelocity_Ref() * 1.0 * 1.0;
+          BCThrust = config->GetActDisk_BCThrust(Marker_Tag);
+          
+          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+            
+            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+            
+            if (geometry->node[iPoint]->GetDomain()) {
+              
+              geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+              
+              if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) {
+                for (iDim = 0; iDim < nDim; iDim++) { Vector[iDim] = -Vector[iDim]; }
+              }
+              
+              Area = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) { Area += Vector[iDim]*Vector[iDim]; }
+              Area = sqrt (Area);
+              
+              /*--- Use the inlet state to compute the Pressure and Temperature jumps ---*/
+              
+              if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET)
+                V_inlet = node[iPoint]->GetPrimitive();
+              if (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)
+                V_inlet = GetDonorPrimVar(iMarker, iVertex);
+              
+              Density       = V_inlet[nDim+2];
+              Pressure      = V_inlet[nDim+1];
+              SoundSpeed2   = Pressure*Gamma/Density;
+              TotalArea     = config->GetActDisk_Area(Marker_Tag);
+              Force_Normal  = Area*(BCThrust/TotalArea);
+              
+              
+              Velocity_Normal = 0.0;
+              for (iDim = 0; iDim < nDim; iDim++) {
+                Velocity_Normal += V_inlet[iDim+1]*Vector[iDim]/Area;
+              }
+              
+              
+              if (Velocity_Normal > EPS) {
+                
+                /*--- Ratio of the total temperature to the temperature at the inflow ---*/
+                
+                T0_Ti = 1.0 + ((Gamma-1.0)/SoundSpeed2)*(0.5*Velocity_Normal*Velocity_Normal + Force_Normal/(Density*Area));
+                
+                
+                ATerm = 2.0*T0_Ti/(Gamma+1.0);
+                BTerm = 0.5*(Gamma+1.0)/(Gamma-1.0);
+                LHS = fabs(Velocity_Normal)/(sqrt(SoundSpeed2)*pow(ATerm,BTerm));
+                
+                CTerm_ = (PolyCoeff-1.0)/(PolyCoeff+1.0);
+                DTerm_ = 1.0/(PolyCoeff-1.0);
+                
+                La = EPS; La_old = EPS;
+                
+                for (iter = 0; iter < 100; iter++) {
+                  
+                  ETerm = ((1.0-CTerm_*La*La)/(1.0-CTerm_+EPS));
+                  
+                  RHS = La*pow(ETerm, DTerm_);
+                  
+                  ETerm = ((1.0-CTerm_*(La+1E-6)*(La+1E-6))/(1.0-CTerm_+EPS));
+                  RHS_PDelta = (La+1E-6)*pow(ETerm, DTerm_);
+                  
+                  ETerm = ((1.0-CTerm_*(La-1E-6)*(La-1E-6))/(1.0-CTerm_+EPS));
+                  RHS_MDelta = (La-1E-6)*pow(ETerm, DTerm_);
+                  
+                  /*--- Objective function and finitte differences derivative ---*/
+                  
+                  F = RHS - LHS;
+                  DF_DLa = (RHS_PDelta - RHS_MDelta)/2E-6;
+                  
+                  /*--- Newton's step ---*/
+                  
+                  La_old = La;
+                  La = La_old - 0.75*(F/DF_DLa);
+                  
+                  if (fabs(F) < 1E-10) break;
+                  
+                }
+                
+                if (iter == 99) cout << "The laval number evaluation is not converging." << endl;
+                
+                /*--- Laval is bounded ---*/
+                
+                La = min(La, sqrt(6.0));  La = max(La, 0.0);
+                
+                To_Ti = max(1.0, T0_Ti*(1.0-CTerm_*La*La));
+                SetActDisk_DeltaT(iMarker, iVertex, To_Ti);
+                
+                Po_Pi = max(1.0, pow(To_Ti, PolyCoeff*DTerm_));
+                SetActDisk_DeltaP(iMarker, iVertex, Po_Pi);
+                
+              }
+              else {
+                SetActDisk_DeltaT(iMarker, iVertex, 1.0);
+                SetActDisk_DeltaP(iMarker, iVertex, 1.0);
+              }
+              
+            }
+            
+          }
+        }
+        
+      }
+    }
+  }
+  
+  /*--- Broadcast some information to the master node ---*/
+  
+  ActDisk_Info = false;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == ACTDISK_INLET) ||
+        (config->GetMarker_All_KindBC(iMarker) == ACTDISK_OUTLET)) {
+      ActDisk_Info = true;
+    }
+  }
+  if (!ActDisk_Info) config->SetInitial_BCThrust(0.0);
+  
+  MyBCThrust = config->GetInitial_BCThrust();
+#ifdef HAVE_MPI
+  SU2_MPI::Allreduce(&MyBCThrust, &BCThrust, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#else
+  BCThrust = MyBCThrust;
+#endif
+  config->SetInitial_BCThrust(BCThrust);
+  
 }
 
 void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_container,
@@ -5797,6 +6638,278 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
   
 }
+
+void CIncEulerSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                    CConfig *config, unsigned short val_marker) {
+  
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, true);
+  
+}
+
+void CIncEulerSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                     CConfig *config, unsigned short val_marker) {
+  
+  BC_ActDisk(geometry, solver_container, conv_numerics, visc_numerics, config, val_marker, false);
+  
+}
+
+void CIncEulerSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                              CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
+  
+  unsigned short iDim;
+  unsigned long iVertex, iPoint, GlobalIndex_donor, GlobalIndex;
+  su2double Pressure, Velocity[3], Target_Press_Jump, Target_Temp_Jump,
+  Velocity2, Entropy, Density, Energy, Riemann, Vn, SoundSpeed, Vn_Inlet, Mach_Outlet,
+  Area, UnitNormal[3], *V_outlet, *V_domain, *V_inlet, P_Total, T_Total, H_Total, Temperature,
+  Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag, alpha, aa, bb, cc, dd;
+  su2double Factor, P_static, T_static, SoS_outlet, Rho_outlet, Rho_inlet;
+  su2double Vel_normal_inlet[3], Vel_tangent_inlet[3], Vel_inlet[3];
+  su2double Vel_normal_outlet[3], Vel_tangent_outlet[3], Vel_outlet[3];
+  su2double Vel_normal_inlet_, Vel_tangent_inlet_, Vel_inlet_;
+  su2double Vel_normal_outlet_, Vel_outlet_;
+  
+  su2double Pressure_out, Density_out, SoundSpeed_out, Velocity2_out,
+  Mach_out, Pressure_in, Density_in, SoundSpeed_in, Velocity2_in,
+  Mach_in, PressureAdj, TemperatureAdj;
+  
+  bool implicit           = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  su2double Gas_Constant  = config->GetGas_ConstantND();
+  bool grid_movement      = config->GetGrid_Movement();
+  bool tkeNeeded          = (((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                            (config->GetKind_Turb_Model() == SST));
+  bool ratio              = (config->GetActDisk_Jump() == RATIO);
+  su2double SecondaryFlow = config->GetSecondaryFlow_ActDisk();
+  su2double a_axial	  = 0.3;
+  su2double Velocity_exit, VelMag_Inf, Press_Inf, Dens_Inf, V_induced;
+  
+  su2double *Normal = new su2double[nDim];
+  su2double *Flow_Dir = new su2double[nDim];
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    GlobalIndex = geometry->node[iPoint]->GetGlobalIndex();
+    GlobalIndex_donor = GetDonorGlobalIndex(val_marker, iVertex);
+    
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
+    if ((geometry->node[iPoint]->GetDomain()) &&
+        (GlobalIndex != GlobalIndex_donor)) {
+      
+      /*--- Normal vector for this vertex (negative for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = Normal[iDim]/Area;
+      
+      
+      VelMag_Inf = GetModVelocity_Inf();
+      Velocity_exit = VelMag_Inf * (1.0 - 2.0 * a_axial);
+      Press_Inf = GetPressure_Inf();
+      Dens_Inf  = GetDensity_Inf();
+
+      
+     /*--- Current solution at this boundary node and jumps values ---*/
+      
+      V_domain = node[iPoint]->GetPrimitive();
+      //Target_Press_Jump = GetActDisk_DeltaP(val_marker, iVertex);
+      Target_Press_Jump = 0.5;
+
+      
+      if (val_inlet_surface) {
+        V_inlet  = node[iPoint]->GetPrimitive();
+        //V_outlet = GetDonorPrimVar(val_marker, iVertex);
+        V_outlet = V_inlet;
+        V_induced = VelMag_Inf * (1.0 - a_axial);
+
+        Pressure_out    = V_outlet[0];
+        Density_out     = V_outlet[nDim+1];
+        
+        Pressure_in    = V_inlet[0];
+        Density_in     = V_inlet[nDim+1];
+                
+        Velocity2_out = 0.0; Velocity2_in = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
+          Velocity2_out  += V_outlet[iDim+1]*V_outlet[iDim+1];
+        }
+
+        PressureAdj = 1.0;
+                  
+        PressureAdj   = ( Press_Inf + 0.5 * Dens_Inf * (Velocity_exit * Velocity_exit - Velocity2_out) ) / 1.0;
+                        // ( Press_Inf + 0.5 * Dens_Inf * (VelMag_Inf * VelMag_Inf - Velocity2_in) );
+        
+        if (ratio) {
+          P_static = V_outlet[0] / (Target_Press_Jump/PressureAdj);
+        }
+        else       { P_static = V_outlet[0] - Target_Press_Jump; }
+      }
+      else {
+
+        V_outlet  = node[iPoint]->GetPrimitive();
+        V_inlet = V_outlet;
+        V_induced = VelMag_Inf * (1.0 - a_axial);
+
+        Pressure_out    = V_outlet[0];
+        Density_out     = V_outlet[nDim+1];
+        
+        Pressure_in    = V_inlet[0];
+        Density_in     = V_inlet[nDim+1];
+                
+        Velocity2_out = 0.0; Velocity2_in = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity2_in  += V_inlet[iDim+1]*V_inlet[iDim+1];
+          Velocity2_out  += V_outlet[iDim+1]*V_outlet[iDim+1];
+        }
+
+        PressureAdj = 1.0;
+                  
+        PressureAdj   = ( Press_Inf + 0.5 * Dens_Inf * (Velocity_exit * Velocity_exit - Velocity2_out) ) / 1.0;
+                        // ( Press_Inf + 0.5 * Dens_Inf * (VelMag_Inf * VelMag_Inf - Velocity2_in) );
+        
+        if (ratio) {
+          P_static = V_inlet[0] / (Target_Press_Jump/PressureAdj);
+        }
+        else       { P_static = V_inlet[0] - Target_Press_Jump; }
+      }
+      
+      /*--- Subsonic inlet ---*/
+      
+      if (val_inlet_surface) {
+        
+        /*--- Build the fictitious intlet state based on characteristics.
+         Retrieve the specified back pressure for this inlet ---*/
+        
+        Density = V_domain[nDim+1];
+        Velocity2 = 0.0; Vn = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = V_domain[iDim+1];
+        }
+
+        /*--- Compute the new fictious state at the outlet ---*/
+        
+        Pressure   = P_static;
+        
+        /*--- Conservative variables, using the derived quantities ---*/
+        
+        V_inlet[0] = Pressure;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_inlet[iDim+1] = Velocity[iDim];
+        
+        V_inlet[nDim+1] = Density;
+        conv_numerics->SetPrimitive(V_domain, V_inlet);
+        
+      }
+      
+      /*--- Subsonic outlet ---*/
+      
+      else {
+ 
+        /*--- Build the fictitious intlet state based on characteristics.
+         Retrieve the specified back pressure for this inlet ---*/
+        
+        Density = V_domain[nDim+1];
+        Velocity2 = 0.0; Vn = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++) {
+          Velocity[iDim] = V_domain[iDim+1];
+        }
+
+        /*--- Compute the new fictious state at the outlet ---*/
+        
+        Pressure   = P_static;
+        
+        /*--- Conservative variables, using the derived quantities ---*/
+        
+        V_outlet[0] = Pressure;
+        for (iDim = 0; iDim < nDim; iDim++)
+          V_outlet[iDim+1] = Velocity[iDim];
+        
+        V_outlet[nDim+1] = Density;
+        conv_numerics->SetPrimitive(V_domain, V_outlet);
+        
+      }
+      
+      /*--- Grid Movement ---*/
+      
+      if (grid_movement)
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+      
+      /*--- Compute the residual using an upwind scheme ---*/
+      
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      
+      /*--- Update residual value ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Jacobian contribution for implicit integration ---*/
+      
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+//
+//      if (viscous) {
+//
+//        /*--- Set laminar and eddy viscosity at the infinity ---*/
+//
+//        if (val_inlet_surface) {
+//          V_inlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//          V_inlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//        }
+//        else {
+//          V_outlet[nDim+5] = node[iPoint]->GetLaminarViscosity();
+//          V_outlet[nDim+6] = node[iPoint]->GetEddyViscosity();
+//        }
+//
+//        /*--- Set the normal vector and the coordinates ---*/
+//
+//        visc_numerics->SetNormal(Normal);
+//        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint_Normal]->GetCoord());
+//
+//        /*--- Primitive variables, and gradient ---*/
+//
+//        if (val_inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        else visc_numerics->SetPrimitive(V_domain, V_outlet);
+//
+//        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+//
+//        /*--- Turbulent kinetic energy ---*/
+//
+//        if (config->GetKind_Turb_Model() == SST)
+//          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+//
+//        /*--- Compute and update residual ---*/
+//
+//        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+//        LinSysRes.SubtractBlock(iPoint, Residual);
+//
+//        /*--- Jacobian contribution for implicit integration ---*/
+//
+//        if (implicit) Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+//
+//      }
+      
+    }
+    
+  }
+  
+  /*--- Free locally allocated memory ---*/
+  
+  delete [] Normal;
+  delete [] Flow_Dir;
+  
+}
+
 
 void CIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 

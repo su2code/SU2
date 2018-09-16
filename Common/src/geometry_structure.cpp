@@ -5428,11 +5428,25 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
    points and decide how to distribute the colors. ---*/
 
   LocalPoints.clear();
+  cout << "   MISMATCH ==>: geometry->GetnElem() line 5428 = " << geometry->GetnElem() << endl;
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       LocalPoints.push_back(geometry->elem[iElem]->GetNode(iNode));
     }
   }
+
+  cout << "   MISMATCH ==>: iNode after line 5428 = " << iNode << endl;
+  cout << "   MISMATCH ==>: LocalPoints.size after line 5428 = " << LocalPoints.size() << endl;
+  cout << "   MISMATCH ==>: geometry->GetnElem() after line 5428 = " << geometry->GetnElem() << endl;
+
+/*  cout << "   MISMATCH ==>: LocalPoints contains before sort:";
+  for (it=LocalPoints.begin(); it!=LocalPoints.end(); ++it)
+    cout << ' ' << *it << endl;
+    
+  cout << ' ' << endl;
+  cout << "   MISMATCH ==>: ====================================================================== " << endl;
+  cout << ' ' << endl;
+*/
 
   /*--- Sort the list and remove duplicates. ---*/
 
@@ -5440,10 +5454,20 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   it = unique(LocalPoints.begin(), LocalPoints.end());
   LocalPoints.resize(it - LocalPoints.begin());
 
+
+  cout << "   MISMATCH ==>: LocalPoints.size after sort= " << LocalPoints.size() << " and geometry->GetnPoint() = " << geometry->GetnPoint() << endl;
+  cout << "   MISMATCH ==>: geometry->GetnElem() after sort = " << geometry->GetnElem() << endl;
+
+/*  cout << "   MISMATCH ==>: LocalPoints contains:";
+  for (it=LocalPoints.begin(); it!=LocalPoints.end(); ++it)
+    cout << ' ' << *it << endl;
+*/
+
   /*--- Error check to ensure that the number of points found for this
    rank matches the number in the mesh file (in serial). ---*/
 
   if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
+    cout << "   MISMATCH ==>: LocalPoints.size = " << LocalPoints.size() << " and geometry->GetnPoint() = " << geometry->GetnPoint() << endl;
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
                    +string("Please check the mesh file for correctness.\n"),
@@ -8815,6 +8839,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             it = unique(ActDiskPoint_Front.begin(), ActDiskPoint_Front.end());
             ActDiskPoint_Front.resize(it - ActDiskPoint_Front.begin());
             ActDiskNewPoints = ActDiskPoint_Front.size();
+            cout << "   MISMATCH ==>: Adding new points" << endl;
             
             if (rank == MASTER_NODE)
               cout << "Splitting the surface " << Marker_Tag << "( " << ActDiskPoint_Front.size()  << " internal points )." << endl;
@@ -8904,6 +8929,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           
           switch(VTK_Type) {
             case TRIANGLE:
+            cout << "   MISMATCH ==>: case TRIANGLE, actuator_disk= " << actuator_disk << endl; 
               elem_line >> vnodes_triangle[0]; elem_line >> vnodes_triangle[1]; elem_line >> vnodes_triangle[2];
               InElem = false;
               for (i = 0; i < (unsigned long)N_POINTS_TRIANGLE; i++) {
@@ -8913,6 +8939,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
                   VolumePoint.push_back(vnodes_triangle[i]); } }
               break;
             case QUADRILATERAL:
+            cout << "   MISMATCH ==>: case TRIANGLE, actuator_disk= " << actuator_disk << endl; 
               elem_line >> vnodes_quad[0]; elem_line >> vnodes_quad[1]; elem_line >> vnodes_quad[2]; elem_line >> vnodes_quad[3];
               InElem = false;
               for (i = 0; i < (unsigned long)N_POINTS_QUADRILATERAL; i++) {
@@ -9200,6 +9227,11 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       stringstream test_line(text_line);
       iCount = 0; while (test_line >> dummyLong) iCount++;
       
+       cout << "   MISMATCH ==>: position = " << position << " string::npos = " << string::npos << endl;
+       cout << "   MISMATCH ==>: dummyLong = " << dummyLong << endl;
+       cout << "   MISMATCH ==>: iCount = " << iCount << endl;
+       cout << "   MISMATCH ==>: iCount = " << text_line << endl;
+
       /*--- Now read and store the number of points and possible ghost points. ---*/
       
       stringstream  stream_line(text_line);
@@ -9208,7 +9240,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         stream_line >> nPoint;
         stream_line >> nPointDomain;
         
+        cout << "   MISMATCH ==>: iCount = " << iCount << endl;
+        cout << "   MISMATCH ==>: actuator_disk = " << actuator_disk << endl;
+        cout << "   MISMATCH ==>: number of points before (1) ====> " << nPoint << endl;
         if (actuator_disk) { nPoint += ActDiskNewPoints;  nPointDomain += ActDiskNewPoints; }
+        cout << "   MISMATCH ==>: number of points after (1) ====> " << nPoint << endl;
+        cout << "   MISMATCH ==>: total number of points added (2) ===>" << ActDiskNewPoints << endl;
+        cout << " " << endl;
         
         /*--- Set some important point information for parallel simulations. ---*/
         
@@ -9225,7 +9263,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       } else if (iCount == 1) {
         stream_line >> nPoint;
         
+        cout << "   MISMATCH ==>: iCount = " << iCount << endl;
+        cout << "   MISMATCH ==>: actuator_disk = " << actuator_disk << endl;
+        cout << "   MISMATCH ==>: number of points before (2) ====> " << nPoint << endl;
         if (actuator_disk) { nPoint += ActDiskNewPoints; }
+        cout << "   MISMATCH ==>: number of points after (2) ====> " << nPoint << endl;
+        cout << "   MISMATCH ==>: total number of points added (2) ===>" << ActDiskNewPoints << endl;
+        cout << " " << endl;
         
         nPointDomain = nPoint;
         Global_nPointDomain = nPoint;
@@ -9403,6 +9447,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         switch(VTK_Type) {
             
           case TRIANGLE:
+          cout << "   MISMATCH ==>: case TRIANGLE, actuator_disk= " << actuator_disk << endl; 
             
             /*--- Load the connectivity for this element. ---*/
             
@@ -9412,7 +9457,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             if (actuator_disk) {
               for (unsigned short i = 0; i<N_POINTS_TRIANGLE; i++) {
+                cout<< "   MISMATCH ==>: ActDisk_Bool[vnodes_triangle[i]]" << ActDisk_Bool[vnodes_triangle[i]] << endl;
                 if (ActDisk_Bool[vnodes_triangle[i]]) {
+                  cout<< "   MISMATCH ==>: ActDisk_Bool[vnodes_triangle[i]]" << ActDisk_Bool[vnodes_triangle[i]] << endl;
                   
                   Xcg = 0.0; Counter = 0;
                   for (unsigned short j = 0; j<N_POINTS_TRIANGLE; j++) {
@@ -9467,6 +9514,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             break;
             
           case QUADRILATERAL:
+          cout << "   MISMATCH ==>: case QUAD, actuator_disk= " << actuator_disk << endl; 
             
             /*--- Load the connectivity for this element. ---*/
             
@@ -9477,8 +9525,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
             
             if (actuator_disk) {
               for (unsigned short  i = 0; i<N_POINTS_QUADRILATERAL; i++) {
+                cout<< "   MISMATCH ==>: ActDisk_Bool[vnodes_quad[i]]" << ActDisk_Bool[vnodes_quad[i]] << endl;
                 if (ActDisk_Bool[vnodes_quad[i]]) {
-                  
+                  cout<< "   MISMATCH ==>: ActDisk_Bool[vnodes_quad[i]]" << ActDisk_Bool[vnodes_quad[i]] << endl;
+
                   Xcg = 0.0; Counter = 0;
                   for (unsigned short j = 0; j<N_POINTS_QUADRILATERAL; j++) {
                     if (vnodes_quad[j] < Global_nPoint-ActDiskNewPoints) {
@@ -15362,6 +15412,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   unsigned short nMarker_ActDiskInlet = config->GetnMarker_ActDiskInlet();
   
   if (nMarker_ActDiskInlet != 0) {
+  cout << "   MISMATCH ==>: = nMarker_ActDiskInlet = " << nMarker_ActDiskInlet << endl; 
     
     unsigned short iMarker, iDim;
     unsigned long iVertex, iPoint, iPointGlobal, pPoint = 0, pPointGlobal = 0, pVertex = 0, pMarker = 0, jVertex, jVertex_, jPoint, jPointGlobal, jMarker;
