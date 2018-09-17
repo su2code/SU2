@@ -68,7 +68,7 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 
   su2double Weight, Jac_X;
 
-  su2double AuxMatrix[3][6];
+  su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
   
   /*--- Set element properties and recompute the constitutive matrix, this is needed
         for multiple material cases and for correct differentiation ---*/
@@ -182,6 +182,25 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
 
   }
+  
+  // compute residual
+  for(iNode = 0; iNode<nNode; ++iNode)
+  {
+    for(jNode = 0; jNode<nNode; ++jNode)
+    {
+      su2double *Kab = element->Get_Kab(iNode,jNode);
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+          res_aux[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            res_aux[iVar] += Kab[iVar*nVar+jVar]*
+              (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
+      }
+      element->Add_Kt_a(res_aux,iNode);
+    }
+  }
+  
+  delete[] res_aux;
 }
 
 
