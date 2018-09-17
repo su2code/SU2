@@ -1545,10 +1545,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
+  su2double val_Coord, val_Sol;
   int EL_KIND = 0;
   
-  su2double *Kab = NULL;
+  su2double *Kab = NULL, *Ta  = NULL;
   unsigned short NelNodes, jNode;
   
   /*--- Loops over all the elements ---*/
@@ -1570,7 +1570,9 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
       
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
     }
     
@@ -1589,27 +1591,22 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
     
     for (iNode = 0; iNode < NelNodes; iNode++) {
       
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+      
       for (jNode = 0; jNode < NelNodes; jNode++) {
         
         Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
         
         for (iVar = 0; iVar < nVar; iVar++) {
-          Res_Stress_i[iVar] = 0.0;
           for (jVar = 0; jVar < nVar; jVar++) {
             Jacobian_ij[iVar][jVar] = Kab[iVar*nVar+jVar];
-            Res_Stress_i[iVar] += Jacobian_ij[iVar][jVar]*node[indexNode[jNode]]->GetSolution(jVar);
           }
         }
-        
+    
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-        
-        /*--- Required because the way algorithmic differentiation of linear systems is handled
-        is only compatible with solution methods where each iteration is a correction, at convergence
-        the correction is 0 thereby making the adjoints of the Jacobian also 0, Solve_b assumes this.
-        Thus we need to cast the linear elasticity problem in that form by defining the RHS as a
-        residual (b-Ax). With initialization the RHS, and therefore the correction, are 0. ---*/
-        LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
-        
       }
       
     }
