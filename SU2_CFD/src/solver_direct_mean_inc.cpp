@@ -5333,10 +5333,13 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   unsigned long iVertex, iPoint, Point_Normal;
   
   su2double *V_infty, *V_domain;
+  su2double Polar_Dist, Polar_angle,Ref_Coord[3];
+  su2double Gamma, pi, ModVel_Corrected;
   
   bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement = config->GetGrid_Movement();
   bool viscous       = config->GetViscous();
+  bool vortex_corretion = true;
   
   su2double *Normal = new su2double[nDim];
 
@@ -5391,6 +5394,35 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Cp is needed for Temperature equation. ---*/
 
       V_infty[nDim+7] = node[iPoint]->GetSpecificHeatCp();
+      
+      if (vortex_correction) {
+		  Ref_Coord[0] = 0.25; Ref_Coord[1] = 0.0;
+		  if (nDim == 3) Ref_Origin[2] = 0.0;
+		  
+		  Polar_dist = 0.0
+		  for(iDim = 0; iDim < nDim; iDim++)
+		      Polar_dist += pow((geometry->node[jPoint]->GetCoord(iDim) - Ref_Coord[iDim]),2.0);
+		      
+		  Polar_dist = sqrt(Polar_dist);
+		   
+		  Polar_angle = atan((geometry->node[jPoint]->GetCoord(1) - Ref_Coord[1])/(geometry->node[jPoint]->GetCoord(0) - Ref_Coord[0]));
+		  
+		  Gamma = 0.5*GetModVel_FreeStream()*1.0*GetTotal_CL()
+		  
+		  pi = 4.0*atan(1.0);
+		  
+		  V_infty[1] += Gamma/(2.0*pi*Polar_dist)*sin(Polar_angle);
+		  V_infty[2] -= Gamma/(2.0*pi*Polar_dist)*cos(Polar_angle);
+		  
+		  ModVel_Corrected = 0.0
+		  for (iDim = 0; iDim < nDim; iDim++)
+		     ModVel_Corrected = pow(V_infty[iDim+1],2.0);
+		  
+		  ModVel_Corrected = sqrt(ModVel_Corrected);
+		  
+		  V_infty[0] += 0.5*GetDensity_Inf()*(GetModVelocity_Inf() - ModVel_Corrected);
+	  }
+      
 
       /*--- Set various quantities in the numerics class ---*/
       
