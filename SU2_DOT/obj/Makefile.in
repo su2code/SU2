@@ -343,6 +343,7 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBPTHREAD = @su2_externals_LIBPTHREAD@
 su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@
@@ -359,8 +360,8 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
 su2_dot_ldadd = $(am__append_3) $(am__append_4) @su2_externals_LIBS@ \
-	@MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
-	$(am__empty)
+	@su2_externals_LIBPTHREAD@ @MUTATIONPP_LD@ @JSONCPP_LD@ \
+	@HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ $(am__empty)
 
 # always link to built dependencies from ./externals
 
