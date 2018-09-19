@@ -2953,7 +2953,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
 
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetRiemann_Solver_FEM()) {
-      case ROE: case AUSM: case TURKEL: case HLLC: case MSW:
+      case AUSM: case TURKEL: case HLLC: case MSW: /* Note that not all need to be deleted. */
 
         for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
           delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
