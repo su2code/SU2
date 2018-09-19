@@ -177,6 +177,7 @@ fi
 # --------------------------------------------------------------
 su2_externals_INCLUDES=""
 su2_externals_LIBS=""
+su2_externals_LIBPTHREAD=""
 
 # Tecplot
 CONFIGURE_TECIO
@@ -184,8 +185,8 @@ if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 # Attempt to get pthread to work
-  AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
-  su2_externals_LIBS="$LIBPTHREAD $su2_externals_LIBS"
+   AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
+  su2_externals_LIBPTHREAD="$LIBPTHREAD"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
@@ -227,6 +228,7 @@ AC_CONFIG_FILES([externals/cgns/Makefile])
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
+AC_SUBST([su2_externals_LIBPTHREAD])
 
 
 ##########################
