@@ -570,7 +570,8 @@ private:
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
-  bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool Visualize_Surface_Def;  /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
+  bool Visualize_Volume_Def; /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
   su2double Mach;		/*!< \brief Mach number. */
   su2double Reynolds;	/*!< \brief Reynolds number. */
@@ -3950,10 +3951,16 @@ public:
   unsigned short GetDeform_Stiffness_Type(void);
   
   /*!
-   * \brief Creates a teot file to visualize the deformation made by the MDC software.
+   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
    * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
    */
-  bool GetVisualize_Deformation(void);
+  bool GetVisualize_Volume_Def(void);
+  
+  /*!
+   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
+   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   */
+  bool GetVisualize_Surface_Def(void);
   
   /*!
    * \brief Define the FFD box with a symetry plane.
