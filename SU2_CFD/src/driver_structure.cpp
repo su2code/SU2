@@ -47,6 +47,7 @@ CDriver::CDriver(char* confFile,
                  bool val_periodic,
                  SU2_Comm MPICommunicator):config_file_name(confFile), StartTime(0.0), StopTime(0.0), UsedTime(0.0), ExtIter(0), nZone(val_nZone), nDim(val_nDim), StopCalc(false), fsi(false) {
 
+
   unsigned short jZone, iSol;
   unsigned short Kind_Grid_Movement;
   bool initStaticMovement;
@@ -83,6 +84,7 @@ CDriver::CDriver(char* confFile,
   transfer_container             = NULL;
   transfer_types                 = NULL;
   nInst                          = NULL;
+  r                              = NULL;
 
 
   /*--- Definition and of the containers for all possible zones. ---*/
@@ -552,6 +554,7 @@ CDriver::CDriver(char* confFile,
 
   // checkpointig stuff, GetCheckpointing returns unsigned short: 0 if None, 1,2,3,... for different schemes
   if(config_container[ZONE_0]->GetCheckpointing()) {
+    if (rank == MASTER_NODE) cout << endl << "---------------------- Checkpointing Preprocessing ---------------------" << endl; cout << "Creating Checkpointing Object." << endl;
     int snaps, steps, snaps_in_ram, depth;
     steps = config_container[ZONE_0]->GetCheckpointingSteps(); // !! This whould be ExtIter
     snaps = config_container[ZONE_0]->GetCheckpointingSnaps();
@@ -746,6 +749,17 @@ void CDriver::Postprocessing() {
   /*--- Deallocate output container ---*/
   if (output!= NULL) delete output;
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+
+  /*--- Deallocate Checkpointing object ---*/
+  if(config_container[ZONE_0]->GetCheckpointing() || r != NULL ) {
+    if (rank == MASTER_NODE) {
+      if (config_container[ZONE_0]->GetCheckpointing()) cout << "config_container[ZONE_0]->GetCheckpointing()" << endl;
+      if (config_container[ZONE_0]->GetCheckpointing()) cout << "r != NULL" << endl;
+      cout << "Deleted Checkpointing class." << endl;
+    }
+    delete r;
+  }
+
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
 
@@ -1151,10 +1165,10 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       }
     }
 
-    //if (disc_adj_fem) {
-      //solver_container[val_iInst][iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
-      //if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJFEA_SOL]->GetnVar();
-    //}
+    if (disc_adj_fem) {
+      solver_container[val_iInst][iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJFEA_SOL]->GetnVar();
+    }
   }
 
 
@@ -3483,6 +3497,7 @@ void CDriver::StartSolver() {
 
     PreprocessExtIter(ExtIter);
 
+
     /*--- Perform a single iteration of the chosen PDE solver. ---*/
 
     if (!fsi) {
@@ -3620,14 +3635,19 @@ void CDriver::StartSolverRevolve() {
         whatodo = r->revolve();
         if (whatodo == ACTION::store_full_checkpoint)
         {
-            StoreFullCheckpoint();
+           StoreFullCheckpoint();
         }
-
-        // TODO: add ACTION::takeshot_one which stores only one (the current) solution either on disk or in RAM
-
+        if (whatodo == ACTION::store_single_state)
+        {
+          StoreSingleState();
+        }
         if (whatodo == ACTION::primal_step)
         {
           PrimalStep();
+        }
+        if (whatodo == ACTION::primal_update)
+        {
+          PrimalUpdate();
         }
         if (whatodo == ACTION::firsturn)
         {
@@ -3911,9 +3931,7 @@ void CDriver::Output(unsigned long ExtIter) {
 
 }
 
-CDriver::~CDriver(void) {
-    //  delete r; // checkpointing object
-}
+CDriver::~CDriver(void) {}
 
 CGeneralDriver::CGeneralDriver(char* confFile, unsigned short val_nZone,
                                unsigned short val_nDim, bool val_periodic,
@@ -4036,6 +4054,7 @@ void CFluidDriver::Run() {
       for (jZone = 0; jZone < nZone; jZone++)
         if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
           Transfer_Data(iZone, jZone);
+
     /*--- For each zone runs one single iteration ---*/
 
     for (iZone = 0; iZone < nZone; iZone++) {
@@ -4055,6 +4074,7 @@ void CFluidDriver::Run() {
   //}
 
     /*--- Check convergence in each zone --*/
+
     checkConvergence = 0;
     for (iZone = 0; iZone < nZone; iZone++)
     checkConvergence += (int) integration_container[iZone][INST_0][FLOW_SOL]->GetConvergence();
@@ -4748,7 +4768,6 @@ void CDiscAdjFluidDriver::DirectRun(){
       if(jZone != iZone && transfer_container[iZone][jZone] != NULL)
         Transfer_Data(iZone, jZone);
 
-
   /*--- For each zone runs one single iteration ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -4768,7 +4787,6 @@ CDiscAdjTurbomachineryDriver::CDiscAdjTurbomachineryDriver(char* confFile,
                                                            unsigned short val_nDim,
                                                            bool val_periodic,
                                                            SU2_Comm MPICommunicator): CDiscAdjFluidDriver(confFile, val_nZone, val_nDim, val_periodic, MPICommunicator){ }
-
 CDiscAdjTurbomachineryDriver::~CDiscAdjTurbomachineryDriver(){
 
 }

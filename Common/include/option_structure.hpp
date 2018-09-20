@@ -380,12 +380,19 @@ enum ENUM_CHECKPOINTING {
   EVERYTHING = 1,			/*!< \brief All solutions are stored. */
   EQUIDISTANT = 2,          /*!< \brief Equidistant Checkpoint distribution. */
   BINOMIAL = 3,				/*!< \brief Offline Binomial Checkpointing. */
+  TEMP_1 = 4,				/*!< \brief Offline Experimental Checkpointing. */
+  TEMP_2 = 5,				/*!< \brief Offline Experimental Checkpointing. */
+  TEMP_3 = 6,				/*!< \brief Offline Experimental Checkpointing. */
+
 };
 static const map<string, ENUM_CHECKPOINTING> Checkpointing_Map = CCreateMap<string, ENUM_CHECKPOINTING>
 ("NONE", NO_CHECKPOINTING)
 ("EVERYTHING", EVERYTHING)
 ("EQUIDISTANT", EQUIDISTANT)
-("BINOMIAL", BINOMIAL);
+("BINOMIAL", BINOMIAL)
+("TEMP_1", TEMP_1)
+("TEMP_2", TEMP_2)
+("TEMP_3", TEMP_3);
 
 /*!
  * \brief different non-dimensional modes

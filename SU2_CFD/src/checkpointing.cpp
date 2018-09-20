@@ -54,6 +54,11 @@ Checkpointing_Scheme::Checkpointing_Scheme(int input_steps, int input_snaps, int
     else if (snaps_in_RAM == snaps) where_to_put = true;
     else throw std::runtime_error("No mixing of snaps in RAM and on Disk currently possible.");
     counter = 0;
+    timestepping_order = 2;
+    current_timestep = timestepping_order - 1; // -1 because 0th step is reached after the first timestep
+    just_advanced = false;
+    just_stored_checkpoint = false;
+    primal_sweep = true;
     capo = 0;
     oldcapo = 0;
     check = 0;
@@ -72,14 +77,18 @@ Checkpointing::Checkpointing(int input_steps, int input_snaps, int input_snaps_i
     oldcapo = 0;
     check = 0;
     // must be consistent with Common/include/option_structure.hpp
-    if      (CP_type == 1)  CP_scheme = new Everything (input_steps, input_snaps, input_snaps_in_RAM);
+    if      (CP_type == 1) CP_scheme = new Everything (input_steps, input_snaps, input_snaps_in_RAM);
     else if (CP_type == 2) CP_scheme = new Equidistant(input_steps, input_snaps, input_snaps_in_RAM);
+    else if (CP_type == 4) CP_scheme = new SU2_implementation(input_steps, input_snaps, input_snaps_in_RAM);
     else throw std::runtime_error("No valid checkpointing scheme.");
 
     std::cout <<  "End of Constructor. Steps: " << steps << std::endl;
 }
 
-Checkpointing::~Checkpointing(void) { delete CP_scheme; }
+Checkpointing::~Checkpointing(void) { 
+    delete CP_scheme; 
+    std::cout << "CP_scheme deleted." << std::endl; 
+}
 
 
 /* Methods of CheckpointEverything. Child class of Checkpointing_Scheme */
@@ -118,6 +127,9 @@ ACTION::action Everything::revolve()
 }
 
 /* Methods of CheckpointEverything child class */
+/* General idea is to store full checkpoints on Disk at equidistant Locations 
+ * Such that the states in between two disk checkpoints can fit into Ram.
+ *  */
 ACTION::action Equidistant::revolve()
 {
     ACTION::action whattodo;
@@ -129,29 +141,104 @@ ACTION::action Equidistant::revolve()
     return whattodo;
 }
 
+/* Methods of SU2_implemementation child class */
+/* Currently mimics a restart by storing freestream restart_flows in 0 and 1 for DT_2nd 
+ * therefore every sim has to be 2 steps longer than the original version which doesn't store freestream  */
+ACTION::action SU2_implementation::revolve()
+{
+    counter++;
+
+    if(primal_sweep) {
+        /*--- Always Update the primal time-stepping after a checkpoint was stored. ---*/
+        if(just_stored_checkpoint) {
+            just_stored_checkpoint = false;
+            return ACTION::primal_update;
+        }
+
+        /*--- Primal sweep with checkpoints stored ---*/
+        if (current_timestep == timestepping_order-1) {
+            current_timestep++; just_stored_checkpoint = true;
+            return ACTION::store_full_checkpoint;
+        }
+        
+        // This loop should excecute primal_step, store_single_state, primal_update consecutively
+        if (current_timestep < steps-4) { // the -3 is due to dual time stepping
+            if (!just_advanced) { // at steps-4 we also need to take a checkpoint
+                current_timestep++; just_advanced = true;
+                return ACTION::primal_step;
+            } else {
+                just_advanced = false;
+                just_stored_checkpoint = true;
+                return ACTION::store_single_state;
+            }
+        }
+
+        if(current_timestep == steps-4 && just_advanced == true) { // the last 3 state are stored in the RAM anyway
+            just_advanced = false;
+            just_stored_checkpoint = true;
+            return ACTION::store_single_state;
+        }
+        
+        // last (3 for DT_2nd order) are in RAM anyway and therefore don't need to be saved, but should be for comparability
+        if (current_timestep < steps-1) {
+            current_timestep++;
+            if (current_timestep < steps-1) 
+                just_stored_checkpoint = true;
+            return ACTION::primal_step; std::cout << "hi" << std::endl;
+        }
+        // first adjoint step here to have correct current_timestep
+        if (current_timestep == steps-1) {
+            just_advanced = true; primal_sweep = false;
+            return ACTION::adjoint_step;
+        }
+    /*--- Reverse sweep ---*/
+
+    } else {
+
+        if (current_timestep > timestepping_order) {
+            if(!just_advanced) {
+                current_timestep--; just_advanced = true;
+                return ACTION::adjoint_step;
+            } else {
+                just_advanced = false;
+                return ACTION::restore_single_state;
+            }
+        }
+    }
+    
+    return ACTION::terminate;
+}
+
 /* int main()
 {
-    std::string CP_type = "EVERYTHING";
+    std::string CP_type = "TEMP_1";
     Checkpointing *r;
     //r = new Checkpointing(10, 3, 3, "hi");
-    r = new Checkpointing(10, 3, 3, CP_type);
+    r = new Checkpointing(10, 9, 9, 4);
     ACTION::action whattodo;
     do
     {
-        std::cout << "getcapo: " << r->getcapo() << std::endl;
         whattodo = r->revolve();
+        std::cout << "counter: " << r->getcounter() << '\t' << "current_timestep: " << r->getcurrent_timestep() << '\t';
+
         if(whattodo == ACTION::primal_step) {
-            std::cout << "advance " << std::endl; continue; }
+            std::cout << "primal_step " << std::endl; continue; }
         if(whattodo == ACTION::store_full_checkpoint) {
-            std::cout << "takeshot " <<  std::endl; continue; }
+            std::cout << "store_full_checkpoint " <<  std::endl; continue; }
+        if(whattodo == ACTION::store_single_state) {
+            std::cout << "store_single_state " <<  std::endl; continue; }
         if(whattodo == ACTION::adjoint_step) {
-            std::cout << "yourturn " << std::endl; continue; }
+            std::cout << "adjoint_step " << std::endl; continue; }
         if(whattodo == ACTION::restore_full_checkpoint) {
-            std::cout << "restore " << std::endl; continue; }
+            std::cout << "restore_full_checkpoint " << std::endl; continue; }
+        if(whattodo == ACTION::restore_single_state) {
+            std::cout << "restore_single_state " <<  std::endl; continue; }
         if(whattodo == ACTION::firsturn){
             std::cout << "firsturn " << std::endl; continue; }
         if(whattodo == ACTION::terminate){
             std::cout << "terminate " << std::endl; continue; }
+        if(whattodo == ACTION::primal_update){
+            std::cout << "primal_update " << std::endl; continue; }
 
     } while (whattodo != ACTION::terminate);
 

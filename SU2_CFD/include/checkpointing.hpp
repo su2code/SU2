@@ -94,17 +94,26 @@ namespace ACTION
         
         int getcounter() { return counter; };
 
+        int getcurrent_timestep() { return current_timestep; };
+
+        unsigned short gettimestepping_order() { return timestepping_order; };
+
         void increasecounter() { counter++; };
 
      protected:
-        int steps;                  /*!< \brief Number of time steps. */
-        int counter;                /*!< \brief Counts the actions taken  */
-        int snaps;                  /*!< \brief Number checkpoints. */
-        int snaps_in_RAM;           /*!< \brief Number checkpoints in memory. */
-        int capo;                   /*!< \brief Current end timestep. */
-        int check;                  /*!< \brief Checkpoint number */
-        int oldcapo;                /*!< \brief Current beginning timestep. */
-        bool where_to_put;          /*!< \brief Checkpoint in RAM (true) or on disk (false) */
+        int steps;                          /*!< \brief Number of time steps. */
+        int counter;                        /*!< \brief Counts the actions taken  */
+        int current_timestep;               /*!< \brief stores the physical timestep during forward and reverse sweep */
+        unsigned short timestepping_order;  /*!< \brief Number of timesteps necessary for restart, i.e. DT_2ND = 2. */
+        bool just_advanced;                 /*!< \brief Marks whether a new solution was computed, such that afterwards a store/restore is called */
+        bool just_stored_checkpoint;        /*!< \brief Marker is a CP was stored, because a primal_update has to follow. */
+        bool primal_sweep;                  /*!< \brief Marker if one is curently in the forward primal sweep */
+        int snaps;                          /*!< \brief Number checkpoints. */
+        int snaps_in_RAM;                   /*!< \brief Number checkpoints in memory. */
+        int capo;                           /*!< \brief Current end timestep. */
+        int check;                          /*!< \brief Checkpoint number */
+        int oldcapo;                        /*!< \brief Current beginning timestep. */
+        bool where_to_put;                  /*!< \brief Checkpoint in RAM (true) or on disk (false) */
  };
 
 
@@ -130,6 +139,9 @@ class Equidistant : public Checkpointing_Scheme
          */
         ~Equidistant();
 
+        /*!
+         * \brief Decision function for checkpointing.
+         */
         ACTION::action revolve();
 
 };
@@ -154,6 +166,33 @@ class Everything : public Checkpointing_Scheme
          * \brief Destructor of the class.
          */
         ~Everything();
+        
+        /*!
+         * \brief Returns the next action to be performed.
+         */
+        ACTION::action revolve();
+};
+
+/*! 
+ * \class SU2_implementation
+ * \brief Parent class for checkpointing schemes.
+ * \author T. Kattmann
+ */
+class SU2_implementation : public Checkpointing_Scheme
+{
+    public:
+        /*! 
+         * \brief Constructor of the class.
+         * \param[in] steps - number of time steps.
+         * \param[in] snaps_in_RAM - number checkpoints that fit in memory. It is assumed that arbitrary many fit on disk.
+         */
+        SU2_implementation(int input_steps, int input_snaps, int input_snaps_in_RAM) 
+            : Checkpointing_Scheme(input_steps, input_snaps, input_snaps_in_RAM) { };
+
+        /*!
+         * \brief Destructor of the class.
+         */
+        ~SU2_implementation();
         
         /*!
          * \brief Returns the next action to be performed.
@@ -218,6 +257,14 @@ class Checkpointing
          * \brief Get level of screen information.
          */
 	    int getinfo()  { return info; }
+
+        int getsteps() { return steps; }
+
+        int getcounter() { return CP_scheme->getcounter(); }
+
+        int getcurrent_timestep() { return CP_scheme->getcurrent_timestep(); }
+
+        unsigned short gettimestepping_order() { return CP_scheme->gettimestepping_order(); };
         
     protected:
         int steps;                       /*!< \brief Number of time steps. */

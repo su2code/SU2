@@ -42,6 +42,10 @@
 #include "../include/checkpointing.hpp"
 #include <stdexcept>
 
+//CDiscAdjFluidDriver::CDiscAdjFluidDriver() { }
+
+//CDiscAdjFluidDriver::~CDiscAdjFluidDriver() { }
+
 void CDiscAdjFluidDriver::PrimalAdvance()
 {
 
@@ -170,9 +174,9 @@ void CDiscAdjFluidDriver::StoreSingleState()
   int info = 3;
 
   /*--- Compute 1st timestep at the start of the primal solver to store a full checkpoint (if current state needs to be stored as well, i.e. DT_2nd stores 3 states)  ---*/
-  if (r->getcapo() == 0)
+  if (r->getcurrent_timestep() == r->gettimestepping_order())
   {
-    PreprocessExtIter(0);
+    PreprocessExtIter(r->getcurrent_timestep());
     /*--- Advance one physical primal step by looping over multiple internal iter. But no Update()/solution pushing. ---*/
     PrimalAdvance();
   }
@@ -182,7 +186,7 @@ void CDiscAdjFluidDriver::StoreSingleState()
     /*--- Save Checkpoint in RAM ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
     {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck());
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck()); //TODO getcheck()
       if (turbulent)
       {
         solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck());
@@ -194,13 +198,13 @@ void CDiscAdjFluidDriver::StoreSingleState()
     /*--- takeshot on DISK, 3 timesteps have to be saved here! Storing wrong Primitives for n and n1. Storage always from sol position (therefore solution_old as intermediate container) ---*/
 
     /*--- Store Sol, setExtIter necessary for output with correct number  ---*/
-    config_container[ZONE_0]->SetExtIter(1000 + r->getcheck() * 3 + 0);
+    config_container[ZONE_0]->SetExtIter(r->getcurrent_timestep());
     config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES);
     if (turbulent)
       config_container[ZONE_0]->SetKind_Solver(RANS);
     config_container[ZONE_0]->SetDiscrete_Adjoint(false);
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, 1000 + r->getcheck() * 3 + 0, nZone, nInst);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, r->getcurrent_timestep(), nZone, nInst);
 
     config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(true);
@@ -210,7 +214,7 @@ void CDiscAdjFluidDriver::StoreSingleState()
 
   if (info > 1)
     if (rank == MASTER_NODE)
-      cout << " takeshot at " << setw(6) << r->getcapo() << " in CP " << r->getcheck() << endl;
+      cout << " takeshot at " << setw(6) << r->getcurrent_timestep() << " in CP " << r->getcheck() << endl;
   if (r->getwhere())
     if (rank == MASTER_NODE)
       cout << "takeshot in RAM " << endl;
@@ -282,13 +286,14 @@ void CDiscAdjFluidDriver::RestoreSingleState()
       }
     }
   }
-  else
+  else // get checkpoint from disk
   {
     /*--- 1 Load checkpoint (into sol). 2 store sol to sol old. 3 push n to sol. 4 push n1 to n. 5 Put old into n1 ---*/
 
     /*--- 1 Load checkpoint (into sol) ---*/
     //last variable updategeo always true except for FSI
-    int val_iter = 1000 + r->getcheck() * 3 + 0;
+    //int val_iter = 1000 + r->getcheck() * 3 + 0;
+    int val_iter = r->getcurrent_timestep() - 3; // -3 du to dual time stepping 2nd order
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
@@ -333,14 +338,16 @@ void CDiscAdjFluidDriver::RestoreSingleState()
 
   } // end of if-else
 
-  if (info > 2)
-    if (rank == MASTER_NODE)
-      cout << " restore at " << setw(7) << r->getcapo() << " in CP " << r->getcheck() << endl;
-  if (r->getwhere())
-    if (rank == MASTER_NODE)
-      cout << "restore in RAM " << endl;
-    else if (rank == MASTER_NODE)
-      cout << "restore in ROM " << endl;
+  if (info > 2) {
+    if (rank == MASTER_NODE) {
+      cout << " restore single state at " << setw(7) << r->getcurrent_timestep() - 3 << " in CP " << r->getcheck() << endl;
+      if (r->getwhere()) {
+        cout << "restore in RAM " << endl;
+      } else {
+        cout << "restore on Disk " << endl;
+      }
+    }
+  }
 }
 
 void CDiscAdjFluidDriver::StoreFullCheckpoint()
@@ -351,8 +358,9 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
   int info = 3;
 
   /*--- Compute 1st timestep at the start of the primal solver to store a full checkpoint (if current state needs to be stored as well, i.e. DT_2nd stores 3 states)  ---*/
-  if (r->getcapo() == 0)
+  if ( r->getcurrent_timestep() == r->gettimestepping_order() )
   {
+    std::cout << "Computing first Primal Step before taking full checkpoint." << std::endl;
     PreprocessExtIter(0);
     /*--- Advance one physical primal step by looping over multiple internal iter. But no Update()/solution pushing. ---*/
     PrimalAdvance();
@@ -375,12 +383,12 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
     /*--- takeshot on DISK, 3 timesteps have to be saved here! Storing wrong Primitives for n and n1. Storage always from sol position (therefore solution_old as intermediate container) ---*/
 
     /*--- Store Sol, setExtIter necessary for output with correct number  ---*/
-    config_container[ZONE_0]->SetExtIter(1000 + r->getcheck() * 3 + 0);
+    config_container[ZONE_0]->SetExtIter(r->getcurrent_timestep() + 0);
     config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES);
     if (turbulent)
       config_container[ZONE_0]->SetKind_Solver(RANS);
     config_container[ZONE_0]->SetDiscrete_Adjoint(false);
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, 1000 + r->getcheck() * 3 + 0, nZone, nInst);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, r->getcurrent_timestep() + 0, nZone, nInst);
     config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(true);
     if (turbulent)
@@ -407,12 +415,12 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
     }
 
     /*--- Store Sol (i.e. n) ---*/
-    config_container[ZONE_0]->SetExtIter(1000 + r->getcheck() * 3 + 1);
+    config_container[ZONE_0]->SetExtIter(r->getcurrent_timestep() - 1);
     config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(false);
     if (turbulent)
       config_container[ZONE_0]->SetKind_Solver(RANS);
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, 1000 + r->getcheck() * 3 + 1, nZone, nInst);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, r->getcurrent_timestep() - 1, nZone, nInst);
     config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(true);
     if (turbulent)
@@ -429,12 +437,12 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
     }
 
     /*--- Store Sol ---*/
-    config_container[ZONE_0]->SetExtIter(1000 + r->getcheck() * 3 + 2);
+    config_container[ZONE_0]->SetExtIter(r->getcurrent_timestep() - 2);
     config_container[ZONE_0]->SetKind_Solver(NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(false);
     if (turbulent)
       config_container[ZONE_0]->SetKind_Solver(RANS);
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, 1000 + r->getcheck() * 3 + 2, nZone, nInst);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, r->getcurrent_timestep() - 2, nZone, nInst);
     config_container[ZONE_0]->SetKind_Solver(DISC_ADJ_NAVIER_STOKES);
     config_container[ZONE_0]->SetDiscrete_Adjoint(true);
     if (turbulent)
@@ -463,31 +471,28 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
 void CDiscAdjFluidDriver::PrimalStep()
 {
   int info = 3;
-  /*--- +1 because first step was already made in the first takeshot. Variable "j" is here taken to be ExtIter ---*/
-  for (int j = r->getoldcapo() + 1; j < r->getcapo() + 1; j++)
-  {
-    if (rank == MASTER_NODE)
-      cout << "ADVANCE: " << j << endl;
-    /*--- Here Flow-solver initial conditions are called, well noe not anymore as first step is taken at takeshot ---*/
-    PreprocessExtIter(j);
+  int val_iter = r->getcurrent_timestep();
+  if (rank == MASTER_NODE)
+    cout << "ADVANCE: " << val_iter << endl;
+  /*--- Here Flow-solver initial conditions are called, well noe not anymore as first step is taken at takeshot ---*/
+  PreprocessExtIter(val_iter);
 
-    /*--- Pushes soltion down for a new timestep. Therefore this must be done after takeshot. Directly before takeshot however update is omitted. ---*/
-    if (j == r->getoldcapo() + 1)
-      Update();
+  /*--- Pushes soltion down for a new timestep. Therefore this must be done after takeshot. Directly before takeshot however update is omitted. ---*/
+  //if (j == r->getoldcapo() + 1)
+  //  Update();
 
-    /*--- Advance one physical primal step by looping over multiple internal iter ---*/
-    PrimalAdvance();
+  /*--- Advance one physical primal step by looping over multiple internal iter ---*/
+  PrimalAdvance();
 
-    /*--- No Update as solution needs to at their place for takeshot ---*/
-    if (j != r->getcapo() + 1 - 1)
-      Update();
+  /*--- No Update as solution needs to at their place for takeshot ---*/
+  //if (j != r->getcapo() + 1 - 1)
+  //  Update();
 
-    //Monitor(j);
-  }
+  //Monitor(j);
 
   if (info > 2)
     if (rank == MASTER_NODE)
-      cout << " advance to " << setw(7) << r->getcapo() << endl;
+      cout << " advance to " << setw(7) << val_iter << endl;
 }
 
 void CDiscAdjFluidDriver::RestoreFullCheckpoint()
@@ -518,7 +523,7 @@ void CDiscAdjFluidDriver::RestoreFullCheckpoint()
 
     /*--- Load n1 ---*/
     //last variable updategeo always true except for FSI
-    int val_iter = 1000 + r->getcheck() * 3 + 2;
+    int val_iter = r->getcurrent_timestep() - 2;
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
@@ -536,7 +541,7 @@ void CDiscAdjFluidDriver::RestoreFullCheckpoint()
     }
 
     /*--- Load n ---*/
-    val_iter = 1000 + r->getcheck() * 3 + 1;
+    val_iter = r->getcurrent_timestep() - 1;
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
@@ -552,14 +557,14 @@ void CDiscAdjFluidDriver::RestoreFullCheckpoint()
     }
 
     /*--- Load sol ---*/
-    val_iter = 1000 + r->getcheck() * 3 + 0;
+    val_iter = r->getcurrent_timestep() - 0;
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
   }
   if (info > 2)
     if (rank == MASTER_NODE)
-      cout << " restore at " << setw(7) << r->getcapo() << " in CP " << r->getcheck() << endl;
+      cout << " restore at " << setw(7) << r->getcurrent_timestep() - 0 << " in CP " << r->getcheck() << endl;
   if (r->getwhere())
     if (rank == MASTER_NODE)
       cout << "restore in RAM " << endl;
@@ -569,13 +574,18 @@ void CDiscAdjFluidDriver::RestoreFullCheckpoint()
 
 void CDiscAdjFluidDriver::PrimalUpdate()
 {
-  //to be filled
+  Update();
+  int info = 3;
+  if (info > 2) {
+    std::cout << "Update at "<< r->getcurrent_timestep() << std::endl;
+  }
 }
 
 void CDiscAdjFluidDriver::AdjointStep()
 {
   int info = 3;
   /*--- Do one adjoint step ---*/
+  ExtIter = r->getsteps() - r->getcurrent_timestep() - 1;
   PreprocessExtIter(ExtIter);
   DynamicMeshUpdate(ExtIter);
   Run();
@@ -587,9 +597,10 @@ void CDiscAdjFluidDriver::AdjointStep()
 
   if (info > 2)
     if (rank == MASTER_NODE)
-      cout << " youturn at " << setw(7) << r->getcapo() << endl;
+      cout << " youturn at " << setw(7) << r->getcurrent_timestep() << endl;
 }
 
+/* Equivalent to adjoint step, could probably be completely removed */
 void CDiscAdjFluidDriver::Firsturn()
 {
   int info = 3;

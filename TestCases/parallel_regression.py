@@ -48,6 +48,28 @@ def main():
 
     test_list = []
 
+    # 2D transonic stator restart
+    transonic_stator_rst           = TestCase('transonic_stator_restart')
+    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
+    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
+    transonic_stator_rst.test_iter = 20
+    transonic_stator_rst.test_vals = [-0.484778, 4.462654, 6.460856, 0.004009] #last 4 columns
+    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
+    transonic_stator_rst.timeout   = 1600
+    transonic_stator_rst.tol       = 0.00001
+    test_list.append(transonic_stator_rst)
+
+    # Jones APU Turbocharger restart
+    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
+    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
+    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
+    Jones_tc_rst.test_iter = 5
+    Jones_tc_rst.test_vals = [-4.409575, -1.605695, 82.250580, 2.791302] #last 4 columns
+    Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
+    Jones_tc_rst.timeout   = 1600
+    Jones_tc_rst.tol       = 0.00001
+    test_list.append(Jones_tc_rst)
+
     ##########################
     ### Compressible Euler ###
     ##########################
@@ -613,16 +635,6 @@ def main():
     Jones_tc.tol       = 0.00001
     test_list.append(Jones_tc)
 
-	# Jones APU Turbocharger restart
-    Jones_tc_rst           = TestCase('jones_turbocharger_restart')
-    Jones_tc_rst.cfg_dir   = "turbomachinery/APU_turbocharger"
-    Jones_tc_rst.cfg_file  = "Jones_rst.cfg"
-    Jones_tc_rst.test_iter = 5
-    Jones_tc_rst.test_vals = [-4.409575, -1.605695, 82.250580, 2.791302] #last 4 columns
-    Jones_tc_rst.su2_exec  = "parallel_computation.py -f"
-    Jones_tc_rst.timeout   = 1600
-    Jones_tc_rst.tol       = 0.00001
-    test_list.append(Jones_tc_rst)
 
     # 2D axial stage
     axial_stage2D           = TestCase('axial_stage2D')
@@ -646,17 +658,6 @@ def main():
     transonic_stator.tol       = 0.00001
     test_list.append(transonic_stator)
     
-    # 2D transonic stator restart
-    transonic_stator_rst           = TestCase('transonic_stator_restart')
-    transonic_stator_rst.cfg_dir   = "turbomachinery/transonic_stator_2D"
-    transonic_stator_rst.cfg_file  = "transonic_stator_rst.cfg"
-    transonic_stator_rst.test_iter = 20
-    transonic_stator_rst.test_vals = [-0.484778, 4.462654, 6.460856, 0.004009] #last 4 columns
-    transonic_stator_rst.su2_exec  = "parallel_computation.py -f"
-    transonic_stator_rst.timeout   = 1600
-    transonic_stator_rst.tol       = 0.00001
-    test_list.append(transonic_stator_rst)
-
     ######################################
     ### Sliding Mesh                   ###
     ######################################

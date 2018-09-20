@@ -1781,7 +1781,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
     
     if (ExtIter == 0 || config_container[ZONE_0]->GetCheckpointing()){
 
-      if (dual_time_2nd || dual_time_1st) {
+      if (dual_time_2nd) {
 
         /*--- Load solution at timestep n-2 ---*/
 
@@ -1857,7 +1857,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
           }
         }
       }
-      if (dual_time_1st){ 
+      if (dual_time_1st){
       // Bug in brace-setting: the statement 2 blocks down should also be excecuted for dual_time_1st
       // This part is identical with the block below which is excecuted for dual time stepping 2nd
       /*--- Set Solution at timestep n-1 to the previously loaded solution ---*/
@@ -1880,7 +1880,6 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             }
           }
         }
-              }//relocated bracket
         /*--- Set Solution at timestep n-2 to the previously loaded solution ---*/
         for (iMesh=0; iMesh<=config_container[val_iZone]->GetnMGLevels();iMesh++) {
           for(iPoint=0; iPoint<geometry_container[val_iZone][val_iInst][iMesh]->GetnPoint();iPoint++) {
@@ -1890,7 +1889,7 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
             }
           }
         }
-
+      }
     }
   }
 

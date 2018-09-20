@@ -245,9 +245,9 @@ void CVariable::Set_Checkpoint(unsigned short iCheckpoint) {
   if (iCheckpoint < nCheckpoint) {
       
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Checkpoints[iCheckpoint][0][iVar]   = Solution[iVar];
-      Checkpoints[iCheckpoint][1][iVar]   = Solution_time_n[iVar];
-      Checkpoints[iCheckpoint][2][iVar]   = Solution_time_n1[iVar];
+      if (nCheckpointDepth > 0) Checkpoints[iCheckpoint][0][iVar] = Solution[iVar];
+      if (nCheckpointDepth > 1) Checkpoints[iCheckpoint][1][iVar] = Solution_time_n[iVar];
+      if (nCheckpointDepth > 2) Checkpoints[iCheckpoint][2][iVar] = Solution_time_n1[iVar];
     }
       
   } else {
@@ -260,9 +260,9 @@ void CVariable::Restore_Checkpoint(unsigned short iCheckpoint) {
   if (iCheckpoint < nCheckpoint) {
       
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Solution[iVar]         = Checkpoints[iCheckpoint][0][iVar];
-      Solution_time_n[iVar]  = Checkpoints[iCheckpoint][1][iVar];
-      Solution_time_n1[iVar] = Checkpoints[iCheckpoint][2][iVar];
+      if (nCheckpointDepth > 0) Solution[iVar]         = Checkpoints[iCheckpoint][0][iVar];
+      if (nCheckpointDepth > 1) Solution_time_n[iVar]  = Checkpoints[iCheckpoint][1][iVar];
+      if (nCheckpointDepth > 2) Solution_time_n1[iVar] = Checkpoints[iCheckpoint][2][iVar];
     }
       
   } else {
@@ -275,7 +275,7 @@ void CVariable::Set_CheckpointSingleState(unsigned short iCheckpoint) {
   if (iCheckpoint < nCheckpoint) {
       
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-      Checkpoints[iCheckpoint][0][iVar]   = Solution[iVar];
+      Checkpoints[iCheckpoint][0][iVar] = Solution[iVar];
     }
       
   } else {

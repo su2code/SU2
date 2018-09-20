@@ -3653,7 +3653,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
       }
 
@@ -4754,9 +4754,14 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Checkpointing == EVERYTHING) cout <<  "Checkpointing type: Everything" << endl;
         if (Checkpointing == EQUIDISTANT) cout <<  "Checkpointing type: Equidistant" << endl;
         if (Checkpointing == BINOMIAL) cout <<  "Checkpointing type: Binomial" << endl;
-        cout << "Steps: " << CheckpointingSteps << " ExtIter" << nExtIter << endl;
+        if (Checkpointing == TEMP_1) cout <<  "Checkpointing type: TEMP_1" << endl;
+        if (Checkpointing == TEMP_2) cout <<  "Checkpointing type: TEMP_2" << endl;
+        if (Checkpointing == TEMP_3) cout <<  "Checkpointing type: TEMP_3" << endl;
+
+        cout << "Steps: " << CheckpointingSteps << ", ExtIter: " << nExtIter << endl;
         cout << "Snaps: " << CheckpointingSnaps << endl;
         cout << "Snaps in RAM: " << CheckpointingSnapsInRAM << endl;
+        if ( CheckpointingDepth != 1 && CheckpointingDepth != 2 && CheckpointingDepth != 3 ) SU2_MPI::Error("CHECKPOINTNG_DEPTH must be either 1,2 or 3." , CURRENT_FUNCTION);
         cout << "Checkpoint Depth: " << CheckpointingDepth << endl;
     }
 
