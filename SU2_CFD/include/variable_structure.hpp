@@ -2417,9 +2417,9 @@ public:
   
   virtual void SubtractMassFlux(su2double val_MassFlux);
   
-  virtual void SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff);
+  virtual void Set_Mom_Coeff(su2double *val_Mom_Coeff);
   
-  virtual su2double GetMean_Mom_Coeff();
+  virtual su2double Get_Mom_Coeff(unsigned short val_Var);
   
   virtual su2double GetMassFlux();
   
@@ -3940,7 +3940,7 @@ protected:
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double MassFlux;   /*!< \brief Massflux associated with each CV */
-  su2double Mean_Mom_Coeff;
+  su2double *Mom_Coeff;
   
 
 public:
@@ -4155,17 +4155,13 @@ public:
   bool SetPrimVar(su2double Density_Inf, CConfig *config);
 
 
-   
-
   su2double GetMassFlux();
 
 
-  su2double GetMean_Mom_Coeff();
-  
+  su2double Get_Mom_Coeff(unsigned short val_Var);
 
 
-
-  void SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff);
+  void Set_Mom_Coeff(su2double *val_Mom_Coeff);
 
 };
 

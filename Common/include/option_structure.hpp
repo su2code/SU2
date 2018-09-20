@@ -317,7 +317,7 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  */
 enum ENUM_INCOMP_SYSTEM {
   DENSITY_BASED = 0,		/*!< \brief Density-based. */
-  PRESSURE_BASED = 1        /*!< \brief Pressure-based. */
+  PRESSURE_BASED = 1,        /*!< \brief Pressure-based. */
 };
 static const map<string, ENUM_INCOMP_SYSTEM> Incomp_Map = CCreateMap<string, ENUM_INCOMP_SYSTEM>
 ("DENSITY_BASED", DENSITY_BASED)

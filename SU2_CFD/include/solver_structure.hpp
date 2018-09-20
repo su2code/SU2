@@ -8459,7 +8459,7 @@ public:
    */
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
-    /*!
+  /*!
    * \brief Update the solution using an implicit Euler scheme.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
@@ -8467,6 +8467,13 @@ public:
    */
   void ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
+  /*!
+   * \brief Update the solution using an explicit Euler scheme.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config);  
   
   /*!
    * \brief Compute the max eigenvalue.

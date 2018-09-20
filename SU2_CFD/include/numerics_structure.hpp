@@ -211,9 +211,9 @@ public:
   su2double StrainMag_i, StrainMag_j;   /*!< \brief Strain rate magnitude. */
   su2double Dissipation_i, Dissipation_j;
   su2double Dissipation_ij;
-  su2double Mom_Coeff_Mean;
   su2double Source_Term;
   su2double *l, *m;
+  su2double Face_Flux;
 
   /*!
    * \brief Constructor of the class.
@@ -745,8 +745,8 @@ public:
   
   /*!
    * \brief Set the Poisson coefficient
-   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
+   * \param[in] val_Poisson_i - Value of the Poisson coefficient at point i.
+   * \param[in] val_Poisson_j - Value of the Poisson coefficient at point j.
    */
    void SetPoisson_Coeff(su2double val_Poisson_Coeff_i,su2double val_Poisson_Coeff_j);  
   
@@ -755,15 +755,7 @@ public:
    * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
    * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
    */
-   void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j);
-   
-   /*!
-   * \brief Set the Poisson value 
-   * \param[in] val_Poisson_i - Value of the Poisson variable at point i.
-   * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
-   */
-   void SetMom_Coeff_Mean(su2double val_Mom_Coeff_Mean);
-   
+   void SetPoissonval(su2double val_Poisson_i,su2double val_Poisson_j);   
    
    /*!
    * \brief Set the Poisson value 
@@ -771,6 +763,13 @@ public:
    * \param[in] val_Poisson_j - Value of the Poisson variable at point j.
    */
    void SetSourcePoisson(su2double val_Source_Term);
+   
+   /*!
+   * \brief Set the value of the momentum equation coefficients for Poisson eq.
+   * \param[in] val_Mom_Coeff_i - Value of the cross coefficient at point i.
+   * \param[in] val_Mom_Coeff_j - Value of the cross coefficient at point j.
+   */
+  virtual void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) {/* empty */};
    
   
   /*!
@@ -4139,6 +4138,7 @@ private:
   su2double *Edge_Vector;
   bool implicit,direct;
   su2double **Mean_GradPoissonVar;
+  su2double *Mom_Coeff_i,*Mom_Coeff_j;
   su2double *Proj_Mean_GradPoissonVar_Normal, *Proj_Mean_GradPoissonVar_Corrected;
   su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean ;
   unsigned short iVar, iDim;
@@ -4166,6 +4166,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  
+  
+  void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j);
 };
 
 /*!
@@ -4180,6 +4183,7 @@ private:
   su2double *Edge_Vector;
   bool implicit,direct;
   su2double **Mean_GradPoissonVar;
+  su2double *Mom_Coeff_i,*Mom_Coeff_j;
   su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
   su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
   unsigned short iVar, iDim;
@@ -4207,6 +4211,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  
+  
+  void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j);
 };
 
 /*!
@@ -4222,6 +4229,7 @@ private:
   su2double **Mean_GradPoissonVar;
   su2double *Proj_Mean_GradPoissonVar_Kappa, *Proj_Mean_GradPoissonVar_Edge, *Proj_Mean_GradPoissonVar_Corrected;
   su2double dist_ij_2, proj_vector_ij, Poisson_Coeff_Mean;
+  su2double *Mom_Coeff_i,*Mom_Coeff_j;
   unsigned short iVar, iDim;
 
 public:
@@ -4247,6 +4255,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config);
+  
+  
+  void SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j);
 };
 
 

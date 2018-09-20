@@ -485,8 +485,6 @@ inline su2double CNumerics::GetDissipation(){
   return Dissipation_ij;
 }
 
-inline void CNumerics::SetMom_Coeff_Mean(su2double val_Mom_Coeff_Mean) { Mom_Coeff_Mean = val_Mom_Coeff_Mean; }
-
 inline void CNumerics::SetSourcePoisson(su2double val_Source_Term) { Source_Term = val_Source_Term; }
 
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
@@ -593,4 +591,22 @@ inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tau
 inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
+}
+
+
+inline void CPressure_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { 
+  Mom_Coeff_i = val_Mom_Coeff_i;
+  Mom_Coeff_j = val_Mom_Coeff_j;
+}
+
+
+inline void CAvgGradCorrected_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { 
+  Mom_Coeff_i = val_Mom_Coeff_i;
+  Mom_Coeff_j = val_Mom_Coeff_j;
+}
+
+
+inline void CAvgGrad_Poisson::SetInvMomCoeff(su2double *val_Mom_Coeff_i, su2double *val_Mom_Coeff_j) { 
+  Mom_Coeff_i = val_Mom_Coeff_i;
+  Mom_Coeff_j = val_Mom_Coeff_j;
 }

@@ -78,13 +78,11 @@ void CIntegration::Space_Integration(CGeometry *geometry,
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
       break;
   }
-  
+
   /*--- Compute viscous residuals ---*/
-  
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
   
   /*--- Compute source term residuals ---*/
-
   solver_container[MainSolver]->Source_Residual(geometry, solver_container, numerics[SOURCE_FIRST_TERM], numerics[SOURCE_SECOND_TERM], config, iMesh);
   
   /*--- Add viscous and convective residuals, and compute the Dual Time Source term ---*/
@@ -103,7 +101,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
     solver_container[MainSolver]->PreprocessBC_Giles(geometry, config, numerics[CONV_BOUND_TERM], OUTFLOW);
   }
+  
 
+  
 
   /*--- Weak boundary conditions ---*/
   

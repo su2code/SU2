@@ -171,6 +171,9 @@ CAvgGradCorrected_Poisson::CAvgGradCorrected_Poisson(unsigned short val_nDim, un
 
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
+  
+  Mom_Coeff_i = new su2double [nDim];
+  Mom_Coeff_j = new su2double [nDim];
 
 }
 
@@ -193,6 +196,9 @@ CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
     /*for (iVar = 0; iVar < nVar; iVar++)
        delete [] ConsVar_Grad_j[iVar];
     delete [] ConsVar_Grad_j;*/
+    
+    delete Mom_Coeff_i;
+	delete Mom_Coeff_j;
 
 
 }
@@ -271,6 +277,9 @@ CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_n
   ConsVar_Grad_j = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
     ConsVar_Grad_j[iVar] = new su2double [nDim];
+  
+  Mom_Coeff_i = new su2double [nDim];
+  Mom_Coeff_j = new su2double [nDim];
 
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
@@ -292,17 +301,16 @@ CAvgGrad_Poisson::~CAvgGrad_Poisson(void) {
     delete [] Mean_GradPoissonVar;
     //delete [] ConsVar_Grad_i;
     //delete [] ConsVar_Grad_j;	
+    
+    delete Mom_Coeff_i;
+	delete Mom_Coeff_j;
 
 }
 
 void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
 
-  /*AD::StartPreacc();
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
-  AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
-  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
+
+  su2double Coeff_Mean;
 
   Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
 
@@ -320,24 +328,30 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPoissonVar_Normal[iVar] = 0.0;
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
       
-      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
+      Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
+      
+      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
     }
-    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }
 
-  val_residual[0] = Poisson_Coeff_Mean*Proj_Mean_GradPoissonVar_Corrected[0];
+  val_residual[0] = Proj_Mean_GradPoissonVar_Normal[0];
+  
+  Poisson_Coeff_Mean = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+     Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
+     
+  Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
+  if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
+  
   /*--- Jacobians for implicit scheme ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -Poisson_Coeff_Mean*proj_vector_ij;
-    Jacobian_j[0][0] = Poisson_Coeff_Mean*proj_vector_ij;
+    Jacobian_i[0][0] = -Poisson_Coeff_Mean;//*proj_vector_ij;
+    Jacobian_j[0][0] = Poisson_Coeff_Mean;//*proj_vector_ij;
   }
 
-  /*AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();*/
 }
 
 
@@ -352,6 +366,9 @@ CPressure_Poisson::CPressure_Poisson(unsigned short val_nDim, unsigned short val
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
   
+  Mom_Coeff_i = new su2double [nDim];
+  Mom_Coeff_j = new su2double [nDim];
+  
 }
 
 
@@ -359,36 +376,43 @@ CPressure_Poisson::~CPressure_Poisson(void) {
 	
 	unsigned int iDim;
 	delete [] Edge_Vector;
+	
+	delete Mom_Coeff_i;
+	delete Mom_Coeff_j;
 }
 
 void CPressure_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
 
-  /*AD::StartPreacc();
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
+  
+  su2double Area;
+  su2double UnitNormal[3];
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
   dist_ij_2 = 0; proj_vector_ij = 0;
+  Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
   for (iDim = 0; iDim < nDim; iDim++) {
     Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
+    UnitNormal[iDim] = Normal[iDim]/Area;
   }
   if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
-  Poisson_Coeff_Mean = (config->GetDensity_Ref()*Volume)/(Mom_Coeff_Mean*sqrt(dist_ij_2));
   
-  val_residual[0] = 0.0;
+  Poisson_Coeff_Mean = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+     Poisson_Coeff_Mean += 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]);
+   
+   
+  val_residual[0] = 0.5*Poisson_Coeff_Mean*(Poissonval_i + Poissonval_j);
     
   if (implicit){
-	Jacobian_i[0][0] = -Poisson_Coeff_Mean;
-	Jacobian_j[0][0] = Poisson_Coeff_Mean;
+	Jacobian_i[0][0] = Poisson_Coeff_Mean;
+	Jacobian_j[0][0] = -Poisson_Coeff_Mean;
   }
-  /*AD::SetPreaccOut(val_residual, nVar);
-  AD::EndPreacc();*/
 }
 
 

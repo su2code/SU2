@@ -277,6 +277,7 @@ CDriver::CDriver(char* confFile,
           case EULER: case DISC_ADJ_EULER:
             if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
             if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+            //if (Kind_Incomp_System == PRESSURE_BASED) cout<<"Pressure based system."<<endl;
             break;
           case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
             if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
@@ -299,7 +300,7 @@ CDriver::CDriver(char* confFile,
   }
   else {
     if (rank == MASTER_NODE) cout << "A Fluid driver has been instantiated." << endl;
-    if (rank == MASTER_NODE) cout<<"Type incompressible: "<<config_container[iZone]->GetKind_Incomp_System()<<endl;
+    //if (rank == MASTER_NODE) cout<<"Type incompressible: "<<config_container[iZone]->GetKind_Incomp_System()<<endl;
   }
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -1051,7 +1052,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (incompressible) {
-		  if (pressure_based) {
+		if (pressure_based) {
 			solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CPBIncEulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
 			solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 			solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[val_iInst][iMGlevel], config);
@@ -2197,11 +2198,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 	  if (pressure_based) {
 		  cout<<"Allocating numerics container for poisson problem...."<<iMGlevel<<endl;
 		  /*--- Pressure correction (Poisson) equation ---*/
-           numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CPressure_Poisson(nDim, nVar_Poisson, config);
-		   numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_BOUND_TERM] = new CPressure_Poisson(nDim, nVar_Poisson, config);
+           numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+		   numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 
  		  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);//new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
 	  }
 	  else {
@@ -3592,7 +3593,7 @@ void CDriver::StartSolver() {
 
     /*--- Output the solution in files. ---*/
 
-    Output(ExtIter);
+    //Output(ExtIter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 

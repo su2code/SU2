@@ -4190,7 +4190,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   
   /*--- Solve or smooth the linear system ---*/
   
-  cout<<"Jacobian matrix"<<endl;
+  /*cout<<"Jacobian matrix"<<endl;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
 		total_index = iPoint*nVar + iVar;
@@ -4208,7 +4208,7 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
        cout<<jac_matrix[total_index_i][total_index_j]<<"\t";
     cout<<"\n";
     if (((total_index_i+1) % nVar) == 0) cout<<"\n";
-  }
+  }*/
   CSysSolve system;
   IterLinSol = system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
@@ -5330,7 +5330,9 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   
-  su2double *V_infty, *V_domain;
+  su2double *V_infty, *V_domain,*Coord_i,*Ref_Coord;
+  su2double Circulation,polar_dist,polar_angle,Cl,Mach,Vortex_Corr[2];
+  su2double Pi,AoA,Gam,Gam_m1,ModVel_InftyCorr;
   
   bool implicit      = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement = config->GetGrid_Movement();
@@ -5339,6 +5341,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
   su2double *Normal = new su2double[nDim];
 
   /*--- Loop over all the vertices on this boundary marker ---*/
+  //cout<<"Pressure: "<<GetPressure_Inf()<<endl;
+  
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
@@ -5369,10 +5373,42 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = GetVelocity_Inf(iDim);
-
+      
+      /*--- Vortex correction (2-D only) ---*/
+      Cl = GetTotal_CL();
+      Circulation = 0.5*config->GetModVel_FreeStream()*config->GetRefLength()*Cl;
+      Mach = config->GetMach();
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Ref_Coord = config->GetRefOriginMoment(0);
+      polar_dist = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+         polar_dist += (Coord_i[iDim]-Ref_Coord[iDim])*(Coord_i[iDim]-Ref_Coord[iDim]);
+      
+      polar_dist = sqrt(polar_dist);
+      
+      polar_angle = atan((Coord_i[1]-Ref_Coord[1])/(Coord_i[0]-Ref_Coord[0]));
+      Pi = 4.0*atan(1.0);
+      AoA = config->GetAoA();
+      
+      Vortex_Corr[0] = Circulation*sqrt(1-Mach*Mach)/(2.0*Pi*polar_dist);
+      Vortex_Corr[0] = Vortex_Corr[0]*(sin(polar_angle))/(1-Mach*Mach*sin(polar_angle-AoA)*sin(polar_angle-AoA));
+      Vortex_Corr[1] = Vortex_Corr[0]*(cos(polar_angle))/(1-Mach*Mach*sin(polar_angle-AoA)*sin(polar_angle-AoA));
+      
+      V_infty[1] = V_infty[1] + Vortex_Corr[0];
+      V_infty[2] = V_infty[2] - Vortex_Corr[1];
+      
+      ModVel_InftyCorr = 0.0;
+      for(iDim = 0; iDim < nDim; iDim++)
+       ModVel_InftyCorr += V_infty[iDim+1]*V_infty[iDim+1];
+      
+      //ModVel_InftyCorr = sqrt(ModVel_InftyCorr);
+      
       /*--- Far-field pressure set to static pressure (0.0). ---*/
 
-      V_infty[0] = GetPressure_Inf();
+      V_infty[0] = GetPressure_Inf() + 0.5*GetDensity_Inf()*(GetModVelocity_Inf() - ModVel_InftyCorr);
+      cout<<ModVel_InftyCorr<<" correction"<<endl;
+      cout<<GetModVelocity_Inf()<<" from solver"<<endl;
+          
 
       /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
 
@@ -5381,6 +5417,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       /*--- Store the density.  ---*/
 
       V_infty[nDim+2] = GetDensity_Inf();
+      
 
       /*--- Beta coefficient stored at the node ---*/
 
@@ -5462,7 +5499,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
 void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim;
+  unsigned short iDim,iVar;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
   su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area;
@@ -5570,6 +5607,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
       /*--- Set various quantities in the solver class ---*/
       
+      cout<<"Inlet V_domain"<<endl;
+      for (iVar = 0; iVar < nVar; iVar++) cout<<V_domain[iVar]<<", "<<iVar<<endl;
+      
+      cout<<"Inlet V_inlet"<<endl;
+      for (iVar = 0; iVar < nVar; iVar++) cout<<V_inlet[iVar]<<", "<<iVar<<endl;
+      
       conv_numerics->SetPrimitive(V_domain, V_inlet);
       
       if (grid_movement)
@@ -5641,7 +5684,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 
 void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  unsigned short iDim;
+  unsigned short iDim,iVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area;
   su2double *V_outlet, *V_domain, P_Outlet;
@@ -5684,7 +5727,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
-
+      
       /*--- Retrieve the specified back pressure for this outlet. ---*/
 
       P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
@@ -5718,7 +5761,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       V_outlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
 
       /*--- Set various quantities in the solver class ---*/
-
+      
       conv_numerics->SetPrimitive(V_domain, V_outlet);
       
       if (grid_movement)

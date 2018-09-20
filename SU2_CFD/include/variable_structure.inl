@@ -707,13 +707,13 @@ inline void CVariable::SubtractMassFlux(su2double val_MassFlux){  }
 
 inline su2double CVariable::GetMassFlux() {}
 
-inline su2double CVariable::GetMean_Mom_Coeff() {}
+inline su2double CVariable::Get_Mom_Coeff(unsigned short val_Var) { return 0.0;}
 
 inline su2double CVariable::GetPoisson_Coeff() { }
   
 inline void CVariable::SetPoisson_Coeff(su2double val_Poisson_Coeff){ }
 
-inline void CVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) {  }
+inline void CVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {  }
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
@@ -1121,9 +1121,12 @@ inline void CPBIncEulerVariable::SubtractMassFlux(su2double val_MassFlux){ MassF
 
 inline su2double CPBIncEulerVariable::GetMassFlux() {return MassFlux;}
 
-inline su2double CPBIncEulerVariable::GetMean_Mom_Coeff() {return Mean_Mom_Coeff;}
+inline su2double CPBIncEulerVariable::Get_Mom_Coeff(unsigned short val_Var) { return Mom_Coeff[val_Var];}
 
-inline void CPBIncEulerVariable::SetMean_Mom_Coeff(su2double val_Mean_Mom_Coeff) { Mean_Mom_Coeff = val_Mean_Mom_Coeff; }
+inline void CPBIncEulerVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) { 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+      Mom_Coeff[iDim] = val_Mom_Coeff[iDim]; 
+}
 
 inline su2double CPBIncEulerVariable::GetSolution_iter_m(unsigned short val_var) { return Solution_iter_m[val_var]; }
 
@@ -1374,7 +1377,7 @@ inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2d
 
 inline void CPotentialVariable :: SetPoisson_Coeff(su2double val_Poisson_Coeff) { Poisson_Coeff = val_Poisson_Coeff ; }
 
-inline su2double :: CPotentialVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
+inline su2double CPotentialVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
 
 inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
 
