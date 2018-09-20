@@ -675,6 +675,7 @@ HDF5_LD
 HDF5_CXX
 BUILD_HDF5_FALSE
 BUILD_HDF5_TRUE
+su2_externals_LIBPTHREAD
 su2_externals_LIBS
 su2_externals_INCLUDES
 BUILD_CGNS_FALSE
@@ -6089,6 +6090,7 @@ fi
 # --------------------------------------------------------------
 su2_externals_INCLUDES=""
 su2_externals_LIBS=""
+su2_externals_LIBPTHREAD=""
 
 # Tecplot
 
@@ -6199,7 +6201,7 @@ if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
 # Attempt to get pthread to work
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
+   { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthread_create in -lpthread" >&5
 $as_echo_n "checking for pthread_create in -lpthread... " >&6; }
 if ${ac_cv_lib_pthread_pthread_create+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -6239,7 +6241,7 @@ if test "x$ac_cv_lib_pthread_pthread_create" = xyes; then :
   LIBPTHREAD="-lpthread"
 fi
 
-  su2_externals_LIBS="$LIBPTHREAD $su2_externals_LIBS"
+  su2_externals_LIBPTHREAD="$LIBPTHREAD"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
@@ -6463,6 +6465,7 @@ else
 fi
 
 ac_config_files="$ac_config_files externals/cgns/Makefile"
+
 
 
 
