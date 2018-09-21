@@ -42,6 +42,12 @@ int CBaseMPIWrapper::Size = 1;
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
 
 #ifdef HAVE_MPI
+int  CBaseMPIWrapper::MinRankError;
+bool CBaseMPIWrapper::winMinRankErrorInUse = false;
+CBaseMPIWrapper::Win CBaseMPIWrapper::winMinRankError;
+#endif
+
+#ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE
 //AMPI_ADOUBLE_TYPE* AMPI_ADOUBLE;
 #include <medi/medi.cpp>
