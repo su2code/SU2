@@ -91,26 +91,6 @@ su2_dot_cxx_flags += @MUTATIONPP_CXX@
 su2_dot_ldadd += @MUTATIONPP_LD@
 # endif
 
-# if BUILD_JSONCPP
-su2_dot_cxx_flags += @JSONCPP_CXX@
-su2_dot_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_HDF5
-su2_dot_cxx_flags += @HDF5_CXX@
-su2_dot_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-su2_dot_cxx_flags += @SZIP_CXX@
-su2_dot_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-su2_dot_cxx_flags += @ZLIB_CXX@
-su2_dot_ldadd += @ZLIB_LD@
-# endif
-
 if BUILD_NORMAL
 ___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 ___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
