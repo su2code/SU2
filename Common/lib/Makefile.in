@@ -385,17 +385,11 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
-HDF5_CXX = @HDF5_CXX@
-HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-JSONCPP_CXX = @JSONCPP_CXX@
-JSONCPP_LD = @JSONCPP_LD@
-LAPACK_CXX = @LAPACK_CXX@
-LAPACK_LD = @LAPACK_LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -434,13 +428,9 @@ STRIP = @STRIP@
 SU2_CGNS_CPPFLAGS = @SU2_CGNS_CPPFLAGS@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
-SZIP_CXX = @SZIP_CXX@
-SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
-ZLIB_CXX = @ZLIB_CXX@
-ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -565,23 +555,9 @@ lib_sources = \
 
 # always link to built dependencies from ./externals
 
-# if BUILD_HDF5
-# endif
-
-# if BUILD_SZIP
-# endif
-
-# if BUILD_ZLIB
-# endif
-
 # if BUILD_MUTATIONPP
-# endif
-
-# if BUILD_JSONCPP
-lib_cxxflags = -fPIC @su2_externals_INCLUDES@ @HDF5_CXX@ @SZIP_CXX@ \
-	@ZLIB_CXX@ @MUTATIONPP_CXX@ @JSONCPP_CXX@ $(am__empty)
-lib_ldadd = @su2_externals_LIBS@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
-	@MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+lib_cxxflags = -fPIC @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
+lib_ldadd = @su2_externals_LIBS@ @MUTATIONPP_LD@
 # endif
 @BUILD_NORMAL_TRUE@libSU2_a_SOURCES = $(lib_sources)
 @BUILD_NORMAL_TRUE@libSU2_a_CXXFLAGS = ${lib_cxxflags}

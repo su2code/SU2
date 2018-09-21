@@ -236,17 +236,11 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 GREP = @GREP@
-HDF5_CXX = @HDF5_CXX@
-HDF5_LD = @HDF5_LD@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
-JSONCPP_CXX = @JSONCPP_CXX@
-JSONCPP_LD = @JSONCPP_LD@
-LAPACK_CXX = @LAPACK_CXX@
-LAPACK_LD = @LAPACK_LD@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -285,13 +279,9 @@ STRIP = @STRIP@
 SU2_CGNS_CPPFLAGS = @SU2_CGNS_CPPFLAGS@
 SU2_METIS_CPPFLAGS = @SU2_METIS_CPPFLAGS@
 SU2_PARMETIS_CPPFLAGS = @SU2_PARMETIS_CPPFLAGS@
-SZIP_CXX = @SZIP_CXX@
-SZIP_LD = @SZIP_LD@
 TECIO_CPPFLAGS = @TECIO_CPPFLAGS@
 TECIO_INCLUDE = @TECIO_INCLUDE@
 VERSION = @VERSION@
-ZLIB_CXX = @ZLIB_CXX@
-ZLIB_LD = @ZLIB_LD@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
@@ -359,26 +349,12 @@ su2_dot_sources = ../include/SU2_DOT.hpp \
 		../src/SU2_DOT.cpp
 
 su2_dot_ldadd = $(am__append_3) $(am__append_4) @su2_externals_LIBS@ \
-	@MUTATIONPP_LD@ @JSONCPP_LD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
-	$(am__empty)
+	@MUTATIONPP_LD@ $(am__empty)
 
 # always link to built dependencies from ./externals
 
 # if BUILD_MUTATIONPP
-# endif
-
-# if BUILD_JSONCPP
-# endif
-
-# if BUILD_HDF5
-# endif
-
-# if BUILD_SZIP
-# endif
-
-# if BUILD_ZLIB
-su2_dot_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@ \
-	@JSONCPP_CXX@ @HDF5_CXX@ @SZIP_CXX@ @ZLIB_CXX@ $(am__empty)
+su2_dot_cxx_flags = @su2_externals_INCLUDES@ @MUTATIONPP_CXX@
 # endif
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_SOURCES = ${su2_dot_sources}
 @BUILD_NORMAL_TRUE@___bin_SU2_DOT_CXXFLAGS = ${su2_dot_cxx_flags}
