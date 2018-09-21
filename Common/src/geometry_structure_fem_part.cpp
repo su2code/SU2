@@ -2973,26 +2973,26 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         vector<unsigned long>  longGlobBuf(sizeGlobal);
         vector<su2double>      doubleGlobBuf(13*sizeGlobal);
 
-        MPI_Allgatherv(longLocBuf.data(), longLocBuf.size(), MPI_UNSIGNED_LONG,
-                       longGlobBuf.data(), recvCounts.data(), displs.data(),
-                       MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+        SU2_MPI::Allgatherv(longLocBuf.data(), longLocBuf.size(), MPI_UNSIGNED_LONG,
+                            longGlobBuf.data(), recvCounts.data(), displs.data(),
+                            MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
 
         for(int i=0; i<size; ++i) {
           recvCounts[i] *= 5; displs[i] *= 5;
         }
 
-        MPI_Allgatherv(shortLocBuf.data(), shortLocBuf.size(), MPI_UNSIGNED_SHORT,
-                       shortGlobBuf.data(), recvCounts.data(), displs.data(),
-                       MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
+        SU2_MPI::Allgatherv(shortLocBuf.data(), shortLocBuf.size(), MPI_UNSIGNED_SHORT,
+                            shortGlobBuf.data(), recvCounts.data(), displs.data(),
+                            MPI_UNSIGNED_SHORT, MPI_COMM_WORLD);
 
         for(int i=0; i<size; ++i) {
           recvCounts[i] /=  5; displs[i] /=  5;
           recvCounts[i] *= 13; displs[i] *= 13;
         }
 
-        MPI_Allgatherv(doubleLocBuf.data(), doubleLocBuf.size(), MPI_DOUBLE,
-                       doubleGlobBuf.data(), recvCounts.data(), displs.data(),
-                       MPI_DOUBLE, MPI_COMM_WORLD);
+        SU2_MPI::Allgatherv(doubleLocBuf.data(), doubleLocBuf.size(), MPI_DOUBLE,
+                            doubleGlobBuf.data(), recvCounts.data(), displs.data(),
+                            MPI_DOUBLE, MPI_COMM_WORLD);
 
         /*--- Copy the data back into facesDonor, which will contain the
               global information after the copies. ---*/
