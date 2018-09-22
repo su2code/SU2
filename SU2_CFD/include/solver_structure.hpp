@@ -4420,7 +4420,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -13272,7 +13272,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -14890,7 +14890,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:
