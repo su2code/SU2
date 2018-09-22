@@ -2,7 +2,7 @@
  * \file numerics_direct_mean_fem.cpp
  * \brief This file contains all the convective term discretization.
  * \author J. Alonso, E. van der Weide, T. Economon
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

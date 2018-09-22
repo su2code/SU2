@@ -2,7 +2,7 @@
  * \file fem_wall_distance.cpp
  * \brief Main subroutines for computing the wall distance for the FEM solver.
  * \author E. van der Weide
- * \version 4.1.3 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

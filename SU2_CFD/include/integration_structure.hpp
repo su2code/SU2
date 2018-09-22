@@ -711,7 +711,7 @@ public:
  * \class CFEM_DG_Integration
  * \brief Class for integration with the FEM DG solver.
  * \author E. van der Weide, T. Economon
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_DG_Integration : public CIntegration {
 public:
