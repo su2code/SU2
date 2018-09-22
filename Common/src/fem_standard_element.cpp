@@ -2,7 +2,7 @@
  * \file fem_standard_element.cpp
  * \brief Functions for the FEM standard elements.
  * \author E. van der Weide
- * \version 4.1.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
