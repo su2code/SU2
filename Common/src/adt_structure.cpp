@@ -1687,7 +1687,7 @@ bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
   const su2double V3z = 0.25*(xRel[4][2]+xRel[5][2]-xRel[1][2]-xRel[2][2]);
 
   const su2double V4x = 0.25*(xRel[4][0]-xRel[1][0]-xRel[3][0]);
-  const su2double V4y = 0.25*(xRel[4][1]-xRel[1][1]-xRel[3][2]);
+  const su2double V4y = 0.25*(xRel[4][1]-xRel[1][1]-xRel[3][1]);
   const su2double V4z = 0.25*(xRel[4][2]-xRel[1][2]-xRel[3][2]);
 
   const su2double V5x = 0.25*(xRel[5][0]-xRel[2][0]-xRel[3][0]);
