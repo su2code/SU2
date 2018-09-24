@@ -370,7 +370,6 @@ void CRadP1Solver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
 
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
 
-
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
       Jacobian.AddVal2Diag(iPoint, Delta);
@@ -594,7 +593,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   /*--- Jacobians and vector structures for implicit computations ---*/
 
-  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+  if (config->GetKind_TimeIntScheme_Radiation() == EULER_IMPLICIT) {
 
     Jacobian_i = new su2double* [nVar];
     Jacobian_j = new su2double* [nVar];
@@ -826,7 +825,7 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Compute the radiative heat flux. ---*/
       Radiative_Energy = node[iPoint]->GetSolution(0);
-      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+      Radiative_Heat_Flux = Theta*(Ib_w - Radiative_Energy);
 
       /*--- Compute the Viscous contribution to the residual ---*/
       Res_Visc[0] = Radiative_Heat_Flux*Area;
@@ -836,7 +835,7 @@ void CRadP1Solver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
       /*--- Compute the Jacobian contribution. ---*/
       if (implicit) {
-        Jacobian_i[0][0] = Theta;
+        Jacobian_i[0][0] = - Theta;
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       }
 
@@ -920,7 +919,7 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
       /*--- Compute the Jacobian contribution. ---*/
       if (implicit) {
-        Jacobian_i[0][0] = Theta;
+        Jacobian_i[0][0] = - Theta;
         Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       }
     }

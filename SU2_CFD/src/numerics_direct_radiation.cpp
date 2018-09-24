@@ -42,7 +42,7 @@ CNumericsRadiation::CNumericsRadiation(unsigned short val_nDim,
                          CConfig *config)
                          : CNumerics(val_nDim, val_nVar, config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_Radiation() == EULER_IMPLICIT);
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   Absorption_Coeff = config->GetAbsorption_Coeff();
@@ -147,10 +147,6 @@ CAvgGradCorrected_P1::CAvgGradCorrected_P1(unsigned short val_nDim, unsigned sho
 
   GammaP1 = 1.0 / (3.0*(Absorption_Coeff + Scattering_Coeff));
 
-  //implicit        = (config->GetKind_TimeIntScheme_Heat() == EULER_IMPLICIT);
-  implicit = false;
-
-
   Edge_Vector = new su2double [nDim];
   Proj_Mean_GradP1Var_Edge = new su2double [nVar];
   Proj_Mean_GradP1Var_Kappa = new su2double [nVar];
@@ -249,8 +245,7 @@ void CSourceP1::ComputeResidual(su2double *val_residual, su2double **val_Jacobia
 
   /*--- Contribution to the Jacobian ---*/
   if (implicit) {
-    val_Jacobian_i[0][0] = Absorption_Coeff * Volume;
+    val_Jacobian_i[0][0] = - Absorption_Coeff * Volume;
   }
-
 
 }

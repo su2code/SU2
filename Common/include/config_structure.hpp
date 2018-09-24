@@ -478,6 +478,7 @@ private:
   Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_TimeIntScheme_Radiation, /*!< \brief Time integration for the Radiation equations. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
   Kind_ConvNumScheme_Flow,	/*!< \brief Centered or upwind scheme for the flow equations. */
   Kind_ConvNumScheme_Heat,	/*!< \brief Centered or upwind scheme for the flow equations. */
@@ -4134,6 +4135,15 @@ public:
    */
   unsigned short GetKind_TimeIntScheme_FEA(void);
   
+  /*!
+   * \brief Get the kind of integration scheme (explicit or implicit)
+   *        for the radiation equations.
+   * \note This value is obtained from the config file, and it is constant
+   *       during the computation.
+   * \return Kind of integration scheme for the radiation equations.
+   */
+  unsigned short GetKind_TimeIntScheme_Radiation(void);
+
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
    *        for the template equations.

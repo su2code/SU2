@@ -1069,6 +1069,8 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_Tim
 
 inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_SpaceIteScheme_FEA; }
 
+inline unsigned short CConfig::GetKind_TimeIntScheme_Radiation(void) { return Kind_TimeIntScheme_Radiation; }
+
 inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_TransferMethod; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
