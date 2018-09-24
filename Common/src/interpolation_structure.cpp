@@ -202,13 +202,11 @@ void CInterpolator::Determine_ArraySize(bool faces, int markDonor, int markTarge
 
 }
 
-void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim, unsigned long &nLocalVertex_Donor)
+void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim)
 {
-  unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point;
+  unsigned long iVertex, iPointDonor = 0, iVertexDonor, nBuffer_Coord, nBuffer_Point, nLocalVertex_Donor;
   unsigned short iDim;
-  
-  nLocalVertex_Donor = 0;
-  
+
   /* Only needed if face data is also collected */
   su2double  *Normal;
 
@@ -260,13 +258,6 @@ void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget
       Buffer_Receive_Normal[iVertex] = Buffer_Send_Normal[iVertex];
   }
 #endif
-}
-
-void CInterpolator::Collect_VertexInfo(bool faces, int markDonor, int markTarget, unsigned long nVertexDonor, unsigned short nDim) {
-
-	unsigned long  nLocalVertex_Donor = 0;
-	
-	Collect_VertexInfo(faces, markDonor, markTarget, nVertexDonor, nDim, nLocalVertex_Donor);
 }
 
 int CInterpolator::Find_InterfaceMarker(CConfig *config, unsigned short val_marker_interface) {
@@ -2744,24 +2735,23 @@ CRadialBasisFunction::~CRadialBasisFunction() {}
 
 void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
-  int rank=MASTER_NODE, nProcessor=SINGLE_NODE;
-  int iProcessor;
+  int iProcessor, nProcessor = size;
   int nPolynomial;
   int mark_donor, mark_target, target_check, donor_check;
   int *skip_row = NULL, *calc_polynomial_check;
 
   unsigned short iDim, nDim, iMarkerInt, nMarkerInt;    
 
-  unsigned long iVertexDonor, jVertexDonor, iVertexTarget, iLocalM, iCount, jCount;
+  unsigned long iVertexDonor, jVertexDonor, iVertexTarget, iCount, jCount;
   unsigned long nVertexDonor, nVertexTarget, nVertexDonorInDomain;
   unsigned long nGlobalVertexDonor, iGlobalVertexDonor_end, nLocalM;
   unsigned long point_donor, point_target;
-  unsigned long *nVertexDonorInDomain_arr, *nLocalM_arr;
+  unsigned long *nLocalM_arr;
   
   su2double val_i, val_j;
   su2double interface_coord_tol=1e6*numeric_limits<double>::epsilon();
   su2double *Coord_i, *Coord_j;
-  su2double *local_M, *global_M_val_arr = NULL, *Buffer_recv_local_M;
+  su2double *local_M;
   su2double *P = NULL;
   su2double *C_inv_trunc = NULL, *C_tmp = NULL;
   su2double *target_vec, *coeff_vec;
@@ -2769,15 +2759,9 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
   CSymmetricMatrix *global_M = NULL, *Mp = NULL;
 
 #ifdef HAVE_MPI
-
-  int *Buffer_Recv_mark=NULL, iRank;
-  
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-  
-  if (rank == MASTER_NODE) 
-    Buffer_Recv_mark = new int[nProcessor];
-
+  unsigned long iLocalM;
+  su2double *global_M_val_arr = NULL, *Buffer_recv_local_M;
+  int *Buffer_Recv_mark = new int[nProcessor], iRank;
 #endif
 
   /*--- Initialize variables --- */
@@ -2853,32 +2837,26 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 
     /*--- Sets MaxLocalVertex_Donor, Buffer_Receive_nVertex_Donor ---*/
     Determine_ArraySize(false, mark_donor, mark_target, nVertexDonor, nDim);
+    
+    /*--- Collect information about number of donor vertices in domain.
+          Calculate total number of donor vertices across all ranks and
+          number of vertices on boundary prior to current rank. ---*/
+    nVertexDonorInDomain = Buffer_Send_nVertex_Donor[0];
+    iGlobalVertexDonor_end = nGlobalVertexDonor = 0;
+    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
+    {
+      nGlobalVertexDonor += Buffer_Receive_nVertex_Donor[iProcessor];
+      if (iProcessor<=rank) iGlobalVertexDonor_end += Buffer_Receive_nVertex_Donor[iProcessor];
+    }
 
+    /*-- Collect coordinates, global points, and normal vectors ---*/
     Buffer_Send_Coord          = new su2double     [ MaxLocalVertex_Donor * nDim ];
     Buffer_Send_GlobalPoint    = new unsigned long [ MaxLocalVertex_Donor ];
     Buffer_Receive_Coord       = new su2double     [ nProcessor * MaxLocalVertex_Donor * nDim ];
     Buffer_Receive_GlobalPoint = new unsigned long [ nProcessor * MaxLocalVertex_Donor ];
 
-    /*-- Collect coordinates, global points, and normal vectors ---*/
-    Collect_VertexInfo( false, mark_donor, mark_target, nVertexDonor, nDim, nVertexDonorInDomain);
-    
-    /*--- Collect information about number of donor vertices in domain ---*/
-    /*--- Also calculate total number of donor vertices across all processors in domain on boundary ---*/
-    nVertexDonorInDomain_arr = new unsigned long [nProcessor];
-#ifdef HAVE_MPI
-    SU2_MPI::Allgather(&nVertexDonorInDomain, 1, MPI_UNSIGNED_LONG, nVertexDonorInDomain_arr, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nVertexDonorInDomain, &nGlobalVertexDonor, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-#else
-    nVertexDonorInDomain_arr[MASTER_NODE] = nVertexDonorInDomain;
-    nGlobalVertexDonor = nVertexDonorInDomain;
-#endif
-    
-		/*--- Calculate number of vertices on boundary prior to current processor ---*/
-    iGlobalVertexDonor_end = 0;
-    for (iProcessor=0; iProcessor<=rank; iProcessor++) {
-      iGlobalVertexDonor_end += nVertexDonorInDomain_arr[iProcessor];
-    }
-    
+    Collect_VertexInfo( false, mark_donor, mark_target, nVertexDonor, nDim);
+
     /*--- Send information about size of local_M array ---*/
     nLocalM = nVertexDonorInDomain*(nVertexDonorInDomain+1)/2 \
 		    + nVertexDonorInDomain*(nGlobalVertexDonor-iGlobalVertexDonor_end);
@@ -2895,31 +2873,31 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     Coord_i = new su2double [nDim];
     Coord_j = new su2double [nDim];
     iCount=0;
-    for (iVertexDonor=0; iVertexDonor<nVertexDonorInDomain; iVertexDonor++) {
+    for (iVertexDonor=0; iVertexDonor<nVertexDonorInDomain; iVertexDonor++)
+    {
       for (iDim=0; iDim<nDim; iDim++)
         Coord_i[iDim] = Buffer_Send_Coord[iVertexDonor*nDim + iDim];
 
-      for (jVertexDonor=iVertexDonor; jVertexDonor<nVertexDonorInDomain; jVertexDonor++) { 
+      for (jVertexDonor=iVertexDonor; jVertexDonor<nVertexDonorInDomain; jVertexDonor++)
+      { 
         for (iDim=0; iDim<nDim; iDim++)
           Coord_j[iDim] = Buffer_Send_Coord[jVertexDonor*nDim + iDim];
 
-        Get_Distance(Coord_i, Coord_j, nDim, val_i);
-        Get_RadialBasisValue(val_i, config[donorZone]);
-        local_M[iCount] = val_i;
-        iCount++;
+        local_M[iCount++] = Get_RadialBasisValue(config[donorZone]->GetKindRadialBasisFunction(),
+                                                 config[donorZone]->GetRadialBasisFunctionParameter(),
+                                                 PointsDistance(Coord_i, Coord_j));
       }
-      
-      if (rank+1 < nProcessor ) {
-        for (iProcessor=rank+1; iProcessor<nProcessor; iProcessor++) {
-          for (jVertexDonor=0; jVertexDonor<nVertexDonorInDomain_arr[iProcessor]; jVertexDonor++) {
-            for (iDim=0; iDim<nDim; iDim++)
-              Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertexDonor)*nDim + iDim];
 
-            Get_Distance(Coord_i, Coord_j, nDim, val_i);
-            Get_RadialBasisValue(val_i, config[donorZone]);
-            local_M[iCount] = val_i;
-            iCount++;
-          }
+      for (iProcessor=rank+1; iProcessor<nProcessor; iProcessor++)
+      {
+        for (jVertexDonor=0; jVertexDonor<Buffer_Receive_nVertex_Donor[iProcessor]; jVertexDonor++)
+        {
+          for (iDim=0; iDim<nDim; iDim++)
+            Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+jVertexDonor)*nDim + iDim];
+
+          local_M[iCount++] = Get_RadialBasisValue(config[donorZone]->GetKindRadialBasisFunction(),
+                                                   config[donorZone]->GetRadialBasisFunctionParameter(),
+                                                   PointsDistance(Coord_i, Coord_j));
         }
       }
     }
@@ -2967,35 +2945,20 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     
     /*--- Invert M matrix ---*/
     if (rank == MASTER_NODE) {
-      switch (config[donorZone]->GetKindRadialBasisFunction()) {
-
-        /*--- Cholesky decompose for basis functions giving positive definite matrix ---*/
+      switch (config[donorZone]->GetKindRadialBasisFunction())
+      {
+        /*--- Basis functions that make M positive definite ---*/
         case WENDLAND_C2:
         case INV_MULTI_QUADRIC:
         case GAUSSIAN:
-
-#ifdef HAVE_LAPACK
-          global_M->CalcInv_dsptri();
-#else
-          global_M->CholeskyDecompose(true);
-#endif
+          global_M->Invert(true);
           break;
-					
-        /*--- LU decompose otherwise ---*/
+
         case THIN_PLATE_SPLINE:
         case MULTI_QUADRIC:
-				
-#ifdef HAVE_LAPACK
-          global_M->CalcInv_dsptri();
-#else
-          global_M->LUDecompose();
-#endif
+          global_M->Invert(false);
           break;
       }
-			
-#ifndef HAVE_LAPACK
-      global_M->CalcInv(true);
-#endif
     }
     
     calc_polynomial_check = new int [nDim];
@@ -3009,7 +2972,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         P = new su2double [nGlobalVertexDonor*(nDim+1)];
         iCount = 0;
         for (iProcessor=MASTER_NODE; iProcessor<nProcessor; iProcessor++) {
-          for (iVertexDonor=0; iVertexDonor<nVertexDonorInDomain_arr[iProcessor]; iVertexDonor++) {
+          for (iVertexDonor=0; iVertexDonor<Buffer_Receive_nVertex_Donor[iProcessor]; iVertexDonor++) {
             P[iCount*(nDim+1)] = 1;
             for (iDim=0; iDim<nDim; iDim++) {
               P[iCount*(nDim+1)+iDim+1] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+iVertexDonor)*nDim + iDim];
@@ -3021,8 +2984,8 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         skip_row = new int [nDim+1];
         skip_row[0] = 1;
         for (int i=1; i<nDim+1; i++) skip_row[i] = 0;
-        
-        Check_PolynomialTerms(nDim+1, nGlobalVertexDonor, P, skip_row, calc_polynomial_check, interface_coord_tol, true, nPolynomial);
+
+        Check_PolynomialTerms(nDim+1, nGlobalVertexDonor, true, skip_row, interface_coord_tol, calc_polynomial_check, nPolynomial, P);
 
         /*--- Calculate Mp ---*/
         Mp = new CSymmetricMatrix;
@@ -3040,7 +3003,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
             Mp->Write(m, n, val_i);
           }
         }
-        Mp->CalcInv(true);
+        Mp->Invert(false);
 
         /*--- Calculate M_p*P*M_inv ---*/
         C_inv_trunc = new su2double [(nGlobalVertexDonor+nPolynomial+1)*nGlobalVertexDonor];
@@ -3133,14 +3096,13 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         }
 				
         for (iProcessor=0; iProcessor<nProcessor; iProcessor++) {
-          for (iVertexDonor=0; iVertexDonor<nVertexDonorInDomain_arr[iProcessor]; iVertexDonor++) {
+          for (iVertexDonor=0; iVertexDonor<Buffer_Receive_nVertex_Donor[iProcessor]; iVertexDonor++) {
             for (iDim=0; iDim<nDim; iDim++)
               Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Donor+iVertexDonor)*nDim + iDim];  		
-            
-            Get_Distance(Coord_i, Coord_j, nDim, val_i);
-            Get_RadialBasisValue(val_i, config[donorZone]);
-            target_vec[iCount] = val_i;
-            iCount++;
+
+            target_vec[iCount++] = Get_RadialBasisValue(config[donorZone]->GetKindRadialBasisFunction(),
+                                                        config[donorZone]->GetRadialBasisFunctionParameter(),
+                                                        PointsDistance(Coord_i, Coord_j));
           }
         }
 		  	
@@ -3162,7 +3124,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         iCount = 0;
         jCount = 0;
         for (iProcessor=0; iProcessor<nProcessor; iProcessor++) {
-          for (iVertexDonor=0; iVertexDonor<nVertexDonorInDomain_arr[iProcessor]; iVertexDonor++) {
+          for (iVertexDonor=0; iVertexDonor<Buffer_Receive_nVertex_Donor[iProcessor]; iVertexDonor++) {
             if ( coeff_vec[iCount] != 0 ) {
               point_donor = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Donor+iVertexDonor];
               target_geometry->vertex[mark_target][iVertexTarget]->SetInterpDonorPoint(jCount, point_donor);
@@ -3177,7 +3139,6 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
     } // endfor
     
     /*--- Memory management ---*/
-    delete [] nVertexDonorInDomain_arr;
     delete [] nLocalM_arr;
     delete [] local_M;
     delete [] Coord_i;
@@ -3220,7 +3181,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 #endif
 }
 
-void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2double *P, int *skip_row, int* keep_row, su2double max_diff_tol_in, bool P_transposed, int &n_polynomial)
+void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_transposed, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P)
 {
   int *write_row = NULL;
   unsigned long iCount, jCount, n_rows;
@@ -3233,6 +3194,9 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
     if (skip_row[i] == 0) { n_rows++; }
   }
   
+  /*--- Fit a plane through the points in P ---*/
+  
+  /*--- Compute P times its transpose ---*/
   PPT = new CSymmetricMatrix;
   PPT->Initialize(n_rows);
 
@@ -3259,9 +3223,9 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
     }
   }
   
-  PPT->CholeskyDecompose(true);
-  PPT->CalcInv(true);
+  PPT->Invert(true);
 
+  /*--- RHS for the least squares fit (vector of ones times P) ---*/
   coeff = new double [n_rows];
   iCount = 0;
   for (int i = 0; i < m; i ++) {
@@ -3275,8 +3239,10 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
     }
   } 
   
+  /*--- Multiply the RHS by the inverse thus obtaining the coefficients ---*/
   PPT->MatVecMult(coeff);
   
+  /*--- Determine the maximum deviation of the points from the fitted plane ---*/
   max_diff = 0;
   for (unsigned long i = 0; i < n; i ++)
   {
@@ -3289,35 +3255,29 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
         iCount++;
       }
     }
-    max_diff = (abs(1-sum) > max_diff)? abs(1-sum):max_diff;
+    /*--- 1.0 is the arbitrary constant we are assuming when fitting the plane ---*/
+    max_diff = max(abs(1.0-sum), max_diff);
   }
   
   for (unsigned long i=0; i<n_rows; i++) {
-    if (max_diff < max_diff_tol) { keep_row[i] = 0; }
-    else {keep_row[i] = 1;}
+    if (max_diff < max_diff_tol) { keep_row[i] = 0; } // it is a plane! assume none will be kept
+    else {keep_row[i] = 1;} // not a plane, keep all
   }
   
-  /*--- If points lie on plane ---*/
+  /*--- If points lie on plane remove row associated with the maximum coefficient ---*/
   if (max_diff < max_diff_tol)
   {
+    /*--- find the max coeff and mark the corresponding row for removal ---*/
     iCount = 0;
-    for (unsigned long i=0; i<n_rows; i++) {
-      
-      if (i == 0) {
-        iCount = i;
-      }
-      else {
-        iCount = ( abs(coeff[i]) > max_coeff )? i : iCount;
-      }
-      max_coeff = coeff[iCount];
+    for (unsigned long i=1; i<n_rows; i++) {
+      max_coeff = abs(coeff[iCount]);
+      if(abs(coeff[i]) > max_coeff) iCount = i;
     }
 
-    for (unsigned long i=0; i<n_rows; i++) {
-      if ( i != iCount ) {
-        keep_row[i] = 1;
-      }
-    }
+    for (unsigned long i=0; i<n_rows; i++)
+      keep_row[i] = int(i != iCount);
     
+    /*--- form the truncated P... ---*/
     n_polynomial = n_rows - 1;
     
     write_row = new int [m];
@@ -3359,28 +3319,13 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
       }
     }
     
-    for (unsigned long i=0; i<jCount*n; i++) {
-      P[i] = P_tmp[i];
-    }
-    
+    /*--- ...write over the original. ---*/
+    for (unsigned long i=0; i<jCount*n; i++) P[i] = P_tmp[i];
   }
+  /*--- Not a plane after all ---*/
   else {
     n_polynomial = n_rows;
   }
-  
-//  cout << "Coefficients: ";
-//  for (int i = 0; i < n_rows; i ++)
-//  {
-//    cout << coeff[i] << ", ";
-//  }
-//  cout << endl;
-//  
-//  cout << "keep_row: ";
-//  for (int i = 0; i < n_rows; i ++)
-//  {
-//    cout << keep_row[i] << ", ";
-//  }
-//  cout << endl;
   
   delete PPT;
   delete [] coeff;
@@ -3391,49 +3336,34 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, su2doub
   
 }
 
-void CRadialBasisFunction::Get_Distance(su2double *Coord_i, su2double *Coord_j, unsigned short nDim, su2double &dist)
+su2double CRadialBasisFunction::Get_RadialBasisValue(const short unsigned int type, const su2double &radius, const su2double &dist)
 {
-  dist = 0;
-  for (unsigned short k=0; k<nDim; k++)
-    dist += pow((Coord_i[k] - Coord_j[k]), 2);
-  dist = sqrt(dist);
-}
+  su2double rbf = dist/radius;
 
-void CRadialBasisFunction::Get_RadialBasisValue(su2double &dist, CConfig *config)
-{
-  switch (config->GetKindRadialBasisFunction()) {
+  switch (type) {
 
     case WENDLAND_C2:
-      dist /= config->GetRadialBasisFunctionParameter();
-      if(dist < 1) dist = pow((1-dist), 4)*(4*dist+1);
-      else         dist = 0;
-      break;
-
-    case INV_MULTI_QUADRIC:
-      dist = 1/sqrt(dist*dist + \
-        (config->GetRadialBasisFunctionParameter())* \
-        (config->GetRadialBasisFunctionParameter()));
+      if(rbf < 1) rbf = pow((1-rbf),4)*(4*rbf+1);
+      else        rbf = 0.0;
       break;
 
     case GAUSSIAN:
-      dist /= config->GetRadialBasisFunctionParameter();
-      dist = exp(-dist*dist);
+      rbf = exp(-rbf*rbf);
       break;
-			
+
     case THIN_PLATE_SPLINE:
-      dist /= config->GetRadialBasisFunctionParameter();
-      if(dist > numeric_limits<float>::min())
-        dist *= dist*log(dist);
-      else
-        dist = 0;
+      if(rbf < numeric_limits<float>::min()) rbf = 0.0;
+      else rbf *= rbf*log(rbf);
       break;
-		
+
     case MULTI_QUADRIC:
-      dist = sqrt(dist*dist + \
-        (config->GetRadialBasisFunctionParameter())* \
-        (config->GetRadialBasisFunctionParameter()));
+    case INV_MULTI_QUADRIC:
+      rbf = sqrt(1.0+rbf*rbf);
+      if(type == INV_MULTI_QUADRIC) rbf = 1.0/rbf;
       break;
   }
+
+  return rbf;
 }
 
 /*--- Symmetric matrix class definitions ---*/
@@ -3497,6 +3427,7 @@ inline int CSymmetricMatrix::GetSize()
 
 void CSymmetricMatrix::CholeskyDecompose(bool overwrite)
 {
+#ifndef HAVE_LAPACK
   int i, j, k;
   double *vec, sum;
 	
@@ -3526,10 +3457,12 @@ void CSymmetricMatrix::CholeskyDecompose(bool overwrite)
   }
   
   decomposed = cholesky;
+#endif
 }
 
 void CSymmetricMatrix::LUDecompose()
 {
+#ifndef HAVE_LAPACK
   bool interchange_row;
   int i, j, k, pivot_idx, tmp_perm_idx;
   double pivot, *tmp_row;
@@ -3588,10 +3521,12 @@ void CSymmetricMatrix::LUDecompose()
   delete [] tmp_row;
 
   decomposed = lu;
+#endif
 }
 
 void CSymmetricMatrix::CalcInv(bool overwrite)
 {
+#ifndef HAVE_LAPACK
   int i, j, k;
   double *vec, sum, *write_vec;
 
@@ -3729,12 +3664,12 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
   decompose_vec = NULL;
   decomposed = none;
   inversed = true;
+#endif
 }
 
 void CSymmetricMatrix::CalcInv_dsptri()
 {
 #ifdef HAVE_LAPACK
-
   char uplo = 'L';
   int info, *ipiv = new int [sz];
   double *work = new double [sz];
@@ -3749,8 +3684,18 @@ void CSymmetricMatrix::CalcInv_dsptri()
   decompose_vec = NULL;
   decomposed    = none;
   inversed      = true;
-
 #endif
+}
+
+void CSymmetricMatrix::Invert(const bool is_spd)
+{
+#ifdef HAVE_LAPACK
+  CalcInv_dsptri();
+#else
+  if(!is_spd) LUDecompose();
+  else CholeskyDecompose(true);
+  CalcInv(true);
+#endif // HAVE_LAPACK
 }
 
 void CSymmetricMatrix::MatVecMult(double *v)
@@ -3773,9 +3718,9 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
 
   tmp_res = new double [sz*N];
 
-  // for compatibility with LAPACK in AD a copy of the input matrix is made
-  // demoting su2double to double. The interpolation weights are only differentiated
-  // for unsteady fluid adjoint so in all other cases there is no loss of accuracy
+  /*--- For compatibility with LAPACK in AD a copy of the input matrix is made
+  demoting su2double to double. The interpolation weights are only differentiated
+  for unsteady fluid adjoint so in all other cases there is no loss of accuracy. ---*/
   mat_vec = new double [sz*N];
   for(int i=0; i<sz*N; ++i)
     mat_vec[i] = SU2_TYPE::GetValue(mat_vec_in[i]);
@@ -3806,10 +3751,10 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
   
 #else
 
-  for (unsigned long i=0; i<sz; i++) {
-    for (unsigned long j=0; j<N; j++) {
+  for (int i=0; i<sz; i++) {
+    for (int j=0; j<N; j++) {
       tmp_res[i*N+j] = 0;
-      for (unsigned long k=0; k<sz; k++) {
+      for (int k=0; k<sz; k++) {
         tmp_res[i*N+j] += val_vec[CalcIdx(i, k)]*mat_vec[k*N+j];
       }
     }
@@ -3905,64 +3850,4 @@ double CSymmetricMatrix::ReadInv(int i, int j)
   else {
     throw invalid_argument("Matrix inverse not calculated yet.");
   }
-}
-
-void CSymmetricMatrix::Print()
-{
-  cout << "Matrix values:" << endl;
-  cout << "["<< endl;
-  for (int i=0; i<sz; i++) {
-    cout << "[ ";
-    for (int j=0; j<sz; j++) {
-      cout << Read(i, j) << ", ";
-    }
-    cout << " ], " << endl;
-  }
-  cout << "]" << endl;
-}
-
-void CSymmetricMatrix::PrintInv()
-{
-  cout << "Matrix inverse values:" << endl;
-  cout << "["<< endl;
-  for (int i=0; i<sz; i++) {
-    cout << "[ ";
-    for (int j=0; j<sz; j++) {
-      cout << ReadInv(i, j) << ", ";
-    }
-    cout << " ], " << endl;
-  }
-  cout << "]" << endl;
-}
-
-void CSymmetricMatrix::PrintLU()
-{
-  cout << "LU matrix:" << endl;
-  cout << "["<< endl;
-  for (int i=0; i<sz; i++) {
-    cout << "[ ";
-    for (int j=0; j<sz; j++) {
-      cout << decompose_vec[CalcIdxFull(i, j)] << ", ";
-    }
-    cout << " ], " << endl;
-  }
-  cout << "]" << endl;
-}
-
-void CSymmetricMatrix::CheckInv()
-{
-  double sum;
-
-  cout << "Multiplying matrix by its inverse:" << endl;
-  cout << "["<< endl;
-  for (int i=0; i<sz; i++) {
-    cout << "[ ";
-    for (int j=0; j<sz; j++) {
-      sum = 0.0;
-      for (int k=0; k<sz; k++) {sum += Read(i, k)*ReadInv(k, j);}
-      cout << sum << ", ";
-    }
-    cout << " ], " << endl;
-  }
-  cout << "]" << endl;	
 }
