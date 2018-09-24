@@ -2,7 +2,7 @@
  * \file data_manufactured_solutions.cpp
  * \brief Functions to compute the solution and source terms for manufactured solutions.
  * \author E. van der Weide
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

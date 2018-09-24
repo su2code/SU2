@@ -4,7 +4,7 @@
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
  * \author E. van der Weide
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.

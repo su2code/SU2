@@ -6,7 +6,7 @@
           All the functions in this class are based on the program JACOBI_RULE
           of John Burkardt.
  * \author E. van der Weide
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -49,7 +49,7 @@ using namespace std;
  * \brief Class used to determine the quadrature points of the Gauss Jacobi
           integration rules.
  * \author E. van der Weide
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CGaussJacobiQuadrature {
 public:

@@ -353,7 +353,7 @@ def main():
     fem_ns_flatplate.cfg_dir   = "hom_navierstokes/FlatPlate/nPoly4"
     fem_ns_flatplate.cfg_file  = "lam_flatplate_reg.cfg"
     fem_ns_flatplate.test_iter = 25
-    fem_ns_flatplate.test_vals = [1.325847,3.141486,0.037730,0.223626] #last 4 columns
+    fem_ns_flatplate.test_vals = [1.383727,3.175247,0.058387,0.257951] #last 4 columns
     fem_ns_flatplate.su2_exec  = "SU2_CFD"
     fem_ns_flatplate.timeout   = 1600
     fem_ns_flatplate.tol       = 0.00001
@@ -364,11 +364,55 @@ def main():
     fem_ns_cylinder.cfg_dir   = "hom_navierstokes/CylinderViscous/nPoly3"
     fem_ns_cylinder.cfg_file  = "fem_Cylinder_reg.cfg"
     fem_ns_cylinder.test_iter = 10
-    fem_ns_cylinder.test_vals = [0.441637,0.963217,-0.000022,67.293720] #last 4 columns
+    fem_ns_cylinder.test_vals = [0.454960,0.979123,-0.000028,79.984799] #last 4 columns
     fem_ns_cylinder.su2_exec  = "SU2_CFD"
     fem_ns_cylinder.timeout   = 1600
     fem_ns_cylinder.tol       = 0.00001
     test_list.append(fem_ns_cylinder)
+
+    # Steady sphere
+    fem_ns_sphere           = TestCase('fem_ns_sphere')
+    fem_ns_sphere.cfg_dir   = "hom_navierstokes/SphereViscous/nPoly3_QuadDominant"
+    fem_ns_sphere.cfg_file  = "fem_Sphere_reg.cfg"
+    fem_ns_sphere.test_iter = 10
+    fem_ns_sphere.test_vals = [-0.288121,0.240324,0.000258,21.797363] #last 4 columns
+    fem_ns_sphere.su2_exec  = "SU2_CFD"
+    fem_ns_sphere.timeout   = 1600
+    fem_ns_sphere.tol       = 0.00001
+    test_list.append(fem_ns_sphere)
+
+    # Unsteady sphere ADER
+    fem_ns_sphere_ader           = TestCase('fem_ns_sphere_ader')
+    fem_ns_sphere_ader.cfg_dir   = "hom_navierstokes/SphereViscous/nPoly3_QuadDominant"
+    fem_ns_sphere_ader.cfg_file  = "fem_Sphere_reg_ADER.cfg"
+    fem_ns_sphere_ader.test_iter = 10
+    fem_ns_sphere_ader.test_vals = [-35.000000,-35.000000,0.000047,31.110911] #last 4 columns
+    fem_ns_sphere_ader.su2_exec  = "SU2_CFD"
+    fem_ns_sphere_ader.timeout   = 1600
+    fem_ns_sphere_ader.tol       = 0.00001
+    test_list.append(fem_ns_sphere_ader)
+
+    # Unsteady cylinder
+    fem_ns_unsteady_cylinder           = TestCase('fem_ns_unsteady_cylinder')
+    fem_ns_unsteady_cylinder.cfg_dir   = "hom_navierstokes/UnsteadyCylinder/nPoly4"
+    fem_ns_unsteady_cylinder.cfg_file  = "fem_unst_cylinder.cfg"
+    fem_ns_unsteady_cylinder.test_iter = 10
+    fem_ns_unsteady_cylinder.test_vals = [-3.558582,-3.014464,-0.038927,1.383983] #last 4 columns
+    fem_ns_unsteady_cylinder.su2_exec  = "SU2_CFD"
+    fem_ns_unsteady_cylinder.timeout   = 1600
+    fem_ns_unsteady_cylinder.tol       = 0.00001
+    test_list.append(fem_ns_unsteady_cylinder)
+
+    # Unsteady cylinder ADER
+    fem_ns_unsteady_cylinder_ader           = TestCase('fem_ns_unsteady_cylinder_ader')
+    fem_ns_unsteady_cylinder_ader.cfg_dir   = "hom_navierstokes/UnsteadyCylinder/nPoly4"
+    fem_ns_unsteady_cylinder_ader.cfg_file  = "fem_unst_cylinder_ADER.cfg"
+    fem_ns_unsteady_cylinder_ader.test_iter = 10
+    fem_ns_unsteady_cylinder_ader.test_vals = [-35.000000,-35.000000,-0.041003,1.391339] #last 4 columns
+    fem_ns_unsteady_cylinder_ader.su2_exec  = "SU2_CFD"
+    fem_ns_unsteady_cylinder_ader.timeout   = 1600
+    fem_ns_unsteady_cylinder_ader.tol       = 0.00001
+    test_list.append(fem_ns_unsteady_cylinder_ader)
 
     #########################
     ###    Transition     ###

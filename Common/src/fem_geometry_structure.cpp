@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 4.3.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -32,10 +32,10 @@
 #include "../include/fem_geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-/* MKL or LAPACK include files, if supported. */
+/* MKL or LAPACKE include files, if supported. */
 #ifdef HAVE_MKL
 #include "mkl.h"
-#elif HAVE_LAPACK
+#elif HAVE_LAPACKE
 #include "lapacke.h"
 #endif
 
@@ -5817,9 +5817,9 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /*--- Check if the inverse of mass matrix is needed. ---*/
     if( FullInverseMassMatrix ) {
 
-      /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
+      /*--- Check if LAPACKE/MKL can be used to compute the inverse. ---*/
 
-#if defined (HAVE_LAPACK) || defined(HAVE_MKL)
+#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
 
       /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
          and LAPACKE_dpotri. As the mass matrix is positive definite, a
