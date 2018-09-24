@@ -1086,7 +1086,7 @@ void CSourceRadiation::ComputeResidual(su2double *val_residual, su2double **val_
 
   /*--- Set the energy contribution ---*/
 
-  val_residual[nDim+1] = -RadVar_Source[0]*Volume;
+  val_residual[nDim+1] = - RadVar_Source[0]*Volume;
 
   /*--- Set the energy contribution to the Jacobian ---*/
 
@@ -1110,7 +1110,7 @@ void CSourceRadiation::ComputeResidual(su2double *val_residual, su2double **val_
     val_Jacobian_i[3][0] = 0.0;
     val_Jacobian_i[3][1] = 0.0;
     val_Jacobian_i[3][2] = 0.0;
-    val_Jacobian_i[3][3] = 1.0*RadVar_Source[1]*Volume;  // pos
+    val_Jacobian_i[3][3] = - RadVar_Source[1]*Volume;
 
   }
 
