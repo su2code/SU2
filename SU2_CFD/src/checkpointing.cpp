@@ -92,6 +92,7 @@ Checkpointing::~Checkpointing(void) {
 
 
 /* Methods of CheckpointEverything. Child class of Checkpointing_Scheme */
+// DOESNT WORK ANYMORE REPLACED BY SU2 IMPLEMENTATION
 ACTION::action Everything::revolve()
 {
     ACTION::action whattodo;

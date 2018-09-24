@@ -54,7 +54,7 @@ def main():
 
     # checkpointing_cylinder
     checkpointing_cylinder           = TestCase('checkpointing_cylinder')
-    checkpointing_cylinder.cfg_dir   = "checkpointing/everything/"
+    checkpointing_cylinder.cfg_dir   = "checkpointing/SU2_implementation/"
     checkpointing_cylinder.cfg_file  = "cylinder_CP.cfg"
     checkpointing_cylinder.test_iter = 9
     checkpointing_cylinder.test_vals = [4.332534, -0.975925, 1.9055e-05, 1.6986e-07] #last 4 columns

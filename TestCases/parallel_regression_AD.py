@@ -48,6 +48,22 @@ def main():
 
     test_list = []
 
+    ######################################
+    ### Checkpointing                  ###
+    ######################################
+
+    # checkpointing_cylinder
+    checkpointing_cylinder           = TestCase('checkpointing_cylinder')
+    checkpointing_cylinder.cfg_dir   = "checkpointing/SU2_implementation/"
+    checkpointing_cylinder.cfg_file  = "cylinder_CP.cfg"
+    checkpointing_cylinder.test_iter = 9
+    checkpointing_cylinder.test_vals = [4.330404, -0.978228, 2.0140e-05, 1.4274e-07]
+    checkpointing_cylinder.su2_exec  = "parallel_computation.py -f"
+    checkpointing_cylinder.timeout   = 1600
+    checkpointing_cylinder.tol       = 0.00001
+    checkpointing_cylinder.unsteady  = True
+    test_list.append(checkpointing_cylinder)
+
     #####################################
     ### Disc. adj. compressible Euler ###
     #####################################
