@@ -440,7 +440,7 @@ public:
  * \class CFEMFluidIteration
  * \brief Class for driving an iteration of the finite element flow system.
  * \author T. Economon, E. van der Weide
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEMFluidIteration : public CIteration {
 public:
@@ -887,7 +887,7 @@ public:
  * \class CFEAIteration
  * \brief Class for driving an iteration of structural analysis.
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEAIteration : public CIteration {
 public:

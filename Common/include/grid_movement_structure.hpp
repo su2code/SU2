@@ -1306,7 +1306,7 @@ public:
  * \class CElasticityMovement
  * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
  * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CElasticityMovement : public CVolumetricMovement {
 protected:

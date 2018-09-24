@@ -3,7 +3,7 @@
  * \brief Headers of the main functions for the FEM standard elements.
  *        The functions are in the <i>fem_standard_element.cpp</i> file.
  * \author E. van der Weide
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,7 +44,7 @@ using namespace std;
  * \class FEMStandardElementBaseClass
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class FEMStandardElementBaseClass {
 protected:
@@ -785,7 +785,7 @@ private:
  * \class FEMStandardElementClass
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class FEMStandardElementClass : public FEMStandardElementBaseClass {
 private:
@@ -1234,7 +1234,7 @@ private:
  * \class FEMStandardInternalFaceClass
  * \brief Class to define a FEM standard internal face.
  * \author E. van der Weide
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class FEMStandardInternalFaceClass : public FEMStandardElementBaseClass {
 private:
@@ -1570,7 +1570,7 @@ private:
  * \class FEMStandardBoundaryFaceClass
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class FEMStandardBoundaryFaceClass : public FEMStandardElementBaseClass {
 private:

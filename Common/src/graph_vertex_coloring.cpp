@@ -2,7 +2,7 @@
  * \file graph_vertex_coloring.cpp
  * \brief Function used to carry out the vertex coloring of a given graph.
  * \author E. van der Weide
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

@@ -4,7 +4,7 @@
           operations, which are typically found in the BLAS libraries.
           The functions are in the <i>su2_blass.cpp</i> file.
  * \author E. van der Weide
- * \version 6.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

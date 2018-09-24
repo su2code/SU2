@@ -333,7 +333,7 @@ void CIntegration::Time_Integration(CGeometry *geometry, CSolver **solver_contai
   unsigned short KindSolver = config->GetKind_Solver();
   
   /*--- Perform the time integration ---*/
-  
+
   /*--- Fluid time integration schemes ---*/
 
   if (KindSolver != FEM_ELASTICITY) {
@@ -527,9 +527,11 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     
     if (Already_Converged) { Convergence = true; Convergence_FullMG = true; }
     
+    
     /*--- Apply the same convergence criteria to all the processors ---*/
     
 #ifdef HAVE_MPI
+    
     unsigned short *sbuf_conv = NULL, *rbuf_conv = NULL;
     sbuf_conv = new unsigned short[1]; sbuf_conv[0] = 0;
     rbuf_conv = new unsigned short[1]; rbuf_conv[0] = 0;
@@ -540,13 +542,13 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     SU2_MPI::Reduce(sbuf_conv, rbuf_conv, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
     
     /*-- Compute global convergence criteria in the master node --*/
-
+    
     sbuf_conv[0] = 0;
     if (rank == MASTER_NODE) {
       if (rbuf_conv[0] == size) sbuf_conv[0] = 1;
       else sbuf_conv[0] = 0;
     }
-
+    
     SU2_MPI::Bcast(sbuf_conv, 1, MPI_UNSIGNED_SHORT, MASTER_NODE, MPI_COMM_WORLD);
     
     if (sbuf_conv[0] == 1) { Convergence = true; Convergence_FullMG = true; }
@@ -566,7 +568,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
     if (config->GetFinestMesh() != MESH_0 ) Convergence = false;
     
   }
-
+  
 }
 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
