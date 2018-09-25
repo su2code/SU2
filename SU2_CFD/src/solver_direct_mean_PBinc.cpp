@@ -2230,8 +2230,8 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Update residual value ---*/
     
-    LinSysRes.AddBlock(iPoint, Res_Conv);
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
+    LinSysRes.AddBlock(iPoint, Res_Conv);
     
     /*--- Set implicit Jacobians ---*/
     
@@ -2643,7 +2643,7 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   }
   
   
-  alfa = 0.8;
+  alfa = 1.0;
   /*--- Update the solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3176,7 +3176,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   if (Res_MassFlux <= Criteria) MassConvergence = true;
   
   
-  alfa = 0.8 ; // This is the underrelaxation factor that must be read from config file 
+  alfa = 1.0 ; // This is the underrelaxation factor that must be read from config file 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  	  
 	  if (implicit)
@@ -3505,7 +3505,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim,iVar;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area, yCoordRef, yCoord;
-  su2double *V_outlet, *V_domain,P_Outlet;
+  su2double *V_outlet, *V_domain, P_Outlet, Face_Flux;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -3545,33 +3545,51 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       
       V_domain = node[iPoint]->GetPrimitive();
       
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
+      /*--- Retrieve the specified back pressure for this outlet. ---/
 
       P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
-      /*--- The pressure is prescribed at the outlet. ---*/
+      /*--- The pressure is prescribed at the outlet. ---/
       
       V_outlet[0] = P_Outlet;
 
-      /*--- Neumann condition for the velocity ---*/
+      /*--- Neumann condition for the velocity ---/
       
       for (iDim = 0; iDim < nDim; iDim++) {
         V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
       }
 
-      /*--- Constant value of density ---*/
+      /*--- Constant value of density ---/
       
       V_outlet[nDim+1] = GetDensity_Inf();
-      /*--- Set various quantities in the solver class ---*/
+      /*--- Set various quantities in the solver class ---/
       conv_numerics->SetPrimitive(V_domain, V_outlet);
       
       if (grid_movement)
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
       
-      /*--- Compute the residual using an upwind scheme ---*/
+      /*--- Compute the residual using an upwind scheme ---/
       
-      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);*/
+      
+      for (iVar = 0; iVar < nVar; iVar++)   
+         Residual[iVar] = 0.0;
+      
+      
+      Face_Flux = 0.0;
+	  for (iDim = 0; iDim < nDim; iDim++) 
+		Face_Flux += V_domain[nDim+1]*V_domain[iDim+1]*Normal[iDim];
+	  
+    
+	  if (Face_Flux > 0) 
+       for (iVar = 0; iVar < nVar; iVar++) {
+	     Residual[iVar] = 0.0;
+	     for (iDim = 0; iDim < nDim; iDim++) 
+	       Residual[iVar] += V_domain[nDim+1]*V_domain[iVar+1]*Normal[iDim]*V_domain[iDim+1];
+	  }
+    
+      
       
       /*--- Update residual value ---*/
       

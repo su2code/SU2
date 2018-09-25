@@ -734,6 +734,9 @@ su2double Mom_Coeff_i[3],Mom_Coeff_j[3];
 unsigned long iEdge, iPoint, jPoint;
 unsigned short iDim;
 
+
+    cout<<"Poisson vix residual"<<endl;
+
 	for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
 
 		iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -778,14 +781,12 @@ unsigned short iDim;
 			for (iDim = 0; iDim < nDim; iDim++) {
 				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->Get_Mom_Coeff(iDim);
 			    Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->Get_Mom_Coeff(iDim);
-			    
+
+			  
 				Mom_Coeff_i[iDim] = solver_container[FLOW_SOL]->node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iDim];
 				Mom_Coeff_j[iDim] = solver_container[FLOW_SOL]->node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iDim];
 				
-				//cout<<iPoint<<", "<<jPoint<<", "<<Mom_Coeff_i[0]<<", "<<Mom_Coeff_i[1]<<", "<<Mom_Coeff_j[0]<<", "<<Mom_Coeff_j[1]<<endl;
-				
 			}
-			
 			numerics->SetInvMomCoeff(Mom_Coeff_i,Mom_Coeff_j);
 			
 		}
@@ -796,7 +797,7 @@ unsigned short iDim;
 		/*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		LinSysRes.AddBlock(jPoint, Residual);
-		
+		cout<<Residual[0]<<", "<<iPoint<<endl;
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
@@ -833,6 +834,8 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 	  Residual[iVar] = 0.0;
   }
   
+  cout<<"Mass flux"<<endl;
+  
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Load the volume of the dual mesh cell ---*/
@@ -845,6 +848,7 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
         
     if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
 		Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux();
+		cout<<Src_Term<<", "<<iPoint<<endl;
     }
 
     numerics->SetSourcePoisson(Src_Term);
@@ -1284,7 +1288,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-			Local_Delta_Time = 10.0e-4;
+			Local_Delta_Time = 10.0e-3;
 			node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
