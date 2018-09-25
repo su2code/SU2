@@ -929,6 +929,84 @@ void CRadP1Solver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_cont
 
 void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
 
+  unsigned short iDim, iVar, jVar;
+  unsigned long iVertex, iPoint, total_index;
+
+  su2double Theta, Ib_w, Temperature, Radiative_Energy;
+  su2double *Normal, *Unit_Normal, Area, Wall_Emissivity;
+  su2double Radiative_Heat_Flux;
+  su2double Twall;
+  su2double *Gradient;
+
+  Unit_Normal = new su2double[nDim];
+
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool energy        = config->GetEnergy_Equation();
+
+  /*--- Identify the boundary by string name ---*/
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Get the specified wall emissivity from config ---*/
+  Wall_Emissivity = config->GetWall_Emissivity(Marker_Tag);
+
+  /*--- Compute the constant for the wall theta ---*/
+  Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
+
+    /*--- Retrieve the specified wall temperature ---*/
+  Twall = config->GetTemperature_FreeStreamND()/config->GetTemperature_Ref();
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+
+    if (geometry->node[iPoint]->GetDomain()) {
+
+      /*--- Compute dual-grid area and boundary normal ---*/
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      // Weak application of the boundary condition
+
+      /*--- Initialize the viscous residuals to zero ---*/
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Visc[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Apply a weak boundary condition for the radiative transfer equation. ---*/
+
+      /*--- Compute the blackbody intensity at the wall. ---*/
+      Ib_w = 4.0*pow(Refractive_Index,2.0)*STEFAN_BOLTZMANN*pow(Twall,4.0);
+
+      /*--- Compute the radiative heat flux. ---*/
+      Radiative_Energy = node[iPoint]->GetSolution(0);
+      Radiative_Heat_Flux = 1.0*Theta*(Ib_w - Radiative_Energy);
+
+      /*--- Compute the Viscous contribution to the residual ---*/
+      Res_Visc[0] = Radiative_Heat_Flux*Area;
+
+      /*--- Apply to the residual vector ---*/
+      LinSysRes.SubtractBlock(iPoint, Res_Visc);
+
+      /*--- Compute the Jacobian contribution. ---*/
+      if (implicit) {
+        Jacobian_i[0][0] = - Theta;
+        Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      }
+    }
+  }
+
 }
 
 void CRadP1Solver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
