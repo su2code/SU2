@@ -647,6 +647,7 @@ Build Configuration Summary:
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
+    External libpthreads: $su2_externals_LIBPTHREAD
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DOT:        $build_DOT
