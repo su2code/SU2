@@ -14029,7 +14029,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
    it down to the coarse levels. We alo call the preprocessing routine
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
-   
+  //double necessary? Yes, this broke the turbomachinery APU and staticbla restart regression test
+  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
@@ -14049,6 +14050,8 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       }
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
+    //double necessary?
+    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }

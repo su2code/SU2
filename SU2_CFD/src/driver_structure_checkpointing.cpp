@@ -157,7 +157,8 @@ void CDiscAdjFluidDriver::Update()
 {
 
   /*--- Advance fowrard in time for Primal steps ---*/
-  cout << "void CDiscAdjFluidDriver::Update()" << endl;
+  if (rank == MASTER_NODE && false)
+    cout << "void CDiscAdjFluidDriver::Update()" << endl;
   if (config_container[ZONE_0]->GetCheckpointing())
   {
     for (iZone = 0; iZone < nZone; iZone++)

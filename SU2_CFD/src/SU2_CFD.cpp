@@ -162,7 +162,7 @@ int main(int argc, char *argv[]) {
   config = NULL;
 
   /*--- Launch the main external loop of the solver ---*/
-  cout << "Before StartSolver()." << endl;
+
   if ( checkpointing ) {
     cout << "In StartSolver() with CP." << endl;
     driver->StartSolverRevolve();   

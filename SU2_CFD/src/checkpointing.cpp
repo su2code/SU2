@@ -133,13 +133,37 @@ ACTION::action Everything::revolve()
  *  */
 ACTION::action Equidistant::revolve()
 {
-    ACTION::action whattodo;
-    // std::cout << "counter: " << counter << " ";
+    counter++;
+    if(primal_sweep) {
+        // Initialization: primal_step, store_full_DISK
+        if(counter==1)
+            return ACTION::primal_step;
+        if(counter==2)
+            return ACTION::store_full_checkpoint;
 
-    if (counter == 0) {whattodo = ACTION::store_full_checkpoint; counter++;}
-    else {whattodo = ACTION::terminate;}
-    
-    return whattodo;
+        // intermediate CP's
+        // do SNAPS_IN_RAM times: primal_update, primal_step, store_single_RAM
+        return ACTION::primal_update;
+        return ACTION::primal_step;
+        return ACTION::store_single_state;
+        // full CP's
+        // dp DEPTH times: primal_update, primal_step, store_single_DISK
+        return ACTION::primal_update;
+        return ACTION::primal_step;
+        return ACTION::store_single_state;
+
+    } else { // Adjoint computation
+
+        // do until CP_RAM=0 was loaded: adjoint_step, restore_single
+        // do DEPTH times: adjoint_step, restore_single
+
+        // restore latest full checkpoint
+
+        // do SNAPS_IN_RAM times: primal_update, primal_step, store_single_RAM
+
+        // Load 2 DEPTH-1 latest entries of latest DISK checkpoint
+
+    }
 }
 
 /* Methods of SU2_implemementation child class */

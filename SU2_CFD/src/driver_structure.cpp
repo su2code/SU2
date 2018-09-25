@@ -751,10 +751,10 @@ void CDriver::Postprocessing() {
   if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
 
   /*--- Deallocate Checkpointing object ---*/
-  if(config_container[ZONE_0]->GetCheckpointing() || r != NULL ) {
+  if(r != NULL ) {
     if (rank == MASTER_NODE) {
+      if (r != NULL) cout << "r != NULL" << endl;
       if (config_container[ZONE_0]->GetCheckpointing()) cout << "config_container[ZONE_0]->GetCheckpointing()" << endl;
-      if (config_container[ZONE_0]->GetCheckpointing()) cout << "r != NULL" << endl;
       cout << "Deleted Checkpointing class." << endl;
     }
     delete r;
@@ -1391,7 +1391,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
    these restart routines fill the fine grid and interpolate to all MG levels. ---*/
 
   if (restart || restart_flow) {
-            cout << " Restart in driver: Loading flow solution from direct iteration " << val_iter << "." << endl;
+      if(rank == MASTER_NODE) cout << "Restart in driver: Loading flow solution from direct iteration " << val_iter << "." << endl;
     if (euler || ns) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
