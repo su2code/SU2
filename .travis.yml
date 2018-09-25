@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - feature_bugfix
+        - feature_p1model
 
 python:
     - 2.7
