@@ -2,7 +2,7 @@
  * \file SU2_GEO.cpp
  * \brief Main file of the Geometry Definition Code (SU2_GEO).
  * \author F. Palacios, T. Economon
- * \version 6.0.0 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -64,6 +64,7 @@ int main(int argc, char *argv[]) {
  	char *cstr;
   bool Local_MoveSurface, MoveSurface = false;
   ofstream Gradient_file, ObjFunc_file;
+  bool periodic = false;
   int rank, size;
   
   /*--- MPI initialization ---*/
@@ -90,7 +91,17 @@ int main(int argc, char *argv[]) {
   
   if (argc == 2) { strcpy(config_file_name,argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
-  
+
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation)  ---*/
+
+  CConfig *config = NULL;
+  config = new CConfig(config_file_name, SU2_GEO);
+
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
@@ -126,10 +137,15 @@ int main(int argc, char *argv[]) {
     
     geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
     
-    /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
-    
-    geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    /*--- Until we finish the new periodic BC implementation, use the old
+     partitioning routines for cases with periodic BCs. The old routines 
+     will be entirely removed eventually in favor of the new methods. ---*/
+
+    if (periodic) {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+    } else {
+      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+    }
     
     /*--- Deallocate the memory of geometry_aux ---*/
     
@@ -591,6 +607,7 @@ int main(int argc, char *argv[]) {
     
     /*--- Definition of the FFD deformation class ---*/
     FFDBox = new CFreeFormDefBox*[MAX_NUMBER_FFD];
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) FFDBox[iFFDBox] = NULL;
     
     if (rank == MASTER_NODE)
       cout << endl << endl << "------------- Gradient evaluation using finite differences --------------" << endl;
@@ -1216,15 +1233,12 @@ int main(int argc, char *argv[]) {
     
   }
 		
-  /*--- Deallocate memory ---*/
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
   
-  delete [] Xcoord_Airfoil;
-  delete [] Ycoord_Airfoil;
-  delete [] Zcoord_Airfoil;
+  delete [] Xcoord_Airfoil; delete [] Ycoord_Airfoil; delete [] Zcoord_Airfoil;
   
-  delete [] ObjectiveFunc;
-  delete [] ObjectiveFunc_New;
-  delete [] Gradient;
+  delete [] ObjectiveFunc; delete [] ObjectiveFunc_New; delete [] Gradient;
   
   for(iPlane = 0; iPlane < nPlane; iPlane++ ) {
     delete Plane_P0[iPlane];
@@ -1232,6 +1246,45 @@ int main(int argc, char *argv[]) {
   }
   delete [] Plane_P0;
   delete [] Plane_Normal;
+  
+  delete config;
+  config = NULL;
+
+  if (rank == MASTER_NODE) cout << "Deleted main variables." << endl;
+  
+  
+  if (geometry_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (geometry_container[iZone] != NULL) {
+        delete geometry_container[iZone];
+      }
+    }
+    delete [] geometry_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+
+  if (surface_movement != NULL) delete surface_movement;
+  if (rank == MASTER_NODE) cout << "Deleted CSurfaceMovement class." << endl;
+  
+  if (FFDBox != NULL) {
+    for (iFFDBox = 0; iFFDBox < MAX_NUMBER_FFD; iFFDBox++) {
+      if (FFDBox[iFFDBox] != NULL) {
+        delete FFDBox[iFFDBox];
+      }
+    }
+    delete [] FFDBox;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CFreeFormDefBox class." << endl;
+  
+  if (config_container != NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (config_container[iZone] != NULL) {
+        delete config_container[iZone];
+      }
+    }
+    delete [] config_container;
+  }
+  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

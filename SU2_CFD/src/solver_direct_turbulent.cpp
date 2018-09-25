@@ -2,7 +2,7 @@
  * \file solution_direct_turbulent.cpp
  * \brief Main subrotuines for solving direct problems
  * \author F. Palacios, A. Bueno
- * \version 6.0.0 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -775,7 +775,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           if (incompressible) {
-            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+            density_old = solver_container[FLOW_SOL]->node[iPoint]->GetDensity_Old();
             density     = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
           }
           
@@ -1070,8 +1070,6 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   unsigned short iVar, iMesh;
   unsigned long iPoint, index, iChildren, Point_Fine;
   su2double Area_Children, Area_Parent, *Solution_Fine;
-  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
@@ -1108,14 +1106,8 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   
   unsigned short skipVars = 0;
 
-  if (compressible) {
-    if (nDim == 2) skipVars += 6;
-    if (nDim == 3) skipVars += 8;
-  }
-  if (incompressible) {
-    if (nDim == 2) skipVars += 5;
-    if (nDim == 3) skipVars += 7;
-  }
+  if (nDim == 2) skipVars += 6;
+  if (nDim == 3) skipVars += 8;
 
   /*--- Load data from the restart into correct containers. ---*/
 
@@ -1260,7 +1252,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     
     /*--- Define some auxiliar vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
@@ -1389,9 +1381,17 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
     }
   }
 
-  /*--- Set up inlet profiles, if necessary ---*/
+  /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
 
-  SetInlet(config);
+  Inlet_TurbVars = new su2double**[nMarker];
+  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+      }
+  }
 
 }
 
@@ -1484,23 +1484,14 @@ void CTurbSASolver::Postprocessing(CGeometry *geometry, CSolver **solver_contain
   su2double cv1_3 = 7.1*7.1*7.1;
   unsigned long iPoint;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool neg_spalart_allmaras = (config->GetKind_Turb_Model() == SA_NEG);
-  
   
   /*--- Compute eddy viscosity ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
-    if (compressible) {
-      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
-    if (incompressible) {
-      rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
+    rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+    mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     
     nu  = mu/rho;
     nu_hat = node[iPoint]->GetSolution();
@@ -1748,7 +1739,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
-  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
   
   Normal = new su2double[nDim];
   
@@ -1786,13 +1776,10 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
       
       Solution_i[0] = node[iPoint]->GetSolution(0);
 
-      if (isCustomizable) {
-        /*--- Only use the array version of the inlet BC when necessary ---*/
-        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-      } else {
-        Solution_j[0] = nu_tilde_Inf;
-      }
-      
+      /*--- Load the inlet turbulence variable (uniform by default). ---*/
+
+      Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
       
       /*--- Set various other quantities in the conv_numerics class ---*/
@@ -2145,7 +2132,7 @@ void CTurbSASolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_cont
 }
 
 void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                               CConfig *config, unsigned short val_marker, bool inlet_surface) {
+                               CConfig *config, unsigned short val_marker, bool val_inlet_surface) {
   
   unsigned long iPoint, iVertex, GlobalIndex_donor, GlobalIndex;
   su2double *V_outlet, *V_inlet, *V_domain, *Normal, *UnitNormal, Area, Vn;
@@ -2191,8 +2178,8 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
       Vn = 0.0; ReverseFlow = false;
       for (iDim = 0; iDim < nDim; iDim++) {  Vn += V_domain[iDim+1]*UnitNormal[iDim]; }
       
-      if ((inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
-      if ((!inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
+      if ((val_inlet_surface) && (Vn < 0.0)) { ReverseFlow = true; }
+      if ((!val_inlet_surface) && (Vn > 0.0)) { ReverseFlow = true; }
       
       /*--- Do not anything if there is a
        reverse flow, Euler b.c. for the direct problem ---*/
@@ -2201,7 +2188,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         /*--- Allocate the value at the infinity ---*/
         
-        if (inlet_surface) {
+        if (val_inlet_surface) {
           V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
           V_outlet = solver_container[FLOW_SOL]->GetDonorPrimVar(val_marker, iVertex);
           conv_numerics->SetPrimitive(V_domain, V_inlet);
@@ -2220,22 +2207,22 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
         
         Solution_i[0] = node[iPoint]->GetSolution(0);
         
-        //      if (inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
+        //      if (val_inlet_surface) Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_outlet [nDim+9]);
         //      else Solution_j[0] = 0.5*(node[iPoint]->GetSolution(0)+V_inlet [nDim+9]);
         
         //      /*--- Inflow analysis (interior extrapolation) ---*/
-        //      if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+        //      if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
         //        Solution_j[0] = 2.0*node[iPoint]->GetSolution(0) - node[iPoint_Normal]->GetSolution(0);
         //      }
         
         //      /*--- Outflow analysis ---*/
         //      else {
-        //        if (inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
+        //        if (val_inlet_surface) Solution_j[0] = Factor_nu_ActDisk*V_outlet [nDim+9];
         //        else { Solution_j[0] = Factor_nu_ActDisk*V_inlet [nDim+9]; }
         //      }
         
         /*--- Inflow analysis (interior extrapolation) ---*/
-        if (((inlet_surface) && (!ReverseFlow)) || ((!inlet_surface) && (ReverseFlow))) {
+        if (((val_inlet_surface) && (!ReverseFlow)) || ((!val_inlet_surface) && (ReverseFlow))) {
           Solution_j[0] = node[iPoint]->GetSolution(0);
         }
         
@@ -2267,7 +2254,7 @@ void CTurbSASolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, 
 //
 //        /*--- Conservative variables w/o reconstruction ---*/
 //
-//        if (inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
+//        if (val_inlet_surface) visc_numerics->SetPrimitive(V_domain, V_inlet);
 //        else visc_numerics->SetPrimitive(V_domain, V_outlet);
 //
 //        /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
@@ -3180,28 +3167,78 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
   }
 }
 
-void CTurbSASolver::SetInlet(CConfig* config) {
+void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
+                                    unsigned short iMarker,
+                                    unsigned long iVertex) {
 
-  /*-- Allocation has to happen in derived classes (not CTurbSolver),
-   * due to arbitrary number of turbulence variables ---*/
-  Inlet_TurbVars = new su2double**[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
-    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-    if (isCustomizable && isInlet) {
-      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-        /*--- The default values for these custom BCs are initialized with
-         * the freestream values to avoid nonphysical values at unspecified
-         * points ---*/
-        Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+  Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
+
+}
+
+su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
+                                          unsigned long val_inlet_point,
+                                          unsigned short val_kind_marker,
+                                          CGeometry *geometry,
+                                          CConfig *config) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iMarker, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+
+  /*--- Alias positions within inlet file for readability ---*/
+
+  if (val_kind_marker == INLET_FLOW) {
+
+    unsigned short position = nDim+2+nDim;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+
+            val_inlet[position] = Inlet_TurbVars[iMarker][iVertex][0];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
       }
-    } else {
-      Inlet_TurbVars[iMarker] = NULL;
     }
+
   }
 
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
+}
+
+void CTurbSASolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+
+  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
+  }
+  
 }
 
 CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
@@ -3275,7 +3312,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Define some auxiliary vector related with the flow solution ---*/
     
-    FlowPrimVar_i = new su2double [nDim+7]; FlowPrimVar_j = new su2double [nDim+7];
+    FlowPrimVar_i = new su2double [nDim+9]; FlowPrimVar_j = new su2double [nDim+9];
     
     /*--- Jacobians and vector structures for implicit computations ---*/
     
@@ -3396,9 +3433,18 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  /*--- Set up inlet profiles, if necessary ---*/
+  /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
+   * due to arbitrary number of turbulence variables ---*/
 
-  SetInlet(config);
+      Inlet_TurbVars = new su2double**[nMarker];
+      for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+        Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
+        for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+          Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
+          Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+          Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+        }
+      }
 
 }
 
@@ -3471,17 +3517,12 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   su2double a1 = constants[7];
   unsigned long iPoint;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
   /*--- Compute mean flow and turbulence gradients ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
-//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_GG(geometry, config);
     SetSolution_Gradient_GG(geometry, config);
   }
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
-//    solver_container[FLOW_SOL]->SetPrimitive_Gradient_LS(geometry, config);
     SetSolution_Gradient_LS(geometry, config);
   }
   
@@ -3489,14 +3530,8 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Compute blending functions and cross diffusion ---*/
     
-    if (compressible) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
-    if (incompressible) {
-      rho  = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
-      mu   = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
-    }
+    rho = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+    mu  = solver_container[FLOW_SOL]->node[iPoint]->GetLaminarViscosity();
     
     dist = geometry->node[iPoint]->GetWall_Distance();
     
@@ -3587,9 +3622,6 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
   unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3606,14 +3638,9 @@ void CTurbSSTSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_cont
       distance = sqrt(distance);
       
       /*--- Set wall values ---*/
-      if (compressible) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-      }
-      if (incompressible) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-      }
+      
+      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       
       beta_1 = constants[4];
       
@@ -3643,9 +3670,6 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
   unsigned short iDim, iVar;
   su2double distance, density = 0.0, laminar_viscosity = 0.0, beta_1;
   
-  bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
-  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -3662,14 +3686,9 @@ void CTurbSSTSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
       distance = sqrt(distance);
       
       /*--- Set wall values ---*/
-      if (compressible) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-      }
-      if (incompressible) {
-        density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
-        laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
-      }
+      
+      density = solver_container[FLOW_SOL]->node[jPoint]->GetDensity();
+      laminar_viscosity = solver_container[FLOW_SOL]->node[jPoint]->GetLaminarViscosity();
       
       beta_1 = constants[4];
       
@@ -3760,112 +3779,108 @@ void CTurbSSTSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_containe
 
 void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                               unsigned short val_marker) {
-  
+
   unsigned short iVar, iDim;
   unsigned long iVertex, iPoint;
   su2double *V_inlet, *V_domain, *Normal;
-  bool isCustomizable = config->GetMarker_All_PyCustom(val_marker);
-  
+
   Normal = new su2double[nDim];
-  
+
   bool grid_movement  = config->GetGrid_Movement();
-  
+
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
+
   /*--- Loop over all the vertices on this boundary marker ---*/
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
-    
+
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
+
     /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
-    
+
     if (geometry->node[iPoint]->GetDomain()) {
-      
+
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
+
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
+
       /*--- Allocate the value at the inlet ---*/
-      
+
       V_inlet = solver_container[FLOW_SOL]->GetCharacPrimVar(val_marker, iVertex);
 
       /*--- Retrieve solution at the farfield boundary node ---*/
-      
+
       V_domain = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
-      
+
       /*--- Set various quantities in the solver class ---*/
-      
+
       conv_numerics->SetPrimitive(V_domain, V_inlet);
-      
+
       /*--- Set the turbulent variable states. Use free-stream SST
        values for the turbulent state at the inflow. ---*/
-      
+
       for (iVar = 0; iVar < nVar; iVar++)
-      Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
-      
-      if (isCustomizable) {
-        /*--- Only use the array version of the inlet BC when necessary ---*/
-        Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
-        Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
-      } else {
-        Solution_j[0] = kine_Inf;
-        Solution_j[1] = omega_Inf;
-      }
-      
+        Solution_i[iVar] = node[iPoint]->GetSolution(iVar);
+
+      /*--- Load the inlet turbulence variables (uniform by default). ---*/
+
+      Solution_j[0] = Inlet_TurbVars[val_marker][iVertex][0];
+      Solution_j[1] = Inlet_TurbVars[val_marker][iVertex][1];
+
       conv_numerics->SetTurbVar(Solution_i, Solution_j);
-      
+
       /*--- Set various other quantities in the solver class ---*/
-      
+
       conv_numerics->SetNormal(Normal);
-      
+
       if (grid_movement)
-      conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                geometry->node[iPoint]->GetGridVel());
-      
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
+
       /*--- Compute the residual using an upwind scheme ---*/
-      
+
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
       LinSysRes.AddBlock(iPoint, Residual);
-      
-      /*--- Jacobian contribution for implicit integration ---*/
-      
-      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
-//      /*--- Viscous contribution, commented out because serious convergence problems ---*/
-//
-//      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
-//      visc_numerics->SetNormal(Normal);
-//
-//      /*--- Conservative variables w/o reconstruction ---*/
-//
-//      visc_numerics->SetPrimitive(V_domain, V_inlet);
-//
-//      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
-//
-//     visc_numerics->SetTurbVar(Solution_i, Solution_j);
-//      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
-//
-//      /*--- Menter's first blending function ---*/
-//
-//      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
-//
-//      /*--- Compute residual, and Jacobians ---*/
-//
-//      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-//
-//      /*--- Subtract residual, and update Jacobians ---*/
-//
-//      LinSysRes.SubtractBlock(iPoint, Residual);
-//      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
 
-    }
+      /*--- Jacobian contribution for implicit integration ---*/
+
+      Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+      //      /*--- Viscous contribution, commented out because serious convergence problems ---*/
+      //
+      //      visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+      //      visc_numerics->SetNormal(Normal);
+      //
+      //      /*--- Conservative variables w/o reconstruction ---*/
+      //
+      //      visc_numerics->SetPrimitive(V_domain, V_inlet);
+      //
+      //      /*--- Turbulent variables w/o reconstruction, and its gradients ---*/
+      //
+      //     visc_numerics->SetTurbVar(Solution_i, Solution_j);
+      //      visc_numerics->SetTurbVarGradient(node[iPoint]->GetGradient(), node[iPoint]->GetGradient());
+      //
+      //      /*--- Menter's first blending function ---*/
+      //
+      //      visc_numerics->SetF1blending(node[iPoint]->GetF1blending(), node[iPoint]->GetF1blending());
+      //
+      //      /*--- Compute residual, and Jacobians ---*/
+      //
+      //      visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      //
+      //      /*--- Subtract residual, and update Jacobians ---*/
+      //
+      //      LinSysRes.SubtractBlock(iPoint, Residual);
+      //      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
       
+    }
+    
   }
   
   /*--- Free locally allocated memory ---*/
-  delete[] Normal;
+  
+  delete [] Normal;
   
 }
 
@@ -4329,28 +4344,80 @@ su2double* CTurbSSTSolver::GetConstants() {
   return constants;
 }
 
+void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
+                                     unsigned short iMarker,
+                                     unsigned long iVertex) {
 
-void CTurbSSTSolver::SetInlet(CConfig* config) {
+  Inlet_TurbVars[iMarker][iVertex][0] = val_inlet[nDim+2+nDim];
+  Inlet_TurbVars[iMarker][iVertex][1] = val_inlet[nDim+2+nDim+1];
 
-  /*-- Allocation has to happen in derived classes (not CTurbSolver),
-   * due to arbitrary number of turbulence variables ---*/
-  Inlet_TurbVars = new su2double**[nMarker];
-  for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
-    bool isCustomizable = config->GetMarker_All_PyCustom(iMarker);
-    bool isInlet = (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW);
-    if (isCustomizable && isInlet) {
-      Inlet_TurbVars[iMarker] = new su2double*[nVertex[iMarker]];
-      for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
-        Inlet_TurbVars[iMarker][iVertex] = new su2double[nVar];
-        /*--- The default values for these custom BCs are initialized with
-         * the freestream values to avoid nonphysical values at unspecified
-         * points ---*/
-        Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
-        Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
+}
+
+su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
+                                           unsigned long val_inlet_point,
+                                           unsigned short val_kind_marker,
+                                           CGeometry *geometry,
+                                           CConfig *config) {
+
+  /*--- Local variables ---*/
+
+  unsigned short iMarker, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area = 0.0;
+  su2double Normal[3] = {0.0,0.0,0.0};
+
+  /*--- Alias positions within inlet file for readability ---*/
+
+  if (val_kind_marker == INLET_FLOW) {
+
+    unsigned short tke_position   = nDim+2+nDim;
+    unsigned short omega_position = nDim+2+nDim+1;
+
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
+
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+          if (iPoint == val_inlet_point) {
+
+            /*-- Compute boundary face area for this vertex. ---*/
+
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            Area = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++)
+              Area += Normal[iDim]*Normal[iDim];
+            Area = sqrt(Area);
+
+            /*--- Access and store the inlet variables for this vertex. ---*/
+
+            val_inlet[tke_position]   = Inlet_TurbVars[iMarker][iVertex][0];
+            val_inlet[omega_position] = Inlet_TurbVars[iMarker][iVertex][1];
+
+            /*--- Exit once we find the point. ---*/
+
+            return Area;
+
+          }
+        }
       }
-    } else {
-      Inlet_TurbVars[iMarker] = NULL;
     }
+
+  }
+
+  /*--- If we don't find a match, then the child point is not on the
+   current inlet boundary marker. Return zero area so this point does
+   not contribute to the restriction operator and continue. ---*/
+  
+  return Area;
+  
+}
+
+void CTurbSSTSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
+
+  for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+    Inlet_TurbVars[iMarker][iVertex][0] = kine_Inf;
+    Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
   }
 
 }

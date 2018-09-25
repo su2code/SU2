@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.0.0 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -128,7 +128,7 @@ class COutput {
   unsigned short nVar_Consv, nVar_Total, nVar_Extra, nZones;
   bool wrote_surf_file, wrote_CGNS_base, wrote_Tecplot_base, wrote_Paraview_base;
   unsigned short wrote_base_file;
-  su2double RhoRes_New, RhoRes_Old;
+  su2double RhoRes_New, *RhoRes_Old;
   int cgns_base, cgns_zone, cgns_base_results, cgns_zone_results;
   
   su2double Sum_Total_RadialDistortion, Sum_Total_CircumferentialDistortion; // Add all the distortion to compute a run average.
@@ -185,6 +185,12 @@ class COutput {
         **Turb2LamViscRatioOut,
         **NuFactorIn,
         **NuFactorOut;
+
+  unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
+  vector<string> Marker_Tags_InletFile;   /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
+  unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
+  unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
+  su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
 
 protected:
 
@@ -293,6 +299,24 @@ public:
    * \param[in] output - Create output files.
    */
   void SpecialOutput_Distortion(CSolver *solver, CGeometry *geometry, CConfig *config, bool output);
+
+  /*!
+   * \brief Create and write the file with the FSI convergence history.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Solver for all physical problems.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Current zone number in the grid file.
+   */
+  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration,
+                         unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
+
+  /*!
+   * \brief Create and write the file with the FSI convergence history.
+   * \param[in] iIter - Current iteration.
+   * \param[in] iFreq - Frequency of output printing.
+   */
+  bool PrintOutput(unsigned long iIter, unsigned long iFreq);
 
   /*! 
    * \brief Create and write the file with the flow coefficient on the surface.
@@ -516,6 +540,14 @@ public:
    * \param[in] val_iZone - iZone index.
    */
   void SetSU2_MeshBinary(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates to a binary file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -733,6 +765,15 @@ public:
   void LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
   
   /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for incmopressible flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_iZone - iZone index.
+   */
+  void LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for adjoint flow problems.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -817,7 +858,40 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Merge the node coordinates of all inlet boundaries from all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void MergeInletCoordinates(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write a template inlet profile file for all inlets for flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Solver container.
+   */
+  void Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver);
+
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing inlet boundary coordinates.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
   
+  /*! 
+   * \brief Create and write a CSV file with a slice of data.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] FlowSolution - Flow solution.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Current zone number in the grid file.
+   * \param[in] val_direction - Controls the slice direction (0 for constant x/vertical, 1 for constant y/horizontal.
+   */
+  void WriteCSV_Slice(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_direction);
+
 };
 
 #include "output_structure.inl"
