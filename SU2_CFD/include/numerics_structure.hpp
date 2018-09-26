@@ -91,8 +91,7 @@ public:
   Thermal_Conductivity_ve_i, /*!< \brief Thermal conductivity at point i. */
   Thermal_Conductivity_ve_j; /*!< \brief Thermal conductivity at point j. */
   su2double Poisson_Coeff_i, /*!< \brief Poisson coefficient at point i. */
-  Poisson_Coeff_j; /*!< \brief Poisson coefficient at point j. */
-  Thermal_Conductivity_ve_j, /*!< \brief Thermal conductivity at point j. */
+  Poisson_Coeff_j, /*!< \brief Poisson coefficient at point j. */
   Thermal_Diffusivity_i, /*!< \brief Thermal diffusivity at point i. */
   Thermal_Diffusivity_j; /*!< \brief Thermal diffusivity at point j. */
   su2double Cp_i, /*!< \brief Cp at point i. */

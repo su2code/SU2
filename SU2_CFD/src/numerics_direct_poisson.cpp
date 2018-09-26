@@ -352,7 +352,7 @@ void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **va
   su2double src_term;
 
 
- src_term = 10.0; //analytical solution, u = 1+2x^2+3y^2
+ src_term = 0.0; //analytical solution, u = 1+2x^2+3y^2
  for (iVar = 0; iVar < nVar; iVar++)    
       val_residual[iVar] = src_term*Volume;
     

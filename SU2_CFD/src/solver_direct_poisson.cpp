@@ -807,7 +807,11 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
 
     /*--- Compute the source residual ---*/
     
-    numerics->ComputeResidual(Residual, Jacobian_i, config);
+    //numerics->ComputeResidual(Residual, Jacobian_i, config);
+    
+    Residual[0] = -2.0*sin(geometry->node[iPoint]->GetCoord(0))*cos(geometry->node[iPoint]->GetCoord(1));
+    
+    Residual[0] = Residual[0]*geometry->node[iPoint]->GetVolume();
 
     /*--- Add the source residual to the total ---*/
     
@@ -1236,6 +1240,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
 			node[iPoint]->SetDelta_Time(Local_Delta_Time);
+			cout<<iPoint<<": "<<Local_Delta_Time<<endl;
 		}
 		else {
 			node[iPoint]->SetDelta_Time(0.0);
@@ -1251,7 +1256,7 @@ su2double CPoissonSolverFVM::GetDirichlet_BC(CGeometry *geometry, CConfig *confi
 	
 	su2double dirichlet_bc;
 	
-	dirichlet_bc = cos(geometry->node[Point]->GetCoord(0))*cosh(geometry->node[Point]->GetCoord(1));
+	dirichlet_bc = sin(geometry->node[Point]->GetCoord(0))*cos(geometry->node[Point]->GetCoord(1));
 	//1+2*(geometry->node[Point]->GetCoord(0))*(geometry->node[Point]->GetCoord(0))+3*(geometry->node[Point]->GetCoord(1))*(geometry->node[Point]->GetCoord(1));
 	
 	return dirichlet_bc;
