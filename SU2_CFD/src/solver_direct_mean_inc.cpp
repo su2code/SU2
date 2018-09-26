@@ -2921,11 +2921,15 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
     
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
-      /*--- Load the conservative variables ---*/
+      /*--- Load the primitive variables ---*/
       
-      numerics->SetConservative(node[iPoint]->GetSolution(),
-                                node[iPoint]->GetSolution());
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
       
+      /*--- Set incompressible density ---*/
+
+      numerics->SetDensity(node[iPoint]->GetDensity(),
+                            node[iPoint]->GetDensity());
+
       /*--- Load the volume of the dual mesh cell ---*/
       
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -5959,7 +5963,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
       U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      for (iVar = 1; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
       LinSysRes.AddBlock(iPoint, Residual);
       
@@ -5973,7 +5977,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       }
       U_time_n[nDim+1] = Density*Cp*V_time_n[nDim+1];
       
-      for (iVar = 1; iVar < nVar; iVar++)
+      for (iVar = 0; iVar < nVar; iVar++)
         Residual[iVar] = U_time_n[iVar]*Residual_GCL;
       LinSysRes.SubtractBlock(jPoint, Residual);
       

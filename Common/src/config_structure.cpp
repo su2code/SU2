@@ -3774,9 +3774,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
   /*--- Grid motion is not yet supported with the incompressible solver. ---*/
 
-  if ((Kind_Regime == INCOMPRESSIBLE) && (Grid_Movement)) {
+  /*if ((Kind_Regime == INCOMPRESSIBLE) && (Grid_Movement)) {
     SU2_MPI::Error("Support for grid movement not yet implemented for incompressible flows.", CURRENT_FUNCTION);
-  }
+  }*/
 
   /*--- Assert that there are two markers being analyzed if the
    pressure drop objective function is selected. ---*/
