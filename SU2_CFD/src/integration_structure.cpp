@@ -103,8 +103,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
   }
   
 
-  
-
   /*--- Weak boundary conditions ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {

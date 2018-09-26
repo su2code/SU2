@@ -1098,7 +1098,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
       }
     }
     if (poisson) {
-      solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolver(geometry[val_iInst][iMGlevel], config);
+      solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[val_iInst][iMGlevel], config);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][POISSON_SOL]->GetnVar();
     }
     if (wave) {
@@ -1763,6 +1763,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
   if (euler && pressure_based) poisson = true;
   
+  if (poisson) cout<<"Poisson detected"<<endl;
+  else cout<<"Poisson is not true"<<endl;
+  
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
@@ -2198,7 +2201,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   
  /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
-	  if (pressure_based) {
 		  cout<<"Allocating numerics container for poisson problem...."<<iMGlevel<<endl;
 		  /*--- Pressure correction (Poisson) equation ---*/
            numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
@@ -2207,15 +2209,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
  		  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-	  }
-	  else {
-			/*--- Definition of the viscous scheme for each equation and mesh level ---*/
-			numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CGalerkin_Flow(nDim, nVar_Poisson, config);
-    
-			/*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-			numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-			numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
-	  }
   }
   
   /*--- Solver definition of the finite volume heat solver  ---*/
@@ -3573,7 +3566,7 @@ void CDriver::StartSolver() {
       DynamicMeshUpdate(ExtIter);
 
       /*--- Run a single iteration of the problem (fluid, elasticity, wave, heat, ...). ---*/
-
+      
       Run();
 
       /*--- Update the solution for dual time stepping strategy ---*/
@@ -3596,7 +3589,7 @@ void CDriver::StartSolver() {
 
     /*--- Output the solution in files. ---*/
 
-    //Output(ExtIter);
+    Output(ExtIter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 
@@ -3842,6 +3835,7 @@ void CGeneralDriver::Run() {
   /*--- Run a single iteration of a fem problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
+   
 
   for (iZone = 0; iZone < nZone; iZone++) {
 

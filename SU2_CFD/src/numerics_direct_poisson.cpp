@@ -266,6 +266,9 @@ CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_n
   Edge_Vector = new su2double [nDim];
   Proj_Mean_GradPoissonVar_Normal = new su2double [nVar];
   Proj_Mean_GradPoissonVar_Corrected = new su2double [nVar];
+  Mom_Coeff_i = new su2double [nDim];
+  Mom_Coeff_j = new su2double [nDim];
+  
   Mean_GradPoissonVar = new su2double* [nVar];
   for (iVar = 0; iVar < nVar; iVar++)
    Mean_GradPoissonVar[iVar] = new su2double [nDim];
@@ -278,8 +281,7 @@ CAvgGrad_Poisson::CAvgGrad_Poisson(unsigned short val_nDim, unsigned short val_n
   for (iVar = 0; iVar < nVar; iVar++)
     ConsVar_Grad_j[iVar] = new su2double [nDim];
   
-  Mom_Coeff_i = new su2double [nDim];
-  Mom_Coeff_j = new su2double [nDim];
+
 
   Poisson_Coeff_i = 1.0;
   Poisson_Coeff_j = 1.0;
@@ -292,18 +294,25 @@ CAvgGrad_Poisson::~CAvgGrad_Poisson(void) {
 	delete [] Edge_Vector;
 	delete [] Proj_Mean_GradPoissonVar_Normal;
 	delete [] Proj_Mean_GradPoissonVar_Corrected;
+	/*delete [] Mom_Coeff_i;
+	delete [] Mom_Coeff_j;
 	
-	for (iDim = 0; iVar < nVar; iVar++) {
-    delete [] Mean_GradPoissonVar[iVar];
-    //delete [] ConsVar_Grad_i[iVar];
-    //delete [] ConsVar_Grad_j[iVar];
-    }
-    delete [] Mean_GradPoissonVar;
-    //delete [] ConsVar_Grad_i;
-    //delete [] ConsVar_Grad_j;	
+	for (iDim = 0; iVar < nVar; iVar++) 
+      delete [] Mean_GradPoissonVar[iVar];
     
-    delete Mom_Coeff_i;
-	delete Mom_Coeff_j;
+    delete [] Mean_GradPoissonVar;
+    
+    /*for (iDim = 0; iVar < nVar; iVar++) 
+      delete [] ConsVar_Grad_i[iVar];
+    
+    delete [] ConsVar_Grad_i;
+    
+    for (iDim = 0; iVar < nVar; iVar++) 
+      delete [] ConsVar_Grad_j[iVar];
+   
+    delete [] ConsVar_Grad_j;	*/
+    
+    
 
 }
 
@@ -333,23 +342,28 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
       
       Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
       
-      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
+      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
     }
   }
 
   val_residual[0] = Proj_Mean_GradPoissonVar_Normal[0];
   
+  if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
   Poisson_Coeff_Mean = 0.0;
   for (iDim = 0; iDim < nDim; iDim++)
      Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
      
   Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
   if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
+  }
+  else {
+	  Poisson_Coeff_Mean = 1.0;
+  }
   
   /*--- Jacobians for implicit scheme ---*/
   if (implicit) {
-    Jacobian_i[0][0] = -Poisson_Coeff_Mean;//*proj_vector_ij;
-    Jacobian_j[0][0] = Poisson_Coeff_Mean;//*proj_vector_ij;
+    Jacobian_i[0][0] = -Poisson_Coeff_Mean*proj_vector_ij;
+    Jacobian_j[0][0] = Poisson_Coeff_Mean*proj_vector_ij;
   }
 
 }
@@ -424,7 +438,7 @@ void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **va
  
  su2double src_term;
  
- src_term = 10.0; //analytical solution, u = 1+2x^2+3y^2
+ src_term = 0.0; //analytical solution, u = 1+2x^2+3y^2
  
  if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
     val_residual[0] = Source_Term;
