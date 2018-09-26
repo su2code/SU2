@@ -2894,6 +2894,7 @@ public:
   virtual su2double GetInletAtVertex(su2double *val_inlet,
                                      unsigned long val_inlet_point,
                                      unsigned short val_kind_marker,
+                                     string val_marker,
                                      CGeometry *geometry,
                                      CConfig *config);
 
@@ -6363,6 +6364,7 @@ public:
   su2double GetInletAtVertex(su2double *val_inlet,
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
+                             string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
 
@@ -8221,6 +8223,7 @@ public:
   su2double GetInletAtVertex(su2double *val_inlet,
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
+                             string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
 
@@ -10172,6 +10175,7 @@ public:
   su2double GetInletAtVertex(su2double *val_inlet,
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
+                             string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
 
@@ -10408,6 +10412,7 @@ public:
   su2double GetInletAtVertex(su2double *val_inlet,
                              unsigned long val_inlet_point,
                              unsigned short val_kind_marker,
+                             string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
   /*!
