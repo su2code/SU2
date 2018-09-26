@@ -4000,12 +4000,6 @@ public:
    * \brief Get factor to multiply smallest volume for deform tolerance.
    * \return Factor to multiply smallest volume for deform tolerance.
    */
-  su2double GetDeform_Tol_Factor(void);
-  
-  /*!
-   * \brief Get factor to multiply smallest volume for deform tolerance.
-   * \return Factor to multiply smallest volume for deform tolerance.
-   */
   su2double GetDeform_Coeff(void);
   
   /*!
