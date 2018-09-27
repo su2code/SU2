@@ -13094,6 +13094,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     }
   }
 
+  /*--- Add restart data for P1 radiative model. ---*/
+  if (p1_radiation){
+    nVar_Par += 1;
+    Variable_Names.push_back("Radiative_Energy(P1)");
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
 
@@ -13230,12 +13236,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     nVar_Par += 1;
     Variable_Names.push_back("Density");
 
-    /*--- Add output for P1 radiative model. ---*/
-    if (p1_radiation){
-      nVar_Par += 1;
-      Variable_Names.push_back("Radiative_Energy(P1)");
-    }
-
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13362,6 +13362,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         }
       }
 
+      /*--- Add restart data for P1 radiative model. ---*/
+      if (p1_radiation){
+        Local_Data[jPoint][iVar] = solver[RAD_SOL]->node[iPoint]->GetSolution(0); iVar++;
+      }
+
       /*--- If limiters and/or residuals are requested. ---*/
       if (!config->GetLow_MemoryOutput()) {
 
@@ -13469,11 +13474,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
          assuming they were registered above correctly. ---*/
 
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
-
-        /*--- Add output for P1 radiative model. ---*/
-        if (p1_radiation){
-          Local_Data[jPoint][iVar] = solver[RAD_SOL]->node[iPoint]->GetSolution(0);
-        }
 
       }
 
