@@ -1240,7 +1240,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
 			node[iPoint]->SetDelta_Time(Local_Delta_Time);
-			cout<<iPoint<<": "<<Local_Delta_Time<<endl;
 		}
 		else {
 			node[iPoint]->SetDelta_Time(0.0);
