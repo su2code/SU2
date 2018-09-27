@@ -443,14 +443,19 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
     if (abs(u_tau - u_tau0) < 1e-6){
       break;
     }
+    if (counter == 49) {
+      cout << counter << " " <<  u_tau0 << " " << u_tau << endl;
+      cout << fprime << " " << fval << " " << newton_step << endl;
+      cout << rhoExchange << " " << velExchange << " " << muExchange << endl;
+    }
     u_tau0 = u_tau;
   }
   //cout << counter << " " <<  u_tau0 << " " << u_tau << endl;
-  
+  //cout << thickness * u_tau0 / nuExchange << " " << velExchange /u_tau << endl;
   tauWall = rhoExchange * pow(u_tau,2.0);
   qWall = 0.0;
   ViscosityWall = muExchange;
-  //kOverCvWall = ViscosityWall * factHeatFlux_Lam;
-  kOverCvWall = c_p / c_v * (muExchange/Pr_lam);
+  kOverCvWall = ViscosityWall * factHeatFlux_Lam;
+  //kOverCvWall = c_p / c_v * (muExchange/Pr_lam);
 
 }
