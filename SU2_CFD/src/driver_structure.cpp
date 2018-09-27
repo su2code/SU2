@@ -856,6 +856,11 @@ void CDriver::Geometrical_Preprocessing() {
       geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 
+      /*--- Compute the max length. ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
+
       /*--- Visualize a dual control volume if requested ---*/
 
       if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
@@ -919,6 +924,10 @@ void CDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][iInst][iMGlevel]->SetControlVolume(config_container[iZone], geometry_container[iZone][iInst][iMGlevel-1], ALLOCATE);
         geometry_container[iZone][iInst][iMGlevel]->SetBoundControlVolume(config_container[iZone], geometry_container[iZone][iInst][iMGlevel-1], ALLOCATE);
         geometry_container[iZone][iInst][iMGlevel]->SetCoord(geometry_container[iZone][iInst][iMGlevel-1]);
+
+        /*--- Compute the max length. ---*/
+
+        geometry_container[iZone][iInst][iMGlevel]->SetMaxLength(config_container[iZone]);
 
         /*--- Find closest neighbor to a surface point ---*/
 
