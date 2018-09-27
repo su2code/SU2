@@ -8288,8 +8288,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMx[iMarker_Monitoring]        += Surface_CMx_Visc[iMarker_Monitoring];
     Surface_CMy[iMarker_Monitoring]        += Surface_CMy_Visc[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]        += Surface_CMz_Visc[iMarker_Monitoring];
-    Surface_HF_Visc[iMarker_Monitoring]    += Surface_CMy_Visc[iMarker_Monitoring];
-    Surface_MaxHF_Visc[iMarker_Monitoring] += Surface_CMz_Visc[iMarker_Monitoring];
   }
 
 }
