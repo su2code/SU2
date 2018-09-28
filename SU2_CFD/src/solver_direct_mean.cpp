@@ -13648,6 +13648,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
 
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
@@ -13658,6 +13659,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
+      geometry[iMesh]->SetMaxLength(config);
       }
     }
 
@@ -13675,6 +13677,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
 
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
@@ -13684,6 +13687,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetMaxLength(config);
     }
   }
   
@@ -17134,17 +17138,11 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
       }
       
       node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
-    }
-    
-    if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS){
-      /*--- XXX: This grid length does not match the original paper.
-       * Here we use the volume-based grid length,
-       *    delta = (delta_x * delta_y * delta_z)^(1/3)
-       * as an approximation for Travin's max-based grid length,
-       *    delta = max(delta_x, delta_y, delta_z)
-       * Since the volume is already computed, using the volume is much faster.
-       * ---*/
-      const su2double delta = pow(geometry->node[iPoint]->GetVolume(), 1.0/3);
+
+    } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {
+
+      const su2double delta = geometry->node[iPoint]->GetMaxLength();
+      assert(delta > 0); // Delta must be initialized and non-negative
       node[iPoint]->SetRoe_Dissipation_NTS(delta, config->GetConst_DES());
     }
   }
