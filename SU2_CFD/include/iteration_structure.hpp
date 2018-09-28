@@ -994,6 +994,7 @@ private:
   CFluidIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
   unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
   bool turbulent;       /*!< \brief Stores the turbulent flag. */
+  bool radiation;       /*!< \brief Stores the radiation flag. */
 
 public:
   

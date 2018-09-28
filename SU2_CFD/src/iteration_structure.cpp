@@ -1746,6 +1746,7 @@ void CAdjFluidIteration::Postprocess(COutput *output,
 CDiscAdjFluidIteration::CDiscAdjFluidIteration(CConfig *config) : CIteration(config) {
   
   turbulent = ( config->GetKind_Solver() == DISC_ADJ_RANS);
+  radiation = ( config->GetKind_RadiationModel() != NONE);
   
 }
 
@@ -1908,11 +1909,19 @@ void CDiscAdjFluidIteration::Preprocess(COutput *output,
         solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL]->node[iPoint]->GetSolution());
       }
     }
+    if (radiation) {
+      for (iPoint = 0; iPoint < geometry_container[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+        solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->node[iPoint]->SetSolution_Direct(solver_container[val_iZone][val_iInst][MESH_0][RAD_SOL]->node[iPoint]->GetSolution());
+      }
+    }
   }
 
   solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJFLOW_SYS, false);
   if (turbulent && !config_container[val_iZone]->GetFrozen_Visc_Disc()){
     solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJTURB_SYS, false);
+  }
+  if (radiation){
+    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->Preprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0],  config_container[val_iZone] , MESH_0, 0, RUNTIME_ADJRAD_SYS, false);
   }
 
 
@@ -1994,6 +2003,12 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
     solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
                                                                               config_container[val_iZone]);
   }
+  if (radiation) {
+
+    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
+                                                                              config_container[val_iZone]);
+  }
+
 
   }
   
@@ -2019,6 +2034,11 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver_container, CG
     solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
         config_container[iZone]);
   }
+
+  if (radiation) {
+    solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
+        config_container[iZone]);
+  }
 }
 
 
@@ -2040,6 +2060,10 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
     
     if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
       solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    }
+
+    if (radiation) {
+      solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
   }
   if (kind_recording == MESH_COORDS){
@@ -2095,6 +2119,12 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
   }
 
+  if (radiation){
+    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
+    solver_container[iZone][iInst][MESH_0][RAD_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
+    solver_container[iZone][iInst][MESH_0][RAD_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  }
+
 }
 
 void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, COutput* output, unsigned short iZone, unsigned short iInst){
@@ -2112,6 +2142,9 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver_container, CGeom
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
                                                                  config_container[iZone]);
+  }
+  if (radiation){
+    solver_container[iZone][iInst][MESH_0][RAD_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
   }
 }
 
@@ -2135,6 +2168,11 @@ void CDiscAdjFluidIteration::InitializeAdjoint_CrossTerm(CSolver *****solver_con
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc) {
     solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
                                                                     config_container[iZone]);
+  }
+
+  if (radiation) {
+    solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->SetAdjoint_Output(geometry_container[iZone][iInst][MESH_0],
+                                                                          config_container[iZone]);
   }
 }
 
