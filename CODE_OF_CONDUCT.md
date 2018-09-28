@@ -14,22 +14,23 @@ appearance, race, religion, or sexual identity and orientation.
 Examples of behavior that contributes to creating a positive environment
 include:
 
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
+* Using welcoming and inclusive language.
+* Being respectful of differing viewpoints and experiences.
+* Gracefully accepting and giving constructive criticism.
+* Focusing on what is best for the community.
+* Showing empathy towards other community members.
+* Offering guidance towards those with less expertise.
 
 Examples of unacceptable behavior by participants include:
 
 * The use of sexualized language or imagery and unwelcome sexual attention or
-  advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
+  advances.
+* Trolling, insulting/derogatory comments, and personal or political attacks.
+* Public or private harassment.
 * Publishing others' private information, such as a physical or electronic
-  address, without explicit permission
+  address, without explicit permission. 
 * Other conduct which could reasonably be considered inappropriate in a
-  professional setting
+  professional setting.
 
 ## Our Responsibilities
 
@@ -64,6 +65,13 @@ Further details of specific enforcement policies may be posted separately.
 Project maintainers who do not follow or enforce the Code of Conduct in good
 faith may face temporary or permanent repercussions as determined by other
 members of the project's leadership.
+
+Consequences may include:
+* Downgrade or removal of repository permissions such as admin and write 
+  permissions.
+* Removal from the su2code organization on Github.
+* Being blocked from the su2code repository.
+* Reporting of the abuse to Github.
 
 ## Attribution
 
