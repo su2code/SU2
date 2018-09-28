@@ -245,7 +245,7 @@ def adjoint( func_name, config, state=None ):
     link.extend(name)
 
     if config['DV_KIND'][0] == 'SURFACE_FILE':
-        link.append(config['MOTION_FILENAME'])
+        link.append(config['DV_FILENAME'])
 
     # files: adjoint solution
     if ADJ_NAME in files:

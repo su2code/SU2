@@ -732,7 +732,7 @@ def update_mesh(config,state=None):
         link = config['MESH_FILENAME']
         link = su2io.expand_part(link,config)
 
-        link.append(config["MOTION_FILENAME"])
+        link.append(config["DV_FILENAME"])
     
         # output redirection
         with redirect_folder('DEFORM',pull,link) as push:
