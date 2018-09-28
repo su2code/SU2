@@ -412,6 +412,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
+    case TOTAL_HEATFLUX:
+      ObjFunc_Value = direct_solver->GetTotal_HeatFlux();
+      break;
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
@@ -934,6 +937,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool rans = (config->GetKind_Solver() == RANS);
 
   /*--- Restart the solution from file information ---*/
 
@@ -968,6 +972,13 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
     if (incompressible) {
       skipVars += nDim + 2;
     }
+  }
+
+  /*--- Skip flow adjoint and turbulent variables ---*/
+  if (KindDirect_Solver == RUNTIME_RADIATION_SYS) {
+    if (compressible) skipVars += nDim + 2;
+    if (incompressible) skipVars += nDim + 2;
+    if (rans) skipVars += solver[MESH_0][TURB_SOL]->GetnVar();
   }
 
   /*--- Load data from the restart into correct containers. ---*/

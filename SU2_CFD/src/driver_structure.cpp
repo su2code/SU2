@@ -1151,6 +1151,10 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJTURB_SOL]->GetnVar();
       }
+      if (p1_rad){
+        solver_container[val_iInst][iMGlevel][ADJRAD_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][RAD_SOL], RUNTIME_RADIATION_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJRAD_SOL]->GetnVar();
+      }
     }
     
     if (disc_adj_fem) {
@@ -1395,6 +1399,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     if (turbulent) {
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
+    if (radiation) {
+      solver_container[val_iInst][MESH_0][RAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
       solver_container[val_iInst][MESH_0][FEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -1417,9 +1424,6 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     if (heat) {
       no_restart = true;
     }
-    if (radiation) {
-      solver_container[val_iInst][MESH_0][RAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
-    }
     if (adj_euler || adj_ns) {
       solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
@@ -1430,6 +1434,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
       solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
       if (disc_adj_turb)
         solver_container[val_iInst][MESH_0][ADJTURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      if (p1_rad)
+        solver_container[val_iInst][MESH_0][ADJRAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
         if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
@@ -1565,6 +1571,9 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     }
     if (radiation) {
       delete solver_container[val_iInst][iMGlevel][RAD_SOL];
+    }
+    if (disc_adj && radiation) {
+      delete solver_container[val_iInst][iMGlevel][ADJRAD_SOL];
     }
     
     delete [] solver_container[val_iInst][iMGlevel];
@@ -4452,6 +4461,9 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
     if (config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !config_container[iZone]->GetFrozen_Visc_Disc()) {
       solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
     }
+    if (config_container[iZone]->GetKind_RadiationModel() != NONE) {
+      solver_container[iZone][INST_0][MESH_0][ADJRAD_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    }
   }
 
 
@@ -4488,6 +4500,9 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
       cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
       if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
         cout <<"       log10[RMS k]: " << log10(solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+      }
+      if ( config_container[iZone]->GetKind_RadiationModel() != NONE) {
+        cout <<"         log10[RMS E(rad)]: " << log10(solver_container[iZone][INST_0][MESH_0][RAD_SOL]->GetRes_RMS(0)) << endl;
       }
     }
   }
