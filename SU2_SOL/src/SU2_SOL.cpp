@@ -339,7 +339,8 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated[iZone] = true;
                 }
-                  solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                  config_container[iZone]->SetiInst(INST_0);
+                  solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
               if (rank == MASTER_NODE)
@@ -364,7 +365,7 @@ int main(int argc, char *argv[]) {
 
           /*--- Either instantiate the solution class or load a restart file. ---*/
           solver_container[iZone][iInst] = new CBaselineSolver(geometry_container[iZone][iInst], config_container[iZone]);
-          solver_container[iZone][iInst]->LoadRestart(&geometry_container[iZone][iInst], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+          solver_container[iZone][iInst]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
 
           /*--- Print progress in solution writing to the screen. ---*/
           if (rank == MASTER_NODE) {
@@ -424,7 +425,8 @@ int main(int argc, char *argv[]) {
                   solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
                   SolutionInstantiated = true;
                 }
-                solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+                config_container[iZone]->SetiInst(INST_0);
+                solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
               }
 
               if (rank == MASTER_NODE)
@@ -443,9 +445,10 @@ int main(int argc, char *argv[]) {
       /*--- Steady simulation: merge the single solution file. ---*/
 
       for (iZone = 0; iZone < nZone; iZone++) {
+        config_container[iZone]->SetiInst(INST_0);
         /*--- Definition of the solution class ---*/
         solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
-        solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
+        solver_container[iZone][INST_0]->LoadRestart(geometry_container[iZone], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
       }
 
       output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);

@@ -45,6 +45,7 @@
 
 #include "./datatype_structure.hpp"
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef HAVE_MPI
 
@@ -92,11 +93,14 @@ public:
   typedef MPI_Datatype Datatype;
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
+  typedef MPI_Win      Win;
   
 protected:
   
-  static int Rank, Size;
+  static int Rank, Size, MinRankError;
   static Comm currentComm;
+  static bool winMinRankErrorInUse;
+  static Win  winMinRankError;
   
 public:
   
