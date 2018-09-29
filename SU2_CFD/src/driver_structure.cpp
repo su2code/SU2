@@ -1061,7 +1061,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (incompressible) {
-//        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncEulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
         solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
@@ -1071,7 +1071,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-//        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
     }
