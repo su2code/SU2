@@ -1354,7 +1354,6 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
-  vector<unsigned long> LocalPoints;
   vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
   vector<string> Marker_Tags;
