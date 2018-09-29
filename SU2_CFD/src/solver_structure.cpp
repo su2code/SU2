@@ -3936,6 +3936,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   bool adjoint = ( config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint() ); 
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = config->GetnZone();
+  unsigned short iInst = config->GetiInst();
   bool grid_movement  = config->GetGrid_Movement();
   bool steady_restart = config->GetSteadyRestart();
   unsigned short turb_model = config->GetKind_Turb_Model();
@@ -3946,7 +3947,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Skip coordinates ---*/
 
-  unsigned short skipVars = geometry[iZone]->GetnDim();
+  unsigned short skipVars = geometry[iInst]->GetnDim();
 
   /*--- Retrieve filename from config ---*/
 
@@ -3984,9 +3985,9 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
   if (config->GetRead_Binary_Restart()) {
-    Read_SU2_Restart_Binary(geometry[iZone], config, filename);
+    Read_SU2_Restart_Binary(geometry[iInst], config, filename);
   } else {
-    Read_SU2_Restart_ASCII(geometry[iZone], config, filename);
+    Read_SU2_Restart_ASCII(geometry[iInst], config, filename);
   }
 
   int counter = 0;
@@ -3994,12 +3995,12 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Load data from the restart into correct containers. ---*/
 
-  for (iPoint_Global = 0; iPoint_Global < geometry[iZone]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
+  for (iPoint_Global = 0; iPoint_Global < geometry[iInst]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
 
-    iPoint_Local = geometry[iZone]->GetGlobal_to_Local_Point(iPoint_Global);
+    iPoint_Local = geometry[iInst]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
       
@@ -4041,8 +4042,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
         }
 
         for (iDim = 0; iDim < nDim; iDim++) {
-          geometry[iZone]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
-          geometry[iZone]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
+          geometry[iInst]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
+          geometry[iInst]->node[iPoint_Local]->SetGridVel(iDim, GridVel[iDim]);
         }
       }
 
@@ -4054,7 +4055,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry[iZone], config);
+  Set_MPI_Solution(geometry[iInst], config);
   
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
@@ -4062,8 +4063,8 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
-    geometry[iZone]->Set_MPI_Coord(config);
-    geometry[iZone]->Set_MPI_GridVel(config);
+    geometry[iInst]->Set_MPI_Coord(config);
+    geometry[iInst]->Set_MPI_GridVel(config);
 
   }
   
