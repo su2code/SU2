@@ -648,7 +648,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
    * ---*/
 
   for (iDim = 0; iDim < 3; iDim++){
-    Omega_2 += 2.0*Vorticity[iDim]*Vorticity[iDim];
+    Omega_2 += Vorticity[iDim]*Vorticity[iDim];
   }
   Omega = sqrt(Omega_2);
   
@@ -677,7 +677,7 @@ void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
   
   static const su2double k2 = pow(0.41,2.0);
   
-  su2double uijuij = 0, r_d;
+  su2double uijuij = 0;
   unsigned short iDim, jDim;
   
   AD::StartPreacc();
@@ -697,7 +697,9 @@ void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
   uijuij=sqrt(fabs(uijuij));
   uijuij=max(uijuij,1e-10);
 
-  r_d = (GetEddyViscosity()+GetLaminarViscosity())/(uijuij*k2*pow(val_wall_dist, 2.0));
+  const su2double nu = GetLaminarViscosity()/GetDensity();
+  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  const su2double r_d = (nu + nu_t)/(uijuij*k2*pow(val_wall_dist, 2.0));
   
   Roe_Dissipation = 1.0-tanh(pow(8.0*r_d,3.0));
   
