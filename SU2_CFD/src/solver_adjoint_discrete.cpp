@@ -832,17 +832,9 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    // FWH
-    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
-    if (config->GetExtIter()<config->GetIter_Avg_Objective() && config->GetKind_ObjFunc()==NOISE){
-    if (LocalPointIndex[iPoint] >= 0){
-        for (iVar = 0; iVar < nVar; iVar++){
-            Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
-         }
-    }
-    }
     // Boom
-    else if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
+    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
+    if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
     if (LocalPointIndex[iPoint] >= 0){
         for (iVar = 0; iVar < nVar; iVar++){
             Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
@@ -1138,6 +1130,99 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
 
+}
+
+void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config){
+    unsigned long iPoint, iVar, iPanel;
+    string  text_line;
+    ifstream Boom_AdjointFile;
+    
+    char filename [64];
+    
+    SPRINTF (filename, "Adj_Boom.dat");
+    Boom_AdjointFile.open(filename , ios::in);
+    if (Boom_AdjointFile.fail()) {
+        cout << "There is no boom adjoint restart file " <<  filename  << "!!"<< endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    
+    /*--- In case this is a parallel simulation, we need to perform the
+     Global2Local index transformation first. ---*/
+    
+    long *Global2Local = NULL;
+    Global2Local = new long[geometry->GetGlobal_nPoint()];
+    /*--- First, set all indices to a negative value by default ---*/
+    for (iPoint = 0; iPoint < geometry->GetGlobal_nPoint(); iPoint++) {
+        Global2Local[iPoint] = -1;
+    }
+    
+    /*--- Now fill array with the transform values only for local points ---*/
+    
+    for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
+    }
+    
+    /*--- Read all lines in the restart file ---*/
+    
+    long iPoint_Local = 0;
+    unsigned long iPoint_Global = 0;
+    iPanel=0;
+    //unsigned short *dJdU_count = new unsigned short[nPanel];
+    
+    
+    int rank ;
+#ifdef HAVE_MPI
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#endif
+    
+    while (getline (Boom_AdjointFile, text_line)) {
+        istringstream point_line(text_line);
+        point_line >> iPoint_Global ;
+        
+        /*--- Retrieve local index. If this node from the restart file lives
+         on a different processor, the value of iPoint_Local will be -1, as
+         initialized above. Otherwise, the local index for this node on the
+         current processor will be returned and used to instantiate the vars. ---*/
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        if (iPoint_Local >= 0) {
+            if(LocalPointIndex[iPoint_Local] < 0){
+                LocalPointIndex[iPoint_Local] =  iPanel;
+                for (iVar=0; iVar<nDim+3; iVar++){
+                    point_line >> dJdU_CAA[iPanel][iVar];
+                }
+                //dJdU_count[iPanel] = 1;
+                iPanel++;
+            }
+            else{
+                su2double dJdU_tmp = 0.0;
+                for(iVar=0; iVar<nDim+3; iVar++){
+                    point_line >> dJdU_tmp;
+                    dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
+                }
+                //dJdU_count[LocalPointIndex[iPoint_Local]]++;
+            }
+        }
+        
+        
+    }
+    
+    /*--- Average dJdU (scale by number of points) ---*/
+    //for(unsigned long i = 0; i < iPanel; i++){
+    //  for(iVar = 0; iVar < nDim+3; iVar++){
+    //    dJdU_CAA[i][iVar] /= dJdU_count[i];
+    //  }
+    //}
+    
+    /*--- Close the restart file ---*/
+    
+    Boom_AdjointFile.close();
+    
+    /*--- Free memory needed for the transformation ---*/
+    
+    delete [] Global2Local;
+    
 }
 
 void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){

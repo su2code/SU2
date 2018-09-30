@@ -666,7 +666,6 @@ public:
   virtual void Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, CNumerics **numerics, unsigned short iMesh, unsigned long Iteration, unsigned short RunTime_EqSystem, bool Output);
   
 
-  virtual void ExtractCAA_Sensitivity(CGeometry *geometry,  CConfig *config, int iExtIter);
   virtual void ExtractBoomSensitivity(CGeometry *geometry,  CConfig *config);
 
   /*!
@@ -12513,6 +12512,9 @@ private:
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
+  su2double **dJdU_CAA;
+  unsigned long nPanel;
+  int *LocalPointIndex;
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */
   
@@ -12768,6 +12770,9 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+    
+  void ExtractBoomSensitivity(CGeometry *geometry, CConfig *config);
+
 };
 
 /*!
@@ -12794,9 +12799,9 @@ private:
   su2double *normalLoads;       /*!< \brief Values of the normal loads for each marker iMarker_nL. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   unsigned long nMarker_nL;     /*!< \brief Total number of markers that have a normal load applied. */
-  su2double **dJdU_CAA;
-  unsigned long nPanel;
-  int *LocalPointIndex;
+    
+  /*!< \brief Definition of element based sensitivities. */
+  unsigned short nMPROP;        /*!< \brief Number of material properties */
   
   su2double *E_i,               /*!< \brief Values of the Young's Modulus. */
             *Nu_i,              /*!< \brief Values of the Poisson's ratio. */
@@ -13109,8 +13114,6 @@ public:
    */
   void BC_Clamped_Post(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
       unsigned short val_marker);
-
-  void ExtractBoomSensitivity(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Load a solution from a restart file.

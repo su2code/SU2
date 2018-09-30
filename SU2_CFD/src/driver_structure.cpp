@@ -1,4 +1,4 @@
-﻿/*!
+/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
@@ -2476,6 +2476,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   heat, heat_fvm,
   transition,
   template_solver;
+    
+  bool e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
   
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
@@ -2488,6 +2490,8 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   spalart_allmaras = false;   neg_spalart_allmaras = false; menter_sst       = false;
   transition       = false;   heat_fvm         = false;
   template_solver  = false;
+    
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
   
   /*--- Assign booleans ---*/
   switch (config->GetKind_Solver()) {
@@ -2509,10 +2513,13 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
   
   if (turbulent)
     switch (config->GetKind_Turb_Model()) {
-      case SA:     spalart_allmaras = true;     break;
-      case SA_NEG: neg_spalart_allmaras = true; break;
-      case SST:    menter_sst = true;  break;
-        
+        case SA:     spalart_allmaras = true;     break;
+        case SA_NEG: neg_spalart_allmaras = true; break;
+        case SST:    menter_sst = true;  break;
+        case SA_COMP: comp_spalart_allmaras = true; break;
+        case SA_E: e_spalart_allmaras = true; break;
+        case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+                
     }
   
   /*--- Solver definition for the template problem ---*/

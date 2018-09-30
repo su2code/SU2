@@ -1799,9 +1799,6 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     den_aux = sqrt(max(den_aux,1E-10));
     
     /*--- Adding the QCR contribution ---*/
-==== BASE ====
-        
-==== BASE ====
     for (iDim = 0 ; iDim < nDim; iDim++){
       for (jDim = 0 ; jDim < nDim; jDim++){
         for (kDim = 0 ; kDim < nDim; kDim++){

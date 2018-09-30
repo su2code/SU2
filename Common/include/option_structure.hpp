@@ -1265,7 +1265,7 @@ enum ENUM_OBJECTIVE {
   PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
-  REFERENCE_NODE=61               /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
+  REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
   BOOM_LOUD = 78,
   BOOM_ENERGY = 79
 };
