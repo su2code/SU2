@@ -3,20 +3,24 @@
 ## \file scipy_tools.py
 #  \brief tools for interfacing with scipy
 #  \author T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.1.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,146 +39,11 @@
 #  Imports
 # -------------------------------------------------------------------
 
-import os, sys, shutil, copy
+import sys
 
 from .. import eval as su2eval
-from numpy import array, zeros, inf, hstack, vstack, atleast_2d
-from numpy.linalg import norm
-import pyOpt
-import pyOpt.pySNOPT
+from numpy import array, zeros
 
-# -------------------------------------------------------------------
-#  Scipy SNOPT
-# -------------------------------------------------------------------
-
-def pySNOPT(project,x0=None,xb=None,its=100,accu=1e-12,grads=True):
-    
-    # handle input cases
-    if x0 is None: x0 = []
-    if xb is None: xb = []
-    
-    # function handles
-    func           = obj_f
-    f_eqcons       = con_ceq
-    f_ieqcons      = con_cieq 
-    
-    # gradient handles
-    if project.config.get('GRADIENT_METHOD','NONE') == 'NONE': 
-        fprime         = None
-        fprime_eqcons  = None
-        fprime_ieqcons = None
-    else:
-        fprime         = obj_df
-        fprime_eqcons  = con_dceq
-        fprime_ieqcons = con_dcieq        
-    
-    # number of design variables
-    dv_size = project.config['DEFINITION_DV']['SIZE']
-    n_dv = sum( dv_size)
-    project.n_dv = n_dv
-    
-    # Initial guess
-    if not x0: x0 = [0.0]*n_dv
-    
-    # prescale x0
-    dv_scales = project.config['DEFINITION_DV']['SCALE']*1
-    k = 0
-    for i, dv_scl in enumerate(dv_scales):
-        dv_scales[i] = 1000.
-        for j in range(dv_size[i]):
-            ##x0[k] =x0[k]/dv_scl;
-            x0[k] =x0[k]*dv_scl;
-            k = k + 1
-
-    # scale accuracy
-    obj = project.config['OPT_OBJECTIVE']
-    obj_scale = []
-    for this_obj in obj.keys():
-        obj_scale = obj_scale + [obj[this_obj]['SCALE']]
-    #obj_scale = [100.]
-        
-    ieq_cons = project.config['OPT_CONSTRAINT']['INEQUALITY']
-    ieq_cons_scale = []
-    for this_con in ieq_cons.keys():
-        ieq_cons_scale = ieq_cons_scale + [ieq_cons[this_con]['SCALE']] 
-    #ieq_cons_scale = [100.,100.,1000.]
-        
-    if len(project.config['OPT_CONSTRAINT']['EQUALITY']) > 0:
-        raise NotImplementedError('Equality constaints have not been implemented for SU2 <-> SNOPT')
-    
-    # Only scale the accuracy for single-objective problems: 
-    if len(obj.keys())==1:
-        accu = accu*obj_scale[0]
-
-    # scale accuracy
-    eps = 1.0e-04  
-    
-    # ----------------------------
-    #
-    # SNOPT Specific Values
-    #
-    # ----------------------------
-    
-    def snopt_func_base(xs, project):
-        # s indicated SNOPT, otherwise they are direct SU2 inputs/outputs
-        x = xs*1
-        for i, val in enumerate(xs):
-            x[i] = x[i]*dv_scales[i];
-        f = func(x, project)
-        fs = f*obj_scale[0]
-        g = hstack([f_ieqcons(x,project),f_eqcons(x,project)])
-        gs = g*ieq_cons_scale
-        fail = 0
-        #f *= obj_scale
-        return fs,gs.tolist(),fail
-        
-    snopt_func_final = lambda x:snopt_func_base(x,project)
-            
-    opt_prob = pyOpt.Optimization('SUAVE',snopt_func_final)
-    opt_prob.addObj('Objective')
-    for i,val in enumerate(x0):
-        var_name = 'x' + str(i)
-        opt_prob.addVar(var_name ,'c',lower=xb[i][0]*dv_scales[i],upper=xb[i][1]*dv_scales[i],value=x0[i]) # final value already scaled
-        
-    for con in project.config['OPT_CONSTRAINT']['INEQUALITY']:
-        bound = project.config['OPT_CONSTRAINT']['INEQUALITY'][con]['VALUE']
-        if project.config['OPT_CONSTRAINT']['INEQUALITY'][con]['SIGN'] == '>':
-            opt_prob.addCon(con ,type='i',lower=0.,upper=inf)
-        else:
-            opt_prob.addCon(con ,type='i',lower=0.,upper=inf) # no change due to ineq functionality in this module
-            
-    for con in project.config['OPT_CONSTRAINT']['EQUALITY']:
-        opt_prob.addCon(con ,type='e',equal=bound)
-        
-    opt = pyOpt.pySNOPT.SNOPT()
-    
-    def grad_function_base(xs,fs,gs,project):
-        # s indicated SNOPT, otherwise they are direct SU2 inputs/outputs
-        x = xs*1
-        for i, val in enumerate(x):
-            x[i] = x[i]*dv_scales[i]        
-        g_obj = fprime(x, project)
-        g_obj_s = g_obj*1
-        for i, val in enumerate(dv_scales):
-            g_obj_s[i] = g_obj[i]*obj_scale[0]/dv_scales[i]
-        g_con = vstack([fprime_ieqcons(x,project),fprime_eqcons(x,project)])
-        g_con_s = g_con*1
-        for i, val in enumerate(dv_scales):
-            g_con_s[:,i] = g_con_s[:,i]*atleast_2d(ieq_cons_scale)/dv_scales[i]
-        fail = 0
-        return g_obj_s.tolist(),g_con_s.tolist(),fail
-        
-    grad_function_final = lambda x,f,g:grad_function_base(x,f,g,project)        
-    
-    opt.setOption('Function precision', accu)
-    opt.setOption('Verify level',0)
-    opt.setOption('Major optimality tolerance',eps)
-    opt.setOption('Major iterations limit',its)
-    outputs = opt(opt_prob, sens_type=grad_function_final)
-            
-    print 'Ran SNOPT'
-    print outputs
-    return outputs
 
 # -------------------------------------------------------------------
 #  Scipy SLSQP

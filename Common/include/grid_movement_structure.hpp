@@ -5,20 +5,24 @@
  *        technique definition). The subroutines and functions are in 
  *        the <i>grid_movement_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, S. Padron
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,6 +53,7 @@
 #include "matrix_structure.hpp"
 #include "vector_structure.hpp"
 #include "linear_solvers_structure.hpp"
+#include "element_structure.hpp"
 
 using namespace std;
 
@@ -57,9 +62,13 @@ using namespace std;
  * \brief Class for moving the surface and volumetric 
  *        numerical grid (2D and 3D problems).
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CGridMovement {
+  
+protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
+  
 public:
 
 	/*! 
@@ -85,7 +94,6 @@ public:
  * \class CFreeFormBlending
  * \brief Class that defines the particular kind of blending function for the free form deformation.
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CFreeFormBlending {
 
@@ -143,7 +151,6 @@ public:
  * \class CBSplineBlending
  * \brief Class that defines the blending using uniform BSplines.
  * \author T. Albring
- * \version 5.0.0 "Raven"
  */
 class CBSplineBlending : public CFreeFormBlending{
 
@@ -192,7 +199,6 @@ public:
  * \class CBezierBlending
  * \brief Class that defines the blending using Bernsteinpolynomials (Bezier Curves).
  * \author F. Palacios, T. Albring
- * \version 5.0.0 "Raven"
  */
 class CBezierBlending : public CFreeFormBlending{
 
@@ -268,7 +274,6 @@ public:
  * \class CFreeFormDefBox
  * \brief Class for defining the free form FFDBox structure.
  * \author F. Palacios & A. Galdran.
- * \version 5.0.0 "Raven"
  */
 class CFreeFormDefBox : public CGridMovement {
 public:
@@ -950,7 +955,6 @@ public:
  * \class CVolumetricMovement
  * \brief Class for moving the volumetric numerical grid.
  * \author F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 5.0.0 "Raven"
  */
 class CVolumetricMovement : public CGridMovement {
 protected:
@@ -968,6 +972,11 @@ protected:
   CSysVector LinSysRes;
 
 public:
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CVolumetricMovement(void);
 
 	/*! 
 	 * \brief Constructor of the class.
@@ -1234,6 +1243,15 @@ public:
   void SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
 
   /*!
+   * \brief Grid deformation using the spring analogy method.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   */
+  virtual void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+
+  /*!
    * \brief Set the derivatives of the boundary nodes.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -1275,13 +1293,197 @@ public:
 	 * \param[out] Number of iterations.
 	 */
 	unsigned long Get_nIterMesh(void);
+
+  /*!
+   * \brief Set the boundary dependencies in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 };
 
 /*! 
+ * \class CElasticityMovement
+ * \brief Class for moving the volumetric numerical grid using the new linear elasticity solver.
+ * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
+ * \version 4.2.0 "Cardinal"
+ */
+class CElasticityMovement : public CVolumetricMovement {
+protected:
+
+  unsigned short nDim;    /*!< \brief Number of dimensions. */
+  unsigned short nVar;    /*!< \brief Number of variables. */
+
+  unsigned long nPoint;   /*!< \brief Number of points. */
+  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
+
+  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
+  su2double valResidual;
+
+  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
+            *Solution;         /*!< \brief Auxiliary nDim vector. */
+
+  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
+  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
+
+  su2double MinVolume;
+  su2double MaxVolume;
+
+  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector LinSysSol;
+  CSysVector LinSysRes;
+
+  su2double E;                  /*!< \brief Young's modulus of elasticity. */
+  su2double Nu;                 /*!< \brief Poisson's ratio. */
+
+  su2double Mu;                 /*!< \brief Lame's coeficient. */
+  su2double Lambda;             /*!< \brief Lame's coeficient. */
+
+  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
+
+  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
+            **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
+  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
+  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
+  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
+
+public:
+
+  CElement** element_container;  /*!< \brief Container which stores the element information. */
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CElasticityMovement(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CElasticityMovement(void);
+
+  /*!
+   * \brief Grid deformation using the linear elasticity equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   */
+  void SetVolume_Deformation_Elas(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative = false);
+
+  /*!
+   * \brief Update the value of the coordinates after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the dual grid after the grid movement (edges and control volumes).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the coarse multigrid levels after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Check the boundary vertex that are going to be moved.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the boundary displacements to 0.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker -
+   */
+  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solve_System(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return Value of the length of the smallest edge of the grid.
+   */
+  void SetMinMaxVolume(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \return Value of the length of the smallest edge of the grid.
+   */
+  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the number of iterations when moving the mesh.
+   * \param[in] val_nIterMesh - Number of iterations.
+   */
+  void Set_nIterMesh(unsigned long val_nIterMesh);
+
+  /*!
+   * \brief Retrieve the number of iterations when moving the mesh.
+   * \param[out] Number of iterations.
+   */
+  unsigned long Get_nIterMesh(void);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   */
+  void Set_Element_Stiffness(su2double ElemVolume, CConfig *config);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   */
+  void Compute_Element_Contribution(CElement *element, CConfig *config);
+
+  /*!
+   * \brief Compute the constitutive matrix in an element for mesh deformation problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  void Compute_Constitutive_Matrix(void);
+
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
+
+};
+
+/*!
  * \class CSurfaceMovement
  * \brief Class for moving the surface numerical grid.
  * \author F. Palacios, T. Economon.
- * \version 5.0.0 "Raven"
  */
 class CSurfaceMovement : public CGridMovement {
 protected:

@@ -2,20 +2,24 @@
  * \file variable_direct_mean.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -59,7 +63,8 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   Undivided_Laplacian = NULL;
   
   Solution_New = NULL;
-
+ 
+  Solution_BGS_k = NULL;
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
@@ -71,6 +76,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
@@ -224,6 +230,16 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
 
+  Solution_BGS_k = NULL;
+  if (fsi){
+      Solution_BGS_k  = new su2double [nVar];
+      Solution[0] = val_density;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Solution_BGS_k[iDim+1] = val_density*val_velocity[iDim];
+      }
+      Solution_BGS_k[nVar-1] = val_density*val_energy;
+  }
+
 }
 
 CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -234,6 +250,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool viscous = config->GetViscous();
   bool windgust = config->GetWind_Gust();
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
+  bool fsi = config->GetFSI_Simulation();
 
   /*--- Array initialization ---*/
   
@@ -379,8 +396,15 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
-
   
+  Solution_BGS_k = NULL;
+  if (fsi){
+      Solution_BGS_k  = new su2double [nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution_BGS_k[iVar] = val_solution[iVar];
+      }
+  }
+
 }
 
 CEulerVariable::~CEulerVariable(void) {
@@ -409,6 +433,8 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Solution_New != NULL) delete [] Solution_New;
   
+  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
+
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
@@ -505,22 +531,33 @@ CNSVariable::CNSVariable(su2double val_density, su2double *val_velocity, su2doub
                          unsigned short val_nDim, unsigned short val_nvar,
                          CConfig *config) : CEulerVariable(val_density, val_velocity, val_energy, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
   
 }
 
 CNSVariable::CNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
-    Temperature_Ref = config->GetTemperature_Ref();
-    Viscosity_Ref   = config->GetViscosity_Ref();
-    Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-    Prandtl_Lam     = config->GetPrandtl_Lam();
-    Prandtl_Turb    = config->GetPrandtl_Turb();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
+  Prandtl_Turb    = config->GetPrandtl_Turb();
+  
+  inv_TimeScale   = config->GetModVel_FreeStream() / config->GetRefLength();
+  Roe_Dissipation = 0.0;
+  Vortex_Tilting  = 0.0;
+  Tau_Wall        = -1.0;
+
 }
 
 CNSVariable::~CNSVariable(void) { }
@@ -576,6 +613,98 @@ bool CNSVariable::SetStrainMag(void) {
   AD::EndPreacc();
 
   return false;
+  
+}
+
+void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
+                                         su2double val_const_DES){
+  
+  static const su2double cnu = pow(0.09, 1.5),
+                         ch1 = 3.0,
+                         ch2 = 1.0,
+                         ch3 = 2.0,
+                         sigma_max = 1.0;
+  
+  unsigned short iDim;
+  su2double Omega, Omega_2 = 0, Baux, Gaux, Lturb, Kaux, Aaux;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Vorticity, 3);
+  AD::SetPreaccIn(StrainMag);
+  AD::SetPreaccIn(val_delta);
+  AD::SetPreaccIn(val_const_DES);
+  /*--- Density ---*/
+  AD::SetPreaccIn(Solution[0]);
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+5]);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(Primitive[nDim+6]);
+
+  /*--- Central/upwind blending based on:
+   * Zhixiang Xiao, Jian Liu, Jingbo Huang, and Song Fu.  "Numerical
+   * Dissipation Effects on Massive Separation Around Tandem Cylinders",
+   * AIAA Journal, Vol. 50, No. 5 (2012), pp. 1119-1136.
+   * https://doi.org/10.2514/1.J051299
+   * ---*/
+
+  for (iDim = 0; iDim < 3; iDim++){
+    Omega_2 += Vorticity[iDim]*Vorticity[iDim];
+  }
+  Omega = sqrt(Omega_2);
+  
+  Baux = (ch3 * Omega * max(StrainMag, Omega)) /
+      max((pow(StrainMag,2)+Omega_2)*0.5, 1E-20);
+  Gaux = tanh(pow(Baux,4.0));
+  
+  Kaux = max(sqrt((Omega_2 + pow(StrainMag, 2))*0.5), 0.1 * inv_TimeScale);
+  
+  const su2double nu = GetLaminarViscosity()/GetDensity();
+  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  Lturb = sqrt((nu + nu_t)/(cnu*Kaux));
+  
+  Aaux = ch2*max((val_const_DES*val_delta/Lturb)/Gaux -  0.5, 0.0);
+  
+  Roe_Dissipation = sigma_max * tanh(pow(Aaux, ch1)); 
+  
+  AD::SetPreaccOut(Roe_Dissipation);
+  AD::EndPreacc();
+
+}
+
+void CNSVariable::SetRoe_Dissipation_FD(su2double val_wall_dist){
+  
+  /*--- Constants for Roe Dissipation ---*/
+  
+  static const su2double k2 = pow(0.41,2.0);
+  
+  su2double uijuij = 0;
+  unsigned short iDim, jDim;
+  
+  AD::StartPreacc();
+  AD::SetPreaccIn(Gradient_Primitive, nVar, nDim);
+  AD::SetPreaccIn(val_wall_dist);
+  /*--- Eddy viscosity ---*/
+  AD::SetPreaccIn(Primitive[nDim+5]);  
+  /*--- Laminar viscosity --- */
+  AD::SetPreaccIn(Primitive[nDim+6]);
+  
+  for(iDim=0;iDim<nDim;++iDim){
+    for(jDim=0;jDim<nDim;++jDim){
+      uijuij+= Gradient_Primitive[1+iDim][jDim]*Gradient_Primitive[1+iDim][jDim];
+    }
+  }
+  
+  uijuij=sqrt(fabs(uijuij));
+  uijuij=max(uijuij,1e-10);
+
+  const su2double nu = GetLaminarViscosity()/GetDensity();
+  const su2double nu_t = GetEddyViscosity()/GetDensity();
+  const su2double r_d = (nu + nu_t)/(uijuij*k2*pow(val_wall_dist, 2.0));
+  
+  Roe_Dissipation = 1.0-tanh(pow(8.0*r_d,3.0));
+  
+  AD::SetPreaccOut(Roe_Dissipation);
+  AD::EndPreacc();
   
 }
 
@@ -671,4 +800,6 @@ void CNSVariable::SetSecondaryVar(CFluidModel *FluidModel) {
     SetdktdT_rho( FluidModel->GetdktdT_rho() );
 
 }
+
+
 

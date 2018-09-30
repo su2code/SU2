@@ -2,20 +2,24 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -39,7 +43,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo;
+  bool fsi, turbo, zone_specific, periodic = false;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -47,7 +51,7 @@ int main(int argc, char *argv[]) {
   int  buffsize;
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
-  MPI_Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
   SU2_Comm MPICommunicator(MPI_COMM_WORLD);
 #else
   SU2_Comm MPICommunicator(0);
@@ -70,16 +74,19 @@ int main(int argc, char *argv[]) {
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
-  nZone = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  nDim  = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
-  fsi   = config->GetFSI_Simulation();
-  turbo = config->GetBoolTurbomachinery();
+  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
+  fsi      = config->GetFSI_Simulation();
+  turbo    = config->GetBoolTurbomachinery();
+  periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  zone_specific = config->GetBoolZoneSpecific();
 
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
 
   if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+        config->GetKind_Solver() == DISC_ADJ_FEM ||
         config->GetKind_Solver() == POISSON_EQUATION ||
         config->GetKind_Solver() == WAVE_EQUATION ||
         config->GetKind_Solver() == HEAT_EQUATION) ) {
@@ -87,24 +94,38 @@ int main(int argc, char *argv[]) {
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
     if (nZone > 1 ) {
-      cout << "The required solver doesn't support multizone simulations" << endl; 
-      exit(EXIT_FAILURE);
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
     }
     
-    driver = new CGeneralDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CGeneralDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
     /*--- Harmonic balance problem: instantiate the Harmonic Balance driver class. ---*/
 
-    driver = new CHBDriver(config_file_name, nZone, nDim, MPICommunicator);
+    driver = new CHBDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if ((nZone == 2) && fsi) {
 
-    /*--- FSI problem: instantiate the FSI driver class. ---*/
+    bool stat_fsi = ((config->GetDynamic_Analysis() == STATIC) && (config->GetUnsteady_Simulation() == STEADY));
+    bool disc_adj_fsi = (config->GetDiscrete_Adjoint());
 
-    driver = new CFSIDriver(config_file_name, nZone, nDim, MPICommunicator);
+    /*--- If the problem is a discrete adjoint FSI problem ---*/
+    if (disc_adj_fsi) {
+      if (stat_fsi) {
+        driver = new CDiscAdjFSIDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+      }
+      else {
+        SU2_MPI::Error("WARNING: There is no discrete adjoint implementation for dynamic FSI. ", CURRENT_FUNCTION);
+      }
+    }
+    /*--- If the problem is a direct FSI problem ---*/
+    else{
+      driver = new CFSIDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+    }
 
+  } else if (zone_specific) {
+    driver = new CMultiphysicsZonalDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
   } else {
 
     /*--- Multi-zone problem: instantiate the multi-zone driver class by default
@@ -114,23 +135,23 @@ int main(int argc, char *argv[]) {
 
       if (turbo) {
 
-        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
       } else {
 
-        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+        driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
         
       }
 
     } else if (turbo) {
 
-      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
     } else {
 
       /*--- Instantiate the class for external aerodynamics ---*/
 
-      driver = new CFluidDriver(config_file_name, nZone, nDim, MPICommunicator);
+      driver = new CFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
       
     }
     
@@ -153,9 +174,9 @@ int main(int argc, char *argv[]) {
   /*--- Finalize MPI parallelization ---*/
 
 #ifdef HAVE_MPI
-  MPI_Buffer_detach(&buffptr, &buffsize);
+  SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
-  MPI_Finalize();
+  SU2_MPI::Finalize();
 #endif
   
   return EXIT_SUCCESS;

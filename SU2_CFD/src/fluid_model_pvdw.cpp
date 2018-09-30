@@ -2,20 +2,24 @@
  * fluid_model_pvdw.cpp
  * \brief Source of the Polytropic Van der Waals model.
  * \author S. Vitale, G. Gori, M. Pini, A. Guardone, P. Colonna
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -157,7 +161,7 @@ void CVanDerWaalsGas::SetTDState_hs (su2double h, su2double s ) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     fmid= log(xmid-b) - s/Gas_Constant + log((h+ 2*a/xmid)/Gas_Constant/(1/Gamma_Minus_One+ xmid/(xmid-b)))/Gamma_Minus_One;
@@ -245,7 +249,7 @@ void CVanDerWaalsGas::SetTDState_Ps (su2double P, su2double s) {
     cout<< "Root must be bracketed for bisection in rtbis"<< endl;
     SetTDState_rhoT(Density, Temperature);
   }
-  rtb = f < 0.0 ? (dx=x2-x1,x1) : (dx=x1-x2,x2);
+  rtb = f < 0.0 ? (static_cast<void>(dx=x2-x1),x1) : (static_cast<void>(dx=x1-x2),x2);
   do{
     xmid=rtb+(dx *= 0.5);
     T = (P+xmid*xmid*a)*((1-xmid*b)/(xmid*Gas_Constant));

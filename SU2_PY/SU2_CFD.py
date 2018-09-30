@@ -3,20 +3,24 @@
 ## \file SU2_CFD.py
 #  \brief Python script to launch SU2_CFD through the Python Wrapper.
 #  \author David Thomas
-#  \version 5.0.0 "Raven"
+#  \version 6.1.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -35,9 +39,9 @@
 #  Imports
 # ----------------------------------------------------------------------
 
+from __future__ import division, print_function, absolute_import
 from optparse import OptionParser	# use a parser for configuration
 import SU2				# imports SU2 python tools
-
 import pysu2			# imports the SU2 wrapped module
 
 # -------------------------------------------------------------------
@@ -51,30 +55,25 @@ def main():
   parser.add_option("-f", "--file", dest="filename", help="Read config from FILE", metavar="FILE")
   parser.add_option("--nDim", dest="nDim", default=2, help="Define the number of DIMENSIONS",
                     metavar="DIMENSIONS")
-  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES",
-                    metavar="ZONES")
+  parser.add_option("--nZone", dest="nZone", default=1, help="Define the number of ZONES", metavar="NZONE")
+  parser.add_option("--periodic", dest="periodic", default="False", help="Define whether the problem has periodic boundary conditions", metavar="PERIODIC")
   parser.add_option("--parallel", action="store_true",
                     help="Specify if we need to initialize MPI", dest="with_MPI", default=False)
-
   parser.add_option("--fsi", dest="fsi", default="False", help="Launch the FSI driver", metavar="FSI")
-
   parser.add_option("--fem", dest="fem", default="False", help="Launch the FEM driver (General driver)", metavar="FEM")
-
   parser.add_option("--harmonic_balance", dest="harmonic_balance", default="False",
                     help="Launch the Harmonic Balance (HB) driver", metavar="HB")
-
   parser.add_option("--poisson_equation", dest="poisson_equation", default="False",
                     help="Launch the poisson equation driver (General driver)", metavar="POIS_EQ")
-
   parser.add_option("--wave_equation", dest="wave_equation", default="False",
                     help="Launch the wave equation driver (General driver)", metavar="WAVE_EQ")
-
   parser.add_option("--heat_equation", dest="heat_equation", default="False",
                     help="Launch the heat equation driver (General driver)", metavar="HEAT_EQ")
 
   (options, args) = parser.parse_args()
   options.nDim  = int( options.nDim )
   options.nZone = int( options.nZone )
+  options.periodic = options.periodic.upper() == 'TRUE'
   options.fsi = options.fsi.upper() == 'TRUE'
   options.fem = options.fem.upper() == 'TRUE'
   options.harmonic_balance = options.harmonic_balance.upper() == 'TRUE'
@@ -94,13 +93,13 @@ def main():
   # Initialize the corresponding driver of SU2, this includes solver preprocessing
   try:
     if (options.nZone == 1) and ( options.fem or options.poisson_equation or options.wave_equation or options.heat_equation ):
-      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CGeneralDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
     elif options.harmonic_balance:
-      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CHBDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
     elif (options.nZone == 2) and (options.fsi):
-      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CFSIDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
     else:
-      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, comm);
+      SU2Driver = pysu2.CFluidDriver(options.filename, options.nZone, options.nDim, options.periodic, comm);
   except TypeError as exception:
     print('A TypeError occured in pysu2.CDriver : ',exception)
     if options.with_MPI == True:

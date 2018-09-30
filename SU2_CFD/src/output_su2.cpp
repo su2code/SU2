@@ -2,20 +2,24 @@
  * \file output_su2.cpp
  * \brief Main subroutines for output solver information.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -244,3 +248,69 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
 }
 
 void COutput::SetSU2_MeshBinary(CConfig *config, CGeometry *geometry) { }
+
+void COutput::WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+  
+  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned long iPoint;
+  char cstr[200];
+  
+  /*--- Prepare the file name. ---*/
+  
+  strcpy(cstr, "coordinates");
+  if (config->GetnZone() > 1){
+    char appstr[200];
+    SPRINTF(appstr, "_%u", val_iZone);
+    strcat(cstr, appstr);
+  }
+  strcat(cstr,".dat");
+  
+  /*--- Prepare the first ints containing the counts. The first is a
+   the total number of points written. The second is the dimension.
+   We know the rest of the file will contain the coords (nPoints*nDim). ---*/
+  
+  int var_buf_size = 2;
+  int var_buf[2]   = {(int)nGlobal_Poin, nDim};
+  
+  /*--- Prepare the 1D data buffer on this rank. ---*/
+  
+  passivedouble *buf = new passivedouble[nGlobal_Poin*nDim];
+  
+  /*--- For now, create a temp 1D buffer to load up the data for writing.
+   This will be replaced with a derived data type most likely. ---*/
+  
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      buf[iPoint*nDim+iDim] = SU2_TYPE::GetValue(Coords[iDim][iPoint]);
+  
+  /*--- Write the binary file. Everything is done in serial, as only the
+   master node has the data and enters this routine. ---*/
+  
+  FILE* fhw;
+  fhw = fopen(cstr, "wb");
+  
+  /*--- Error check for opening the file. ---*/
+  
+  if (!fhw) {
+    SU2_MPI::Error(string("Unable to open binary coordinates file ") +
+                   string(cstr), CURRENT_FUNCTION);
+  }
+  
+  /*--- First, write the number of variables and points. ---*/
+  
+  fwrite(var_buf, var_buf_size, sizeof(int), fhw);
+  
+  /*--- Call to write the entire restart file data in binary in one shot. ---*/
+  
+  fwrite(buf, nGlobal_Poin*nDim, sizeof(passivedouble), fhw);
+  
+  /*--- Close the file. ---*/
+  
+  fclose(fhw);
+  
+  /*--- Release buffer memory. ---*/
+  
+  delete [] buf;
+  
+}
+

@@ -3,20 +3,24 @@
 ## \file state.py
 #  \brief python package for state
 #  \author T. Lukaczyk, F. Palacios
-#  \version 5.0.0 "Raven"
+#  \version 6.1.0 "Falcon"
 #
-# SU2 Original Developers: Dr. Francisco D. Palacios.
-#                          Dr. Thomas D. Economon.
+# The current SU2 release has been coordinated by the
+# SU2 International Developers Society <www.su2devsociety.org>
+# with selected contributions from the open-source community.
 #
-# SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
-#                 Prof. Piero Colonna's group at Delft University of Technology.
-#                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
-#                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
-#                 Prof. Rafael Palacios' group at Imperial College London.
-#                 Prof. Edwin van der Weide's group at the University of Twente.
-#                 Prof. Vincent Terrapon's group at the University of Liege.
+# The main research teams contributing to the current release are:
+#  - Prof. Juan J. Alonso's group at Stanford University.
+#  - Prof. Piero Colonna's group at Delft University of Technology.
+#  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+#  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+#  - Prof. Rafael Palacios' group at Imperial College London.
+#  - Prof. Vincent Terrapon's group at the University of Liege.
+#  - Prof. Edwin van der Weide's group at the University of Twente.
+#  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
 #
-# Copyright (C) 2012-2017 SU2, the open-source CFD code.
+# Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+#                      Tim Albring, and the SU2 contributors.
 #
 # SU2 is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -156,10 +160,10 @@ class State(ordered_bunch):
 
     def __str__(self):
         output = 'STATE:'
-        for k1,v1 in self.iteritems():
+        for k1, v1 in self.items():
             output += '\n    %s:' % k1
             if isinstance(v1,dict):
-                for k2,v2 in v1.iteritems():
+                for k2, v2 in v1.items():
                     output += '\n        %s: %s' % (k2,v2)
             else:
                 output += '\n        %s' % v1
@@ -174,8 +178,8 @@ class State(ordered_bunch):
         pull = []; link = []
 
         # choose files to pull and link
-        for key,value in self.FILES.iteritems():
-
+        for key, value in self.FILES.items():
+            
             # link big files
             if key == 'MESH':
                 # mesh (merged or partitioned)
@@ -236,7 +240,7 @@ class State(ordered_bunch):
         special_cases = get_specialCases(config)
 
         def register_file(label,filename):
-            if not files.has_key(label):
+            if not label in files:
                 if label.split('_')[0] in ['DIRECT', 'ADJOINT']:
                   names = expand_zones(filename, config)
                   found = False
@@ -249,13 +253,12 @@ class State(ordered_bunch):
 
                   if found:
                     files[label] = filename
-                    print 'Found: %s' % filename
-                  
+                    print('Found: %s' % filename)
 
                 else:
                   if os.path.exists(filename):
                       files[label] = filename
-                      print 'Found: %s' % filename
+                      print('Found: %s' % filename)
             else:
                 if label.split("_")[0] in ['DIRECT', 'ADJOINT']:
                     for name in expand_zones(files[label], config):
@@ -273,7 +276,7 @@ class State(ordered_bunch):
 
         # adjoint solutions
         if restart:
-            for obj,suff in adj_map.iteritems():
+            for obj, suff in adj_map.items():
                 ADJ_LABEL = 'ADJOINT_' + obj
                 adjoint_name_suffixed = add_suffix(adjoint_name,suff)
                 register_file(ADJ_LABEL,adjoint_name_suffixed)
@@ -285,12 +288,6 @@ class State(ordered_bunch):
         # pressure inverse design
         if 'INV_DESIGN_CP' in special_cases:
           register_file('TARGET_CP',targetcp_name)
-
-        if config['OBJECTIVE_FUNCTION']== "NOISE":
-          register_file('NOISE', 'Observer_Locations.dat')
-
-        if config['OBJECTIVE_FUNCTION']== "BOOM_LOUD" or config['OBJECTIVE_FUNCTION']== "BOOM_ENERGY":
-            register_file('BOOM', 'DIRECT/boomSU2')
 
         # heat flux inverse design
         if 'INV_DESIGN_HEATFLUX' in special_cases:

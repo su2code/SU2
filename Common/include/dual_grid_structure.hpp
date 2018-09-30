@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines for doing the complete dual grid structure.
  *        The subroutines and functions are in the <i>dual_grid_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -50,7 +54,6 @@ using namespace std;
  * \brief Class for controlling the dual volume definition. The dual volume is compose by 
  *        three main elements: points, edges, and vertices.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CDualGrid{
 protected:
@@ -135,7 +138,6 @@ public:
  * \class CPoint
  * \brief Class for point definition (including control volume definition).
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CPoint : public CDualGrid {
 private:
@@ -171,6 +173,7 @@ private:
   unsigned long GlobalIndex;          /*!< \brief Global index in the parallel simulation. */
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
+  su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
 
 public:
 	
@@ -400,6 +403,12 @@ public:
 	 */
 	su2double GetVolume(void);
 	
+	/*!
+	 * \brief Get the maximum cell-center to cell-center length.
+	 * \return The maximum cell-center to cell-center length.
+	 */
+	su2double GetMaxLength(void);
+
 	/*! 
 	 * \brief Get information about the movement of the node.
 	 * \return <code>TRUE</code> if the point is going to be moved; otherwise <code>FALSE</code>.
@@ -564,7 +573,13 @@ public:
 	 * \param[in] val_Volume - Value of the volume.
 	 */
 	void SetVolume(su2double val_Volume);
-	
+
+  /*!
+   * \brief Set the max cell-center to cell-center length.
+   * \param[in] val_max_length - Value of the max length
+   */
+  void SetMaxLength(su2double val_max_length);
+
 	/*! 
 	 * \brief Set if a element is going to be moved on the deformation process.
 	 * \param[in] val_move - true or false depending if the point will be moved.
@@ -736,13 +751,25 @@ public:
 	 *        definition of the function in all the derived classes).
 	 */
 	void AddNormal(su2double *val_face_normal);
+
+  /*!
+   * \brief Set the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void SetAdjointCoord(su2double *adj_coor);
+
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  void GetAdjointCoord(su2double *adj_coor);
+
 };
 
 /*! 
  * \class CEdge
  * \brief Class for defining an edge.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CEdge : public CDualGrid {
 private:
@@ -879,7 +906,6 @@ public:
  * \class CVertex
  * \brief Class for vertex definition (equivalent to edges, but for the boundaries).
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CVertex : public CDualGrid {
 protected:
@@ -1249,7 +1275,6 @@ public:
  * \class CTurboVertex
  * \brief Class for vertex definition for turbomachinery (equivalent to edges, but for the boundaries).
  * \author S. Vitale
- * \version 5.0.0 "Raven"
  */
 class CTurboVertex : public CVertex {
 private:

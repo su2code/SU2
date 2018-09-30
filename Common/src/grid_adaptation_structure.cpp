@@ -2,20 +2,24 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +40,9 @@
 
 CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();
+  
 	unsigned long iPoint;
 	
 	nDim = geometry->GetnDim();
@@ -124,17 +131,12 @@ void CGridAdaptation::GetFlowSolution(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 
 	char *cstr = new char [mesh_filename.size()+1];
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error("There is no flow restart file!!", CURRENT_FUNCTION);
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -166,17 +168,12 @@ void CGridAdaptation::GetFlowResidual(CGeometry *geometry, CConfig *config) {
 	ifstream restart_file;
 	
 	char *cstr = new char [mesh_filename.size()+1];
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	strcpy (cstr, mesh_filename.c_str());
 	restart_file.open(cstr, ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+    SU2_MPI::Error(string("There is no flow restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -207,10 +204,6 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	string copy, mesh_filename;
 	ifstream restart_file;
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
   /*--- Get the adjoint solution file name ---*/
 	mesh_filename = config->GetSolution_AdjFileName();
@@ -218,15 +211,8 @@ void CGridAdaptation::GetAdjSolution(CGeometry *geometry, CConfig *config) {
 	
 	restart_file.open(mesh_filename.c_str(), ios::in);
 	if (restart_file.fail()) {
-	  if (rank == MASTER_NODE) cout << "There is no adjoint restart file!!" << endl;
-#ifndef HAVE_MPI
-      exit(EXIT_FAILURE);
-#else
-      MPI_Barrier(MPI_COMM_WORLD);
-      MPI_Abort(MPI_COMM_WORLD,1);
-      MPI_Finalize();
-#endif
-}
+    SU2_MPI::Error(string("There is no adjoint restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
   /*--- Read the header of the file ---*/
   getline(restart_file, text_line);
@@ -255,10 +241,6 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 
 	string mesh_filename, copy;
 	ifstream restart_file;
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
 
 	char buffer[50], cstr[MAX_STRING_SIZE];
 	mesh_filename = config->GetSolution_AdjFileName();
@@ -297,8 +279,8 @@ void CGridAdaptation::GetAdjResidual(CGeometry *geometry, CConfig *config) {
 	
 	if (restart_file.fail()) {
 	  if (rank == MASTER_NODE)
-	    cout << "There is no flow restart file!!" << endl;
-		exit(EXIT_FAILURE); }
+      SU2_MPI::Error(string("There is no flow restart file ") + mesh_filename, CURRENT_FUNCTION );
+  }
 	
 	for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
 		getline(restart_file, text_line);
@@ -3616,6 +3598,13 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	su2double Max_Sensor, threshold;
 	su2double *Sensor = new su2double[geometry->GetnElem()];
 	unsigned long ip_0, ip_1, ip_2, ip_3, iElem, nElem_real;
+  
+	if (max_elem > geometry->GetnElem()) {
+		cout << "WARNING: Attempted to adapt " << max_elem << " cells," << endl;
+		cout << "  which is greater than the total number of cells, ";
+		cout << geometry->GetnElem() << "." << endl;
+		cout << "  Did you set the option NEW_ELEMS in the *.cfg file?" << endl;
+  }
 	
 	/*--- Compute the the adaptation index at each element ---*/
 	Max_Sensor = 0.0;
@@ -3640,7 +3629,7 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 	/*--- Selection of the elements to be adapted ---*/
 	threshold = 0.999;
 	nElem_real = 0;
-	while (nElem_real <= max_elem) {
+	while (nElem_real <= max_elem && threshold >= 0) {
 		for (iElem = 0; iElem < geometry->GetnElem(); iElem ++)
 			if ( Sensor[iElem] >= threshold && !geometry->elem[iElem]->GetDivide() ) {
 				if (geometry->elem[iElem]->GetVTK_Type() == TRIANGLE) nElem_real = nElem_real + 3;
@@ -3650,6 +3639,17 @@ void CGridAdaptation::SetSensorElem(CGeometry *geometry, CConfig *config, unsign
 				if (nElem_real >= max_elem) break;
 			}	
 		threshold = threshold - 0.001;
+	}
+
+	if (threshold < 0) {
+		cout << "WARNING: Tried to find " << max_elem;
+		cout << " cells suitable for adaptation, but only found ";
+		cout << nElem_real << endl;
+		cout << "The following cell types are currently adaptable: " << endl;
+		cout << "  + triangles" << endl;
+		cout << "  + quadrilaterals" << endl;
+		cout << "  + tetrahedrons" << endl;
+		cout << "Your grid may have too high a percentage of other types." << endl;
 	}
 	
 	cout << "Number of elements to adapt: " << nElem_real << endl;

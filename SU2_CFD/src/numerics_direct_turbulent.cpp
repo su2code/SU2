@@ -2,20 +2,24 @@
  * \file numerics_direct_turbulent.cpp
  * \brief This file contains all the convective term discretization.
  * \author F. Palacios, A. Bueno
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -69,14 +73,8 @@ void CUpwScalar::ComputeResidual(su2double *val_residual,
 
   ExtraADPreaccIn();
 
-  if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Density_j = V_j[nDim+1];
-  }
-  else {
-    Density_i = V_i[nDim+2];
-    Density_j = V_j[nDim+2];
-  }
+  Density_i = V_i[nDim+2];
+  Density_j = V_j[nDim+2];
 
   q_ij = 0.0;
   if (grid_movement) {
@@ -175,11 +173,11 @@ void CAvgGrad_Scalar::ComputeResidual(su2double *val_residual,
   ExtraADPreaccIn();
 
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+5); AD::SetPreaccIn(V_j, nDim+5);
+    AD::SetPreaccIn(V_i, nDim+6); AD::SetPreaccIn(V_j, nDim+6);
 
-    Density_i = V_i[nDim+1];            Density_j = V_j[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];  Laminar_Viscosity_j = V_j[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];     Eddy_Viscosity_j = V_j[nDim+4];
+    Density_i = V_i[nDim+2];            Density_j = V_j[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];  Laminar_Viscosity_j = V_j[nDim+4];
+    Eddy_Viscosity_i = V_i[nDim+5];     Eddy_Viscosity_j = V_j[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7); AD::SetPreaccIn(V_j, nDim+7);
@@ -345,8 +343,8 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   su2double tu , nu_cr, nu_t, nu_BC, chi_1, chi_2, term1, term2, term_exponential;
 
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
@@ -514,8 +512,8 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -547,10 +545,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
     
     Omega= sqrt(max(Sbar,0.0));
     
-    /*--- Evaluate Omega ---*/
-    
-    //Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
-    
     /*--- Rotational correction term ---*/
     
     if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
@@ -578,14 +572,10 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
-        //r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r=tanh(r)/tanh(1.0);
         
@@ -593,9 +583,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -613,8 +600,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
         dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
-        //if ( Shat <= 1.0e-10 ) dShat = 0.0;
-        //else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -622,8 +607,6 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         /*--- Implicit part, destruction term ---*/
         
-        //dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-        //if (r == 10.0) dr = 0.0;
         dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
@@ -673,8 +656,8 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -716,9 +699,6 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
@@ -728,9 +708,6 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -816,8 +793,8 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
     
     if (incompressible) {
-        Density_i = V_i[nDim+1];
-        Laminar_Viscosity_i = V_i[nDim+3];
+      Density_i = V_i[nDim+2];
+      Laminar_Viscosity_i = V_i[nDim+4];
     }
     else {
         Density_i = V_i[nDim+2];
@@ -829,7 +806,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
     Destruction     = 0.0;
     CrossProduction = 0.0;
     val_Jacobian_i[0][0] = 0.0;
-    
     
     /*
      From NASA Turbulence model site. http://turbmodels.larc.nasa.gov/spalart.html
@@ -848,11 +824,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         Sbar-= ((2.0/3.0)*pow(PrimVar_Grad_i[1+iDim][iDim],2.0));}
     
     Omega= sqrt(max(Sbar,0.0));
-    
-    /*--- Evaluate Omega ---*/
-    
-    //Omega = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1] + Vorticity_i[2]*Vorticity_i[2]);
-    
+
     /*--- Rotational correction term ---*/
     
     if (rotating_frame) { Omega += 2.0*min(0.0, StrainMag_i-Omega); }
@@ -872,7 +844,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         S = Omega;
         inv_k2_d2 = 1.0/(k2*dist_i_2);
         
-        //Shat = S + TurbVar_i[0]*fv2*inv_k2_d2;
         Shat = max(S*((1.0/max(Ji,1.0e-16))+fv1),1.0e-16);
         
         Shat = max(Shat, 1.0e-10);
@@ -880,14 +851,10 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         /*--- Production term ---*/;
         
-        //    Original SA model
-        //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-        
         Production = cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
-        //r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
         r=tanh(r)/tanh(1.0);
         
@@ -895,9 +862,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         g_6 =	pow(g,6.0);
         glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
         fw = g*glim;
-        
-        //    Original SA model
-        //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
         Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
         
@@ -926,8 +890,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         dfv1 = 3.0*Ji_2*cv1_3/(nu*pow(Ji_3+cv1_3,2.));
         dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
-        //if ( Shat <= 1.0e-10 ) dShat = 0.0;
-        //else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
@@ -935,8 +897,6 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         /*--- Implicit part, destruction term ---*/
         
-        //dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
-        //if (r == 10.0) dr = 0.0;
         dr = (Shat-TurbVar_i[0]*dShat)*inv_Shat*inv_Shat*inv_k2_d2;
         dr=(1-pow(tanh(r),2.0))*(dr)/tanh(1.0);
         dg = dr*(1.+cw2*(6.0*pow(r,5.0)-1.0));
@@ -990,8 +950,8 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
 //  AD::SetPreaccIn(Volume); AD::SetPreaccIn(dist_i);
 
   if (incompressible) {
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
   }
   else {
     Density_i = V_i[nDim+2];
@@ -1047,10 +1007,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       g_6 =  pow(g,6.0);
       glim = pow((1.0+cw3_6)/(g_6+cw3_6),1.0/6.0);
       fw = g*glim;
-      
-      //    Original SA model
-      //    Destruction = (cw1*fw-cb1*ft2/k2)*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
-      
+        
       Destruction = cw1*fw*TurbVar_i[0]*TurbVar_i[0]/dist_i_2*Volume;
       
       /*--- Diffusion term ---*/
@@ -1131,14 +1088,10 @@ CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
 }
 
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
-  if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+2);
-    AD::SetPreaccIn(V_j, nDim+2);
-  }
-  else {
-    AD::SetPreaccIn(V_i, nDim+3);
-    AD::SetPreaccIn(V_j, nDim+3);
-  }
+
+  AD::SetPreaccIn(V_i, nDim+3);
+  AD::SetPreaccIn(V_j, nDim+3);
+  
 }
 
 void CUpwSca_TurbSST::FinishResidualCalc(su2double *val_residual,
@@ -1245,11 +1198,11 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   su2double diverg, pk, pw, zeta;
   
   if (incompressible) {
-    AD::SetPreaccIn(V_i, nDim+5);
+    AD::SetPreaccIn(V_i, nDim+6);
 
-    Density_i = V_i[nDim+1];
-    Laminar_Viscosity_i = V_i[nDim+3];
-    Eddy_Viscosity_i = V_i[nDim+4];
+    Density_i = V_i[nDim+2];
+    Laminar_Viscosity_i = V_i[nDim+4];
+    Eddy_Viscosity_i = V_i[nDim+5];
   }
   else {
     AD::SetPreaccIn(V_i, nDim+7);
@@ -1298,8 +1251,10 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     /*--- Implicit part ---*/
     
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;    val_Jacobian_i[0][1] = 0.0;
-    val_Jacobian_i[1][0] = 0.0;                               val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
+    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
+    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+    val_Jacobian_i[1][0] = 0.0;
+    val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
   
   AD::SetPreaccOut(val_residual, nVar);

@@ -2,20 +2,24 @@
  * \file solver_adjoint_discrete.cpp
  * \brief Main subroutines for solving the discrete adjoint problem.
  * \author T. Albring
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -49,6 +53,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   ifstream restart_file;
   string filename, AdjExt;
 
+  bool fsi = config->GetFSI_Simulation();
+
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 
@@ -74,6 +80,28 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   Residual      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 1.0;
   Residual_RMS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 1.0;
   Residual_Max  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 1.0;
+
+  /*--- Define some auxiliary vectors related to the geometry adjoint (nDim) ---*/
+  Solution_Geometry = new su2double[nDim];     for (iDim = 0; iDim < nDim; iDim++) Solution_Geometry[iDim] = 1.0;
+
+  /*--- Define some auxiliary vectors related to the residual for problems with a BGS strategy---*/
+
+  if (fsi){
+
+    Residual_BGS      = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]      = 1.0;
+    Residual_Max_BGS  = new su2double[nVar];     for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 1.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar] = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+
+  }
+
 
   /*--- Define some structures for locating max residuals ---*/
 
@@ -249,6 +277,58 @@ void CDiscAdjSolver::SetRecording(CGeometry* geometry, CConfig *config){
 
 }
 
+void CDiscAdjSolver::SetMesh_Recording(CGeometry** geometry, CVolumetricMovement *grid_movement, CConfig *config) {
+
+
+//  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)),
+//  time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+
+//  unsigned long ExtIter = config->GetExtIter();
+
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  /*--- Reset the solution to the initial (converged) position ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      geometry[MESH_0]->node[iPoint]->SetCoord(iDim,node[iPoint]->GetGeometry_Direct(iDim));
+    }
+  }
+
+  /*--- After moving all nodes, update the dual mesh. Recompute the edges and
+   dual mesh control volumes in the domain and on the boundaries. ---*/
+
+  grid_movement->UpdateDualGrid(geometry[MESH_0], config);
+
+  /*--- After updating the dual mesh, compute the grid velocities (only dynamic problems). ---*/
+//  if (time_n_needed){
+//    geometry[MESH_0]->SetGridVelocity(config, ExtIter);
+//  }
+
+  /*--- Update the multigrid structure after moving the finest grid,
+   including computing the grid velocities on the coarser levels. ---*/
+
+  grid_movement->UpdateMultiGrid(geometry, config);
+
+//  if (time_n_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n()[iVar]);
+//      }
+//    }
+//  }
+//  if (time_n1_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//        AD::ResetInput(direct_solver->node[iPoint]->GetSolution_time_n1()[iVar]);
+//      }
+//    }
+//  }
+
+}
+
 void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   unsigned long iPoint, nPoint = geometry->GetnPoint();
 
@@ -332,10 +412,41 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
     config->SetTotalTemperatureIn_BC(Temperature);
   }
 
+  /*--- Register incompressible initialization values as input ---*/
 
-    /*--- Here it is possible to register other variables as input that influence the flow solution
-     * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
-     * extracted in the ExtractAdjointVariables routine. ---*/
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      ((KindDirect_Solver == RUNTIME_FLOW_SYS &&
+        (!config->GetBoolTurbomachinery())))) {
+
+    /*--- Access the velocity (or pressure) and temperature at the
+     inlet BC and the back pressure at the outlet. Note that we are
+     assuming that have internal flow, which will be true for the
+     majority of cases. External flows with far-field BCs will report
+     zero for these sensitivities. ---*/
+
+    ModVel    = config->GetIncInlet_BC();
+    BPressure = config->GetIncPressureOut_BC();
+    Temperature = config->GetIncTemperature_BC();
+
+    /*--- Register the variables for AD. ---*/
+
+    if (!reset) {
+      AD::RegisterInput(ModVel);
+      AD::RegisterInput(BPressure);
+      AD::RegisterInput(Temperature);
+    }
+
+    /*--- Set the BC values in the config class. ---*/
+
+    config->SetIncInlet_BC(ModVel);
+    config->SetIncPressureOut_BC(BPressure);
+    config->SetIncTemperature_BC(Temperature);
+
+  }
+
+  /*--- Here it is possible to register other variables as input that influence the flow solution
+   * and thereby also the objective function. The adjoint values (i.e. the derivatives) can be
+   * extracted in the ExtractAdjointVariables routine. ---*/
 }
 
 void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
@@ -350,6 +461,81 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     direct_solver->node[iPoint]->RegisterSolution(input);
+  }
+}
+
+void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
+
+  /*--- Here we can add new (scalar) objective functions ---*/
+  if (config->GetnObj()==1) {
+    switch (config->GetKind_ObjFunc()) {
+    case DRAG_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CD();
+      if (config->GetFixed_CL_Mode()) ObjFunc_Value -= config->GetdCD_dCL() * direct_solver->GetTotal_CL();
+      if (config->GetFixed_CM_Mode()) ObjFunc_Value -= config->GetdCD_dCMy() * direct_solver->GetTotal_CMy();
+      break;
+    case LIFT_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CL();
+      break;
+    case SIDEFORCE_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CSF();
+      break;
+    case EFFICIENCY:
+      ObjFunc_Value = direct_solver->GetTotal_CEff();
+      break;
+    case MOMENT_X_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMx();
+      break;
+    case MOMENT_Y_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMy();
+      break;
+    case MOMENT_Z_COEFFICIENT:
+      ObjFunc_Value = direct_solver->GetTotal_CMz();
+      break;
+    case EQUIVALENT_AREA:
+      ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
+      break;
+    }
+
+    /*--- Template for new objective functions where TemplateObjFunction()
+     *  is the routine that returns the obj. function value. The computation
+     * must be done while the tape is active, i.e. between AD::StartRecording() and
+     * AD::StopRecording() in DiscAdjMeanFlowIteration::Iterate(). The best place is somewhere
+     * inside MeanFlowIteration::Iterate().
+     *
+     * case TEMPLATE_OBJECTIVE:
+     *    ObjFunc_Value = TemplateObjFunction();
+     *    break;
+     * ---*/
+  }
+  else{
+    ObjFunc_Value = direct_solver->GetTotal_ComboObj();
+  }
+  if (rank == MASTER_NODE) {
+    AD::RegisterOutput(ObjFunc_Value);
+  }
+}
+
+void CDiscAdjSolver::SetAdj_ObjFunc(CGeometry *geometry, CConfig *config) {
+
+  bool time_stepping = config->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = config->GetIter_Avg_Objective();
+  unsigned long ExtIter = config->GetExtIter();
+  su2double seeding = 1.0;
+
+  if (time_stepping) {
+    if (ExtIter < IterAvg_Obj) {
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else {
+      seeding = 0.0;
+    }
+  }
+
+  if (rank == MASTER_NODE) {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc_Value, 0.0);
   }
 }
 
@@ -467,14 +653,166 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
 
   }
 
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_FLOW_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+        
+    su2double Local_Sens_ModVel, Local_Sens_BPress, Local_Sens_Temp;
+
+    Local_Sens_ModVel = SU2_TYPE::GetDerivative(ModVel);
+    Local_Sens_BPress = SU2_TYPE::GetDerivative(BPressure);
+    Local_Sens_Temp   = SU2_TYPE::GetDerivative(Temperature);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_ModVel, &Total_Sens_ModVel, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_BPress, &Total_Sens_BPress, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&Local_Sens_Temp,   &Total_Sens_Temp,   1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_ModVel = Local_Sens_ModVel;
+    Total_Sens_BPress = Local_Sens_BPress;
+    Total_Sens_Temp   = Local_Sens_Temp;
+#endif
+
+  }
+
   /*--- Extract here the adjoint values of everything else that is registered as input in RegisterInput. ---*/
 
 }
+
+
+void CDiscAdjSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {
+
+//  bool time_n_needed  = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+//      (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+
+//  bool time_n1_needed = config->GetUnsteady_Simulation() == DT_STEPPING_2ND;
+
+//  unsigned short iVar;
+  unsigned long iPoint;
+
+  /*--- Set Residuals to zero ---*/
+
+//  for (iVar = 0; iVar < nVar; iVar++){
+//      SetRes_RMS(iVar,0.0);
+//      SetRes_Max(iVar,0.0,0);
+//  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Set the old solution ---*/
+
+    node[iPoint]->Set_OldSolution_Geometry();
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    /*--- Store the adjoint solution ---*/
+
+    node[iPoint]->SetSolution_Geometry(Solution_Geometry);
+
+  }
+
+//  if (time_n_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//      /*--- Extract the adjoint solution at time n ---*/
+//
+//      direct_solver->node[iPoint]->GetAdjointSolution_time_n(Solution);
+//
+//      /*--- Store the adjoint solution at time n ---*/
+//
+//      node[iPoint]->Set_Solution_time_n(Solution);
+//    }
+//  }
+//  if (time_n1_needed){
+//    for (iPoint = 0; iPoint < nPoint; iPoint++){
+//
+//      /*--- Extract the adjoint solution at time n-1 ---*/
+//
+//      direct_solver->node[iPoint]->GetAdjointSolution_time_n1(Solution);
+//
+//      /*--- Store the adjoint solution at time n-1 ---*/
+//
+//      node[iPoint]->Set_Solution_time_n1(Solution);
+//    }
+//  }
+
+  /*--- Set the residuals ---*/
+
+//  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+//      for (iVar = 0; iVar < nVar; iVar++){
+//          residual = node[iPoint]->GetSolution_Geometry(iVar) - node[iPoint]->Get_OldSolution_Geometry(iVar);
+//
+//          AddRes_RMS(iVar,residual*residual);
+//          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+//      }
+//  }
+//
+//  SetResidual_RMS(geometry, config);
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+
+    for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetCross_Term_Derivative(iVar, Solution[iVar]);
+
+  }
+
+//  Set_MPI_CrossTerm(geometry, config);
+
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iDim, Solution_Geometry[iDim]);
+
+  }
+
+}
+
+void CDiscAdjSolver::ExtractAdjoint_CrossTerm_Geometry_Flow(CGeometry *geometry, CConfig *config){
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+
+    /*--- Extract the adjoint solution ---*/
+
+    geometry->node[iPoint]->GetAdjointCoord(Solution_Geometry);
+
+    for (iDim = 0; iDim < nDim; iDim++) node[iPoint]->SetGeometry_CrossTerm_Derivative_Flow(iDim, Solution_Geometry[iDim]);
+
+  }
+
+}
+
 
 void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
       config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+  bool fsi = config->GetFSI_Simulation();
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -482,6 +820,11 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution[iVar] = node[iPoint]->GetSolution(iVar);
+    }
+    if (fsi) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Solution[iVar] += node[iPoint]->GetCross_Term_Derivative(iVar);
+      }
     }
     if (dual_time) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -511,6 +854,39 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
     direct_solver->node[iPoint]->SetAdjointSolution(Solution);
   }
+
+}
+
+void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
+
+//  bool dual_time = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST ||
+//      config->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  bool fsi = config->GetFSI_Simulation();
+
+  unsigned short iDim;
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
+    for (iDim = 0; iDim < nDim; iDim++){
+      Solution_Geometry[iDim] = 0.0;
+    }
+    if (fsi){
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative(iDim);
+      }
+      for (iDim = 0; iDim < nDim; iDim++){
+        Solution_Geometry[iDim] += node[iPoint]->GetGeometry_CrossTerm_Derivative_Flow(iDim);
+      }
+    }
+//    if (dual_time){
+//      for (iDim = 0; iDim < nVar; iDim++){
+//        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
+//      }
+//    }
+    geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
+  }
+
 }
 
 void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
@@ -668,11 +1044,6 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   filename = config->GetSolution_AdjFileName();
   restart_filename = config->GetObjFunc_Extension(filename);
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   /*--- Read and store the restart metadata. ---*/
 
   Read_SU2_Restart_Metadata(geometry[MESH_0], config, true, restart_filename);
@@ -699,7 +1070,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       skipVars += nDim + 2;
     }
     if (incompressible) {
-      skipVars += nDim + 1;
+      skipVars += nDim + 2;
     }
   }
 
@@ -738,17 +1109,8 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
   if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
+    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
@@ -778,204 +1140,51 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-void CDiscAdjSolver::ExtractCAA_Sensitivity(CGeometry *geometry, CConfig *config, int iExtIter){
-   unsigned long iPoint, iVar, iPanel;
-   string  text_line;
-   ifstream CAA_AdjointFile;
-   char buffer [50];
+void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
 
-   char cstr [64];
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual, bgs_sol;
 
-   SPRINTF (cstr, "Adj_CAA");
-   if ((SU2_TYPE::Int(iExtIter) >= 0)    && (SU2_TYPE::Int(iExtIter) < 10))    SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(iExtIter));
-   if ((SU2_TYPE::Int(iExtIter) >= 10)   && (SU2_TYPE::Int(iExtIter) < 100))   SPRINTF (buffer, "_000%d.dat",  SU2_TYPE::Int(iExtIter));
-   if ((SU2_TYPE::Int(iExtIter) >= 100)  && (SU2_TYPE::Int(iExtIter) < 1000))  SPRINTF (buffer, "_00%d.dat",   SU2_TYPE::Int(iExtIter));
-   if ((SU2_TYPE::Int(iExtIter) >= 1000) && (SU2_TYPE::Int(iExtIter) < 10000)) SPRINTF (buffer, "_0%d.dat",    SU2_TYPE::Int(iExtIter));
-   if (SU2_TYPE::Int(iExtIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(iExtIter));
-   string filename = strcat (cstr, buffer);
-   cout<<"Accessing CAA Adjoint file: "<<filename <<endl;
-   //CAA_AdjointFile.precision(15);
-   CAA_AdjointFile.open(filename.data() , ios::in);
-   if (CAA_AdjointFile.fail()) {
-//     if (rank == MASTER_NODE)
-       cout << "There is no flow restart file!! " <<  filename.data()  << "."<< endl;
-     exit(EXIT_FAILURE);
-   }
+  /*--- Set Residuals to zero ---*/
 
-
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry->GetGlobal_nPointDomain()];
-  /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPointDomain(); iPoint++) {
-    Global2Local[iPoint] = -1;
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
   }
 
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
-  /*--- Read all lines in the restart file ---*/
-
-  long iPoint_Local = 0;
-  unsigned long iPoint_Global = 0;
-  iPanel=0;
-
-
-  int rank ;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-//   ofstream dJdU_file;
-//  if (iExtIter==1051){
-
-//      dJdU_file.open("dJdU_read.dat");
-//      dJdU_file.precision(15);
-
-//    }
-
-
-//  cout<<"Rank= "<<rank<<", nPanel= "<<nPanel<<endl;
-
-  /*--- The first line is the header ---*/
-
- // getline (CAA_AdjointFile, text_line);
-//  cout<<"Passed getline!!!"<<endl;
-  while (getline (CAA_AdjointFile, text_line)) {
-   //   cout<<"iPanel= "<<iPanel<<",   rank= "<<rank<<endl;
-    istringstream point_line(text_line);
-     point_line >> iPoint_Global ;
-
-    /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-
-    iPoint_Local = Global2Local[iPoint_Global];
-   // cout<<"iPoint_Local= "<<iPoint_Local<< ", rank="<<rank<<endl;
-    if (iPoint_Local >= 0) {
-      LocalPointIndex[iPoint_Local] =  iPanel;
-  //    if (rank==3)dJdU_file << scientific <<  iPoint_Global  << "\t";
-      for (iVar=0; iVar<nDim+3; iVar++){
-          point_line >> dJdU_CAA[iPanel][iVar];
-
- //         if (rank==3)
-  //        dJdU_file << scientific <<   dJdU_CAA[iPanel][iVar]  << "\t";
-        }
-        //cout<<"iPanel= "<<iPanel<<",   rank= "<<rank<<endl;
-     iPanel++;
- //    if (rank==3)  dJdU_file   << "\n";
+  /*--- Compute the BGS solution (adding the cross term) ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+    for (iVar = 0; iVar < nVar; iVar++){
+      bgs_sol = node[iPoint]->GetSolution(iVar) + node[iPoint]->GetCross_Term_Derivative(iVar);
+      node[iPoint]->Set_BGSSolution(iVar, bgs_sol);
     }
-
-
   }
 
+  /*--- Set the residuals ---*/
 
-//  cout<<"Finished reading."<<"iPanel= "<<iPanel<<",  Rank= "<<rank<<endl;
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->Get_BGSSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
 
-  /*--- Close the restart file ---*/
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
 
-  CAA_AdjointFile.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Global2Local;
+  SetResidual_BGS(geometry, config);
 
 }
 
-void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config){
-   unsigned long iPoint, iVar, iPanel;
-   string  text_line;
-   ifstream Boom_AdjointFile;
+void CDiscAdjSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
-   char filename [64];
+  unsigned long iPoint;
 
-   SPRINTF (filename, "Adj_Boom.dat");
-   Boom_AdjointFile.open(filename , ios::in);
-   if (Boom_AdjointFile.fail()) {
-       cout << "There is no boom adjoint restart file " <<  filename  << "!!"<< endl;
-     exit(EXIT_FAILURE);
-   }
+  /*--- To nPoint: The solution must be communicated beforehand ---*/
+  for (iPoint = 0; iPoint < nPoint; iPoint++){
 
-
-  /*--- In case this is a parallel simulation, we need to perform the
-   Global2Local index transformation first. ---*/
-
-  long *Global2Local = NULL;
-  Global2Local = new long[geometry->GetGlobal_nPoint()];
-  /*--- First, set all indices to a negative value by default ---*/
-  for (iPoint = 0; iPoint < geometry->GetGlobal_nPoint(); iPoint++) {
-    Global2Local[iPoint] = -1;
-  }
-
-  /*--- Now fill array with the transform values only for local points ---*/
-
-  for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-    Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
-  }
-
-  /*--- Read all lines in the restart file ---*/
-
-  long iPoint_Local = 0;
-  unsigned long iPoint_Global = 0;
-  iPanel=0;
-  //unsigned short *dJdU_count = new unsigned short[nPanel];
-
-
-  int rank ;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
-  while (getline (Boom_AdjointFile, text_line)) {
-    istringstream point_line(text_line);
-     point_line >> iPoint_Global ;
-
-    /*--- Retrieve local index. If this node from the restart file lives
-     on a different processor, the value of iPoint_Local will be -1, as
-     initialized above. Otherwise, the local index for this node on the
-     current processor will be returned and used to instantiate the vars. ---*/
-
-    iPoint_Local = Global2Local[iPoint_Global];
-    if (iPoint_Local >= 0) {
-      if(LocalPointIndex[iPoint_Local] < 0){
-        LocalPointIndex[iPoint_Local] =  iPanel;
-        for (iVar=0; iVar<nDim+3; iVar++){
-            point_line >> dJdU_CAA[iPanel][iVar];
-          }
-        //dJdU_count[iPanel] = 1;
-        iPanel++;
-      }
-      else{
-        su2double dJdU_tmp = 0.0;
-        for(iVar=0; iVar<nDim+3; iVar++){
-          point_line >> dJdU_tmp;
-          dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
-        }
-        //dJdU_count[LocalPointIndex[iPoint_Local]]++;
-      }
-    }
-
+    node[iPoint]->Set_BGSSolution_k();
 
   }
-
-  /*--- Average dJdU (scale by number of points) ---*/
-  //for(unsigned long i = 0; i < iPanel; i++){
-  //  for(iVar = 0; iVar < nDim+3; iVar++){
-  //    dJdU_CAA[i][iVar] /= dJdU_count[i];
-  //  }
-  //}
-
-  /*--- Close the restart file ---*/
-
-  Boom_AdjointFile.close();
-
-  /*--- Free memory needed for the transformation ---*/
-
-  delete [] Global2Local;
 
 }

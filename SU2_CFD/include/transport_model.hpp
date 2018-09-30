@@ -2,20 +2,24 @@
  * \file transport_model.hpp
  * \brief Headers of the main transport properties subroutines of the SU2 solvers.
  * \author S. Vitale, M. Pini, G. Gori, A. Guardone, P. Colonna
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -103,7 +107,6 @@ public:
 
 };
 
-
 /*!
  * \class CConstantViscosity
  * \brief this class defines a constant viscosity
@@ -132,7 +135,6 @@ public:
   
   
 };
-
 
 /*!
  * \class CSutherland
@@ -176,7 +178,6 @@ public:
   
 };
 
-
 /*!
  * \class CThermalConductivityModel
  * \brief Main class for defining the Transport-Physical Model
@@ -219,19 +220,18 @@ public:
     /*!
      * \brief Set Thermal conductivity.
      */
-    virtual   void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+    virtual void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
 
     /*!
      * \brief Set Thermal conductivity derivatives.
      */
-    virtual   void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
+    virtual void SetDerConductivity(su2double T, su2double rho, su2double dmudrho_T, su2double dmudT_rho, su2double cp);
 
 };
 
-
 /*!
- * \class CConstantPrandtl
- * \brief this class defines a constant thermal conductivity using a constant Prandtl's number
+ * \class CConstantConductivity
+ * \brief this class defines a constant thermal conductivity.
  * \author S.Vitale, M.Pini
  * \version 1.0
  */
@@ -255,7 +255,6 @@ public:
     virtual ~CConstantConductivity(void);
 
 };
-
 
 /*!
  * \class CConstantPrandtl
@@ -289,7 +288,7 @@ public:
      * \brief par1 -> Cp.
      * \brief par2 -> Mu.
      */
-    void SetConductivity(su2double T, su2double rho, su2double mu, su2double cp);
+    void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
 
     /*!
      * \brief Set Thermal conductivity derivatives.
@@ -298,5 +297,40 @@ public:
 
 };
 
+/*!
+ * \class CConstantPrandtlRANS
+ * \brief Defines a non-constant effective thermal conductivity for RANS problems using Prandtl numbers.
+ * \author T. Economon
+ * \version 1.0
+ */
+class CConstantPrandtlRANS : public CConductivityModel {
+
+protected:
+  su2double Prandtl_Lam;    /*!< \brief Laminar Prandtl number. */
+  su2double Prandtl_Turb;   /*!< \brief Turbulent Prandtl number. */
+
+public:
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CConstantPrandtlRANS(void);
+
+    /*!
+     * \brief Destructor of the class.
+     */
+    virtual ~CConstantPrandtlRANS(void);
+
+    /*!
+     * \brief Constructor of the class.
+     */
+    CConstantPrandtlRANS(su2double pr_lam, su2double pr_turb);
+
+    /*!
+     * \brief Set effective thermal conductivity.
+     */
+    void SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp);
+
+};
 
 #include "transport_model.inl"

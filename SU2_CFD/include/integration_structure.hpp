@@ -4,20 +4,24 @@
  *        The subroutines and functions are in the <i>integration_structure.cpp</i>, 
  *        <i>integration_time.cpp</i>, and <i>integration_notime.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,10 +56,11 @@ using namespace std;
  * \brief Main class for doing the space integration, time integration, and monitoring 
  *        of a system of Partial Differential Equations (PDE).
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CIntegration {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   su2double Cauchy_Value,  /*!< \brief Summed value of the convergence indicator. */
   Cauchy_Func;      /*!< \brief Current value of the convergence indicator at one iteration. */
   unsigned short Cauchy_Counter;  /*!< \brief Number of elements of the Cauchy serial. */
@@ -137,7 +142,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+  void Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                      unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
 
   /*! 
@@ -170,6 +175,16 @@ public:
    * \param[in] monitor - Objective function that is use to study its convergence.
    */
   void Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
+
+  /*!
+   * \brief Do the convergence analysis to determine if the adjoint FEM analysis has converged.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] solver - Solution of the problem
+   * \param[in] Iteration - Current iteration.
+   * \param[in] monitor - Objective function that is use to study its convergence.
+   */
+  void Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter);
 
 
   /*!
@@ -225,8 +240,8 @@ public:
    */
   bool GetConvergence_FullMG(void);
   
-  /*! 
-   * \brief Save the solution, and volume at different time steps. 
+  /*!
+   * \brief Save the solution, and volume at different time steps.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Flow solution.
    * \param[in] config - Definition of the particular problem.
@@ -258,8 +273,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  virtual void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -272,9 +287,9 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+  virtual void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                  CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                 unsigned long Iteration, unsigned short iZone);
+                 unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief A virtual member.
@@ -385,8 +400,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  virtual void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
 
   /*!
@@ -398,8 +413,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  virtual void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  virtual void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+                  CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
   
   /*! 
@@ -411,7 +426,7 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
-  virtual void SetPotential_Solver(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+  virtual void SetPotential_Solver(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                                    CConfig **config, unsigned short RunTime_EqSystem, unsigned short iMesh, unsigned short iZone);
   
   /*!
@@ -432,7 +447,6 @@ public:
  * \class CMultiGridIntegration
  * \brief Class for doing the numerical integration using a multigrid method.
  * \author F. Palacios
- * \version 5.0.0 "Raven"
  */
 class CMultiGridIntegration : public CIntegration {
 protected:
@@ -459,8 +473,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void MultiGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  void MultiGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Perform a Full-Approximation Storage (FAS) Multigrid. 
@@ -473,9 +487,9 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void MultiGrid_Cycle(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
+  void MultiGrid_Cycle(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
                      CConfig **config, unsigned short iMesh, unsigned short mu, unsigned short RunTime_EqSystem,
-                     unsigned long Iteration, unsigned short iZone);
+                     unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*! 
    * \brief Compute the non-dimensional parameters.
@@ -604,7 +618,6 @@ public:
  * \class CSingleGridIntegration
  * \brief Class for doing the numerical integration of the turbulence model.
  * \author A. Bueno.
- * \version 5.0.0 "Raven"
  */
 class CSingleGridIntegration : public CIntegration {
 public:
@@ -629,8 +642,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void SingleGrid_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  void SingleGrid_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
   
   /*!
    * \brief Restrict solution from fine grid to a coarse grid.
@@ -665,7 +678,6 @@ public:
  * \class CStructuralIntegration
  * \brief Class for doing the numerical integration of the structural model.
  * \author R. Sanchez.
- * \version 5.0.0 "Raven"
  */
 class CStructuralIntegration : public CIntegration {
 public:
@@ -690,8 +702,8 @@ public:
    * \param[in] RunTime_EqSystem - System of equations which is going to be solved.
    * \param[in] Iteration - Current iteration.
    */
-  void Structural_Iteration(CGeometry ***geometry, CSolver ****solver_container, CNumerics *****numerics_container,
-               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone);
+  void Structural_Iteration(CGeometry ****geometry, CSolver *****solver_container, CNumerics ******numerics_container,
+               CConfig **config, unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone, unsigned short iInst);
 
 };
 

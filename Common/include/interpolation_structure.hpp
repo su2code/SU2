@@ -3,20 +3,24 @@
  * \brief Headers of the main subroutines used by SU2_FSI.
  *        The subroutines and functions are in the <i>interpolation_structure.cpp</i> file.
  * \author H. Kline
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -52,10 +56,11 @@ using namespace std;
  * \brief Main class for defining the interpolator, it requires
  * a child class for each particular interpolation method
  * \author H. Kline
- * \version 3.2.9 "eagle"
  */
 class CInterpolator {
 protected:
+  int rank, 	/*!< \brief MPI Rank. */
+  size;       	/*!< \brief MPI Size. */
   unsigned int nZone;
   unsigned int donorZone, targetZone;
 
@@ -98,7 +103,7 @@ protected:
   nLocalLinkedNodes;                   /*!\brief Dummy variable to temporarily store the number of vertex of a boundary*/
 
 public:
-  CGeometry*** Geometry;        /*! \brief Vector which stores n zones of geometry. */
+  CGeometry**** Geometry;        /*! \brief Vector which stores n zones of geometry. */
   CGeometry* donor_geometry;    /*! \brief Vector which stores the donor geometry. */
   CGeometry* target_geometry;   /*! \brief Vector which stores the target geometry. */
 
@@ -114,7 +119,7 @@ public:
  * \param[in] iZone - index of the donor zone
  * \param[in] jZone - index of the target zone
  */
-  CInterpolator(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CInterpolator(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -197,7 +202,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CNearestNeighbor(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CNearestNeighbor(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -225,7 +230,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CIsoparametric(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CIsoparametric(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -273,7 +278,7 @@ public:
    * Data is set in geometry[targetZone]
    *
    */
-  CMirror(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CMirror(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.
@@ -301,7 +306,7 @@ public:
    * \param[in] iZone - index of the donor zone
    * \param[in] jZone - index of the target zone
    */
-  CSlidingMesh(CGeometry ***geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
+  CSlidingMesh(CGeometry ****geometry_container, CConfig **config, unsigned int iZone, unsigned int jZone);
 
   /*!
    * \brief Destructor of the class.

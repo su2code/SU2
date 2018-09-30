@@ -2,20 +2,24 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  *
- * SU2 Original Developers: Dr. Francisco D. Palacios.
- *                          Dr. Thomas D. Economon.
+ * The current SU2 release has been coordinated by the
+ * SU2 International Developers Society <www.su2devsociety.org>
+ * with selected contributions from the open-source community.
  *
- * SU2 Developers: Prof. Juan J. Alonso's group at Stanford University.
- *                 Prof. Piero Colonna's group at Delft University of Technology.
- *                 Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
- *                 Prof. Alberto Guardone's group at Polytechnic University of Milan.
- *                 Prof. Rafael Palacios' group at Imperial College London.
- *                 Prof. Edwin van der Weide's group at the University of Twente.
- *                 Prof. Vincent Terrapon's group at the University of Liege.
+ * The main research teams contributing to the current release are:
+ *  - Prof. Juan J. Alonso's group at Stanford University.
+ *  - Prof. Piero Colonna's group at Delft University of Technology.
+ *  - Prof. Nicolas R. Gauger's group at Kaiserslautern University of Technology.
+ *  - Prof. Alberto Guardone's group at Polytechnic University of Milan.
+ *  - Prof. Rafael Palacios' group at Imperial College London.
+ *  - Prof. Vincent Terrapon's group at the University of Liege.
+ *  - Prof. Edwin van der Weide's group at the University of Twente.
+ *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright (C) 2012-2017 SU2, the open-source CFD code.
+ * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -53,37 +57,100 @@ inline void CNumerics::Compute_Dead_Load(CElement *element_container, CConfig *c
 
 inline void CNumerics::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Tangent_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_MeanDilatation_Term(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_NodalStress_Term(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Averaged_NodalStress(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Plane_Stress_Term(CElement *element_container, CConfig *config) { }
+
+inline su2double CFEANonlinearElasticity::deltaij(unsigned short iVar, unsigned short jVar) {
+	if (iVar == jVar) return 1.0; else return 0.0;
+}
+
+inline void CNumerics::SetElement_Properties(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::ReadDV(CConfig *config){ }
+
+inline void CNumerics::Set_DV_Val(unsigned short i_DV, su2double val_DV) { }
+
+inline su2double CNumerics::Get_DV_Val(unsigned short i_DV) { return 0.0; }
+
+inline void CFEAElasticity::Set_DV_Val(unsigned short i_DV, su2double val_DV){ DV_Val[i_DV] = val_DV;}
+
+inline su2double CFEAElasticity::Get_DV_Val(unsigned short i_DV){ return DV_Val[i_DV]; }
+
+inline void CNumerics::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CFEAElasticity::Add_MaxwellStress(CElement *element_container, CConfig *config){ }
+
+inline void CNumerics::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CFEAElasticity::SetElectric_Properties(CElement *element_container, CConfig *config) { }
+
+inline void CNumerics::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEAElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ }
+
+inline void CFEANonlinearElasticity::Set_ElectricField(unsigned short i_DV, su2double val_EField){ 
+  EField_Ref_Mod[i_DV] = val_EField; }
+
+inline void CNumerics::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ }
+
+inline void CNumerics::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ }
+
+inline void CNumerics::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ }
+
+inline void CFEAElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){
+  E_i[0] = val_Young; 
+}
+
+inline void CFEANonlinearElasticity::Set_YoungModulus(unsigned short i_DV, su2double val_Young){ 
+  E_i[0] = val_Young; 
+}
+
+inline void CFEAElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEANonlinearElasticity::SetMaterial_Properties(unsigned short iVal, su2double val_E, su2double val_Nu){ 
+  E_i[iVal] = val_E; 
+  Nu_i[iVal] = val_Nu; 
+}
+
+inline void CFEAElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
+
+inline void CFEANonlinearElasticity::SetMaterial_Density(unsigned short iVal, su2double val_Rho, su2double val_Rho_DL){ 
+  Rho_s_i[iVal] = val_Rho; 
+  Rho_s_DL_i[iVal] = val_Rho_DL;}
 
 inline void CNumerics::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_Elasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
+inline void CFEAElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
-inline void CFEM_NonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
+inline void CFEANonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
@@ -204,6 +271,11 @@ inline void CNumerics::SetThermalConductivity(su2double val_therm_conductivity_i
 inline void CNumerics::SetThermalConductivity_ve(su2double val_therm_conductivity_ve_i, su2double val_therm_conductivity_ve_j) {
   Thermal_Conductivity_ve_i = val_therm_conductivity_ve_i;
   Thermal_Conductivity_ve_j = val_therm_conductivity_ve_j;
+}
+
+inline void CNumerics::SetThermalDiffusivity(su2double val_thermal_diffusivity_i,su2double val_thermal_diffusivity_j) {
+  Thermal_Diffusivity_i = val_thermal_diffusivity_i;
+  Thermal_Diffusivity_j = val_thermal_diffusivity_j;
 }
 
 inline void CNumerics::SetDiffusionCoeff(su2double* val_diffusioncoeff_i, su2double* val_diffusioncoeff_j) {
@@ -394,7 +466,14 @@ inline void CNumerics::SetNormal(su2double *val_normal) { Normal = val_normal; }
 
 inline void CNumerics::SetVolume(su2double val_volume) { Volume = val_volume; }
 
-inline void CNumerics::SetRoeDissipation(su2double val_dissipation) { dissipation = val_dissipation; }
+inline void CNumerics::SetDissipation(su2double diss_i, su2double diss_j) {
+  Dissipation_i = diss_i;
+  Dissipation_j = diss_j;
+}
+
+inline su2double CNumerics::GetDissipation(){
+  return Dissipation_ij;
+}
 
 inline void CSourcePieceWise_TurbSST::SetF1blending(su2double val_F1_i, su2double val_F1_j) { 
   F1_i = val_F1_i; 
@@ -489,3 +568,15 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
+
+inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
+
+inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
+
+inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
