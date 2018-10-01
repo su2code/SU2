@@ -1404,7 +1404,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   unsigned long len_pad = 5*ceil(scale_L/dx_avg);
   su2double dp_dx_end = abs(ptmp[len_new-1]-ptmp[len_new-2])/dx_avg;
   if(ptmp[len_new-1] > 0) dp_dx_end = - dp_dx_end;
-  len_new = len_new+ceil(len_pad*1.25);
+  len_new = len_new+ceil(len_pad*1.75);
   signal.len[iPhi] = len_new;
   signal.x[iPhi] = new su2double[signal.len[iPhi]];
   signal.p_prime[iPhi] = new su2double[signal.len[iPhi]];
@@ -1523,7 +1523,7 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    dsigma_non = 0.8*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
+    dsigma_non = 0.5*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
 
     /*---Restrict dsigma based on thermoviscous effects---*/
     dsigma_tv = 0.1*Gamma/signal.len[iPhi];
