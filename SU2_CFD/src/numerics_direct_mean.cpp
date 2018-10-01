@@ -1080,7 +1080,7 @@ void CUpwSLAU_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   }
     
   if (slau_low_diss){
-    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+    SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
   }
   
   pF = 0.5 * (Pressure_i + Pressure_j) + 0.5 * (BetaL - BetaR) * (Pressure_i - Pressure_j) + Dissipation_ij*(1.0 - Chi) * (BetaL + BetaR - 1.0) *  0.5 * (Pressure_i + Pressure_j);
@@ -1277,7 +1277,7 @@ void CUpwSLAU2_Flow::ComputeResidual(su2double *val_residual, su2double **val_Ja
   }
   
   if (slau_low_dissipation){
-    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+    SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
   }
   
   /*--- Pressure Flux ---*/
@@ -2941,7 +2941,7 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
     Diff_U[iVar] = U_j[iVar]-U_i[iVar];
   
   if (roe_low_dissipation)
-    SetRoe_Dissipation(Coord_i, Coord_j, Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
+    SetRoe_Dissipation(Dissipation_i, Dissipation_j, Sensor_i, Sensor_j, Dissipation_ij, config);
   
   /*--- Roe's Flux approximation ---*/
   
