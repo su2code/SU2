@@ -15,12 +15,10 @@ CBoom_AugBurgers::CBoom_AugBurgers(){
 
 CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *geometry){
 
-	int rank, nProcessor = 1;
+  int rank, nProcessor = 1;
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+  rank = SU2_MPI::GetRank();
+  nProcessor = SU2_MPI::GetSize();
 
   Kind_Boom_Cost = config->GetKind_ObjFunc();
   AD_flag = false;
@@ -1179,11 +1177,9 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
-int rank = 0;
+  int rank = 0;
 
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
+  rank = SU2_MPI::GetRank();
 
   unsigned long iIter = 0;
   ground_flag = false;
@@ -2273,10 +2269,9 @@ void CBoom_AugBurgers::WriteSensitivities(){
   ofstream Boom_AdjointFile;
 
   int rank = 0, iProcessor, nProcessor = 1;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-  MPI_Comm_size(MPI_COMM_WORLD, &nProcessor);
-#endif
+  rank = SU2_MPI::GetRank();
+  nProcessor = SU2_MPI::GetSize();
+    
   unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
 
   if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];

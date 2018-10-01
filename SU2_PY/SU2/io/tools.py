@@ -652,8 +652,8 @@ def get_adjointSuffix(objective_function=None):
                  "TOTAL_EFFICIENCY"            : "teff"      ,
                  "TOTAL_STATIC_EFFICIENCY"     : "tseff"     ,
                  "COMBO"                       : "combo"     ,
-                 "BOOM_ENERGY"             : "boom_energy"   ,
-                 "BOOM_LOUD"               : "boom_pldb"}
+                 "BOOM_ENERGY"                 : "boom_energy"   ,
+                 "BOOM_LOUD"                   : "boom_pldb"}
     
     # if none or false, return map
     if not objective_function:

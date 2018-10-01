@@ -46,7 +46,6 @@
 #include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "../../SU2_CFD/include/SUBoom.hpp"
 #include "../../SU2_CFD/include/solver_boom.hpp"
 
 using namespace std;
