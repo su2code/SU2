@@ -228,13 +228,13 @@ def SOL(config):
 
     konfig = copy.deepcopy(config)
 
-        tempname = 'config_SOL.cfg'
-        konfig.dump(tempname)
+    tempname = 'config_SOL.cfg'
+    konfig.dump(tempname)
 
     # must run with rank 1
-        processes = konfig['NUMBER_PART']
+    processes = konfig['NUMBER_PART']
 
-        the_Command = 'SU2_SOL ' + tempname
+    the_Command = 'SU2_SOL ' + tempname
 
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
