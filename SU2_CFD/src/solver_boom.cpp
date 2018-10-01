@@ -559,7 +559,6 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
 
   bool inside=false;
 
-  su2double Minf = config->GetMach();
   su2double x = 0.0, y = 0.0, z = 0.0;
   su2double *Coord;
   su2double *pp0, *pp1;
@@ -680,7 +679,6 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
   bool inside, inside_iPanel, addPanel, end = false;
   unsigned short iElem, nElem;
   unsigned long jElem, jElem_m1, nElem_tot = geometry->GetnElem();
-  su2double x_i, x_m1;
 
   unsigned long *pointID_tmp;
   su2double **Coord_tmp;
@@ -767,7 +765,6 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   unsigned short iDim, iNode, nNode;
   unsigned long iElem, jElem, jNode, jjNode, iPoint;
   unsigned long nNode_list, *jNode_list;
-  unsigned long pointCount = 0;
   su2double rho, rho_ux, rho_uy, rho_uz, rho_E, TKE;
   su2double ux, uy, uz, StaticEnergy;
   bool addNode;
@@ -1223,11 +1220,10 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
             Ts  = 110.4,         // Reference temperature (Sutherland)
             Ta  = 245.4,         // Reference temperature (Sutherland)
             Tb  = 27.6,          // Reference temperature (Sutherland)
-            T01 = 273.16,        // Reference temperature (Humidity)
             Tr  = 293.15,        // Reference temperature (Absorption)
             Pr  = 101325.;       // Reference pressure (Absorption)
 
-  su2double c0_old, rho0_old, max_dp, h;
+  su2double h;
 
   /*---Preprocess signal for first iteration---*/
   if(iIter == 0){
@@ -1807,7 +1803,7 @@ void CBoom_AugBurgers::Scaling(unsigned short iPhi){
 
 void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
-  su2double p_ref = 20.E-6, p_dc;             // [Pa]
+  su2double p_ref = 20.E-6;             // [Pa]
 
   unsigned long n_sample, len_new; //n_sample = ceil(14500*signal.len[iPhi]*dx_avg/(flt_U)), // fmax*N/Fs
   unsigned short n_band = 41, N;
@@ -2197,7 +2193,8 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
   }
 
   /*--- Interpolate sone based on Leq ---*/
-  sonmax = 0.0, sonsum = 0.0;
+  sonmax = 0.0;
+  sonsum = 0.0;
   for(unsigned short i = 0; i < n_band; i++){
     band = floor(L_eq[i]);
     if(band > 139) sonband = son[139];
