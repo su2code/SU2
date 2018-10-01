@@ -109,6 +109,12 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   signal.len = new unsigned long[ray_N_phi];
   signal.x = new su2double*[ray_N_phi];
   signal.p_prime = new su2double*[ray_N_phi];
+    
+  for( unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+    PointID[iPhi] = NULL;
+    signal.x[iPhi] = NULL;
+    signal.p_prime[iPhi] = NULL;
+  }
 
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
@@ -119,10 +125,10 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     if(nPanel[iPhi] > 0){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
-    else{
-      PointID[iPhi] = new unsigned long[1];
-      PointID[iPhi][0] = -1;
-    }
+//    else{
+//      PointID[iPhi] = new unsigned long[1];
+//      PointID[iPhi][0] = 0;
+//    }
   }
 
   nPointID_proc = new unsigned long[nProcessor];
@@ -220,16 +226,17 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
       dJdU[iPhi] = new su2double* [nDim+3];
       for(int iDim = 0; iDim < nDim+3 ; iDim++){
+        dJdU[iPhi][iDim] = NULL;
         if(nPointID[iPhi] > 0){
           dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
-          for(iPanel = 0;  iPanel< nPointID[iPhi]; iPanel++){
+          for(iPanel = 0;  iPanel < nPointID[iPhi]; iPanel++){
             dJdU[iPhi][iDim][iPanel] = 0.0;
           }
         }
-        else{
-          dJdU[iPhi][iDim] = new su2double[1];
-          dJdU[iPhi][iDim][0] = 0.0;
-        }
+//        else{
+//          dJdU[iPhi][iDim] = new su2double[1];
+//          dJdU[iPhi][iDim][0] = 0.0;
+//        }
       }
     }
 
@@ -391,7 +398,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     for (iDonor=0; iDonor<nDonor; iDonor++) {
       isoparams[iDonor]=0;
       A[iDonor] = 1.0;
-      for (iDim=0; iDim<n; iDim++)
+      for (iDim=0; iDim<nDim; iDim++)
         A[(iDim+1)*nDonor+iDonor]=X[iDim*nDonor+iDonor];
     }
 
@@ -560,8 +567,8 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
   bool inside=false;
 
   su2double x = 0.0, y = 0.0, z = 0.0;
-  su2double *Coord;
-  su2double *pp0, *pp1;
+  su2double *Coord = NULL;
+  su2double *pp0 = NULL, *pp1 = NULL;
 
   nPanel = new unsigned long[ray_N_phi];
   for(unsigned short i = 0; i < ray_N_phi; i++){
@@ -669,9 +676,9 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
     }
   }
 
-  delete [] Coord;
-  delete [] pp0;
-  delete [] pp1;
+//  if(Coord != NULL) delete [] Coord;
+  if(pp0 != NULL) delete [] pp0;
+  if(pp1 != NULL) delete [] pp1;
 
 }
 
@@ -769,8 +776,8 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   su2double ux, uy, uz, StaticEnergy;
   bool addNode;
 
-  su2double **isoparams;
-  su2double *X_donor;
+  su2double **isoparams = NULL;
+  su2double *X_donor = NULL;
   su2double *Coord = new su2double[nDim];
 
   isoparams = new su2double*[nPanel[iPhi]];
@@ -779,6 +786,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
     nPointID[iPhi] += nNode;
+    isoparams[i] = NULL;
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
   jNode_list = new unsigned long[nPointID[iPhi]];
@@ -875,10 +883,17 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   nPointID[iPhi] = nNode_list;
 
   /*--- Clean up interpolation variables ---*/
-  for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
-    delete [] isoparams[iElem];
+  if(isoparams != NULL){
+    for(iElem = 0; iElem < nPanel[iPhi]; iElem++){
+      if(isoparams[iElem] != NULL){
+        delete [] isoparams[iElem];
+      }
+    }
+    delete [] isoparams;
   }
-  delete [] isoparams;
+
+  if(X_donor != NULL) delete [] X_donor;
+//  if(Coord != NULL) delete [] Coord;
   
 }
 
@@ -935,10 +950,14 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
         }
     }
 
-    for(iNode = 0; iNode < nNode; iNode++){
-      delete [] Coord_elem[iNode];
+    if(Coord_elem != NULL){
+      for(iNode = 0; iNode < nNode; iNode++){
+        if(Coord_elem[iNode] != NULL){
+          delete [] Coord_elem[iNode];
+        }
+      }
+      delete [] Coord_elem;
     }
-    delete [] Coord_elem;
   }
 
   else{ // Check if line intersects face
@@ -976,11 +995,19 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
       }
     }
 
-    for(iNode = 0; iNode < nNodeFace; iNode++){
-      delete [] Coord_face[iNode];
+    if(Coord_face != NULL){
+      for(iNode = 0; iNode < nNodeFace; iNode++){
+        if(Coord_face[iNode] != NULL){
+          delete [] Coord_face[iNode];
+        }
+      }
+      delete [] Coord_face;
     }
-    delete [] Coord_face;
+      
   }
+    
+  delete [] ppp0;
+  delete [] ppp1;
 
   return inside;
 }
@@ -1072,9 +1099,10 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
       pp1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
     }
 
-    delete [] isoparams;
-    delete [] Coord;
-    delete [] X_donor;
+    if(isoparams != NULL) delete [] isoparams;
+    if(Coord != NULL) delete [] Coord;
+    if(X_donor != NULL) delete [] X_donor;
+      
     return 1;
   }
   else{
@@ -1171,14 +1199,9 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
-  int rank = 0;
-
-  rank = SU2_MPI::GetRank();
-
   unsigned long iIter = 0;
   ground_flag = false;
 
-  if(rank == MASTER_NODE){
   while(!ground_flag){
 
   	Preprocessing(iPhi, iIter);
@@ -1192,21 +1215,18 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
     iIter++;
   }
 
-  }
 
-  if(rank == MASTER_NODE){
-    cout.width(5); cout << iIter;
-    cout.width(12); cout.precision(6); cout << ray_z;
-    cout.width(12); cout.precision(6); cout << p_peak << endl;
-    cout << "Signal propagated in " << iIter << " iterations." << endl;
-  }
+  cout.width(5); cout << iIter;
+  cout.width(12); cout.precision(6); cout << ray_z;
+  cout.width(12); cout.precision(6); cout << p_peak << endl;
+  cout << "Signal propagated in " << iIter << " iterations." << endl;
 
   WriteGroundPressure(iPhi);
   if(Kind_Boom_Cost==BOOM_LOUD){
-    if(rank == MASTER_NODE) PerceivedLoudness(iPhi);
+    PerceivedLoudness(iPhi);
   }
   else{
-    if(rank == MASTER_NODE) AcousticEnergy(iPhi);
+    AcousticEnergy(iPhi);
   }
 
 }
@@ -2268,7 +2288,7 @@ void CBoom_AugBurgers::WriteSensitivities(){
     
   unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
 
-  if (rank == MASTER_NODE) Buffer_Recv_nPointID= new unsigned long [nProcessor];
+  if(rank == MASTER_NODE) Buffer_Recv_nPointID = new unsigned long [nProcessor];
 
     if(rank == MASTER_NODE){
       Boom_AdjointFile.precision(15);
@@ -2277,55 +2297,54 @@ void CBoom_AugBurgers::WriteSensitivities(){
 
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
 
-    Buffer_Send_nPointID[0]=nPointID[iPhi]; 
+    Buffer_Send_nPointID[0] = nPointID[iPhi]; 
 
-    SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
-    SU2_MPI::Allreduce(&nPointID[iPhi],&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
+    SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); // send the number of vertices at each process to the master
+    SU2_MPI::Allreduce(&nPointID[iPhi], &Max_nPointID, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD); // find the max num of vertices over all processes
 
     nVar = nDim+3;
 
-    /* pack sensitivity values in each processor and send to root */
+    /*--- Pack sensitivity values in each processor and send to root ---*/
     su2double *Buffer_Send_dJdU = new su2double [Max_nPointID*nVar];
     unsigned long *Buffer_Send_GlobalIndex = new unsigned long [Max_nPointID];
-    /*---Zero send buffers---*/
-    for (unsigned int i=0; i <Max_nPointID*nVar; i++){
-      Buffer_Send_dJdU[i]=0.0;
+    /*--- Zero send buffers ---*/
+    for(unsigned int i =  0; i < Max_nPointID*nVar; i++){
+      Buffer_Send_dJdU[i] = 0.0;
     }
-    for (unsigned int i=0; i <Max_nPointID; i++){
-      Buffer_Send_GlobalIndex[i]=0;
+    for(unsigned int i = 0; i < Max_nPointID; i++){
+      Buffer_Send_GlobalIndex[i] = 0;
     }
     su2double *Buffer_Recv_dJdU = NULL;
     unsigned long *Buffer_Recv_GlobalIndex = NULL;
 
-    if (rank == MASTER_NODE) {
+    if(rank == MASTER_NODE) {
       Buffer_Recv_dJdU = new su2double [nProcessor*Max_nPointID*nVar];
       Buffer_Recv_GlobalIndex = new unsigned long[nProcessor*Max_nPointID];
     }
 
-    /*---Fill send buffers with dJ/dU---*/
-    for (iVar=0; iVar<nVar; iVar++){
-        for(iSig=0; iSig<nPointID[iPhi]; iSig++){
+    /*--- Fill send buffers with dJ/dU ---*/
+    for(iVar = 0; iVar < nVar; iVar++){
+        for(iSig = 0; iSig < nPointID[iPhi]; iSig++){
             Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
           }
       }
 
-    for (iSig=0; iSig<nPointID[iPhi]; iSig++){
+    for(iSig = 0; iSig < nPointID[iPhi]; iSig++){
        Buffer_Send_GlobalIndex[iSig] = PointID[iPhi][iSig];
     }
 
     SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Gather(Buffer_Send_GlobalIndex, Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
 
-    if (rank == MASTER_NODE){
+    if(rank == MASTER_NODE){
 
       /*--- Loop through all of the collected data and write each node's values ---*/
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-        for (iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
+      for(iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        for(iSig = 0; iSig < Buffer_Recv_nPointID[iProcessor]; iSig++) {
           Global_Index = Buffer_Recv_GlobalIndex[iProcessor*Max_nPointID+iSig];
-          /*--- Check dJdU[][iVar==0] and only write if greater than some tolerance ---*/
           Boom_AdjointFile  << scientific << Global_Index << "\t";
 
-          for (iVar = 0; iVar < nVar; iVar++){
+          for(iVar = 0; iVar < nVar; iVar++){
             /*--- Current index position and global index ---*/
             Total_Index  = iProcessor*Max_nPointID*nVar + iVar*Buffer_Recv_nPointID[iProcessor]  + iSig;
 
@@ -2337,12 +2356,13 @@ void CBoom_AugBurgers::WriteSensitivities(){
         }
       }
 
+      delete [] Buffer_Recv_nPointID;
       delete [] Buffer_Recv_dJdU;
       delete [] Buffer_Recv_GlobalIndex;
     }
 
-  delete [] Buffer_Send_dJdU;
-  delete [] Buffer_Send_GlobalIndex;
+    delete [] Buffer_Send_dJdU;
+    delete [] Buffer_Send_GlobalIndex;
 
   }
 
@@ -2351,16 +2371,18 @@ void CBoom_AugBurgers::WriteSensitivities(){
 
   /*---Clear up  memory from dJdU---*/
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    for (unsigned short i=0; i<nDim+3; i++){
-      delete [] dJdU[iPhi][i];
+    for (unsigned short i = 0; i < nDim+3; i++){
+      if(dJdU[iPhi][i] != NULL){
+        delete [] dJdU[iPhi][i];
+      }
     }
-    delete [] dJdU[iPhi];
-    delete [] PointID[iPhi];
+    if(dJdU[iPhi] != NULL) delete [] dJdU[iPhi];
+//    if(PointID[iPhi] != NULL) delete [] PointID[iPhi];
 
   }
-  delete [] dJdU;
-  delete [] PointID;
-  delete [] nPointID;
+  if(dJdU != NULL) delete [] dJdU;
+//  if(PointID != NULL) delete [] PointID;
+  if(nPointID != NULL) delete [] nPointID;
 
   if (rank == MASTER_NODE)
     cout << "\nFinished writing boom adjoint file." << endl;

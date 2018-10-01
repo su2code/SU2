@@ -190,56 +190,57 @@ int main(int argc, char *argv[]) {
 
 
 
-if((config_container[ZONE_0]->GetBoom_flag() != NONE) || 
-  config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD || 
-  config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
-  if (rank == MASTER_NODE)
-          cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
+  if((config_container[ZONE_0]->GetBoom_flag() != NONE) ||
+    config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+    config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
+      
+    if (rank == MASTER_NODE) cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
 
-/*--- Compute elements surrounding points, points surrounding points ---*/
+    /*--- Compute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
+    if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
+    geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
 
-if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
-geometry_container[ZONE_0][INST_0]->SetRCM_Ordering(config_container[ZONE_0]);
+    if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+    geometry_container[ZONE_0][INST_0]->SetRCM_Ordering(config_container[ZONE_0]);
 
-/*--- recompute elements surrounding points, points surrounding points ---*/
+    /*--- recompute elements surrounding points, points surrounding points ---*/
 
-if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
-geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
+    if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+    geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
 
-/*--- Compute elements surrounding elements ---*/
+    /*--- Compute elements surrounding elements ---*/
 
-if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
-geometry_container[ZONE_0][INST_0]->SetElement_Connectivity();
+    if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+    geometry_container[ZONE_0][INST_0]->SetElement_Connectivity();
 
-/*--- Check the orientation before computing geometrical quantities ---*/
+    /*--- Check the orientation before computing geometrical quantities ---*/
 
-if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
-geometry_container[ZONE_0][INST_0]->SetBoundVolume();
-geometry_container[ZONE_0][INST_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
-geometry_container[ZONE_0][INST_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
-/*--- Create the edge structure ---*/
+    if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
+    geometry_container[ZONE_0][INST_0]->SetBoundVolume();
+    geometry_container[ZONE_0][INST_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
+    geometry_container[ZONE_0][INST_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
+      
+    /*--- Create the edge structure ---*/
 
-if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-geometry_container[ZONE_0][INST_0]->SetEdges();
-geometry_container[ZONE_0][INST_0]->SetVertex(config_container[ZONE_0]);
+    if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
+    geometry_container[ZONE_0][INST_0]->SetEdges();
+    geometry_container[ZONE_0][INST_0]->SetVertex(config_container[ZONE_0]);
 
-/*--- Compute center of gravity ---*/
+    /*--- Compute center of gravity ---*/
 
-if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-geometry_container[ZONE_0][INST_0]->SetCoord_CG();
+    if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
+    geometry_container[ZONE_0][INST_0]->SetCoord_CG();
 
-/*--- Create the dual control volume structures ---*/
+    /*--- Create the dual control volume structures ---*/
 
-if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-geometry_container[ZONE_0][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+    geometry_container[ZONE_0][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
-/*--- Store the global to local mapping after preprocessing. ---*/
+    /*--- Store the global to local mapping after preprocessing. ---*/
 
-if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
+    if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+    geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
 
   }
 
@@ -520,6 +521,8 @@ geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
         if ((config_container[ZONE_0]->GetBoom_flag() != NONE) || 
           config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
           config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
+            
+          /*---Boom primal and discrete adjoint---*/
           if (config_container[ZONE_0]->GetAD_Mode()){
 
             if (rank == MASTER_NODE)
@@ -584,11 +587,13 @@ geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
               }
 
               if(rank==MASTER_NODE)
-                cout<<"Finished extracting."<<endl;
+                cout<<"Finished extracting derivatives."<<endl;
 
               boom.WriteSensitivities();
 
           }
+        
+          /*---Boom primal only---*/
 		  else{
             if (rank == MASTER_NODE)
               cout << endl <<"------------------------- Computing Sonic Boom (Primal Only) -----------------------" << endl;
@@ -630,6 +635,7 @@ geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
                 sigFile.close();
               }           
           }
+            
        }
   
   delete config;
