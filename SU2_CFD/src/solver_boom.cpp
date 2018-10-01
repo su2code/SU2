@@ -136,12 +136,11 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
 
     totSig = 0;
     maxSig = 0;
-#ifdef HAVE_MPI
+
     SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
     SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_UNSIGNED_LONG, nPointID_proc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
     su2double* Buffer_Recv_Press = NULL;
     su2double* Buffer_Recv_x = NULL;
@@ -157,10 +156,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
       Buffer_Send_Press[iPanel] = signal.p_prime[iPhi][iPanel];
     }
 
-#ifdef HAVE_MPI
     SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
     if (rank == MASTER_NODE)
       cout << "Gathered signal data to MASTER_NODE." << endl;
@@ -2284,10 +2281,9 @@ void CBoom_AugBurgers::WriteSensitivities(){
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
 
     Buffer_Send_nPointID[0]=nPointID[iPhi]; 
-#ifdef HAVE_MPI
+
     SU2_MPI::Gather(&Buffer_Send_nPointID, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nPointID, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD); //send the number of vertices at each process to the master
     SU2_MPI::Allreduce(&nPointID[iPhi],&Max_nPointID,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD); //find the max num of vertices over all processes
-#endif
 
     nVar = nDim+3;
 
@@ -2320,10 +2316,8 @@ void CBoom_AugBurgers::WriteSensitivities(){
        Buffer_Send_GlobalIndex[iSig] = PointID[iPhi][iSig];
     }
 
-#ifdef HAVE_MPI
     SU2_MPI::Gather(Buffer_Send_dJdU, Max_nPointID*nVar, MPI_DOUBLE, Buffer_Recv_dJdU,  Max_nPointID*nVar , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Gather(Buffer_Send_GlobalIndex,Max_nPointID, MPI_UNSIGNED_LONG, Buffer_Recv_GlobalIndex, Max_nPointID , MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-#endif
 
     if (rank == MASTER_NODE){
 
