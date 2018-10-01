@@ -10,6 +10,8 @@ For an overview of the technical details in SU2, please see the following AIAA J
 
 [![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
 
+Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+
 ----------------------------------------------------------
   SU2 INTRODUCTION 
 ----------------------------------------------------------
