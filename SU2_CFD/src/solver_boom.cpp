@@ -119,16 +119,13 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
     cout << "Extract pressure signature." << endl;
+    
   nPointID_loc = 0;
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     nPointID[iPhi] = 0;
     if(nPanel[iPhi] > 0){      
       ExtractPressure(solver, config, geometry, iPhi);
     }
-//    else{
-//      PointID[iPhi] = new unsigned long[1];
-//      PointID[iPhi][0] = 0;
-//    }
   }
 
   nPointID_proc = new unsigned long[nProcessor];
@@ -233,10 +230,6 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
             dJdU[iPhi][iDim][iPanel] = 0.0;
           }
         }
-//        else{
-//          dJdU[iPhi][iDim] = new su2double[1];
-//          dJdU[iPhi][iDim][0] = 0.0;
-//        }
       }
     }
 
@@ -676,7 +669,6 @@ void CBoom_AugBurgers::SearchLinear(CConfig *config, CGeometry *geometry,
     }
   }
 
-//  if(Coord != NULL) delete [] Coord;
   if(pp0 != NULL) delete [] pp0;
   if(pp1 != NULL) delete [] pp1;
 
@@ -893,7 +885,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   }
 
   if(X_donor != NULL) delete [] X_donor;
-//  if(Coord != NULL) delete [] Coord;
+  if(Coord != NULL) delete [] Coord;
   
 }
 
@@ -1531,7 +1523,6 @@ void CBoom_AugBurgers::DetermineStepSize(unsigned short iPhi, unsigned long iIte
       p_peak = max(signal.P[i]*p0, p_peak);
     }
 
-    // dsigma_non = 0.8*dtau/max_dp; // dsigma < 1/max(dp/dtau)
     dsigma_non = 0.8*pow(dtau,2.)/(max_dp*dtau + 2./Gamma); // dsigma < dtau^2/max|dp|*dtau + 2/Gamma
 
     /*---Restrict dsigma based on thermoviscous effects---*/
@@ -2377,11 +2368,9 @@ void CBoom_AugBurgers::WriteSensitivities(){
       }
     }
     if(dJdU[iPhi] != NULL) delete [] dJdU[iPhi];
-//    if(PointID[iPhi] != NULL) delete [] PointID[iPhi];
 
   }
   if(dJdU != NULL) delete [] dJdU;
-//  if(PointID != NULL) delete [] PointID;
   if(nPointID != NULL) delete [] nPointID;
 
   if (rank == MASTER_NODE)
