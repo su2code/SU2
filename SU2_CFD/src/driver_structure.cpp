@@ -3589,7 +3589,7 @@ void CDriver::StartSolver() {
 
     /*--- Output the solution in files. ---*/
 
-    Output(ExtIter);
+    //Output(ExtIter);
 
     /*--- If the convergence criteria has been met, terminate the simulation. ---*/
 

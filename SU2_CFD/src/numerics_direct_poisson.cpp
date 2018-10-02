@@ -197,8 +197,8 @@ CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
        delete [] ConsVar_Grad_j[iVar];
     delete [] ConsVar_Grad_j;*/
     
-    delete Mom_Coeff_i;
-	delete Mom_Coeff_j;
+    //delete Mom_Coeff_i;
+	//delete Mom_Coeff_j;
 
 
 }
@@ -337,27 +337,28 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Mean_GradPoissonVar_Normal[iVar] = 0.0;
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPoissonVar[iVar][iDim] = 0.5*(ConsVar_Grad_i[iVar][iDim] + ConsVar_Grad_j[iVar][iDim]);
       
       Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
       
-      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim];
+      Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
     }
+    Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }
 
-  val_residual[0] = Proj_Mean_GradPoissonVar_Normal[0];
+  val_residual[0] = Proj_Mean_GradPoissonVar_Corrected[0];
   
   if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
-  Poisson_Coeff_Mean = 0.0;
-  for (iDim = 0; iDim < nDim; iDim++)
-     Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
-     
-  Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
-  if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
+     Poisson_Coeff_Mean = 0.0;
+     for (iDim = 0; iDim < nDim; iDim++)
+         Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
+     Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
+     if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
   }
   else {
-	  Poisson_Coeff_Mean = 1.0;
+	 Poisson_Coeff_Mean = 1.0;
   }
   
   /*--- Jacobians for implicit scheme ---*/
@@ -435,11 +436,7 @@ CSource_PoissonFVM::CSource_PoissonFVM(unsigned short val_nDim, unsigned short v
 CSource_PoissonFVM::~CSource_PoissonFVM(void) { }
 
 void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) {
- 
- su2double src_term;
- 
- src_term = 0.0; //analytical solution, u = 1+2x^2+3y^2
- 
+  
  if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
     val_residual[0] = Source_Term;
  else 
