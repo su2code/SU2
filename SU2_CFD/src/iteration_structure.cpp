@@ -2654,6 +2654,12 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   unsigned short iVar;
   unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
+  
+  /*--- Some numerics are only instanciated under these conditions ---*/
+  bool element_based = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased(),
+       de_effects    = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        config_container[iZone]->GetDE_Effects();
 
   for (iVar = 0; iVar < iMPROP; iVar++){
 
@@ -2671,7 +2677,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       /*--- Add dependencies for element-based simulations. ---*/
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
           /*--- Neo Hookean Compressible ---*/
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
@@ -2703,7 +2709,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   }
 
-  if (config_container[iZone]->GetDE_Effects()){
+  if (de_effects){
 
       unsigned short nEField = solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetnEField();
 
@@ -2736,14 +2742,14 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
                                                                            solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
 
-          if (config_container[iZone]->GetDE_Effects()){
+          if (de_effects){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
           }
 
       }
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
         for (unsigned short iDV = 0; iDV < nDV; iDV++){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
