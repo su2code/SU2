@@ -111,6 +111,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   signal.len = new unsigned long[ray_N_phi];
   signal.x = new su2double*[ray_N_phi];
   signal.p_prime = new su2double*[ray_N_phi];
+  Coord_original = new su2double**[ray_N_phi];
     
   for( unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
     PointID[iPhi] = NULL;
@@ -678,7 +679,6 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
   unsigned long *pointID_tmp;
   su2double *pp0 = new su2double[nDim], *pp1 = new su2double[nDim];
 
-  
   while(!end){
     inside_iPanel = false;
     for(unsigned long jPanel = 0; jPanel < nPanel[iPhi]; jPanel++){
@@ -713,6 +713,7 @@ void CBoom_AugBurgers::ExtractLine(CGeometry *geometry, const su2double r0, unsi
                 pointID_original[iPhi][i] = pointID_tmp[i];
               }
               delete [] pointID_tmp;
+              pointID_original[iPhi][nPanel[iPhi]-1] = jElem;
               inside_iPanel = true;
             }
 
