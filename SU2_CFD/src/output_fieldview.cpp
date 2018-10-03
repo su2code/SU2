@@ -59,14 +59,9 @@ void COutput::SetFieldViewASCII(CConfig *config, CGeometry *geometry, unsigned s
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {
     filename = config->GetVolSens_FileName().c_str();
@@ -505,14 +500,9 @@ void COutput::SetFieldViewBinary(CConfig *config, CGeometry *geometry, unsigned 
   if (Kind_Solver == FEM_ELASTICITY)
     filename = config->GetStructure_FileName().c_str();
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
   
