@@ -3446,6 +3446,15 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     /*--- Determine the type of grid motion. ---*/
     switch( config->GetKind_GridMovement(0) ) {
 
+      case MOVING_WALL:
+      case ROTATING_FRAME:
+      case STEADY_TRANSLATION: {
+
+        /* Steady motion. This is accounted for in the general preprocessing,
+           where grid velocities are computed. */
+        break;
+      }
+
       case RIGID_MOTION: {
 
         /* Rigid body motion described. At the moment this is only
