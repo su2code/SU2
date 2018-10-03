@@ -145,6 +145,8 @@ inline void CGeometry::Set_MPI_GridVel(CConfig *config) { }
 
 inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
 
+inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
+
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
@@ -288,6 +290,8 @@ inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, uns
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
+
+inline void CGeometry::SetMaxLength(CConfig* config) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 
