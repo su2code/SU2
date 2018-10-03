@@ -68,6 +68,7 @@ install:
     # Configure, make, and install SU2
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
+    - autoreconf -f -i
     - $CONFIGURE_COMMAND
     - make -j 4
     - make install
