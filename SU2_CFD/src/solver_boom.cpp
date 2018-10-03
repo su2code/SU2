@@ -1299,9 +1299,10 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
     cout.width(12); cout.precision(6); cout << ray_z;
     cout.width(12); cout.precision(6); cout << p_peak << endl;
     cout << "Signal propagated in " << iIter << " iterations." << endl;
+      
+    WriteGroundPressure(iPhi);
   }
 
-  WriteGroundPressure(iPhi);
   if(Kind_Boom_Cost==BOOM_LOUD){
     PerceivedLoudness(iPhi);
   }

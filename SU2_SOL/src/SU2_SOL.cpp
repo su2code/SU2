@@ -48,7 +48,6 @@ int main(int argc, char *argv[]) {
   int rank = MASTER_NODE;
   int size = SINGLE_NODE;
   bool periodic = false;
-  su2double Objective_Function;
 
   /*--- MPI initialization ---*/
 
