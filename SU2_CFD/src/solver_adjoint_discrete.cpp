@@ -181,7 +181,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
     string  text_line;
     ifstream Boom_AdjointFile;
     char filename [64];
-    SPRINTF (filename, "Adj_Boom.dat");
+    SPRINTF (filename, "Adj_Boom_dJdU.dat");
     Boom_AdjointFile.open(filename , ios::in);
     if (Boom_AdjointFile.fail()) {
       cout << "There is no flow restart file!! " <<  filename  << "."<< endl;
@@ -196,21 +196,24 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   }
 
  dJdU_CAA = new su2double* [nPanel];
- for(int iPanel = 0;  iPanel< nPanel; iPanel++)
- {
-      dJdU_CAA[iPanel] = new su2double[nDim+3];
-     for (iVar=0; iVar < nDim+3; iVar++){
-         dJdU_CAA[iPanel][iVar]= 0.0;
-       }
+ dJdX_CAA = new su2double* [nPanel];
+ for(int iPanel = 0;  iPanel< nPanel; iPanel++){
+   dJdU_CAA[iPanel] = new su2double[nDim+3];
+   dJdX_CAA[iPanel] = new su2double[nDim+3];
+   for (iVar=0; iVar < nDim+3; iVar++){
+     dJdU_CAA[iPanel][iVar]= 0.0;
+   }
+   for (iVar=0; iVar < nDim; iVar++){
+     dJdX_CAA[iPanel][iVar]= 0.0;
+   }
  }
  LocalPointIndex = new int[nPoint];
 
- for(int iPoint = 0;  iPoint< nPoint; iPoint++)
- {
+ for(int iPoint = 0;  iPoint< nPoint; iPoint++){
     LocalPointIndex[iPoint] = -1;
  }
 
- /*--- Now that dJ/dU is allocated, extract sensitivities ---*/
+ /*--- Now that dJ/dU and dJ/dX are allocated, extract sensitivities ---*/
  if((config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY) && iMesh == MESH_0){
    ExtractBoomSensitivity(geometry, config);
  }
@@ -832,15 +835,15 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    // Boom
-    if (KindDirect_Solver == RUNTIME_FLOW_SYS   ){
-    if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
-    if (LocalPointIndex[iPoint] >= 0){
-        for (iVar = 0; iVar < nVar; iVar++){
+    /*--- If Boom, add dJ/dU from propagation ---*/
+    if (KindDirect_Solver == RUNTIME_FLOW_SYS){
+      if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
+        if (LocalPointIndex[iPoint] >= 0){
+          for (iVar = 0; iVar < nVar; iVar++){
             Solution[iVar] += dJdU_CAA[LocalPointIndex[iPoint]][iVar];
-         }
-    }
-    }
+          }
+        }
+      }
     }
 
 
@@ -898,7 +901,16 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
       /*--- Set the index manually to zero. ---*/
 
-     AD::ResetInput(Coord[iDim]);
+      AD::ResetInput(Coord[iDim]);
+        
+      /*--- If Boom, add dJ/dX from propagation ---*/
+      if (KindDirect_Solver == RUNTIME_FLOW_SYS){
+        if(config->GetKind_ObjFunc()==BOOM_LOUD || config->GetKind_ObjFunc()==BOOM_ENERGY){
+          if (LocalPointIndex[iPoint] >= 0){
+            Sensitivity += dJdX_CAA[LocalPointIndex[iPoint]][iDim];
+          }
+        }
+      }
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
@@ -1139,13 +1151,14 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
     
     char filename [64];
     
-    SPRINTF (filename, "Adj_Boom.dat");
+    /*--- First read in boom flow adjoint ---*/
+    
+    SPRINTF (filename, "Adj_Boom_dJdU.dat");
     Boom_AdjointFile.open(filename , ios::in);
     if (Boom_AdjointFile.fail()) {
-        cout << "There is no boom adjoint restart file " <<  filename  << "!!"<< endl;
+        cout << "There is no boom flow adjoint restart file " <<  filename  << "!!"<< endl;
         exit(EXIT_FAILURE);
     }
-    
     
     /*--- In case this is a parallel simulation, we need to perform the
      Global2Local index transformation first. ---*/
@@ -1168,13 +1181,6 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
     long iPoint_Local = 0;
     unsigned long iPoint_Global = 0;
     iPanel=0;
-    //unsigned short *dJdU_count = new unsigned short[nPanel];
-    
-    
-    int rank ;
-#ifdef HAVE_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
     
     while (getline (Boom_AdjointFile, text_line)) {
         istringstream point_line(text_line);
@@ -1192,7 +1198,6 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
                 for (iVar=0; iVar<nDim+3; iVar++){
                     point_line >> dJdU_CAA[iPanel][iVar];
                 }
-                //dJdU_count[iPanel] = 1;
                 iPanel++;
             }
             else{
@@ -1201,21 +1206,62 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
                     point_line >> dJdU_tmp;
                     dJdU_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
                 }
-                //dJdU_count[LocalPointIndex[iPoint_Local]]++;
             }
         }
         
         
     }
     
-    /*--- Average dJdU (scale by number of points) ---*/
-    //for(unsigned long i = 0; i < iPanel; i++){
-    //  for(iVar = 0; iVar < nDim+3; iVar++){
-    //    dJdU_CAA[i][iVar] /= dJdU_count[i];
-    //  }
-    //}
+    /*--- Close the flow adjoint restart file ---*/
     
-    /*--- Close the restart file ---*/
+    Boom_AdjointFile.close();
+    
+    /*--- Next read in boom mesh adjoint ---*/
+    
+    SPRINTF (filename, "Adj_Boom_dJdX.dat");
+    Boom_AdjointFile.open(filename , ios::in);
+    if (Boom_AdjointFile.fail()) {
+        cout << "There is no boom mesh adjoint restart file " <<  filename  << "!!"<< endl;
+        exit(EXIT_FAILURE);
+    }
+    
+    /*--- Read all lines in the restart file ---*/
+    
+    iPoint_Local = 0;
+    iPoint_Global = 0;
+    iPanel=0;
+    
+    while (getline (Boom_AdjointFile, text_line)) {
+        istringstream point_line(text_line);
+        point_line >> iPoint_Global ;
+        
+        /*--- Retrieve local index. If this node from the restart file lives
+         on a different processor, the value of iPoint_Local will be -1, as
+         initialized above. Otherwise, the local index for this node on the
+         current processor will be returned and used to instantiate the vars. ---*/
+        
+        iPoint_Local = Global2Local[iPoint_Global];
+        if (iPoint_Local >= 0) {
+            if(LocalPointIndex[iPoint_Local] < 0){
+                LocalPointIndex[iPoint_Local] =  iPanel;
+                for (iVar=0; iVar<nDim; iVar++){
+                    point_line >> dJdX_CAA[iPanel][iVar];
+                }
+                iPanel++;
+            }
+            else{
+                su2double dJdU_tmp = 0.0;
+                for(iVar=0; iVar<nDim; iVar++){
+                    point_line >> dJdU_tmp;
+                    dJdX_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
+                }
+            }
+        }
+        
+        
+    }
+    
+    /*--- Close the flow adjoint restart file ---*/
     
     Boom_AdjointFile.close();
     

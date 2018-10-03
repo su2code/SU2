@@ -578,6 +578,16 @@ int main(int argc, char *argv[]) {
 
               su2double extracted_derivative;
 
+              /*---Mesh sensitivities---*/
+              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
+                for(unsigned int iSig=0; iSig<boom.nPointID[iPhi]; iSig++){
+                  for(unsigned short i =0; i< boom.nDim; i++){
+                    boom.dJdX[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
+                  }
+                }
+              }
+              
+              /*---Flow sensitivities---*/
               for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
                 for(unsigned int iSig=0; iSig<boom.nPointID[iPhi]; iSig++){
                   for(unsigned short i =0; i< boom.nDim+3; i++){
@@ -589,7 +599,8 @@ int main(int argc, char *argv[]) {
               if(rank==MASTER_NODE)
                 cout<<"Finished extracting derivatives."<<endl;
 
-              boom.WriteSensitivities();
+              /*---Write sensitivities to file---*/
+              for(unsigned short kind_sens = 0; kind_sens < 2; kind_sens++) boom.WriteSensitivities(kind_sens);
 
           }
         

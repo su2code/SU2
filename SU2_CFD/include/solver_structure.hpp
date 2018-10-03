@@ -12512,7 +12512,8 @@ private:
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
-  su2double **dJdU_CAA;
+  su2double **dJdU_CAA;          /*!< \brief Flow sensitivity for boom/CAA adjoint. */
+  su2double **dJdX_CAA;          /*!< \brief Mesh sensitivity for boom/CAA adjoint. */
   unsigned long nPanel;
   int *LocalPointIndex;
   

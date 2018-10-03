@@ -93,7 +93,7 @@ public:
   unsigned short nDim;
   unsigned long *nPanel, nSig, *nPointID, nPanel_tot, nPointID_loc, *nPointID_proc, nPointID_tot;
   unsigned long **PointID;
-  su2double ***dJdU;
+  su2double ***dJdU, ***dJdX;
 
   /*---Ray data class for passing into RK4---*/
   class RayData{
@@ -153,7 +153,7 @@ public:
   void MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band);
   void AcousticEnergy(unsigned short iPhi);
   void WriteGroundPressure(unsigned short iPhi);
-  void WriteSensitivities();
+  void WriteSensitivities(unsigned short kind_sensitivity);
 
 };
 
