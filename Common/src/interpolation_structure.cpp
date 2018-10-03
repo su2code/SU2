@@ -37,6 +37,29 @@
 
 #include "../include/interpolation_structure.hpp"
 
+#ifdef HAVE_LAPACK
+template<> void sptrf<double>(char* uplo, int* n, double* ap, int* ipiv, int* info) {
+  return dsptrf_(uplo, n, ap, ipiv, info);
+}
+template<> void sptri<double>(char* uplo, int* n, double* ap, int* ipiv, double* work, int* info) {
+  return dsptri_(uplo, n, ap, ipiv, work, info);
+}
+template<> void symm<double>(char* side, char* uplo, int* m, int* n, double* alpha, double* a,
+                             int* lda, double* b, int* ldb, double* beta, double* c, int* ldc) {
+  return dsymm_(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+template<> void sptrf<float>(char* uplo, int* n, float* ap, int* ipiv, int* info) {
+  return ssptrf_(uplo, n, ap, ipiv, info);
+}
+template<> void sptri<float>(char* uplo, int* n, float* ap, int* ipiv, float* work, int* info) {
+  return ssptri_(uplo, n, ap, ipiv, work, info);
+}
+template<> void symm<float>(char* side, char* uplo, int* m, int* n, float* alpha, float* a,
+                             int* lda, float* b, int* ldb, float* beta, float* c, int* ldc) {
+  return ssymm_(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
+}
+#endif
+
 CInterpolator::CInterpolator(void) {
   
   size = SU2_MPI::GetSize();
@@ -2985,7 +3008,7 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
         skip_row[0] = 1;
         for (int i=1; i<nDim+1; i++) skip_row[i] = 0;
 
-        Check_PolynomialTerms(nDim+1, nGlobalVertexDonor, true, skip_row, interface_coord_tol, calc_polynomial_check, nPolynomial, P);
+        Check_PolynomialTerms(nDim+1, nGlobalVertexDonor, skip_row, interface_coord_tol, calc_polynomial_check, nPolynomial, P);
 
         /*--- Calculate Mp ---*/
         Mp = new CSymmetricMatrix;
@@ -3181,13 +3204,16 @@ void CRadialBasisFunction::Set_TransferCoeff(CConfig **config) {
 #endif
 }
 
-void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_transposed, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P)
+void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P)
 {
+  /*--- This routine keeps the AD information in P but the calculations are done in passivedouble as their purpose
+  is to decide which (if any) row of P to remove, and that process is not differentiable anyway. ---*/
+
   int *write_row = NULL;
   unsigned long iCount, jCount, n_rows;
-  double sum, max_diff, max_coeff, *coeff, *P_tmp = NULL;
+  passivedouble sum, max_diff, max_coeff, *coeff = NULL, max_diff_tol = SU2_TYPE::GetValue(max_diff_tol_in);
   CSymmetricMatrix *PPT;
-  double max_diff_tol = SU2_TYPE::GetValue(max_diff_tol_in);
+  su2double *P_tmp = NULL;
 
   n_rows = 0;
   for (int i=0; i<m; i++) {
@@ -3211,7 +3237,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_
           sum = 0.0;
           for (unsigned long k = 0; k < n; k ++)
           {
-            sum += SU2_TYPE::GetValue((P_transposed)? P[k*m+i]*P[k*m+j] : P[i*n+k]*P[j*n+k]);
+            sum += SU2_TYPE::GetValue(P[k*m+i]*P[k*m+j]);
           }
           PPT->Write(iCount, jCount, sum);
           
@@ -3226,14 +3252,14 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_
   PPT->Invert(true);
 
   /*--- RHS for the least squares fit (vector of ones times P) ---*/
-  coeff = new double [n_rows];
+  coeff = new passivedouble [n_rows];
   iCount = 0;
   for (int i = 0; i < m; i ++) {
     if (skip_row[i] == 0) {
       coeff[iCount] = 0;
       for (unsigned long j = 0; j < n; j += 1)
       {
-        coeff[iCount] += SU2_TYPE::GetValue((P_transposed)? P[j*m+i] : P[i*n+j]);
+        coeff[iCount] += SU2_TYPE::GetValue(P[j*m+i]);
       }
       iCount++;
     }
@@ -3251,7 +3277,7 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_
     for (int j = 0; j < m; j ++)
     {
       if (skip_row[j] == 0) {
-        sum += coeff[iCount]*SU2_TYPE::GetValue((P_transposed)? P[i*m+j] : P[j*n+i]);
+        sum += coeff[iCount]*SU2_TYPE::GetValue(P[i*m+j]);
         iCount++;
       }
     }
@@ -3296,25 +3322,14 @@ void CRadialBasisFunction::Check_PolynomialTerms(int m, unsigned long n, bool P_
       else {iCount++;}
     }
     
-    P_tmp = new double [jCount*n];
+    P_tmp = new su2double [jCount*n];
     iCount = 0;
-    if (P_transposed) {
-      for (unsigned long i=0; i<n; i++) {
-        for (int j=0; j<m; j++) {
-          if (write_row[j] == 1) {
-            P_tmp[iCount] = SU2_TYPE::GetValue(P[i*m+j]);
-            iCount++;
-          }
-        }
-      }
-    }
-    else {
-      for (int i=0; i<m; i++) {
-        for (unsigned long j=0; j<n; j++) {
-          if (write_row[i] == 1) {
-            P_tmp[iCount] = SU2_TYPE::GetValue(P[i*n+j]);
-            iCount++;
-          }
+    
+    for (unsigned long i=0; i<n; i++) {
+      for (int j=0; j<m; j++) {
+        if (write_row[j] == 1) {
+          P_tmp[iCount] = P[i*m+j];
+          iCount++;
         }
       }
     }
@@ -3393,7 +3408,7 @@ void CSymmetricMatrix::Initialize(int N)
 
   sz = N;
   num_val = sz*(sz+1)/2;
-  val_vec = new double [num_val];
+  val_vec = new passivedouble [num_val];
   for (i=0; i<num_val; i++) {val_vec[i] = 0.0;}
 
   initialized = true;
@@ -3404,7 +3419,7 @@ void CSymmetricMatrix::Initialize(int N, su2double *formed_val_vec)
   sz = N;	
   num_val = sz*(sz+1)/2;
 
-  val_vec = new double [num_val];
+  val_vec = new passivedouble [num_val];
   for (int i=0; i<num_val; i++) {val_vec[i] = SU2_TYPE::GetValue(formed_val_vec[i]);}
 
   initialized = true;
@@ -3429,7 +3444,7 @@ void CSymmetricMatrix::CholeskyDecompose(bool overwrite)
 {
 #ifndef HAVE_LAPACK
   int i, j, k;
-  double *vec, sum;
+  passivedouble *vec, sum;
 	
   if (!initialized) {
     throw invalid_argument("Matrix not initialized.");
@@ -3440,7 +3455,7 @@ void CSymmetricMatrix::CholeskyDecompose(bool overwrite)
     vec = val_vec;
   }
   else {
-    decompose_vec = new double [num_val];
+    decompose_vec = new passivedouble [num_val];
     for (i=0; i<num_val; i++){decompose_vec[i] = val_vec[i];}
     vec = decompose_vec;
   }
@@ -3465,14 +3480,14 @@ void CSymmetricMatrix::LUDecompose()
 #ifndef HAVE_LAPACK
   bool interchange_row;
   int i, j, k, pivot_idx, tmp_perm_idx;
-  double pivot, *tmp_row;
+  passivedouble pivot, *tmp_row;
 
   if (! initialized) {
     throw invalid_argument("Matrix not initialized.");
   }
 
   /*--- Copy matrix values to LU matrix ---*/
-  decompose_vec = new double [sz*sz];
+  decompose_vec = new passivedouble [sz*sz];
   perm_vec = new int [sz];
   for (i=0; i<sz; i++) {
     for (j=i; j<sz; j++) {
@@ -3483,7 +3498,7 @@ void CSymmetricMatrix::LUDecompose()
   }
 
   /*--- Decompose LU matrix ---*/
-  tmp_row = new double [sz];
+  tmp_row = new passivedouble [sz];
   for (j=0; j<sz-1; j++) {
 
     /*--- Search for pivot and interchange rows ---*/
@@ -3528,7 +3543,7 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
 {
 #ifndef HAVE_LAPACK
   int i, j, k;
-  double *vec, sum, *write_vec;
+  passivedouble *vec, sum, *write_vec;
 
   if ( ! initialized ) {
     throw invalid_argument("Matrix not initialized.");
@@ -3546,7 +3561,7 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
       else { vec = val_vec; }
 	
       /*--- Initialize inverse matrix ---*/
-      inv_val_vec = new double [num_val];
+      inv_val_vec = new passivedouble [num_val];
       for (i=0; i<num_val; i++){inv_val_vec[i] = 0.0;}	
 	
       /*---        Calculate L inverse       ---*/
@@ -3602,7 +3617,7 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
       vec = decompose_vec;
 
       /*--- Initialize inverse matrix ---*/
-      inv_val_vec = new double [sz*sz];
+      inv_val_vec = new passivedouble [sz*sz];
 
       /*--- Invert L and U matrices in place ---*/
       for ( j=0; j<sz; j++ ) {
@@ -3638,7 +3653,7 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
         inv_val_vec = NULL;
       }
       else { 
-        inv_val_vec = new double [num_val];
+        inv_val_vec = new passivedouble [num_val];
         write_vec = inv_val_vec;
       }
 
@@ -3667,15 +3682,15 @@ void CSymmetricMatrix::CalcInv(bool overwrite)
 #endif
 }
 
-void CSymmetricMatrix::CalcInv_dsptri()
+void CSymmetricMatrix::CalcInv_sptri()
 {
 #ifdef HAVE_LAPACK
   char uplo = 'L';
   int info, *ipiv = new int [sz];
-  double *work = new double [sz];
+  passivedouble *work = new passivedouble [sz];
 
-  dsptrf_(&uplo, &sz, val_vec, ipiv, &info);
-  dsptri_(&uplo, &sz, val_vec, ipiv, work, &info);
+  sptrf(&uplo, &sz, val_vec, ipiv, &info);
+  sptri(&uplo, &sz, val_vec, ipiv, work, &info);
 
   delete [] ipiv;
   delete [] work;
@@ -3690,7 +3705,7 @@ void CSymmetricMatrix::CalcInv_dsptri()
 void CSymmetricMatrix::Invert(const bool is_spd)
 {
 #ifdef HAVE_LAPACK
-  CalcInv_dsptri();
+  CalcInv_sptri();
 #else
   if(!is_spd) LUDecompose();
   else CholeskyDecompose(true);
@@ -3698,9 +3713,9 @@ void CSymmetricMatrix::Invert(const bool is_spd)
 #endif // HAVE_LAPACK
 }
 
-void CSymmetricMatrix::MatVecMult(double *v)
+void CSymmetricMatrix::MatVecMult(passivedouble *v)
 {
-  double *tmp_res = new double [sz];
+  passivedouble *tmp_res = new passivedouble [sz];
 
   for (int i=0; i<sz; i++) {
     tmp_res[i] = 0.0;
@@ -3714,14 +3729,14 @@ void CSymmetricMatrix::MatVecMult(double *v)
 
 void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
 {
-  double *tmp_res, *mat_vec;
+  passivedouble *tmp_res, *mat_vec;
 
-  tmp_res = new double [sz*N];
+  tmp_res = new passivedouble [sz*N];
 
   /*--- For compatibility with LAPACK in AD a copy of the input matrix is made
   demoting su2double to double. The interpolation weights are only differentiated
   for unsteady fluid adjoint so in all other cases there is no loss of accuracy. ---*/
-  mat_vec = new double [sz*N];
+  mat_vec = new passivedouble [sz*N];
   for(int i=0; i<sz*N; ++i)
     mat_vec[i] = SU2_TYPE::GetValue(mat_vec_in[i]);
 
@@ -3732,10 +3747,10 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
 #ifdef HAVE_LAPACK
   
   char side[1]={'R'}, uplo[1]={'L'}; // Right side because mat_vec in row major order
-  double *val_full, alpha=1, beta=0;
+  passivedouble *val_full, alpha=1, beta=0;
   
   /*--- Copy packed storage to full storage to use BLAS level 3 routine ---*/
-  val_full = new double [sz*sz];
+  val_full = new passivedouble [sz*sz];
   for (int i=0; i<sz; i++) {
     for (int j=i; j<sz; j++) {
       val_full[i+sz*j] = val_vec[CalcIdx(i, j)]; // val_full in column major storage
@@ -3745,7 +3760,7 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
     }
   }
 
-  dsymm_(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
+  symm(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
   
   delete [] val_full;
   
@@ -3784,15 +3799,15 @@ void CSymmetricMatrix::Write(int i, int j, const su2double& val)
   val_vec[CalcIdx(i, j)] = SU2_TYPE::GetValue(val);
 }
 
-double CSymmetricMatrix::Read(int i, int j)
+passivedouble CSymmetricMatrix::Read(int i, int j)
 {
   CheckBounds(i,j);
   return val_vec[CalcIdx(i, j)];
 }
 
-double CSymmetricMatrix::ReadL(int i, int j)
+passivedouble CSymmetricMatrix::ReadL(int i, int j)
 {
-  double *p;
+  passivedouble *p = NULL;
 
   CheckBounds(i,j);
 
@@ -3806,16 +3821,16 @@ double CSymmetricMatrix::ReadL(int i, int j)
 			
     case lu:
       if (i>j)  return p[CalcIdxFull(i, j)];
-      else      return double(i==j);
+      else      return passivedouble(i==j);
       
     default:
       throw invalid_argument("Matrix not decomposed yet or results have been deleted.");
 	}
 }
 
-double CSymmetricMatrix::ReadU(int i, int j)
+passivedouble CSymmetricMatrix::ReadU(int i, int j)
 {
-  double *p;
+  passivedouble *p = NULL;
 
   CheckBounds(i,j);
 	
@@ -3837,7 +3852,7 @@ double CSymmetricMatrix::ReadU(int i, int j)
 
 double CSymmetricMatrix::ReadInv(int i, int j)
 {
-  double *p;
+  passivedouble *p = NULL;
 
   CheckBounds(i,j);
 
