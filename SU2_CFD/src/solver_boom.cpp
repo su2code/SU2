@@ -2288,7 +2288,7 @@ void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
       nVar = nDim;
     }
     else if(kind_sensitivity == wrt_flow){
-      Boom_AdjointFile.open("Adj_Boom_dJdX.dat", ios::out);
+      Boom_AdjointFile.open("Adj_Boom_dJdU.dat", ios::out);
       nVar = nDim+3;
     }
   }
@@ -2322,7 +2322,7 @@ void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
     for(iVar = 0; iVar < nVar; iVar++){
       for(iSig = 0; iSig < nPointID[iPhi]; iSig++){
         if(kind_sensitivity == wrt_mesh)      Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdX[iPhi][iVar][iSig];
-        else if(kind_sensitivity == wrt_flow) Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdX[iPhi][iVar][iSig];
+        else if(kind_sensitivity == wrt_flow) Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
       }
     }
 
