@@ -2583,6 +2583,10 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   }
 
+  /*--- Add dependencies for grid coordinate derivatives, no need for full update as the structural solver only uses the node coordinates. ---*/
+
+  geometry_container[iZone][iInst][MESH_0]->Set_MPI_Coord(config_container[iZone]);
+
 }
 
 void CDiscAdjFEAIteration::RegisterOutput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst){
