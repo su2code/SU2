@@ -539,23 +539,26 @@ CDriver::CDriver(char* confFile,
 
   }
 
-  /*---If the Grid Movement is static initialize the static mesh movment ---*/
-  Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
-  initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
-                        || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
+  /*---If the Grid Movement is static initialize the static mesh movment.
+       Not for the FEM solver, because this is handled later, because
+       the integration points must be known. ---*/
+  if( !fem_solver ) {
+    Kind_Grid_Movement = config_container[ZONE_0]->GetKind_GridMovement(ZONE_0);
+    initStaticMovement = (config_container[ZONE_0]->GetGrid_Movement() && (Kind_Grid_Movement == MOVING_WALL
+                          || Kind_Grid_Movement == ROTATING_FRAME || Kind_Grid_Movement == STEADY_TRANSLATION));
 
 
-  if(initStaticMovement){
-    if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
+    if(initStaticMovement){
+      if (rank == MASTER_NODE)cout << endl <<"--------------------- Initialize Static Mesh Movement --------------------" << endl;
 
-      InitStaticMeshMovement();
+        InitStaticMeshMovement();
+    }
+
+    if (config_container[ZONE_0]->GetBoolTurbomachinery()){
+      if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
+        TurbomachineryPreprocessing();
+    }
   }
-
- if (config_container[ZONE_0]->GetBoolTurbomachinery()){
-   if (rank == MASTER_NODE)cout << endl <<"---------------------- Turbomachinery Preprocessing ---------------------" << endl;
-      TurbomachineryPreprocessing();
-  }
-
 
   if (rank == MASTER_NODE) cout << endl << "---------------------- Python Interface Preprocessing ---------------------" << endl;
   PythonInterface_Preprocessing();
@@ -1089,6 +1092,18 @@ void CDriver::Geometrical_Preprocessing_DGFEM() {
             geometry and solution. ---*/
       if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
       DGMesh->CoordinatesSolDOFs();
+
+      /*--- Initialize the static mesh movement, if necessary. ---*/
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
+                                      (Kind_Grid_Movement == MOVING_WALL    ||
+                                       Kind_Grid_Movement == ROTATING_FRAME ||
+                                       Kind_Grid_Movement == STEADY_TRANSLATION));
+
+      if(initStaticMovement){
+        if (rank == MASTER_NODE) cout << "Initialize Static Mesh Movement" << endl;
+        DGMesh->InitStaticMeshMovement(config_container[iZone], Kind_Grid_Movement, iZone);
+      }
 
       /*--- Perform the preprocessing tasks when wall functions are used. ---*/
       if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
