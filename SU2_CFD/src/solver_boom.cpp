@@ -88,6 +88,10 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   if(rank == MASTER_NODE && !AD_Mode)
     cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
 
+    if(rank == MASTER_NODE && AD_Mode){
+      if(kind_sens == mesh_sens)      cout << "Computing mesh sensitivity." << endl;
+      else if(kind_sens == flow_sens) cout << "Computing flow sensitivity." << endl;
+    }
   /*---Perform search on domain to determine where line intersects boundary---*/
   if(rank == MASTER_NODE)
     cout << "Search for start of line." << endl;
@@ -1193,11 +1197,6 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 void CBoom_AugBurgers::SetKindSens(unsigned short kind_sensitivity){
   kind_sens = kind_sensitivity;
-  int rank = SU2_MPI::GetRank();
-  if(rank == MASTER_NODE){
-    if(kind_sens == mesh_sens){      cout << endl; cout << "Computing mesh sensitivity." << endl;}
-    else if(kind_sens == flow_sens){ cout << endl; cout << "Computing flow sensitivity." << endl;}
-  }
 }
 
 void CBoom_AugBurgers::Run(CConfig *config){
@@ -2461,7 +2460,7 @@ void CBoom_AugBurgers::WriteSensitivities(){
 
   }
 
-  if (rank == MASTER_NODE) cout << "\nFinished writing boom adjoint file." << endl;
+  if (rank == MASTER_NODE) cout << "Finished writing boom adjoint file." << endl;
 
 }
 
