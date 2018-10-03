@@ -1,8 +1,9 @@
 #!/bin/sh
 
 # Run the tests via the Python scripts
-ls
+cd TestCases/
 echo $PWD
-travis_wait 90 python $TEST_SCRIPT
+echo $TEST_SCRIPT
+python $TEST_SCRIPT
 
 

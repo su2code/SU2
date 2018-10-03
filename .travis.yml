@@ -1,6 +1,18 @@
 # Continous Integration setup for SU2.
 # Tests on the develop branch in both serial and parallel.
 
+# To enable travis for your own branch, make sure to change the email address to receive notifications
+notifications:
+    email:
+        recipients:
+            - tim.albring@scicomp.uni-kl.de
+
+# Change the branch name to the name of your branch
+branches:
+    only:
+        - develop
+
+# DO NOT TOUCH ANYTHING BELOW HERE 
 dist: trusty
 sudo: required
 
@@ -9,18 +21,17 @@ language: python
 compiler:
     - gcc
 
-notifications:
-    email:
-        recipients:
-            - su2code-dev@lists.stanford.edu
-  
-branches:
-    only:
-        - develop
-
 python:
     - 2.7
     - 3.6
+
+addons:
+  apt:
+    packages:
+      - doxygen
+      - doxygen-doc
+      - doxygen-gui
+      - graphviz
 
 env:
     global:
@@ -43,53 +54,32 @@ env:
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
-    # Temporarily fixes Travis CI issue with paths for Python packages
-    - export PATH=/usr/bin:$PATH
-
-    # Install the necessary packages using apt-get with sudo
-    - sudo apt-get update -qq
-    - sudo apt-get install -qq build-essential libopenmpi-dev
- 
-    # Install Python dependencies
-    # http://conda.pydata.org/docs/travis.html#the-travis-yml-file
-    - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-    - bash miniconda.sh -b -p $HOME/miniconda
-    - export PATH="$HOME/miniconda/bin:$PATH"
-    - hash -r
-    - conda config --set always_yes yes --set changeps1 no
-    - conda update -q conda
-    - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
-
-    # to avoid interference with MPI
-    - test -n $CC  && unset CC
-    - test -n $CXX && unset CXX
+    - source travis_scripts/test/before_install.sh
 
 install:
-    # Configure, make, and install SU2
-    - echo $TRAVIS_BUILD_DIR
-    - echo $CONFIGURE_COMMAND
-    - autoreconf -f -i
-    - $CONFIGURE_COMMAND
-    - make -j 4
-    - make install
-
-    # Add environmental variables according to the configure step
-    - export SU2_RUN=$TRAVIS_BUILD_DIR/bin
-    - export SU2_HOME=$TRAVIS_BUILD_DIR
-    - export PATH=$PATH:$SU2_RUN
-    - export PYTHONPATH=$PYTHONPATH:$SU2_RUN
+    - source travis_scripts/test/install.sh
 
 before_script:
-    # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
-    - cp -R ./TestData/* ./TestCases/
+    - source travis_scripts/test/before_script.sh
 
-    # Get the tutorial cases
-    - git clone -b develop https://github.com/su2code/su2code.github.io ./Tutorials
-    
-    # Enter the SU2/TestCases/ directory, which is now ready to run
-    - cd TestCases/
 
 script: 
-    # Run the tests via the Python scripts
-    - python $TEST_SCRIPT
+    - travis_wait 90 source travis_scripts/test/script.sh
+              
+jobs:
+    include:
+        - stage: doxygen
+          python: 2.7
+          before_install: 
+              - echo 'No before install script.'
+          install:
+              - echo 'No install script'
+          before_script:
+              - echo 'No before_script script.'
+          script:
+              - source travis_scripts/doxygen/script.sh
+          
+
+stages:
+    - test
+    - doxygen
