@@ -2109,7 +2109,77 @@ inline su2double CIncNSSolver::GetConjugateHeatVariable(unsigned short val_marke
 
 inline void CIncNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
+//---------------------------------------------------------------------------------------------------------
 
+inline su2double CPBIncNSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
+
+inline su2double CPBIncNSSolver::GetTke_Inf(void) { return Tke_Inf; }
+
+inline su2double CPBIncNSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetCSF_Visc(unsigned short val_marker) { return CSF_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetCD_Visc(unsigned short val_marker) { return CD_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CL_Visc() { return AllBound_CL_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CSF_Visc() { return AllBound_CSF_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CD_Visc() { return AllBound_CD_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CEff_Visc() { return AllBound_CEff_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CMx_Visc() { return AllBound_CMx_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CMy_Visc() { return AllBound_CMy_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CMz_Visc() { return AllBound_CMz_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CoPx_Visc() { return AllBound_CoPx_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CoPy_Visc() { return AllBound_CoPy_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CoPz_Visc() { return AllBound_CoPz_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CFx_Visc() { return AllBound_CFx_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CFy_Visc() { return AllBound_CFy_Visc; }
+
+inline su2double CPBIncNSSolver::GetAllBound_CFz_Visc() { return AllBound_CFz_Visc; }
+
+inline su2double CPBIncNSSolver::GetSurface_CL_Visc(unsigned short val_marker) { return Surface_CL_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CD_Visc(unsigned short val_marker) { return Surface_CD_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CSF_Visc(unsigned short val_marker) { return Surface_CSF_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CEff_Visc(unsigned short val_marker) { return Surface_CEff_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CFx_Visc(unsigned short val_marker) { return Surface_CFx_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CFy_Visc(unsigned short val_marker) { return Surface_CFy_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CFz_Visc(unsigned short val_marker) { return Surface_CFz_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CMx_Visc(unsigned short val_marker) { return Surface_CMx_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CMy_Visc(unsigned short val_marker) { return Surface_CMy_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
+
+inline su2double CPBIncNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
+
+inline su2double CPBIncNSSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
+
+inline su2double CPBIncNSSolver::GetStrainMag_Max(void) { return StrainMag_Max; }
+
+inline su2double CPBIncNSSolver::GetOmega_Max(void) { return Omega_Max; }
+
+inline void CPBIncNSSolver::SetStrainMag_Max(su2double val_strainmag_max) { StrainMag_Max = val_strainmag_max; }
+
+inline void CPBIncNSSolver::SetOmega_Max(su2double val_omega_max) { Omega_Max = val_omega_max; }
+
+//---------------------------------------------------------------------------------------------------------
 inline su2double CHeatSolverFVM::GetTotal_HeatFlux() { return Total_HeatFlux; }
 
 inline su2double CHeatSolverFVM::GetTotal_AvgTemperature() { return Total_AvgTemperature; }
