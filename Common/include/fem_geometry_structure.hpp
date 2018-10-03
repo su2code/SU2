@@ -975,6 +975,16 @@ public:
   CInternalFaceElementFEM *GetMatchingFaces(void);
 
  /*!
+  * \brief Function to compute the grid velocities for static problems.
+  * \param[in] config             - Definition of the particular problem.
+  * \param[in] Kind_Grid_Movement - The type of prescribed grid motion.
+  * \param[in] iZone              - The currently active zone number.
+  */
+  void InitStaticMeshMovement(CConfig              *config,
+                              const unsigned short Kind_Grid_Movement,
+                              const unsigned short iZone);
+
+ /*!
   * \brief Function, which makes available the number of standard volume elements of the solution.
   * \return  Number of standard volume elements of the solution.
   */
