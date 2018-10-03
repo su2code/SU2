@@ -128,7 +128,8 @@ const unsigned int OVERHEAD = 4; /*!< \brief Overhead space above nMarker when a
 const unsigned int MESH_0 = 0; /*!< \brief Definition of the finest grid level. */
 const unsigned int MESH_1 = 1; /*!< \brief Definition of the finest grid level. */
 const unsigned int ZONE_0 = 0; /*!< \brief Definition of the first grid domain. */
-const unsigned int ZONE_1 = 1; /*!< \brief Definition of the first grid domain. */
+const unsigned int ZONE_1 = 1; /*!< \brief Definition of the second grid domain. */
+const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per grid level. */
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
