@@ -263,20 +263,22 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
 CBoom_AugBurgers::~CBoom_AugBurgers(void){
     
   /*---Clear up memory from dJ/dU and dJ/dX---*/
-  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    for (unsigned short i = 0; i < nDim+3; i++){
-      if(dJdU[iPhi][i] != NULL) delete [] dJdU[iPhi][i];
-    }
-    for (unsigned short i = 0; i < nDim; i++){
-      if(dJdX[iPhi][i] != NULL) delete [] dJdX[iPhi][i];
-    }
+  if(dJdU != NULL){
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+      for (unsigned short i = 0; i < nDim+3; i++){
+        if(dJdU[iPhi][i] != NULL) delete [] dJdU[iPhi][i];
+      }
+      for (unsigned short i = 0; i < nDim; i++){
+        if(dJdX[iPhi][i] != NULL) delete [] dJdX[iPhi][i];
+      }
     
-    if(dJdU[iPhi] != NULL) delete [] dJdU[iPhi];
-    if(dJdX[iPhi] != NULL) delete [] dJdX[iPhi];
+      if(dJdU[iPhi] != NULL) delete [] dJdU[iPhi];
+      if(dJdX[iPhi] != NULL) delete [] dJdX[iPhi];
         
+    }
+    delete [] dJdU;
+    delete [] dJdX;
   }
-  if(dJdU != NULL) delete [] dJdU;
-  if(dJdX != NULL) delete [] dJdX;
   if(nPointID != NULL) delete [] nPointID;
 
 }
