@@ -6649,3 +6649,284 @@ void CMeshFEM_DG::HighOrderContainmentSearch(const su2double      *coor,
   if(itCount == maxIt)
     SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
 }
+
+void CMeshFEM_DG::InitStaticMeshMovement(CConfig              *config,
+                                         const unsigned short Kind_Grid_Movement,
+                                         const unsigned short iZone) {
+
+  /*--- Get the reference values for the non-dimensionalization of the
+        prescribed velocities. ---*/
+  const su2double L_Ref     = config->GetLength_Ref();
+  const su2double Omega_Ref = config->GetOmega_Ref();
+  const su2double Vel_Ref   = config->GetVelocity_Ref();
+
+  /*--- Make a distinction between the possibilities. ---*/
+  switch( Kind_Grid_Movement ) {
+
+    case MOVING_WALL: {
+
+      /*--- Loop over the physical boundaries. Skip the periodic boundaries. ---*/
+      for(unsigned short i=0; i<boundaries.size(); ++i) {
+        if( !boundaries[i].periodicBoundary ) {
+
+          /* Check if for this boundary a motion has been specified. */
+          if (config->GetMarker_All_Moving(i) == YES) {
+
+            /* Determine the prescribed translation velocity, rotation rate
+               and rotation center. */
+            const unsigned short jMarker = config->GetMarker_Moving(boundaries[i].markerTag);
+            const su2double Center[] = {config->GetMotion_Origin_X(jMarker),
+                                        config->GetMotion_Origin_Y(jMarker),
+                                        config->GetMotion_Origin_Z(jMarker)};
+            const su2double Omega[]  = {config->GetRotation_Rate_X(jMarker)/Omega_Ref,
+                                        config->GetRotation_Rate_Y(jMarker)/Omega_Ref,
+                                        config->GetRotation_Rate_Z(jMarker)/Omega_Ref};
+            const su2double vTrans[] = {config->GetTranslation_Rate_X(jMarker)/Vel_Ref,
+                                        config->GetTranslation_Rate_Y(jMarker)/Vel_Ref,
+                                        config->GetTranslation_Rate_Z(jMarker)/Vel_Ref};
+
+            /* Easier storage of the surface elements and loop over them. */
+            vector<CSurfaceElementFEM> &surfElem = boundaries[i].surfElem;
+
+            for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+              /* Determine the corresponding standard face element and get the
+                 relevant information from it. Note that the standard element
+                 of the solution must be taken and not of the grid. */
+              const unsigned short ind  = surfElem[l].indStandardElement;
+              const unsigned short nInt = standardBoundaryFacesSol[ind].GetNIntegration();
+
+              /* Loop over the number of integration points. */
+              for(unsigned short j=0; j<nInt; ++j) {
+
+                /* Set the pointers for the coordinates and grid velocities
+                   for this integration points. */
+                const su2double *Coord = surfElem[l].coorIntegrationPoints.data() + j*nDim;
+                su2double *gridVel     = surfElem[l].gridVelocities.data() + j*nDim;
+
+                /* Calculate non-dim. position from rotation center. */
+                su2double r[] = {0.0, 0.0, 0.0};
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  r[iDim] = (Coord[iDim]-Center[iDim])/L_Ref;
+
+                /* Cross Product of angular velocity and distance from center to
+                   get the rotational velocity. Note that we are adding on the
+                   velocity due to pure translation as well. Note that for the
+                   2D case only Omega[2] can be non-zero. */
+                su2double velGrid[] = {vTrans[0] + Omega[1]*r[2] - Omega[2]*r[1],
+                                       vTrans[1] + Omega[2]*r[0] - Omega[0]*r[2],
+                                       vTrans[2] + Omega[0]*r[1] - Omega[1]*r[0]};
+
+                /* Store the grid velocities. */
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  gridVel[iDim] = velGrid[iDim];
+              }
+            }
+          }
+        }
+      }
+
+      break;
+    }
+
+    /*-------------------------------------------------------------------------------------*/
+
+    case ROTATING_FRAME: {
+
+      /* Get the rotation rate and rotation center from config. */
+      const su2double Center[] = {config->GetMotion_Origin_X(iZone),
+                                  config->GetMotion_Origin_Y(iZone),
+                                  config->GetMotion_Origin_Z(iZone)};
+      const su2double Omega[]  = {config->GetRotation_Rate_X(iZone)/Omega_Ref,
+                                  config->GetRotation_Rate_Y(iZone)/Omega_Ref,
+                                  config->GetRotation_Rate_Z(iZone)/Omega_Ref};
+
+      /* Array used to store the distance to the rotation center. */ 
+      su2double dist[] = {0.0, 0.0, 0.0};
+
+      /* Loop over the owned volume elements. */
+      for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+        /* Get the number of DOFs and integration points for this element. */
+        const unsigned short ind   = volElem[l].indStandardElement;
+        const unsigned short nInt  = standardElementsSol[ind].GetNIntegration();
+        const unsigned short nDOFs = volElem[l].nDOFsSol;
+
+        /* Determine the grid velocities in the integration points. */
+        for(unsigned short i=0; i<nInt; ++i) {
+          const su2double *coor    = volElem[l].coorIntegrationPoints.data() + i*nDim;
+          su2double       *gridVel = volElem[l].gridVelocities.data() + i*nDim;
+
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            dist[iDim] = (coor[iDim]-Center[iDim])/L_Ref;
+
+          gridVel[0] = Omega[1]*dist[2] - Omega[2]*dist[1];
+          gridVel[1] = Omega[2]*dist[0] - Omega[0]*dist[2];
+          if(nDim == 3) gridVel[2] = Omega[0]*dist[1] - Omega[1]*dist[0];
+        }
+
+        /* Determine the grid velocities in the solution DOFs. */
+        for(unsigned short i=0; i<nDOFs; ++i) {
+          const su2double *coor    = volElem[l].coorSolDOFs.data() + i*nDim;
+          su2double       *gridVel = volElem[l].gridVelocitiesSolDOFs.data() + i*nDim;
+
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            dist[iDim] = (coor[iDim]-Center[iDim])/L_Ref;
+
+          gridVel[0] = Omega[1]*dist[2] - Omega[2]*dist[1];
+          gridVel[1] = Omega[2]*dist[0] - Omega[0]*dist[2];
+          if(nDim == 3) gridVel[2] = Omega[0]*dist[1] - Omega[1]*dist[0];
+        }
+      }
+
+      /* Loop over the internal matching faces. */
+      for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+
+        /* Get the number of integration points. */
+        const unsigned short ind  = matchingFaces[l].indStandardElement;
+        const unsigned short nInt = standardMatchingFacesSol[ind].GetNIntegration();
+
+        /* Determine the grid velocity in the integration points. */
+        for(unsigned short i=0; i<nInt; ++i) {
+          const su2double *coor    = matchingFaces[l].coorIntegrationPoints.data() + i*nDim;
+          su2double       *gridVel = matchingFaces[l].gridVelocities.data() + i*nDim;
+
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            dist[iDim] = (coor[iDim]-Center[iDim])/L_Ref;
+
+          gridVel[0] = Omega[1]*dist[2] - Omega[2]*dist[1];
+          gridVel[1] = Omega[2]*dist[0] - Omega[0]*dist[2];
+          if(nDim == 3) gridVel[2] = Omega[0]*dist[1] - Omega[1]*dist[0];
+        }
+      }
+
+      /* Loop over the physical boundaries. Exclude periodic boundaries. */
+      for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+        if( !boundaries[iMarker].periodicBoundary ) {
+
+          /* Abbreviate the surface elements a bit easier. */
+          vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+          /* Check if this is a shroud boundary. */
+          bool shroudBoundary = false;
+          for(unsigned short iShroud=0; iShroud<config->GetnMarker_Shroud(); ++iShroud) {
+            if(boundaries[iMarker].markerTag == config->GetMarker_Shroud(iShroud)) {
+              shroudBoundary = true;
+              break;
+            }
+          }
+
+          /* Loop over the boundary faces of this marker. */
+          for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+            /* Get the number of integration points. */
+            const unsigned short ind  = surfElem[l].indStandardElement;
+            const unsigned short nInt = standardBoundaryFacesGrid[ind].GetNIntegration();
+
+            /* For a shroud boundary the grid velocities must be set to zero. */
+            if( shroudBoundary ) {
+              for(unsigned short i=0; i<(nInt*nDim); ++i)
+                surfElem[l].gridVelocities[i] = 0.0;
+            }
+            else {
+
+              /* Normal boundary. Determine the grid velocity in the integration points. */
+              for(unsigned short i=0; i<nInt; ++i) {
+                const su2double *coor    = surfElem[l].coorIntegrationPoints.data() + i*nDim;
+                su2double       *gridVel = surfElem[l].gridVelocities.data() + i*nDim;
+
+                for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                  dist[iDim] = (coor[iDim]-Center[iDim])/L_Ref;
+
+                gridVel[0] = Omega[1]*dist[2] - Omega[2]*dist[1];
+                gridVel[1] = Omega[2]*dist[0] - Omega[0]*dist[2];
+                if(nDim == 3) gridVel[2] = Omega[0]*dist[1] - Omega[1]*dist[0];
+              }
+            }
+          }
+        }
+      }
+
+      break;
+    }
+
+    /*-------------------------------------------------------------------------------------*/
+
+    case STEADY_TRANSLATION: {
+
+      /* Get the translation velocity from config. */
+      su2double vTrans[] = {config->GetTranslation_Rate_X(iZone)/Vel_Ref,
+                            config->GetTranslation_Rate_Y(iZone)/Vel_Ref,
+                            config->GetTranslation_Rate_Z(iZone)/Vel_Ref};
+
+      /* Loop over the owned volume elements. */
+      for(unsigned long l=0; l<nVolElemOwned; ++l) {
+
+        /* Get the number of DOFs and integration points for this element. */
+        const unsigned short ind   = volElem[l].indStandardElement;
+        const unsigned short nInt  = standardElementsSol[ind].GetNIntegration();
+        const unsigned short nDOFs = volElem[l].nDOFsSol;
+
+        /* Set the grid velocity in both the integration points and
+           the sol DOFs. */
+        for(unsigned short i=0; i<nInt; ++i) {
+          su2double *gridVel = volElem[l].gridVelocities.data() + i*nDim;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            gridVel[iDim] = vTrans[iDim];
+        }
+
+        for(unsigned short i=0; i<nDOFs; ++i) {
+          su2double *gridVel = volElem[l].gridVelocitiesSolDOFs.data() + i*nDim;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            gridVel[iDim] = vTrans[iDim];
+        }
+      }
+
+      /* Loop over the internal matching faces. */
+      for(unsigned long l=0; l<matchingFaces.size(); ++l) {
+
+        /* Get the number of integration points. */
+        const unsigned short ind  = matchingFaces[l].indStandardElement;
+        const unsigned short nInt = standardMatchingFacesSol[ind].GetNIntegration();
+
+        /* Set the grid velocity in the integration points. */
+        for(unsigned short i=0; i<nInt; ++i) {
+          su2double *gridVel = matchingFaces[l].gridVelocities.data() + i*nDim;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            gridVel[iDim] = vTrans[iDim];
+        }
+      }
+
+      /* Loop over the physical boundaries. Exclude periodic boundaries. */
+      for(unsigned short iMarker=0; iMarker<boundaries.size(); ++iMarker) {
+        if( !boundaries[iMarker].periodicBoundary ) {
+
+          /* Abbreviate the surface elements a bit easier. */
+          vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
+
+          /* Loop over the boundary faces of this marker. */
+          for(unsigned long l=0; l<surfElem.size(); ++l) {
+
+            /* Get the number of integration points. */
+            const unsigned short ind  = surfElem[l].indStandardElement;
+            const unsigned short nInt = standardBoundaryFacesGrid[ind].GetNIntegration();
+
+            /* Set the grid velocity in the integration points. */
+            for(unsigned short i=0; i<nInt; ++i) {
+              su2double *gridVel = surfElem[l].gridVelocities.data() + i*nDim;
+              for(unsigned short iDim=0; iDim<nDim; ++iDim)
+                gridVel[iDim] = vTrans[iDim];
+            }
+          }
+        }
+      }
+
+      break;
+    }
+
+    /*-------------------------------------------------------------------------------------*/
+
+    default:  /* Just to avoid a compiler warning. */
+      break;
+  }
+}
