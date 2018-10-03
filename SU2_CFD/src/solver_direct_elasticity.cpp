@@ -1424,10 +1424,13 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * the Jacobian matrix once, at the beginning of the simulation.
    *
    * We don't need first_iter, because there is only one iteration per time step in linear analysis.
+   * For dynamic problems we also need to recompute the Jacobian as that is where the RHS is computed
+   * as a residual (and we need that for AD).
    */
   if ((initial_calc && linear_analysis)||
       (restart && initial_calc_restart && linear_analysis) ||
-      (dynamic && disc_adj_fem)) {
+      (dynamic && disc_adj_fem) ||
+      (dynamic && linear_analysis)) {
     Jacobian.SetValZero();
   }
   
@@ -1568,10 +1571,10 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
   unsigned long iElem, iVar, jVar;
   unsigned short iNode, iDim, nNodes = 0;
   unsigned long indexNode[8]={0,0,0,0,0,0,0,0};
-  su2double val_Coord;
+  su2double val_Coord, val_Sol;
   int EL_KIND = 0;
   
-  su2double *Kab = NULL;
+  su2double *Kab = NULL, *Ta  = NULL;
   unsigned short NelNodes, jNode;
   
   bool topology_mode = config->GetTopology_Optimization();
@@ -1597,7 +1600,9 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
       
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Coord = geometry->node[indexNode[iNode]]->GetCoord(iDim);
+        val_Sol = node[indexNode[iNode]]->GetSolution(iDim) + val_Coord;
         element_container[FEA_TERM][EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
+        element_container[FEA_TERM][EL_KIND]->SetCurr_Coord(val_Sol, iNode, iDim);
       }
     }
     
@@ -1622,6 +1627,11 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
     
     for (iNode = 0; iNode < NelNodes; iNode++) {
       
+      Ta = element_container[FEA_TERM][EL_KIND]->Get_Kt_a(iNode);
+      for (iVar = 0; iVar < nVar; iVar++) Res_Stress_i[iVar] = Ta[iVar];
+      
+      LinSysRes.SubtractBlock(indexNode[iNode], Res_Stress_i);
+      
       for (jNode = 0; jNode < NelNodes; jNode++) {
         
         Kab = element_container[FEA_TERM][EL_KIND]->Get_Kab(iNode, jNode);
@@ -1631,9 +1641,8 @@ void CFEASolver::Compute_StiffMatrix(CGeometry *geometry, CSolver **solver_conta
             Jacobian_ij[iVar][jVar] = simp_penalty*Kab[iVar*nVar+jVar];
           }
         }
-        
+    
         Jacobian.AddBlock(indexNode[iNode], indexNode[jNode], Jacobian_ij);
-        
       }
       
     }
@@ -2188,9 +2197,6 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
     unsigned long iVertex;
     su2double val_Reaction;
     
-    bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-    bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-    
     if (!dynamic) {
       /*--- Loop over all the markers  ---*/
       for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
@@ -2237,27 +2243,16 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
         case (NEWMARK_IMPLICIT):
           
           /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-          if (linear_analysis) {
-            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-                a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-                a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-              }
-              TimeRes_Aux.SetBlock(iPoint, Residual);
+          for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+              - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+              + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+              + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
             }
+            TimeRes_Aux.SetBlock(iPoint, Residual);
           }
-          else if (nonlinear_analysis) {
-            for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-              for (iVar = 0; iVar < nVar; iVar++) {
-                Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-                - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-                + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-                + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-              }
-              TimeRes_Aux.SetBlock(iPoint, Residual);
-            }
-          }
+
           /*--- Once computed, compute M*TimeRes_Aux ---*/
           MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
           
@@ -3437,7 +3432,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
@@ -3446,9 +3440,6 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
-  
-  bool restart = config->GetRestart();                          // Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   bool incremental_load = config->GetIncrementalLoad();
   
@@ -3516,14 +3507,11 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
      * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
      * iteration, as the Jacobian is recomputed
      *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
-     * From then on, the Jacobian is always the same matrix.
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
+     * correct differentiation the Jacobian is recomputed every time step.
      *
      */
-    
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
-        (linear_analysis && initial_calc) ||
-        (linear_analysis && restart && initial_calc_restart)) {
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
           for(iVar = 0; iVar < nVar; iVar++) {
@@ -3538,27 +3526,15 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
     
     
     /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-    if (linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
+
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+        - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+        + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+        + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
       }
-    }
-    else if (nonlinear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
-      }
-      
+      TimeRes_Aux.SetBlock(iPoint, Residual);
     }
     
     /*--- Once computed, compute M*TimeRes_Aux ---*/
@@ -3629,8 +3605,6 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);          // Dynamic simulations.
   
   /*--- Update solution ---*/
@@ -3640,12 +3614,8 @@ void CFEASolver::ImplicitNewmark_Update(CGeometry *geometry, CSolver **solver_co
     for (iVar = 0; iVar < nVar; iVar++) {
       
       /*--- Displacements component of the solution ---*/
-      
-      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-      
-      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      
-      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+       
+      node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
@@ -3774,7 +3744,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   unsigned long iPoint, jPoint;
   unsigned short iVar, jVar;
   
-  bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
   bool first_iter = (config->GetIntIter() == 0);
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
@@ -3783,9 +3752,6 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
-  
-  bool restart = config->GetRestart();                          // Restart solution
-  bool initial_calc_restart = (SU2_TYPE::Int(config->GetExtIter()) == config->GetDyn_RestartIter());  // Restart iteration
   
   su2double alpha_f = config->Get_Int_Coeffs(2);
   
@@ -3841,14 +3807,11 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
      * of each time step. If the solution method is Newton Rapshon, we repeat this step at the beginning of each
      * iteration, as the Jacobian is recomputed
      *
-     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian at the first calculation.
-     * From then on, the Jacobian is always the same matrix.
+     * If the problem is linear, we add the Mass Matrix contribution to the Jacobian everytime because for
+     * correct differentiation the Jacobian is recomputed every time step.
      *
      */
-    
-    if ((nonlinear_analysis && (newton_raphson || first_iter)) ||
-        (linear_analysis && initial_calc) ||
-        (linear_analysis && restart && initial_calc_restart)) {
+    if ((nonlinear_analysis && (newton_raphson || first_iter)) || linear_analysis) {
       for (iPoint = 0; iPoint < nPoint; iPoint++) {
         for (jPoint = 0; jPoint < nPoint; jPoint++) {
           for(iVar = 0; iVar < nVar; iVar++) {
@@ -3863,27 +3826,17 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
     
     
     /*--- Loop over all points, and set aux vector TimeRes_Aux = a0*U+a2*U'+a3*U'' ---*/
-    if (linear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] = a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)+    //a0*U(t)
-          a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)+  //a2*U'(t)
-          a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
+        - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
+        + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
+        + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
       }
+      TimeRes_Aux.SetBlock(iPoint, Residual);
     }
-    else if (nonlinear_analysis) {
-      for (iPoint = 0; iPoint < nPoint; iPoint++) {
-        for (iVar = 0; iVar < nVar; iVar++) {
-          Residual[iVar] =   a_dt[0]*node[iPoint]->GetSolution_time_n(iVar)        //a0*U(t)
-          - a_dt[0]*node[iPoint]->GetSolution(iVar)           //a0*U(t+dt)(k-1)
-          + a_dt[2]*node[iPoint]->GetSolution_Vel_time_n(iVar)    //a2*U'(t)
-          + a_dt[3]*node[iPoint]->GetSolution_Accel_time_n(iVar);  //a3*U''(t)
-        }
-        TimeRes_Aux.SetBlock(iPoint, Residual);
-      }
-    }
+
     /*--- Once computed, compute M*TimeRes_Aux ---*/
     MassMatrix.MatrixVectorProduct(TimeRes_Aux,TimeRes,geometry,config);
     /*--- Add the components of M*TimeRes_Aux to the residual R(t+dt) ---*/
@@ -3954,9 +3907,6 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
   unsigned short iVar;
   unsigned long iPoint;
   
-  bool linear = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);    // Geometrically linear problems
-  bool nonlinear = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Geometrically non-linear problems
-  
   /*--- Update solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -3965,11 +3915,7 @@ void CFEASolver::GeneralizedAlpha_UpdateDisp(CGeometry *geometry, CSolver **solv
       
       /*--- Displacements component of the solution ---*/
       
-      /*--- If it's a non-linear problem, the result is the DELTA_U, not U itself ---*/
-      
-      if (linear) node[iPoint]->SetSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
-      
-      if (nonlinear)  node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+      node[iPoint]->Add_DeltaSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
       
     }
     
