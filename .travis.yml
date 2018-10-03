@@ -54,17 +54,17 @@ env:
           TEST_SCRIPT=parallel_regression_AD.py
 
 before_install:
-    - sh travis_scripts/test/before_install.sh
+    - source travis_scripts/test/before_install.sh
 
 install:
-    - sh travis_scripts/test/install.sh
+    - source travis_scripts/test/install.sh
 
 before_script:
-    - sh travis_scripts/test/before_script.sh
+    - source travis_scripts/test/before_script.sh
 
 
 script: 
-    - travis_wait 90 sh travis_scripts/test/script.sh
+    - travis_wait 90 source travis_scripts/test/script.sh
               
 jobs:
     include:
@@ -77,7 +77,7 @@ jobs:
           before_script:
               - echo 'No before_script script.'
           script:
-              - sh travis_scripts/doxygen/script.sh
+              - source travis_scripts/doxygen/script.sh
           
 
 stages:
