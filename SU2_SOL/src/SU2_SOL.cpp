@@ -518,136 +518,43 @@ int main(int argc, char *argv[]) {
     
   }
 
-        if ((config_container[ZONE_0]->GetBoom_flag() != NONE) || 
-          config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
-          config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
+  if ((config_container[ZONE_0]->GetBoom_flag() != NONE) ||
+       config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+       config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
             
-          /*---Boom primal and discrete adjoint---*/
-          if (config_container[ZONE_0]->GetAD_Mode()){
+    /*---Boom primal and discrete adjoint---*/
+    if (config_container[ZONE_0]->GetAD_Mode()){
 
-            if (rank == MASTER_NODE)
-               cout << endl <<"------------------------- Computing Sonic Boom (Primal+Adjoint) -----------------------" << endl;
+      if (rank == MASTER_NODE) cout << endl <<"------------------------- Computing Sonic Boom (Primal+Adjoint) -----------------------" << endl;
 
-              if(config->GetBoom_flag() != ABBOOM){
-                if(rank==MASTER_NODE)
-                  cout <<"Only Augmented Burgers Equation propagation currently supported."<< endl;
-              }
+      if(config->GetBoom_flag() != ABBOOM){
+        if(rank==MASTER_NODE) cout <<"Only Augmented Burgers Equation propagation currently supported."<< endl;
+      }
 
-              AD::StartRecording();
-              CBoom_AugBurgers boom(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
+      for(unsigned short kind_sens = 0; kind_sens < 2; kind_sens++){
+        CBoom_AugBurgers *solver_boom = new CBoom_AugBurgers(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
+        solver_boom->SetKindSens(kind_sens);
+        solver_boom->Run(config_container[ZONE_0]);
+        delete solver_boom;
+      }
 
-              if(rank == MASTER_NODE){
-                cout << "ABE initialized." << endl;
-
-                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  if(rank == MASTER_NODE)
-                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". " << endl;
-                  boom.PropagateSignal(iPhi);
-                }
-              }
-
-              if(rank == MASTER_NODE)
-                cout << "Propagation complete." << endl;
-
-              if (rank == MASTER_NODE){
-                Objective_Function = 0.0;
-                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  Objective_Function += boom.PLdB[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
-                }
-              }
-
-              /*---Write boom strength metrics to file---*/
-              if (rank == MASTER_NODE){
-                ofstream sigFile;
-                sigFile.precision(15);
-                sigFile.open("boomSU2", ios::out);
-                sigFile << "Objective_Function= " << Objective_Function << endl;
-                sigFile.close();
-              }
-
-              if (rank==MASTER_NODE){
-                SU2_TYPE::SetDerivative(Objective_Function,1.0);
-              }else{
-                SU2_TYPE::SetDerivative(Objective_Function,0.0);
-              }
-              AD::StopRecording();
-              AD::ComputeAdjoint();
-
-              if (rank==MASTER_NODE)
-                cout<<"Finished computing boom adjoint."<<endl;
-
-              su2double extracted_derivative;
-
-              /*---Mesh sensitivities---*/
-              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                for(unsigned int iSig=0; iSig<boom.nPointID[iPhi]; iSig++){
-                  for(unsigned short i =0; i< boom.nDim; i++){
-                    boom.dJdX[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
-                  }
-                }
-              }
-              
-              /*---Flow sensitivities---*/
-              for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                for(unsigned int iSig=0; iSig<boom.nPointID[iPhi]; iSig++){
-                  for(unsigned short i =0; i< boom.nDim+3; i++){
-                    boom.dJdU[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
-                  }
-                }
-              }
-
-              if(rank==MASTER_NODE)
-                cout<<"Finished extracting derivatives."<<endl;
-
-              /*---Write sensitivities to file---*/
-              for(unsigned short kind_sens = 0; kind_sens < 2; kind_sens++) boom.WriteSensitivities(kind_sens);
-
-          }
+    }
         
-          /*---Boom primal only---*/
-		  else{
-            if (rank == MASTER_NODE)
-              cout << endl <<"------------------------- Computing Sonic Boom (Primal Only) -----------------------" << endl;
+    /*---Boom primal only---*/
+    else{
+      if (rank == MASTER_NODE) cout << endl <<"------------------------- Computing Sonic Boom (Primal Only) -----------------------" << endl;
 
 
-              if(config->GetBoom_flag() != ABBOOM){
-                if(rank==MASTER_NODE)
-                  cout <<"Only Augmented Burgers Equation propagation currently supported."<< endl;
-              }
+      if(config->GetBoom_flag() != ABBOOM){
+        if(rank==MASTER_NODE) cout <<"Only Augmented Burgers Equation propagation currently supported."<< endl;
+      }
 
-              CBoom_AugBurgers boom(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
-
-              if(rank == MASTER_NODE){
-                cout << "ABE initialized." << endl;
-
-                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  if(rank == MASTER_NODE)
-                    cout << "Propagating signal for phi = " << boom.ray_phi[iPhi] << ". " << endl;
-                  boom.PropagateSignal(iPhi);
-                }
-              }
-
-              if(rank == MASTER_NODE)
-                cout << "Propagation complete." << endl;
-
-              if (rank == MASTER_NODE){
-                Objective_Function = 0.0;
-                for(unsigned short iPhi = 0; iPhi < boom.ray_N_phi; iPhi++){
-                  Objective_Function += boom.PLdB[iPhi]/boom.ray_N_phi; // Normalize by number of propagated signals
-                }
-              }
-
-              /*---Write boom strength metrics to file---*/
-              if (rank == MASTER_NODE){
-                ofstream sigFile;
-                sigFile.precision(15);
-                sigFile.open("boomSU2", ios::out);
-                sigFile << "Objective_Function= " << Objective_Function << endl;
-                sigFile.close();
-              }           
-          }
+      CBoom_AugBurgers *solver_boom = new CBoom_AugBurgers(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
+      solver_boom->Run(config_container[ZONE_0]);
+      delete solver_boom;
+    }
             
-       }
+  }
   
   delete config;
   config = NULL;

@@ -25,7 +25,8 @@ public:
   unsigned long **pointID_original;
   su2double ***Coord_original;
   su2double CFL_reduce, Step_size, Step_growth;
-  bool AD_flag;
+  unsigned short kind_sens, mesh_sens = 0, flow_sens = 1;
+  bool AD_Mode;
 
   /*---Flight variables---*/
   su2double flt_h;
@@ -138,6 +139,8 @@ public:
                 su2double& rho, su2double& g);
   void HumidityISO(su2double& z0, su2double& p_inf, su2double& T_inf, su2double& h);
 
+  void SetKindSens(unsigned short kind_sensitivity);
+  void Run(CConfig *config);
   void PropagateSignal(unsigned short iPhi);
   void Preprocessing(unsigned short iPhi, unsigned long iIter);
   void CreateUniformGridSignal(unsigned short iPhi);
@@ -153,7 +156,7 @@ public:
   void MarkVII(unsigned short iPhi, su2double *SPL_band, su2double *fc, unsigned short n_band);
   void AcousticEnergy(unsigned short iPhi);
   void WriteGroundPressure(unsigned short iPhi);
-  void WriteSensitivities(unsigned short kind_sensitivity);
+  void WriteSensitivities();
 
 };
 

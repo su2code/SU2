@@ -15,20 +15,17 @@ CBoom_AugBurgers::CBoom_AugBurgers(){
 
 CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *geometry){
 
-  AD_BEGIN_PASSIVE
-
   int rank, nProcessor = 1;
 
   rank = SU2_MPI::GetRank();
   nProcessor = SU2_MPI::GetSize();
 
   Kind_Boom_Cost = config->GetKind_ObjFunc();
-  AD_flag = false;
-  if(config->GetAD_Mode()) AD_flag = true;
   CFL_reduce = config->GetBoom_cfl_reduce();
   Kind_Step = config->GetBoom_step_type();
   Step_size = config->GetBoom_step_size();
   Step_growth = config->GetBoom_step_growth();
+  AD_Mode = config->GetAD_Mode();
 
   /*---Make sure to read in hard-coded values in the future!---*/
 
@@ -88,7 +85,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     Pressure_Ref      = flt_M*flt_M*atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
   }
   
-  if(rank == MASTER_NODE)
+  if(rank == MASTER_NODE && !AD_Mode)
     cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
 
   /*---Perform search on domain to determine where line intersects boundary---*/
@@ -119,7 +116,7 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     signal.p_prime[iPhi] = NULL;
   }
     
-  AD_END_PASSIVE
+  if(AD_Mode) AD::StartRecording();
 
   /*---Interpolate pressures along line---*/
   if(rank == MASTER_NODE)
@@ -223,7 +220,9 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
   }
 
   /*---Initialize sensitivities---*/
-  if(config->GetAD_Mode()){
+  dJdU = NULL;
+  dJdX = NULL;
+  if(AD_Mode){
     
     dJdU = new su2double**[ray_N_phi];
     dJdX = new su2double**[ray_N_phi];
@@ -257,6 +256,8 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
     if (rank==MASTER_NODE) cout << "Sensitivities initialized." << endl;
     
   }
+    
+  if(rank == MASTER_NODE) cout << "ABE initialized." << endl;
 
 }
 
@@ -265,16 +266,16 @@ CBoom_AugBurgers::~CBoom_AugBurgers(void){
   /*---Clear up memory from dJ/dU and dJ/dX---*/
   if(dJdU != NULL){
     for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-      for (unsigned short i = 0; i < nDim+3; i++){
-        if(dJdU[iPhi][i] != NULL) delete [] dJdU[iPhi][i];
+      if(dJdU[iPhi] != NULL){
+        for (unsigned short i = 0; i < nDim+3; i++){
+          if(dJdU[iPhi][i] != NULL) delete [] dJdU[iPhi][i];
+        }
+        for (unsigned short i = 0; i < nDim; i++){
+          if(dJdX[iPhi][i] != NULL) delete [] dJdX[iPhi][i];
+        }
+        delete [] dJdU[iPhi];
+        delete [] dJdX[iPhi];
       }
-      for (unsigned short i = 0; i < nDim; i++){
-        if(dJdX[iPhi][i] != NULL) delete [] dJdX[iPhi][i];
-      }
-    
-      if(dJdU[iPhi] != NULL) delete [] dJdU[iPhi];
-      if(dJdX[iPhi] != NULL) delete [] dJdX[iPhi];
-        
     }
     delete [] dJdU;
     delete [] dJdX;
@@ -782,8 +783,9 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   }
 
   /*---Register coordinates as input for adjoint computation---*/
-  if (config->GetAD_Mode()){
-    for(jNode = 0; jNode < nNode_list; jNode++){
+  if (AD_Mode){
+    for(iPoint = 0; iPoint < nNode_list; iPoint++){
+      jNode = jNode_list[iPoint];
       for(iDim = 0; iDim < nDim; iDim++){
         AD::RegisterInput(geometry->node[jNode]->GetCoord()[iDim] );
       }
@@ -844,7 +846,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     TKE = 0.0;
 
     /*---Register conservative variables as input for adjoint computation---*/
-    if (config->GetAD_Mode()){
+    if (AD_Mode){
       AD::RegisterInput(rho );
       AD::RegisterInput(rho_ux );
       AD::RegisterInput(rho_uy );
@@ -1189,6 +1191,85 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 }
 
+void CBoom_AugBurgers::SetKindSens(unsigned short kind_sensitivity){
+  kind_sens = kind_sensitivity;
+    if(kind_sens == mesh_sens){      cout << endl; cout << "Computing mesh sensitivity." << endl;}
+    else if(kind_sens == flow_sens){ cout << endl; cout << "Computing flow sensitivity." << endl;}
+}
+
+void CBoom_AugBurgers::Run(CConfig *config){
+    
+  int rank = SU2_MPI::GetRank();
+    
+  if(rank == MASTER_NODE){
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+      cout << "Propagating signal for phi = " << ray_phi[iPhi] << ". " << endl;
+      PropagateSignal(iPhi);
+    }
+  }
+    
+  if(rank == MASTER_NODE) cout << "Propagation complete." << endl;
+    
+  su2double Objective_Function = 0.0;
+  if (rank == MASTER_NODE){
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+      Objective_Function += PLdB[iPhi]/su2double(ray_N_phi); // Normalize by number of propagated signals
+    }
+  }
+    
+  /*---Write boom strength metrics to file---*/
+  if (rank == MASTER_NODE){
+    ofstream sigFile;
+    sigFile.precision(15);
+    sigFile.open("boomSU2", ios::out);
+    sigFile << "Objective_Function= " << Objective_Function << endl;
+    sigFile.close();
+  }
+    
+  /*---Extract sensitivities for discrete adjoint---*/
+  if(AD_Mode){
+    if (rank==MASTER_NODE){
+      SU2_TYPE::SetDerivative(Objective_Function,1.0);
+    }else{
+      SU2_TYPE::SetDerivative(Objective_Function,0.0);
+    }
+    AD::StopRecording();
+    AD::ComputeAdjoint();
+        
+    if (rank==MASTER_NODE) cout<<"Finished computing boom adjoint."<<endl;
+        
+    su2double extracted_derivative;
+      
+    if(kind_sens == mesh_sens){
+      /*---Mesh sensitivities---*/
+      for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        for(unsigned int iSig=0; iSig<nPointID[iPhi]; iSig++){
+          for(unsigned short i =0; i< nDim; i++){
+            dJdX[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
+          }
+        }
+      }
+    }
+      
+    if(kind_sens == flow_sens){
+      /*---Flow sensitivities---*/
+      for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        for(unsigned int iSig=0; iSig<nPointID[iPhi]; iSig++){
+          for(unsigned short i =0; i< nDim+3; i++){
+            dJdU[iPhi][i][iSig]=SU2_TYPE::GetDerivative(extracted_derivative);
+          }
+        }
+      }
+    }
+        
+    if(rank==MASTER_NODE) cout<<"Finished extracting derivatives."<<endl;
+        
+    /*---Write sensitivities to file---*/
+    WriteSensitivities();
+    
+  }
+}
+
 void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
   unsigned long iIter = 0;
@@ -1208,10 +1289,12 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
   }
 
 
-  cout.width(5); cout << iIter;
-  cout.width(12); cout.precision(6); cout << ray_z;
-  cout.width(12); cout.precision(6); cout << p_peak << endl;
-  cout << "Signal propagated in " << iIter << " iterations." << endl;
+  if(!AD_Mode){
+    cout.width(5); cout << iIter;
+    cout.width(12); cout.precision(6); cout << ray_z;
+    cout.width(12); cout.precision(6); cout << p_peak << endl;
+    cout << "Signal propagated in " << iIter << " iterations." << endl;
+  }
 
   WriteGroundPressure(iPhi);
   if(Kind_Boom_Cost==BOOM_LOUD){
@@ -1264,7 +1347,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     }
 
     M_a = p_peak/(rho0*pow(c0,2));
-    cout << "Acoustic Mach number: " << M_a << endl;
+    if(!AD_Mode) cout << "Acoustic Mach number: " << M_a << endl;
 
   	for(unsigned long i = 0; i < signal.len[iPhi]; i++){
       signal.t[i]       = (signal.x[iPhi][i]-signal.x[iPhi][0])/flt_U;
@@ -1282,17 +1365,19 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
     CreateInitialRayTube(iPhi);
 
     /*---Initial signal---*/
-    ofstream sigFile;
-    char filename [64];
-    SPRINTF (filename, "nearfield_%d.dat", SU2_TYPE::Int(iPhi));
-    sigFile.precision(15);
-    sigFile.open(filename, ios::out);
-    for(int j = 0; j < signal.len[iPhi]; j++){
-      sigFile << signal.tau[j]/w0 << "\t" << signal.P[j] << endl;
-    }
-    sigFile.close();
+    if(!AD_Mode){
+      ofstream sigFile;
+      char filename [64];
+      SPRINTF (filename, "nearfield_%d.dat", SU2_TYPE::Int(iPhi));
+      sigFile.precision(15);
+      sigFile.open(filename, ios::out);
+      for(int j = 0; j < signal.len[iPhi]; j++){
+        sigFile << signal.tau[j]/w0 << "\t" << signal.P[j] << endl;
+      }
+      sigFile.close();
 
-    cout << " Iter" << "        z[m]" << "   p_max[Pa]" << endl;
+      cout << " Iter" << "        z[m]" << "   p_max[Pa]" << endl;
+    }
 
   }
 
@@ -1332,7 +1417,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   AD::StartRecording();
 
   /*--- Output some information about the propagation ---*/
-  if(iIter%50 == 0){
+  if((!AD_Mode) && (iIter%50 == 0)){
     cout.width(5); cout << iIter;
     cout.width(12); cout.precision(6); cout << ray_z;
     cout.width(12); cout.precision(6); cout << p_peak << endl;
@@ -1430,9 +1515,11 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
     }
   }
 
-  cout << "Signal interpolated and padded, now contains " << signal.len[iPhi] << " points." << endl;
-  cout << "Length scale of waveform = " << scale_L << " m." << endl;
-  cout << "Sample frequency = " << fs << " Hz." << endl;
+  if(!AD_Mode){
+    cout << "Signal interpolated and padded, now contains " << signal.len[iPhi] << " points." << endl;
+    cout << "Length scale of waveform = " << scale_L << " m." << endl;
+    cout << "Sample frequency = " << fs << " Hz." << endl;
+  }
 
   delete [] xtmp;
   delete [] ptmp;
@@ -1854,7 +1941,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
 
   /*--- Upsample if necessary ---*/
   if(fs < 29000.){ // Nyquist criterion for Mark VII
-    cout << "Upsampling signal." << endl;
+    if(!AD_Mode) cout << "Upsampling signal." << endl;
 
     /*--- Zero-fill signal ---*/
     N = ceil(29000./fs);
@@ -1878,16 +1965,18 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
     dtau /= N;
 
     /*---Write upsampled signal---*/
-    ofstream sigFile;
-    char filename [64];
-    SPRINTF (filename, "ground_sinc_%d.dat", SU2_TYPE::Int(iPhi));
-    sigFile.precision(15);
-    sigFile.open(filename, ios::out);
-    if(iPhi == 0) sigFile << "# phi, T, p" << endl;
-    for(int j = 0; j < len_new; j++){
-      sigFile << su2double(j)*dtau/w0 << "\t" << ptmp[j]*p0 << endl;
+    if(!AD_Mode){
+      ofstream sigFile;
+      char filename [64];
+      SPRINTF (filename, "ground_sinc_%d.dat", SU2_TYPE::Int(iPhi));
+      sigFile.precision(15);
+      sigFile.open(filename, ios::out);
+      if(iPhi == 0) sigFile << "# phi, T, p" << endl;
+      for(int j = 0; j < len_new; j++){
+        sigFile << su2double(j)*dtau/w0 << "\t" << ptmp[j]*p0 << endl;
+      }
+      sigFile.close();
     }
-    sigFile.close();
 
   }
   else{
@@ -1899,7 +1988,7 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   }
 
   /*-- Zero-pad signal ---*/
-  cout << "Zero-padding signal." << endl;
+  if(!AD_Mode) cout << "Zero-padding signal." << endl;
   m_pow_2  = ceil(log(su2double(len_new))/log(2.)); // Next power of 2 (for FFT)
   n_sample = pow(2,m_pow_2);
   w        = new su2double[n_sample/2];
@@ -1915,10 +2004,10 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   delete [] ptmp;
 
   /*--- Compute frequency domain signal ---*/
-  cout << "Performing Fourier Transform." << endl;
+  if(!AD_Mode) cout << "Performing Fourier Transform." << endl;
   FFT(m_pow_2, p_of_t, p_of_w);
 
-  cout << "Interpolating signal at band edges." << endl;
+  if(!AD_Mode) cout << "Interpolating signal at band edges." << endl;
   n_sample = n_sample/2;
   wtmp = new su2double[n_sample+42];
   ptmp = new su2double[n_sample+42];
@@ -1952,8 +2041,8 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
   MergeSort(wtmp, ptmp, 0, n_sample-1);
 
   /*--- Compute 1/3-oct band energies and pressure levels ---*/
-  cout << "Computing 1/3-oct band pressure levels." << endl;
-  cout << " Band" << "      E[Pa^2*s]" << endl;
+  if(!AD_Mode) cout << "Computing 1/3-oct band pressure levels." << endl;
+  if(!AD_Mode) cout << " Band" << "      E[Pa^2*s]" << endl;
 
   k = 0;
   for(unsigned short j = 1; j < n_sample; j++){
@@ -1968,14 +2057,18 @@ void CBoom_AugBurgers::PerceivedLoudness(unsigned short iPhi){
       E_band[j] += 0.5*(ptmp[k]+ptmp[k+1])*(wtmp[k+1]-wtmp[k]);
       k++;
     }
-    cout.width(5); cout << j+1;
-    cout.width(15); cout.precision(6); cout << E_band[j] << endl;
+      
+    if(!AD_Mode){
+      cout.width(5); cout << j+1;
+      cout.width(15); cout.precision(6); cout << E_band[j] << endl;
+    }
+      
     E_band[j] /= 0.07;  // Critical time of human ear is 0.07 s (Shepherd, 1991)
     SPL_band[j] = 10.*log10(E_band[j]/pow(p_ref,2.)) - 3.0;
   }
 
   /*--- Use band pressure levels to compute perceived loudness ---*/
-  cout << "Computing perceived loudness (MarkVII)." << endl;
+  if(!AD_Mode) cout << "Computing perceived loudness (MarkVII)." << endl;
   MarkVII(iPhi, SPL_band, fc, n_band);
 
   /*--- Clean up ---*/
@@ -2236,7 +2329,7 @@ void CBoom_AugBurgers::MarkVII(unsigned short iPhi, su2double *SPL_band, su2doub
 
 void CBoom_AugBurgers::AcousticEnergy(unsigned short iPhi){
 
-  cout << "Comupting acoustic energy." << endl;
+  if(!AD_Mode) cout << "Computing acoustic energy." << endl;
 
   PLdB[iPhi] = 0.;
   for(int j = 1; j < signal.len[iPhi]; j++){
@@ -2269,10 +2362,9 @@ void CBoom_AugBurgers::WriteGroundPressure(unsigned short iPhi){
   sigFile.close();
 }
 
-void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
+void CBoom_AugBurgers::WriteSensitivities(){
   unsigned long iVar, iSig, Max_nPointID, nVar, Global_Index, Total_Index;
   ofstream Boom_AdjointFile;
-  unsigned short wrt_mesh = 0, wrt_flow = 1;
 
   int rank = 0, iProcessor, nProcessor = 1;
   rank = SU2_MPI::GetRank();
@@ -2285,11 +2377,11 @@ void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
   /*--- First write flow sensitivities ---*/
   if(rank == MASTER_NODE){
     Boom_AdjointFile.precision(15);
-    if(kind_sensitivity == wrt_mesh){
+    if(kind_sens == mesh_sens){
       Boom_AdjointFile.open("Adj_Boom_dJdX.dat", ios::out);
       nVar = nDim;
     }
-    else if(kind_sensitivity == wrt_flow){
+    else if(kind_sens == flow_sens){
       Boom_AdjointFile.open("Adj_Boom_dJdU.dat", ios::out);
       nVar = nDim+3;
     }
@@ -2323,8 +2415,8 @@ void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
     /*--- Fill send buffers with dJ/dX or dJ/dU ---*/
     for(iVar = 0; iVar < nVar; iVar++){
       for(iSig = 0; iSig < nPointID[iPhi]; iSig++){
-        if(kind_sensitivity == wrt_mesh)      Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdX[iPhi][iVar][iSig];
-        else if(kind_sensitivity == wrt_flow) Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
+        if(kind_sens == mesh_sens)      Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdX[iPhi][iVar][iSig];
+        else if(kind_sens == flow_sens) Buffer_Send_dJdU[iVar*nPointID[iPhi]+iSig] = dJdU[iPhi][iVar][iSig];
       }
     }
 
@@ -2365,8 +2457,7 @@ void CBoom_AugBurgers::WriteSensitivities(unsigned short kind_sensitivity){
 
   }
 
-  if (rank == MASTER_NODE)
-    cout << "\nFinished writing boom adjoint file." << endl;
+  if (rank == MASTER_NODE) cout << "\nFinished writing boom adjoint file." << endl;
 
 }
 
