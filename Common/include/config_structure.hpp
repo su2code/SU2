@@ -472,10 +472,8 @@ private:
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
-  Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
@@ -704,17 +702,13 @@ private:
   SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
   AdjStructure_FileName,         /*!< \brief Structure variables output file. */
   AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
-  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
   SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
-  Wave_FileName,					/*!< \brief Wave variables output file. */
   Heat_FileName,					/*!< \brief Heat variables output file. */
-  AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
-  Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
   Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
@@ -844,7 +838,6 @@ private:
   bool RampAndRelease;        /*!< \brief option for ramp load and release */
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
-  su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
@@ -1960,12 +1953,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void);
-  
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetWaveSpeed(void);
   
   /*!
    * \brief Get the wave speed.
@@ -4090,15 +4077,6 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_TimeIntScheme_Wave(void);
-  
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
   /*!
@@ -4109,15 +4087,6 @@ public:
    * \return Kind of time stepping for the heat equation.
    */
   unsigned short GetKind_TimeStep_Heat(void);
-
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Poisson(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5135,37 +5104,13 @@ public:
    * \brief Get the name of the file with the structure variables.
    * \return Name of the file with the structure variables.
    */
-  string GetSurfWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
   string GetSurfHeat_FileName(void);
   
   /*!
    * \brief Get the name of the file with the wave variables.
    * \return Name of the file with the wave variables.
    */
-  string GetWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the wave variables.
-   * \return Name of the file with the wave variables.
-   */
   string GetHeat_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint wave variables.
-   * \return Name of the file with the adjoint wave variables.
-   */
-  string GetAdjWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the wave variables.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetRestart_WaveFileName(void);
   
   /*!
    * \brief Get the name of the restart file for the heat variables.
