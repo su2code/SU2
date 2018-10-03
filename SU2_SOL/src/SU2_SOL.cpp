@@ -532,6 +532,7 @@ int main(int argc, char *argv[]) {
       }
 
       for(unsigned short kind_sens = 0; kind_sens < 2; kind_sens++){
+        AD::Reset();
         CBoom_AugBurgers *solver_boom = new CBoom_AugBurgers(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
         solver_boom->SetKindSens(kind_sens);
         solver_boom->Run(config_container[ZONE_0]);

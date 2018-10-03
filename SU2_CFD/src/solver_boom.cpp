@@ -1193,8 +1193,11 @@ void CBoom_AugBurgers::HumidityISO(su2double& z0, su2double& p_inf, su2double& T
 
 void CBoom_AugBurgers::SetKindSens(unsigned short kind_sensitivity){
   kind_sens = kind_sensitivity;
+  int rank = SU2_MPI::GetRank();
+  if(rank == MASTER_NODE){
     if(kind_sens == mesh_sens){      cout << endl; cout << "Computing mesh sensitivity." << endl;}
     else if(kind_sens == flow_sens){ cout << endl; cout << "Computing flow sensitivity." << endl;}
+  }
 }
 
 void CBoom_AugBurgers::Run(CConfig *config){
@@ -1261,6 +1264,8 @@ void CBoom_AugBurgers::Run(CConfig *config){
         }
       }
     }
+      
+    AD::ClearAdjoints();
         
     if(rank==MASTER_NODE) cout<<"Finished extracting derivatives."<<endl;
         
@@ -2373,18 +2378,16 @@ void CBoom_AugBurgers::WriteSensitivities(){
   unsigned long Buffer_Send_nPointID[1], *Buffer_Recv_nPointID = NULL;
 
   if(rank == MASTER_NODE) Buffer_Recv_nPointID = new unsigned long [nProcessor];
+    
+  /*--- Determine number of variables based on sensitivity mode ---*/
+  if(kind_sens == mesh_sens) nVar = nDim;
+  if(kind_sens == flow_sens) nVar = nDim+3;
 
-  /*--- First write flow sensitivities ---*/
+  /*--- Open proper file ---*/
   if(rank == MASTER_NODE){
     Boom_AdjointFile.precision(15);
-    if(kind_sens == mesh_sens){
-      Boom_AdjointFile.open("Adj_Boom_dJdX.dat", ios::out);
-      nVar = nDim;
-    }
-    else if(kind_sens == flow_sens){
-      Boom_AdjointFile.open("Adj_Boom_dJdU.dat", ios::out);
-      nVar = nDim+3;
-    }
+    if(kind_sens == mesh_sens)      Boom_AdjointFile.open("Adj_Boom_dJdX.dat", ios::out);
+    else if(kind_sens == flow_sens) Boom_AdjointFile.open("Adj_Boom_dJdU.dat", ios::out);
   }
 
   for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
