@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for creating the sparse matrices-by-blocks.
  *        The subroutines and functions are in the <i>matrix_structure.cpp</i> file.
  * \author F. Palacios, A. Bueno, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -47,6 +47,10 @@
 #include "config_structure.hpp"
 #include "geometry_structure.hpp"
 #include "vector_structure.hpp"
+
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
 
 using namespace std;
 
@@ -93,7 +97,17 @@ private:
   **yVector, **zVector, **rVector, *LFBlock,
   *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
   unsigned long max_nElem;
-  
+
+#ifdef HAVE_MKL
+  void * MatrixMatrixProductJitter;                   		/*!< \brief Jitter handle for MKL JIT based GEMM. */
+  dgemm_jit_kernel_t MatrixMatrixProductKernel;               	/*!< \brief MKL JIT based GEMM kernel. */
+  void * MatrixVectorProductJitterBetaZero;           		/*!< \brief Jitter handle for MKL JIT based GEMV. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaZero;       	/*!< \brief MKL JIT based GEMV kernel. */
+  void * MatrixVectorProductJitterBetaOne;            		/*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
+  dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;        	/*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
+  bool useMKL;
+#endif
+
 public:
   
   /*!

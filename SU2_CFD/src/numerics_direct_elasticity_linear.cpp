@@ -2,7 +2,7 @@
  * \file numerics_direct_elasticity_linear.cpp
  * \brief This file contains the routines for setting the FEM elastic structural problem.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -52,17 +52,6 @@ CFEALinearElasticity::CFEALinearElasticity(unsigned short val_nDim, unsigned sho
     for (iVar = 0; iVar < 8; iVar++) nodalDisplacement[iVar] = new su2double[nDim];
   }
 
-  /*--- Initialize values for the material model considered ---*/
-  E   = E_i[0];  Nu  = Nu_i[0];
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-  Kappa  = Lambda + (2/3)*Mu;
-  /*-----------------------------------------------------------*/
-
-  /*--- If it is linear elasticity, D is constant along the calculations ---*/
-
-  Compute_Constitutive_Matrix();
-
 }
 
 CFEALinearElasticity::~CFEALinearElasticity(void) {
@@ -79,7 +68,12 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
 
   su2double Weight, Jac_X;
 
-  su2double AuxMatrix[3][6];
+  su2double AuxMatrix[3][6], *res_aux = new su2double[nVar];
+  
+  /*--- Set element properties and recompute the constitutive matrix, this is needed
+        for multiple material cases and for correct differentiation ---*/
+  SetElement_Properties(element, config);
+  Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
 
@@ -188,10 +182,29 @@ void CFEALinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig *co
     }
 
   }
+  
+  // compute residual
+  for(iNode = 0; iNode<nNode; ++iNode)
+  {
+    for(jNode = 0; jNode<nNode; ++jNode)
+    {
+      su2double *Kab = element->Get_Kab(iNode,jNode);
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+          res_aux[iVar] = 0.0;
+          for (jVar = 0; jVar < nVar; jVar++)
+            res_aux[iVar] += Kab[iVar*nVar+jVar]*
+              (element->GetCurr_Coord(jNode,jVar)-element->GetRef_Coord(jNode,jVar));
+      }
+      element->Add_Kt_a(res_aux,iNode);
+    }
+  }
+  
+  delete[] res_aux;
 }
 
 
-void CFEALinearElasticity::Compute_Constitutive_Matrix(void) {
+void CFEALinearElasticity::Compute_Constitutive_Matrix(CElement *element_container, CConfig *config) {
 
      /*--- Compute the D Matrix (for plane stress and 2-D)---*/
 
@@ -236,6 +249,11 @@ void CFEALinearElasticity::Compute_Averaged_NodalStress(CElement *element, CConf
 
   /*--- Auxiliary vector ---*/
   su2double Strain[6], Stress[6];
+  
+  /*--- Set element properties and recompute the constitutive matrix, this is needed
+        for multiple material cases and for correct differentiation ---*/
+  SetElement_Properties(element, config);
+  Compute_Constitutive_Matrix(element, config);
 
   /*--- Initialize auxiliary matrices ---*/
 

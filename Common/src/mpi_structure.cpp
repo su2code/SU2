@@ -2,7 +2,7 @@
  * \file mpi_structure.cpp
  * \brief Main subroutines for the mpi structures.
  * \author T. Albring
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -40,6 +40,12 @@
 int CBaseMPIWrapper::Rank = 0;
 int CBaseMPIWrapper::Size = 1;
 CBaseMPIWrapper::Comm CBaseMPIWrapper::currentComm = MPI_COMM_WORLD;
+
+#ifdef HAVE_MPI
+int  CBaseMPIWrapper::MinRankError;
+bool CBaseMPIWrapper::winMinRankErrorInUse = false;
+CBaseMPIWrapper::Win CBaseMPIWrapper::winMinRankError;
+#endif
 
 #ifdef HAVE_MPI
 #if defined CODI_REVERSE_TYPE || defined CODI_FORWARD_TYPE

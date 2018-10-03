@@ -2,7 +2,7 @@
  * \file variable_structure.inl
  * \brief In-Line subroutines of the <i>variable_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -249,6 +249,8 @@ inline void CVariable::SetSensor(su2double val_sensor, unsigned short val_iSpeci
 
 inline su2double CVariable::GetDensity(void) {  return 0; }
 
+inline su2double CVariable::GetDensity_Old(void) {  return 0; }
+
 inline su2double CVariable::GetDensity(unsigned short val_iSpecies) {  return 0; }
 
 inline su2double CVariable::GetEnergy(void) { return 0; }
@@ -454,6 +456,10 @@ inline void CVariable::SetSpecificHeatCv(su2double Cv) { }
 inline bool CVariable::SetVorticity(void) { return false; }
 
 inline bool CVariable::SetStrainMag(void) { return false; }
+
+inline void CVariable::SetTauWall(su2double val_tau_wall) { }
+
+inline su2double CVariable::GetTauWall(void) { return 0; }
 
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
@@ -903,6 +909,9 @@ inline void CNSVariable::Setdktdrho_T(su2double dktdrho_T) {
 inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
   Secondary[7] = dktdT_rho;
 }
+inline void CNSVariable::SetTauWall(su2double val_tau_wall) { Tau_Wall = val_tau_wall; }
+
+inline su2double CNSVariable::GetTauWall(void) { return Tau_Wall; }
 
 inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
 
@@ -941,6 +950,8 @@ inline void CAdjNSVariable::SetVelSolutionOldDVector(void) { for (unsigned short
 inline void CAdjNSVariable::SetVelSolutionDVector(void) { for (unsigned short iDim = 0; iDim < nDim; iDim++) Solution[iDim+1] = ForceProj_Vector[iDim]; };
 
 inline su2double CIncEulerVariable::GetDensity(void) { return Primitive[nDim+2]; }
+
+inline su2double CIncEulerVariable::GetDensity_Old(void) { return Density_Old; }
 
 inline su2double CIncEulerVariable::GetBetaInc2(void) { return Primitive[nDim+3]; }
 
@@ -1007,18 +1018,6 @@ inline void CIncEulerVariable::SetLimiter_Primitive(unsigned short val_var, su2d
 inline su2double **CIncEulerVariable::GetGradient_Primitive(void) { return Gradient_Primitive; }
 
 inline su2double *CIncEulerVariable::GetLimiter_Primitive(void) { return Limiter_Primitive; }
-
-inline void CIncEulerVariable::SetWindGust( su2double* val_WindGust) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    WindGust[iDim] = val_WindGust[iDim];}
-
-inline su2double* CIncEulerVariable::GetWindGust() { return WindGust;}
-
-inline void CIncEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
-  for (unsigned short iDim = 0; iDim < nDim+1; iDim++)
-    WindGustDer[iDim] = val_WindGustDer[iDim];}
-
-inline su2double* CIncEulerVariable::GetWindGustDer() { return WindGustDer;}
 
 inline void CIncEulerVariable::SetSpecificHeatCp(su2double val_Cp) {
   Primitive[nDim+7] = val_Cp;
@@ -1281,10 +1280,6 @@ inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { 
 inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density;}
 
 inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
-
-inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
-
-inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 

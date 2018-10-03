@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -165,6 +165,17 @@ def main():
     poiseuille.tol       = 0.00001
     test_list.append(poiseuille)
 
+    # 2D Poiseuille flow (inlet profile file)
+    poiseuille_profile           = TestCase('poiseuille_profile')
+    poiseuille_profile.cfg_dir   = "navierstokes/poiseuille"
+    poiseuille_profile.cfg_file  = "profile_poiseuille.cfg"
+    poiseuille_profile.test_iter = 10
+    poiseuille_profile.test_vals = [-12.494687, -7.712471, -0.000000, 2.085796] #last 4 columns
+    poiseuille_profile.su2_exec  = "SU2_CFD"
+    poiseuille_profile.timeout   = 1600
+    poiseuille_profile.tol       = 0.00001
+    test_list.append(poiseuille_profile)
+
     ##########################
     ### Compressible RANS  ###
     ##########################
@@ -251,7 +262,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.378804, -8.130405, 0.000051, 0.055764] #last 4 columns
+    propeller.test_vals = [-3.378876, -8.397629, 0.000047, 0.055591] #last 4 columns
     propeller.su2_exec  = "SU2_CFD"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
@@ -790,7 +801,7 @@ def main():
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
     cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
     cht_incompressible.test_iter = 10
-    cht_incompressible.test_vals = [0.000000, 0.000000, -7.992570, -1948.623994] #last 4 columns
+    cht_incompressible.test_vals = [0.000000, 0.000000, -7.814182, -3975.414972] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
     cht_incompressible.tol       = 0.00001
@@ -834,6 +845,19 @@ def main():
     
     pass_list.append(naca0012_def.run_def())
     test_list.append(naca0012_def)
+    
+    # Inviscid NACA0012 based on SURFACE_FILE input (surface_bump.dat)
+    naca0012_def_file            = TestCase('naca0012_def_file')
+    naca0012_def_file.cfg_dir   = "deformation/naca0012"
+    naca0012_def_file.cfg_file  = "surface_file_NACA0012.cfg"
+    naca0012_def_file.test_iter = 10
+    naca0012_def_file.test_vals = [0.00344658] #residual
+    naca0012_def_file.su2_exec  = "mpirun -n 2 SU2_DEF"
+    naca0012_def_file.timeout   = 1600
+    naca0012_def_file.tol       = 1e-8
+    
+    pass_list.append(naca0012_def_file.run_def())
+    test_list.append(naca0012_def_file)
     
     # RAE2822 (mixed tris + quads)
     rae2822_def            = TestCase('rae2822_def')

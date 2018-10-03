@@ -2,7 +2,7 @@
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -86,10 +86,7 @@ int main(int argc, char *argv[]) {
    and perform all the preprocessing. ---*/
 
   if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
-        config->GetKind_Solver() == DISC_ADJ_FEM ||
-        config->GetKind_Solver() == POISSON_EQUATION ||
-        config->GetKind_Solver() == WAVE_EQUATION ||
-        config->GetKind_Solver() == HEAT_EQUATION) ) {
+        config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
