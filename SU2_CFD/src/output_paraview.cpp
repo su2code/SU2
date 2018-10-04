@@ -107,13 +107,7 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
       fileroot = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION)
-    fileroot = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == POISSON_EQUATION)
-    fileroot = config->GetStructure_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     fileroot = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -124,8 +118,6 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
   }
   
   strcpy (cstr, fileroot.c_str());
-  if (Kind_Solver == POISSON_EQUATION)
-    strcpy (cstr, config->GetStructure_FileName().c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
@@ -223,14 +215,8 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     else
       filename = config->GetAdjStructure_FileName().c_str();
   }
-  
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
 
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -241,8 +227,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   }
 
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
-    
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
@@ -1214,17 +1198,11 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
@@ -2018,13 +1996,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       filename = config->GetStructure_FileName().c_str();
   }
 
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
-
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -2035,8 +2007,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
-
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
