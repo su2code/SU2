@@ -69,6 +69,7 @@ install:
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
     - ./bootstrap
+    - autoreconf -f -i
     - $CONFIGURE_COMMAND
     - make -j 4
     - make install
