@@ -5660,8 +5660,6 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   unsigned short nVar_Flow = 0, nVar_Struct = 0;
   RecordingState = 0;
   CurrentRecording = 0;
-  
-  filterCrossTerm = false;
 
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
@@ -5826,20 +5824,54 @@ void CDiscAdjFSIDriver::Run( ) {
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   unsigned short iZone;
+  bool BGS_Converged = false;
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long FSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(FSIIter);
+  unsigned long IntIter  = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
+  unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
+  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
+
+  ofstream myfile_struc, myfile_flow, myfile_geo;
+
 
   Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
 
-  switch (Kind_Objective_Function){
-  case FLOW_OBJECTIVE_FUNCTION:
-    Iterate_Block_FlowOF(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-    break;
-  case FEM_OBJECTIVE_FUNCTION:
-    Iterate_Block_StructuralOF(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-    break;
+
+  for (iFSIIter = 0; iFSIIter < nFSIIter && !BGS_Converged; iFSIIter++){
+
+    if (rank == MASTER_NODE){
+      cout << endl << "                    ****** BGS ITERATION ";
+      cout << iFSIIter;
+      cout << " ******" << endl;
+    }
+
+    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
+    
+    /*--- Start with structural terms if OF is based on displacements ---*/
+
+    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION)
+      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+
+    /*--- Iterate fluid (including cross term) ---*/
+
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
+
+    /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
+
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
+
+    /*--- Compute mesh cross term (dM / dSv) ---*/
+
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
+    
+    /*--- End with structural terms if OF is based on fluid variables ---*/
+    
+    if (Kind_Objective_Function == FLOW_OBJECTIVE_FUNCTION)
+      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+
+    /*--- Check convergence of the BGS method ---*/
+    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
   }
+
 
   Postprocess(ZONE_FLOW, ZONE_STRUCT);
 
@@ -6246,6 +6278,7 @@ void CDiscAdjFSIDriver::Iterate_Direct(unsigned short ZONE_FLOW, unsigned short 
 void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+  bool frozen_visc = config_container[ZONE_FLOW]->GetFrozen_Visc_Disc();
 
   /*-----------------------------------------------------------------*/
   /*------------------- Set Dependency on Geometry ------------------*/
@@ -6257,7 +6290,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
 
   solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0],solver_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
-  if(turbulent){
+  if (turbulent && !frozen_visc) {
     solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0], solver_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW], MESH_0);
     solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW]);
   }
@@ -6284,6 +6317,7 @@ void CDiscAdjFSIDriver::Fluid_Iteration_Direct(unsigned short ZONE_FLOW, unsigne
 void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT) {
 
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+  bool frozen_visc = config_container[ZONE_FLOW]->GetFrozen_Visc_Disc();
 
   /*-----------------------------------------------------------------*/
   /*---------- Set Dependencies on Geometry and Flow ----------------*/
@@ -6295,11 +6329,9 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
   solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW]);
 
-  if(!filterCrossTerm)
   solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0],solver_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
-  if(!filterCrossTerm)
-  if(turbulent){
+  if (turbulent && !frozen_visc) {
     solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0], solver_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW], MESH_0);
     solver_container[ZONE_FLOW][INST_0][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW]);
   }
@@ -6424,20 +6456,20 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
 
   AD::Reset();
 
-//  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
-//
-//    /*--- Clear indices ---*/
-//
-//    PrepareRecording(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-//
-//    /*--- Clear indices of coupling variables ---*/
-//
-//    SetDependencies(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-//
-//    /*--- Run one iteration while tape is passive - this clears all indices ---*/
-//    Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
-//
-//  }
+  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+
+    /*--- Clear indices ---*/
+
+    PrepareRecording(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+    /*--- Clear indices of coupling variables ---*/
+
+    SetDependencies(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+    /*--- Run one iteration while tape is passive - this clears all indices ---*/
+    Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
+
+  }
 
   /*--- Prepare for recording ---*/
 
@@ -6504,25 +6536,28 @@ void CDiscAdjFSIDriver::PrepareRecording(unsigned short ZONE_FLOW,
 void CDiscAdjFSIDriver::RegisterInput(unsigned short ZONE_FLOW,
                                                unsigned short ZONE_STRUCT,
                                                unsigned short kind_recording){
-
+  
   /*--- Register flow variables ---*/
-  if ((kind_recording == FLOW_CONS_VARS) ||
-      (kind_recording == FLOW_CROSS_TERM)) {
+  if (kind_recording == FLOW_CONS_VARS) {
     iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, INST_0, kind_recording);
   }
 
   /*--- Register geometry variables ---*/
-  if ((kind_recording == MESH_COORDS) ||
-      (kind_recording == GEOMETRY_CROSS_TERM)) {
+  if (kind_recording == MESH_COORDS) {
     iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, INST_0, kind_recording);
   }
-
+  
   /*--- Register structural variables ---*/
-  if ((kind_recording == FEA_DISP_VARS) ||
-      (kind_recording == FEM_CROSS_TERM_GEOMETRY)) {
+  if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
     iteration_container[ZONE_STRUCT][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, INST_0, kind_recording);
   }
 
+  /*--- Register all variables ---*/
+  if (kind_recording == FEA_DISP_VARS) {
+    iteration_container[ZONE_STRUCT][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_STRUCT, INST_0, FEA_DISP_VARS);
+    iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, INST_0, FLOW_CROSS_TERM);
+    iteration_container[ZONE_FLOW][INST_0]->RegisterInput(solver_container, geometry_container, config_container, ZONE_FLOW, INST_0, GEOMETRY_CROSS_TERM);
+  }
 
 }
 
@@ -6546,54 +6581,35 @@ void CDiscAdjFSIDriver::RegisterOutput(unsigned short ZONE_FLOW,
                                                  unsigned short kind_recording){
 
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+  bool frozen_visc = config_container[ZONE_FLOW]->GetFrozen_Visc_Disc();
 
-  /*--- Register the objective function as output of the iteration ---*/
-  /*--- We need to avoid recording it twice for the crossed terms  ---*/
 
-  /*--- Register a flow-type objective function ---*/
+  /*--- Register a flow-type objective function and the conservative variables of the flow as output of the iteration. ---*/
   if ((kind_recording == FLOW_CONS_VARS) ||
       (kind_recording == MESH_COORDS)) {
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->RegisterObj_Func(config_container[ZONE_FLOW]);
-  }
-
-  /*--- The FEM_CROSS_TERM_GEOMETRY evaluates the mesh routines:
-   *--- They don't throw any dependency on the objective function ---*/
-
-  /*--- Register a structural-type objective function ---*/
-  if ((kind_recording == FEA_DISP_VARS) ||
-      (kind_recording == FLOW_CROSS_TERM) ||
-      (kind_recording == GEOMETRY_CROSS_TERM)){
-    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[ZONE_STRUCT]);
-  }
-
-  /*--- Register the conservative variables of the flow as output of the iteration ---*/
-  if ((kind_recording == FLOW_CONS_VARS) ||
-      (kind_recording == MESH_COORDS)) {
 
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[ZONE_FLOW][INST_0][MESH_0],config_container[ZONE_FLOW]);
 
-    if (turbulent){
-      solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-          config_container[ZONE_FLOW]);
+    if (turbulent && !frozen_visc) {
+      solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[ZONE_FLOW][INST_0][MESH_0],config_container[ZONE_FLOW]);
     }
   }
 
-  /*--- Register the displacements of the nodes of the fluid as output of the iteration ---*/
-  if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
 
-    geometry_container[ZONE_FLOW][INST_0][MESH_0]->RegisterOutput_Coordinates(config_container[ZONE_FLOW]);
-
-  }
-
-  /*--- Register the displacements of the structure as output of the iteration ---*/
-  if ((kind_recording == FEA_DISP_VARS) ||
-      (kind_recording == FLOW_CROSS_TERM) ||
-      (kind_recording == GEOMETRY_CROSS_TERM)) {
+  /*--- Register a structural-type objective function and the displacements of the structure as output of the iteration. ---*/
+  if (kind_recording == FEA_DISP_VARS) {
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->RegisterObj_Func(config_container[ZONE_STRUCT]);
 
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->RegisterOutput(geometry_container[ZONE_STRUCT][INST_0][MESH_0],config_container[ZONE_STRUCT]);
-
   }
 
+
+  /*--- The FEM_CROSS_TERM_GEOMETRY evaluates the mesh routines, they do not throw any dependency on the objective function. ---*/
+  /*--- Register the displacements of the fluid nodes as output of the iteration. ---*/
+  if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
+    geometry_container[ZONE_FLOW][INST_0][MESH_0]->RegisterOutput_Coordinates(config_container[ZONE_FLOW]);
+  }
 
 }
 
@@ -6690,65 +6706,45 @@ void CDiscAdjFSIDriver::InitializeAdjoint(unsigned short ZONE_FLOW,
                                                      unsigned short kind_recording){
 
   bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+  bool frozen_visc = config_container[ZONE_FLOW]->GetFrozen_Visc_Disc();
 
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
-  /*--- We need to avoid setting it twice for the crossed terms  ---*/
-
-  /*--- Register a flow-type objective function ---*/
+  /*--- Seed a fluid-type objective function and initialize the adjoints of fluid conservative variables. ---*/
   if ((kind_recording == FLOW_CONS_VARS) ||
       (kind_recording == MESH_COORDS)) {
-    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW]);
-  }
+    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                             config_container[ZONE_FLOW]);
 
-  /*--- Register a structural-type objective function ---*/
-  if ((kind_recording == FEA_DISP_VARS) ||
-      (kind_recording == FLOW_CROSS_TERM) ||
-      (kind_recording == GEOMETRY_CROSS_TERM)){
-    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_STRUCT][INST_0][MESH_0], config_container[ZONE_STRUCT]);
-  }
-
-  /*--- Adjoint of the fluid conservative variables ---*/
-
-  if ((kind_recording == FLOW_CONS_VARS) ||
-      (kind_recording == MESH_COORDS)) {
-
-    /*--- Initialize the adjoints the conservative variables ---*/
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_Output(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                    config_container[ZONE_FLOW]);
-
-    if (turbulent){
+                                                                                config_container[ZONE_FLOW]);
+    if (turbulent && !frozen_visc) {
       solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->SetAdjoint_Output(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                      config_container[ZONE_FLOW]);
+                                                                                  config_container[ZONE_FLOW]);
     }
-
   }
 
-  /*--- Adjoint of the positions of the mesh ---*/
-  if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
-
-    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                            config_container[ZONE_FLOW]);
-
-  }
-
-  /*--- Adjoint of the structural displacements ---*/
-  if ((kind_recording == FEA_DISP_VARS) ||
-      (kind_recording == FLOW_CROSS_TERM) ||
-      (kind_recording == GEOMETRY_CROSS_TERM)) {
-
-    /*--- Initialize the adjoints the conservative variables ---*/
-
+  /*--- Seed a structural-type objective function and initialize the adjoints of structural displacements. ---*/
+  if (kind_recording == FEA_DISP_VARS) {
+    solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->SetAdj_ObjFunc(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
+                                                                              config_container[ZONE_STRUCT]);
+    
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->SetAdjoint_Output(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
-                                                                         config_container[ZONE_STRUCT]);
-
+                                                                                 config_container[ZONE_STRUCT]);
   }
 
+  /*--- Initialize the adjoints of fluid grid nodes. ---*/
+  if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
+    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->SetAdjoint_OutputMesh(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                                    config_container[ZONE_FLOW]);
+  }
 }
 
 void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
                                                   unsigned short ZONE_STRUCT,
                                                   unsigned short kind_recording){
-													  
+
+  bool turbulent = (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS);
+  bool frozen_visc = config_container[ZONE_FLOW]->GetFrozen_Visc_Disc();
+
   /*--- Extract the adjoint of the fluid conservative variables ---*/
 
   if (kind_recording == FLOW_CONS_VARS) {
@@ -6761,7 +6757,7 @@ void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                       config_container[ZONE_FLOW]);
 
-    if (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS) {
+    if (turbulent && !frozen_visc) {
       solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->ExtractAdjoint_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                         config_container[ZONE_FLOW]);
     }
@@ -6791,39 +6787,17 @@ void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->ExtractAdjoint_Variables(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
                                                                                 config_container[ZONE_STRUCT]);
 
-  }
-
-  /*--- Extract the adjoint cross term from the structural problem with respect to the flow variables ---*/
-  if (kind_recording == FLOW_CROSS_TERM) {
-
-    /*--- Extract the adjoints of the conservative input variables and store them for the next iteration ---*/
-    if(!filterCrossTerm) {
     solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_CrossTerm(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                       config_container[ZONE_FLOW]);
 
-    if (config_container[ZONE_FLOW]->GetKind_Solver() == DISC_ADJ_RANS) {
+    if (turbulent && !frozen_visc)
       solver_container[ZONE_FLOW][INST_0][MESH_0][ADJTURB_SOL]->ExtractAdjoint_CrossTerm(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                        config_container[ZONE_FLOW]);
-    }
-    } else
-    {
-      // this is a temporary fix to remove some spurious values in the cross term before a final solution is found
-      // it is implemented here instead of inside ExtractAdjoint_CrossTerm to avoid touching the solver structure
-      unsigned long nPoint = geometry_container[ZONE_FLOW][INST_0][MESH_0]->GetnPoint();
-      unsigned short nVar = solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-      su2double* solution = new su2double[nVar];
-      
-      for (unsigned long iPoint = 0; iPoint < nPoint; ++iPoint)
-      {
-        solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->GetAdjointSolution(solution);
+                                                                                         config_container[ZONE_FLOW]);
 
-        for (unsigned short iVar = 0; iVar < nVar; ++iVar)
-          solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->node[iPoint]->SetCross_Term_Derivative(iVar,
-          solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->node[iPoint]->GetCross_Term_Derivative(iVar)-solution[iVar]);
-      }
-      delete[] solution;
-    }
+    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_CrossTerm_Geometry(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+                                                                                                config_container[ZONE_FLOW]);
   }
+
 
   if (kind_recording == FEM_CROSS_TERM_GEOMETRY) {
 
@@ -6831,21 +6805,9 @@ void CDiscAdjFSIDriver::ExtractAdjoint(unsigned short ZONE_FLOW,
 
     solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->ExtractAdjoint_CrossTerm_Geometry(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
                                                                                 config_container[ZONE_STRUCT]);
-
-  }
-
-
-  if (kind_recording == GEOMETRY_CROSS_TERM) {
-
-    /*--- Extract the adjoints of the geometry input variables and store them for the next iteration ---*/
-
-    solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ExtractAdjoint_CrossTerm_Geometry(geometry_container[ZONE_FLOW][INST_0][MESH_0],
-                                                                                        config_container[ZONE_FLOW]);
-
   }
 
 }
-
 
 
 bool CDiscAdjFSIDriver::CheckConvergence(unsigned long IntIter,
@@ -6970,126 +6932,6 @@ void CDiscAdjFSIDriver::ConvergenceHistory(unsigned long IntIter,
 
     /*--- Set the convergence criteria (only residual possible) ---*/
     output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, ZONE_STRUCT, INST_0);
-
-  }
-
-
-}
-
-void CDiscAdjFSIDriver::Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
-                                                       unsigned short ZONE_STRUCT,
-                                                       unsigned short kind_recording){
-
-  bool BGS_Converged = false;
-
-  unsigned short iZone;
-
-  unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-
-  for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
-
-    if (rank == MASTER_NODE){
-      cout << endl << "                    ****** BGS ITERATION ";
-      cout << iFSIIter;
-      cout << " ******" << endl;
-    }
-
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-
-    /*--- Iterate fluid (including cross term) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
-
-    /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
-
-    /*--- Compute mesh cross term (dM / dSv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
-
-    /*--- Iterate structure first ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
-
-    /*--- Compute cross term (dS / dFv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
-    filterCrossTerm=true;
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
-    filterCrossTerm=false;
-
-    /*--- Compute cross term (dS / dMv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
-
-
-    /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
-
-    if (BGS_Converged) break;
-
-  }
-
-
-}
-
-void CDiscAdjFSIDriver::Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
-                                                              unsigned short ZONE_STRUCT,
-                                                              unsigned short kind_recording){
-
-  bool BGS_Converged = false;
-
-  unsigned short iZone;
-
-  unsigned long iFSIIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-  unsigned long nFSIIter = config_container[ZONE_FLOW]->GetnIterFSI();
-
-  ofstream myfile_struc, myfile_flow, myfile_geo;
-
-  for (iFSIIter = 0; iFSIIter < nFSIIter; iFSIIter++){
-
-    if (rank == MASTER_NODE){
-      cout << endl << "                    ****** BGS ITERATION ";
-      cout << iFSIIter;
-      cout << " ******" << endl;
-    }
-
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetFSIIter(iFSIIter);
-
-    /*--- Iterate structure first ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
-
-    /*--- Compute cross term (dS / dFv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
-    filterCrossTerm=true;
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CROSS_TERM);
-    filterCrossTerm=false;
-
-    /*--- Compute cross term (dS / dMv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, GEOMETRY_CROSS_TERM);
-
-    /*--- Iterate fluid (including cross term) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
-
-    /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
-
-    /*--- Compute mesh cross term (dM / dSv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
-
-
-    /*--- Check convergence of the BGS method ---*/
-    BGS_Converged = BGSConvergence(iFSIIter, ZONE_FLOW, ZONE_STRUCT);
-
-    if (BGS_Converged) break;
 
   }
 
