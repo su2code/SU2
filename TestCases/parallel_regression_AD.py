@@ -196,12 +196,12 @@ def main():
     ### Structural Adjoint          ###
     ###################################
    
-    # Turbulent Cylinder
+    # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-4.883347, -5.185222, -0.000364, -8.708700] #last 4 columns
+    discadj_fea.test_vals = [-4.751576, -4.692029, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
