@@ -37,29 +37,6 @@
 
 #include "../include/interpolation_structure.hpp"
 
-#ifdef HAVE_LAPACK
-template<> void sptrf<double>(char* uplo, int* n, double* ap, int* ipiv, int* info) {
-  return dsptrf_(uplo, n, ap, ipiv, info);
-}
-template<> void sptri<double>(char* uplo, int* n, double* ap, int* ipiv, double* work, int* info) {
-  return dsptri_(uplo, n, ap, ipiv, work, info);
-}
-template<> void symm<double>(char* side, char* uplo, int* m, int* n, double* alpha, double* a,
-                             int* lda, double* b, int* ldb, double* beta, double* c, int* ldc) {
-  return dsymm_(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-}
-template<> void sptrf<float>(char* uplo, int* n, float* ap, int* ipiv, int* info) {
-  return ssptrf_(uplo, n, ap, ipiv, info);
-}
-template<> void sptri<float>(char* uplo, int* n, float* ap, int* ipiv, float* work, int* info) {
-  return ssptri_(uplo, n, ap, ipiv, work, info);
-}
-template<> void symm<float>(char* side, char* uplo, int* m, int* n, float* alpha, float* a,
-                             int* lda, float* b, int* ldb, float* beta, float* c, int* ldc) {
-  return ssymm_(side, uplo, m, n, alpha, a, lda, b, ldb, beta, c, ldc);
-}
-#endif
-
 CInterpolator::CInterpolator(void) {
   
   size = SU2_MPI::GetSize();
@@ -3689,8 +3666,8 @@ void CSymmetricMatrix::CalcInv_sptri()
   int info, *ipiv = new int [sz];
   passivedouble *work = new passivedouble [sz];
 
-  sptrf(&uplo, &sz, val_vec, ipiv, &info);
-  sptri(&uplo, &sz, val_vec, ipiv, work, &info);
+  dsptrf_(&uplo, &sz, val_vec, ipiv, &info);
+  dsptri_(&uplo, &sz, val_vec, ipiv, work, &info);
 
   delete [] ipiv;
   delete [] work;
@@ -3760,7 +3737,7 @@ void CSymmetricMatrix::MatMatMult(bool left_side, su2double *mat_vec_in, int N)
     }
   }
 
-  symm(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
+  dsymm_(side, uplo, &N, &sz, &alpha, val_full, &sz, mat_vec, &N, &beta, tmp_res, &N);
   
   delete [] val_full;
   
