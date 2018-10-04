@@ -51,10 +51,11 @@
 #include "vector_structure.hpp"
 
 #ifdef HAVE_LAPACK
-extern "C" void dsptrf_(char*, int*, double*, int*, int*);
-extern "C" void dsptri_(char*, int*, double*, int*, double*, int*);
-extern "C" void dsymm_(char*, char*, int*, int*, double*, double*, int*, \
-  double*, int*, double*, double*, int*);
+/*--- Lapack / Blas routines used in RBF interpolation. ---*/
+extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
+                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
 #endif
 
 using namespace std;
@@ -437,14 +438,13 @@ private:
    * and cannot be inverted. This method detects that condition and corrects it by removing a row from P (the polynomial part of the matrix).
    * \param[in] m - number of rows of P
    * \param[in] n - number of columns of P
-   * \param[in] P_transposed - orientation of the polynomial part
    * \param[in] skip_row - marks the row of P which is all ones (by construction)
    * \param[in] max_diff_tol_in - tolerance to detect points are on a plane
    * \param[out] keep_row - marks the rows of P kept
    * \param[out] n_polynomial - size of the polynomial part on exit (i.e. new number of rows)
    * \param[in,out] P - polynomial part of the matrix, may be changed or not!
    */
-  void Check_PolynomialTerms(int m, unsigned long n, bool P_transposed, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P);
+  void Check_PolynomialTerms(int m, unsigned long n, const int *skip_row, su2double max_diff_tol_in, int *keep_row, int &n_polynomial, su2double *P);
 
 };
 
@@ -462,7 +462,7 @@ class CSymmetricMatrix{
     bool initialized, inversed;
     int sz, num_val;
     int *perm_vec;
-    double *val_vec, *decompose_vec, *inv_val_vec;
+    passivedouble *val_vec, *decompose_vec, *inv_val_vec;
 
     enum DecompositionType { none, cholesky, lu };
     
@@ -472,17 +472,17 @@ class CSymmetricMatrix{
     inline int CalcIdxFull(int i, int j);
     inline void CheckBounds(int i, int j);
     
-    double ReadL(int i, int j);
-    double ReadU(int i, int j);
-    double ReadInv(int i,int j);
+    passivedouble ReadL(int i, int j);
+    passivedouble ReadU(int i, int j);
+    passivedouble ReadInv(int i,int j);
     
     // not optimized dense matrix factorization and inversion for portability
     void CholeskyDecompose(bool overwrite);
     void LUDecompose();
     void CalcInv(bool overwrite);
     // matrix inversion using LAPACK routines (LDLT factorization)
-    void CalcInv_dsptri();
-    void CalcInv_dpotri() {}; // LLT not implemented yet
+    void CalcInv_sptri();
+    void CalcInv_potri() {}; // LLT not implemented yet
 
   public:
 	
@@ -496,9 +496,9 @@ class CSymmetricMatrix{
     inline int GetSize();
 
     void Write(int i, int j, const su2double& val);
-    double Read(int i, int j);
+    passivedouble Read(int i, int j);
 
-    void MatVecMult(double *v);
+    void MatVecMult(passivedouble *v);
     void MatMatMult(bool left_mult, su2double *mat_vec, int N);
     void Invert(const bool is_spd);
 
