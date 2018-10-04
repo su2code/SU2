@@ -902,8 +902,74 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
    */
-  virtual void BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
-                           CConfig *config, unsigned short val_periodic_index);
+  virtual void BC_Periodic_GG(CGeometry *geometry,
+                              CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_LS(CGeometry *geometry,
+                              CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_Limiter1(CGeometry *geometry,
+                              CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_Limiter2(CGeometry *geometry,
+                              CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_Eigenvalue(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_Laplacian(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  virtual void BC_Periodic_Sensor(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index);
   
   /*!
   * \brief Impose the interface state across sliding meshes.
@@ -5100,15 +5166,81 @@ public:
                    CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
   
   /*!
-   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
    */
-  void BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
+  void BC_Periodic_GG(CGeometry *geometry,
                    CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Least Squares gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_LS(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter1(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter2(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Eigenvalue(CGeometry *geometry,
+                                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Laplacian(CGeometry *geometry,
+                                     CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Sensor(CGeometry *geometry,
+                                  CConfig *config, unsigned short val_periodic_index);
   
   /*!
    * \brief Impose the dirichlet boundary condition using the residual.

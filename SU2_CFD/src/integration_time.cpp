@@ -385,11 +385,13 @@ void CMultiGridIntegration::SmoothProlongated_Correction (unsigned short RunTime
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Residual_Old = solver->node[iPoint]->GetResidual_Old();
           solver->LinSysRes.SetBlock(iPoint, Residual_Old);
+        }
         }
     }
     
@@ -452,11 +454,13 @@ void CMultiGridIntegration::Smooth_Solution(unsigned short RunTime_EqSystem, CSo
       /*--- Copy boundary values ---*/
       
       for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-        if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+        if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+            (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Solution_Old = solver->node[iPoint]->GetResidual_Old();
           solver->node[iPoint]->SetSolution(Solution_Old);
+        }
         }
     }
     

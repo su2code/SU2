@@ -732,8 +732,26 @@ inline void CSolver::BC_NearField_Boundary(CGeometry *geometry, CSolver **solver
 inline void CSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                                  CNumerics *numerics, CConfig *config, unsigned short val_periodic_index) { }
 
-inline void CSolver::BC_PeriodicGrad(CGeometry *geometry, CSolver **solver_container,
+inline void CSolver::BC_Periodic_GG(CGeometry *geometry,
                                      CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_LS(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_Limiter1(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_Limiter2(CGeometry *geometry,
+                                    CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_Eigenvalue(CGeometry *geometry,
+                                          CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_Laplacian(CGeometry *geometry,
+                                            CConfig *config, unsigned short val_periodic_index) { }
+
+inline void CSolver::BC_Periodic_Sensor(CGeometry *geometry,
+                                           CConfig *config, unsigned short val_periodic_index) { }
 
 inline void CSolver::BC_ActDisk_Inlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                       CConfig *config, unsigned short val_marker) { }
