@@ -228,6 +228,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
     bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
+    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
     unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -240,7 +241,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
     /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && initial_calc) ||
+    if ((linear_analysis && (initial_calc || dynamic)) ||
       (linear_analysis && restart && initial_calc_restart)) {
       solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
