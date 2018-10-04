@@ -224,7 +224,20 @@ CDriver::CDriver(char* confFile,
         geometry_container[iZone][iInst][iMesh]->MatchNearField(config_container[iZone]);
         geometry_container[iZone][iInst][iMesh]->MatchInterface(config_container[iZone]);
         geometry_container[iZone][iInst][iMesh]->MatchActuator_Disk(config_container[iZone]);
-        geometry_container[iZone][iInst][iMesh]->MatchPeriodic(config_container[iZone]);
+      }
+      
+      /*--- Match the periodic interfaces and store donor-receiver pairs.
+       Note that we loop over pairs so that repeated nodes of adjacent
+       periodic faces are properly accounted for in multiple places. ---*/
+      
+      /*--- Send an initial message to the console. ---*/
+      if (rank == MASTER_NODE)
+      cout << "Setting the periodic boundary conditions." << endl;
+      
+      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+        for (unsigned short iPeriodic = 1; iPeriodic <= config_container[ZONE_0]->GetnMarker_Periodic()/2; iPeriodic++) {
+          geometry_container[iZone][iInst][iMesh]->MatchPeriodic(config_container[iZone], iPeriodic);
+        }
       }
 
     }

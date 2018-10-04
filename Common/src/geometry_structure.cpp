@@ -12405,7 +12405,8 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       
       for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
         
@@ -15580,7 +15581,7 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
+void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) {
   
   su2double epsilon = 1e-1;
   
@@ -15588,9 +15589,14 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3] = {0.0,0.0,0.0};
   
-  unsigned short nMarker_Periodic = config->GetnMarker_Periodic();
+  unsigned short iPeriodic, nPeriodic, rMarker, dMarker;
+  unsigned long nPointMatch = 0;
   
-  if (nMarker_Periodic != 0) {
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+  
+  nPeriodic = config->GetnMarker_Periodic();
+  
+  if (nPeriodic != 0) {
     
     unsigned short iMarker, iDim, jMarker, pMarker = 0;
     unsigned long iVertex, iPoint, pVertex = 0, pPoint = 0, jVertex, jPoint, iPointGlobal, jPointGlobal, jVertex_, pPointGlobal = 0;
@@ -15602,18 +15608,36 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
-    if (rank == MASTER_NODE) cout << "Setting the periodic boundary conditions." << endl;
+    /*--- Write some info to the console. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        if (iPeriodic == val_periodic) dMarker = iMarker;
+        else if (iPeriodic == val_periodic + nPeriodic/2) rMarker = iMarker;
+      }
+    }
+    if (rank == MASTER_NODE) {
+      cout << "Checking marker '" << config->GetMarker_All_TagBound(dMarker);
+      cout << "' against periodic marker '" << config->GetMarker_All_TagBound(rMarker) << "'. " << endl;
+    }
     
     /*--- Compute the number of vertex that have interfase boundary condition
      without including the ghost nodes ---*/
     
     nLocalVertex_Periodic = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        if ((iPeriodic == val_periodic) ||
+            (iPeriodic == val_periodic + nPeriodic/2)) {
+          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            if (node[iPoint]->GetDomain()) nLocalVertex_Periodic++;
+          }
         }
+      }
+    }
     
     Buffer_Send_nVertex[0] = nLocalVertex_Periodic;
     
@@ -15657,21 +15681,27 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
     /*--- Copy coordinates and point to the auxiliar vector --*/
     
     nLocalVertex_Periodic = 0;
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++)
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
-        for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
-          iPoint = vertex[iMarker][iVertex]->GetNode();
-          iPointGlobal = node[iPoint]->GetGlobalIndex();
-          if (node[iPoint]->GetDomain()) {
-            Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
-            Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
-            Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
-            Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
-            nLocalVertex_Periodic++;
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        if ((iPeriodic == val_periodic) ||
+            (iPeriodic == val_periodic + nPeriodic/2)) {
+          for (iVertex = 0; iVertex < GetnVertex(iMarker); iVertex++) {
+            iPoint = vertex[iMarker][iVertex]->GetNode();
+            iPointGlobal = node[iPoint]->GetGlobalIndex();
+            if (node[iPoint]->GetDomain()) {
+              Buffer_Send_Point[nLocalVertex_Periodic] = iPoint;
+              Buffer_Send_GlobalIndex[nLocalVertex_Periodic] = iPointGlobal;
+              Buffer_Send_Vertex[nLocalVertex_Periodic] = iVertex;
+              Buffer_Send_Marker[nLocalVertex_Periodic] = iMarker;
+              for (iDim = 0; iDim < nDim; iDim++)
+                Buffer_Send_Coord[nLocalVertex_Periodic*nDim+iDim] = node[iPoint]->GetCoord(iDim);
+              nLocalVertex_Periodic++;
+            }
           }
         }
+      }
+    }
     
 #ifndef HAVE_MPI
     for (unsigned long iBuffer_Coord = 0; iBuffer_Coord < nBuffer_Coord; iBuffer_Coord++)
@@ -15693,12 +15723,16 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
 #endif
     
     
-    /*--- Compute the closest point to a Near-Field boundary point ---*/
+    /*--- Compute the closest point to a matching periodic boundary point ---*/
     
     maxdist_local = 0.0;
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
         
+        iPeriodic = config->GetMarker_All_PerBound(iMarker);
+        if ((iPeriodic == val_periodic) ||
+            (iPeriodic == val_periodic + nPeriodic/2)) {
+          
         /*--- Retrieve the supplied periodic information. ---*/
         center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iMarker));
         angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iMarker));
@@ -15796,6 +15830,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
             
             maxdist_local = max(maxdist_local, mindist);
             vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pPointGlobal, pVertex, pMarker, pProcessor);
+            nPointMatch++;
             
             if (mindist > epsilon) {
               cout.precision(10);
@@ -15810,14 +15845,17 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config) {
         }
       }
     }
+    }
     
 #ifndef HAVE_MPI
     maxdist_global = maxdist_local;
 #else
+    unsigned long nPointMatch_Local = nPointMatch;
+    SU2_MPI::Reduce(&nPointMatch_Local, &nPointMatch, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
     SU2_MPI::Reduce(&maxdist_local, &maxdist_global, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
 #endif
     
-    if (rank == MASTER_NODE) cout <<" The max distance between points is: " << maxdist_global <<"."<< endl;
+    if (rank == MASTER_NODE) cout <<" Matched " << nPointMatch << " points with a max distance of: " << maxdist_global <<"."<< endl;
     
     delete[] Buffer_Send_Coord;
     delete[] Buffer_Send_Point;
@@ -21337,18 +21375,26 @@ void CMultiGridGeometry::MatchInterface(CConfig *config) {
   
 }
 
-void CMultiGridGeometry::MatchPeriodic(CConfig *config) {
+void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_periodic) {
   
-  unsigned short iMarker;
+  unsigned short iMarker, iPeriodic, nPeriodic;
   unsigned long iVertex, iPoint;
   int iProcessor = size;
   
+  /*--- Evaluate the number of periodic boundary conditions ---*/
+  
+  nPeriodic = config->GetnMarker_Periodic();
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        if (node[iPoint]->GetDomain()) {
-          vertex[iMarker][iVertex]->SetDonorPoint(iPoint, node[iPoint]->GetGlobalIndex(), iVertex, iMarker, iProcessor);
+      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+      if ((iPeriodic == val_periodic) ||
+          (iPeriodic == val_periodic + nPeriodic/2)) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+          iPoint = vertex[iMarker][iVertex]->GetNode();
+          if (node[iPoint]->GetDomain()) {
+            vertex[iMarker][iVertex]->SetDonorPoint(iPoint, node[iPoint]->GetGlobalIndex(), iVertex, iMarker, iProcessor);
+          }
         }
       }
     }

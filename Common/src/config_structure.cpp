@@ -291,7 +291,7 @@ bool CConfig::GetPeriodic(string val_mesh_filename,
   /*--- For now, assume that if we have periodic BCs in the config, that
    the user's intent is for there to be periodic BCs in the mesh too. ---*/
 
-  if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
+  //if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
 
   return isPeriodic;
   
