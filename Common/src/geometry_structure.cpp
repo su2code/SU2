@@ -15652,20 +15652,6 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
-    /*--- Write some info to the console. ---*/
-    
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        iPeriodic = config->GetMarker_All_PerBound(iMarker);
-        if (iPeriodic == val_periodic) dMarker = iMarker;
-        else if (iPeriodic == val_periodic + nPeriodic/2) rMarker = iMarker;
-      }
-    }
-    if (rank == MASTER_NODE) {
-      cout << "Checking marker '" << config->GetMarker_All_TagBound(dMarker);
-      cout << "' against periodic marker '" << config->GetMarker_All_TagBound(rMarker) << "'. " << endl;
-    }
-    
     /*--- Compute the number of vertex that have interfase boundary condition
      without including the ghost nodes ---*/
     
