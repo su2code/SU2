@@ -493,6 +493,12 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] config - Definition of the particular problem.
+   */
+  virtual void SetMaxLength(CConfig* config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
    * \param[in] action - Allocate or not the new elements.
    */
   virtual void SetControlVolume(CConfig *config, unsigned short action);
@@ -744,6 +750,12 @@ public:
     * \param[in] config - Definition of the particular problem.
     */
   virtual void Set_MPI_OldCoord(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_MPI_MaxLength(CConfig *config);
 
 	/*!
 	 * \brief A virtual member.
@@ -1348,7 +1360,6 @@ class CPhysicalGeometry : public CGeometry {
   unsigned long **adjacent_elem; /*!< \brief Adjacency element list. */
   su2double* Sensitivity; /*! <\brief Vector holding the sensitivities at each point. */
 
-  vector<unsigned long> LocalPoints;
   vector<vector<unsigned long> > Neighbors;
   map<unsigned long, unsigned long> Color_List;
   vector<string> Marker_Tags;
@@ -1751,6 +1762,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 */
 	void SetBoundControlVolume(CConfig *config, unsigned short action);
 
+  /*!
+   * \brief Set the maximum cell-center to cell-center distance for CVs.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMaxLength(CConfig* config);
+
 	/*! 
 	 * \brief Set the Tecplot file.
 	 * \param[in] config_filename - Name of the file where the Tecplot 
@@ -1835,6 +1852,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    */
   void Set_MPI_OldCoord(CConfig *config);
   
+  /*!
+   * \brief Perform the MPI communication for the max grid spacing.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_MaxLength(CConfig *config);
+
   /*!
    * \brief Set the periodic boundary conditions.
    * \param[in] config - Definition of the particular problem.
