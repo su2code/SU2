@@ -51,18 +51,11 @@
 #include "vector_structure.hpp"
 
 #ifdef HAVE_LAPACK
-/*--- Lapack / Blas routines used in RBF interpolation. Do not use directly, use the templated wrapper. ---*/
-extern "C" void dsptrf_(char*, int*, double*, int*, int*);
-extern "C" void dsptri_(char*, int*, double*, int*, double*, int*);
-extern "C" void dsymm_(char*, char*, int*, int*, double*, double*, int*, double*, int*, double*, double*, int*);
-extern "C" void ssptrf_(char*, int*, float*, int*, int*);
-extern "C" void ssptri_(char*, int*, float*, int*, float*, int*);
-extern "C" void ssymm_(char*, char*, int*, int*, float*, float*, int*, float*, int*, float*, float*, int*);
-
-/*--- Mechanism to make the code compatible with single and double precision, specialized in the .cpp. ---*/
-template<typename T> void sptrf(char*, int*, T*, int*, int*);
-template<typename T> void sptri(char*, int*, T*, int*, T*, int*);
-template<typename T> void symm(char*, char*, int*, int*, T*, T*, int*, T*, int*, T*, T*, int*);
+/*--- Lapack / Blas routines used in RBF interpolation. ---*/
+extern "C" void dsptrf_(char*, int*, passivedouble*, int*, int*);
+extern "C" void dsptri_(char*, int*, passivedouble*, int*, passivedouble*, int*);
+extern "C" void dsymm_(char*, char*, int*, int*, passivedouble*, passivedouble*, int*,
+                       passivedouble*, int*, passivedouble*, passivedouble*, int*);
 #endif
 
 using namespace std;
