@@ -1,0 +1,374 @@
+
+-------------------------------------------------------------------------
+|    ___ _   _ ___                                                      |
+|   / __| | | |_  )   Release 6.1.0  "Falcon"                           |
+|   \__ \ |_| |/ /                                                      |
+|   |___/\___//___|   Suite (Computational Fluid Dynamics Code)         |
+|                                                                       |
+-------------------------------------------------------------------------
+| The current SU2 release has been coordinated by the                   |
+| SU2 International Developers Society <www.su2devsociety.org>          |
+| with selected contributions from the open-source community.           |
+-------------------------------------------------------------------------
+| The main research teams contributing to the current release are:      |
+| - Prof. Juan J. Alonso's group at Stanford University.                |
+| - Prof. Piero Colonna's group at Delft University of Technology.      |
+| - Prof. Nicolas R. Gauger's group at Kaiserslautern U. of Technology. |
+| - Prof. Alberto Guardone's group at Polytechnic University of Milan.  |
+| - Prof. Rafael Palacios' group at Imperial College London.            |
+| - Prof. Vincent Terrapon's group at the University of Liege.          |
+| - Prof. Edwin van der Weide's group at the University of Twente.      |
+| - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.  |
+-------------------------------------------------------------------------
+| Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,       |
+|                      Tim Albring, and the SU2 contributors.           |
+|                                                                       |
+| SU2 is free software; you can redistribute it and/or                  |
+| modify it under the terms of the GNU Lesser General Public            |
+| License as published by the Free Software Foundation; either          |
+| version 2.1 of the License, or (at your option) any later version.    |
+|                                                                       |
+| SU2 is distributed in the hope that it will be useful,                |
+| but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+| MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU      |
+| Lesser General Public License for more details.                       |
+|                                                                       |
+| You should have received a copy of the GNU Lesser General Public      |
+| License along with SU2. If not, see <http://www.gnu.org/licenses/>.   |
+-------------------------------------------------------------------------
+
+------------------------ Physical Case Definition -----------------------
+Incompressible Euler equations.
+No restart solution, use the values at infinity (freestream).
+Non-Dimensional simulation using intialization values.
+The reference area is 105120 m^2.
+The semi-span will be computed using the max y(3D) value.
+The reference length is 1 m.
+Surface(s) where the force coefficients are evaluated and 
+their reference origin for moment computation: 
+   - INNER_NACELLE (0, 0, 0).
+   - OUTER_NACELLE (0, 0, 0).
+   - ACTDISK (0, 0, 0).
+   - ACTDISK_BACK (0, 0, 0) m.
+Surface(s) where the objective function is evaluated: INNER_NACELLE, OUTER_NACELLE, ACTDISK, ACTDISK_BACK.
+Surface(s) plotted in the output file: INNER_NACELLE, OUTER_NACELLE, ACTDISK, ACTDISK_BACK.
+Input mesh file name: ActuatorDisk.su2
+
+---------------------- Space Numerical Integration ----------------------
+Flux difference splitting (FDS) upwind scheme for the flow inviscid terms.
+Second order integration in space, with slope limiter.
+Venkatakrishnan slope-limiting method, with constant: 0.05. 
+The reference element size is: 1. 
+Gradient computation using Green-Gauss theorem.
+
+---------------------- Time Numerical Integration -----------------------
+Local time stepping (steady state simulation).
+Euler implicit method for the flow equations.
+FGMRES is used for solving the linear system.
+Using a LU-SGS preconditioning.
+Convergence criteria of the linear solver: 1e-12.
+Max number of linear iterations: 3.
+No CFL adaptation.
+Courant-Friedrichs-Lewy number:        1
+
+------------------------- Convergence Criteria --------------------------
+Maximum number of iterations: 15.
+Reduce the density residual 10 orders of magnitude.
+The minimum bound for the density residual is 10^(-12).
+Start convergence criteria at iteration 10.
+
+-------------------------- Output Information ---------------------------
+Writing a solution file every 1500 iterations.
+Writing the convergence history every 1 iterations.
+The output file format is Paraview ASCII (.vtk).
+Convergence history file name: history.
+Forces breakdown file name: forces_breakdown.dat.
+Surface flow coefficients file name: surface_flow.
+Flow variables file name: flow.
+Restart flow file name: restart_flow.dat.
+
+------------------- Config File Boundary Information --------------------
+Far-field boundary marker(s): FARFIELD.
+Internal boundary marker(s): ACTDISK_BACK.
+Constant heat flux wall boundary marker(s): INNER_NACELLE, OUTER_NACELLE.
+Actuator disk (inlet) boundary marker(s): ACTDISK.
+Actuator disk (outlet) boundary marker(s): NONE.
+
+---------------------- Read Grid File Information -----------------------
+Splitting the surface ACTDISK( 939 boundary elements ).
+   MISMATCH ==>: Adding new points
+Splitting the surface ACTDISK( 891 internal points ).
+   MISMATCH ==>: Adding new points
+   MISMATCH ==>: Adding new points
+   MISMATCH ==>: Adding new points
+   MISMATCH ==>: Adding new points
+   MISMATCH ==>: Adding new points
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+Three dimensional problem.
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+70546 points before parallel partitioning.
+Performing linear partitioning of the grid nodes.
+   MISMATCH ==>: position = 0 string::npos = 18446744073709551615
+   MISMATCH ==>: dummyLong = 69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: iCount =  69655
+   MISMATCH ==>: iCount = 1
+   MISMATCH ==>: actuator_disk = 1
+   MISMATCH ==>: number of points before (2) ====> 69655
+   MISMATCH ==>: number of points after (2) ====> 70546
+   MISMATCH ==>: total number of points added (2) ===>891
+ 
+202375 interior elements before parallel partitioning.
+Executing the partitioning functions.
+Building the graph adjacency structure.
+Distributing elements across all ranks.
+5 surface markers.
+939 boundary elements in index 0 (Marker = ACTDISK).
+939 boundary elements in index 1 (Marker = NONE).
+720 boundary elements in index 2 (Marker = INNER_NACELLE).
+1840 boundary elements in index 3 (Marker = OUTER_NACELLE).
+5108 boundary elements in index 4 (Marker = FARFIELD).
+Calling ParMETIS... graph partitioning complete (7623 edge cuts).
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 85468
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 26718
+Distributing ParMETIS coloring.
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 31141
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 26853
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 28835
+   MISMATCH ==>: geometry->GetnElem() line 5428 = 71964
+   MISMATCH ==>: iNode after line 5428 = 6
+   MISMATCH ==>: iNode after line 5428 = 5
+   MISMATCH ==>: LocalPoints.size after line 5428 = 167926
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 28835
+   MISMATCH ==>: LocalPoints.size after line 5428 = 160308
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 26718
+   MISMATCH ==>: iNode after line 5428 = 6
+   MISMATCH ==>: LocalPoints.size after line 5428 = 161118
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 26853
+   MISMATCH ==>: iNode after line 5428 = 5
+   MISMATCH ==>: LocalPoints.size after line 5428 = 161429
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 31141
+   MISMATCH ==>: iNode after line 5428 = 5
+   MISMATCH ==>: LocalPoints.size after line 5428 = 345315
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 85468
+   MISMATCH ==>: LocalPoints.size after sort= 15065 and geometry->GetnPoint() = 11758
+   MISMATCH ==>: geometry->GetnElem() after sort = 26853
+   MISMATCH ==>: LocalPoints.size after sort= 14901 and geometry->GetnPoint() = 11758
+   MISMATCH ==>: geometry->GetnElem() after sort = 26718
+   MISMATCH ==>: LocalPoints.size after sort= 15376 and geometry->GetnPoint() = 11758
+   MISMATCH ==>: geometry->GetnElem() after sort = 28835
+   MISMATCH ==>: iNode after line 5428 = 5
+   MISMATCH ==>: LocalPoints.size after line 5428 = 319601
+   MISMATCH ==>: geometry->GetnElem() after line 5428 = 71964
+   MISMATCH ==>: LocalPoints.size after sort= 15705 and geometry->GetnPoint() = 11758
+   MISMATCH ==>: geometry->GetnElem() after sort = 31141
+   MISMATCH ==>: LocalPoints.size after sort= 18375 and geometry->GetnPoint() = 11757
+   MISMATCH ==>: geometry->GetnElem() after sort = 85468
+   MISMATCH ==>: LocalPoints.size after sort= 22288 and geometry->GetnPoint() = 11757
+   MISMATCH ==>: geometry->GetnElem() after sort = 71964
+Rebalancing vertices.
+Rebalancing volume element connectivity.
+Rebalancing markers and surface elements.
+79988 vertices including ghost points. 
+213796 interior elements including halo cells. 
+103699 tetrahedra.
+108948 prisms.
+1149 pyramids.
+Establishing MPI communication patterns.
+
+------------------------- Geometry Preprocessing ------------------------
+Setting point connectivity.
+Renumbering points (Reverse Cuthill McKee Ordering).
+Recomputing point connectivity.
+Setting element connectivity.
+Checking the numerical grid orientation.
+There has been a re-orientation of the TRIANGLE surface elements.
+There has been a re-orientation of the QUADRILATERAL surface elements.
+Identifying edges and vertices.
+Computing centers of gravity.
+Setting the control volume structure.
+Volume of the computational grid: 1.25e+07.
+Searching for the closest normal neighbors to the surfaces.
+Storing a mapping from global to local point index.
+Compute the surface curvature.
+Max K: 96.4. Mean K: 0.642. Standard deviation K: 5.56.
+Checking for periodicity.
+Computing wall distances.
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+Semi-span length = 31 m.
+Wetted area = 3.15e+04 m^2.
+Area projection in the x-plane = 1.84e+03 m^2, y-plane = 9.78e+03 m^2, z-plane = 9.78e+03 m^2.
+Max. coordinate in the x-direction = 100 m, y-direction = 31 m, z-direction = 31 m.
+Min coordinate in the x-direction = 0 m, y-direction = -31 m, z-direction = -31 m.
+   MISMATCH ==>: = nMarker_ActDiskInlet = 1
+Set Actuator Disk inlet boundary conditions.
+The max distance between points is: 0.
+Set Actuator Disk outlet boundary conditions.
+The max distance between points is: 0.
+
+------------------------- Driver information --------------------------
+A Fluid driver has been instantiated.
+
+------------------------ Iteration Preprocessing ------------------------
+Zone 1: Euler/Navier-Stokes/RANS fluid iteration.
+
+------------------------- Solver Preprocessing --------------------------
+Incompressible flow: rho_ref, vel_ref, and temp_ref
+are based on the initial values, p_ref = rho_ref*vel_ref^2.
+Force coefficients computed using initial values.
+The reference area for force coeffs. is 105120 m^2.
+The reference length for force coeffs. is 1 m.
+The pressure is decomposed into thermodynamic and dynamic components.
+The initial value of the dynamic pressure is 0.
+Mach number: 0.00301242, computed using the Bulk modulus.
+For external flows, the initial state is imposed at the far-field.
+Angle of attack (deg): 0, computed using the initial velocity.
+Side slip angle (deg): 0, computed using the initial velocity.
+SI units only. The grid should be dimensional (meters).
+No energy equation.
+-- Input conditions:
+Fluid Model: CONSTANT_DENSITY 
+Thermodynamic pressure not required.
+Bulk modulus: 142000 Pa.
+Initial dynamic pressure: 0 Pa.
+Initial total pressure: 0.6443 Pa.
+Initial density: 1.2886 kg/m^3.
+Initial velocity: (1, 0, 0) m/s. Magnitude: 1 m/s.
+-- Reference values:
+Reference pressure: 1.2886 Pa.
+Reference density: 1.2886 kg/m^3.
+Reference velocity: 1 m/s.
+Reference length: 1 m.
+-- Resulting non-dimensional state:
+Mach number (non-dim): 0.00301242
+Initial pressure (non-dim): 0
+Initial density (non-dim): 1
+Initial velocity (non-dim): (1, 0, 0). Magnitude: 1
+
+Initialize Jacobian structure (Euler). MG level: 0.
+
+----------------- Integration and Numerics Preprocessing ----------------
+Integration Preprocessing.
+Numerics Preprocessing.
+
+---------------------- Python Interface Preprocessing ---------------------
+Setting customized boundary conditions for zone 0
+
+------------------------------ Begin Solver -----------------------------
+
+------------------------ Evaluate Special Output ------------------------
+Writing the forces breakdown file (forces_breakdown.dat).
+
+-------------------------------------------------------------------------
+
+
+---------------------- Local Time Stepping Summary ----------------------
+MG level: 0 -> Min. DT: 5.92721e-05. Max. DT: 1.15899. CFL: 1.
+-------------------------------------------------------------------------
+
+----------------------- Residual Evolution Summary ----------------------
+log10[Maximum residual]: 0.962402.
+Maximum residual point 3671, located at (67.3711, 28.8888, 3.44496e-07).
+-------------------------------------------------------------------------
+
+ Iter    Time(s)   Res[Press]     Res[Velx]   CLift(Total)   CDrag(Total)
+
+    0   0.307242    -0.324672     -0.299995       0.000016       0.034020
+    1   0.317487    -0.385247     -0.344315       0.000031       0.045952
+    2   0.315833    -0.430553     -0.373237       0.000045       0.057156
+    3   0.317871    -0.465318     -0.392046       0.000059       0.067752
+    4   0.315830    -0.486996     -0.400042       0.000073       0.078235
+    5   0.316619    -0.497246     -0.399528       0.000087       0.089057
+    6   0.317906    -0.502614     -0.395570       0.000103       0.100366
+    7   0.318349    -0.505394     -0.389967       0.000119       0.112241
+    8   0.318684    -0.507138     -0.383760       0.000137       0.124711
+    9   0.317801    -0.508709     -0.377422       0.000155       0.137776
+   10   0.315996    -0.510477     -0.371099       0.000175       0.151417
+   11   0.314001    -0.512504     -0.364768       0.000195       0.165608
+   12   0.313611    -0.514693     -0.358355       0.000216       0.180325
+   13   0.313890    -0.516882     -0.351790       0.000239       0.195548
+
+------------------------ Evaluate Special Output ------------------------
+Writing the forces breakdown file (forces_breakdown.dat).
+
+-------------------------------------------------------------------------
+
+   14   0.315033    -0.518906     -0.345031       0.000262       0.211267
+
+-------------------------- File Output Summary --------------------------
+Writing comma-separated values (CSV) surface files.
+Loading solution output data locally on each rank.
+Sorting output data across all ranks.
+Writing binary SU2 native restart file.
+-------------------------------------------------------------------------
+
+
+------------------------- Solver Postprocessing -------------------------
+Deleted CNumerics container.
+Deleted CIntegration container.
+Deleted CSolver container.
+Deleted CIteration container.
+Deleted CInterpolator container.
+Deleted CTransfer container.
+Deleted CGeometry container.
+Deleted CFreeFormDefBox class.
+Deleted CSurfaceMovement class.
+Deleted CVolumetricMovement class.
+Deleted CConfig container.
+Deleted COutput class.
+-------------------------------------------------------------------------
+
+------------------------- Exit Success (SU2_CFD) ------------------------
+
