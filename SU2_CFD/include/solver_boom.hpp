@@ -140,9 +140,10 @@ public:
   void HumidityISO(su2double& z0, su2double& p_inf, su2double& T_inf, su2double& h);
 
   void SetKindSens(unsigned short kind_sensitivity);
+  void SolverPreprocessing(CSolver *solver, CConfig *config, CGeometry *geometry);
   void Run(CConfig *config);
   void PropagateSignal(unsigned short iPhi);
-  void Preprocessing(unsigned short iPhi, unsigned long iIter);
+  void IterationPreprocessing(unsigned short iPhi, unsigned long iIter);
   void CreateUniformGridSignal(unsigned short iPhi);
   void CreateInitialRayTube(unsigned short iPhi);
   void DetermineStepSize(unsigned short iPhi, unsigned long iIter);

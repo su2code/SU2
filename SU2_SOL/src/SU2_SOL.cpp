@@ -534,6 +534,7 @@ int main(int argc, char *argv[]) {
         AD::Reset();
         CBoom_AugBurgers *solver_boom = new CBoom_AugBurgers(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
         solver_boom->SetKindSens(kind_sens);
+        solver_boom->SolverPreprocessing(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
         solver_boom->Run(config_container[ZONE_0]);
         delete solver_boom;
       }
@@ -550,6 +551,7 @@ int main(int argc, char *argv[]) {
       }
 
       CBoom_AugBurgers *solver_boom = new CBoom_AugBurgers(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
+      solver_boom->SolverPreprocessing(solver_container[ZONE_0][INST_0], config_container[ZONE_0], geometry_container[ZONE_0][INST_0]);
       solver_boom->Run(config_container[ZONE_0]);
       delete solver_boom;
     }

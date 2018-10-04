@@ -15,11 +15,6 @@ CBoom_AugBurgers::CBoom_AugBurgers(){
 
 CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *geometry){
 
-  int rank, nProcessor = 1;
-
-  rank = SU2_MPI::GetRank();
-  nProcessor = SU2_MPI::GetSize();
-
   Kind_Boom_Cost = config->GetKind_ObjFunc();
   CFL_reduce = config->GetBoom_cfl_reduce();
   Kind_Step = config->GetBoom_step_type();
@@ -68,200 +63,6 @@ CBoom_AugBurgers::CBoom_AugBurgers(CSolver *solver, CConfig *config, CGeometry *
 
   /*---Cost function---*/
   PLdB = new su2double[ray_N_phi];
-
-  /*---Set reference pressure, make sure signal is dimensional---*/
-  su2double Pressure_FreeStream=config->GetPressure_FreeStream();
-  su2double Pressure_Ref;
-  if (config->GetRef_NonDim() == DIMENSIONAL) {
-    Pressure_Ref      = 1.0;
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
-    Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
-    Pressure_Ref      = atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
-  }
-  else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
-    Pressure_Ref      = flt_M*flt_M*atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
-  }
-  
-  if(rank == MASTER_NODE && !AD_Mode)
-    cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
-
-    if(rank == MASTER_NODE && AD_Mode){
-      if(kind_sens == mesh_sens)      cout << "Computing mesh sensitivity." << endl;
-      else if(kind_sens == flow_sens) cout << "Computing flow sensitivity." << endl;
-    }
-  /*---Perform search on domain to determine where line intersects boundary---*/
-  if(rank == MASTER_NODE)
-    cout << "Search for start of line." << endl;
-  SearchLinear(config, geometry, ray_r0, ray_phi);
-
-  /*---Walk through neighbors to determine all points containing line---*/
-  if(rank == MASTER_NODE)
-    cout << "Extract line." << endl;
-  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    if(nPanel[iPhi] > 0){
-      ExtractLine(geometry, ray_r0, iPhi);
-    }
-  }
-
-  /*---Initialize some signal parameters---*/
-  nPointID = new unsigned long[ray_N_phi];
-  PointID = new unsigned long*[ray_N_phi];
-  signal.len = new unsigned long[ray_N_phi];
-  signal.x = new su2double*[ray_N_phi];
-  signal.p_prime = new su2double*[ray_N_phi];
-  Coord_original = new su2double**[ray_N_phi];
-    
-  for( unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    PointID[iPhi] = NULL;
-    signal.x[iPhi] = NULL;
-    signal.p_prime[iPhi] = NULL;
-  }
-    
-  if(AD_Mode) AD::StartRecording();
-
-  /*---Interpolate pressures along line---*/
-  if(rank == MASTER_NODE)
-    cout << "Extract pressure signature." << endl;
-    
-  nPointID_loc = 0;
-  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    nPointID[iPhi] = 0;
-    if(nPanel[iPhi] > 0){      
-      ExtractPressure(solver, config, geometry, iPhi);
-    }
-  }
-
-  nPointID_proc = new unsigned long[nProcessor];
-  unsigned long iPanel, panelCount, totSig, maxSig;
-  unsigned long *nPanel_loc = new unsigned long[nProcessor];
-  nPointID_tot = 0;
-  for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-    for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-      signal.p_prime[iPhi][iPanel] = signal.p_prime[iPhi][iPanel]*Pressure_Ref - Pressure_FreeStream;
-    }
-
-    totSig = 0;
-    maxSig = 0;
-
-    SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_UNSIGNED_LONG, nPointID_proc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    su2double* Buffer_Recv_Press = NULL;
-    su2double* Buffer_Recv_x = NULL;
-    su2double* Buffer_Send_Press = new su2double[maxSig];
-    su2double* Buffer_Send_x = new su2double[maxSig];
-    if(rank == MASTER_NODE){
-      Buffer_Recv_Press = new su2double[nProcessor*maxSig];
-      Buffer_Recv_x = new su2double[nProcessor*maxSig];
-    }
-    
-    for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-      Buffer_Send_x[iPanel] = signal.x[iPhi][iPanel];
-      Buffer_Send_Press[iPanel] = signal.p_prime[iPhi][iPanel];
-    }
-
-    SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-
-    if (rank == MASTER_NODE)
-      cout << "Gathered signal data to MASTER_NODE." << endl;
-
-    if (rank == MASTER_NODE){
-      panelCount = 0;
-      nPanel[iPhi] = totSig;
-      signal.x[iPhi] = new su2double[nPanel[iPhi]];
-      signal.p_prime[iPhi] = new su2double[nPanel[iPhi]];
-      for(unsigned int iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-        for(iPanel = 0; iPanel < nPanel_loc[iProcessor]; iPanel++){
-          signal.x[iPhi][panelCount] = Buffer_Recv_x[iProcessor*maxSig+iPanel];
-          signal.p_prime[iPhi][panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
-          panelCount++;
-        }
-        nPointID_tot += nPointID_proc[iProcessor];
-      }
-
-      /*---Sort signal in order of x-coordinate---*/
-      cout << "Sorting signal data. " << nPanel[iPhi] << " points to sort." << endl;
-      MergeSort(signal.x[iPhi], signal.p_prime[iPhi], 0, totSig-1);
-
-      /*---Check for duplicate points---*/
-      signal.len[iPhi] = nPanel[iPhi];
-      for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
-        if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-6){
-          for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
-            signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
-            signal.p_prime[iPhi][jPanel-1] = signal.p_prime[iPhi][jPanel];
-          }
-          iPanel--;
-          nPanel[iPhi]--;
-        }
-      }
-
-      if(nPanel[iPhi] != totSig){
-        cout << "Eliminating duplicate points." << endl;
-        su2double *xtmp = new su2double[nPanel[iPhi]], *ptmp = new su2double[nPanel[iPhi]];
-        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-          xtmp[iPanel] = signal.x[iPhi][iPanel];
-          ptmp[iPanel] = signal.p_prime[iPhi][iPanel];
-        }
-        signal.len[iPhi] = nPanel[iPhi];
-        signal.x[iPhi] = new su2double[nPanel[iPhi]];
-        signal.p_prime[iPhi] = new su2double[nPanel[iPhi]];
-        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
-          signal.x[iPhi][iPanel] = xtmp[iPanel];
-          signal.p_prime[iPhi][iPanel] = ptmp[iPanel];
-        }
-        delete [] xtmp;
-        delete [] ptmp;
-        totSig = nPanel[iPhi];
-      }
-    }
-  }
-
-  /*---Initialize sensitivities---*/
-  dJdU = NULL;
-  dJdX = NULL;
-  if(AD_Mode){
-    
-    dJdU = new su2double**[ray_N_phi];
-    dJdX = new su2double**[ray_N_phi];
-    
-    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
-      dJdU[iPhi] = new su2double* [nDim+3];
-      dJdX[iPhi] = new su2double* [nDim];
-      
-      for(int iDim = 0; iDim < nDim+3; iDim++){
-        dJdU[iPhi][iDim] = NULL;
-        if(nPointID[iPhi] > 0){
-          dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
-          for(iPanel = 0;  iPanel < nPointID[iPhi]; iPanel++){
-            dJdU[iPhi][iDim][iPanel] = 0.0;
-          }
-        }
-      }
-      
-      for(int iDim = 0; iDim < nDim; iDim++){
-        dJdX[iPhi][iDim] = NULL;
-        if(nPointID[iPhi] > 0){
-          dJdX[iPhi][iDim] = new su2double[nPointID[iPhi]];
-          for(iPanel = 0;  iPanel < nPointID[iPhi]; iPanel++){
-            dJdX[iPhi][iDim][iPanel] = 0.0;
-          }
-        }
-      }
-        
-    }
-
-    if (rank==MASTER_NODE) cout << "Sensitivities initialized." << endl;
-    
-  }
-    
-  if(rank == MASTER_NODE) cout << "ABE initialized." << endl;
 
 }
 
@@ -787,7 +588,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   }
 
   /*---Register coordinates as input for adjoint computation---*/
-  if (AD_Mode){
+  if (AD_Mode && kind_sens == mesh_sens){
     for(iPoint = 0; iPoint < nNode_list; iPoint++){
       jNode = jNode_list[iPoint];
       for(iDim = 0; iDim < nDim; iDim++){
@@ -822,7 +623,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     for(iNode = 0; iNode < nNode; iNode++){
       jNode = geometry->elem[jElem]->GetNode(iNode);
       for(iDim = 0; iDim < nDim; iDim++){
-        X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord(iDim);
+        X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord()[iDim];
       }
     }
       
@@ -850,7 +651,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     TKE = 0.0;
 
     /*---Register conservative variables as input for adjoint computation---*/
-    if (AD_Mode){
+    if (AD_Mode && kind_sens == flow_sens){
       AD::RegisterInput(rho );
       AD::RegisterInput(rho_ux );
       AD::RegisterInput(rho_uy );
@@ -1199,6 +1000,206 @@ void CBoom_AugBurgers::SetKindSens(unsigned short kind_sensitivity){
   kind_sens = kind_sensitivity;
 }
 
+void CBoom_AugBurgers::SolverPreprocessing(CSolver *solver, CConfig *config, CGeometry *geometry){
+    
+    int rank = SU2_MPI::GetRank();
+    int nProcessor = SU2_MPI::GetSize();
+    
+    /*---Set reference pressure, make sure signal is dimensional---*/
+    su2double Pressure_FreeStream=config->GetPressure_FreeStream();
+    su2double Pressure_Ref;
+    if (config->GetRef_NonDim() == DIMENSIONAL) {
+        Pressure_Ref      = 1.0;
+    }
+    else if (config->GetRef_NonDim() == FREESTREAM_PRESS_EQ_ONE) {
+        Pressure_Ref      = Pressure_FreeStream;     // Pressure_FreeStream = 1.0
+    }
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_MACH) {
+        Pressure_Ref      = atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/Gamma
+    }
+    else if (config->GetRef_NonDim() == FREESTREAM_VEL_EQ_ONE) {
+        Pressure_Ref      = flt_M*flt_M*atm_g*Pressure_FreeStream; // Pressure_FreeStream = 1.0/(Gamma*(M_inf)^2)
+    }
+    
+    if(rank == MASTER_NODE && !AD_Mode)
+        cout << "Pressure_Ref = " << Pressure_Ref << ", Pressure_FreeStream = " << Pressure_FreeStream << endl;
+    
+    if(rank == MASTER_NODE && AD_Mode){
+        if(kind_sens == mesh_sens)      cout << "Computing mesh sensitivity." << endl;
+        else if(kind_sens == flow_sens) cout << "Computing flow sensitivity." << endl;
+    }
+    /*---Perform search on domain to determine where line intersects boundary---*/
+    if(rank == MASTER_NODE)
+        cout << "Search for start of line." << endl;
+    SearchLinear(config, geometry, ray_r0, ray_phi);
+    
+    /*---Walk through neighbors to determine all points containing line---*/
+    if(rank == MASTER_NODE)
+        cout << "Extract line." << endl;
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        if(nPanel[iPhi] > 0){
+            ExtractLine(geometry, ray_r0, iPhi);
+        }
+    }
+    
+    /*---Initialize some signal parameters---*/
+    nPointID = new unsigned long[ray_N_phi];
+    PointID = new unsigned long*[ray_N_phi];
+    signal.len = new unsigned long[ray_N_phi];
+    signal.x = new su2double*[ray_N_phi];
+    signal.p_prime = new su2double*[ray_N_phi];
+    Coord_original = new su2double**[ray_N_phi];
+    
+    for( unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        PointID[iPhi] = NULL;
+        signal.x[iPhi] = NULL;
+        signal.p_prime[iPhi] = NULL;
+    }
+    
+    if(AD_Mode) AD::StartRecording();
+    
+    /*---Interpolate pressures along line---*/
+    if(rank == MASTER_NODE)
+        cout << "Extract pressure signature." << endl;
+    
+    nPointID_loc = 0;
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        nPointID[iPhi] = 0;
+        if(nPanel[iPhi] > 0){
+            ExtractPressure(solver, config, geometry, iPhi);
+        }
+    }
+    
+    nPointID_proc = new unsigned long[nProcessor];
+    unsigned long iPanel, panelCount, totSig, maxSig;
+    unsigned long *nPanel_loc = new unsigned long[nProcessor];
+    nPointID_tot = 0;
+    for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+            signal.p_prime[iPhi][iPanel] = signal.p_prime[iPhi][iPanel]*Pressure_Ref - Pressure_FreeStream;
+        }
+        
+        totSig = 0;
+        maxSig = 0;
+        
+        SU2_MPI::Allreduce(&nPanel[iPhi], &totSig, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+        SU2_MPI::Allreduce(&nPanel[iPhi], &maxSig, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&nPanel[iPhi], 1, MPI_UNSIGNED_LONG, nPanel_loc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(&nPointID[iPhi], 1, MPI_UNSIGNED_LONG, nPointID_proc, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
+        
+        su2double* Buffer_Recv_Press = NULL;
+        su2double* Buffer_Recv_x = NULL;
+        su2double* Buffer_Send_Press = new su2double[maxSig];
+        su2double* Buffer_Send_x = new su2double[maxSig];
+        if(rank == MASTER_NODE){
+            Buffer_Recv_Press = new su2double[nProcessor*maxSig];
+            Buffer_Recv_x = new su2double[nProcessor*maxSig];
+        }
+        
+        for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+            Buffer_Send_x[iPanel] = signal.x[iPhi][iPanel];
+            Buffer_Send_Press[iPanel] = signal.p_prime[iPhi][iPanel];
+        }
+        
+        SU2_MPI::Gather(Buffer_Send_Press, maxSig, MPI_DOUBLE, Buffer_Recv_Press,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        SU2_MPI::Gather(Buffer_Send_x, maxSig, MPI_DOUBLE, Buffer_Recv_x,  maxSig , MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+        
+        if (rank == MASTER_NODE)
+            cout << "Gathered signal data to MASTER_NODE." << endl;
+        
+        if (rank == MASTER_NODE){
+            panelCount = 0;
+            nPanel[iPhi] = totSig;
+            signal.x[iPhi] = new su2double[nPanel[iPhi]];
+            signal.p_prime[iPhi] = new su2double[nPanel[iPhi]];
+            for(unsigned int iProcessor = 0; iProcessor < nProcessor; iProcessor++){
+                for(iPanel = 0; iPanel < nPanel_loc[iProcessor]; iPanel++){
+                    signal.x[iPhi][panelCount] = Buffer_Recv_x[iProcessor*maxSig+iPanel];
+                    signal.p_prime[iPhi][panelCount] = Buffer_Recv_Press[iProcessor*maxSig+iPanel];
+                    panelCount++;
+                }
+                nPointID_tot += nPointID_proc[iProcessor];
+            }
+            
+            /*---Sort signal in order of x-coordinate---*/
+            cout << "Sorting signal data. " << nPanel[iPhi] << " points to sort." << endl;
+            MergeSort(signal.x[iPhi], signal.p_prime[iPhi], 0, totSig-1);
+            
+            /*---Check for duplicate points---*/
+            signal.len[iPhi] = nPanel[iPhi];
+            for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
+                if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-6){
+                    for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
+                        signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
+                        signal.p_prime[iPhi][jPanel-1] = signal.p_prime[iPhi][jPanel];
+                    }
+                    iPanel--;
+                    nPanel[iPhi]--;
+                }
+            }
+            
+            if(nPanel[iPhi] != totSig){
+                cout << "Eliminating duplicate points." << endl;
+                su2double *xtmp = new su2double[nPanel[iPhi]], *ptmp = new su2double[nPanel[iPhi]];
+                for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+                    xtmp[iPanel] = signal.x[iPhi][iPanel];
+                    ptmp[iPanel] = signal.p_prime[iPhi][iPanel];
+                }
+                signal.len[iPhi] = nPanel[iPhi];
+                signal.x[iPhi] = new su2double[nPanel[iPhi]];
+                signal.p_prime[iPhi] = new su2double[nPanel[iPhi]];
+                for(iPanel = 0; iPanel < nPanel[iPhi]; iPanel++){
+                    signal.x[iPhi][iPanel] = xtmp[iPanel];
+                    signal.p_prime[iPhi][iPanel] = ptmp[iPanel];
+                }
+                delete [] xtmp;
+                delete [] ptmp;
+                totSig = nPanel[iPhi];
+            }
+        }
+    }
+    
+    /*---Initialize sensitivities---*/
+    dJdU = NULL;
+    dJdX = NULL;
+    if(AD_Mode){
+        
+        dJdU = new su2double**[ray_N_phi];
+        dJdX = new su2double**[ray_N_phi];
+        
+        for(unsigned short iPhi = 0; iPhi < ray_N_phi; iPhi++){
+            dJdU[iPhi] = new su2double* [nDim+3];
+            dJdX[iPhi] = new su2double* [nDim];
+            
+            for(int iDim = 0; iDim < nDim+3; iDim++){
+                dJdU[iPhi][iDim] = NULL;
+                if(nPointID[iPhi] > 0){
+                    dJdU[iPhi][iDim] = new su2double[nPointID[iPhi]];
+                    for(iPanel = 0;  iPanel < nPointID[iPhi]; iPanel++){
+                        dJdU[iPhi][iDim][iPanel] = 0.0;
+                    }
+                }
+            }
+            
+            for(int iDim = 0; iDim < nDim; iDim++){
+                dJdX[iPhi][iDim] = NULL;
+                if(nPointID[iPhi] > 0){
+                    dJdX[iPhi][iDim] = new su2double[nPointID[iPhi]];
+                    for(iPanel = 0;  iPanel < nPointID[iPhi]; iPanel++){
+                        dJdX[iPhi][iDim][iPanel] = 0.0;
+                    }
+                }
+            }
+            
+        }
+        
+        if (rank==MASTER_NODE) cout << "Sensitivities initialized." << endl;
+        
+    }
+    
+    if(rank == MASTER_NODE) cout << "ABE initialized." << endl;
+}
+
 void CBoom_AugBurgers::Run(CConfig *config){
     
   int rank = SU2_MPI::GetRank();
@@ -1281,7 +1282,7 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
   while(!ground_flag){
 
-  	Preprocessing(iPhi, iIter);
+  	IterationPreprocessing(iPhi, iIter);
     Scaling(iPhi);
     Relaxation(iPhi, iIter);
     Attenuation(iPhi);
@@ -1311,7 +1312,7 @@ void CBoom_AugBurgers::PropagateSignal(unsigned short iPhi){
 
 }
 
-void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
+void CBoom_AugBurgers::IterationPreprocessing(unsigned short iPhi, unsigned long iIter){
   
   su2double R = 287.058,         // Gas constant
             mu0 = 1.846E-5,      // Reference viscosity
@@ -1412,7 +1413,7 @@ void CBoom_AugBurgers::Preprocessing(unsigned short iPhi, unsigned long iIter){
   C_nu_O2 = A_nu_O2 * f0 * xbar * theta_nu_O2;
   C_nu_N2 = A_nu_N2 * f0 * xbar * theta_nu_N2;
 
-  /*--- Stop recording during step size computation to avoid implicit dependence of controller on state ---*/
+  /*--- Stop recording during step size computation to avoid implicit dependence of controller on flow state ---*/
   AD::StopRecording();
 
   /*--- Step size controller ---*/
