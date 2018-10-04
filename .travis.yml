@@ -68,6 +68,7 @@ install:
     # Configure, make, and install SU2
     - echo $TRAVIS_BUILD_DIR
     - echo $CONFIGURE_COMMAND
+    - ./bootstrap
     - $CONFIGURE_COMMAND
     - make -j 4
     - make install
