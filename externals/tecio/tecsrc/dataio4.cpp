@@ -1476,7 +1476,7 @@ Boolean_t ReadInAuxData(FileStream_s *FileStream,
                             DoCollectData);
     if (IsOk && DoCollectData)
         IsOk = AuxDataSetItem(AuxData,
-                              AuxName, (ArbParam_t)AuxValue,
+                              AuxName,reinterpret_cast<ArbParam_t> (AuxValue),
                               AuxDataType_String,
                               TRUE); /* Retain */
 
