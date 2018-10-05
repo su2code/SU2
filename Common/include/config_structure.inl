@@ -1862,6 +1862,14 @@ inline unsigned short CConfig::GetnID_DV(void) { return nID_DV; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
 
+inline unsigned short CConfig::GetKindRadialBasisFunction(void) { return Kind_RadialBasisFunction; }
+
+inline bool CConfig::GetRadialBasisFunctionPolynomialOption(void) {return RadialBasisFunction_PolynomialOption; }
+
+inline su2double CConfig::GetRadialBasisFunctionParameter(void) {return RadialBasisFunction_Parameter; }
+
+inline bool CConfig::GetConservativeInterpolation(void) { return ConservativeInterpolation; }
+
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
 
 inline su2double CConfig::GetOrderMagResidualFSI(void) { return OrderMagResidualFSI; }
