@@ -945,6 +945,10 @@ private:
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
+  unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
+  bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
+  su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   string FEA_FileName;         /*!< \brief File name for element-based properties. */
@@ -8352,6 +8356,26 @@ public:
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
+	
+	/*!
+	 * \brief Get option of whether to use conservative interpolation between zones.
+	 */
+  inline bool GetConservativeInterpolation(void);
+	
+  /*!
+   * \brief Get the basis function to use for radial basis function interpolation for FSI.
+   */
+  inline unsigned short GetKindRadialBasisFunction(void);
+	
+  /*!
+   * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.
+   */
+  inline bool GetRadialBasisFunctionPolynomialOption(void);
+	
+  /*!
+   * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
+   */
+  inline su2double GetRadialBasisFunctionParameter(void);
   
   /*!
    * \brief Get information about whether to use wall functions.
