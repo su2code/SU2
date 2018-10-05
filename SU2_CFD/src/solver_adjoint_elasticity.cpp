@@ -624,6 +624,7 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
         }
 
+        geometry->RegisterCoordinates(config);
     }
 
   }
@@ -858,9 +859,10 @@ void CDiscAdjFEASolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *co
 
 void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){
 
-  unsigned short iVar;
+  unsigned short iVar, iDim;
+  unsigned long iPoint;
 
-  /*--- Extract the adjoint values of the farfield values ---*/
+  /*--- Extract the adjoint values of the material properties ---*/
 
   if (KindDirect_Solver == RUNTIME_FEA_SYS){
 
@@ -907,6 +909,16 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     }
 
+    /*--- Extract the adjoint values of the grid coordinates ---*/
+    
+    su2double *adj_coord = new su2double[nDim];
+    for (iPoint = 0; iPoint < nPoint; ++iPoint) {
+      geometry->node[iPoint]->GetAdjointCoord(adj_coord);
+      
+      for (iDim = 0; iDim < nDim; ++iDim)
+        node[iPoint]->SetSensitivity(iDim, adj_coord[iDim]);
+    }
+    delete [] adj_coord;
 
   }
 
