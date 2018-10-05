@@ -70,3 +70,6 @@ bin/
 
 TestData
 *.stl
+
+Mercurial
+.hg*
