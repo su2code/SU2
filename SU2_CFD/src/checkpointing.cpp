@@ -50,18 +50,21 @@ Checkpointing_Scheme::Checkpointing_Scheme(int input_steps, int input_snaps, int
     snaps_in_RAM = input_snaps_in_RAM;
 
     // RAM = true, disk = false
-    if (snaps_in_RAM == 0) where_to_put = false;
-    else if (snaps_in_RAM == snaps) where_to_put = true;
+    if (snaps_in_RAM == 0) { where_to_put = false; std::cout << "CP's stored on Disk.\n";}
+    else if (snaps_in_RAM == snaps) {where_to_put = true; std::cout << "CP's stored in RAM.\n";}
     else throw std::runtime_error("No mixing of snaps in RAM and on Disk currently possible.");
+
     counter = 0;
-    timestepping_order = 2;
+    timestepping_order = 2; // here hardcoding needs to be released
+    depth = 2+1;
     current_timestep = timestepping_order - 1; // -1 because 0th step is reached after the first timestep
     just_advanced = false;
     just_stored_checkpoint = false;
     primal_sweep = true;
+    recompute_primal = false;
     capo = 0;
     oldcapo = 0;
-    check = 0;
+    iCheckpoint = -1;
 }
 
 /* Methods of Checkpointing base class */
@@ -72,10 +75,8 @@ Checkpointing::Checkpointing(int input_steps, int input_snaps, int input_snaps_i
     snaps_in_RAM = input_snaps_in_RAM;
     CP_type = input_CP_type;
 
-    where_to_put = true;
     capo = 0;
     oldcapo = 0;
-    check = 0;
     // must be consistent with Common/include/option_structure.hpp
     if      (CP_type == 1) CP_scheme = new Everything (input_steps, input_snaps, input_snaps_in_RAM);
     else if (CP_type == 2) CP_scheme = new Equidistant(input_steps, input_snaps, input_snaps_in_RAM);
@@ -102,7 +103,7 @@ ACTION::action Everything::revolve()
         if (counter%2 == 1) {
             capo++;
             oldcapo = capo - 1;
-            check++;
+            iCheckpoint++;
             whattodo = ACTION::primal_step;
         } else {
             whattodo = ACTION::store_full_checkpoint;
@@ -114,7 +115,7 @@ ACTION::action Everything::revolve()
     if (counter > (steps-1)*2 && counter < (steps*2-1)*2-1) {
         if (counter%2 == 1) {
             capo--;
-            check--;
+            iCheckpoint--;
             whattodo = ACTION::restore_full_checkpoint;
         } else {
             whattodo = ACTION::adjoint_step;
@@ -133,36 +134,90 @@ ACTION::action Everything::revolve()
  *  */
 ACTION::action Equidistant::revolve()
 {
+    if (counter > 60) return ACTION::terminate;
     counter++;
+
+    // Initialization: primal_step, store_full_DISK
+    //if(counter==1) return ACTION::primal_step;
+    if(counter==1) {
+        current_timestep++;
+        just_stored_checkpoint = true;
+        //iCheckpoint += timestepping_order+1;
+        where_to_put=false;
+        return ACTION::store_full_checkpoint;
+    }
+    
     if(primal_sweep) {
-        // Initialization: primal_step, store_full_DISK
-        if(counter==1)
-            return ACTION::primal_step;
-        if(counter==2)
-            return ACTION::store_full_checkpoint;
+
+        if (current_timestep==steps) primal_sweep=false;
 
         // intermediate CP's
         // do SNAPS_IN_RAM times: primal_update, primal_step, store_single_RAM
-        return ACTION::primal_update;
-        return ACTION::primal_step;
-        return ACTION::store_single_state;
+        if((current_timestep-timestepping_order)%(snaps_in_RAM+depth) <= snaps_in_RAM && (current_timestep-timestepping_order)%(snaps_in_RAM+depth) != 0 || counter==2) {
+            where_to_put=true;
+            if (just_stored_checkpoint) {just_stored_checkpoint=false; return ACTION::primal_update;}
+            if (!just_advanced && !just_stored_checkpoint) {current_timestep++; just_advanced=true; return ACTION::primal_step;}
+            if (just_advanced && !just_stored_checkpoint) {iCheckpoint++; just_stored_checkpoint=true; just_advanced=false; return ACTION::store_single_state;}
+            else throw std::runtime_error("Equidistant revolve primal sweep 1."); 
+        }
         // full CP's
-        // dp DEPTH times: primal_update, primal_step, store_single_DISK
-        return ACTION::primal_update;
-        return ACTION::primal_step;
-        return ACTION::store_single_state;
+        // dp DEPTH (or TS_order+1) times: primal_update, primal_step, store_single_DISK
+        if((current_timestep-timestepping_order)%(snaps_in_RAM+depth) > snaps_in_RAM || (current_timestep-timestepping_order)%(snaps_in_RAM+depth) == 0) {
+            where_to_put=false;
+            if (just_stored_checkpoint) {just_stored_checkpoint=false; return ACTION::primal_update;}
+            if (!just_advanced && !just_stored_checkpoint) {current_timestep++; just_advanced=true; return ACTION::primal_step;}
+            if (just_advanced && !just_stored_checkpoint) {iCheckpoint = -1; just_stored_checkpoint=true; just_advanced=false; return ACTION::store_single_state;}
+        }
 
     } else { // Adjoint computation
+        // end condition for whole computation
+        if (current_timestep==timestepping_order) return ACTION::terminate;
 
-        // do until CP_RAM=0 was loaded: adjoint_step, restore_single
-        // do DEPTH times: adjoint_step, restore_single
+        if(recompute_primal) { 
+            // restore latest full checkpoint
+            if((current_timestep-timestepping_order)%(snaps_in_RAM-depth) == 0) {
+                where_to_put=false; // from Disk
+                current_timestep -= snaps_in_RAM-depth; //set current timestep to last step of full CP
+                iCheckpoint = -1;
+                return ACTION::restore_full_checkpoint;
+            }
 
-        // restore latest full checkpoint
-
-        // do SNAPS_IN_RAM times: primal_update, primal_step, store_single_RAM
-
-        // Load 2 DEPTH-1 latest entries of latest DISK checkpoint
-
+            // do SNAPS_IN_RAM times: primal_update, primal_step, store_single_RAM
+            if (1) {
+                where_to_put=true;
+                if (just_stored_checkpoint) {just_stored_checkpoint=false; return ACTION::primal_update;}
+                if (!just_advanced && !just_stored_checkpoint) {current_timestep++; just_advanced=true; return ACTION::primal_step;}
+                if (just_advanced && !just_stored_checkpoint) {iCheckpoint++; just_stored_checkpoint=true; just_advanced=false; return ACTION::store_single_state;}
+                else throw std::runtime_error("Equidistant revolve primal sweep 1.");             
+            }
+            // Load 2 DEPTH-1 latest entries of latest DISK checkpoint
+        } else {
+            //std::cout << just_stored_checkpoint << std::endl;
+            if (just_stored_checkpoint) {
+                just_stored_checkpoint=false; 
+                just_advanced=true; 
+                if ((current_timestep-timestepping_order)%(snaps_in_RAM+depth) == 0 && current_timestep!=steps) {recompute_primal = true; std::cout << (current_timestep-timestepping_order)%(snaps_in_RAM-depth) << std::endl;}
+                if (CP_actions.back()==ACTION::restore_single_state) current_timestep--;
+                return ACTION::adjoint_step;
+            }
+            // do until CP_RAM=0 was loaded: adjoint_step, restore_single
+            if(just_advanced && ((current_timestep-timestepping_order)%(snaps_in_RAM+depth) >= depth+1) || ((current_timestep-timestepping_order)%(snaps_in_RAM+depth) == 0))  {
+                where_to_put=true;
+                just_stored_checkpoint=true;
+                just_advanced=false; 
+                setcheck((current_timestep-timestepping_order)%(depth+snaps_in_RAM)-depth+1);
+                return ACTION::restore_single_state;
+            } else if (just_advanced && ((current_timestep-timestepping_order)%(snaps_in_RAM+depth) < depth)) {  // do DEPTH times: adjoint_step, restore_single
+                where_to_put=false; // Load CP from disk
+                just_stored_checkpoint=true;
+                just_advanced=false; 
+                return ACTION::restore_single_state;
+            } else {
+                throw std::runtime_error("Equidistant revolve adjoint reverse."); 
+            }
+        }
+        
+        return ACTION::terminate;
     }
 }
 
@@ -182,18 +237,24 @@ ACTION::action SU2_implementation::revolve()
 
         /*--- Primal sweep with checkpoints stored ---*/
         if (current_timestep == timestepping_order-1) {
-            current_timestep++; just_stored_checkpoint = true;
+            current_timestep++;
+            just_stored_checkpoint = true;
+            iCheckpoint += timestepping_order+1; // += depth+1;
+            //iCheckpoint += 1; // += depth
+            //if(snaps == snaps_in_RAM) where_to_put = false;
             return ACTION::store_full_checkpoint;
         }
         
         // This loop should excecute primal_step, store_single_state, primal_update consecutively
         if (current_timestep < steps-4) { // the -3 is due to dual time stepping
             if (!just_advanced) { // at steps-4 we also need to take a checkpoint
-                current_timestep++; just_advanced = true;
+                current_timestep++;
+                just_advanced = true;
                 return ACTION::primal_step;
             } else {
                 just_advanced = false;
                 just_stored_checkpoint = true;
+                iCheckpoint++;
                 return ACTION::store_single_state;
             }
         }
@@ -201,6 +262,7 @@ ACTION::action SU2_implementation::revolve()
         if(current_timestep == steps-4 && just_advanced == true) { // the last 3 state are stored in the RAM anyway
             just_advanced = false;
             just_stored_checkpoint = true;
+            iCheckpoint++;
             return ACTION::store_single_state;
         }
         
@@ -213,7 +275,9 @@ ACTION::action SU2_implementation::revolve()
         }
         // first adjoint step here to have correct current_timestep
         if (current_timestep == steps-1) {
-            just_advanced = true; primal_sweep = false;
+            just_advanced = true; 
+            primal_sweep = false;
+            iCheckpoint++; // artificially add 1 as later iCheckpoint-- is used.
             return ACTION::adjoint_step;
         }
     /*--- Reverse sweep ---*/
@@ -222,10 +286,12 @@ ACTION::action SU2_implementation::revolve()
 
         if (current_timestep > timestepping_order) {
             if(!just_advanced) {
-                current_timestep--; just_advanced = true;
+                current_timestep--;
+                just_advanced = true;
                 return ACTION::adjoint_step;
             } else {
                 just_advanced = false;
+                iCheckpoint--;
                 return ACTION::restore_single_state;
             }
         }
@@ -239,25 +305,43 @@ ACTION::action SU2_implementation::revolve()
     std::string CP_type = "TEMP_1";
     Checkpointing *r;
     //r = new Checkpointing(10, 3, 3, "hi");
-    r = new Checkpointing(10, 9, 9, 4);
+    r = new Checkpointing(16, 4, 4, 2);
+    //r = new Checkpointing(12, 9, 9, 4);
     ACTION::action whattodo;
     do
     {
         whattodo = r->revolve();
-        std::cout << "counter: " << r->getcounter() << '\t' << "current_timestep: " << r->getcurrent_timestep() << '\t';
+        r->CP_scheme->CP_actions.push_back(whattodo);
+        //std::cout << r->CP_scheme->CP_actions.back() << std::endl; 
+        std::cout << "counter: " << r->getcounter() << '\t' << "current_timestep: " << r->getcurrent_timestep() << '\t' << "iCheckpoint: " << r->getcheck() << '\t';
 
         if(whattodo == ACTION::primal_step) {
             std::cout << "primal_step " << std::endl; continue; }
         if(whattodo == ACTION::store_full_checkpoint) {
-            std::cout << "store_full_checkpoint " <<  std::endl; continue; }
+            std::cout << "store_full_checkpoint "; 
+            if(r->getwhere()) {
+                 std::cout << "in RAM " << r->getcheck();
+            }
+            std::cout <<  std::endl;
+            continue;}
         if(whattodo == ACTION::store_single_state) {
-            std::cout << "store_single_state " <<  std::endl; continue; }
+            std::cout << "store_single_state ";
+            if(r->getwhere()) {
+                 std::cout << "in RAM " << r->getcheck();
+            }
+            std::cout <<  std::endl;
+            continue; }
         if(whattodo == ACTION::adjoint_step) {
             std::cout << "adjoint_step " << std::endl; continue; }
         if(whattodo == ACTION::restore_full_checkpoint) {
             std::cout << "restore_full_checkpoint " << std::endl; continue; }
         if(whattodo == ACTION::restore_single_state) {
-            std::cout << "restore_single_state " <<  std::endl; continue; }
+            std::cout << "restore_single_state "; 
+            if(r->getwhere()) {
+                 std::cout << "in RAM " << r->getcheck();
+            }
+            std::cout <<  std::endl;    
+            continue; }
         if(whattodo == ACTION::firsturn){
             std::cout << "firsturn " << std::endl; continue; }
         if(whattodo == ACTION::terminate){

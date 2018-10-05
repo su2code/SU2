@@ -556,7 +556,7 @@ CDriver::CDriver(char* confFile,
   if(config_container[ZONE_0]->GetCheckpointing()) {
     if (rank == MASTER_NODE) cout << endl << "---------------------- Checkpointing Preprocessing ---------------------" << endl; cout << "Creating Checkpointing Object." << endl;
     int snaps, steps, snaps_in_ram, depth;
-    steps = config_container[ZONE_0]->GetCheckpointingSteps(); // !! This whould be ExtIter
+    steps = config_container[ZONE_0]->GetCheckpointingSteps(); // !! This whould be ExtIter, later on or more specific Ext_Iter+TSorder because Ext_Iter is already in place
     snaps = config_container[ZONE_0]->GetCheckpointingSnaps();
     snaps_in_ram = config_container[ZONE_0]->GetCheckpointingSnapsInRAM();
     depth = config_container[ZONE_0]->GetCheckpointingDepth();

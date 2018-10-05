@@ -148,11 +148,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     /*--- If checkpointing is used, allocate memory & initialize Checkpoints ---*/
     if (config->GetCheckpointing()) {
         nCheckpointDepth = config->GetCheckpointingDepth();
-        nCheckpoint = config->GetCheckpointingSnaps();
+        nCheckpoint = config->GetCheckpointingSnapsInRAM();
         
         Checkpoints = new su2double** [nCheckpoint];
         for (iCheckpoint = 0; iCheckpoint < nCheckpoint; iCheckpoint++) {
-            Checkpoints[iCheckpoint] = new su2double* [nCheckpointDepth];
+            Checkpoints[iCheckpoint] = new su2double* [nCheckpointDepth]; // Checkpoint_depth=1 take out the depthlevel completly later on
             for (iCheckpointDepth = 0; iCheckpointDepth < nCheckpointDepth; iCheckpointDepth++) {
                 Checkpoints[iCheckpoint][iCheckpointDepth] = new su2double [nVar];
                 for (iVar = 0; iVar < nVar; iVar++) {
@@ -283,6 +283,32 @@ void CVariable::Set_CheckpointSingleState(unsigned short iCheckpoint) {
   }
 }
 
+void CVariable::Set_CheckpointSingleState_time_n(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Checkpoints[iCheckpoint][0][iVar] = Solution_time_n[iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Set_CheckpointSingleState_time_n1(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Checkpoints[iCheckpoint][0][iVar] = Solution_time_n1[iVar];
+    }
+      
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
 void CVariable::Restore_CheckpointSingleState(unsigned short iCheckpoint) {
 
   if (iCheckpoint < nCheckpoint) {
@@ -291,6 +317,32 @@ void CVariable::Restore_CheckpointSingleState(unsigned short iCheckpoint) {
       Solution[iVar] = Checkpoints[iCheckpoint][0][iVar];
     }
       
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Restore_CheckpointSingleState_time_n(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Solution_time_n[iVar] = Checkpoints[iCheckpoint][0][iVar];
+    }
+    
+  } else {
+      cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
+  }
+}
+
+void CVariable::Restore_CheckpointSingleState_time_n1(unsigned short iCheckpoint) {
+
+  if (iCheckpoint < nCheckpoint) {
+      
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      Solution_time_n1[iVar] = Checkpoints[iCheckpoint][0][iVar];
+    }
+    
   } else {
       cout << "CHECKPOINT OUT OF BOUNDS!" << endl;
   }

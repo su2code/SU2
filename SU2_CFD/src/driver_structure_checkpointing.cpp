@@ -187,15 +187,13 @@ void CDiscAdjFluidDriver::StoreSingleState()
     /*--- Save Checkpoint in RAM ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
     {
-      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck()); //TODO getcheck()
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck()); //TODO getcheck() // allocated checkpoints and ID do not fit together propably only single state checkpoints is the best solution
       if (turbulent)
       {
         solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck());
       }
     }
-  }
-  else
-  {
+  } else {
     /*--- takeshot on DISK, 3 timesteps have to be saved here! Storing wrong Primitives for n and n1. Storage always from sol position (therefore solution_old as intermediate container) ---*/
 
     /*--- Store Sol, setExtIter necessary for output with correct number  ---*/
@@ -215,15 +213,16 @@ void CDiscAdjFluidDriver::StoreSingleState()
 
   if (info > 1)
     if (rank == MASTER_NODE)
-      cout << " takeshot at " << setw(6) << r->getcurrent_timestep() << " in CP " << r->getcheck() << endl;
+      cout << "Store single state at " << setw(6) << r->getcurrent_timestep();
   if (r->getwhere())
     if (rank == MASTER_NODE)
-      cout << "takeshot in RAM " << endl;
+      cout << " in RAM" << " in CP " << r->getcheck() << endl;
     else if (rank == MASTER_NODE)
-      cout << "takeshot in ROM " << endl;
+      cout << " in ROM." << endl;
 }
 
 /* A restore single state is basically what happens currently during the adjoint run */
+/* Only tested for DT2nd */
 void CDiscAdjFluidDriver::RestoreSingleState()
 {
 
@@ -339,14 +338,12 @@ void CDiscAdjFluidDriver::RestoreSingleState()
 
   } // end of if-else
 
-  if (info > 2) {
-    if (rank == MASTER_NODE) {
-      cout << " restore single state at " << setw(7) << r->getcurrent_timestep() - 3 << " in CP " << r->getcheck() << endl;
-      if (r->getwhere()) {
-        cout << "restore in RAM " << endl;
-      } else {
-        cout << "restore on Disk " << endl;
-      }
+  if (info > 2 && rank == MASTER_NODE) {
+    cout << "Restore single state at " << setw(7) << r->getcurrent_timestep() - 3;
+    if (r->getwhere()) {
+      cout << "restore in RAM " << "in CP " << r->getcheck() << endl;
+    } else {
+      cout << "restore on Disk" << endl;
     }
   }
 }
@@ -361,13 +358,13 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
   /*--- Compute 1st timestep at the start of the primal solver to store a full checkpoint (if current state needs to be stored as well, i.e. DT_2nd stores 3 states)  ---*/
   if ( r->getcurrent_timestep() == r->gettimestepping_order() )
   {
-    std::cout << "Computing first Primal Step before taking full checkpoint." << std::endl;
+    if(rank == MASTER_NODE) std::cout << "Computing first Primal Step before taking full checkpoint." << std::endl;
     PreprocessExtIter(0);
     /*--- Advance one physical primal step by looping over multiple internal iter. But no Update()/solution pushing. ---*/
     PrimalAdvance();
   }
 
-  if (r->getwhere())
+  if (r->getwhere() && false) // Here It needs to stored in single checkpoints only !
   {
     /*--- Save Checkpoint in RAM ---*/
     for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
@@ -378,9 +375,42 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
         solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_Checkpoint(r->getcheck());
       }
     }
-  }
-  else
-  {
+  } else if (r->getwhere() && true) {
+    std::cout << "In new Store Full Checkpoint RAM method" << std::endl;
+    /*--- Save Checkpoints in RAM: 1. Store n1 (if DT2nd) in CP(i) 2. Store n in CP(i+1) 3. Store current sol in CP(i+2) ---*/
+    
+    /* 1. Store n1 (if DT2nd) in CP(i) */
+    // if(DT2nd)
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
+    {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState_time_n1(r->getcheck()-2);
+      if (turbulent)
+      {
+        solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_CheckpointSingleState_time_n1(r->getcheck()-2);
+      }
+    }
+    
+    /* 2. Store n in CP(i+1) */
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
+    {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState_time_n(r->getcheck()-1);
+      if (turbulent)
+      {
+        solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_CheckpointSingleState_time_n(r->getcheck()-1);
+      }
+    }
+    
+    /* 3. Store current sol in CP(i+2) */
+    for (iPoint = 0; iPoint < geometry_container[ZONE_0][INST_0][MESH_0]->GetnPoint(); iPoint++)
+    {
+      solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck());
+      if (turbulent)
+      {
+        solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->node[iPoint]->Set_CheckpointSingleState(r->getcheck());
+      }
+    }
+    
+  } else { //Disk
     /*--- takeshot on DISK, 3 timesteps have to be saved here! Storing wrong Primitives for n and n1. Storage always from sol position (therefore solution_old as intermediate container) ---*/
 
     /*--- Store Sol, setExtIter necessary for output with correct number  ---*/
@@ -459,22 +489,22 @@ void CDiscAdjFluidDriver::StoreFullCheckpoint()
       }
     }
   }
-  if (info > 1)
-    if (rank == MASTER_NODE)
-      cout << " takeshot at " << setw(6) << r->getcapo() << " in CP " << r->getcheck() << endl;
-  if (r->getwhere())
-    if (rank == MASTER_NODE)
-      cout << "takeshot in RAM " << endl;
-    else if (rank == MASTER_NODE)
-      cout << "takeshot in ROM " << endl;
+  if (info > 1 && rank == MASTER_NODE) {
+    cout << "Store full checkpoint at " << setw(6) << r->getcurrent_timestep();
+      
+    if (r->getwhere()) {
+      cout << " in RAM " << " in CP " << r->getcheck() << "." << endl;
+    } else { 
+      cout << " in ROM" << "." << endl;
+    }
+  }
 }
 
 void CDiscAdjFluidDriver::PrimalStep()
 {
   int info = 3;
   int val_iter = r->getcurrent_timestep();
-  if (rank == MASTER_NODE)
-    cout << "ADVANCE: " << val_iter << endl;
+  if (rank == MASTER_NODE) cout << "ADVANCE: " << val_iter << endl;
   /*--- Here Flow-solver initial conditions are called, well noe not anymore as first step is taken at takeshot ---*/
   PreprocessExtIter(val_iter);
 
@@ -491,9 +521,8 @@ void CDiscAdjFluidDriver::PrimalStep()
 
   //Monitor(j);
 
-  if (info > 2)
-    if (rank == MASTER_NODE)
-      cout << " advance to " << setw(7) << val_iter << endl;
+  if (info > 2 && rank == MASTER_NODE)
+   cout << "Primal step at " << setw(7) << r->getcurrent_timestep() << endl;
 }
 
 void CDiscAdjFluidDriver::RestoreFullCheckpoint()
@@ -563,22 +592,22 @@ void CDiscAdjFluidDriver::RestoreFullCheckpoint()
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
   }
-  if (info > 2)
-    if (rank == MASTER_NODE)
-      cout << " restore at " << setw(7) << r->getcurrent_timestep() - 0 << " in CP " << r->getcheck() << endl;
-  if (r->getwhere())
-    if (rank == MASTER_NODE)
-      cout << "restore in RAM " << endl;
-    else if (rank == MASTER_NODE)
-      cout << "restore in ROM " << endl;
+  if (info > 2 && rank == MASTER_NODE) {
+    cout << " Restore full checkpoint at timestep " << setw(7) << r->getcurrent_timestep() - 0;
+      
+    if (r->getwhere()) {
+      cout << " in RAM" << " in CP " << r->getcheck() << endl;
+    } else { 
+      cout << " in ROM " << endl;
+    }
+  }
 }
-
 void CDiscAdjFluidDriver::PrimalUpdate()
 {
   Update();
   int info = 3;
-  if (info > 2) {
-    std::cout << "Update at "<< r->getcurrent_timestep() << std::endl;
+  if (info > 2 && rank == MASTER_NODE) {
+    std::cout << "Primal update at timestep " << r->getcurrent_timestep() << std::endl;
   }
 }
 
@@ -596,9 +625,8 @@ void CDiscAdjFluidDriver::AdjointStep()
   Output(ExtIter);
   ExtIter++;
 
-  if (info > 2)
-    if (rank == MASTER_NODE)
-      cout << " youturn at " << setw(7) << r->getcurrent_timestep() << endl;
+  if (info > 2 && rank == MASTER_NODE)
+    cout << "Adjoint Step at timestep " << setw(7) << r->getcurrent_timestep() << endl;
 }
 
 /* Equivalent to adjoint step, could probably be completely removed */
@@ -616,7 +644,6 @@ void CDiscAdjFluidDriver::Firsturn()
   Output(ExtIter);
   ExtIter++;
 
-  if (info > 2)
-    if (rank == MASTER_NODE)
-      cout << " firsturn at " << setw(6) << r->getcapo() << endl;
+  if (info > 2 && rank == MASTER_NODE)
+    cout << " THIS SHOULD NOT RUN at " << setw(6) << r->getcapo() << endl;
 }

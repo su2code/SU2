@@ -213,10 +213,34 @@ public:
   void Set_CheckpointSingleState(unsigned short iCheckpoint);
   
   /*!
+   * \brief Fill Checkpoint with the value of the variables at time n.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Set_CheckpointSingleState_time_n(unsigned short iCheckpoint);
+  
+  /*!
+   * \brief Fill Checkpoint with the value of the variables at time n1.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Set_CheckpointSingleState_time_n1(unsigned short iCheckpoint);
+  
+  /*!
    * \brief Fills the primal solution of the solver container with state(s) in Checkpoint.
    * \param[in] iCheckpoint - position in the Checkpoints array 
    */
   void Restore_CheckpointSingleState(unsigned short iCheckpoint);
+
+  /*!
+   * \brief Fills the primal solution at time n of the solver container with state(s) in Checkpoint.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Restore_CheckpointSingleState_time_n(unsigned short iCheckpoint);
+
+  /*!
+   * \brief Fills the primal solution at time n1 of the solver container with state(s) in Checkpoint.
+   * \param[in] iCheckpoint - position in the Checkpoints array 
+   */
+  void Restore_CheckpointSingleState_time_n1(unsigned short iCheckpoint);
 
   /*!
    * \brief Set variables to the value of the old variables.

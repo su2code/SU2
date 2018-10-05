@@ -46,6 +46,7 @@
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 /*! 
  * \enum action
@@ -90,7 +91,9 @@ namespace ACTION
         /*!
          * \brief Get the current Checkpoint number.
          */
-        int getcheck() { return check; }
+        int getcheck() { return iCheckpoint; }
+
+        void setcheck(int iCP) { iCheckpoint = iCP; }
         
         int getcounter() { return counter; };
 
@@ -100,18 +103,22 @@ namespace ACTION
 
         void increasecounter() { counter++; };
 
+        std::vector<int> CP_actions;  /*!< \brief Vector holding all performed Actions ins chronological order */
+
      protected:
         int steps;                          /*!< \brief Number of time steps. */
         int counter;                        /*!< \brief Counts the actions taken  */
         int current_timestep;               /*!< \brief stores the physical timestep during forward and reverse sweep */
         unsigned short timestepping_order;  /*!< \brief Number of timesteps necessary for restart, i.e. DT_2ND = 2. */
+        unsigned short depth;               /*!< \brief Number of timesteps necessary for one adjoint iteration, i.e. DT_2ND = 2+1. */
         bool just_advanced;                 /*!< \brief Marks whether a new solution was computed, such that afterwards a store/restore is called */
         bool just_stored_checkpoint;        /*!< \brief Marker is a CP was stored, because a primal_update has to follow. */
         bool primal_sweep;                  /*!< \brief Marker if one is curently in the forward primal sweep */
+        bool recompute_primal;              /*!< \brief Marker during adjoint run recompute primal and store CPs */
         int snaps;                          /*!< \brief Number checkpoints. */
         int snaps_in_RAM;                   /*!< \brief Number checkpoints in memory. */
         int capo;                           /*!< \brief Current end timestep. */
-        int check;                          /*!< \brief Checkpoint number */
+        int iCheckpoint;                    /*!< \brief Checkpoint number */
         int oldcapo;                        /*!< \brief Current beginning timestep. */
         bool where_to_put;                  /*!< \brief Checkpoint in RAM (true) or on disk (false) */
  };
@@ -236,7 +243,7 @@ class Checkpointing
          * \brief Get current (end) timestep.
          */
         int getcapo()  { return CP_scheme->getcapo(); }
-        ;
+        
         /*!
          * \brief Get current (beginning) timestep.
          */
@@ -265,17 +272,18 @@ class Checkpointing
         int getcurrent_timestep() { return CP_scheme->getcurrent_timestep(); }
 
         unsigned short gettimestepping_order() { return CP_scheme->gettimestepping_order(); };
+
+        void setcheck(int iCP) { CP_scheme->setcheck(iCP); }
         
+        Checkpointing_Scheme *CP_scheme; /*!< \brief Checkpointing scheme object, specifies how revolve() behaves */
+
     protected:
         int steps;                       /*!< \brief Number of time steps. */
         int snaps;                       /*!< \brief Number checkpoints. */
         int snaps_in_RAM;                /*!< \brief Number checkpoints in memory. */
         int info;                        /*!< \brief Amount of screen information, valid {1,2,3} */
         int capo;                        /*!< \brief Current end timestep. */
-        int check;                       /*!< \brief Checkpoint number */
         int oldcapo;                     /*!< \brief Current beginning timestep. */
-        bool where_to_put;               /*!< \brief Checkpoint in RAM (true) or on disk (false) */
         unsigned short CP_type;             /*!< \brief Checkpoint type (EQUIDISTANT, BINOMIAL, QIQIWANG, FULL) */
         ACTION::action schedule[];       /*!< \brief Array holds ordered actions that define the checkpointing */
-        Checkpointing_Scheme *CP_scheme; /*!< \brief Checkpointing scheme object, specifies how revolve() behaves */
 };
