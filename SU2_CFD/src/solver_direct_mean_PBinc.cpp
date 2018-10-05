@@ -3454,15 +3454,6 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
-      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-      
-      Area = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-      Area = sqrt (Area);
-      
       /*--- Retrieve the specified velocity for the inlet. ---*/
 
       Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
@@ -3484,7 +3475,7 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
       /*--- Jacobian contribution for implicit integration ---*/
       
       if (implicit) {
-        for (iDim = 0; iDim <= nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
           total_index = iPoint*nVar+iDim;
           Jacobian.DeleteValsRowi(total_index);
         }
@@ -3619,3 +3610,601 @@ void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_conta
 void CPBIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
 
+CPBIncNSSolver::CPBIncNSSolver(void) : CPBIncEulerSolver() {
+  
+  /*--- Basic array initialization ---*/
+  
+  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
+  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
+  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
+  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+
+  ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
+  
+  /*--- Surface based array initialization ---*/
+  
+  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
+  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
+  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
+
+  /*--- Rotorcraft simulation array initialization ---*/
+  
+  CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
+  
+}
+
+CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CPBIncEulerSolver() {
+  
+  unsigned long iPoint, iVertex;
+  unsigned short iVar, iDim, iMarker, nLineLets;
+  ifstream restart_file;
+  unsigned short nZone = geometry->GetnZone();
+  bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  int Unst_RestartIter;
+  unsigned short iZone = config->GetiZone();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
+  string filename_ = config->GetSolution_FlowFileName();
+  bool fsi     = config->GetFSI_Simulation();
+
+  unsigned short direct_diff = config->GetDirectDiff();
+
+  /*--- Check for a restart file to evaluate if there is a change in the angle of attack
+   before computing all the non-dimesional quantities. ---*/
+
+  if (!(!restart || (iMesh != MESH_0) || nZone > 1)) {
+
+    /*--- Multizone problems require the number of the zone to be appended. ---*/
+
+    if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+    /*--- Read and store the restart metadata. ---*/
+
+    Read_SU2_Restart_Metadata(geometry, config, false, filename_);
+    
+  }
+
+  /*--- Array initialization ---*/
+  
+  CD_Visc = NULL; CL_Visc = NULL; CSF_Visc = NULL; CEff_Visc = NULL;
+  CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
+  CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
+  CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+
+  Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
+  Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
+  Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
+
+  CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
+  MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
+  CSkinFriction = NULL;    Cauchy_Serie = NULL; HF_Visc = NULL;
+  
+  /*--- Set the gamma value ---*/
+  
+  Gamma = config->GetGamma();
+  Gamma_Minus_One = Gamma - 1.0;
+  
+  /*--- Define geometry constants in the solver structure
+   * Incompressible flow, primitive variables (P, vx, vy, vz, T, rho, beta, lamMu, EddyMu, Kt_eff, Cp, Cv) --- */
+
+  nDim = geometry->GetnDim();
+  
+  nVar = nDim+2; nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
+  
+  /*--- Initialize nVarGrad for deallocation ---*/
+  
+  nVarGrad = nPrimVarGrad;
+  
+  nMarker      = config->GetnMarker_All();
+  nPoint       = geometry->GetnPoint();
+  nPointDomain = geometry->GetnPointDomain();
+ 
+  /*--- Store the number of vertices on each marker for deallocation later ---*/
+
+  nVertex = new unsigned long[nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++)
+    nVertex[iMarker] = geometry->nVertex[iMarker];
+ 
+  /*--- Fluid model intialization. ---*/
+
+  FluidModel = NULL;
+
+  /*--- Perform the non-dimensionalization for the flow equations using the
+   specified reference values. ---*/
+  
+  SetNondimensionalization(geometry, config, iMesh);
+  
+  /*--- Allocate the node variables ---*/
+  node = new CVariable*[nPoint];
+  
+  /*--- Define some auxiliar vector related with the residual ---*/
+  
+  Residual      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual[iVar]      = 0.0;
+  Residual_RMS  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+  Residual_Max  = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Residual_Max[iVar]  = 0.0;
+  Res_Conv      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Conv[iVar]      = 0.0;
+  Res_Visc      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Visc[iVar]      = 0.0;
+  Res_Sour      = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Res_Sour[iVar]      = 0.0;
+  
+  /*--- Define some structures for locating max residuals ---*/
+  
+  Point_Max     = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max[iVar]     = 0;
+  Point_Max_Coord = new su2double*[nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Point_Max_Coord[iVar] = new su2double[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord[iVar][iDim] = 0.0;
+  }
+  
+  /*--- Define some auxiliary vectors related to the solution ---*/
+  
+  Solution   = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution[iVar]   = 0.0;
+  Solution_i = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_i[iVar] = 0.0;
+  Solution_j = new su2double[nVar]; for (iVar = 0; iVar < nVar; iVar++) Solution_j[iVar] = 0.0;
+  
+  /*--- Define some auxiliary vectors related to the geometry ---*/
+  
+  Vector   = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector[iDim]   = 0.0;
+  Vector_i = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_i[iDim] = 0.0;
+  Vector_j = new su2double[nDim]; for (iDim = 0; iDim < nDim; iDim++) Vector_j[iDim] = 0.0;
+  
+  /*--- Define some auxiliary vectors related to the primitive solution ---*/
+  
+  Primitive   = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar]   = 0.0;
+  Primitive_i = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_i[iVar] = 0.0;
+  Primitive_j = new su2double[nPrimVar]; for (iVar = 0; iVar < nPrimVar; iVar++) Primitive_j[iVar] = 0.0;
+  
+  /*--- Define some auxiliar vector related with the undivided lapalacian computation ---*/
+  
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) {
+    iPoint_UndLapl = new su2double [nPoint];
+    jPoint_UndLapl = new su2double [nPoint];
+  }
+
+
+  /*--- Initialize the solution and right hand side vectors for storing
+   the residuals and updating the solution (always needed even for
+   explicit schemes). ---*/
+  
+  LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+  
+  /*--- Jacobians and vector structures for implicit computations ---*/
+  
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) {
+    
+    Jacobian_i = new su2double* [nVar];
+    Jacobian_j = new su2double* [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Jacobian_i[iVar] = new su2double [nVar];
+      Jacobian_j[iVar] = new su2double [nVar];
+    }
+    
+    if (rank == MASTER_NODE) cout << "Initialize Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+    Jacobian.Initialize(nPoint, nPointDomain, nVar, nVar, true, geometry, config);
+    
+    if ((config->GetKind_Linear_Solver_Prec() == LINELET) ||
+        (config->GetKind_Linear_Solver() == SMOOTHER_LINELET)) {
+      nLineLets = Jacobian.BuildLineletPreconditioner(geometry, config);
+      if (rank == MASTER_NODE) cout << "Compute linelet structure. " << nLineLets << " elements in each line (average)." << endl;
+    }
+    
+  }
+  
+  else {
+    if (rank == MASTER_NODE)
+      cout << "Explicit scheme. No Jacobian structure (Navier-Stokes). MG level: " << iMesh <<"." << endl;
+  }
+  
+  /*--- Define some auxiliary vectors for computing flow variable
+   gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
+   c vector := transpose(WA)*(Wb) ---*/
+  
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    
+    Smatrix = new su2double* [nDim];
+    for (iDim = 0; iDim < nDim; iDim++)
+      Smatrix[iDim] = new su2double [nDim];
+    
+    Cvector = new su2double* [nPrimVarGrad];
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+      Cvector[iVar] = new su2double [nDim];
+  }
+  
+  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
+  
+  CharacPrimVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    CharacPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      CharacPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+      for (iVar = 0; iVar < nPrimVar; iVar++) {
+        CharacPrimVar[iMarker][iVertex][iVar] = 0.0;
+      }
+    }
+  }
+
+  /*--- Store the values of the temperature and the heat flux density at the boundaries,
+   used for coupling with a solid donor cell ---*/
+  unsigned short nHeatConjugateVar = 4;
+
+  HeatConjugateVar = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+
+      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
+      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
+        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
+      }
+      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
+    }
+  }
+  
+  /*--- Inviscid force definition and coefficient in all the markers ---*/
+  
+  CPressure = new su2double* [nMarker];
+  CPressureTarget = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    CPressure[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    CPressureTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      CPressure[iMarker][iVertex] = 0.0;
+      CPressureTarget[iMarker][iVertex] = 0.0;
+    }
+  }
+  
+  /*--- Heat flux in all the markers ---*/
+  
+  HeatFlux = new su2double* [nMarker];
+  HeatFluxTarget = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    HeatFlux[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    HeatFluxTarget[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      HeatFlux[iMarker][iVertex] = 0.0;
+      HeatFluxTarget[iMarker][iVertex] = 0.0;
+    }
+  }
+  
+  /*--- Y plus in all the markers ---*/
+  
+  YPlus = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    YPlus[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      YPlus[iMarker][iVertex] = 0.0;
+    }
+  }
+  
+  /*--- Skin friction in all the markers ---*/
+  
+  CSkinFriction = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    CSkinFriction[iMarker] = new su2double*[nDim];
+    for (iDim = 0; iDim < nDim; iDim++) {
+      CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        CSkinFriction[iMarker][iDim][iVertex] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Non dimensional coefficients ---*/
+  
+  ForceInviscid  = new su2double[3];
+  MomentInviscid = new su2double[3];
+  CD_Inv      = new su2double[nMarker];
+  CL_Inv      = new su2double[nMarker];
+  CSF_Inv = new su2double[nMarker];
+  CMx_Inv        = new su2double[nMarker];
+  CMy_Inv        = new su2double[nMarker];
+  CMz_Inv        = new su2double[nMarker];
+  CEff_Inv       = new su2double[nMarker];
+  CFx_Inv        = new su2double[nMarker];
+  CFy_Inv        = new su2double[nMarker];
+  CFz_Inv        = new su2double[nMarker];
+
+  ForceMomentum  = new su2double[3];
+  MomentMomentum = new su2double[3];
+  CD_Mnt      = new su2double[nMarker];
+  CL_Mnt      = new su2double[nMarker];
+  CSF_Mnt = new su2double[nMarker];
+  CMx_Mnt        = new su2double[nMarker];
+  CMy_Mnt        = new su2double[nMarker];
+  CMz_Mnt        = new su2double[nMarker];
+  CEff_Mnt       = new su2double[nMarker];
+  CFx_Mnt        = new su2double[nMarker];
+  CFy_Mnt        = new su2double[nMarker];
+  CFz_Mnt        = new su2double[nMarker];
+
+  ForceViscous     = new su2double[3];
+  MomentViscous    = new su2double[3];
+  CD_Visc       = new su2double[nMarker];
+  CL_Visc       = new su2double[nMarker];
+  CSF_Visc  = new su2double[nMarker];
+  CMx_Visc         = new su2double[nMarker];
+  CMy_Visc         = new su2double[nMarker];
+  CMz_Visc         = new su2double[nMarker];
+  CEff_Visc        = new su2double[nMarker];
+  CFx_Visc         = new su2double[nMarker];
+  CFy_Visc         = new su2double[nMarker];
+  CFz_Visc         = new su2double[nMarker];
+  CoPx_Visc         = new su2double[nMarker];
+  CoPy_Visc         = new su2double[nMarker];
+  CoPz_Visc         = new su2double[nMarker];
+
+  Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Inv = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CEff_Inv       = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Inv        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Inv        = new su2double[config->GetnMarker_Monitoring()];
+
+  Surface_CL_Mnt      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD_Mnt      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Mnt = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CEff_Mnt       = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Mnt        = new su2double[config->GetnMarker_Monitoring()];
+
+  Surface_CL          = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD          = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF     = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CEff           = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFx            = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFy            = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFz            = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMx            = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMy            = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMz            = new su2double[config->GetnMarker_Monitoring()];
+
+  Surface_CL_Visc      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CD_Visc      = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CSF_Visc = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CEff_Visc       = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFx_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFy_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CFz_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMx_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMy_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  Surface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
+  
+  /*--- Rotorcraft coefficients ---*/
+
+  CT_Inv           = new su2double[nMarker];
+  CQ_Inv           = new su2double[nMarker];
+  CMerit_Inv       = new su2double[nMarker];
+
+  CT_Mnt           = new su2double[nMarker];
+  CQ_Mnt           = new su2double[nMarker];
+  CMerit_Mnt       = new su2double[nMarker];
+
+  CMerit_Visc      = new su2double[nMarker];
+  CT_Visc          = new su2double[nMarker];
+  CQ_Visc          = new su2double[nMarker];
+  
+  /*--- Heat based coefficients ---*/
+
+  HF_Visc    = new su2double[nMarker];
+  MaxHF_Visc = new su2double[nMarker];
+
+  /*--- Init total coefficients ---*/
+
+  Total_CD       = 0.0;  Total_CL           = 0.0;  Total_CSF            = 0.0;
+  Total_CMx      = 0.0;  Total_CMy          = 0.0;  Total_CMz            = 0.0;
+  Total_CEff     = 0.0;
+  Total_CFx      = 0.0;  Total_CFy          = 0.0;  Total_CFz            = 0.0;
+  Total_CT       = 0.0;  Total_CQ           = 0.0;  Total_CMerit         = 0.0;
+  Total_MaxHeat  = 0.0;  Total_Heat         = 0.0;  Total_ComboObj       = 0.0;
+  Total_CpDiff   = 0.0;  Total_HeatFluxDiff = 0.0;  Total_Custom_ObjFunc = 0.0;
+  AoA_Prev       = 0.0;
+  Total_CL_Prev  = 0.0;  Total_CD_Prev      = 0.0;
+  Total_CMx_Prev = 0.0;  Total_CMy_Prev     = 0.0;  Total_CMz_Prev       = 0.0;
+
+  /*--- Coefficients for fixed lift mode. ---*/
+  
+  AoA_Prev = 0.0;
+  Total_CL_Prev = 0.0; Total_CD_Prev = 0.0;
+  Total_CMx_Prev = 0.0; Total_CMy_Prev = 0.0; Total_CMz_Prev = 0.0;
+
+  /*--- Read farfield conditions from config ---*/
+  
+  Density_Inf     = config->GetDensity_FreeStreamND();
+  Pressure_Inf    = config->GetPressure_FreeStreamND();
+  Temperature_Inf = config->GetTemperature_FreeStreamND();
+  Velocity_Inf    = config->GetVelocity_FreeStreamND();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Tke_Inf         = config->GetTke_FreeStreamND();
+  
+  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+  
+  switch(direct_diff){
+    case NO_DERIVATIVE:
+      break;
+    case D_DENSITY:
+      SU2_TYPE::SetDerivative(Density_Inf, 1.0);
+      break;
+    case D_PRESSURE:
+      SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
+      break;
+    case D_TEMPERATURE:
+      SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
+      break;
+    case D_VISCOSITY:
+      SU2_TYPE::SetDerivative(Viscosity_Inf, 1.0);
+      break;
+    case D_MACH: case D_AOA:
+    case D_SIDESLIP: case D_REYNOLDS:
+    case D_TURB2LAM: case D_DESIGN:
+      /*--- Already done in postprocessing of config ---*/
+      break;
+    default:
+      break;
+  }
+
+  /*--- Initialize the cauchy critera array for fixed CL mode ---*/
+
+  if (config->GetFixed_CL_Mode())
+    Cauchy_Serie = new su2double [config->GetCauchy_Elems()+1];
+
+  /*--- Initialize the solution to the far-field state everywhere. ---*/
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
+
+  /*--- Initialize the BGS residuals in FSI problems. ---*/
+  if (fsi){
+    Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
+    Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+    /*--- Define some structures for locating max residuals ---*/
+
+    Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+    Point_Max_Coord_BGS = new su2double*[nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+      for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+    }
+  }
+
+  /*--- Define solver parameters needed for execution of destructor ---*/
+
+  if (config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) space_centered = true;
+  else space_centered = false;
+
+  if (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT) euler_implicit = true;
+  else euler_implicit = false;
+
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
+  else least_squares = false;
+
+  /*--- Perform the MPI communication of the solution ---*/
+
+  Set_MPI_Solution(geometry, config);
+
+}
+
+
+CPBIncNSSolver::~CPBIncNSSolver(void) {
+
+  unsigned short iMarker, iDim;
+
+  unsigned long iVertex;
+
+  if (CD_Visc != NULL)       delete [] CD_Visc;
+  if (CL_Visc != NULL)       delete [] CL_Visc;
+  if (CSF_Visc != NULL)  delete [] CSF_Visc;
+  if (CMx_Visc != NULL)         delete [] CMx_Visc;
+  if (CMy_Visc != NULL)         delete [] CMy_Visc;
+  if (CMz_Visc != NULL)         delete [] CMz_Visc;
+  if (CoPx_Visc != NULL)        delete [] CoPx_Visc;
+  if (CoPy_Visc != NULL)        delete [] CoPy_Visc;
+  if (CoPz_Visc != NULL)        delete [] CoPz_Visc;
+  if (CFx_Visc != NULL)         delete [] CFx_Visc;
+  if (CFy_Visc != NULL)         delete [] CFy_Visc;
+  if (CFz_Visc != NULL)         delete [] CFz_Visc;
+  if (CEff_Visc != NULL)        delete [] CEff_Visc;
+  if (CMerit_Visc != NULL)      delete [] CMerit_Visc;
+  if (CT_Visc != NULL)          delete [] CT_Visc;
+  if (CQ_Visc != NULL)          delete [] CQ_Visc;
+  if (HF_Visc != NULL)        delete [] HF_Visc;
+  if (MaxHF_Visc != NULL) delete [] MaxHF_Visc;
+  if (ForceViscous != NULL)     delete [] ForceViscous;
+  if (MomentViscous != NULL)    delete [] MomentViscous;
+
+  if (Surface_CL_Visc != NULL)      delete [] Surface_CL_Visc;
+  if (Surface_CD_Visc != NULL)      delete [] Surface_CD_Visc;
+  if (Surface_CSF_Visc != NULL) delete [] Surface_CSF_Visc;
+  if (Surface_CEff_Visc != NULL)       delete [] Surface_CEff_Visc;
+  if (Surface_CFx_Visc != NULL)        delete [] Surface_CFx_Visc;
+  if (Surface_CFy_Visc != NULL)        delete [] Surface_CFy_Visc;
+  if (Surface_CFz_Visc != NULL)        delete [] Surface_CFz_Visc;
+  if (Surface_CMx_Visc != NULL)        delete [] Surface_CMx_Visc;
+  if (Surface_CMy_Visc != NULL)        delete [] Surface_CMy_Visc;
+  if (Surface_CMz_Visc != NULL)        delete [] Surface_CMz_Visc;
+
+  if (Cauchy_Serie != NULL) delete [] Cauchy_Serie;
+  
+  if (CSkinFriction != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        delete [] CSkinFriction[iMarker][iDim];
+      }
+      delete [] CSkinFriction[iMarker];
+    }
+    delete [] CSkinFriction;
+  }
+  
+  if (HeatConjugateVar != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
+        delete [] HeatConjugateVar[iMarker][iVertex];
+      }
+      delete [] HeatConjugateVar[iMarker];
+    }
+    delete [] HeatConjugateVar;
+  }
+  
+}
+
+
+
+void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
+                    unsigned short iMesh, unsigned long Iteration) {
+
+}
+
+void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+
+}
+
+  
+
+void CPBIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+}
+
+void CPBIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config){
+
+}
+
+void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+}
+
+
+void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+	
+}
+
+
+unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+	
+}

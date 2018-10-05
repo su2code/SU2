@@ -1094,7 +1094,7 @@ inline su2double *CPBIncEulerVariable::GetPrimitive(void) { return Primitive; }
 
 inline void CPBIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_Old[iDim+1] = val_velocity[iDim]*Primitive[nDim+1];
+    Solution_Old[iDim] = val_velocity[iDim]*Primitive[nDim+1];
 }
 
 inline void CPBIncEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }

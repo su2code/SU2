@@ -5633,13 +5633,6 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       V_inlet[nDim+7] = node[iPoint]->GetSpecificHeatCp();
 
       /*--- Set various quantities in the solver class ---*/
-      
-      cout<<"Inlet V_domain"<<endl;
-      for (iVar = 0; iVar < nVar; iVar++) cout<<V_domain[iVar]<<", "<<iVar<<endl;
-      
-      cout<<"Inlet V_inlet"<<endl;
-      for (iVar = 0; iVar < nVar; iVar++) cout<<V_inlet[iVar]<<", "<<iVar<<endl;
-      
       conv_numerics->SetPrimitive(V_domain, V_inlet);
       
       if (grid_movement)

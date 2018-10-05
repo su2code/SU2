@@ -819,7 +819,7 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
     case RUNTIME_POISSON_SYS: monitor = log10(solver_container[iZone][iInst][FinestMesh][POISSON_SOL]->GetRes_RMS(0)); 
        if ((Iteration%500)==0)  cout<<"Res : "<<monitor<<endl;
     break;
-    case RUNTIME_FLOW_SYS:if ((Iteration%50)==0)  cout<<"Momentum Res: "<<log10(solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(0))<<", "<<log10(solver_container[iZone][iInst][FinestMesh][POISSON_SOL]->GetRes_RMS(1))<<endl;
+    case RUNTIME_FLOW_SYS:if ((Iteration%50)==0)  cout<<"Momentum Res: "<<log10(solver_container[iZone][iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(0))<<endl;
   }
   
   if (RunTime_EqSystem == RUNTIME_HEAT_SYS) {

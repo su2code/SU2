@@ -4696,6 +4696,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
+    bool pressure_based = config[val_iZone]->GetKind_Incomp_System() == PRESSURE_BASED;
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -4793,6 +4794,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
+    if (pressure_based) nVar_Flow = nDim;
     if (turbulent) {
       switch (config[val_iZone]->GetKind_Turb_Model()) {
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
@@ -5007,7 +5009,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         /*--- Flow Residuals ---*/
-        
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
         
@@ -5359,7 +5360,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (incompressible && (!pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
+              if (incompressible && (pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), dummy);
             }
             else {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
@@ -13018,6 +13020,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
   bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  bool pressure_based   = (config->GetKind_Incomp_System() == PRESSURE_BASED);
 
   int *Local_Halo = NULL;
 
@@ -13134,13 +13137,18 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     if (config->GetWrt_Residuals()) {
       nVar_Par += nVar_Consv_Par;
-
-      Variable_Names.push_back("Residual_Pressure");
-      Variable_Names.push_back("Residual_Velocity_x");
-      Variable_Names.push_back("Residual_Velocity_y");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
-      Variable_Names.push_back("Residual_Temperature");
-
+      
+      if (pressure_based) {
+		  Variable_Names.push_back("Residual_Velocity_x");
+		  Variable_Names.push_back("Residual_Velocity_y");
+      }
+      else {
+		  Variable_Names.push_back("Residual_Pressure");
+		  Variable_Names.push_back("Residual_Velocity_x");
+		  Variable_Names.push_back("Residual_Velocity_y");
+		  if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
+		  Variable_Names.push_back("Residual_Temperature");
+	  }
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
           Variable_Names.push_back("Residual_TKE");
@@ -13340,20 +13348,28 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       }
 
       /*--- Load the conservative variable states for the mean flow variables. ---*/
-
-      Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
-      Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
-      Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(2); iVar++;
-      if (nDim == 3) {
-        Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(3); iVar++;
-      }
-      if (weakly_coupled_heat) {
-        Local_Data[jPoint][iVar] = solver[HEAT_SOL]->node[iPoint]->GetSolution(0);
-        iVar++;
-      }
-      else {
-        Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(nDim+1);
-        iVar++;
+      if (pressure_based) {
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
+		  if (nDim == 3) {
+			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(3); iVar++;
+		  }
+	  }
+	  else {
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(2); iVar++;
+		  if (nDim == 3) {
+			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(3); iVar++;
+		  }
+		  if (weakly_coupled_heat) {
+			  Local_Data[jPoint][iVar] = solver[HEAT_SOL]->node[iPoint]->GetSolution(0);
+			  iVar++;
+		  }
+		  else {
+			  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(nDim+1);
+			  iVar++;
+		  }
       }
 
       /*--- If this is RANS, i.e., the second solver container is not empty,
