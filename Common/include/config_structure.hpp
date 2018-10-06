@@ -1013,11 +1013,12 @@ private:
   string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
   su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
   su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
-  su2double top_optim_filter_radius; /*!< \brief Radius of the filter used on the design density for topology optimization. */
   unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
                 *top_optim_kernels, /*!< \brief The kernels to use. */
-                 top_optim_nKernelParams; /*!< \brief Number of kernel parameters specified. */
-  su2double *top_optim_kernel_params; /*!< \brief The kernel parameters. */
+                 top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
+                 top_optim_nRadius; /*!< \brief Number of radius values specified. */
+  su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
+            *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
   unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
   su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
 
@@ -8481,42 +8482,37 @@ public:
   /*!
    * \brief Get topology optimization.
    */
-  bool GetTopology_Optimization(void);
+  bool GetTopology_Optimization(void) const;
 
   /*!
    * \brief Get name of output file for topology optimization derivatives.
    */
-  string GetTopology_Optim_FileName(void);
+  string GetTopology_Optim_FileName(void) const;
 
   /*!
    * \brief Get exponent for density-based stiffness penalization.
    */
-  su2double GetSIMP_Exponent(void);
+  su2double GetSIMP_Exponent(void) const;
 
   /*!
    * \brief Get lower bound for density-based stiffness penalization.
    */
-  su2double GetSIMP_MinStiffness(void);
-  
-  /*!
-   * \brief Get the radius for the filter used in topology optimization.
-   */
-  su2double GetTopology_Optim_Filter_Radius(void);
+  su2double GetSIMP_MinStiffness(void) const;
   
   /*!
    * \brief Number of kernels to use in filtering the design density field.
    */
-  unsigned short GetTopology_Optim_Num_Kernels(void);
+  unsigned short GetTopology_Optim_Num_Kernels(void) const;
   
   /*!
-   * \brief Get the i'th kernel to use and its parameter.
+   * \brief Get the i'th kernel to use, its parameter, and the radius.
    */
-  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type, su2double &param);
-  
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+                                su2double &param, su2double &radius) const;
   /*!
    * \brief Get the type and parameter for the projection function used in topology optimization
    */
-  void GetTopology_Optim_Projection(unsigned short &type, su2double &param);
+  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const;
 
 };
 
