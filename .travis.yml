@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - charanya.crome09@ic.ac.uk
   
 branches:
     only:
-        - develop
+        - fix_multizone_DEF
 
 python:
     - 2.7

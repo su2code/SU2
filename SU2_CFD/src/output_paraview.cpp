@@ -1196,6 +1196,9 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       filename = config->GetSurfStructure_FileName().c_str();
     else
       filename = config->GetStructure_FileName().c_str();
+    if (!new_file) {
+      filename = filename + "_def";
+    }
   }
   
   
