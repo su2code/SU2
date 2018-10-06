@@ -4923,13 +4923,15 @@ void CFEASolver::FilterElementDensities(CGeometry *geometry, CConfig *config)
   physical densities which are the ones used to penalize their stiffness. ---*/
   
   unsigned short type;
-  su2double param, filter_radius = config->GetTopology_Optim_Filter_Radius();
+  su2double param, radius;
   
   vector<pair<unsigned short,su2double> > kernels;
+  vector<su2double> filter_radius;
   for (unsigned short iKernel=0; iKernel<config->GetTopology_Optim_Num_Kernels(); ++iKernel)
   {
-    config->GetTopology_Optim_Kernel(iKernel,type,param);
+    config->GetTopology_Optim_Kernel(iKernel,type,param,radius);
     kernels.push_back(make_pair(type,param));
+    filter_radius.push_back(radius);
   }
 
   unsigned long iElem, nElem = geometry->GetnElem();

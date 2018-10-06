@@ -538,6 +538,7 @@ void CConfig::SetPointersNull(void) {
 
   top_optim_kernels       = NULL;
   top_optim_kernel_params = NULL;
+  top_optim_filter_radius = NULL;
 
   /*--- Variable initialization ---*/
   
@@ -1876,8 +1877,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
   addDoubleOption("TOPOL_OPTIM_SIMP_EXPONENT", simp_exponent, 1.0);
   addDoubleOption("TOPOL_OPTIM_SIMP_MINSTIFF", simp_minimum_stiffness, 0.001);
-  addDoubleOption("TOPOL_OPTIM_FILTER_RADIUS", top_optim_filter_radius, 1e-6);
   addEnumListOption("TOPOL_OPTIM_FILTER_KERNEL", top_optim_nKernel, top_optim_kernels, Filter_Kernel_Map);
+  addDoubleListOption("TOPOL_OPTIM_FILTER_RADIUS", top_optim_nRadius, top_optim_filter_radius);
   addDoubleListOption("TOPOL_OPTIM_KERNEL_PARAM", top_optim_nKernelParams, top_optim_kernel_params);
   addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, NO_PROJECTION);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
@@ -3786,6 +3787,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   /*--- Handle default options for topology optimization ---*/
   
+  if (topology_optimization && top_optim_nKernel==0) {
+    top_optim_nKernel = 1;
+    top_optim_kernels = new unsigned short [1];
+    top_optim_kernels[0] = CONICAL_WEIGHT_FILTER;
+  }
+  
   if (top_optim_nKernel != 0) {
     /*--- Set default value of kernel parameters ---*/
     if (top_optim_nKernelParams == 0) {
@@ -3804,6 +3811,25 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     /*--- Numbers do not match ---*/
     else if (top_optim_nKernelParams != top_optim_nKernel) {
       SU2_MPI::Error("Different number of topology filter kernels and respective parameters.", CURRENT_FUNCTION);
+    }
+
+    /*--- Set default value of filter radius ---*/
+    if (top_optim_nRadius == 0) {
+      top_optim_nRadius = top_optim_nKernel;
+      top_optim_filter_radius = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_filter_radius[i] = 1.0e-6;
+    }
+    /*--- Broadcast the only value provided ---*/
+    else if (top_optim_nRadius==1 && top_optim_nKernel>1) {
+      su2double tmp = top_optim_filter_radius[0];
+      delete [] top_optim_filter_radius;
+      top_optim_nRadius = top_optim_nKernel;
+      top_optim_filter_radius = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_filter_radius[i] = tmp;
+    }
+    /*--- Numbers do not match ---*/
+    else if (top_optim_nRadius != top_optim_nKernel) {
+      SU2_MPI::Error("Different number of topology filter kernels and respective radii.", CURRENT_FUNCTION);
     }
   }
 
@@ -6659,6 +6685,8 @@ CConfig::~CConfig(void) {
 
   if (top_optim_kernels != NULL) delete [] top_optim_kernels;
   if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
+  if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
+
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {

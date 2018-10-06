@@ -1343,8 +1343,8 @@ public:
    * \param[in] input_values - "Raw" values.
    * \param[out] output_values - Filtered values.
    */
-  void FilterValuesAtElementCG(const su2double filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
-                               const su2double *input_values, su2double *output_values);
+  void FilterValuesAtElementCG(const vector<su2double> filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+                               const su2double *input_values, su2double *output_values) const;
   
   /*!
    * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.

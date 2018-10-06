@@ -1856,10 +1856,10 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
+void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
                                         const vector<pair<unsigned short,su2double> > &kernels,
                                         const su2double *input_values,
-                                        su2double *output_values)
+                                        su2double *output_values) const
 {
   /*--- Apply a filter to "input_values". The filter is an averaging process over the neighbourhood
   of each element, which is a circle in 2D and a sphere in 3D of radius "filter_radius".
@@ -1875,7 +1875,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
 
   if ( kernels.empty() ) return;
 
-  /*--- FIRST: Gather the adjacency matrix, element centroids, volumes, and densities on every
+  /*--- FIRST: Gather the adjacency matrix, element centroids, volumes, and values on every
   processor, this is required because the filter reaches far into adjacent partitions. ---*/
   
   /*--- Adjacency matrix ---*/
@@ -1945,6 +1945,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
   {
     unsigned short kernel_type = kernels[iKernel].first;
     su2double kernel_param = kernels[iKernel].second;
+    su2double kernel_radius = filter_radius[iKernel];
 
     /*--- Synchronize work values ---*/
     /*--- Initialize ---*/
@@ -1974,7 +1975,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
     
       /*--- Find the neighbours of iElem ---*/
       vector<long> neighbours;
-      GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(filter_radius),
+      GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(kernel_radius),
                              neighbour_start, neighbour_idx, cg_elem, neighbours);
     
       /*--- Apply the kernel ---*/
@@ -1993,7 +1994,7 @@ void CGeometry::FilterValuesAtElementCG(const su2double filter_radius,
       
             switch ( kernel_type ) {
               case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
-              case CONICAL_WEIGHT_FILTER:  weight = filter_radius-distance; break;
+              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
               case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2.0)); break;
               default: break;
             }
@@ -2039,8 +2040,6 @@ void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour
                                                 long *&neighbour_idx) const
 {
   unsigned long iElem, iElem_global;
-  
-  if (neighbour_idx) delete [] neighbour_idx;
 
   /*--- Determine how much space we need for the adjacency matrix by counting the
   neighbours of each element, i.e. its number of faces---*/
