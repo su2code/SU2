@@ -241,7 +241,10 @@ inline void CSmagorinskyModel::ComputeGradEddyViscosity_3D(const su2double rho,
   exit(1);
 }
 
-inline CWALEModel::CWALEModel(void) : CSGSModel() {}
+inline CWALEModel::CWALEModel(void) : CSGSModel() {
+  const_WALE = 0.325;
+}
+
 inline CWALEModel::~CWALEModel(void){}
 
 inline su2double CWALEModel::ComputeEddyViscosity_2D(const su2double rho,
@@ -251,8 +254,42 @@ inline su2double CWALEModel::ComputeEddyViscosity_2D(const su2double rho,
                                                      const su2double dvdy,
                                                      const su2double lenScale,
                                                      const su2double distToWall) {
-  cout << "CWALEModel::ComputeEddyViscosity_2D: Not implemented yet" << endl;
-  exit(1);
+  /* Compute the length scale in WALE. */
+  const su2double lenScaleWale = const_WALE*lenScale;
+
+  /* Compute the strain rate tensor, which is symmetric. */
+  const su2double S11 = dudx, S22 = dvdy;
+  const su2double S12 = 0.5*(dudy + dvdx);
+
+  /* Compute the values of the Sd tensor. First without the trace
+     correction of the diagonal terms. */
+  su2double Sd11 = dudx*dudx + dudy*dvdx;
+  su2double Sd22 = dvdx*dudy + dvdy*dvdy;
+
+  const su2double Sd12 = 0.5*(dudx*dudy + dudy*dvdy + dvdx*dudx + dvdy*dvdx);
+
+  /* Correct the diagonal elements, such that the trace of the Sd tensor is zero
+     Note that this comes from the 3D formulation. */
+  const su2double thirdTrace = (Sd11 + Sd22)/3.0;
+
+  Sd11 -= thirdTrace;
+  Sd22 -= thirdTrace;
+
+  /* Compute the summation of both tensors. */
+  const su2double sumS  = S11 *S11  + S22 *S22  + 2.0*S12 *S12;
+  const su2double sumSd = Sd11*Sd11 + Sd22*Sd22 + 2.0*Sd12*Sd12;
+
+  /* Compute the kinematic eddy viscosity. */
+  const su2double sumSdPow3_2 = sumSd*sqrt(sumSd);
+  const su2double sumSdPow5_4 = sqrt(sumSdPow3_2*sumSd);
+  const su2double sumSPow5_2  = sumS*sumS*sqrt(sumS);
+  const su2double denom       = sumSPow5_2 + sumSdPow5_4;
+
+  const su2double nuEddy = lenScaleWale*lenScaleWale*sumSdPow3_2
+                         / max(denom, 1.e-20);
+
+  /* Return the SGS dynamic viscosity. */
+  return rho*nuEddy;
 }
 
 inline su2double CWALEModel::ComputeEddyViscosity_3D(const su2double rho,
@@ -267,8 +304,52 @@ inline su2double CWALEModel::ComputeEddyViscosity_3D(const su2double rho,
                                                      const su2double dwdz,
                                                      const su2double lenScale,
                                                      const su2double distToWall) {
-  cout << "CWALEModel::ComputeEddyViscosity_3D: Not implemented yet" << endl;
-  exit(1);
+  /* Compute the length scale in WALE. */
+  const su2double lenScaleWale = const_WALE*lenScale;
+
+  /* Compute the strain rate tensor, which is symmetric. */
+  const su2double S11 = dudx, S22 = dvdy, S33 = dwdz;
+  const su2double S12 = 0.5*(dudy + dvdx);
+  const su2double S13 = 0.5*(dudz + dwdx);
+  const su2double S23 = 0.5*(dvdz + dwdy);
+
+  /* Compute the values of the Sd tensor. First without the trace
+     correction of the diagonal terms. */
+  su2double Sd11 = dudx*dudx + dudy*dvdx + dudz*dwdx;
+  su2double Sd22 = dvdx*dudy + dvdy*dvdy + dvdz*dwdy;
+  su2double Sd33 = dwdx*dudz + dwdy*dvdz + dwdz*dwdz;
+
+  const su2double Sd12 = 0.5*(dudx*dudy + dudy*dvdy + dudz*dwdy
+                       +      dvdx*dudx + dvdy*dvdx + dvdz*dwdx);
+  const su2double Sd13 = 0.5*(dudx*dudz + dudy*dvdz + dudz*dwdz
+                       +      dwdx*dudx + dwdy*dvdx + dwdz*dwdx);
+  const su2double Sd23 = 0.5*(dvdx*dudz + dvdy*dvdz + dvdz*dwdz
+                       +      dwdx*dudy + dwdy*dvdy + dwdz*dwdy);
+
+  /* Correct the diagonal elements, such that the trace of the Sd tensor is zero. */
+  const su2double thirdTrace = (Sd11 + Sd22 + Sd33)/3.0;
+
+  Sd11 -= thirdTrace;
+  Sd22 -= thirdTrace;
+  Sd33 -= thirdTrace;
+
+  /* Compute the summation of both tensors. */
+  const su2double sumS  = S11*S11 + S22*S22 + S33*S33
+                        + 2.0*(S12*S12 + S13*S13 + S23*S23);
+  const su2double sumSd = Sd11*Sd11 + Sd22*Sd22 + Sd33*Sd33
+                        + 2.0*(Sd12*Sd12 + Sd13*Sd13 + Sd23*Sd23);
+
+  /* Compute the kinematic eddy viscosity. */
+  const su2double sumSdPow3_2 = sumSd*sqrt(sumSd);
+  const su2double sumSdPow5_4 = sqrt(sumSdPow3_2*sumSd);
+  const su2double sumSPow5_2  = sumS*sumS*sqrt(sumS);
+  const su2double denom       = sumSPow5_2 + sumSdPow5_4;
+
+  const su2double nuEddy = lenScaleWale*lenScaleWale*sumSdPow3_2
+                         / max(denom, 1.e-20);
+
+  /* Return the SGS dynamic viscosity. */
+  return rho*nuEddy;
 }
 
 inline void CWALEModel::ComputeGradEddyViscosity_2D(const su2double rho,
