@@ -1408,6 +1408,8 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   bool incremental_load = config->GetIncrementalLoad();               // If an incremental load is applied
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
+  
+  bool topology_mode = config->GetTopology_Optimization();  // Density-based topology optimization
 
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1440,8 +1442,9 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * This has to be done before computing the mass matrix and the dead load terms.
    * This filter, and the volume fraction objective function, require the element volumes,
    * so we ask "geometry" to compute them.
+   * This only needs to be done for the undeformed (initial) shape.
    */
-  if (config->GetTopology_Optimization()) {
+  if (topology_mode && (restart || initial_calc || initial_calc_restart || disc_adj_fem)) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
   }
@@ -2037,6 +2040,9 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
   
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
   
+  bool topology_mode = config->GetTopology_Optimization();
+  su2double simp_exponent = config->GetSIMP_Exponent();
+  
   if (nDim == 2) nStress = 3;
   else nStress = 6;
   
@@ -2087,8 +2093,11 @@ void CFEASolver::Compute_NodalStress(CGeometry *geometry, CSolver **solver_conta
       }
     }
     
-    /*--- Correct the stresses and reactions for topology optimization densities ---*/
-    su2double simp_penalty = element_properties[iElem]->GetPhysicalDensity();
+    /*--- Correct the stresses and reactions for topology optimization densities. ---*/
+    su2double simp_penalty = 1.0;
+    if (topology_mode) {
+      simp_penalty = pow(element_properties[iElem]->GetPhysicalDensity(),simp_exponent);
+    }
     
     /*--- Set the properties of the element ---*/
     element_container[FEA_TERM][EL_KIND]->Set_ElProperties(element_properties[iElem]);
