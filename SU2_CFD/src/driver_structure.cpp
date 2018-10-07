@@ -5729,27 +5729,27 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     ofstream myfile_res;
     myfile_res.open ("history_adjoint_FSI.csv");
 
-    myfile_res << "BGS_Iter\t";
+    myfile_res << "BGS_Iter";
 
     for (iVar = 0; iVar < nVar_Flow; iVar++){
-      myfile_res << "ResFlow[" << iVar << "]\t";
+      myfile_res << ", " << "ResFlow[" << iVar << "]";
     }
 
     for (iVar = 0; iVar < nVar_Struct; iVar++){
-      myfile_res << "ResFEA[" << iVar << "]\t";
+      myfile_res << ", " << "ResFEA[" << iVar << "]";
     }
 
 
     bool de_effects = config_container[ZONE_0]->GetDE_Effects();
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnElasticityMod(); iVar++)
-        myfile_res << "Sens_E_" << iVar << "\t";
+      myfile_res << ", " << "Sens_E_" << iVar;
 
     for (iVar = 0; iVar < config_container[ZONE_0]->GetnPoissonRatio(); iVar++)
-      myfile_res << "Sens_Nu_" << iVar << "\t";
+      myfile_res << ", " << "Sens_Nu_" << iVar;
 
     if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_0]->GetnElectric_Field(); iVar++)
-          myfile_res << "Sens_EField_" << iVar << "\t";
+          myfile_res << ", " << "Sens_EField_" << iVar;
     }
 
     myfile_res << endl;
@@ -7168,25 +7168,25 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
       myfile_res.open ("history_adjoint_FSI.csv", ios::app);
 
-      myfile_res << IntIter << "\t";
+      myfile_res << IntIter;
 
       myfile_res.precision(15);
 
       for (iVar = 0; iVar < nVar_Flow; iVar++){
-        myfile_res << fixed << residual_flow[iVar] << "\t";
+        myfile_res << fixed << ", " << residual_flow[iVar];
       }
 
       for (iVar = 0; iVar < nVar_Struct; iVar++){
-        myfile_res << fixed << residual_struct[iVar] << "\t";
+        myfile_res << fixed << ", " << residual_struct[iVar];
       }
 
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElasticityMod(); iVar++)
-         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar) << "\t";
+         myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_E(iVar);
       for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnPoissonRatio(); iVar++)
-         myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar) << "\t";
+         myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_Nu(iVar);
       if (de_effects){
         for (iVar = 0; iVar < config_container[ZONE_STRUCT]->GetnElectric_Field(); iVar++)
-          myfile_res << scientific << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0) << "\t";
+          myfile_res << scientific << ", " << solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->GetGlobal_Sens_EField(0);
       }
 
       myfile_res << endl;

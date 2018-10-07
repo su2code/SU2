@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - fix_multizone_DEF
+        - feature_FSI_shape_opt
 
 python:
     - 2.7

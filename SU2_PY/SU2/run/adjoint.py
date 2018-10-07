@@ -39,7 +39,7 @@
 #  Imports
 # ----------------------------------------------------------------------
 
-import copy
+import os, copy
 
 from .. import io  as su2io
 from .merge     import merge     as su2merge
@@ -95,7 +95,11 @@ def adjoint( config ):
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
-    history_filename = konfig['CONV_FILENAME'] + plot_extension
+    # CVC: Temporary FSI fix
+    if config.NZONES == 1:
+        history_filename = konfig['CONV_FILENAME'] + plot_extension
+    elif config.NZONES == 2:
+        history_filename = 'history_adjoint_FSI' + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
     
     # get history

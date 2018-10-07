@@ -282,8 +282,10 @@ def adjoint( func_name, config, state=None ):
             state.update(info)
 
             # Gradient Projection
-            info = su2run.projection(config,state)
-            state.update(info)
+            # CVC: Temporary FSI fix
+            if config.NZONES == 1:
+                info = su2run.projection(config,state)
+                state.update(info)
 
             # solution files to push
             name = state.FILES[ADJ_NAME]

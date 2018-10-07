@@ -126,7 +126,11 @@ def read_plot( filename ):
         # store to dictionary
         for i_Var in range(n_Vars):
             this_variable = Variables[i_Var] 
-            plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
+	    # CVC: Temporary FSI fix
+            try:
+                plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
+            except (IndexError):
+                plot_data[this_variable] = '0.0'
     
     #: for each line
 
