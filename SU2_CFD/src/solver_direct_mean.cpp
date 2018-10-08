@@ -4252,61 +4252,61 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
     
   }
 
-  if (ExtIter == 0) {
-  
-  /* Write a message that the solution is initialized for the Taylor-Green vortex
-   test case. */
-  if(rank == MASTER_NODE) {
-    cout << endl;
-    cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
-    cout << endl << flush;
-  }
-  
-  /* The initial conditions are set for the Taylor-Green vortex case, which
-   is a DNS case that features vortex breakdown into turbulence. These
-   particular settings are for the typical Re = 1600 case (M = 0.08) with
-   an initial temperature of 300 K. Note that this condition works in both
-   2D and 3D. */
-  
-  const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
-  const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
-  const su2double tgvDensity  = 1.0;     // Taylor-Green density.
-  const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
-  
-  /* Useful coefficient in which Gamma is present. */
-  const su2double ovGm1    = 1.0/Gamma_Minus_One;
-  
-  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      
-      /* Set the pointers to the coordinates and solution of this DOF. */
-      const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
-      su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
-      
-      su2double coorZ = 0.0;
-      if (nDim == 3) coorZ = coor[2];
-      
-      /* Compute the primitive variables. */
-      su2double rho = tgvDensity;
-      su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
-                                      cos(coor[1]/tgvLength)*
-                                      cos(coorZ  /tgvLength));
-      su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
-                                      sin(coor[1]/tgvLength)*
-                                      cos(coorZ  /tgvLength));
-      su2double factorA = cos(2.0*coorZ/tgvLength) + 2.0;
-      su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
-      su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
-      
-      /* Compute the conservative variables. Note that both 2D and 3D
-       cases are treated correctly. */
-      solDOF[0]      = rho;
-      solDOF[1]      = rho*u;
-      solDOF[2]      = rho*v;
-      solDOF[3]      = 0.0;
-      solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+  if ((ExtIter == 0) && config->GetTaylorGreen()) {
+
+    /* Write a message that the solution is initialized for the Taylor-Green vortex
+     test case. */
+    if(rank == MASTER_NODE) {
+      cout << endl;
+      cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
+      cout << endl << flush;
     }
-  }
+    
+    /* The initial conditions are set for the Taylor-Green vortex case, which
+     is a DNS case that features vortex breakdown into turbulence. These
+     particular settings are for the typical Re = 1600 case (M = 0.08) with
+     an initial temperature of 300 K. Note that this condition works in both
+     2D and 3D. */
+    
+    const su2double tgvLength   = 1.0;     // Taylor-Green length scale.
+    const su2double tgvVelocity = 1.0;     // Taylor-Green velocity.
+    const su2double tgvDensity  = 1.0;     // Taylor-Green density.
+    const su2double tgvPressure = 100.0;   // Taylor-Green pressure.
+    
+    /* Useful coefficient in which Gamma is present. */
+    const su2double ovGm1    = 1.0/Gamma_Minus_One;
+    
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+        
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
+        
+        su2double coorZ = 0.0;
+        if (nDim == 3) coorZ = coor[2];
+        
+        /* Compute the primitive variables. */
+        su2double rho = tgvDensity;
+        su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
+                                        cos(coor[1]/tgvLength)*
+                                        cos(coorZ  /tgvLength));
+        su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
+                                        sin(coor[1]/tgvLength)*
+                                        cos(coorZ  /tgvLength));
+        su2double factorA = cos(2.0*coorZ/tgvLength) + 2.0;
+        su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
+        su2double p   = tgvPressure+tgvDensity*(pow(tgvVelocity,2.0)/16.0)*factorA*factorB;
+        
+        /* Compute the conservative variables. Note that both 2D and 3D
+         cases are treated correctly. */
+        solDOF[0]      = rho;
+        solDOF[1]      = rho*u;
+        solDOF[2]      = rho*v;
+        solDOF[3]      = 0.0;
+        solDOF[nVar-1] = p*ovGm1 + 0.5*rho*(u*u + v*v);
+      }
+    }
   }
   
   /*--- Make sure that the solution is well initialized for unsteady
@@ -14565,14 +14565,12 @@ void CEulerSolver::BC_Periodic_Limiter1(CGeometry *geometry, CConfig *config, un
   
   unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, jVar, iMarker, jMarker, iPeriodic, nPeriodic = 0;
+  unsigned short iVar, iMarker, jMarker, iPeriodic, nPeriodic = 0;
   long nDomain = 0, iDomain, jDomain;
   
   
   su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
-  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
-  jacMatrix[15][5] ,
-  rotJacob[15][5];
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   
   unsigned long buff_size = nPrimVar*2 + 5;
   
@@ -14990,14 +14988,12 @@ void CEulerSolver::BC_Periodic_Limiter2(CGeometry *geometry, CConfig *config, un
   
   unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, jVar, iMarker, jMarker, iPeriodic, nPeriodic = 0;
+  unsigned short iVar, iMarker, jMarker, iPeriodic, nPeriodic = 0;
   long nDomain = 0, iDomain, jDomain;
   
   
   su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
-  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
-  jacMatrix[15][5] ,
-  rotJacob[15][5];
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   
   unsigned long buff_size = nPrimVar*2 + 5;
   
@@ -15410,8 +15406,8 @@ void CEulerSolver::BC_Periodic_Limiter2(CGeometry *geometry, CConfig *config, un
 void CEulerSolver::BC_Periodic_Eigenvalue(CGeometry *geometry, CConfig *config, unsigned short val_periodic) {
   
   unsigned long iter,  iPoint, iVertex, jVertex, iPointTotal,
-  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, jVar, iMarker, jMarker, iPeriodic, nPeriodic = 0;
+  Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal, iNeighbor, Neighbor_Point, nNeighbor;
+  unsigned short iMarker, jMarker, iPeriodic, nPeriodic = 0;
   long nDomain = 0, iDomain, jDomain;
   
   
@@ -15623,6 +15619,20 @@ void CEulerSolver::BC_Periodic_Eigenvalue(CGeometry *geometry, CConfig *config, 
               
               Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+0] = node[iPoint]->GetLambda();
               
+              /*--- Communicate number of neighbors that do not lie on the BC. ---*/
+              
+              nNeighbor = 0;
+              for (iNeighbor = 0; iNeighbor < geometry->node[iPoint]->GetnPoint(); iNeighbor++) {
+                Neighbor_Point = geometry->node[iPoint]->GetPoint(iNeighbor);
+                
+                /*--- Check if this neighbor lies on the surface. If not,
+                 increment the  ---*/
+                if (geometry->node[iNeighbor]->GetBoundary()) nNeighbor++;
+                
+              }
+              
+              Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+1] = su2double(nNeighbor);
+              
               Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+(nPrimVar*2+0)]  = su2double(iGlobalIndex);
               Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+(nPrimVar*2+1)]  = su2double(jVertex);
               Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+(nPrimVar*2+2)]  = su2double(jMarker);
@@ -15677,6 +15687,8 @@ void CEulerSolver::BC_Periodic_Eigenvalue(CGeometry *geometry, CConfig *config, 
         iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(buff_size)+(nPrimVar*2+2)]);
         
         SetDonorPrimVar(iMarker, iVertex, 0, Buffer_Receive_PrimVar[iPoint*(buff_size)+0]);
+        SetDonorPrimVar(iMarker, iVertex, 1, Buffer_Receive_PrimVar[iPoint*(buff_size)+1]);
+
         
         if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
         if (iMarker < 0.0) cout <<" Negative iMarker (receive)" << endl;
@@ -15734,7 +15746,8 @@ void CEulerSolver::BC_Periodic_Eigenvalue(CGeometry *geometry, CConfig *config, 
         iMarker      = SU2_TYPE::Int(Buffer_Receive_PrimVar[iPoint*(buff_size)+(nPrimVar*2+2)]);
         
         SetDonorPrimVar(iMarker, iVertex, 0, Buffer_Receive_PrimVar[iPoint*(buff_size)+0]);
-        
+        SetDonorPrimVar(iMarker, iVertex, 1, Buffer_Receive_PrimVar[iPoint*(buff_size)+1]);
+
         if (iVertex < 0.0) cout <<" Negative iVertex (receive)" << endl;
         if (iMarker < 0.0) cout <<" Negative iMarker (receive)" << endl;
         
@@ -15802,6 +15815,10 @@ void CEulerSolver::BC_Periodic_Eigenvalue(CGeometry *geometry, CConfig *config, 
             
             node[iPoint]->AddLambda(GetDonorPrimVar(iMarker, iVertex, 0));
             
+            // Add to neighbor count
+            
+            geometry->node[iPoint]->SetnNeighbor(geometry->node[iPoint]->GetnNeighbor() + SU2_TYPE::Int(GetDonorPrimVar(iMarker, iVertex, 1)));
+            
           }
         }
       }
@@ -15819,14 +15836,12 @@ void CEulerSolver::BC_Periodic_Laplacian(CGeometry *geometry, CConfig *config, u
   
   unsigned long iter,  iPoint, jPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, jVar, iMarker, jMarker, iPeriodic, iNeigh, nPeriodic = 0;
+  unsigned short iVar, iMarker, jMarker, iPeriodic, iNeigh, nPeriodic = 0;
   long nDomain = 0, iDomain, jDomain;
   
   
   su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
-  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
-  jacMatrix[15][5] ,
-  rotJacob[15][5];
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   
   unsigned long buff_size = nPrimVar*2 + 5;
   
@@ -16290,14 +16305,12 @@ void CEulerSolver::BC_Periodic_Sensor(CGeometry *geometry, CConfig *config, unsi
   
   unsigned long iter,  iPoint, jPoint, iVertex, jVertex, iPointTotal,
   Buffer_Send_nPointTotal = 0, iGlobalIndex, iGlobal;
-  unsigned short iVar, jVar, iMarker, jMarker, iPeriodic, iNeigh, nPeriodic = 0;
+  unsigned short iMarker, jMarker, iPeriodic, iNeigh, nPeriodic = 0;
   long nDomain = 0, iDomain, jDomain;
   
   
   su2double *center, *angles, rotMatrix[3][3] = {{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}},
-  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
-  jacMatrix[15][5] ,
-  rotJacob[15][5];
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   
   unsigned long buff_size = nPrimVar*2 + 5;
   
@@ -19309,16 +19322,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
         HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
       }
       HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
-  
-  /*--- Store the value of the characteristic primitive variables at the boundaries ---*/
-  
-  DonorGlobalIndex = new unsigned long* [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    DonorGlobalIndex[iMarker] = new unsigned long [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-      DonorGlobalIndex[iMarker][iVertex] = 0;
     }
   }
   
