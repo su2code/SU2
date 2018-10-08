@@ -15633,7 +15633,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi,
   dx, dy, dz, rotCoord[3] = {0.0,0.0,0.0};
   
-  unsigned short iPeriodic, nPeriodic, rMarker, dMarker;
+  unsigned short iPeriodic, nPeriodic;
   unsigned long nPointMatch = 0;
   
   /*--- Evaluate the number of periodic boundary conditions ---*/

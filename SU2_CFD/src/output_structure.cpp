@@ -12599,15 +12599,17 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- New variables get registered here before the end of the loop. ---*/
     
-    nVar_Par += 2;
-    Variable_Names.push_back("Vorticity_x");
-    Variable_Names.push_back("Vorticity_y");
-    if (geometry->GetnDim() == 3) {
-      nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Vorticity_x");
+      Variable_Names.push_back("Vorticity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      }
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Q_Criterion");
     }
-    
-    nVar_Par +=1;
-    Variable_Names.push_back("Q_Criterion");
     
   }
   
@@ -12835,35 +12837,38 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
 
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
-        if (geometry->GetnDim() == 3) {
-          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2];
-          iVar++;
-        }
-        
-        su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-        su2double Omega[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-        su2double Strain[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-            Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
-            Strain[iDim][jDim] = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
-            Omega[iDim][jDim] = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2];
+            iVar++;
           }
-        }
-        
-        su2double OmegaMag = 0.0, StrainMag = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
-          for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
-            StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
-            OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
+          
+          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
+              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+            }
           }
+          
+          su2double OmegaMag = 0.0, StrainMag = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
+              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
+            }
+          }
+          StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+          
+          su2double Q = 0.5*(OmegaMag - StrainMag);
+          Local_Data[jPoint][iVar] = Q; iVar++;
+          
         }
-        StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
-        
-        su2double Q = 0.5*(OmegaMag - StrainMag);
-        Local_Data[jPoint][iVar] = Q; iVar++;
         
       }
       

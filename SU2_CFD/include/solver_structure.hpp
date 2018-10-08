@@ -7024,6 +7024,8 @@ protected:
   **HeatFluxTarget,    /*!< \brief Heat transfer coefficient for each boundary and vertex. */
   **YPlus,    /*!< \brief Yplus for each boundary and vertex. */
   ***CharacPrimVar,    /*!< \brief Value of the characteristic variables at each boundary. */
+  ***DonorPrimVar,    /*!< \brief Value of the donor variables at each boundary. */
+  ****DonorJacobian,    /*!< \brief Value of the donor Jacobian at each boundary. */
   *ForceInviscid,    /*!< \brief Inviscid force for each boundary. */
   *MomentInviscid,  /*!< \brief Inviscid moment for each boundary. */
   *ForceMomentum,    /*!< \brief Inviscid force for each boundary. */
@@ -7032,7 +7034,8 @@ protected:
   su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
   **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
   ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
-  
+  unsigned long **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
+
   su2double
   AllBound_CD_Inv,  /*!< \brief Total drag coefficient (inviscid contribution) for all the boundaries. */
   AllBound_CL_Inv,      /*!< \brief Total lift coefficient (inviscid contribution) for all the boundaries. */
@@ -7498,6 +7501,94 @@ public:
    */
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
+  
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_GG(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Least Squares gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_LS(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter1(CGeometry *geometry,
+                            CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter2(CGeometry *geometry,
+                            CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Eigenvalue(CGeometry *geometry,
+                              CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Laplacian(CGeometry *geometry,
+                             CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Sensor(CGeometry *geometry,
+                          CConfig *config, unsigned short val_periodic_index);
   
    /*!
     * \brief compare to values.
@@ -8184,6 +8275,66 @@ public:
    * \return Value of the pressure coefficient.
    */
   su2double *GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  void SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \param[in] val_value - Value of the Jacobian entry.
+   */
+  void SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \return Value of the Jacobian entry.
+   */
+  su2double GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j);
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index);
   
   /*!
    * \brief Set the total residual adding the term that comes from the Dual Time Strategy.
