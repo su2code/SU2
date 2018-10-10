@@ -1413,14 +1413,14 @@ void CBoom_AugBurgers::IterationPreprocessing(unsigned short iPhi, unsigned long
   C_nu_O2 = A_nu_O2 * f0 * xbar * theta_nu_O2;
   C_nu_N2 = A_nu_N2 * f0 * xbar * theta_nu_N2;
 
-  /*--- Stop recording during step size computation to avoid implicit dependence of controller on flow state ---*/
-  AD::StopRecording();
+//  /*--- Stop recording during step size computation to avoid implicit dependence of controller on flow state ---*/
+//  AD::StopRecording();
 
   /*--- Step size controller ---*/
   DetermineStepSize(iPhi, iIter);
 
-  /*--- Continue recording ---*/
-  AD::StartRecording();
+//  /*--- Continue recording ---*/
+//  AD::StartRecording();
 
   /*--- Output some information about the propagation ---*/
   if((!AD_Mode) && (iIter%50 == 0)){

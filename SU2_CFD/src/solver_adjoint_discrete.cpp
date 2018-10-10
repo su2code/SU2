@@ -199,7 +199,7 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
  dJdX_CAA = new su2double* [nPanel];
  for(int iPanel = 0;  iPanel< nPanel; iPanel++){
    dJdU_CAA[iPanel] = new su2double[nDim+3];
-   dJdX_CAA[iPanel] = new su2double[nDim+3];
+   dJdX_CAA[iPanel] = new su2double[nDim];
    for (iVar=0; iVar < nDim+3; iVar++){
      dJdU_CAA[iPanel][iVar]= 0.0;
    }
@@ -1221,44 +1221,46 @@ void CDiscAdjSolver::ExtractBoomSensitivity(CGeometry *geometry, CConfig *config
     SPRINTF (filename, "Adj_Boom_dJdX.dat");
     Boom_AdjointFile.open(filename , ios::in);
     if (Boom_AdjointFile.fail()) {
+        /*--- We'll allow running without the mesh sensitivities ---*/
         cout << "There is no boom mesh adjoint restart file " <<  filename  << "!!"<< endl;
-        exit(EXIT_FAILURE);
     }
-    
-    /*--- Read all lines in the restart file ---*/
-    
-    iPoint_Local = 0;
-    iPoint_Global = 0;
-    iPanel=0;
-    
-    while (getline (Boom_AdjointFile, text_line)) {
-        istringstream point_line(text_line);
-        point_line >> iPoint_Global ;
+
+    else{
+        /*--- Read all lines in the restart file ---*/
         
-        /*--- Retrieve local index. If this node from the restart file lives
-         on a different processor, the value of iPoint_Local will be -1, as
-         initialized above. Otherwise, the local index for this node on the
-         current processor will be returned and used to instantiate the vars. ---*/
+        iPoint_Local = 0;
+        iPoint_Global = 0;
+        iPanel=0;
         
-        iPoint_Local = Global2Local[iPoint_Global];
-        if (iPoint_Local >= 0) {
-            if(LocalPointIndex[iPoint_Local] < 0){
-                LocalPointIndex[iPoint_Local] =  iPanel;
-                for (iVar=0; iVar<nDim; iVar++){
-                    point_line >> dJdX_CAA[iPanel][iVar];
+        while (getline (Boom_AdjointFile, text_line)) {
+            istringstream point_line(text_line);
+            point_line >> iPoint_Global ;
+            
+            /*--- Retrieve local index. If this node from the restart file lives
+             on a different processor, the value of iPoint_Local will be -1, as
+             initialized above. Otherwise, the local index for this node on the
+             current processor will be returned and used to instantiate the vars. ---*/
+            
+            iPoint_Local = Global2Local[iPoint_Global];
+            if (iPoint_Local >= 0) {
+                if(LocalPointIndex[iPoint_Local] < 0){
+                    LocalPointIndex[iPoint_Local] =  iPanel;
+                    for (iVar=0; iVar<nDim; iVar++){
+                        point_line >> dJdX_CAA[iPanel][iVar];
+                    }
+                    iPanel++;
                 }
-                iPanel++;
-            }
-            else{
-                su2double dJdU_tmp = 0.0;
-                for(iVar=0; iVar<nDim; iVar++){
-                    point_line >> dJdU_tmp;
-                    dJdX_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
+                else{
+                    su2double dJdU_tmp = 0.0;
+                    for(iVar=0; iVar<nDim; iVar++){
+                        point_line >> dJdU_tmp;
+                        dJdX_CAA[LocalPointIndex[iPoint_Local]][iVar] += dJdU_tmp;
+                    }
                 }
             }
+            
+            
         }
-        
-        
     }
     
     /*--- Close the flow adjoint restart file ---*/
