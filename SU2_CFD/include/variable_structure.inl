@@ -1131,6 +1131,7 @@ inline void CPBIncEulerVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {
 inline su2double CPBIncEulerVariable::GetSolution_iter_m(unsigned short val_var) { return Solution_iter_m[val_var]; }
 
 inline void CPBIncEulerVariable::AddSolution_iter_m(unsigned short val_var, su2double val_solution) { Solution_iter_m[val_var] += val_solution;}
+//------------------------------------------------------------------------------------------------------------------------------------------------------//
 
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+5]; }
 

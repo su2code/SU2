@@ -1293,7 +1293,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 0.05;
+		Local_Delta_Time = 1.0e-4*config->GetCFL(iMesh);
 		//cout<<iPoint<<": time: "<<Local_Delta_Time<<" lambda: "<<node[iPoint]->GetMax_Lambda_Visc()<<" Vol: "<<Vol<<endl;
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 			

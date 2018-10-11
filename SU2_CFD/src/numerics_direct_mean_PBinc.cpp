@@ -107,13 +107,13 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
    for (iVar = 0; iVar < nVar; iVar++) {
 	   val_residual[iVar] = 0.0;
 	   for (iDim = 0; iDim < nDim; iDim++) 
-	      val_residual[iVar] += MeanDensity*MeanVelocity[iVar]*Normal[iDim]*V_i[iDim];
+	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_i[iVar+1];
 	}
   else
     for (iVar = 0; iVar < nVar; iVar++) {
 	   val_residual[iVar] = 0.0;
 	   for (iDim = 0; iDim < nDim; iDim++) 
-	      val_residual[iVar] -= MeanDensity*MeanVelocity[iVar]*Normal[iDim]*V_j[iDim];
+	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_j[iVar+1];
     }
     
   if (implicit) {

@@ -321,7 +321,7 @@ CPBIncEulerVariable::~CPBIncEulerVariable(void) {
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
-  if (Mom_Coeff != NULL) delete Mom_Coeff;
+  //if (Mom_Coeff != NULL) delete Mom_Coeff;
  
 
 }
