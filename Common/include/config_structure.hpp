@@ -480,10 +480,8 @@ private:
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
-  Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
@@ -719,17 +717,13 @@ private:
   SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
   AdjStructure_FileName,         /*!< \brief Structure variables output file. */
   AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
-  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
   SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
-  Wave_FileName,					/*!< \brief Wave variables output file. */
   Heat_FileName,					/*!< \brief Heat variables output file. */
-  AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
-  Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
   Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
@@ -860,7 +854,6 @@ private:
   bool RampAndRelease;        /*!< \brief option for ramp load and release */
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
-  su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
@@ -968,6 +961,10 @@ private:
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
+  unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
+  bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
+  su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   string FEA_FileName;         /*!< \brief File name for element-based properties. */
@@ -1992,12 +1989,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void);
-  
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetWaveSpeed(void);
   
   /*!
    * \brief Get the wave speed.
@@ -4185,15 +4176,6 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_TimeIntScheme_Wave(void);
-  
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
   /*!
@@ -4204,15 +4186,6 @@ public:
    * \return Kind of time stepping for the heat equation.
    */
   unsigned short GetKind_TimeStep_Heat(void);
-
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Poisson(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -5263,37 +5236,13 @@ public:
    * \brief Get the name of the file with the structure variables.
    * \return Name of the file with the structure variables.
    */
-  string GetSurfWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
   string GetSurfHeat_FileName(void);
   
   /*!
    * \brief Get the name of the file with the wave variables.
    * \return Name of the file with the wave variables.
    */
-  string GetWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the wave variables.
-   * \return Name of the file with the wave variables.
-   */
   string GetHeat_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint wave variables.
-   * \return Name of the file with the adjoint wave variables.
-   */
-  string GetAdjWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the wave variables.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetRestart_WaveFileName(void);
   
   /*!
    * \brief Get the name of the restart file for the heat variables.
@@ -8647,6 +8596,26 @@ public:
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
+	
+	/*!
+	 * \brief Get option of whether to use conservative interpolation between zones.
+	 */
+  inline bool GetConservativeInterpolation(void);
+	
+  /*!
+   * \brief Get the basis function to use for radial basis function interpolation for FSI.
+   */
+  inline unsigned short GetKindRadialBasisFunction(void);
+	
+  /*!
+   * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.
+   */
+  inline bool GetRadialBasisFunctionPolynomialOption(void);
+	
+  /*!
+   * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
+   */
+  inline su2double GetRadialBasisFunctionParameter(void);
   
   /*!
    * \brief Get information about whether to use wall functions.
