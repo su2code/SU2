@@ -46,321 +46,268 @@ void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
 
   /* Copy the data from the arguments into the member variables. */
   numPoints      = intInfo[0];
-  thickness      = doubleInfo[0];
+  h_wm           = doubleInfo[0];
   expansionRatio = doubleInfo[1];
 
   /* Allocate the memory for the coordinates of the grid points used
      in the 1D equilibrium wall model. */
-  coorGridPoints.resize(numPoints);
+  //coorGridPoints.resize(numPoints);
 
   /* Determine the scaled version of the normal coordinates, where the
      first normal coordinate is simply 1.0. */
-  su2double currentHeight = 1.0;
-  coorGridPoints[0] = 0.0;
+  //su2double currentHeight = 1.0;
+  //coorGridPoints[0] = 0.0;
 
-  for(unsigned short i=1; i<numPoints; ++i) {
-    coorGridPoints[i] = coorGridPoints[i-1] + currentHeight;
-    currentHeight    *= expansionRatio;
-  }
+  //for(unsigned short i=1; i<numPoints; ++i) {
+  //  coorGridPoints[i] = coorGridPoints[i-1] + currentHeight;
+  //  currentHeight    *= expansionRatio;
+  //}
 
   /* Determine the scaling factor of the normal coordinates and
      apply the scaling to obtain the correct coordinates. */
-  const su2double scaleFact = thickness/coorGridPoints[numPoints-1];
+  //const su2double scaleFact = thickness/coorGridPoints[numPoints-1];
 
-  for(unsigned short i=0; i<numPoints; ++i)
-    coorGridPoints[i] *= scaleFact;
+  //for(unsigned short i=0; i<numPoints; ++i)
+  //  coorGridPoints[i] *= scaleFact;
 }
 
-void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double rhoExchange,
+void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
                                                 const su2double velExchange,
                                                 const su2double muExchange,
                                                 const su2double pExchange,
                                                 const su2double Wall_HeatFlux,
                                                 const bool      HeatFlux_Prescribed,
-                                                const su2double Wall_Temperature,
+                                                const su2double TWall,
                                                 const bool      Temperature_Prescribed,
                                                       su2double &tauWall,
                                                       su2double &qWall,
                                                       su2double &ViscosityWall,
                                                       su2double &kOverCvWall) {
 
-  /*--- Set up vectors ---*/
-  vector<su2double> y(numPoints,0.0);
-  vector<su2double> u(numPoints,0.0);
-  vector<su2double> T(numPoints,0.0);
-  vector<su2double> rho(numPoints,0.0);
-  vector<su2double> mu(numPoints,0.0);
-  vector<su2double> muTurb(numPoints,0.0);
-  vector<su2double> muTurb_new(numPoints,0.0);
-  vector<su2double> nu(numPoints,0.0);
+  
+  
+  // Set tau wall to initial guess
+  tauWall = 0.5;
+  qWall = 0.0;
+  ViscosityWall = 0.0;
+  kOverCvWall = 0.0;
 
-  vector<su2double> lower(numPoints-1,0.0);
-  vector<su2double> upper(numPoints-1,0.0);
-  vector<su2double> diagonal(numPoints,0.0);
-  vector<su2double> rhs(numPoints,0.0);
-
+  double tauWall_lam = muExchange * velExchange / h_wm;
+  unsigned short nfa = numPoints + 1;
+  
   // Set some constants, assuming air at standard conditions
   // TO DO: Get these values from solver or config classes
-  su2double C_1 = 1.716E-5;
-  su2double T_ref = 273.15;
-  su2double S = 110.4;
-  su2double R = 287.058;
-  su2double kappa = 0.41;
-  su2double A = 17;
-  su2double gamma = 1.4;
-  su2double Pr_lam = 0.7;
-  su2double Pr_turb = 0.9;
-  su2double c_p = (gamma*R)/(gamma-1);
-  su2double c_v = R/(gamma-1);
+  //double C_1 = 2.03929e-04;
+  double C_1 = 1.716e-5;
+  double S = 110.4;
+  double T_ref = 273.15;
+  double R = 287.058;
+  double kappa = 0.41;
+  double A = 17;
+  double gamma = 1.4;
+  double Pr_lam = 0.7;
+  double Pr_turb = 0.9;
+  double c_p = (gamma*R)/(gamma-1);
+  double c_v = R/(gamma-1);
+  double h_wall = c_p * TWall;
+  double h_bc   = c_p * tExchange;
+  
+  /*--- Set up vectors ---*/
+  vector<double> y_cv(numPoints,0.0);
+  vector<double> y_fa(nfa,0.0);
+  vector<double> u(numPoints, 0.0);
+  vector<double> T(nfa, tExchange);
+  vector<double> mu_fa(nfa, muExchange);
+  vector<double> tmp(numPoints, 0.0);
+  vector<double> lower(numPoints-1,0.0);
+  vector<double> upper(numPoints-1,0.0);
+  vector<double> diagonal(numPoints,0.0);
+  vector<double> rhs(numPoints,0.0);
 
-  // Set tau wall to zero
-  tauWall = 0.0;
-
-  // Set exchange temperature based on pressure and density
-  su2double tExchange = pExchange/(rhoExchange*R);
-
-  // Set booleans for run control
+  /* Determine the scaled version of the normal coordinates, where the
+   first normal coordinate is simply 1.0. */
+  
+  double currentHeight = 1.0;
+  y_fa[0] = 0.0;
+  
+  for(unsigned short i=1; i<nfa; ++i) {
+    y_fa[i] = y_fa[i-1] + currentHeight;
+    y_cv[i-1] = 0.5 * (y_fa[i] + y_fa[i-1]);
+    currentHeight = currentHeight*expansionRatio;
+  }
+  
+  double y_max = y_cv[numPoints-1];
+  
+  for(unsigned short i=0; i<nfa; ++i) {
+    y_fa[i] = y_fa[i]/y_max * h_wm;
+  }
+  for(unsigned short i=0; i<numPoints; ++i) {
+    y_cv[i] = y_cv[i]/y_max * h_wm;
+  }
+  
+  // Set parameters for control
   bool converged = false;
-  bool initCondExists = false;
+  unsigned short iter = 0, max_iter = 50;
+  double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-6,  aux_rhs=0.0;
+  double mut, nu, mu_lam, rho, utau, y_plus, D;
 
-  // Set the exchange height equal to the top (last) wall model grid point
-  su2double exchangeHeight = coorGridPoints[numPoints-1];
-
-  unsigned short j = 0;
-  while( converged == false ){
-
-    // Make sure the tri-diagonal system data is zero'd
-    lower.assign(numPoints-1,0.0);
-    upper.assign(numPoints-1,0.0);
-    diagonal.assign(numPoints,0.0);
-    rhs.assign(numPoints,0.0);
-
-    /*--- Set initial condition if it doesn't already exist ---*/
-    if( initCondExists == false ){
-      for(unsigned short i = 0; i<numPoints; i++){
-        // Set y coordinates
-        y[i] = coorGridPoints[i];
-
-        // Set linear velocity profile
-        u[i] = y[i] * velExchange/exchangeHeight;
-
-        // Set constant temperature profile
-        T[i] = tExchange;
-
-        // Set density profile
-        rho[i] = pExchange / (R*T[i]);
-
-        // Set the viscosity profile, based on Sutherland's law
-        //mu[i] = C_1 * pow(T[i],1.5) / (T[i] + S); //Paul
-        mu[i] = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
-        // mu[i] = muExchange;
-        cout << mu[i] << " " << muExchange << endl;
-        
-        nu[i] = mu[i]/rho[i];
-      }
-      // Set the initial friction length based on wall shear with linear
-      // velocity profile
-      tauWall = mu[0] * (u[1]-u[0])/y[1];
-      su2double u_tau = sqrt(tauWall/rho[0]);
-      su2double l_tau = nu[0] / u_tau;
-      for(unsigned short i = 0; i<numPoints; i++){
-        /*--- Set the turbulent viscosity ---*/
-        su2double y_plus = y[i]/l_tau;
-        su2double D = pow(1-exp((-y_plus)/A),2.0);
-        muTurb[i] = kappa * rhoExchange * y[i] * u_tau * D;
-        //muTurb[i] = 0.0;
-      }
-      initCondExists = true;
-    }
-
-//    // Debugging output
-//    for(unsigned short i=0; i<numPoints; i++){
-//      cout << u[i] << ", ";
-//    }
-//    cout << endl;
-
-    /*--- Solve the differential equation
-     * d/dy[ (mu + mu_turb) * du/dy) = 0
-     * Re-write as
-     * d^2u/dy^2 + g(y)*du/dy = 0
-     * where g(y) = f'(y) / f(y)
-     * f(y) = (mu + mu_turb) ---*/
-
-    for(unsigned short i=1; i<numPoints-1; i++)
-    {
-      // For equally spaced points, these are the same
-      su2double dy_minus = (y[i] - y[i-1]);
-      su2double dy_plus = (y[i+1] - y[i]);
-
-      su2double f_minus = mu[i-1] + muTurb[i-1];
-      su2double f = mu[i] + muTurb[i];
-      su2double f_plus = mu[i+1] + muTurb[i+1];
-
-      su2double f_prime = (f_plus - f_minus) / (dy_minus + dy_plus);
-
-      su2double g = f_prime/f;
-
-      lower[i-1] = (1/(dy_minus*dy_plus) - g/(dy_minus+dy_plus));
-      upper[i] = (1/(dy_plus*dy_plus) + g/(dy_minus+dy_plus));
-      diagonal[i] = -2.0/(dy_minus*dy_plus);
-      rhs[i] = 0.0;
-    }
-
-    /*--- Set boundary conditions in matrix and rhs ---*/
-    diagonal[0] = 1.0;
-    rhs[0] = 0.0;
-    diagonal[numPoints-1] = 1.0;
-    rhs[numPoints-1] = velExchange;
-
-    // Solve the matrix problem to get the velocity field
-    //********LAPACKE CALL*******E
-#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
-    LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
-#else
-    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
-#endif
-
-    u = rhs;
-
-    lower.assign(numPoints-1,0.0);
-    upper.assign(numPoints-1,0.0);
-    diagonal.assign(numPoints,0.0);
-    rhs.assign(numPoints,0.0);
-
-    // Set up energy equation matrix and rhs
-    for(unsigned short i=1; i<numPoints-1; i++)
-    {
-      su2double dy_minus = (y[i] - y[i-1]);
-      su2double dy_plus = (y[i+1] - y[i]);
-
-      su2double f_minus = c_p * (mu[i-1]/Pr_lam + muTurb[i-1]/Pr_turb);
-      su2double f = c_p * (mu[i]/Pr_lam + muTurb[i]/Pr_turb);
-      su2double f_plus = c_p * (mu[i+1]/Pr_lam + muTurb[i+1]/Pr_turb);
-
-      su2double f_prime = (f_plus - f_minus) / (dy_minus + dy_plus);
-
-      su2double g = f_prime/f;
-
-      lower[i-1] = (1/(dy_minus*dy_plus) - g/(dy_minus+dy_plus));
-      upper[i] = (1/(dy_plus*dy_plus) + g/(dy_minus+dy_plus));
-      diagonal[i] = -2.0/(dy_minus*dy_plus);
-
-      su2double u_prime = (u[i+1] - u[i-1])/(dy_minus+dy_plus);
-      su2double u_prime_prime = (u[i-1] - 2*u[i] + u[i+1])/(dy_minus*dy_plus);
-
-      su2double rhs_1 = -f_prime * u[i] * u_prime;
-      su2double rhs_2 = -f * u_prime * u_prime;
-      su2double rhs_3 = -f * u[i] * u_prime_prime;
-      rhs[i] = rhs_1 + rhs_2 + rhs_3;
-    }
-
-    // Set up energy boundary conditions
-    if(Temperature_Prescribed == true)
-    {
-      // Temperature specified at wall
-      diagonal[0] = 1.0;
-      rhs[0] = Wall_Temperature;
-
-      // Temperature specified by exchange
-      diagonal[numPoints-1] = 1.0;
-      rhs[numPoints-1] = tExchange;
-    }
-    else if(HeatFlux_Prescribed == true)
-    {
-      // Heat flux
-      su2double f_zero = c_p * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
-      diagonal[0] = -f_zero/(y[1]-y[0]);
-      su2double f_one = c_p * (mu[1]/Pr_lam + muTurb[1]/Pr_turb);
-      upper[0] = f_one/(y[1]-y[0]);
-      rhs[0] = Wall_HeatFlux;
-
-      // Temperature specified by exchange
-      diagonal[numPoints-1] = 1.0;
-      rhs[numPoints-1] = tExchange;
-    }
-    else {
-      // Euler wall: above statements are false.
-      // What is the correct approach? Assume no temperature variation in the boundary layer?
-      // Temperature specified at wall is also specified by exchange
-      // cout << Temperature_Prescribed << " " << HeatFlux_Prescribed << endl;
-      diagonal[0] = 1.0;
-      rhs[0] = tExchange;
-      
-      // Temperature specified by exchange
-      diagonal[numPoints-1] = 1.0;
-      rhs[numPoints-1] = tExchange;
-
+  while (converged == false){
+    
+    iter += 1;
+    if (iter == max_iter) converged = true;
+    
+    tauWall_prev = tauWall;
+    qWall_prev = qWall;
+    
+    // total viscosity
+    // note: rho and mu_lam will be a function of temperature when solving an energy equation
+    for(unsigned short i=0; i < nfa; ++i){
+      //cout << T[i] << endl;
+      mu_lam = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
+      mu_fa[i] = mu_lam;
     }
     
-
-    // Solve the matrix problem to get the temperature field
-    // *******LAPACKE CALL********
-#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
+    for(unsigned short i=1; i < nfa; ++i){
+      rho = pExchange / (R*T[i]);
+      nu = mu_fa[i] / rho;
+      utau = sqrt(tauWall / rho);
+      y_plus = y_fa[i] * utau / nu;
+      D = pow(1.0 - exp((-y_plus)/A),2.0);
+      mut = rho * kappa * y_fa[i] * utau * D;
+      mu_fa[i] += mut;
+    }
+    
+    // Momentum matrix
+    // solution vector is u at y_cv
+    lower.assign(numPoints-1,0.0);
+    upper.assign(numPoints-1,0.0);
+    diagonal.assign(numPoints,0.0);
+    rhs.assign(numPoints,0.0);
+    
+    // top bc
+    diagonal[numPoints - 1] = 1.0;
+    rhs[numPoints - 1] = velExchange;
+    
+    // internal cvs
+    for (unsigned short i=1; i < (numPoints - 1); ++i){
+      upper[i]  =  mu_fa[i + 1] / (y_cv[i + 1] -  y_cv[i] );
+      lower[i-1]  = mu_fa[i] / (y_cv[i] -  y_cv[i - 1] );
+      diagonal[i] = -1.0 * (upper[i] + lower[i - 1]);
+    }
+    
+    // wall bc
+    upper[0] = mu_fa[1]/(y_cv[1] - y_cv[0]);
+    diagonal[0] = -1.0 * (upper[0] + mu_fa[0]/(y_cv[0]-y_fa[0]) );
+    rhs[0] = 0.0;
+    
+    // Solve the matrix problem to get the velocity field
+    // rhs returned the solution
+    //********LAPACK CALL*******
     LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
-#else
-    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
-#endif
-
-    T = rhs;
-
-    // Update solution with new u and T profiles
-    for(unsigned short i=0; i<numPoints; i++){
-      rho[i] = pExchange / (R*T[i]);
-      mu[i] = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
-      //mu[i] = muExchange;
-      nu[i] = mu[i]/rho[i];
+    u = rhs;
+    
+    // update total viscosity
+    // note: rho and mu_lam will be a function of temperature when solving an energy equation
+    for(unsigned short i=0; i < nfa; ++i){
+      mu_lam = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
+      mu_fa[i] = mu_lam;
+      tmp[i] = mu_lam/Pr_lam;
     }
-
-    tauWall = mu[0] * ( (u[1] - u[0])/(y[1] - y[0]) );
-    su2double u_tau = sqrt(tauWall/rho[0]);
-    su2double l_tau = nu[0]/u_tau;
-
-    for(unsigned short i=0; i<numPoints; i++){
-      su2double y_plus = y[i]/l_tau;
-      su2double D = pow((1 - exp(-y_plus/A)),2.0);
-      muTurb_new[i] = kappa * u_tau * rho[i] * y[i] * D;
+    // update tauWall
+    tauWall = mu_fa[0] * (u[0] - 0.0)/(y_cv[0]-y_fa[0]);
+    for(unsigned short i=1; i < nfa; ++i){
+      rho = pExchange / (R*T[i]);
+      nu = mu_fa[i] / rho;
+      utau = sqrt(tauWall / rho);
+      y_plus = y_fa[i] * utau / nu;
+      D = pow(1.0 - exp((-y_plus)/A),2.0);
+      mut = rho * kappa * y_fa[i] * utau * D;
+      mu_fa[i] += mut;
+      tmp[i] += mut/Pr_turb;
+      tmp[i] *= c_p;
     }
-
-    // Calculate norms and residual
-    su2double norm_diff_mu_turb = 0.0;
-    su2double norm_mu_turb = 0.0;
-    for(unsigned short i=0; i<numPoints; i++){
-      norm_diff_mu_turb = norm_diff_mu_turb + abs(muTurb_new[i] - muTurb[i]);
-      norm_mu_turb = norm_mu_turb + abs(muTurb[i]);
+    tmp[0] = tmp[0]*c_p;
+    
+    // Energy matrix
+    // solution vector is T at y_cv
+    lower.assign(numPoints-1,0.0);
+    upper.assign(numPoints-1,0.0);
+    diagonal.assign(numPoints,0.0);
+    rhs.assign(numPoints,0.0);
+    
+    // internal cvs
+    for (unsigned short i=1; i < (numPoints - 1); ++i){
+      upper[i]  =  tmp[i + 1] / (y_cv[i + 1] -  y_cv[i] );
+      lower[i-1]  = tmp[i] / (y_cv[i] -  y_cv[i - 1] );
+      diagonal[i] = -1.0 * (upper[i] + lower[i - 1]);
     }
-
-    su2double residual = norm_diff_mu_turb/norm_mu_turb;
-    //cout << residual << endl;
-    muTurb = muTurb_new;
-
-    if(residual < 0.000001){
+    
+    // top bc
+    diagonal[numPoints - 1] = 1.0;
+    
+    // wall bc
+    upper[0] = tmp[1]/(y_cv[1] - y_cv[0]);
+    diagonal[0] = -1.0 * (upper[0] + tmp[0]/(y_cv[0]-y_fa[0]) );
+    aux_rhs = tmp[0]/(y_cv[0]-y_fa[0]);
+    
+    // RHS Energy
+    /* compute flux -- (mu + mu_t) * u * du/dy -- */
+    
+    /* zero flux at the wall */
+    tmp[0] = 0. ;
+    for (unsigned short i=1; i < numPoints; ++i){
+      tmp[i] = 0.5* (mu_fa[i]) * (u[i] + u[i-1]) * (u[i] -u[i-1])/(y_cv[i] -  y_cv[i - 1] )  ;
+    }
+    for (unsigned short i=0; i < (numPoints - 1); ++i){
+      rhs[i] = -tmp[i+1] + tmp[i];
+    }
+    // END RHS Energy
+    
+    if (HeatFlux_Prescribed == true){
+      /* dT/dy = 0 -> Twall = T[1] */
+      h_wall = c_p * T[1];
+    }
+    
+    rhs[0] -= aux_rhs * h_wall;
+    rhs[numPoints-1] = h_bc;
+    
+    // Solve the matrix problem to get the temperature field
+    // *******LAPACK CALL********
+    LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+    
+    // Get Temperature from enthalpy
+    // Temperature will be at cv or face?
+    T[0] = h_wall/c_p;
+    T[numPoints] = h_bc/c_p;
+    for (unsigned short i=0; i < numPoints-1; i++){
+      T[i+1] = 0.5 * (rhs[i] + rhs[i+1])/c_p;
+    }
+    
+    // final update tauWall
+    mu_lam = C_1 * pow(T[0]/T_ref, 1.5) * ((T_ref + S)/ (T[0] + S));
+    
+    // These quantities will be returned.
+    tauWall = mu_lam * (u[0] - 0.0)/(y_cv[0]-y_fa[0]);
+    qWall = mu_lam * (c_p / Pr_lam) * -(T[1] - T[0]) / (y_cv[0]-y_fa[0]);
+    ViscosityWall = mu_lam;
+    //kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
+    kOverCvWall = c_p / c_v * (mu_lam/Pr_lam);
+    
+    // define a norm
+    if (abs( (tauWall - tauWall_prev)/tauWall_lam ) < tol && abs(qWall - qWall_prev) < tol){
       converged = true;
-      tauWall = (mu[0] + muTurb[0]) * ( (u[1] - u[0])/(y[1] - y[0]) );
-      qWall = c_p * (mu[0]/Pr_lam + muTurb[0]/Pr_turb) * ( (T[1] - T[0]) / (y[1] - y[0]));
-      ViscosityWall = mu[0] + muTurb[0];
-      kOverCvWall = c_p / c_v * (mu[0]/Pr_lam + muTurb[0]/Pr_turb);
+//      mu_lam = C_1 * pow(T[0]/T_ref, 1.5) * ((T_ref + S)/ (T[0] + S));
+//      rho = pExchange / (R * T[0]);
+//      cout << "#Number of iterations: " << iter << endl;
+//      cout << "#u tau:  " << sqrt(tauWall/rho) << endl;
+//      cout << "#tau wall: " << tauWall << endl;
+//      cout << "#qWall: " << qWall << endl;
+//      cout << "#Re_tau: " << sqrt(tauWall/rho)*1.0/(mu_lam/rho) << endl;
+//      cout << "#Y+  u+ u  T T+" << endl;
+//      for(unsigned short i=0; i < numPoints; ++i){
+//        cout<< y_cv[i] * sqrt(tauWall/rho) / (mu_lam/rho) << " " << u[i]/sqrt(tauWall/rho)  << " " << u[i] << " " << T[i+1] << " " << (TWall - T[i+1]) * (pExchange / (R * T[i+1])) *  sqrt(tauWall/rho) * c_p / qWall<< endl;
+//      }
     }
-    else if(j == 50){
-      cout << "CWallModel1DEQ::WallShearStressAndHeatFlux: Wall Model did not converge" << endl;
-      //      // Debugging output
-            cout << "tauWall = " << tauWall << endl;
-            cout << "qWall = " << qWall << endl;
-            cout << "ViscosityWall = " << ViscosityWall << endl;
-            cout << "kOverCvWall = " << kOverCvWall << endl;
-            cout << "y, u, T, mu, muTurb, rho" << endl;
-            for(unsigned short i=0; i<numPoints; i++){
-              cout << y[i] << ", ";
-              cout << u[i] << ", ";
-              cout << T[i] << ", ";
-              cout << mu[i] << ", ";
-              cout << muTurb[i] << ", ";
-              cout << rho[i] << ", ";
-              cout << endl;
-      	  }
-      SU2_MPI::Error("Did not converge", CURRENT_FUNCTION);
-    }
-
-    j++;
   }
 }
 
@@ -369,7 +316,7 @@ void CWallModelLogLaw::Initialize(const unsigned short *intInfo,
   
   /* Copy the data from the arguments into the member variables. */
   numPoints      = intInfo[0];
-  thickness      = doubleInfo[0];
+  h_wm           = doubleInfo[0];
   expansionRatio = doubleInfo[1];
   
   /* Allocate the memory for the coordinates of the grid points used
@@ -388,7 +335,7 @@ void CWallModelLogLaw::Initialize(const unsigned short *intInfo,
   
   /* Determine the scaling factor of the normal coordinates and
    apply the scaling to obtain the correct coordinates. */
-  const su2double scaleFact = thickness/coorGridPoints[numPoints-1];
+  const su2double scaleFact = h_wm/coorGridPoints[numPoints-1];
   
   for(unsigned short i=0; i<numPoints; ++i)
     coorGridPoints[i] *= scaleFact;
@@ -415,26 +362,28 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   su2double u_tau0 = 0.001;
   su2double nuExchange = muExchange / rhoExchange;
   
-  su2double R = 287.058;
+  //su2double R = 287.058;
   su2double gamma = 1.4;
   su2double Pr_lam = 0.7;
-  su2double Pr_turb = 0.9;
-  su2double c_p = (gamma*R)/(gamma-1);
-  su2double c_v = R/(gamma-1);
+  //su2double Pr_turb = 0.9;
+  //su2double c_p = (gamma*R)/(gamma-1);
+  //su2double c_v = R/(gamma-1);
   const su2double factHeatFlux_Lam  = HeatFlux_Prescribed ? su2double(0.0): gamma/Pr_lam;
   unsigned short maxIter = 50, counter = -1;
   
+  SU2_MPI::Error("Implementation not finished yet.\nPlease comment this line if you want to test", CURRENT_FUNCTION);
+  
   for (unsigned short i=0; i < maxIter; i++){
     counter += 1;
-    y_plus = thickness * u_tau0 / nuExchange;
+    y_plus = h_wm * u_tau0 / nuExchange;
     //fval = (velExchange /u_tau0) - ((1.0/k) * log(y_plus) + C);
     //fprime = -velExchange/pow(u_tau0,2) - 1.0/(k*u_tau0);
 
-    fval = velExchange/u_tau0 - (C - 1.0*log(k)/k)*(1.0 - exp(-0.0909090909090909*u_tau*thickness/nuExchange) - 0.0909090909090909*u_tau0*thickness*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/nuExchange) - 1.0*log(k*u_tau*thickness/nuExchange + 1.0)/k;
+    fval = velExchange/u_tau0 - (C - 1.0*log(k)/k)*(1.0 - exp(-0.0909090909090909*u_tau*h_wm/nuExchange) - 0.0909090909090909*u_tau0*h_wm*exp(-0.333333333333333*u_tau0*h_wm/nuExchange)/nuExchange) - 1.0*log(k*u_tau*h_wm/nuExchange + 1.0)/k;
     
     //-u_pw/u_tau**2 - (C - 1.0*log(k)/k)*(-0.0909090909090909*y*exp(-0.333333333333333*u_tau*y/nu)/nu + 0.0909090909090909*y*exp(-0.0909090909090909*u_tau*y/nu)/nu + 0.0303030303030303*u_tau*y**2*exp(-0.333333333333333*u_tau*y/nu)/nu**2) - 1.0*y/(nu*(k*u_tau*y/nu + 1.0))
     
-    fprime = -velExchange/pow(u_tau0,2.0) - (C - 1.0*log(k)/k)*(-0.0909090909090909*thickness*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/nuExchange + 0.0909090909090909*thickness*exp(-0.0909090909090909*u_tau0*thickness/nuExchange)/nuExchange + 0.0303030303030303*u_tau0*pow(thickness,2.0)*exp(-0.333333333333333*u_tau0*thickness/nuExchange)/pow(nuExchange, 2.0)) - 1.0*thickness/(nuExchange*(k*u_tau0*thickness/nuExchange + 1.0));
+    fprime = -velExchange/pow(u_tau0,2.0) - (C - 1.0*log(k)/k)*(-0.0909090909090909*h_wm*exp(-0.333333333333333*u_tau0*h_wm/nuExchange)/nuExchange + 0.0909090909090909*h_wm*exp(-0.0909090909090909*u_tau0*h_wm/nuExchange)/nuExchange + 0.0303030303030303*u_tau0*pow(h_wm,2.0)*exp(-0.333333333333333*u_tau0*h_wm/nuExchange)/pow(nuExchange, 2.0)) - 1.0*h_wm/(nuExchange*(k*u_tau0*h_wm/nuExchange + 1.0));
     
     newton_step = fval/fprime;
     
@@ -457,5 +406,13 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   ViscosityWall = muExchange;
   kOverCvWall = ViscosityWall * factHeatFlux_Lam;
   //kOverCvWall = c_p / c_v * (muExchange/Pr_lam);
-
+  
+  if(Temperature_Prescribed == true)
+  {
+    
+    
+  }
+  else if(HeatFlux_Prescribed == true){
+  }
+  
 }

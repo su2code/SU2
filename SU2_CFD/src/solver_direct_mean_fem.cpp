@@ -15584,6 +15584,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
 
         FluidModel->SetTDState_rhoe(solInt[0], eInt);
         const su2double Pressure = FluidModel->GetPressure();
+        const su2double Temperature = FluidModel->GetTemperature();
         const su2double LaminarViscosity= FluidModel->GetLaminarViscosity();
 
         /* Subtract the prescribed wall velocity, i.e. grid velocity
@@ -15608,22 +15609,11 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
            the wall model. */
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
         
-        // Debugging output
-        //for(unsigned short m=0; m<nVar; m++){
-        //  cout << solInt[m] << ", ";
-        //}
-        //cout << FluidModel->GetLaminarViscosity() << ", ";
-        //cout << velTan << ", ";
-        //for(unsigned short m=0; m<nDim; m++)
-        //  cout << normals[m] << ", ";
-        //cout << vel_parallel;
-        //cout << endl;
-
-        wallModel->WallShearStressAndHeatFlux(solInt[0], velTan, LaminarViscosity, Pressure,
+        //cout << solInt[0] << " " << velTan << " " << LaminarViscosity << " " << Pressure << " " << Temperature <<   endl;
+        wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
                                               tauWall, qWall, ViscosityWall, kOverCvWall);
-
         /* Determine the position where the viscous fluxes, viscosity and
            thermal conductivity must be stored. */
         su2double *normalFlux = viscFluxes + NPad*ii + llNVar;
