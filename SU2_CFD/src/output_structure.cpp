@@ -20667,7 +20667,15 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
     Variable_Names.push_back("Mach");
 
     /*--- New variables get registered here before the end of the loop. ---*/
-
+    
+    if (Kind_Solver == FEM_NAVIER_STOKES){
+      nVar_Par += 1;
+      Variable_Names.push_back("Laminar_Viscosity");
+    }
+    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+      nVar_Par += 1;
+      Variable_Names.push_back("Eddy_Viscosity");
+    }
   }
 
   /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
@@ -20760,6 +20768,13 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       /*--- New variables can be loaded to the Local_Data structure here,
        assuming they were registered above correctly. ---*/
 
+      if (Kind_Solver == FEM_NAVIER_STOKES){
+        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+      }
+      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+        // todo: Export Eddy instead of Laminar viscosity
+        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+      }
 
       /*--- Increment the point counter. ---*/
 
