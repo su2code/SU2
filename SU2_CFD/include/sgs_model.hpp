@@ -424,6 +424,8 @@ public:
 class CWALEModel : public CSGSModel {
 
 public:
+  su2double const_WALE; /*!< \brief WALE Constant Cw.  */
+
   /*!
    * \brief Constructor of the class.
    */
