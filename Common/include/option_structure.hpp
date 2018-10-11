@@ -206,10 +206,7 @@ enum ENUM_SOLVER {
   EULER = 1,							/*!< \brief Definition of the Euler's solver. */
   NAVIER_STOKES = 2,					/*!< \brief Definition of the Navier-Stokes' solver. */
   RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  POISSON_EQUATION = 4,       			/*!< \brief Definition of the poisson potential solver. */
-  WAVE_EQUATION = 10,					/*!< \brief Definition of the wave solver. */
   HEAT_EQUATION_FVM = 28,     /*!< \brief Definition of the finite volume heat solver. */
-  HEAT_EQUATION = 29,					/*!< \brief Definition of the heat solver. */
   FLUID_STRUCTURE_INTERACTION = 12,		/*!< \brief Definition of a FSI solver. */
   FEM_ELASTICITY = 13,					/*!< \brief Definition of a FEM solver. */
   ADJ_EULER = 18,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
@@ -239,13 +236,10 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("FEM_NAVIER_STOKES", FEM_NAVIER_STOKES)
 ("FEM_RANS", FEM_RANS)
 ("FEM_LES", FEM_LES)
-("POISSON_EQUATION", POISSON_EQUATION)
 ("ADJ_EULER", ADJ_EULER)
 ("ADJ_NAVIER_STOKES", ADJ_NAVIER_STOKES)
 ("ADJ_RANS", ADJ_RANS )
-("WAVE_EQUATION", WAVE_EQUATION)
 ("HEAT_EQUATION_FVM", HEAT_EQUATION_FVM)
-("HEAT_EQUATION", HEAT_EQUATION)
 ("ELASTICITY", FEM_ELASTICITY)
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
@@ -334,13 +328,33 @@ enum ENUM_INTERPOLATOR {
   ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
   CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
   WEIGHTED_AVERAGE  = 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
+  RADIAL_BASIS_FUNCTION= 4, /*!< \brief Radial basis function interpolation. */
 };
 
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC",    ISOPARAMETRIC)
 ("CONSISTCONSERVE",  CONSISTCONSERVE)
-("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE);
+("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE)
+("RADIAL_BASIS_FUNCTION", RADIAL_BASIS_FUNCTION);
+
+/*!
+ * \brief types of radial basis functions
+ */
+enum ENUM_RADIALBASIS {
+  WENDLAND_C2 = 0,   /*!< \brief Wendland C2 radial basis function. */
+  INV_MULTI_QUADRIC = 1, /*!< \brief Inversed multi quartic biharmonic spline. */
+  GAUSSIAN = 2, /*!< \brief Gaussian basis function. */
+  THIN_PLATE_SPLINE = 3, /*!< \brief Thin plate spline. */
+  MULTI_QUADRIC = 4, /*!< \brief Multi quartic biharmonic spline. */
+};
+
+static const map<string, ENUM_RADIALBASIS> RadialBasisFunction_Map = CCreateMap<string, ENUM_RADIALBASIS>
+("WENDLAND_C2", WENDLAND_C2)
+("INV_MULTI_QUADRIC", INV_MULTI_QUADRIC)
+("GAUSSIAN", GAUSSIAN)
+("THIN_PLATE_SPLINE", THIN_PLATE_SPLINE)
+("MULTI_QUADRIC", MULTI_QUADRIC);
 
 /*!
  * \brief types of (coupling) transfers between distinct physical zones
@@ -422,11 +436,9 @@ static const map<string, ENUM_MEASUREMENTS> Measurements_Map = CCreateMap<string
 enum RUNTIME_TYPE {
   RUNTIME_FLOW_SYS = 2,			/*!< \brief One-physics case, the code is solving the flow equations(Euler and Navier-Stokes). */
   RUNTIME_TURB_SYS = 3,			/*!< \brief One-physics case, the code is solving the turbulence model. */
-  RUNTIME_POISSON_SYS = 4,			/*!< \brief One-physics case, the code is solving the poissonal potential equation. */
   RUNTIME_ADJPOT_SYS = 5,		/*!< \brief One-physics case, the code is solving the adjoint potential flow equation. */
   RUNTIME_ADJFLOW_SYS = 6,		/*!< \brief One-physics case, the code is solving the adjoint equations is being solved (Euler and Navier-Stokes). */
   RUNTIME_ADJTURB_SYS = 7,		/*!< \brief One-physics case, the code is solving the adjoint turbulence model. */
-  RUNTIME_WAVE_SYS = 8,		/*!< \brief One-physics case, the code is solving the wave equation. */
   RUNTIME_MULTIGRID_SYS = 14,   	/*!< \brief Full Approximation Storage Multigrid system of equations. */
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
@@ -441,8 +453,6 @@ const int TURB_SOL = 2;		/*!< \brief Position of the turbulence model solution i
 const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbulence solution in the solver container array. */
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
-const int POISSON_SOL = 2;		/*!< \brief Position of the electronic potential solution in the solver container array. */
-const int WAVE_SOL = 1;		/*!< \brief Position of the wave equation in the solution solver array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
 
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
