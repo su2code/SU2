@@ -268,6 +268,9 @@ public:
 class CTransfer_FlowTraction : public CTransfer {
 
 protected:
+  bool consistent_interpolation;
+  
+  void Compute_Pressure_Dimensional_Factor(CConfig *flow_config);
 
 public:
 
@@ -403,7 +406,7 @@ public:
  * \version 4.0.1 "Cardinal"
  */
 
-class CTransfer_FlowTraction_DiscAdj : public CTransfer {
+class CTransfer_FlowTraction_DiscAdj : public CTransfer_FlowTraction {
 
 protected:
 
@@ -438,30 +441,6 @@ public:
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                  CGeometry *donor_geometry, CGeometry *target_geometry,
                  CConfig *donor_config, CConfig *target_config);
-
-  /*!
-   * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] Marker_Donor - Index of the donor marker.
-   * \param[in] Vertex_Donor - Index of the donor vertex.
-   */
-  void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-               unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow);
-
-  /*!
-   * \brief Set the variable that has been received from the target mesh into the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   * \param[in] Marker_Target - Index of the target marker.
-   * \param[in] Vertex_Target - Index of the target vertex.
-   * \param[in] Point_Target - Index of the target point.
-   */
-  void SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-              CConfig *fea_config, unsigned long Marker_Struct,
-              unsigned long Vertex_Struct, unsigned long Point_Struct);
 
 };
 
