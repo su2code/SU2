@@ -38,7 +38,7 @@
 #pragma once
 
 inline CWallModel::CWallModel(void){
-  thickness = 0.0;
+  h_wm = 0.0;
 }
 
 inline CWallModel::~CWallModel(void){}

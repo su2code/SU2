@@ -102,7 +102,7 @@ public:
                                                 su2double &kOverCvWall);
 protected:
 
-  su2double thickness; /*!< \brief The thickness of the wall model. This is also basically the exchange location */
+  su2double h_wm; /*!< \brief The thickness of the wall model. This is also basically the exchange location */
 };
 
 class CWallModel1DEQ : public CWallModel {
