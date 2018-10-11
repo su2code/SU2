@@ -1153,8 +1153,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  poisson, wave, heat,
-  fem,
+  heat, fem,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
   unsigned short iMesh;
@@ -1276,7 +1275,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry,
                              CConfig *config, bool update_geo, unsigned short val_iInst) {
 
-  bool euler, ns, turbulent,
+  bool euler, ns, turbulent, transition,
   adj_euler, adj_ns, adj_turb,
   heat_fvm,
   fem,
@@ -1285,7 +1284,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
 
   /*--- Initialize some useful booleans ---*/
 
-  euler            = false;  ns              = false;  turbulent = false;
+  euler            = false;  ns              = false;  turbulent = false; transition = false;
   adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
   disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
@@ -1324,7 +1323,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     case TEMPLATE_SOLVER: template_solver = true; break;
     case EULER : euler = true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case FEM_ELASTICITY: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
@@ -1346,6 +1345,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     }
     if (turbulent) {
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      if( transition ) {
+        solver_container[val_iInst][MESH_0][TRANS_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      }
     }
     if (fem) {
       if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
@@ -1610,7 +1612,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_Turb             = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
-  nVar_Poisson          = 0,
   nVar_FEM              = 0,
   nVar_Heat             = 0;
   

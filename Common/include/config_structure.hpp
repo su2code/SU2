@@ -4944,12 +4944,6 @@ public:
    * \brief Provides the number of varaibles.
    * \return Number of variables.
    */
-  unsigned short GetnVar(void);
-  
-  /*!
-   * \brief Provides the number of varaibles.
-   * \return Number of variables.
-   */
   unsigned short GetnZone(void);
   
   /*!

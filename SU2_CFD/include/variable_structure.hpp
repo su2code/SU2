@@ -1038,22 +1038,16 @@ public:
   virtual su2double GetThermalConductivity_ve(void);
   
   /*!
-   * \brief A virtual member.
-   * \return Sets separation intermittency
+   * \brief A virtual member to set the separation intermittency.
+   * \param[in] val_gamma_sep - Value to which the separation intermittency should be set.
    */
-  virtual void SetGammaSep(su2double gamma_sep);
+  virtual void SetGammaSep(su2double val_gamma_sep);
   
   /*!
-   * \brief A virtual member.
-   * \return Sets separation intermittency
+   * \brief A virtual member to get the effective intermittency.
+   * \return The effective intermittency
    */
-  virtual void SetGammaEff(void);
-  
-  /*!
-   * \brief A virtual member.
-   * \return Returns intermittency
-   */
-  virtual su2double GetIntermittency();
+  virtual su2double GetGammaEff(void);
   
   /*!
    * \brief A virtual member.
@@ -4289,9 +4283,9 @@ public:
 
 /*!
  * \class CTransLMVariable
- * \brief Main class for defining the variables of the turbulence model.
+ * \brief Main class for defining the variables of the LM transition model.
  * \ingroup Turbulence_Model
- * \author A. Bueno.
+ * \author A. Aniket, E. van der Weide
  */
 
 class CTransLMVariable : public CTurbVariable {
@@ -4307,36 +4301,34 @@ public:
   
   /*!
    * \overload
-   * \param[in] val_nu_tilde - Turbulent variable value (initialization value).
-   * \param[in] val_intermittency
-   * \param[in] val_REth
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_intermittency - Value of the intermittency to be set.
+   * \param[in] val_REth          - Value of Reynolds_theta to be set.
+   * \param[in] val_nDim          - Number of dimensions of the problem.
+   * \param[in] val_nvar          - Number of variables of the problem.
+   * \param[in] config            - Definition of the particular problem.
    */
-  CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CTransLMVariable(const su2double      val_intermittency,
+                   const su2double      val_REth,
+                   const unsigned short val_nDim,
+                   const unsigned short val_nvar,
+                   CConfig              *config);
   
   /*!
    * \brief Destructor of the class.
    */
   ~CTransLMVariable(void);
-  
+
   /*!
-   * \brief ________________.
+   * \brief Member function to get the effective intermittency.
+   * \return The effective intermittency
    */
-  su2double GetIntermittency(void);
-  
+  su2double GetGammaEff(void);
+
   /*!
-   * \brief ________________.
-   * \param[in] gamma_sep_in
+   * \brief Member function to set the separation intermittency.
+   * \param[in] val_gamma_sep - Value to which the separation intermittency should be set.
    */
-  void SetGammaSep(su2double gamma_sep_in);
-  
-  /*!
-   * \brief ________________.
-   */
-  void SetGammaEff(void);
-  
+  void SetGammaSep(su2double val_gamma_sep);
 };
 
 /*!

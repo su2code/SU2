@@ -826,7 +826,9 @@ void CSingleGridIntegration::SingleGrid_Iteration(CGeometry ****geometry, CSolve
   
   Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
   
-  /*--- If turbulence model, copy the turbulence variables to the coarse levels ---*/
+  /*--- If turbulence model, copy the turbulence variables to the coarse levels.
+        No need to do this for the transition variables, because these variables
+        only interact with the turbulence solver, not the mean flow solver. ---*/
   
   if (RunTime_EqSystem == RUNTIME_TURB_SYS) {
     for (iMesh = FinestMesh; iMesh < config[iZone]->GetnMGLevels(); iMesh++) {

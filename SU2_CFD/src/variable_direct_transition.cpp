@@ -39,20 +39,31 @@
 
 CTransLMVariable::CTransLMVariable(void) : CTurbVariable() {}
 
-CTransLMVariable::CTransLMVariable(su2double val_nu_tilde, su2double val_intermittency, su2double val_REth,  unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
+CTransLMVariable::CTransLMVariable(const su2double      val_intermittency,
+                                   const su2double      val_REth,
+                                   const unsigned short val_nDim,
+                                   const unsigned short val_nvar,
+                                   CConfig              *config)
 : CTurbVariable(val_nDim, val_nvar, config) {
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
-  // Initialization of variables
+  /* Initialization of variables */
   Solution[0] = val_intermittency; Solution_Old[0] = val_intermittency;
   Solution[1] = val_REth;          Solution_Old[1] = val_REth;
-  
+
+  /* Initialize gamma_sep to the intermittency. */
+  gamma_sep = val_intermittency;
+
+  /*--- Allocate and initialize solution for the dual time strategy ---*/
+  if (dual_time) {
+    Solution_time_n[0]  = val_intermittency; Solution_time_n[1]  = val_REth;
+    Solution_time_n1[0] = val_intermittency; Solution_time_n1[1] = val_REth;
+  }
 }
 
-CTransLMVariable::~CTransLMVariable(void) { }
+CTransLMVariable::~CTransLMVariable(void) {
 
-void CTransLMVariable::SetGammaEff() {
-  
-  /* -- Correction for separation-induced transition -- */
-  Solution[0] = max(Solution[0], gamma_sep);
-  
+  if (HB_Source != NULL) delete [] HB_Source;
 }

@@ -201,10 +201,10 @@ CSolver::~CSolver(void) {
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
 
-  if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile; nRowCum_InletFile = NULL;
-  if (nRow_InletFile    != NULL) delete [] nRow_InletFile;    nRow_InletFile    = NULL;
-  if (nCol_InletFile    != NULL) delete [] nCol_InletFile;    nCol_InletFile    = NULL;
-  if (Inlet_Data        != NULL) delete [] Inlet_Data;        Inlet_Data        = NULL;
+  if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile;
+  if (nRow_InletFile    != NULL) delete [] nRow_InletFile;
+  if (nCol_InletFile    != NULL) delete [] nCol_InletFile;
+  if (Inlet_Data        != NULL) delete [] Inlet_Data;
 
 }
 
@@ -3386,10 +3386,10 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
     Marker_Tags_InletFile.clear();
 
-    if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile; nRowCum_InletFile = NULL;
-    if (nRow_InletFile    != NULL) delete [] nRow_InletFile;    nRow_InletFile    = NULL;
-    if (nCol_InletFile    != NULL) delete [] nCol_InletFile;    nCol_InletFile    = NULL;
-    if (Inlet_Data        != NULL) delete [] Inlet_Data;        Inlet_Data        = NULL;
+    if (nRowCum_InletFile != NULL) delete [] nRowCum_InletFile;
+    if (nRow_InletFile    != NULL) delete [] nRow_InletFile;
+    if (nCol_InletFile    != NULL) delete [] nCol_InletFile;
+    if (Inlet_Data        != NULL) delete [] Inlet_Data;
 
   } else {
 

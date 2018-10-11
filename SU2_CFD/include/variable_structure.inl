@@ -263,11 +263,9 @@ inline su2double *CVariable::GetIntBoundary_Jump(void) { return NULL; }
 
 inline su2double CVariable::GetEddyViscosity(void) { return 0; }
 
-inline void CVariable::SetGammaEff(void) { }
+inline su2double CVariable::GetGammaEff(void) { return 0; }
 
-inline void CVariable::SetGammaSep(su2double gamma_sep) { }
-
-inline su2double CVariable::GetIntermittency(void) { return 0; }
+inline void CVariable::SetGammaSep(su2double val_gamma_sep) { }
 
 inline su2double CVariable::GetEnthalpy(void) { return 0; }
 
@@ -1056,9 +1054,9 @@ inline void CIncNSVariable::SetThermalConductivity(su2double val_thermal_conduct
   Primitive[nDim+6] = val_thermal_conductivity;
 }
 
-inline su2double CTransLMVariable::GetIntermittency() { return Solution[0]; }
+inline su2double CTransLMVariable::GetGammaEff(void) { return max(Solution[0], gamma_sep); }
 
-inline void CTransLMVariable::SetGammaSep(su2double gamma_sep_in) {gamma_sep = gamma_sep_in;}
+inline void CTransLMVariable::SetGammaSep(su2double val_gamma_sep) {gamma_sep = val_gamma_sep;}
 
 inline void CFEAVariable::SetStress_FEM(unsigned short iVar, su2double val_stress) { Stress[iVar] = val_stress; }
 

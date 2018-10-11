@@ -2254,6 +2254,7 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   bool rans      = ((config->GetKind_Solver() == RANS) ||
                     (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool transition = (config->GetKind_Trans_Model() == LM);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
@@ -2334,9 +2335,12 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
       
       solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
       
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
+      /*--- Load an additional restart file for the turbulence model and transition model (if needed) ---*/
+      if (rans) {
         solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+        if( transition )
+          solver_container[MESH_0][TRANS_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+      }
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -2345,6 +2349,8 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           if (rans) {
             solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+            if( transition )
+              solver_container[iMesh][TRANS_SOL]->node[iPoint]->Set_Solution_time_n();
           }
         }
       }

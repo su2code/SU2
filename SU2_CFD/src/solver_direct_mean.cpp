@@ -3977,6 +3977,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         cout << "Free-stream specific dissipation: " << config->GetOmega_FreeStream();
         if (config->GetSystemMeasurements() == SI) cout << " 1/s." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
+
+        if (config->GetKind_Trans_Model() == LM) {
+          const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
+          const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
+          const su2double REth_Inf          = CTransLMSolver::GetREth(tu_Inf);
+
+          cout << "Free-stream intermittency:  " << Intermittency_Inf << "." << endl;
+          cout << "Free-stream Reynolds_theta: " << REth_Inf          << "." << endl;
+        }
       }
     }
     
@@ -4059,6 +4068,15 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
       if (turbulent) {
         cout << "Free-stream turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
         cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
+
+        if (config->GetKind_Trans_Model() == LM) {
+          const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
+          const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
+          const su2double REth_Inf          = CTransLMSolver::GetREth(tu_Inf);
+
+          cout << "Free-stream intermittency:  " << Intermittency_Inf << "." << endl;
+          cout << "Free-stream Reynolds_theta: " << REth_Inf          << "." << endl;
+        }
       }
     }
     
@@ -4086,6 +4104,7 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool rans = ((config->GetKind_Solver() == RANS) ||
                (config->GetKind_Solver() == ADJ_RANS) ||
                (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool transition = (config->GetKind_Trans_Model() == LM);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool SubsonicEngine = config->GetSubsonicEngine();
@@ -4241,9 +4260,12 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       
       solver_container[MESH_0][FLOW_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), true);
       
-      /*--- Load an additional restart file for the turbulence model ---*/
-      if (rans)
+      /*--- Load an additional restart file for the turbulence model and transition model (if needed) ---*/
+      if (rans) {
         solver_container[MESH_0][TURB_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+        if( transition )
+          solver_container[MESH_0][TRANS_SOL]->LoadRestart(geometry, solver_container, config, SU2_TYPE::Int(config->GetUnst_RestartIter()-1), false);
+      }
       
       /*--- Push back this new solution to time level N. ---*/
       
@@ -4252,6 +4274,8 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
           solver_container[iMesh][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
           if (rans) {
             solver_container[iMesh][TURB_SOL]->node[iPoint]->Set_Solution_time_n();
+            if( transition )
+              solver_container[iMesh][TRANS_SOL]->node[iPoint]->Set_Solution_time_n();
           }
         }
       }
@@ -17455,11 +17479,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
   
-  su2double Wall_HeatFlux, Area, div_vel, UnitNormal[3], *Normal;
+  su2double Area, div_vel, UnitNormal[3], *Normal;
   su2double **grad_primvar, tau[3][3];
   
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double T_Normal, P_Normal, M_Normal;
+  su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0, Tau_Wall_Old = 0.0;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -17496,10 +17520,6 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       /*--- Identify the boundary by string name ---*/
       
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-      
-      /*--- Get the specified wall heat flux from config ---*/
-      
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
       
       /*--- Loop over all of the vertices on this boundary marker ---*/
       
@@ -17561,12 +17581,8 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
             WallDistMod += WallDist[iDim]*WallDist[iDim];
           WallDistMod = sqrt(WallDistMod);
           
-          /*--- Compute mach number ---*/
-          
-          M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
-          
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-          
+          //M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
           //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
           T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
           

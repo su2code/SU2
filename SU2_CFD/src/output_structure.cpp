@@ -5438,8 +5438,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   ". Max. DT: " << solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL]->GetMax_Delta_Time() <<
                   ". CFL: " << config[val_iZone]->GetCFL(iMesh)  << "." << endl;
 
-                  if (nZone > 1)
-                    cout << "CFL in zone 2: " << config[1]->GetCFL(MESH_0) << endl;
+                if (nZone > 1)
+                  cout << "CFL in zone 2: " << config[1]->GetCFL(MESH_0) << endl;
 
                 cout << "-------------------------------------------------------------------------" << endl;
 

@@ -1706,6 +1706,16 @@ inline su2double CNSSolver::GetConjugateHeatVariable(unsigned short val_marker, 
 inline void CNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
 
+inline su2double CTransLMSolver::GetREth(const su2double var_tu) {
+
+  const su2double tu = 100.0*var_tu; // Turbulence intensity in percents.
+
+  if (tu <= 1.3)
+    return (1173.9967604078363 - 589.428*tu + 0.2196/(tu*tu)); // Modified the original value of 1173.51 to get better continuity at tu=1.3.
+  else
+    return (331.5*pow(tu-0.5658, -0.671));
+}
+
 inline su2double CAdjEulerSolver::GetCSensitivity(unsigned short val_marker, unsigned long val_vertex) { return CSensitivity[val_marker][val_vertex]; }
 
 inline void CAdjEulerSolver::SetCSensitivity(unsigned short val_marker, unsigned long val_vertex, su2double val_sensitivity) { CSensitivity[val_marker][val_vertex] = val_sensitivity; }

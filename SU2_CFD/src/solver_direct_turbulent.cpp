@@ -746,7 +746,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   if (!adjoint) {
     
-    /*--- Update and clip trubulent solution ---*/
+    /*--- Update and clip turbulent solution ---*/
     
     switch (config->GetKind_Turb_Model()) {
         
@@ -1093,89 +1093,62 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
 void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
-  
-  unsigned short iVar, iMesh;
-  unsigned long iPoint, index, iChildren, Point_Fine;
-  su2double Area_Children, Area_Parent, *Solution_Fine;
-  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
-  unsigned short iZone = config->GetiZone();
-  unsigned short nZone = config->GetnZone();
-
-  string UnstExt, text_line;
-  ifstream restart_file;
   string restart_filename = config->GetSolution_FlowFileName();
 
   /*--- Modify file name for multizone problems ---*/
-  if (nZone >1)
-    restart_filename = config->GetMultizone_FileName(restart_filename, iZone);
+  if (config->GetnZone() > 1)
+    restart_filename = config->GetMultizone_FileName(restart_filename, config->GetiZone());
 
   /*--- Modify file name for an unsteady restart ---*/
-  
+  const bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                          (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  const bool time_stepping = (config->GetUnsteady_Simulation() == TIME_STEPPING);
+
   if (dual_time|| time_stepping)
     restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
-
-  if (config->GetRead_Binary_Restart()) {
+  if (config->GetRead_Binary_Restart())
     Read_SU2_Restart_Binary(geometry[MESH_0], config, restart_filename);
-  } else {
+  else
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
-  }
-
-  int counter = 0;
-  long iPoint_Local = 0; unsigned long iPoint_Global = 0;
-  unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip flow variables ---*/
-  
-  unsigned short skipVars = 0;
-
-  if (nDim == 2) skipVars += 6;
-  if (nDim == 3) skipVars += 8;
+  const unsigned short skipVars = solver[MESH_0][FLOW_SOL]->GetnVar() + nDim;  
 
   /*--- Load data from the restart into correct containers. ---*/
-
-  counter = 0;
-  for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
-
+  unsigned long iPoint_Global_Local = 0;
+  for (unsigned long iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
 
     /*--- Retrieve local index. If this node from the restart file lives
      on the current processor, we will load and instantiate the vars. ---*/
-
-    iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
+    long iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
       
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
-
-      index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      unsigned long index = iPoint_Global_Local*Restart_Vars[1] + skipVars;
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
-      iPoint_Global_Local++;
 
       /*--- Increment the overall counter for how many points have been loaded. ---*/
-      counter++;
+      iPoint_Global_Local++;
     }
-
   }
 
   /*--- Detect a wrong solution file ---*/
-
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
+  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
+  if (iPoint_Global_Local < nPointDomain) sbuf_NotMatching = 1;
 
 #ifndef HAVE_MPI
   rbuf_NotMatching = sbuf_NotMatching;
 #else
   SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
 #endif
-  if (rbuf_NotMatching != 0) {
+  if (rbuf_NotMatching != 0)
     SU2_MPI::Error(string("The solution file ") + restart_filename + string(" doesn't match with the mesh file!\n") +
                    string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
 
   /*--- MPI solution and compute the eddy viscosity ---*/
 
@@ -1187,18 +1160,16 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
-  
-  for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
-    for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
-      Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
-      for (iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
-        Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
-        Area_Children = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
-        Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
-        for (iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
+    for (unsigned long iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+      const su2double Area_Parent = geometry[iMesh]->node[iPoint]->GetVolume();
+      for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
+      for (unsigned long iChildren = 0; iChildren < geometry[iMesh]->node[iPoint]->GetnChildren_CV(); iChildren++) {
+        const unsigned long Point_Fine = geometry[iMesh]->node[iPoint]->GetChildren_CV(iChildren);
+        const su2double Area_Children  = geometry[iMesh-1]->node[Point_Fine]->GetVolume();
+        const su2double *Solution_Fine = solver[iMesh-1][TURB_SOL]->node[Point_Fine]->GetSolution();
+        for (unsigned short iVar = 0; iVar < nVar; iVar++)
           Solution[iVar] += Solution_Fine[iVar]*Area_Children/Area_Parent;
-        }
       }
       solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
     }
@@ -1208,17 +1179,14 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Delete the class memory that is used to load the restart. ---*/
-
   if (Restart_Vars != NULL) delete [] Restart_Vars;
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
-
 }
 
 CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 
   Inlet_TurbVars = NULL;
-
 }
 
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
@@ -1564,7 +1532,7 @@ void CTurbSASolver::Source_Residual(CGeometry *geometry, CSolver **solver_contai
     /*--- Set intermittency ---*/
     
     if (transition) {
-      numerics->SetIntermittency(solver_container[TRANS_SOL]->node[iPoint]->GetIntermittency());
+      numerics->SetIntermittency(solver_container[TRANS_SOL]->node[iPoint]->GetGammaEff());
     }
     
     /*--- Turbulent variables w/o reconstruction, and its gradient ---*/
@@ -3005,13 +2973,13 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, jDim, iVar, iNode;
   unsigned long iVertex, iPoint, iPoint_Neighbor, counter;
   
-  su2double Wall_HeatFlux, func, func_prim;
+  su2double func, func_prim;
   su2double *Normal, Area;
   su2double div_vel, UnitNormal[3];
   su2double **grad_primvar, tau[3][3];
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til_4, nu_til, cv1_3;
-  su2double T_Normal, P_Normal, M_Normal, Density_Normal;
+  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til, cv1_3;
+  su2double T_Normal, P_Normal, Density_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -3043,10 +3011,6 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   /*--- Identify the boundary by string name ---*/
   
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
-  /*--- Get the specified wall heat flux from config ---*/
-  
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -3113,12 +3077,8 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
           WallDistMod += WallDist[iDim]*WallDist[iDim];
         WallDistMod = sqrt(WallDistMod);
         
-        /*--- Compute mach number ---*/
-        
-        M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
-        
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
-        
+        //M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
         //T_Wall = T_Normal * (1.0 + 0.5*Gamma_Minus_One*Recovery*M_Normal*M_Normal);
         T_Wall = T_Normal + Recovery*pow(VelTangMod,2.0)/(2.0*Cp);
         
@@ -3234,7 +3194,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
         
-        nu_til_old = 0.0; nu_til_4 = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
+        nu_til_old = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
         nu_til_old = node[iPoint]->GetSolution(0);
         counter = 0; diff = 1.0;
         
@@ -3544,8 +3504,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
-  ifstream restart_file;
-  string text_line;
   
   /*--- Array initialization ---*/
   
