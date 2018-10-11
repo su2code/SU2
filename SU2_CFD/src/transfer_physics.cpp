@@ -71,14 +71,14 @@ void CTransfer_FlowTraction::Compute_Pressure_Dimensional_Factor(CConfig *flow_c
 }
 
 void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-                                                         CGeometry *flow_geometry, CGeometry *struct_geometry,
-                           CConfig *flow_config, CConfig *struct_config) {
+                                                   CGeometry *flow_geometry, CGeometry *struct_geometry,
+                                                   CConfig *flow_config, CConfig *struct_config) {
 
   /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
         and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = !flow_config->GetMatchingMesh() &&
-                             !(flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE) &&
-                             !flow_config->GetConservativeInterpolation();
+  consistent_interpolation = !flow_config->GetMatchingMesh() && (
+                             !flow_config->GetConservativeInterpolation() ||
+                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
@@ -238,9 +238,8 @@ CTransfer_StructuralDisplacements::~CTransfer_StructuralDisplacements(void) {
 
 
 void CTransfer_StructuralDisplacements::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                         CGeometry *struct_geometry, CGeometry *flow_geometry,
-                           CConfig *struct_config, CConfig *flow_config) {
-
+                                                              CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                              CConfig *struct_config, CConfig *flow_config) {
 }
 
 void CTransfer_StructuralDisplacements::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
@@ -279,9 +278,8 @@ CTransfer_StructuralDisplacements_DiscAdj::~CTransfer_StructuralDisplacements_Di
 
 
 void CTransfer_StructuralDisplacements_DiscAdj::GetPhysical_Constants(CSolver *struct_solution, CSolver *flow_solution,
-                                                         CGeometry *struct_geometry, CGeometry *flow_geometry,
-                           CConfig *struct_config, CConfig *flow_config) {
-
+                                                                      CGeometry *struct_geometry, CGeometry *flow_geometry,
+                                                                      CConfig *struct_config, CConfig *flow_config) {
 }
 
 void CTransfer_StructuralDisplacements_DiscAdj::GetDonor_Variable(CSolver *struct_solution, CGeometry *struct_geometry, CConfig *struct_config,
@@ -328,8 +326,14 @@ CTransfer_FlowTraction_DiscAdj::~CTransfer_FlowTraction_DiscAdj(void) {
 }
 
 void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solution, CSolver *struct_solution,
-                                               CGeometry *flow_geometry, CGeometry *struct_geometry,
-                           CConfig *flow_config, CConfig *struct_config){
+                                                           CGeometry *flow_geometry, CGeometry *struct_geometry,
+                                                           CConfig *flow_config, CConfig *struct_config){
+
+  /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
+        and integrate on the structural side rather than directly transferring forces. ---*/
+  consistent_interpolation = !flow_config->GetMatchingMesh() && (
+                             !flow_config->GetConservativeInterpolation() ||
+                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
@@ -358,9 +362,8 @@ CTransfer_ConservativeVars::~CTransfer_ConservativeVars(void) {
 
 
 void CTransfer_ConservativeVars::GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
-                                                             CGeometry *donor_geometry, CGeometry *target_geometry,
-                             CConfig *donor_config, CConfig *target_config) {
-
+                                                       CGeometry *donor_geometry, CGeometry *target_geometry,
+                                                       CConfig *donor_config, CConfig *target_config) {
 }
 
 void CTransfer_ConservativeVars::GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
