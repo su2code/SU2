@@ -49,8 +49,15 @@ CTransfer_FlowTraction::~CTransfer_FlowTraction(void) {
 
 }
 
-void CTransfer_FlowTraction::Compute_Pressure_Dimensional_Factor(CConfig *flow_config) {
+void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
 
+  /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
+        and integrate on the structural side rather than directly transferring forces. ---*/
+  consistent_interpolation = !flow_config->GetMatchingMesh() && (
+                             !flow_config->GetConservativeInterpolation() ||
+                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
+
+  /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
   su2double *Velocity_ND, *Velocity_Real;
   su2double Density_ND,  Density_Real, Velocity2_Real, Velocity2_ND;
 
@@ -74,21 +81,12 @@ void CTransfer_FlowTraction::GetPhysical_Constants(CSolver *flow_solution, CSolv
                                                    CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                    CConfig *flow_config, CConfig *struct_config) {
 
-  /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
-        and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = !flow_config->GetMatchingMesh() && (
-                             !flow_config->GetConservativeInterpolation() ||
-                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
-
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++) 
     struct_solution->node[iPoint]->Clear_FlowTraction();
 
-
-  /*--- Redimensionalize the pressure ---*/
-
-  Compute_Pressure_Dimensional_Factor(flow_config);
+  Preprocess(flow_config);
 
   /*--- Apply a ramp to the transfer of the fluid loads ---*/
 
@@ -329,19 +327,12 @@ void CTransfer_FlowTraction_DiscAdj::GetPhysical_Constants(CSolver *flow_solutio
                                                            CGeometry *flow_geometry, CGeometry *struct_geometry,
                                                            CConfig *flow_config, CConfig *struct_config){
 
-  /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
-        and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = !flow_config->GetMatchingMesh() && (
-                             !flow_config->GetConservativeInterpolation() ||
-                             (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
-
   /*--- We have to clear the traction before applying it, because we are "adding" to node and not "setting" ---*/
 
   for (unsigned long iPoint = 0; iPoint < struct_geometry->GetnPoint(); iPoint++)
     struct_solution->node[iPoint]->Clear_FlowTraction();
 
-  /*--- Redimensionalize the pressure ---*/
-  Compute_Pressure_Dimensional_Factor(flow_config);
+  Preprocess(flow_config);
 
   /*--- No ramp applied ---*/
   Physical_Constants[1] = 1.0;
