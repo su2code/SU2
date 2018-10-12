@@ -107,6 +107,9 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
       fileroot = config->GetStructure_FileName().c_str();
   }
   
+  if (Kind_Solver == HEAT_EQUATION_FVM)
+    fileroot = config->GetHeat_FileName().c_str();
+  
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol)
       fileroot = config->GetSurfSens_FileName();
