@@ -270,7 +270,11 @@ class CTransfer_FlowTraction : public CTransfer {
 protected:
   bool consistent_interpolation;
   
-  void Compute_Pressure_Dimensional_Factor(CConfig *flow_config);
+  /*!
+   * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
+   * \param[in] flow_config - Definition of the fluid (donor) problem.
+   */
+  void Preprocess(CConfig *flow_config);
 
 public:
 
