@@ -4292,15 +4292,7 @@ public:
    * \brief A virtual member
    * Correct velocity
    */
-  virtual void CorrectVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
-
-
-  /*!
-   * \brief A virtual member
-   * Correct pressure
-   */
-  virtual void CorrectPressure(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
-  
+  virtual void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config); 
   
     /*!
    * \brief A virtual member
@@ -8726,14 +8718,7 @@ public:
    *  
    * 
    */
-  void CorrectVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config);
-  
-  /*!
-   * \brief Correct the pressure using the pressure corrections.
-   *  
-   * 
-   */
-  void CorrectPressure(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  void Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config);
   
   /*!
    * \brief Compute the source term for the pressure correction equation based 

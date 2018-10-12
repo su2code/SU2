@@ -922,9 +922,7 @@ void CPBFluidIteration::Iterate(COutput *output,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
     
     /*--- Correct pressure and velocities ---*/
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->CorrectPressure(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-    
-    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->CorrectVelocity(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     
     /*--- Set the prmitive value based on updated solution ---*/
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);

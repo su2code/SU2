@@ -883,15 +883,11 @@ inline void CSolver::Compute_Residual(CGeometry *geometry, CSolver **solver_cont
 
 inline void CSolver::Direct_Solve(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
-
 inline su2double CSolver::GetDirichlet_BC(CGeometry*, CConfig*, unsigned long) { return 0.0; }
 
-inline void CSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
-
-inline void CSolver::CorrectPressure(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+inline void CSolver::Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::SetPoissonSourceTerm(CGeometry*, CSolver**, CConfig*) { }
-
 
 inline void CSolver::SetRes_RMS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
 

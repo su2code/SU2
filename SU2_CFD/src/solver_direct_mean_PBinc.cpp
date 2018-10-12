@@ -2258,10 +2258,6 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
 
 
 
-
-
-
-
 void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics,
                                    CConfig *config, unsigned short iMesh) {
 
@@ -3014,7 +3010,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
       MassFlux_Part += GetDensity_Inf()*(0.5*(node[iPoint]->GetVelocity(iDim)+node[jPoint]->GetVelocity(iDim)))*Normal[iDim];
 	
 	
-	//------- Rhie-Chow interpolation ---------//
+	/*------- Rhie-Chow interpolation ---------*/
 	
 	dist_ij = 0; proj_vector_ij = 0;
     Coord_i = geometry->node[iPoint]->GetCoord();
@@ -3071,12 +3067,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		/*--- Wall boundaries have zero mass flux (irrespective of grid movement) ---*/
 		case EULER_WALL: case ISOTHERMAL: case HEAT_FLUX:
 		  MassFlux_Part = 0.0 ;
-		  /*for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-		  iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-		  Normal = geometry->vertex[iMarker][iVertex]->GetNormal(); 
-		  cout<<node[iPoint]->GetVelocity(0)<<", "<<node[iPoint]->GetVelocity(1)<<", "<<Normal[0]<<", "<<Normal[1]<<", "<<iPoint<<", "<<MassFlux_Part<<endl;
-		  node[iPoint]->AddMassFlux(MassFlux_Part); 
-	    }*/
+		 
 		break;
 		
 		case INLET_FLOW:
@@ -3141,9 +3132,8 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
            for (iDim = 0; iDim < nDim; iDim++) 
               MassFlux_Part += GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
              
-             //node[iPoint]->SubtractMassFlux(MassFlux_Part); 
-             node[iPoint]->SetMassFluxZero();        
-             
+             node[iPoint]->SubtractMassFlux(MassFlux_Part); 
+            
 		   }
          }
 		
@@ -3195,14 +3185,17 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
  
 }
 
-void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_container, CConfig *config){
+
+void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 	
-	unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
-	unsigned short iDim, iVar;
-	su2double **vel_corr, press_corr_i, press_corr_j, press_corr_avg;
-	su2double Edge_Vec[3], alpha_vel,dist_ij_2;
-	su2double *Normal, factor, Area, Vel,rho,*Coeff;
-	
+  unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
+  unsigned short iDim, iVar, KindBC;
+  su2double **vel_corr, press_corr_i, press_corr_j, press_corr_avg;
+  su2double Edge_Vec[3], alpha_vel,dist_ij_2;
+  su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff;
+  su2double Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
+  su2double alpha_p;//This should be config->getrelaxation (like)
+  string Marker_Tag;
 	
   
   vel_corr = new su2double* [nPoint];
@@ -3212,8 +3205,6 @@ void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_co
   for (iPoint = 0; iPoint < nPoint; iPoint++)
 	for (iVar = 0; iVar < nVar; iVar++)
 	    vel_corr[iPoint][iVar] = 0.0;
-  
- 	//--- Explicit treatment of pressure ---//
 	
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 
@@ -3228,20 +3219,7 @@ void CPBIncEulerSolver::CorrectVelocity(CGeometry *geometry, CSolver **solver_co
 		
 	} 
 	
-	for (iPoint = 0; iPoint < nPoint; iPoint++)
-	  delete [] vel_corr[iPoint];
-	  
-	delete [] vel_corr;
-}
-
-
-void CPBIncEulerSolver::CorrectPressure(CGeometry *geometry, CSolver **solver_container, CConfig *config){
-	
-	
-	unsigned long iPoint, iVertex, iMarker;
-	su2double Pressure_Correc, Current_Pressure;
-	su2double alpha_p;//This should be config->getrelaxation (like)
-	
+	/*--- Explicit treatment of pressure ---*/
 	alpha_p = 0.1;
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
@@ -3250,6 +3228,69 @@ void CPBIncEulerSolver::CorrectPressure(CGeometry *geometry, CSolver **solver_co
 		Current_Pressure += alpha_p*Pressure_Correc;
 		node[iPoint]->SetPressure_val(Current_Pressure);
 	}
+	
+	 /*--- Boundary conditions ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	
+	  KindBC = config->GetMarker_All_KindBC(iMarker);
+	  Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+    
+    switch (KindBC) {
+		/*--- Impose the value of the velocity as a strong boundary condition (Dirichlet)---*/
+		case ISOTHERMAL: case HEAT_FLUX:
+		
+		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           if (geometry->node[iPoint]->GetDomain()) {
+		   for (iDim = 0; iDim < nDim; iDim++)
+              Vector[iDim] = 0.0;
+              
+           node[iPoint]->SetVelocity_Old(Vector);
+	       }
+	      }
+		break;
+		
+		case INLET_FLOW:
+		
+		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           if (geometry->node[iPoint]->GetDomain()) {		
+		     Normal = geometry->vertex[iMarker][iVertex]->GetNormal(); 
+		        
+		     /*--- Retrieve the specified velocity for the inlet. ---*/
+
+              Vel_Mag  = config->GetInlet_Ptotal(Marker_Tag)/config->GetVelocity_Ref();
+              Flow_Dir = config->GetInlet_FlowDir(Marker_Tag);
+      
+              /*--- Store the velocity in the primitive variable vector. ---*/
+
+              for (iDim = 0; iDim < nDim; iDim++)
+                 Vector[iDim] = Vel_Mag*Flow_Dir[iDim];
+  
+              /*--- Impose the value of the velocity as a strong boundary condition (Dirichlet) ---*/
+               node[iPoint]->SetVelocity_Old(Vector);
+		     }
+           }
+		break;
+		
+		case OUTLET_FLOW:
+		
+		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           if (geometry->node[iPoint]->GetDomain()) {
+		        Current_Pressure = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+		        node[iPoint]->SetPressure_val(Current_Pressure);
+		   }
+         }
+		break;
+		default: break;
+		
+	}
+  }
+	for (iPoint = 0; iPoint < nPoint; iPoint++)
+	  delete [] vel_corr[iPoint];
+	  
+	delete [] vel_corr;
 }
 
 void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
