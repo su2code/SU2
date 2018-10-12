@@ -4991,6 +4991,83 @@ void CIncEulerSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {
   
 }
 
+void CIncEulerSolver::SetABLInlet(CGeometry **geometry, CConfig* config, unsigned short iMarker) {
+	
+  unsigned short iDim,iVar;
+  unsigned long iPoint;
+  su2double wall_dist,fCoriolis,cStability,zi,length;	
+  su2double Lmbl,Ustar,z0,Ufriction,tmp;
+  su2double fvi,dfvi,vi0,dvi0,fu,u0;
+
+  /*--- Assuming 3-D and z is the direction normal to the ground ---*/
+  /*--- For now only neutral gryning model is implemented ---*/
+  
+  if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+    
+    string Marker_Tag   = config->GetMarker_All_TagBound(iMarker);
+    su2double p_total   = config->GetInlet_Ptotal(Marker_Tag);
+    su2double t_total   = config->GetInlet_Ttotal(Marker_Tag);
+    su2double* flow_dir = config->GetInlet_FlowDir(Marker_Tag);
+    
+    fCoriolis = 1.162E-4;
+    cStability =  0.135;
+    Ufriction = 0.48;
+    length = 600;
+    z0=1.8e-2;
+    zi = cStability*Ufriction/fCoriolis;  // height of abl. zi=c*Ufriction/f
+    
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+		iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+		
+		wall_dist = 1e6;
+		tmp = geometry[MESH_0]->node[iPoint]->GetWall_Distance();
+		
+		wall_dist = min(tmp,wall_dist);
+	}
+    Ustar = Ufriction*(1-wall_dist/zi);   // Gryning et.al.
+    Lmbl = (Ustar/fCoriolis)/((-2.0*log(Ustar/(fCoriolis*z0))+55.0)*exp(-1.0*(pow((Ustar/(fCoriolis*length)),2.0))/400.0));
+
+    
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+		iPoint = geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
+		
+		wall_dist = geometry[MESH_0]->node[iPoint]->GetWall_Distance();
+		
+        Ustar = Ufriction*(1-wall_dist/zi);   // Gryning et.al.
+        Lmbl = (Ustar/fCoriolis)/((-2.0*log(Ustar/(fCoriolis*z0))+55.0)*exp(-1.0*(pow((Ustar/(fCoriolis*length)),2.0))/400.0));
+
+
+        fvi  = 1+4.7*wall_dist/length;
+        dfvi = 4.7/length;
+
+        vi0 = 0.4*Ustar*wall_dist/fvi ;
+        dvi0 = -((1.88*Ustar*wall_dist)/(length*pow((1.0 + (4.7*wall_dist)/length),2))) + (0.4*Ustar)/(1.0 + (4.7*wall_dist)/length);
+
+        fu   = -4.7*wall_dist/length ;
+
+        if (wall_dist == 0.0) 
+          u0 = 0.0;
+        else
+          u0   = Ustar/0.4*(log(wall_dist/z0)-fu*(1.0-(wall_dist/(2.0*zi))) + (wall_dist/Lmbl)-(wall_dist/zi)*(wall_dist/(2.0*Lmbl)));
+        
+        cout<<wall_dist<<" "<<u0<<endl;
+    }
+    
+  } else {
+    
+    /*--- For now, non-inlets just get set to zero. In the future, we
+     can do more customization for other boundary types here. ---*/
+    
+    for(unsigned long iVertex=0; iVertex < nVertex[iMarker]; iVertex++){
+      Inlet_Ttotal[iMarker][iVertex] = 0.0;
+      Inlet_Ptotal[iMarker][iVertex] = 0.0;
+      for (unsigned short iDim = 0; iDim < nDim; iDim++)
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0.0;
+    }
+  }
+  
+}
+
 void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
 
   unsigned short iMarker_Monitoring, Kind_ObjFunc;

@@ -2869,6 +2869,13 @@ public:
                                      string val_marker,
                                      CGeometry *geometry,
                                      CConfig *config);
+  
+  /*!
+   * \brief A virtual member
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  virtual void SetABLInlet(CGeometry **geometry, CConfig* config, unsigned short iMarker);
 
   /*!
    * \brief Update the multi-grid structure for the customized boundary conditions
@@ -8111,6 +8118,17 @@ public:
                              string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
+   
+   /*!
+   * \brief Set atmospheric boundary layer profile at inlet
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetABLInlet(CGeometry **geometry, CConfig* config, unsigned short iMarker);
 
 };
 
