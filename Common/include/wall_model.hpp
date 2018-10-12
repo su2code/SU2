@@ -75,8 +75,9 @@ public:
   /*!
    * \brief Virtual function, which computes the wall shear stress and heat flux
             from the data at the exchange location.
-   * \param[in]  rhoExchange            - Density at the exchange location.
+   * \param[in]  tExchange              - Temperature at the exchange location.
    * \param[in]  velExchange            - Velocity at the exchange location.
+   * \param[in]  muExchange             - Laminar viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
@@ -88,13 +89,13 @@ public:
    * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
                                           to be computed.
    */
-  virtual void WallShearStressAndHeatFlux(const su2double rhoExchange,
+  virtual void WallShearStressAndHeatFlux(const su2double tExchange,
                                           const su2double velExchange,
                                           const su2double muExchange,
                                           const su2double pExchange,
                                           const su2double Wall_HeatFlux, 
                                           const bool      HeatFlux_Prescribed,
-                                          const su2double Wall_Temperature,
+                                          const su2double TWall,
                                           const bool      Temperature_Prescribed,
                                                 su2double &tauWall,
                                                 su2double &qWall,
@@ -132,8 +133,9 @@ public:
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
             from the data at the exchange location.
-   * \param[in]  rhoExchange            - Density at the exchange location.
+   * \param[in]  tExchange              - Temperature at the exchange location.
    * \param[in]  velExchange            - Velocity at the exchange location.
+   * \param[in]  muExchange             - Laminar viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
@@ -145,7 +147,7 @@ public:
    * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
                                           to be computed.
    */
-  void WallShearStressAndHeatFlux(const su2double rhoExchange,
+  void WallShearStressAndHeatFlux(const su2double tExchange,
                                   const su2double velExchange,
                                   const su2double muExchange,
                                   const su2double pExchange,
@@ -163,7 +165,8 @@ private:
   su2double      expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
   unsigned short numPoints;        /*!< \brief  Number of points used in the wall model grid. */
 
-  vector<su2double> coorGridPoints;    /*!< \brief  The coordinates in normal direction of the wall model grid. */
+  vector<su2double> y_cv;    /*!< \brief  The coordinates in normal direction of the wall model grid (control volumes). */
+  vector<su2double> y_fa;    /*!< \brief  The coordinates in normal direction of the wall model grid (faces of CV). */
 };
 
 class CWallModelLogLaw : public CWallModel {
@@ -193,8 +196,9 @@ public:
   /*!
    * \brief Function, which computes the wall shear stress and heat flux
    from the data at the exchange location.
-   * \param[in]  rhoExchange            - Density at the exchange location.
+   * \param[in]  tExchange              - Temperature at the exchange location.
    * \param[in]  velExchange            - Velocity at the exchange location.
+   * \param[in]  muExchange             - Laminar Viscosity at the exchange location.
    * \param[in]  pExchange              - Pressure at the exchange location.
    * \param[in]  Wall_HeatFlux          - Value of the wall heat flux, if prescribed.
    * \param[in]  HeatFlux_Prescribed    - Whether or not the wall heat flux is prescribed.
@@ -206,7 +210,7 @@ public:
    * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
    to be computed.
    */
-  void WallShearStressAndHeatFlux(const su2double rhoExchange,
+  void WallShearStressAndHeatFlux(const su2double tExchange,
                                   const su2double velExchange,
                                   const su2double muExchange,
                                   const su2double pExchange,
