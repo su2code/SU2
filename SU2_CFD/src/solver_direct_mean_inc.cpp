@@ -6233,26 +6233,26 @@ void CIncEulerSolver::BC_Periodic_GG(CGeometry *geometry, CConfig *config, unsig
               
               /*--- Rotate the Jacobian momentum components. ---*/
               
-              for (unsigned short iVar = 0; iVar < nPrimVarGrad; iVar++) {
-                
-                if (nDim == 2) {
-                  rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                       rotMatrix[0][1]*jacMatrix[iVar][1]);
-                  rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                       rotMatrix[1][1]*jacMatrix[iVar][1]);
-                } else {
-                  
-                  rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
-                                       rotMatrix[0][1]*jacMatrix[iVar][1] +
-                                       rotMatrix[0][2]*jacMatrix[iVar][2]);
-                  rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
-                                       rotMatrix[1][1]*jacMatrix[iVar][1] +
-                                       rotMatrix[1][2]*jacMatrix[iVar][2]);
-                  rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
-                                       rotMatrix[2][1]*jacMatrix[iVar][1] +
-                                       rotMatrix[2][2]*jacMatrix[iVar][2]);
-                }
-              }
+//              for (unsigned short iVar = 0; iVar < nPrimVarGrad; iVar++) {
+//
+//                if (nDim == 2) {
+//                  rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+//                                       rotMatrix[0][1]*jacMatrix[iVar][1]);
+//                  rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+//                                       rotMatrix[1][1]*jacMatrix[iVar][1]);
+//                } else {
+//
+//                  rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+//                                       rotMatrix[0][1]*jacMatrix[iVar][1] +
+//                                       rotMatrix[0][2]*jacMatrix[iVar][2]);
+//                  rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+//                                       rotMatrix[1][1]*jacMatrix[iVar][1] +
+//                                       rotMatrix[1][2]*jacMatrix[iVar][2]);
+//                  rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
+//                                       rotMatrix[2][1]*jacMatrix[iVar][1] +
+//                                       rotMatrix[2][2]*jacMatrix[iVar][2]);
+//                }
+//              }
               
               int ii = 0;
               for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
@@ -8693,13 +8693,7 @@ void CIncEulerSolver::BC_Periodic_Laplacian(CGeometry *geometry, CConfig *config
                   
                   for (iVar = 0; iVar < nVar; iVar++)
                     Diff[iVar] = node[iPoint]->GetSolution(iVar) - node[jPoint]->GetSolution(iVar);
-                  
-                  /*--- Correction for compressible flows which use the enthalpy ---*/
-                  
-                  Pressure_i = node[iPoint]->GetPressure();
-                  Pressure_j = node[jPoint]->GetPressure();
-                  Diff[nVar-1] = (node[iPoint]->GetSolution(nVar-1) + Pressure_i) - (node[jPoint]->GetSolution(nVar-1) + Pressure_j);
-                  
+
                   boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                   boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
                   
@@ -9152,8 +9146,8 @@ void CIncEulerSolver::BC_Periodic_Sensor(CGeometry *geometry, CConfig *config, u
                 if (geometry->node[jPoint]->GetDomain() && (!geometry->node[jPoint]->GetBoundary())) {
                   
                   
-                  Pressure_i = node[iPoint]->GetPressure();
-                  Pressure_j = node[jPoint]->GetPressure();
+                  Pressure_i = node[iPoint]->GetDensity();
+                  Pressure_j = node[jPoint]->GetDensity();
                   
                   boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                   boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -9366,8 +9360,8 @@ void CIncEulerSolver::BC_Periodic_Sensor(CGeometry *geometry, CConfig *config, u
               
               if (geometry->node[jPoint]->GetDomain()) {
                 
-                Pressure_i = node[iPoint]->GetPressure();
-                Pressure_j = node[jPoint]->GetPressure();
+                Pressure_i = node[iPoint]->GetDensity();
+                Pressure_j = node[jPoint]->GetDensity();
                 
                 boundary_i = geometry->node[iPoint]->GetPhysicalBoundary();
                 boundary_j = geometry->node[jPoint]->GetPhysicalBoundary();
@@ -9988,7 +9982,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement    = config->GetGrid_Movement();
-
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool energy           = config->GetEnergy_Equation();
+  
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -10059,22 +10055,89 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
                             +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
       
+      if (!energy) Residual[nDim+1] = 0.0;
+      
+      //cout << " iPoint: " << iPoint << "  " << Volume_nP1<< "  " << Residual[0]<< "  " << Residual[1]<< "  " << Residual[2]<< "  " << Residual[3]<<endl;
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
+      
       if (implicit) {
-        for (iVar = 1; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
+        
+        unsigned short iDim, jDim;
+        
+        su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+        su2double  Velocity[3] = {0.0,0.0,0.0};
+        
+        /*--- Access the primitive variables at this node. ---*/
+        
+        Density     = node[iPoint]->GetDensity();
+        BetaInc2    = node[iPoint]->GetBetaInc2();
+        Cp          = node[iPoint]->GetSpecificHeatCp();
+        oneOverCp   = 1.0/Cp;
+        Temperature = node[iPoint]->GetTemperature();
+        
         for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
+          Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+        
+        /*--- We need the derivative of the equation of state to build the
+         preconditioning matrix. For now, the only option is the ideal gas
+         law, but in the future, dRhodT should be in the fluid model. ---*/
+        
+        if (variable_density) {
+          dRhodT = -Density/Temperature;
+        } else {
+          dRhodT = 0.0;
+        }
+        
+        /*--- Calculating the inverse of the preconditioning matrix
+         that multiplies the time derivative during time integration. ---*/
+        
+          /*--- For implicit calculations, we multiply the preconditioner
+           by the cell volume over the time step and add to the Jac diagonal. ---*/
+          
+          Jacobian_i[0][0] = 1.0/BetaInc2;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][0] = Velocity[iDim]/BetaInc2;
+          
+          if (energy) Jacobian_i[nDim+1][0] = Cp*Temperature/BetaInc2;
+          else        Jacobian_i[nDim+1][0] = 0.0;
+          
+          for (jDim = 0; jDim < nDim; jDim++) {
+            Jacobian_i[0][jDim+1] = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              if (iDim == jDim) Jacobian_i[iDim+1][jDim+1] = Density;
+              else Jacobian_i[iDim+1][jDim+1] = 0.0;
+            }
+            Jacobian_i[nDim+1][jDim+1] = 0.0;
+          }
+          
+          Jacobian_i[0][nDim+1] = dRhodT;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+          
+          if (energy) Jacobian_i[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+          else        Jacobian_i[nDim+1][nDim+1] = 1.0;
+          
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
 
+        if (!energy) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Jacobian_i[iVar][nDim+1] = 0.0;
+              Jacobian_i[nDim+1][iVar] = 0.0;
+            }
+        }
+        
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
       }
     }
     
