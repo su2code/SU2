@@ -13136,7 +13136,31 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     nVar_Par += 1;
     Variable_Names.push_back("Density");
+    
+    if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Vorticity_x");
+      Variable_Names.push_back("Vorticity_y");
+        nVar_Par += 1; Variable_Names.push_back("Vorticity_z");
+      
+      nVar_Par +=1;
+      Variable_Names.push_back("Q_Criterion");
+    }
 
+    if ((config->GetTaylorGreen()) && (geometry->GetnDim() == 2)) {
+      
+      nVar_Par += 3;
+      Variable_Names.push_back("tgv_vel_x");
+      Variable_Names.push_back("tgv_vel_y");
+      Variable_Names.push_back("tgv_pressure");
+      
+      nVar_Par += 3;
+      Variable_Names.push_back("error_vel_x");
+      Variable_Names.push_back("error_vel_y");
+      Variable_Names.push_back("error_pressure");
+      
+    }
+    
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13370,6 +13394,73 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
          assuming they were registered above correctly. ---*/
 
         Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
+        
+        if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[0]; iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[1]; iVar++;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetVorticity()[2]; iVar++;
+          
+          su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              Grad_Vel[iDim][jDim] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+              Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
+              Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+            }
+          }
+          
+          su2double OmegaMag = 0.0, StrainMag = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+              StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
+              OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
+            }
+          }
+          StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+          
+          su2double Q = 0.5*(OmegaMag - StrainMag);
+          Local_Data[jPoint][iVar] = Q; iVar++;
+          
+        }
+        
+        if ((config->GetTaylorGreen()) && (geometry->GetnDim() == 2)) {
+          
+          /* Set the pointers to the coordinates and solution of this DOF. */
+          const su2double *coor = geometry->node[iPoint]->GetCoord();
+          su2double *solDOF     = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+          
+          const su2double tgvLength    = 1.0;     // Taylor-Green length scale.
+          const su2double tgvVelocity  = 1.0;     // Taylor-Green velocity.
+          const su2double tgvDensity   = 1.0;     // Taylor-Green density.
+          
+          su2double nu = config->GetViscosity_FreeStreamND();
+          su2double t  = static_cast<su2double>(config->GetExtIter()+1)*config->GetDelta_UnstTimeND();
+          su2double coorZ = 0.0;
+          if (nDim == 3) coorZ = coor[2];
+          
+          /* Compute the primitive variables. */
+          su2double rho = tgvDensity;
+          su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
+                                          cos(coor[1]/tgvLength)*
+                                          cos(coorZ  /tgvLength))*exp(-2.0*nu*t);
+          su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
+                                          sin(coor[1]/tgvLength)*
+                                          cos(coorZ  /tgvLength))*exp(-2.0*nu*t);
+          su2double factorA = 1.0;
+          su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
+          su2double p   = (tgvDensity/4.0)*factorA*factorB*exp(-4.0*nu*t);
+          
+          Local_Data[jPoint][iVar] = u; iVar++;
+          Local_Data[jPoint][iVar] = v; iVar++;
+          Local_Data[jPoint][iVar] = p; iVar++;
+
+          Local_Data[jPoint][iVar] = sqrt(pow(u-solDOF[1],2.0)); iVar++;
+          Local_Data[jPoint][iVar] = sqrt(pow(v-solDOF[2],2.0)); iVar++;
+          Local_Data[jPoint][iVar] = sqrt(pow(p-solDOF[0],2.0)); iVar++;
+          
+        }
 
       }
 
