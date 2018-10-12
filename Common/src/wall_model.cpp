@@ -49,26 +49,31 @@ void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
   h_wm           = doubleInfo[0];
   expansionRatio = doubleInfo[1];
 
+  unsigned short nfa = numPoints + 1;
+  su2double currentHeight = 1.0;
+  
   /* Allocate the memory for the coordinates of the grid points used
      in the 1D equilibrium wall model. */
-  //coorGridPoints.resize(numPoints);
+  y_cv.resize(numPoints);
+  y_fa.resize(numPoints+1);
 
   /* Determine the scaled version of the normal coordinates, where the
-     first normal coordinate is simply 1.0. */
-  //su2double currentHeight = 1.0;
-  //coorGridPoints[0] = 0.0;
-
-  //for(unsigned short i=1; i<numPoints; ++i) {
-  //  coorGridPoints[i] = coorGridPoints[i-1] + currentHeight;
-  //  currentHeight    *= expansionRatio;
-  //}
-
-  /* Determine the scaling factor of the normal coordinates and
-     apply the scaling to obtain the correct coordinates. */
-  //const su2double scaleFact = thickness/coorGridPoints[numPoints-1];
-
-  //for(unsigned short i=0; i<numPoints; ++i)
-  //  coorGridPoints[i] *= scaleFact;
+   first normal coordinate is simply 1.0. */
+  
+  y_fa[0] = 0.0;
+  for(unsigned short i=1; i<nfa; ++i) {
+    y_fa[i] = y_fa[i-1] + currentHeight;
+    y_cv[i-1] = 0.5 * (y_fa[i] + y_fa[i-1]);
+    currentHeight = currentHeight*expansionRatio;
+  }
+  
+  su2double y_max = y_cv[numPoints-1];
+  for(unsigned short i=0; i<nfa; ++i) {
+    y_fa[i] = y_fa[i]/y_max * h_wm;
+  }
+  for(unsigned short i=0; i<numPoints; ++i) {
+    y_cv[i] = y_cv[i]/y_max * h_wm;
+  }
 }
 
 void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
@@ -85,15 +90,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
                                                       su2double &kOverCvWall) {
 
   
-  
   // Set tau wall to initial guess
   tauWall = 0.5;
   qWall = 0.0;
   ViscosityWall = 0.0;
   kOverCvWall = 0.0;
-
-  double tauWall_lam = muExchange * velExchange / h_wm;
-  unsigned short nfa = numPoints + 1;
   
   // Set some constants, assuming air at standard conditions
   // TO DO: Get these values from solver or config classes
@@ -111,46 +112,26 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   double c_v = R/(gamma-1);
   double h_wall = c_p * TWall;
   double h_bc   = c_p * tExchange;
-  
-  /*--- Set up vectors ---*/
-  vector<double> y_cv(numPoints,0.0);
-  vector<double> y_fa(nfa,0.0);
-  vector<double> u(numPoints, 0.0);
-  vector<double> T(nfa, tExchange);
-  vector<double> mu_fa(nfa, muExchange);
-  vector<double> tmp(numPoints, 0.0);
-  vector<double> lower(numPoints-1,0.0);
-  vector<double> upper(numPoints-1,0.0);
-  vector<double> diagonal(numPoints,0.0);
-  vector<double> rhs(numPoints,0.0);
+  double tauWall_lam = muExchange * velExchange / h_wm;
+  unsigned short nfa = numPoints + 1;
 
-  /* Determine the scaled version of the normal coordinates, where the
-   first normal coordinate is simply 1.0. */
+  /*--- Set up vectors ---*/
   
-  double currentHeight = 1.0;
-  y_fa[0] = 0.0;
-  
-  for(unsigned short i=1; i<nfa; ++i) {
-    y_fa[i] = y_fa[i-1] + currentHeight;
-    y_cv[i-1] = 0.5 * (y_fa[i] + y_fa[i-1]);
-    currentHeight = currentHeight*expansionRatio;
-  }
-  
-  double y_max = y_cv[numPoints-1];
-  
-  for(unsigned short i=0; i<nfa; ++i) {
-    y_fa[i] = y_fa[i]/y_max * h_wm;
-  }
-  for(unsigned short i=0; i<numPoints; ++i) {
-    y_cv[i] = y_cv[i]/y_max * h_wm;
-  }
+  vector<su2double> T(nfa, tExchange);
+  vector<su2double> mu_fa(nfa, muExchange);
+  vector<su2double> tmp(nfa, 0.0);
+  vector<su2double> u(numPoints, 0.0);
+  vector<su2double> lower(numPoints-1,0.0);
+  vector<su2double> upper(numPoints-1,0.0);
+  vector<su2double> diagonal(numPoints,0.0);
+  vector<su2double> rhs(numPoints,0.0);
   
   // Set parameters for control
   bool converged = false;
-  unsigned short iter = 0, max_iter = 50;
-  double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-6,  aux_rhs=0.0;
-  double mut, nu, mu_lam, rho, utau, y_plus, D;
-
+  unsigned short iter = 0, max_iter = 25;
+  su2double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-6,  aux_rhs=0.0;
+  su2double mut, nu, mu_lam, rho, utau, y_plus, D;
+  
   while (converged == false){
     
     iter += 1;
@@ -162,7 +143,6 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     // total viscosity
     // note: rho and mu_lam will be a function of temperature when solving an energy equation
     for(unsigned short i=0; i < nfa; ++i){
-      //cout << T[i] << endl;
       mu_lam = C_1 * pow(T[i]/T_ref, 1.5) * ((T_ref + S)/ (T[i] + S));
       mu_fa[i] = mu_lam;
     }
@@ -294,10 +274,12 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     kOverCvWall = c_p / c_v * (mu_lam/Pr_lam);
     
     // define a norm
-    if (abs( (tauWall - tauWall_prev)/tauWall_lam ) < tol && abs(qWall - qWall_prev) < tol){
+    //if (abs( (tauWall - tauWall_prev)/tauWall_lam ) < tol && abs(qWall - qWall_prev) < tol){
+    if (abs( (tauWall - tauWall_prev)/tauWall_lam ) < tol){
       converged = true;
 //      mu_lam = C_1 * pow(T[0]/T_ref, 1.5) * ((T_ref + S)/ (T[0] + S));
 //      rho = pExchange / (R * T[0]);
+//      cout << "# " << tExchange << " " << velExchange << " " << muExchange << " " << pExchange << endl;
 //      cout << "#Number of iterations: " << iter << endl;
 //      cout << "#u tau:  " << sqrt(tauWall/rho) << endl;
 //      cout << "#tau wall: " << tauWall << endl;
