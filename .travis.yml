@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - remove_poisson_wave_solvers
+        - develop
 
 python:
     - 2.7
