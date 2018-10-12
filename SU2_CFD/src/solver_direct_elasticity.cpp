@@ -1394,6 +1394,11 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
   bool incremental_load = config->GetIncrementalLoad();               // If an incremental load is applied
   
   bool body_forces = config->GetDeadLoad();                     // Body forces (dead loads).
+  
+  bool fsi = config->GetFSI_Simulation();
+  bool consistent_interpolation = !config->GetMatchingMesh() && (
+                                  !config->GetConservativeInterpolation() ||
+                                  (config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- Set vector entries to zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint ++) {
@@ -1504,6 +1509,11 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
         break;
     }
   }
+  
+  /*
+   * FSI loads (computed upstream) need to be integrated if a nonconservative interpolation scheme is in use
+   */
+  if (fsi && first_iter && consistent_interpolation) Integrate_FSI_Loads(geometry,config);
   
 }
 
@@ -3259,6 +3269,120 @@ void CFEASolver::BC_Damper(CGeometry *geometry, CSolver **solver_container, CNum
 
   }
 
+
+}
+
+void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim, iNode, nNode;
+  unsigned long iPoint, iElem, nElem;
+
+  unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
+                 iMarker, nMarker = config->GetnMarker_All();
+
+  /*--- Temporary storage to store the forces on the element faces ---*/
+  vector<su2double> forces;
+
+  /*--- Loop through the FSI interface pairs ---*/
+  /*--- 1st pass to compute forces ---*/
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      /*--- Define the boundary element ---*/
+      unsigned long nodes[4];
+      su2double coords[4][3];
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+      
+      for (iNode = 0; iNode < nNode; ++iNode) {
+        nodes[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
+        for (iDim = 0; iDim < nDim; ++iDim)
+          coords[iNode][iDim] = geometry->node[nodes[iNode]]->GetCoord(iDim)+
+                                node[nodes[iNode]]->GetSolution(iDim);
+      }
+
+      /*--- Compute the area ---*/
+      su2double area = 0.0;
+
+      if (nDim == 2)
+        area = (coords[0][0]-coords[1][0])*(coords[0][0]-coords[1][0])+
+               (coords[0][1]-coords[1][1])*(coords[0][1]-coords[1][1]);
+
+      if (nDim == 3) {
+        su2double a[3], b[3], Ni, Nj, Nk;
+
+        if (!quad) { // sides of the triangle
+          for (iDim = 0; iDim < 3; iDim++) {
+            a[iDim] = coords[1][iDim]-coords[0][iDim];
+            b[iDim] = coords[2][iDim]-coords[0][iDim];
+          }
+        }
+        else { // diagonals of the quadrilateral
+          for (iDim = 0; iDim < 3; iDim++) {
+            a[iDim] = coords[2][iDim]-coords[0][iDim];
+            b[iDim] = coords[3][iDim]-coords[1][iDim];
+          }
+        }
+        /*--- Area = 0.5*||a x b|| ---*/
+        Ni = a[1]*b[2]-a[2]*b[1];
+        Nj =-a[0]*b[2]+a[2]*b[0];
+        Nk = a[0]*b[1]-a[1]*b[0];
+
+        area = 0.25*(Ni*Ni+Nj*Nj+Nk*Nk);
+      }
+      area = sqrt(area);
+
+      /*--- Integrate ---*/
+      passivedouble weight = 1.0/nNode;
+      su2double force[3] = {0.0, 0.0, 0.0};
+
+      for (iNode = 0; iNode < nNode; ++iNode)
+        for (iDim = 0; iDim < nDim; ++iDim)
+          force[iDim] += weight*area*node[nodes[iNode]]->Get_FlowTraction(iDim);
+
+      for (iDim = 0; iDim < nDim; ++iDim) forces.push_back(force[iDim]);
+    }
+  }
+
+  /*--- 2nd pass to set values. This is to account for overlap in the markers. ---*/
+  /*--- By putting the integrated values back into the nodes no changes have to be made elsewhere. ---*/
+  for (iPoint = 0; iPoint < geometry->GetnPoint(); ++iPoint)
+    node[iPoint]->Clear_FlowTraction();
+  
+  vector<su2double>::iterator force_it = forces.begin();
+  
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+      passivedouble weight = 1.0/nNode;
+
+      su2double force[3];
+      for (iDim = 0; iDim < nDim; ++iDim) force[iDim] = *(force_it++)*weight;
+
+      for (iNode = 0; iNode < nNode; ++iNode) {
+        iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+        node[iPoint]->Add_FlowTraction(force);
+      }
+    }
+  }
 
 }
 

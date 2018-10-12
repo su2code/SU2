@@ -205,18 +205,8 @@ void CTransfer_FlowTraction::SetTarget_Variable(CSolver *fea_solution, CGeometry
                         CConfig *fea_config, unsigned long Marker_Struct,
                         unsigned long Vertex_Struct, unsigned long Point_Struct) {
 
-  /*--- Integrate the stress on the structural side if needed ---*/
-  if (consistent_interpolation) {
-    su2double const *normal = fea_geometry->vertex[Marker_Struct][Vertex_Struct]->GetNormal();
-    
-    su2double area = 0.0;
-    for (unsigned short iVar=0; iVar<nVar; ++iVar) area += normal[iVar]*normal[iVar];
-    area = sqrt(area);
-    
-    for (unsigned short iVar=0; iVar<nVar; ++iVar) Target_Variable[iVar] *= area;
-  }
-  
-  /*--- Add to the Flow traction ---*/
+  /*--- Add to the Flow traction. If nonconservative interpolation is in use,
+        this is a stress and is integrated by the structural solver later on. ---*/
   fea_solution->node[Point_Struct]->Add_FlowTraction(Target_Variable);
 
 }
