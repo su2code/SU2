@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - jairo.pcfilho@gmail.com
   
 branches:
     only:
-        - develop
+        - feature_read_target_file_AD
 
 python:
     - 2.7
