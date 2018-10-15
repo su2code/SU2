@@ -1153,7 +1153,7 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
 
   bool euler, ns, turbulent,
   adj_euler, adj_ns, adj_turb,
-  poisson, wave, heat,
+  heat,
   fem,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
@@ -1610,7 +1610,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_Turb             = 0,
   nVar_Adj_Flow         = 0,
   nVar_Adj_Turb         = 0,
-  nVar_Poisson          = 0,
   nVar_FEM              = 0,
   nVar_Heat             = 0;
   
