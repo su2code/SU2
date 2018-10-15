@@ -3207,8 +3207,14 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
 
   /*--- Modify file name for an unsteady restart ---*/
 
-  if (dual_time || time_stepping)
-    profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+  if (dual_time || time_stepping) {
+    if (config->GetRestart()) {
+      profile_filename = config->GetUnsteady_FileName(profile_filename, val_iter);
+    } else {
+      /*--- No restart, so load inlet profile from *_00000.dat ---*/
+      profile_filename = config->GetUnsteady_FileName(profile_filename, 0);
+    }
+  }
 
   /*--- Open the file and check for problems. If a file can not be found,
    then a warning will be printed, but the calculation will continue
