@@ -896,6 +896,10 @@ private:
   bool grid_movement;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+  
+  map<string, vector<su2double>> Time_Signal;
+  
+  map<string, su2double> Average;
 
 public:
 
@@ -942,6 +946,8 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
   
 };
 
