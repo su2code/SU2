@@ -1297,26 +1297,6 @@ public:
                        unsigned short kind_recording);
 
   /*!
-   * \brief Iterate a block for adjoint FSI with flow Objective Function
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
-                               unsigned short ZONE_STRUCT,
-                               unsigned short kind_recording);
-
-  /*!
-   * \brief Iterate a block for adjoint FSI with structural Objective Function
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
-                                      unsigned short ZONE_STRUCT,
-                                      unsigned short kind_recording);
-
-  /*!
    * \brief Initialize the adjoint - set the objective funcition and the output of the adjoint iteration
    * \param[in] ZONE_FLOW - zone of the fluid solver.
    * \param[in] ZONE_STRUCT - zone of the structural solver.

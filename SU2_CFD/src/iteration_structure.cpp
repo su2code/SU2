@@ -1866,7 +1866,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 
     solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
-    if (turbulent){
+    if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
       solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
   }
@@ -2444,27 +2444,16 @@ void CDiscAdjFEAIteration::SetRecording(COutput *output,
 
 void CDiscAdjFEAIteration::RegisterInput(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
+  /*--- Register structural displacements as input ---*/
 
-  if (kind_recording == FEA_DISP_VARS){
+  solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
-    /*--- Register structural displacements as input ---*/
+  /*--- Register variables as input ---*/
 
-    solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
-    /*--- Register variables as input ---*/
-
-    solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
-
-  }
-
-  if (kind_recording == FEM_CROSS_TERM_GEOMETRY){
-
-    /*--- Register only structural displacements as input ---*/
-
-    solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
-
-  }
-
+  /*--- Both need to be registered regardless of kind_recording for structural shape derivatives to work properly.
+        Otherwise, the code simply diverges as the FEM_CROSS_TERM_GEOMETRY breaks! (no idea why) for this term we register but do not extract! ---*/
 }
 
 void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeometry ****geometry_container, CNumerics ******numerics_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
@@ -2582,6 +2571,10 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
     break;
 
   }
+
+  /*--- Add dependencies for grid coordinate derivatives, no need for full update as the structural solver only uses the node coordinates. ---*/
+
+  geometry_container[iZone][iInst][MESH_0]->Set_MPI_Coord(config_container[iZone]);
 
 }
 

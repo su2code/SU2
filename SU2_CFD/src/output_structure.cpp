@@ -13814,6 +13814,16 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
   if (geometry->GetnDim() == 3)
     Variable_Names.push_back("Displacement_z");
 
+  /*--- For the discrete adjoint, we have the full field of sensitivity
+   in each coordinate direction. ---*/
+  if (config->GetDiscrete_Adjoint()) {
+    nVar_Par += geometry->GetnDim();
+    Variable_Names.push_back("Sensitivity_x");
+    Variable_Names.push_back("Sensitivity_y");
+    if (geometry->GetnDim() == 3)
+      Variable_Names.push_back("Sensitivity_z");
+  }
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
   
@@ -13943,13 +13953,20 @@ void COutput::LoadLocalData_Elasticity(CConfig *config, CGeometry *geometry, CSo
         iVar++;
       }
       
-      /*--- Load the conservative variable states for the mean flow variables.
-       If requested, load the limiters and residuals as well. ---*/
+      /*--- Load the displacements / adjoint displacements. ---*/
       
       for (jVar = 0; jVar < nVar_First; jVar++) {
         Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(jVar);
         iVar++;
       }
+      
+      /*--- Load data for the discrete sensitivities. ---*/
+      
+      if (config->GetDiscrete_Adjoint())
+        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
+          Local_Data[jPoint][iVar++] = solver[FirstIndex]->node[iPoint]->GetSensitivity(iDim);
+      
+      /*--- Residuals. ---*/
       
       if (!config->GetLow_MemoryOutput()) {
         if (config->GetWrt_Residuals()) {
