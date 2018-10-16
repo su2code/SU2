@@ -4257,6 +4257,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     FILE *fhw;
     fhw = fopen(filename.c_str(),"rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -4266,7 +4267,10 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- First, read the number of variables and points. ---*/
 
-    fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    ret = fread(var_buf, sizeof(int), nVar_Buf, fhw);
+    if (ret != (unsigned long)nVar_Buf) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
@@ -4343,6 +4347,7 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     FILE *fhw;
     fhw = fopen(filename.c_str(), "rb");
+    size_t ret;
 
     /*--- Error check for opening the file. ---*/
 
@@ -4352,7 +4357,10 @@ void CBaselineSolver_FEM::SetOutputVariables(CGeometry *geometry, CConfig *confi
 
     /*--- Attempt to read the first int, which should be our magic number. ---*/
 
-    fread(&magic_number, sizeof(int), 1, fhw);
+    ret = fread(&magic_number, sizeof(int), 1, fhw);
+    if (ret != 1) {
+      SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
+    }
 
     /*--- Check that this is an SU2 binary file. SU2 binary files
      have the hex representation of "SU2" as the first int in the file. ---*/
