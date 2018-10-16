@@ -876,6 +876,9 @@ public:
       
   virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
+  
+  void ComputeAverage(std::map<string, std::vector<su2double> > &Signal, std::map<string, double> &Average);
+  
 };
 
 /*! \class CFlowOutput
