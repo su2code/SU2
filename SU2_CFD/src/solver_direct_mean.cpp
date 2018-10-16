@@ -3981,7 +3981,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         if (config->GetKind_Trans_Model() == LM) {
           const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
           const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
-          const su2double REth_Inf          = CTransLMSolver::GetREth(tu_Inf);
+          const su2double REth_Inf          = CSourcePieceWise_TransLM::GetREth(tu_Inf);
 
           cout << "Free-stream intermittency:  " << Intermittency_Inf << "." << endl;
           cout << "Free-stream Reynolds_theta: " << REth_Inf          << "." << endl;
@@ -4072,7 +4072,7 @@ void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config
         if (config->GetKind_Trans_Model() == LM) {
           const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
           const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
-          const su2double REth_Inf          = CTransLMSolver::GetREth(tu_Inf);
+          const su2double REth_Inf          = CSourcePieceWise_TransLM::GetREth(tu_Inf);
 
           cout << "Free-stream intermittency:  " << Intermittency_Inf << "." << endl;
           cout << "Free-stream Reynolds_theta: " << REth_Inf          << "." << endl;

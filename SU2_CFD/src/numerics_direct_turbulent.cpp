@@ -109,9 +109,6 @@ CUpwSca_TurbSA::CUpwSca_TurbSA(unsigned short val_nDim,
     : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
-CUpwSca_TurbSA::~CUpwSca_TurbSA(void) {
-}
-
 void CUpwSca_TurbSA::ExtraADPreaccIn() {
   AD::SetPreaccIn(V_i, nDim+1); AD::SetPreaccIn(V_j, nDim+1);
 }
@@ -230,9 +227,6 @@ CAvgGrad_TurbSA::CAvgGrad_TurbSA(unsigned short val_nDim,
    : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config), sigma(2./3.) {
 }
 
-CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) {
-}
-
 void CAvgGrad_TurbSA::ExtraADPreaccIn() {
 }
 
@@ -261,9 +255,6 @@ CAvgGrad_TurbSA_Neg::CAvgGrad_TurbSA_Neg(unsigned short val_nDim,
                                          CConfig *config)
     : CAvgGrad_Scalar(val_nDim, val_nVar, correct_grad, config),
       sigma(2./3.), cn1(16.0), fn(0.0) {
-}
-
-CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) {
 }
 
 void CAvgGrad_TurbSA_Neg::ExtraADPreaccIn() {
@@ -935,9 +926,7 @@ CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim
   
 }
 
-CSourcePieceWise_TurbSA_Neg::~CSourcePieceWise_TurbSA_Neg(void) {
-  
-}
+CSourcePieceWise_TurbSA_Neg::~CSourcePieceWise_TurbSA_Neg(void) { }
 
 void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
@@ -1084,9 +1073,6 @@ CUpwSca_TurbSST::CUpwSca_TurbSST(unsigned short val_nDim,
     : CUpwScalar(val_nDim, val_nVar, config) {
 }
 
-CUpwSca_TurbSST::~CUpwSca_TurbSST(void) {
-}
-
 void CUpwSca_TurbSST::ExtraADPreaccIn() {
 
   AD::SetPreaccIn(V_i, nDim+3);
@@ -1124,9 +1110,6 @@ CAvgGrad_TurbSST::CAvgGrad_TurbSST(unsigned short val_nDim,
   
 }
 
-CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) {
-}
-
 void CAvgGrad_TurbSST::ExtraADPreaccIn() {
   AD::SetPreaccIn(F1_i); AD::SetPreaccIn(F1_j);
 }
@@ -1135,6 +1118,7 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
   
   su2double sigma_kine_i, sigma_kine_j, sigma_omega_i, sigma_omega_j;
   su2double diff_i_kine, diff_i_omega, diff_j_kine, diff_j_omega;
+  su2double diff_kine, diff_omega;
   
   /*--- Compute the blended constant for the viscous terms ---*/
   sigma_kine_i  = F1_i*sigma_k1 + (1.0 - F1_i)*sigma_k2;

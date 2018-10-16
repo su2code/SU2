@@ -9803,12 +9803,14 @@ public:
  * \ingroup Turbulence_Model
  * \author A. Aranake, E. van der Weide.
  */
-
 class CTransLMSolver: public CTurbSolver {
 private:
   su2double *constants,         /*!< \brief Constants for the model. */
             Intermittency_Inf,  /*!< \brief Free-stream value of the intermittency. */
             REth_Inf;           /*!< \brief Free-stream value of Reynolds_theta. */
+
+  unsigned short nVarTurbModel; /*!< \brief Number of variables in the corresponding turbulence model. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -9827,23 +9829,6 @@ public:
    * \brief Destructor of the class.
    */
   ~CTransLMSolver(void);
-
-  /*!
-   * \brief Static member function to compute the Re_theta from turbulence intensity.
-   * \param[in] var_tu - Turbulence intensity.
-   * \return Value of the Re_theta.
-   */
-  static su2double GetREth(const su2double var_tu);
-
-  /*!
-   * \brief Member function to compute the critical Reynolds_theta. This is the
-            Reynolds number where the intermittency starts to increase in
-            the boundary layer.
-   * \param[in] var_Re_theta - Value of Reynolds theta. The critical Reynolds number
-                               is a correlation based on this value.
-   * \return Value of the critical Re_theta.
-   */
-  su2double GetREth_crit(const su2double var_Re_theta);
 
    /*!
    * \brief Load a solution from a restart file.
@@ -9983,18 +9968,6 @@ public:
    */
   void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
   
-  /*!
-   * \brief Impose the symmetry condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] conv_numerics - Description of the numerical method.
-   * \param[in] visc_numerics - Description of the numerical method.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_marker - Surface marker where the boundary condition is applied.
-   */
-  void BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
-                    unsigned short val_marker);
-
   /*!
    * \brief Get the constants for the LM model.
    * \return A pointer to an array containing a set of constants

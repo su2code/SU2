@@ -1752,7 +1752,6 @@ void CTurbSASolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, CN
   Normal = new su2double[nDim];
   
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -2037,8 +2036,6 @@ void CTurbSASolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_cont
   
   bool grid_movement  = config->GetGrid_Movement();
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-  
   /*--- Loop over all the vertices on this boundary marker ---*/
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -2302,7 +2299,6 @@ void CTurbSASolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_c
   Normal = new su2double[nDim];
 
   bool grid_movement  = config->GetGrid_Movement();
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   unsigned short nSpanWiseSections = config->GetnSpanWiseSections();
 
   /*--- Loop over all the vertices on this boundary marker ---*/
@@ -3007,10 +3003,6 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   
   su2double kappa = 0.4;
   su2double B = 5.5;
-  
-  /*--- Identify the boundary by string name ---*/
-  
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -3808,11 +3800,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     
-    /*--- Conservative variables w/o reconstruction ---*/
+    /*--- Primitive variables w/o reconstruction ---*/
     
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
     
-    /*--- Gradient of the primitive and conservative variables ---*/
+    /*--- Gradient of the primitive variables ---*/
     
     numerics->SetPrimVarGradient(solver_container[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(), NULL);
     
@@ -4037,8 +4029,6 @@ void CTurbSSTSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container, C
 
   bool grid_movement  = config->GetGrid_Movement();
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
   /*--- Loop over all the vertices on this boundary marker ---*/
 
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -4246,8 +4236,6 @@ void CTurbSSTSolver::BC_Inlet_MixingPlane(CGeometry *geometry, CSolver **solver_
 
   bool grid_movement  = config->GetGrid_Movement();
 
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
   /*--- Loop over all the vertices on this boundary marker ---*/
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
     extAverageKine = solver_container[FLOW_SOL]->GetExtAverageKine(val_marker, iSpan);
@@ -4357,9 +4345,6 @@ void CTurbSSTSolver::BC_Inlet_Turbo(CGeometry *geometry, CSolver **solver_contai
   Vel = new su2double[nDim];
 
   bool grid_movement  = config->GetGrid_Movement();
-
-  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
-
 
   for (iSpan= 0; iSpan < nSpanWiseSections ; iSpan++){
 
@@ -4587,10 +4572,6 @@ void CTurbSSTSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_co
   delete [] PrimVar_i;
   delete [] PrimVar_j;
 
-}
-
-su2double* CTurbSSTSolver::GetConstants() {
-  return constants;
 }
 
 void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,

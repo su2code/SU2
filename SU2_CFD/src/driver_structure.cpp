@@ -2022,7 +2022,10 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   
   /*--- Solver definition for the transition model problem ---*/
   if (transition) {
-    
+
+    /*--- Get the constants for the Langtry-Menter transition model. */
+    constants = solver_container[val_iInst][MESH_0][TRANS_SOL]->GetConstants();
+
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_Turb()) {
       case NONE :
@@ -2039,18 +2042,19 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGradCorrected_TransLM(nDim, nVar_Trans, config);
+      numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, constants, true, config);
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, config);
+      numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_FIRST_TERM] = new CSourcePieceWise_TransLM(nDim, nVar_Trans, constants, config);
       numerics_container[val_iInst][iMGlevel][TRANS_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Trans, config);
     }
     
     /*--- Definition of the boundary condition method ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwLin_TransLM(nDim, nVar_Trans, config);
+      numerics_container[val_iInst][iMGlevel][TRANS_SOL][CONV_BOUND_TERM] = new CUpwSca_TransLM(nDim, nVar_Trans, config);
+      numerics_container[val_iInst][iMGlevel][TRANS_SOL][VISC_BOUND_TERM] = new CAvgGrad_TransLM(nDim, nVar_Trans, constants, false, config);
     }
   }
   

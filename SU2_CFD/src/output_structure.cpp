@@ -4282,6 +4282,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
                     (config->GetKind_Solver() == DISC_ADJ_RANS));
+  bool transition = turbulent && (config->GetKind_Trans_Model() == LM);
   bool cont_adj = config->GetContinuous_Adjoint();
   bool disc_adj = config->GetDiscrete_Adjoint();
   bool frozen_visc = (cont_adj && config->GetFrozen_Visc_Cont()) ||( disc_adj && config->GetFrozen_Visc_Disc());
@@ -4421,6 +4422,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
       break;
     case SST:   	SPRINTF (adj_turb_resid, ",\"Res_AdjTurb[0]\",\"Res_AdjTurb[1]\""); break;
   }
+  char trans_resid[]= ",\"Res_Trans[0]\",\"Res_Trans[1]\""; 
+  char adj_trans_resid[]= ",\"Res_AdjTrans[0]\",\"Res_AdjTrans[1]\"";
   char fem_resid[]= ",\"Res_FEM[0]\",\"Res_FEM[1]\",\"Res_FEM[2]\"";
   char heat_resid[]= ",\"Res_Heat\"";
   
@@ -4456,6 +4459,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
 
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
+      if (transition) ConvHist_file[0] << trans_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
       if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
       if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
@@ -4483,7 +4487,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
         }
       }
       else ConvHist_file[0] << begin << adj_turbo_coeff << adj_flow_resid;
-      if ((turbulent) && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
+      if ((turbulent)  && (!frozen_visc)) ConvHist_file[0] << adj_turb_resid;
+      if ((transition) && (!frozen_visc)) ConvHist_file[0] << adj_trans_resid;
       ConvHist_file[0] << end;
       break;
       
@@ -4665,10 +4670,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool engine        = ((config[val_iZone]->GetnMarker_EngineInflow() != 0) || (config[val_iZone]->GetnMarker_EngineExhaust() != 0));
     bool actuator_disk = ((config[val_iZone]->GetnMarker_ActDiskInlet() != 0) || (config[val_iZone]->GetnMarker_ActDiskOutlet() != 0));
     bool inv_design = (config[val_iZone]->GetInvDesign_Cp() || config[val_iZone]->GetInvDesign_HeatFlux());
-    bool transition = (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool thermal = (config[val_iZone]->GetKind_Solver() == RANS || config[val_iZone]->GetKind_Solver()  == NAVIER_STOKES);
     bool turbulent = ((config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS) ||
                       (config[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+    bool transition = turbulent && (config[val_iZone]->GetKind_Trans_Model() == LM);
     bool adjoint =  cont_adj || disc_adj;
     bool frozen_visc = (cont_adj && config[val_iZone]->GetFrozen_Visc_Cont()) ||( disc_adj && config[val_iZone]->GetFrozen_Visc_Disc());
     bool heat =  ((config[val_iZone]->GetKind_Solver() == HEAT_EQUATION_FVM) || (config[val_iZone]->GetWeakly_Coupled_Heat()));

@@ -183,8 +183,6 @@ inline void CNumerics::GetEq_Rxn_Coefficients(su2double **EqnRxnConstants, CConf
                             
 inline void CNumerics::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config) { }
 
-inline void CNumerics::ComputeResidual_TransLM(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config, su2double &gamma_sep) {}
-
 inline void CNumerics::ComputeResidual_Axisymmetric(su2double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual_Axisymmetric_ad(su2double *val_residual, su2double *val_residuald, CConfig *config) { }
@@ -490,6 +488,10 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2doub
   CDkw_j = val_CDkw_j;
 }      
 
+inline CUpwSca_TurbSA::~CUpwSca_TurbSA(void) { }
+
+inline CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) { }
+
 inline void CSourcePieceWise_TurbSA::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 
 inline void CSourcePieceWise_TurbSA::SetProduction(su2double val_production) { Production = val_production; }
@@ -505,6 +507,8 @@ inline su2double CSourcePieceWise_TurbSA::GetGammaBC(void) { return gamma_BC; }
 inline su2double CSourcePieceWise_TurbSA::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA::GetCrossProduction(void) { return CrossProduction; }
+
+inline CAvgGrad_TurbSA_Neg::~CAvgGrad_TurbSA_Neg(void) { }
 
 inline void CSourcePieceWise_TurbSA_E::SetIntermittency(su2double intermittency_in) { intermittency = intermittency_in; }
 
@@ -561,6 +565,14 @@ inline su2double CSourcePieceWise_TurbSA_Neg::GetProduction(void) { return Produ
 inline su2double CSourcePieceWise_TurbSA_Neg::GetDestruction(void) { return Destruction; }
 
 inline su2double CSourcePieceWise_TurbSA_Neg::GetCrossProduction(void) { return CrossProduction; }
+
+inline CUpwSca_TurbSST::~CUpwSca_TurbSST(void) { }
+
+inline CAvgGrad_TurbSST::~CAvgGrad_TurbSST(void) { }
+
+inline CUpwSca_TransLM::~CUpwSca_TransLM(void) { }
+
+inline CAvgGrad_TransLM::~CAvgGrad_TransLM(void) { }
 
 inline su2double CUpwTurkel_Flow::GetPrecond_Beta() { return Beta; }
 
