@@ -204,6 +204,8 @@
 		05F108A11978D2D700F2F288 /* transport_model.inl */ = {isa = PBXFileReference; lastKnownFileType = text; lineEnding = 0; name = transport_model.inl; path = ../../SU2_CFD/include/transport_model.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05F108A31978D2F200F2F288 /* transport_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; lineEnding = 0; name = transport_model.cpp; path = ../../SU2_CFD/src/transport_model.cpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		05F8F2672008A1C7000FEA01 /* python_wrapper_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = python_wrapper_structure.cpp; path = ../../SU2_CFD/src/python_wrapper_structure.cpp; sourceTree = "<group>"; };
+		355D2C9D2172BDE100C10535 /* sgs_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = sgs_model.inl; path = ../../SU2_CFD/include/sgs_model.inl; sourceTree = "<group>"; };
+		355D2C9E2172BDE100C10535 /* sgs_model.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = sgs_model.hpp; path = ../../SU2_CFD/include/sgs_model.hpp; sourceTree = "<group>"; };
 		3599C5D02121FAC9003AAF05 /* su2_blas.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = su2_blas.cpp; path = ../../Common/src/su2_blas.cpp; sourceTree = "<group>"; };
 		3599C5D12121FAC9003AAF05 /* wall_model.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = wall_model.cpp; path = ../../Common/src/wall_model.cpp; sourceTree = "<group>"; };
 		3599C5D42121FAF4003AAF05 /* su2_blas.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = su2_blas.hpp; path = ../../Common/include/su2_blas.hpp; sourceTree = "<group>"; };
@@ -408,6 +410,7 @@
 				05E6DBB017EB624700FA1F7E /* integration_structure.inl */,
 				05E6DBB117EB624700FA1F7E /* numerics_structure.inl */,
 				E9D9CE961C62A272004119E9 /* transfer_structure.inl */,
+				355D2C9D2172BDE100C10535 /* sgs_model.inl */,
 				3599C5D62121FAF4003AAF05 /* wall_model.inl */,
 			);
 			name = InLine;
@@ -453,6 +456,7 @@
 				E9D9CE951C62A272004119E9 /* transfer_structure.hpp */,
 				E9D9CE971C62A2A7004119E9 /* interpolation_structure.hpp */,
 				3599C5D42121FAF4003AAF05 /* su2_blas.hpp */,
+				355D2C9E2172BDE100C10535 /* sgs_model.hpp */,
 				3599C5D52121FAF4003AAF05 /* wall_model.hpp */,
 			);
 			name = Include;

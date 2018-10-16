@@ -9682,6 +9682,11 @@ CFEM_DG_NSSolver::CFEM_DG_NSSolver(CGeometry *geometry, CConfig *config, unsigne
         SGSModelUsed = true;
         break;
 
+      case VREMAN:
+        SGSModel     = new CVremanModel;
+        SGSModelUsed = true;
+        break;
+
       default:
         SU2_MPI::Error("Unknown SGS model encountered", CURRENT_FUNCTION);
     }

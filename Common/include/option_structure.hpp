@@ -830,13 +830,15 @@ enum ENUM_SGS_MODEL {
   NO_SGS_MODEL = 0, /*!< \brief No subgrid scale model. */
   IMPLICIT_LES = 1, /*!< \brief Implicit LES, i.e. no explicit SGS model. */
   SMAGORINSKY  = 2, /*!< \brief Smagorinsky SGS model. */
-  WALE         = 3  /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+  WALE         = 3, /*!< \brief Wall-Adapting Local Eddy-viscosity SGS model. */
+  VREMAN       = 4  /*!< \brief Vreman SGS model. */
 };
 static const map<string, ENUM_SGS_MODEL> SGS_Model_Map = CCreateMap<string, ENUM_SGS_MODEL>
 ("NONE",         NO_SGS_MODEL)
 ("IMPLICIT_LES", IMPLICIT_LES)
 ("SMAGORINSKY",  SMAGORINSKY)
-("WALE",         WALE);
+("WALE",         WALE)
+("VREMAN",       VREMAN);
 
 /*!
  * \brief types of hybrid RANS/LES models
