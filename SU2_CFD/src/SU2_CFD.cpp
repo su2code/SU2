@@ -98,10 +98,7 @@ int main(int argc, char *argv[]) {
 
   }
   else if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
-        config->GetKind_Solver() == DISC_ADJ_FEM ||
-        config->GetKind_Solver() == POISSON_EQUATION ||
-        config->GetKind_Solver() == WAVE_EQUATION ||
-        config->GetKind_Solver() == HEAT_EQUATION) ) {
+        config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
