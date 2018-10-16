@@ -84,6 +84,7 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
     ScreenFields.push_back("ENERGY");
     nScreenOutput = ScreenFields.size();
   }
+  ComputeAverage(Time_Signal, Average);
 }
 
 CFlowOutput::~CFlowOutput(void) {
@@ -112,16 +113,11 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MOMENTUM-Z", "Res[RhoW]", FORMAT_FIXED,   "RESIDUALS");
   AddHistoryOutput("ENERGY",     "Res[RhoE]", FORMAT_FIXED,   "RESIDUALS");
   
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("NU_TILDE", "Res[nu]", FORMAT_FIXED, "RESIDUALS");
-    break;  
-  case SST:
-    AddHistoryOutput("KINETIC_ENERGY", "Res[k]", FORMAT_FIXED, "RESIDUALS");
-    AddHistoryOutput("DISSIPATION",    "Res[w]", FORMAT_FIXED, "RESIDUALS");
-    break;
-  default: break;
-  }
+
+  AddHistoryOutput("NU_TILDE",       "Res[nu]", FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("KINETIC_ENERGY", "Res[k]",  FORMAT_FIXED, "RESIDUALS");
+  AddHistoryOutput("DISSIPATION",    "Res[w]",  FORMAT_FIXED, "RESIDUALS");
+
   
   // Aerodynamic coefficients
   AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
@@ -134,6 +130,17 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
   AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
   AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
+  
+  AddHistoryOutput("DRAG_AVG",       "CD(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("LIFT_AVG",       "CL(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("SIDEFORCE_AVG",  "CSF(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-X_AVG",   "CMx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-Y_AVG",   "CMy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-Z_AVG",   "CMz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-X_AVG",    "CFx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-Y_AVG",    "CFy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-Z_AVG",    "CFz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("EFFICIENCY_AVG", "CEff(Avg)", FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
   
   // Aerodynamic coefficients (per surface)  
   vector<string> Marker_Monitoring;
@@ -303,6 +310,15 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
   }
+  
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION");
+      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION");
+    }
+    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION");
+    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION");  
+  }
 }
 
 void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -417,6 +433,15 @@ void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
   }
   
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity()[0]);
+      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity()[1]);      
+    } 
+    SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity()[2]);      
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, Node_Flow));      
+  }
+  
 }
 
 void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -478,6 +503,35 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   if (nDim == 3)
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
+  
+  if (config[val_iZone]->GetUnsteady_Simulation() != STEADY && !DualTime){
+    Time_Signal["DRAG"].push_back(flow_solver->GetTotal_CD());
+    Time_Signal["LIFT"].push_back(flow_solver->GetTotal_CL());
+    Time_Signal["SIDEFORCE"].push_back(flow_solver->GetTotal_CSF());
+    Time_Signal["MOMENT-X"].push_back(flow_solver->GetTotal_CMx());
+    Time_Signal["MOMENT-Y"].push_back(flow_solver->GetTotal_CMy());
+    Time_Signal["MOMENT-Z"].push_back(flow_solver->GetTotal_CMz());
+    Time_Signal["FORCE-X"].push_back(flow_solver->GetTotal_CFx());
+    Time_Signal["FORCE-Y"].push_back(flow_solver->GetTotal_CFy());
+    Time_Signal["FORCE-Z"].push_back(flow_solver->GetTotal_CFz());
+    Time_Signal["EFFICIENCY"].push_back(flow_solver->GetTotal_CEff());
+    ComputeAverage(Time_Signal, Average);
+  }
+
+  SetHistoryOutputValue("DRAG_AVG", Average["DRAG"]);
+  SetHistoryOutputValue("LIFT_AVG", Average["LIFT"]);
+  if (nDim == 3)
+    SetHistoryOutputValue("SIDEFORCE_AVG", Average["SIDEFORCE"]);
+  if (nDim == 3){
+    SetHistoryOutputValue("MOMENT-X_AVG", Average["MOMENT-X"]);
+    SetHistoryOutputValue("MOMENT-Y_AVG", Average["MOMENT-Y"]);
+  }
+  SetHistoryOutputValue("MOMENT-Z_AVG", Average["MOMENT-Z"]);
+  SetHistoryOutputValue("FORCE-X_AVG", Average["FORCE-X"]);
+  SetHistoryOutputValue("FORCE-Y_AVG", Average["FORCE-Y"]);
+  if (nDim == 3)
+    SetHistoryOutputValue("FORCE-Z_AVG", Average["FORCE-Z"]);
+  SetHistoryOutputValue("EFFICIENCY_AVG", Average["EFFICIENCY"]);
   
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
@@ -549,14 +603,39 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
     write_output = true;    
   } 
   return write_output;
-  
-      (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0)){
 }
 
+
+
+
+
+su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
+  unsigned short iDim;
+  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+      Grad_Vel[iDim][jDim] = node_flow->GetGradient_Primitive(iDim+1, jDim);
+      Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
+      Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+    }
+  }
+  
+  su2double OmegaMag = 0.0, StrainMag = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
+      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
+    }
+  }
+  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+  
+  su2double Q = 0.5*(OmegaMag - StrainMag);
+  
+  return Q;
 }
 
-bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  return true;
-}
+
 
