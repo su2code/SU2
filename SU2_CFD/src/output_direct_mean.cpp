@@ -519,15 +519,40 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
 }
 
 bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- return true;
+ if (!write_dualtime){
+   return true;
+ }
+ else {
+   return false;
+ }
 }
 
 bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header;
-  write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) ||
-     ( (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() ==DT_STEPPING_2ND) && config->GetIntIter() == 0);
-  
+  bool write_header = false;
+  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+  } else {
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+  }
   return write_header;
+}
+
+bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  bool write_output = false;
+  
+  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+      && write_dualtime && 
+      (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0)){
+    write_output = true;
+  }
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) ) && (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ){
+    write_output = true;    
+  } 
+  return write_output;
+  
+      (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0)){
+}
+
   
 }
 
