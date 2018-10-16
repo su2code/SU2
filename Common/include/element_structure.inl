@@ -121,6 +121,10 @@ inline unsigned long CElement::Get_iProp(void) { return iProp;}
 
 inline void CElement::ComputeGrad_Pressure(void){ }
 
+inline void CElement::SetPreaccIn_Coords(void) { AD::SetPreaccIn(RefCoord,nNodes,nDim); AD::SetPreaccIn(CurrentCoord,nNodes,nDim); }
+
+inline void CElement::SetPreaccOut_Kt_a(void) { AD::SetPreaccOut(Kt_a,nNodes,nDim); }
+
 inline void CQUAD4::ComputeGrad_Pressure(void) { }
 
 inline void CHEXA8::ComputeGrad_Pressure(void) { }
