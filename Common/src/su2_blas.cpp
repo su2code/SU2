@@ -34,7 +34,7 @@
 
 using namespace std;
 
-#if !defined(HAVE_LIBXSMM) && !defined(HAVE_CBLAS) && !defined(HAVE_MKL)
+#if !defined(HAVE_LIBXSMM) && !defined(HAVE_BLAS) && !defined(HAVE_MKL)
 
 /*--- Create an unnamed namespace to keep the functions for the
       native implementation of the matrix product local. ---*/
@@ -134,11 +134,17 @@ void su2_gemm(const int M,        const int N,        const int K,
 
   libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
-#elif defined (HAVE_CBLAS) || defined(HAVE_MKL)
+#elif defined (HAVE_MKL) || defined(HAVE_BLAS)
 
-  /* The standard cblas routine dgemm is used for the multiplication. */
-  cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K,
-              1.0, A, K, B, N, 0.0, C, N);
+  /* The standard blas routine dgemm is used for the multiplication.
+     Call dgemm without transposing the matrices. In that case dgemm expects
+     the matrices in column major order, see the comments for libxsmm. */
+  su2double alpha = 1.0;
+  su2double beta  = 0.0;
+  char trans = 'N';
+
+  dgemm_(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
+
 #else
 
   /* Native implementation of the matrix product. This optimized implementation
@@ -159,10 +165,18 @@ void su2_gemm(const int M,        const int N,        const int K,
 void su2_gemv(const int M,        const int N,   const su2double *A,
               const su2double *x, su2double *y) {
 
-#if defined (HAVE_CBLAS) || defined(HAVE_MKL)
+#if defined (HAVE_BLAS) || defined(HAVE_MKL)
 
-  /* The standard cblas routine dgemv is used for the multiplication. */
-  cblas_dgemv(CblasRowMajor, CblasNoTrans, M, N, 1.0, A, N, x, 1, 0.0, y, 1);
+  /* The standard blas routine dgemv is used for the multiplication.
+     Note that dgemv expects the matrices in column major order, while
+     A is in row major order. This can be solved by using the transpose
+     and switching M and N. */
+     su2double alpha = 1.0;
+     su2double beta  = 0.0;
+     int       inc   = 1;
+     char trans = 'T';
+
+     dgemv_(&trans, &N, &M, &alpha, A, &N, x, &inc, &beta, y, &inc);
 
 #else
 
