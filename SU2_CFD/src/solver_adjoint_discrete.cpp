@@ -783,6 +783,9 @@ void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config)
 //        Solution_Geometry[iDim] += node[iPoint]->GetDual_Time_Derivative_Geometry(iDim);
 //      }
 //    }
+    for (iDim = 0; iDim < nDim; iDim++){
+      node[iPoint]->SetSensitivity(iDim, Solution_Geometry[iDim]);
+    }
     geometry->node[iPoint]->SetAdjointCoord(Solution_Geometry);
   }
 
