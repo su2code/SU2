@@ -41,11 +41,18 @@
 #include "libxsmm.h"
 #endif
 
-/* MKL or BLAS include files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_CBLAS
-#include "cblas.h"
+/* MKL or BLAS, if supported. */
+#if defined (HAVE_MKL) || defined(HAVE_BLAS)
+
+/* Function prototypes for the BLAS routines used. */
+extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
+                       const passivedouble*, const passivedouble*, const int*,
+                       const passivedouble*, const int*,
+                       const passivedouble*, passivedouble*, const int*);
+
+extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
+                       const passivedouble*, const int*, const passivedouble*,
+                       const int*, const passivedouble*, passivedouble*, const int*);
 #endif
 
 /*-----------------------------------------------------------------------------*/
