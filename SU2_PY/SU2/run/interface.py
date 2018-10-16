@@ -213,7 +213,7 @@ def GEO(config):
     # must run with rank 1
     processes = konfig['NUMBER_PART']
         
-    the_Command = 'SU2_GEO ' + tempname
+    the_Command = 'SU2_GEO%s %s' % (quote, tempname)
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -234,7 +234,7 @@ def SOL(config):
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_SOL ' + tempname
+    the_Command = 'SU2_SOL%s %s' % (quote, tempname)
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
@@ -255,7 +255,7 @@ def SOL_FSI(config):
     # must run with rank 1
     processes = konfig['NUMBER_PART']
     
-    the_Command = 'SU2_SOL ' + tempname + ' 2'
+    the_Command = 'SU2_SOL%s %s 2' % (quote, tempname)
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
