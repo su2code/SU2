@@ -2546,51 +2546,6 @@ public:
 };
 
 /*!
- * \class CHeatVariable
- * \brief Main class for defining the variables of the Heat equation solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- */
-class CHeatVariable : public CVariable {
-protected:
-  su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHeatVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CHeatVariable(su2double *val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatVariable(void);
-  
-  /*!
-   * \brief Set the direct solution for the adjoint solver.
-   * \param[in] val_solution_direct - Value of the direct solution.
-   */
-  void SetSolution_Direct(su2double *val_solution_direct);
-  
-  /*!
-   * \brief Get the direct solution for the adjoint solver.
-   * \return Pointer to the direct solution vector.
-   */
-  su2double *GetSolution_Direct(void);
-  
-};
-
-/*!
  * \class CFEAVariable
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
