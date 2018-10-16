@@ -3,7 +3,7 @@
 # \file configure.ac
 # \brief Main file for configuring the autoconf/automake build process
 # \author M. Colonno, T. Economon, F. Palacios, B. Kirk
-# \version 6.0.1 "Falcon"
+# \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -45,7 +45,7 @@
 #
 ##########################
 
-AC_INIT([SU2], [6.0.1], [su2code-dev@lists.stanford.edu],
+AC_INIT([SU2], [6.1.0], [su2code-dev@lists.stanford.edu],
         [SU2], [https://github.com/su2code])
 AC_PREREQ([2.59])
 AC_CONFIG_MACRO_DIR([m4])
@@ -491,6 +491,21 @@ AC_SUBST([LAPACK_CXX])
 AC_SUBST([LAPACK_LD])
 
 ###########################
+
+# Check if MKL is available, enable if 2019.0 or newer.
+
+if test "${MKLROOT+set}" = set; then
+  FOUND_MKL_VERSION=$(grep -F "INTEL_MKL_VERSION" ${MKLROOT}/include/mkl_version.h | tr -dc '0-9')
+  REQUIRED_MKL_VERSION=20190000
+  if [[ "$FOUND_MKL_VERSION" -ge "$REQUIRED_MKL_VERSION" ]]; then
+    CPPFLAGS="-DHAVE_MKL -DMKL_DIRECT_CALL_SEQ $CPPFLAGS"
+    CXXFLAGS="-I${MKLROOT}/include $CXXFLAGS"
+    LIBS="-Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_intel_lp64.a ${MKLROOT}/lib/intel64/libmkl_sequential.a ${MKLROOT}/lib/intel64/libmkl_core.a -Wl,--end-group -lpthread -lm -ldl $LIBS" 
+    have_MKL="yes"
+  fi
+fi
+
+###########################
 # Determine what versions of the code to build
 
 build_PY=yes
@@ -561,7 +576,7 @@ AC_MSG_RESULT([
 
 -------------------------------------------------------------------------
 |    ___ _   _ ___                                                      |
-|   / __| | | |_  )   Release 6.0.1 'Falcon'                            |
+|   / __| | | |_  )   Release 6.1.0 'Falcon'                            |
 |   \\__ \\ |_| |/ /                                                      |
 |   |___/\\___//___|   Suite                                             |
 |                                                                       |
@@ -618,6 +633,7 @@ Build Configuration Summary:
     Mutation++ support:   $have_Mutationpp
     Jsoncpp support: 	  $have_Jsoncpp
     LAPACK support:       $have_LAPACK
+    MKL support:          $have_MKL
     Datatype support:
         double              $build_NORMAL
         complex             $build_COMPLEX

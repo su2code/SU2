@@ -2,7 +2,7 @@
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -84,11 +84,7 @@ inline void CSolver::ResetInitialCondition(CGeometry **geometry, CSolver ***solv
 
 inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) { }
 
-inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CSolver ***solver, CConfig *config, int val_iter) { }
-  
-inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
-
-inline void CSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
+inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) { }
 
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
@@ -338,7 +334,7 @@ inline su2double CSolver::GetTotal_CL() { return 0; }
 
 inline su2double CSolver::GetTotal_CD() { return 0; }
 
-inline su2double CSolver::GetTotal_NetCThrust() { return 0; }
+inline su2double CSolver::GetTotal_NetThrust() { return 0; }
 
 inline su2double CSolver::GetTotal_Power() { return 0; }
 
@@ -468,7 +464,7 @@ inline void CSolver::SetTotal_CL(su2double val_Total_CL) { }
 
 inline void CSolver::SetTotal_CD(su2double val_Total_CD) { }
 
-inline void CSolver::SetTotal_NetCThrust(su2double val_Total_NetCThrust) { }
+inline void CSolver::SetTotal_NetThrust(su2double val_Total_NetThrust) { }
 
 inline void CSolver::SetTotal_Power(su2double val_Total_Power) { }
 
@@ -548,7 +544,11 @@ inline void CSolver::SetInlet_FlowDir(unsigned short val_marker, unsigned long v
 
 inline void CSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim, su2double val_turb_var) { }
 
-inline void CSolver::SetInlet(CConfig *config) { }
+inline void CSolver::SetUniformInlet(CConfig* config, unsigned short iMarker) {};
+
+inline void CSolver::SetInletAtVertex(su2double *val_inlet, unsigned short iMarker, unsigned long iVertex) { };
+
+inline su2double CSolver::GetInletAtVertex(su2double *val_inlet, unsigned long val_inlet_point, unsigned short val_kind_marker, string val_marker, CGeometry *geometry, CConfig *config) { return 0; }
 
 inline void CSolver::UpdateCustomBoundaryConditions(CGeometry **geometry_container, CConfig *config) { }
 
@@ -618,7 +618,11 @@ inline su2double CSolver::GetPressure_Inf(void) { return 0; }
 
 inline su2double CSolver::GetViscosity_Inf(void) { return 0; }
 
+inline su2double CSolver::GetNuTilde_Inf(void) { return 0; }
+
 inline su2double CSolver::GetTke_Inf(void) { return 0; }
+
+inline su2double CSolver::GetOmega_Inf(void) { return 0; }
 
 inline su2double CSolver::GetTotal_Sens_E(unsigned short iVal) { return 0.0; }
 
@@ -727,7 +731,7 @@ inline void CSolver::BC_ActDisk_Outlet(CGeometry *geometry, CSolver **solver_con
                                        CConfig *config, unsigned short val_marker) { }
 
 inline void CSolver::BC_ActDisk(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker, bool inlet_surface) { }
+                                CConfig *config, unsigned short val_marker, bool val_inlet_surface) { }
 
 inline void CSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                     CConfig *config, unsigned short val_marker) { }
@@ -899,11 +903,11 @@ inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] = val_residual; }
+inline void CSolver::SetRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] = val_residual; }
 
-inline void CSolver::AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_RMS[val_var] += val_residual; }
+inline void CSolver::AddRes_BGS(unsigned short val_var, su2double val_residual) { Residual_BGS[val_var] += val_residual; }
 
-inline su2double CSolver::GetRes_BGS(unsigned short val_var) { return Residual_RMS[val_var]; }
+inline su2double CSolver::GetRes_BGS(unsigned short val_var) { return Residual_BGS[val_var]; }
 
 inline void CSolver::SetRes_Max_BGS(unsigned short val_var, su2double val_residual, unsigned long val_point) { Residual_Max_BGS[val_var] = val_residual; Point_Max_BGS[val_var] = val_point; }
 
@@ -1041,6 +1045,11 @@ inline void CSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 inline void CSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config){}
 
 inline void CSolver::SetFreeStream_Solution(CConfig *config){}
+
+inline void CSolver::SetTauWall_WF(CGeometry *geometry, CSolver** solver_container, CConfig* config){}
+
+inline void CSolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
+                                           CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {}
 
 inline void CEulerSolver::Set_NewSolution(CGeometry *geometry) {
   for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
@@ -1322,7 +1331,7 @@ inline su2double CEulerSolver::GetTotal_ComboObj() { return Total_ComboObj; }
 
 inline su2double CEulerSolver::GetTotal_CD() { return Total_CD; }
 
-inline su2double CEulerSolver::GetTotal_NetCThrust() { return Total_NetCThrust; }
+inline su2double CEulerSolver::GetTotal_NetThrust() { return Total_NetThrust; }
 
 inline su2double CEulerSolver::GetTotal_Power() { return Total_Power; }
 
@@ -1416,7 +1425,7 @@ inline void CEulerSolver::SetTotal_CL(su2double val_Total_CL) { Total_CL = val_T
 
 inline void CEulerSolver::SetTotal_CD(su2double val_Total_CD) { Total_CD = val_Total_CD; }
 
-inline void CEulerSolver::SetTotal_NetCThrust(su2double val_Total_NetCThrust) { Total_NetCThrust = val_Total_NetCThrust; }
+inline void CEulerSolver::SetTotal_NetThrust(su2double val_Total_NetThrust) { Total_NetThrust = val_Total_NetThrust; }
 
 inline void CEulerSolver::SetTotal_Power(su2double val_Total_Power) { Total_Power = val_Total_Power; }
 
@@ -1795,6 +1804,12 @@ inline void CIncEulerSolver::SetCPressureTarget(unsigned short val_marker, unsig
 
 inline su2double *CIncEulerSolver::GetCharacPrimVar(unsigned short val_marker, unsigned long val_vertex) { return CharacPrimVar[val_marker][val_vertex]; }
 
+inline su2double CIncEulerSolver::GetInlet_Ttotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ttotal[val_marker][val_vertex]; }
+
+inline su2double CIncEulerSolver::GetInlet_Ptotal(unsigned short val_marker, unsigned long val_vertex) { return Inlet_Ptotal[val_marker][val_vertex]; }
+
+inline su2double CIncEulerSolver::GetInlet_FlowDir(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return Inlet_FlowDir[val_marker][val_vertex][val_dim]; }
+
 inline su2double CIncEulerSolver::GetCD_Inv(unsigned short val_marker) { return CD_Inv[val_marker]; }
 
 inline su2double CIncEulerSolver::GetSurface_CL(unsigned short val_marker) { return Surface_CL[val_marker]; }
@@ -2124,10 +2139,6 @@ inline su2double CFEASolver::GetRelaxCoeff(void) { return RelaxCoeff; }
 
 inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
 
-inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
-
-inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
-
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 
 inline void CSolver::ExtractAdjoint_Geometry(CGeometry *geometry, CConfig *config) {}
@@ -2234,12 +2245,18 @@ inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
     node[iPoint]->SetSolution(0, nu_tilde_Inf);
 }
 
+inline su2double CTurbSASolver::GetNuTilde_Inf(void) { return nu_tilde_Inf; }
+
 inline void CTurbSSTSolver::SetFreeStream_Solution(CConfig *config){
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++){
     node[iPoint]->SetSolution(0, kine_Inf);
     node[iPoint]->SetSolution(1, omega_Inf);
   }
 }
+
+inline su2double CTurbSSTSolver::GetTke_Inf(void) { return kine_Inf; }
+
+inline su2double CTurbSSTSolver::GetOmega_Inf(void) { return omega_Inf; }
 
 inline su2double CDiscAdjFEASolver::GetTotal_Sens_E(unsigned short iVal) { return Total_Sens_E[iVal]; }
 

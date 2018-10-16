@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -109,6 +109,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
 	geometry->SetCoord_CG();
 	geometry->SetControlVolume(config, UPDATE);
 	geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
   
 }
 
@@ -2730,7 +2731,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if (config->GetOutput_FileFormat() == PARAVIEW) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
           }
@@ -2794,10 +2795,17 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         }
       }
       
+      /*--- Check that the user has specified a non-zero number of surfaces to move with DV_MARKER. ---*/
+      
+      if (config->GetnMarker_DV() == 0) {
+        SU2_MPI::Error(string("No markers are specified in DV_MARKER, so no deformation will occur.\n") +
+                       string("List markers to be deformed in DV_MARKER."), CURRENT_FUNCTION);
+      }
+    
       /*--- Output original FFD FFDBox ---*/
       
        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
           cout << "Writing a Paraview file of the FFD boxes." << endl;
           for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
@@ -2966,7 +2974,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output the deformed FFD Boxes ---*/
         
         if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-          if (config->GetOutput_FileFormat() == PARAVIEW) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
@@ -2995,47 +3003,47 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     
     /*--- Check whether a surface file exists for input ---*/
     ofstream Surface_File;
-    string filename = config->GetMotion_FileName();
+    string filename = config->GetDV_Filename();
     Surface_File.open(filename.c_str(), ios::in);
     
     /*--- A surface file does not exist, so write a new one for the
      markers that are specified as part of the motion. ---*/
     if (Surface_File.fail()) {
       
-      if (rank == MASTER_NODE)
-        cout << "No surface file found. Writing a new file: " << filename << "." << endl;
-      
-      Surface_File.open(filename.c_str(), ios::out);
-      Surface_File.precision(15);
-      unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
-      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-        if (config->GetMarker_All_DV(iMarker) == YES) {
-          for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-            jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-            GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
-            Coords = geometry->node[jPoint]->GetCoord();
-            Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
-            if (geometry->GetnDim() == 2) Surface_File << endl;
-            else Surface_File << "\t" << Coords[2] << endl;
+      if (rank == MASTER_NODE && size == SINGLE_NODE) {
+        cout << "No surface positions file found. Writing a template file: " << filename << "." << endl;
+        
+        Surface_File.open(filename.c_str(), ios::out);
+        Surface_File.precision(15);
+        unsigned long iMarker, jPoint, GlobalIndex, iVertex; su2double *Coords;
+        for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+          if (config->GetMarker_All_DV(iMarker) == YES) {
+            for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+              jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+              GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
+              Coords = geometry->node[jPoint]->GetCoord();
+              Surface_File << GlobalIndex << "\t" << Coords[0] << "\t" << Coords[1];
+              if (geometry->GetnDim() == 2) Surface_File << endl;
+              else Surface_File << "\t" << Coords[2] << endl;
+            }
           }
         }
+        Surface_File.close();
+        
+      } else {
+        SU2_MPI::Error("No surface positions file found and template writing not yet supported in parallel.\n To generate a template surface positions file, run SU2_DEF again in serial.", CURRENT_FUNCTION);
       }
-      Surface_File.close();
-      
-      /*--- A surface file exists, so read in the coordinates ---*/
-      
     }
     
     else {
+      /*--- A surface file exists, so read in the coordinates ---*/
       Surface_File.close();
       if (rank == MASTER_NODE) cout << "Updating the surface coordinates from the input file." << endl;
       SetExternal_Deformation(geometry, config, ZONE_0, 0);
     }
     
   }
-  
-  /*--- 2D airfoil Hicks-Henne bump functions ---*/
-  
+    
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) ||
@@ -3286,11 +3294,38 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
           
           ParamCoord = FFDBox->GetParametricCoord_Iterative(iPoint, CartCoord, ParamCoordGuess, config);
           
+          /*--- Compute the cartesian coordinates using the parametric coordinates
+           to check that everything is correct ---*/
+          
+          CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
+          
+          /*--- Compute max difference between original value and the recomputed value ---*/
+          
+          Diff = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
+          Diff = sqrt(Diff);
+          my_MaxDiff = max(my_MaxDiff, Diff);
+          
           /*--- If the parametric coordinates are in (0,1) the point belongs to the FFDBox, using the input tolerance  ---*/
           
           if (((ParamCoord[0] >= - config->GetFFD_Tol()) && (ParamCoord[0] <= 1.0 + config->GetFFD_Tol())) &&
               ((ParamCoord[1] >= - config->GetFFD_Tol()) && (ParamCoord[1] <= 1.0 + config->GetFFD_Tol())) &&
               ((ParamCoord[2] >= - config->GetFFD_Tol()) && (ParamCoord[2] <= 1.0 + config->GetFFD_Tol()))) {
+            
+            
+            /*--- Rectification of the initial tolerance (we have detected situations
+             where 0.0 and 1.0 doesn't work properly ---*/
+            
+            su2double lower_limit = config->GetFFD_Tol();
+            su2double upper_limit = 1.0-config->GetFFD_Tol();
+            
+            if (ParamCoord[0] < lower_limit) ParamCoord[0] = lower_limit;
+            if (ParamCoord[1] < lower_limit) ParamCoord[1] = lower_limit;
+            if (ParamCoord[2] < lower_limit) ParamCoord[2] = lower_limit;
+            if (ParamCoord[0] > upper_limit) ParamCoord[0] = upper_limit;
+            if (ParamCoord[1] > upper_limit) ParamCoord[1] = upper_limit;
+            if (ParamCoord[2] > upper_limit) ParamCoord[2] = upper_limit;
             
             /*--- Set the value of the parametric coordinate ---*/
             
@@ -3300,40 +3335,19 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
             FFDBox->Set_ParametricCoord(ParamCoord);
             FFDBox->Set_CartesianCoord(CartCoord);
             
-            /*--- Compute the cartesian coordinates using the parametric coordinates
-             to check that everithing is right ---*/
-            
-            CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
-            
-            /*--- Compute max difference between original value and the recomputed value ---*/
-            
-            Diff = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
-            Diff = sqrt(Diff);
-            my_MaxDiff = max(my_MaxDiff, Diff);
-            
             ParamCoordGuess[0] = ParamCoord[0]; ParamCoordGuess[1] = ParamCoord[1]; ParamCoordGuess[2] = ParamCoord[2];
+            
+            if (Diff >= config->GetFFD_Tol()) {
+              cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<" vs "<< config->GetFFD_Tol() <<"." << endl;
+            }
             
           }
           else {
             
-            /*--- Compute the cartesian coordinates using the parametric coordinates
-             to check that everithing is right ---*/
-            
-            CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
-
-            /*--- Compute max difference between original value and the recomputed value ---*/
-            
-            Diff = 0.0;
-            for (iDim = 0; iDim < nDim; iDim++)
-              Diff += (CartCoordNew[iDim]-CartCoord[iDim])*(CartCoordNew[iDim]-CartCoord[iDim]);
-            Diff = sqrt(Diff);
-            my_MaxDiff = max(my_MaxDiff, Diff);
-            
             if (Diff >= config->GetFFD_Tol()) {
               cout << "Please check this point: Local (" << ParamCoord[0] <<" "<< ParamCoord[1] <<" "<< ParamCoord[2] <<") <-> Global ("
-              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<"." <<endl;
+              << CartCoord[0] <<" "<< CartCoord[1] <<" "<< CartCoord[2] <<") <-> Error "<< Diff <<" vs "<< config->GetFFD_Tol() <<"." << endl;
             }
             
           }
@@ -3342,7 +3356,7 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
       }
     }
   }
-		
+
 #ifdef HAVE_MPI
   SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
@@ -3876,7 +3890,7 @@ void CSurfaceMovement::UpdateParametricCoord(CGeometry *geometry, CConfig *confi
 			FFDBox->Set_ParametricCoord(ParamCoord, iSurfacePoints);
 			
 			/*--- Compute the cartesian coordinates using the parametric coordinates 
-			 to check that everithing is right ---*/
+			 to check that everything is correct ---*/
       
 			CartCoordNew = FFDBox->EvalCartesianCoord(ParamCoord);
 			
@@ -4800,22 +4814,8 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
     /*--- Check that it is possible to move the control point ---*/
     
     jOrder = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++) {
-      for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
-          if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
-          if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
-          if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) return false;
-        }
-        
-      }
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
+      if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
     }
     
     /*--- Line plane intersection to find the origin of rotation ---*/
@@ -4895,6 +4895,20 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
           + l*(-b*u + a*v - v*x + u*y)*sinT;
           movement[2] = movement[2]/l2 - z;
           
+          /*--- Check that it is possible to move the control point ---*/
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
+            if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+            if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+
           FFDBox->SetControlPoints(index, movement);
           
         }
@@ -6444,15 +6458,15 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   unsigned long iVertex;
   unsigned short iMarker;
   char buffer[50];
-  string motion_filename, UnstExt, text_line;
-  ifstream motion_file;
+  string DV_Filename, UnstExt, text_line;
+  ifstream surface_positions;
   bool unsteady = config->GetUnsteady_Simulation();
   bool adjoint = config->GetContinuous_Adjoint();
   
 	/*--- Load stuff from config ---*/
   
 	nDim = geometry->GetnDim();
-  motion_filename = config->GetMotion_FileName();
+  DV_Filename = config->GetDV_Filename();
   
   /*--- Set the extension for the correct unsteady mesh motion file ---*/
   
@@ -6462,27 +6476,27 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
        physical time, so perform mesh motion in reverse. ---*/
       unsigned long nFlowIter = config->GetnExtIter() - 1;
       flowIter  = nFlowIter - iter;
-      unsigned short lastindex = motion_filename.find_last_of(".");
-      motion_filename = motion_filename.substr(0, lastindex);
+      unsigned short lastindex = DV_Filename.find_last_of(".");
+      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
       if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
-      motion_filename.append(UnstExt);
+      DV_Filename.append(UnstExt);
     } else {
       /*--- Forward time for the direct problem ---*/
       flowIter = iter;
-      unsigned short lastindex = motion_filename.find_last_of(".");
-      motion_filename = motion_filename.substr(0, lastindex);
+      unsigned short lastindex = DV_Filename.find_last_of(".");
+      DV_Filename = DV_Filename.substr(0, lastindex);
       if ((SU2_TYPE::Int(flowIter) >= 0) && (SU2_TYPE::Int(flowIter) < 10)) SPRINTF (buffer, "_0000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 10) && (SU2_TYPE::Int(flowIter) < 100)) SPRINTF (buffer, "_000%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 100) && (SU2_TYPE::Int(flowIter) < 1000)) SPRINTF (buffer, "_00%d.dat", SU2_TYPE::Int(flowIter));
       if ((SU2_TYPE::Int(flowIter) >= 1000) && (SU2_TYPE::Int(flowIter) < 10000)) SPRINTF (buffer, "_0%d.dat", SU2_TYPE::Int(flowIter));
       if (SU2_TYPE::Int(flowIter) >= 10000) SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(flowIter));
       UnstExt = string(buffer);
-      motion_filename.append(UnstExt);
+      DV_Filename.append(UnstExt);
     }
     
     if (rank == MASTER_NODE)
@@ -6491,20 +6505,23 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   
   /*--- Open the motion file ---*/
 
-  motion_file.open(motion_filename.data(), ios::in);
+  surface_positions.open(DV_Filename.data(), ios::in);
+  
   /*--- Throw error if there is no file ---*/
-  if (motion_file.fail()) {
-    SU2_MPI::Error(string("There is no mesh motion file ") + motion_filename, CURRENT_FUNCTION);
+  
+  if (surface_positions.fail()) {
+    SU2_MPI::Error(string("There is no surface positions file ") + DV_Filename, CURRENT_FUNCTION);
   }
   
   /*--- Read in and store the new mesh node locations ---*/ 
   
-  while (getline(motion_file, text_line)) {
+  while (getline(surface_positions, text_line)) {
     istringstream point_line(text_line);
     if (nDim == 2) point_line >> iPoint >> NewCoord[0] >> NewCoord[1];
     if (nDim == 3) point_line >> iPoint >> NewCoord[0] >> NewCoord[1] >> NewCoord[2];
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_Moving(iMarker) == YES) {
+      if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
+          (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           jPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           GlobalIndex = geometry->node[jPoint]->GetGlobalIndex();
@@ -6516,8 +6533,10 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
       }
     }
   }
-  /*--- Close the restart file ---*/
-  motion_file.close();
+  
+  /*--- Close the surface positions file ---*/
+  
+  surface_positions.close();
   
   /*--- If rotating as well, prepare the rotation matrix ---*/
   
@@ -6584,7 +6603,8 @@ void CSurfaceMovement::SetExternal_Deformation(CGeometry *geometry, CConfig *con
   /*--- Loop through to find only moving surface markers ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_Moving(iMarker) == YES) {
+    if ((config->GetMarker_All_DV(iMarker) == YES && config->GetKind_SU2() == SU2_DEF) ||
+        (config->GetMarker_All_Moving(iMarker) == YES && config->GetKind_SU2() == SU2_CFD)) {
       
       /*--- Loop over all surface points for this marker ---*/
       
@@ -8648,22 +8668,22 @@ void CFreeFormDefBox::GetFFDHessian(su2double *uvw, su2double *xyz, su2double **
 su2double *CFreeFormDefBox::GetParametricCoord_Iterative(unsigned long iPoint, su2double *xyz, su2double *ParamCoordGuess, CConfig *config) {
   
   su2double *IndepTerm, SOR_Factor = 1.0, MinNormError, NormError, Determinant, AdjHessian[3][3], Temp[3] = {0.0,0.0,0.0};
-	unsigned short iDim, jDim, RandonCounter;
-	unsigned long iter;
+  unsigned short iDim, jDim, RandonCounter;
+  unsigned long iter;
   
-  su2double tol = config->GetFFD_Tol();
+  su2double tol = config->GetFFD_Tol()*1E-3;
   unsigned short it_max = config->GetnFFD_Iter();
   unsigned short Random_Trials = 500;
-  
+
 	/*--- Allocate the Hessian ---*/
   
-	Hessian = new su2double* [nDim];
+  Hessian = new su2double* [nDim];
   IndepTerm = new su2double [nDim];
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Hessian[iDim] = new su2double[nDim];
-		ParamCoord[iDim] = ParamCoordGuess[iDim];
-		IndepTerm [iDim] = 0.0;
-	}
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Hessian[iDim] = new su2double[nDim];
+    ParamCoord[iDim] = ParamCoordGuess[iDim];
+    IndepTerm [iDim] = 0.0;
+  }
 	
 	RandonCounter = 0; MinNormError = 1E6;
 	
@@ -9266,6 +9286,7 @@ void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
 
 }
 

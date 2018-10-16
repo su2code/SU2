@@ -4,7 +4,7 @@
  *        each kind of governing equation (direct, adjoint and linearized).
  *        The subroutines and functions are in the <i>variable_structure.cpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -284,8 +284,11 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_delta - A scalar measure of the grid size
+   * \param[in] val_const_DES - The DES constant (C_DES)
    */
-  virtual void SetRoe_Dissipation_NTS();
+  virtual void SetRoe_Dissipation_NTS(su2double val_delta,
+                                      su2double val_const_DES);
   
   /*!
    * \brief A virtual member.
@@ -864,6 +867,12 @@ public:
    * \return Value of the flow density.
    */
   virtual su2double GetDensity(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual su2double GetDensity_Old(void);
   
   /*!
    * \brief A virtual member.
@@ -2370,15 +2379,13 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
-  
-  /*!
-   * \brief Virtual member. 
-   */
+
+  virtual void SetTauWall(su2double val_tau_wall);
+
+  virtual su2double GetTauWall();
+
   virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
- 
-  /*!
-   * \brief Virtual member. 
-   */
+
   virtual su2double GetVortex_Tilting();
   
   virtual void SetDynamic_Derivative(unsigned short iVar, su2double der);
@@ -2531,7 +2538,7 @@ public:
  * \class CHeatFVMVariable
  * \brief Main class for defining the variables of the finite-volume heat equation solver.
  * \author O. Burghardt
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  */
 class CHeatFVMVariable : public CVariable {
 protected:
@@ -2558,51 +2565,6 @@ public:
    */
   ~CHeatFVMVariable(void);
 
-};
-
-/*!
- * \class CHeatVariable
- * \brief Main class for defining the variables of the Heat equation solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- */
-class CHeatVariable : public CVariable {
-protected:
-  su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHeatVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CHeatVariable(su2double *val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatVariable(void);
-  
-  /*!
-   * \brief Set the direct solution for the adjoint solver.
-   * \param[in] val_solution_direct - Value of the direct solution.
-   */
-  void SetSolution_Direct(su2double *val_solution_direct);
-  
-  /*!
-   * \brief Get the direct solution for the adjoint solver.
-   * \return Pointer to the direct solution vector.
-   */
-  su2double *GetSolution_Direct(void);
-  
 };
 
 /*!
@@ -3129,7 +3091,6 @@ public:
  * \class CFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
  * \author R. Sanchez.
- * \version 3.2.3 "eagle"
  */
 class CFEABoundVariable : public CVariable {
 protected:
@@ -3636,9 +3597,6 @@ public:
 class CIncEulerVariable : public CVariable {
 protected:
   su2double Velocity2;      /*!< \brief Square of the velocity vector. */
-  su2double Precond_Beta;  /*!< \brief Low Mach number preconditioner value, Beta. */
-  su2double *WindGust;           /*! < \brief Wind gust value */
-  su2double *WindGustDer;        /*! < \brief Wind gust derivatives value */
   
   /*--- Primitive variable definition ---*/
   
@@ -3647,7 +3605,12 @@ protected:
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
   
   /*--- Old solution container for BGS iterations ---*/
+  
   su2double* Solution_BGS_k;
+  
+  /*--- Old density for variable density turbulent flows (SST). ---*/
+  
+  su2double Density_Old;
 
 public:
   
@@ -3823,6 +3786,12 @@ public:
   su2double GetDensity(void);
   
   /*!
+   * \brief Get the density of the flow from the previous iteration.
+   * \return Old value of the density of the flow.
+   */
+  su2double GetDensity_Old(void);
+  
+  /*!
    * \brief Get the temperature of the flow.
    * \return Value of the temperature of the flow.
    */
@@ -3847,30 +3816,6 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   void SetVelocity_Old(su2double *val_velocity);
-
-  /*!
-   * \brief Get the value of the wind gust
-   * \return Value of the wind gust
-   */
-  su2double* GetWindGust();
-  
-  /*!
-   * \brief Set the value of the wind gust
-   * \param[in] Value of the wind gust
-   */
-  void SetWindGust(su2double* val_WindGust);
-  
-  /*!
-   * \brief Get the value of the derivatives of the wind gust
-   * \return Value of the derivatives of the wind gust
-   */
-  su2double* GetWindGustDer();
-  
-  /*!
-   * \brief Set the value of the derivatives of the wind gust
-   * \param[in] Value of the derivatives of the wind gust
-   */
-  void SetWindGustDer(su2double* val_WindGust);
   
   /*!
    * \brief Set all the primitive variables for incompressible flows.
@@ -3927,6 +3872,7 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
   su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -4078,6 +4024,17 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+
+  /*! 
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  void SetTauWall(su2double val_tau_wall);
+  
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  su2double GetTauWall(void);
   
   /*!
    * \brief Get the DES length scale
@@ -4092,24 +4049,26 @@ public:
   
   /*!
    * \brief Set the new solution for Roe Dissipation.
+   * \param[in] val_delta - A scalar measure of the grid size
+   * \param[in] val_const_DES - The DES constant (C_DES)
    */
-  void SetRoe_Dissipation_NTS();
-    
+  void SetRoe_Dissipation_NTS(su2double val_delta, su2double val_const_DES);
+
   /*!
    * \brief Set the new solution for Roe Dissipation.
    */
   void SetRoe_Dissipation_FD(su2double wall_distance);
-    
+  
   /*!
- * \brief Get the Roe Dissipation Coefficient.
- * \return Value of the Roe Dissipation.
- */
+   * \brief Get the Roe Dissipation Coefficient.
+   * \return Value of the Roe Dissipation.
+   */
   su2double GetRoe_Dissipation(void);
   
   /*!
- * \brief Set the Roe Dissipation Coefficient.
- * \param[in] val_dissipation - Value of the Roe dissipation factor.
- */
+   * \brief Set the Roe Dissipation Coefficient.
+   * \param[in] val_dissipation - Value of the Roe dissipation factor.
+   */
   void SetRoe_Dissipation(su2double val_dissipation);
   
 };
@@ -4122,11 +4081,6 @@ public:
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
-  su2double Prandtl_Lam;     /*!< \brief Laminar Prandtl number. */
-  su2double Prandtl_Turb;    /*!< \brief Turbulent Prandtl number. */
-  su2double Temperature_Ref; /*!< \brief Reference temperature of the fluid. */
-  su2double Viscosity_Ref;   /*!< \brief Reference viscosity of the fluid. */
-  su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
   

@@ -3,7 +3,7 @@
  * \brief Headers of the mpi interface for generalized datatypes.
  *        The subroutines and functions are in the <i>mpi_structure.cpp</i> file.
  * \author T. Albring
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -45,6 +45,7 @@
 
 #include "./datatype_structure.hpp"
 #include <stdlib.h>
+#include <unistd.h>
 
 #ifdef HAVE_MPI
 
@@ -92,11 +93,14 @@ public:
   typedef MPI_Datatype Datatype;
   typedef MPI_Op       Op;
   typedef MPI_Comm     Comm;
+  typedef MPI_Win      Win;
   
 protected:
   
-  static int Rank, Size;
+  static int Rank, Size, MinRankError;
   static Comm currentComm;
+  static bool winMinRankErrorInUse;
+  static Win  winMinRankError;
   
 public:
   

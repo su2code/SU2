@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -186,6 +186,12 @@ class COutput {
         **NuFactorIn,
         **NuFactorOut;
 
+  unsigned long nMarker_InletFile;       /*!< \brief Counter for total number of inlet boundaries written to inlet profile file. */
+  vector<string> Marker_Tags_InletFile;   /*!< \brief Marker tags for the strings of the markers in the inlet profile file. */
+  unsigned long *nRow_InletFile;         /*!< \brief Counters for the number of points per marker in the inlet profile file. */
+  unsigned long *nRowCum_InletFile;      /*!< \brief Counters for the number of points per marker in cumulative storage format in the inlet profile file. */
+  su2double **InletCoords;  /*!< \brief Data structure for holding the merged inlet boundary coordinates from all ranks. */
+
 protected:
 
   int rank, 	/*!< \brief MPI Rank. */
@@ -212,7 +218,7 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetResult_Files(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, 
+  void SetResult_Files(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
                        unsigned long iExtIter, unsigned short val_nZone);
   
   /*!
@@ -224,7 +230,7 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetBaselineResult_Files(CSolver **solver, CGeometry **geometry, CConfig **config,
+  void SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
                                unsigned long iExtIter, unsigned short val_nZone);
   
   /*!
@@ -302,7 +308,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config, CIntegration ***integration,
+  void SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config, CIntegration ****integration,
                          unsigned long iExtIter, unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, bool header);
 
   /*!
@@ -320,7 +326,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone);
+  void SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry, CSolver *FlowSolver, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*! 
    * \brief Create and write the file with the adjoint coefficients on the surface for serial computations.
@@ -331,7 +337,7 @@ public:
    * \param[in] iExtIter - Current external (time) iteration.
    * \param[in] val_iZone - Current zone number in the grid file.
    */
-  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone);
+  void SetSurfaceCSV_Adjoint(CConfig *config, CGeometry *geometry, CSolver *AdjSolver, CSolver *FlowSolution, unsigned long iExtIter, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Merge the geometry into a data structure used for output file writing.
@@ -398,7 +404,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  void WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write a native SU2 restart file (binary) in parallel.
@@ -407,7 +413,7 @@ public:
    * \param[in] solver - Flow, adjoint or linearized solution.
    * \param[in] val_iZone - iZone index.
    */
-  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  void WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_iInst);
 
   /*!
    * \brief Write the x, y, & z coordinates to a CGNS output file.
@@ -459,8 +465,18 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
 
+  /*!
+   * \brief Write a Paraview binary solution file with parallel output.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+   */
+  void WriteParaViewBinary_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  
   /*!
    * \brief Write a Tecplot ASCII solution file.
    * \param[in] config - Definition of the particular problem.
@@ -509,7 +525,7 @@ public:
    * \param[in] val_nZone - Total number of zones.
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
-  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
+  void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -534,6 +550,14 @@ public:
    * \param[in] val_iZone - iZone index.
    */
   void SetSU2_MeshBinary(CConfig *config, CGeometry *geometry);
+  
+  /*!
+   * \brief Write the nodal coordinates to a binary file.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - iZone index.
+   */
+  void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
@@ -626,7 +650,7 @@ public:
    * \param[in] ConvHist_file - Pointer to the convergence history file (which is defined in the main subroutine).
    * \param[in] config - Definition of the particular problem.
    */
-  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone);
+  void SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, unsigned short val_iZone, unsigned short val_iInst);
 
   /*! 
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -639,8 +663,8 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
-                              CIntegration ***integration, bool DualTime, su2double timeused, unsigned short val_iZone);
+  void SetConvHistory_Body(ofstream *ConvHist_file, CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+                              CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -649,7 +673,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_ForcesBreakdown(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
   
   /*!
    * \brief Write the history file and the convergence on the screen for serial computations.
@@ -662,7 +686,7 @@ public:
    * \param[in] timeused - Current number of clock tick in the computation (related with total time).
    * \param[in] val_nZone - iZone index.
    */
-  void SetCFL_Number(CSolver ****solver_container, CConfig **config, unsigned short val_iZone);
+  void SetCFL_Number(CSolver *****solver_container, CConfig **config, unsigned short val_iZone);
   
   /*!
    * \brief Write the sensitivity (including mesh sensitivity) computed with the discrete adjoint method
@@ -696,7 +720,7 @@ public:
    * \param[in] val_nZone - iZone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_Turbo(CSolver ****solver_container, CGeometry ***geometry, CConfig **config, unsigned short val_iZone, bool output);
+  void SpecialOutput_Turbo(CSolver *****solver_container, CGeometry ****geometry, CConfig **config, unsigned short val_iZone, bool output);
 
   /*!
    * \brief Give the Entropy Generation performance parameters for turbomachinery.
@@ -727,7 +751,7 @@ public:
    * \param[in] val_iZone - Zone index.
    * \param[in] output - Create output files.
    */
-  void SpecialOutput_HarmonicBalance(CSolver ****solver, CGeometry ***geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
+  void SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****geometry, CConfig **config, unsigned short iZone, unsigned short val_nZone, bool output);
 
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for parallel computations.
@@ -738,8 +762,8 @@ public:
    * \param[in] val_iZone - Total number of domains in the grid file.
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
-  void SetResult_Files_Parallel(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone);
+  void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
+                                unsigned long iExtIter, unsigned short val_nZone, unsigned short *nInst);
   
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
@@ -844,6 +868,28 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void DeallocateSurfaceData_Parallel(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Merge the node coordinates of all inlet boundaries from all processors.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void MergeInletCoordinates(CConfig *config, CGeometry *geometry);
+
+  /*!
+   * \brief Write a template inlet profile file for all inlets for flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Solver container.
+   */
+  void Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver **solver);
+
+  /*!
+   * \brief Deallocate temporary memory needed for merging and writing inlet boundary coordinates.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
   
   /*! 
    * \brief Create and write a CSV file with a slice of data.

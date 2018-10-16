@@ -2,7 +2,7 @@
  * \file element_structure.inl
  * \brief In-Line subroutines of the <i>element_structure.hpp</i> file.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -120,6 +120,10 @@ inline unsigned long CElement::Get_iDV(void) { return iDV;}
 inline unsigned long CElement::Get_iProp(void) { return iProp;}
 
 inline void CElement::ComputeGrad_Pressure(void){ }
+
+inline void CElement::SetPreaccIn_Coords(void) { AD::SetPreaccIn(RefCoord,nNodes,nDim); AD::SetPreaccIn(CurrentCoord,nNodes,nDim); }
+
+inline void CElement::SetPreaccOut_Kt_a(void) { AD::SetPreaccOut(Kt_a,nNodes,nDim); }
 
 inline void CQUAD4::ComputeGrad_Pressure(void) { }
 

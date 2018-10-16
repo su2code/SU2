@@ -2,7 +2,7 @@
  * \file linear_solvers_structure.cpp
  * \brief Main classes required for solving linear systems of equations
  * \author J. Hicken, F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -589,7 +589,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
 
 unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
   
-  su2double SolverTol = config->GetLinear_Solver_Error(), Residual;
+  su2double SolverTol = config->GetLinear_Solver_Error(), Residual, Norm0;
   unsigned long MaxIter = config->GetLinear_Solver_Iter();
   unsigned long IterLinSol = 0;
   CMatrixVectorProduct *mat_vec;
@@ -654,12 +654,12 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
         break;
       case RESTARTED_FGMRES:
         IterLinSol = 0;
+        Norm0 = LinSysRes.norm();
         while (IterLinSol < config->GetLinear_Solver_Iter()) {
-          if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
-            MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
+          /*--- Enforce a hard limit on total number of iterations ---*/
+          MaxIter = min(config->GetLinear_Solver_Restart_Frequency(), config->GetLinear_Solver_Iter()-IterLinSol);
           IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
-          if (LinSysRes.norm() < SolverTol) break;
-          SolverTol = SolverTol*(1.0/LinSysRes.norm());
+          if ( Residual < SolverTol*Norm0 ) break;
         }
         break;
     }

@@ -2,7 +2,7 @@
  * \file geometry_structure.inl
  * \brief In-Line subroutines of the <i>geometry_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -104,6 +104,8 @@ inline void CGeometry::Set_MPI_Coord(CConfig *config) { }
 inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
 
 inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
+
+inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
@@ -248,6 +250,8 @@ inline su2double CGeometry::GetMinRelAngularCoord(unsigned short val_marker, uns
 inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
+
+inline void CGeometry::SetMaxLength(CConfig* config) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 

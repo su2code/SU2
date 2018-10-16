@@ -3,7 +3,7 @@
 ## \file tools.py
 #  \brief file i/o functions
 #  \author T. Lukaczyk, F. Palacios
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -256,7 +256,12 @@ def get_headerMap(nZones = 1):
                  "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
                  "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
-                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
+                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     ,
+                 "D(Uniformity)"                : "D_SURFACE_UNIFORMITY"            ,
+                 "D(Secondary_Strength)"        : "D_SURFACE_SECONDARY"             ,
+                 "D(Momentum_Distortion)"       : "D_SURFACE_MOM_DISTORTION"        ,
+                 "D(Secondary_Over_Uniformity)" : "D_SURFACE_SECOND_OVER_UNIFORM"   ,
+                 "D(Pressure_Drop)"             : "D_SURFACE_PRESSURE_DROP"         }
  
     return history_header_map        
 
@@ -427,7 +432,12 @@ grad_names_directdiff = ["D_LIFT",
                          "D_MASS_FLOW_OUT",
                          "D_PRESSURE_RATIO",
                          "D_ENTHALPY_OUT",
-                         "D_TOTAL_ENTHALPY_OUT"]
+                         "D_TOTAL_ENTHALPY_OUT",
+                         "D_SURFACE_UNIFORMITY",
+                         "D_SURFACE_SECONDARY",
+                         "D_SURFACE_MOM_DISTORTION",
+                         "D_SURFACE_SECOND_OVER_UNIFORM",
+                         "D_SURFACE_PRESSURE_DROP"]
 
 grad_names_map = ordered_bunch()
 grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
@@ -454,6 +464,11 @@ grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
 grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
 grad_names_map.HEAT = "D_HEAT"
 grad_names_map.MAX_HEAT = "D_MAX_HEAT"
+grad_names_map.SURFACE_UNIFORMITY = "D_SURFACE_UNIFORMITY"
+grad_names_map.SURFACE_SECONDARY = "D_SURFACE_SECONDARY"
+grad_names_map.SURFACE_MOM_DISTORTION = "D_SURFACE_MOM_DISTORTION"
+grad_names_map.SURFACE_SECOND_OVER_UNIFORM = "D_SURFACE_SECOND_OVER_UNIFORM"
+grad_names_map.SURFACE_PRESSURE_DROP = "D_SURFACE_PRESSURE_DROP"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,

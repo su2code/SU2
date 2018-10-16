@@ -2,7 +2,7 @@
  * \file variable_direct_heat.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -89,41 +89,3 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {  }
-
-CHeatVariable::CHeatVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-  
-}
-
-CHeatVariable::CHeatVariable(su2double *val_heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config)
-: CVariable(val_nDim, val_nvar, config) {
-  unsigned short iVar;
-  
-  /*--- Array initialization ---*/
-  Solution_Direct = NULL;
-  
-  /*--- Allocate residual structures ---*/
-  Residual_Sum = new su2double [nVar]; Residual_Old = new su2double [nVar];
-  
-  /*--- Allocate direct solution container for adjoint problem ---*/
-  Solution_Direct = new su2double[nVar];
-  
-  /*--- Allocate aux gradient vector ---*/
-  Grad_AuxVar = new su2double [nDim];
-  
-  /*--- Initialization of variables ---*/
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Solution[iVar] = val_heat[iVar];
-    Solution_Old[iVar] = val_heat[iVar];
-    Solution_Direct[iVar] = 0.0;
-  }
-  
-}
-
-CHeatVariable::~CHeatVariable(void) {
-  
-  if (Solution_Direct != NULL) delete [] Solution_Direct;
-  
-}

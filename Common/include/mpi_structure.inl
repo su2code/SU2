@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -40,7 +40,57 @@
 #ifdef HAVE_MPI
 
 inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionName){
-  if (Rank == 0){
+
+  /* Set MinRankError to Rank, as the error message is called on this rank. */
+  MinRankError = Rank;
+  int flag = 0;
+
+#if MPI_VERSION >= 3
+  /* Find out whether the error call is collective via MPI_Ibarrier. */
+  Request barrierRequest;
+  MPI_Ibarrier(currentComm, &barrierRequest);
+
+  /* Try to complete the non-blocking barrier call for a second. */
+  double startTime = MPI_Wtime();
+  while( true ) {
+
+    MPI_Test(&barrierRequest, &flag, MPI_STATUS_IGNORE);
+    if( flag ) break;
+
+    double currentTime = MPI_Wtime();
+    if(currentTime > startTime + 1.0) break;
+  }
+#else
+  /* MPI_Ibarrier function is not supported. Simply wait for one
+     second to give other ranks the opportunity to reach this point. */
+  sleep(1);
+#endif
+
+  if( flag ) {
+    /* The barrier is completed and hence the error call is collective.
+       Set MinRankError to 0. */
+    MinRankError = 0;
+  }
+  else {
+    /* The error call is not collective and the minimum rank must be
+       determined by one sided communication. Loop over the lower numbered
+       ranks to check if they participate in the error message. */
+    for(int i=0; i<Rank; ++i) {
+
+      int MinRankErrorOther;
+      MPI_Win_lock(MPI_LOCK_SHARED, i, 0, winMinRankError);
+      MPI_Get(&MinRankErrorOther, 1, MPI_INT, i, 0, 1, MPI_INT, winMinRankError);
+      MPI_Win_unlock(i, winMinRankError);
+
+      if(MinRankErrorOther < MinRankError) {
+        MinRankError = MinRankErrorOther;
+        break;
+      }
+    }
+  }
+
+  /* Check if this rank must write the error message and do so. */
+  if (Rank == MinRankError){
     std::cout << std::endl << std::endl;
     std::cout << "Error in \"" << FunctionName << "\": " << std::endl;
     std::cout <<  "-------------------------------------------------------------------------" << std::endl;
@@ -64,6 +114,12 @@ inline void CBaseMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
   MPI_Comm_rank(currentComm, &Rank);  
   MPI_Comm_size(currentComm, &Size);
+
+  if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
 }
 
 inline CBaseMPIWrapper::Comm CBaseMPIWrapper::GetComm(){
@@ -74,6 +130,11 @@ inline void CBaseMPIWrapper::Init(int *argc, char ***argv) {
   MPI_Init(argc,argv);
   MPI_Comm_rank(currentComm, &Rank);    
   MPI_Comm_size(currentComm, &Size);  
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
 }
 
 inline void CBaseMPIWrapper::Buffer_attach(void *buffer, int size){
@@ -93,6 +154,7 @@ inline void CBaseMPIWrapper::Comm_size(Comm comm, int *size){
 }
 
 inline void CBaseMPIWrapper::Finalize(){
+  if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
   MPI_Finalize();
 }
 
@@ -208,12 +270,23 @@ inline void CMediMPIWrapper::Init(int *argc, char ***argv) {
   MediTool::init();
   AMPI_Comm_rank(convertComm(currentComm), &Rank);    
   AMPI_Comm_size(convertComm(currentComm), &Size);  
+
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
 }
 
 inline void CMediMPIWrapper::SetComm(Comm newComm){
   currentComm = newComm;
   AMPI_Comm_rank(convertComm(currentComm), &Rank);  
   AMPI_Comm_size(convertComm(currentComm), &Size);
+
+  if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
+  MinRankError = Size;
+  MPI_Win_create(&MinRankError, sizeof(int), sizeof(int), MPI_INFO_NULL,
+                 currentComm, &winMinRankError);
+  winMinRankErrorInUse = true;
 }
 
 inline AMPI_Comm CMediMPIWrapper::convertComm(MPI_Comm comm) {
@@ -281,6 +354,7 @@ inline void CMediMPIWrapper::Comm_size(Comm comm, int *size){
 }
 
 inline void CMediMPIWrapper::Finalize(){
+  if( winMinRankErrorInUse ) MPI_Win_free(&winMinRankError);
   AMPI_Finalize();
 }
 

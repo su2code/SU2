@@ -4,7 +4,7 @@
  *        The subroutines and functions are in the <i>element_structure.cpp</i>
  *        and <i>element_linear.cpp</i> files.
  * \author R. Sanchez
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -456,6 +456,18 @@ public:
 	 */
 	virtual void ComputeGrad_Pressure(void);
 
+    /*!
+	 * \brief Register the current and reference coordinates of the element as pre-accumulation inputs
+	 * the latter are needed for compatibility with shape derivatives, there is no problem registering
+	 * because inactive variables are ignored.
+	 */
+	void SetPreaccIn_Coords(void);
+	
+	/*!
+	 * \brief Register the stress residual as a pre-accumulation output. When computing the element
+	 * stiffness matrix this is the only term that sees its way into the RHS of the system.
+	 */
+	void SetPreaccOut_Kt_a(void);
 
 };
 

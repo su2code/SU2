@@ -2,7 +2,7 @@
  * \file grid_adaptation_structure.cpp
  * \brief Main subroutines for grid adaptation
  * \author F. Palacios
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -48,10 +48,6 @@ CGridAdaptation::CGridAdaptation(CGeometry *geometry, CConfig *config) {
 	nDim = geometry->GetnDim();
 	
 	switch (config->GetKind_Solver()) {			
-		
-		case POISSON_EQUATION:
-			nVar = 1;
-			break;
 			
 		default:
 			nVar = geometry->GetnDim()+2;

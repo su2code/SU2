@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -618,6 +618,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
                                        vector<su2double> &Zcoord_Airfoil, vector<su2double> &Variable_Airfoil,
                                        bool original_surface, CConfig *config) {
   
+  AD_BEGIN_PASSIVE
+  
   unsigned short iMarker, iNode, jNode, iDim, Index = 0;
   bool intersect;
   long Next_Edge = 0;
@@ -701,7 +703,7 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
           iPoint = bound[iMarker][iElem]->GetNode(iNode);
           AveXCoord += node[iPoint]->GetCoord(0);
           AveYCoord += node[iPoint]->GetCoord(1);
-          AveZCoord += node[iPoint]->GetCoord(2);
+          if (nDim == 3) AveZCoord += node[iPoint]->GetCoord(2);
         }
         
         AveXCoord /= su2double(bound[iMarker][iElem]->GetnNodes());
@@ -1342,6 +1344,8 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
     
   }
   
+  AD_END_PASSIVE
+  
 }
 
 void CGeometry::RegisterCoordinates(CConfig *config) {
@@ -1377,6 +1381,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
+  geometry_container[MESH_0]->SetMaxLength(config);
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
@@ -5202,7 +5207,6 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry,
 
   /*--- Free memory associated with the partitioning of points and elems. ---*/
 
-  LocalPoints.clear();
   Neighbors.clear();
   Color_List.clear();
 
@@ -5413,33 +5417,31 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   unsigned short iNode, jNode;
   unsigned long iPoint, iNeighbor, jPoint, iElem, iProcessor;
+  
+  map<unsigned long, unsigned long> Point_Map;
+  map<unsigned long, unsigned long>::iterator MI;
+  
   vector<unsigned long>::iterator it;
 
   SU2_MPI::Request *colorSendReq = NULL, *idSendReq = NULL;
   SU2_MPI::Request *colorRecvReq = NULL, *idRecvReq = NULL;
   int iProc, iSend, iRecv, myStart, myFinal;
 
-  /*--- First, create a complete list of the points on this rank (including
+  /*--- First, create a complete map of the points on this rank (excluding
    repeats) and their neighbors so that we can efficiently loop through the
    points and decide how to distribute the colors. ---*/
 
-  LocalPoints.clear();
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
-      LocalPoints.push_back(geometry->elem[iElem]->GetNode(iNode));
+      iPoint = geometry->elem[iElem]->GetNode(iNode);
+      Point_Map[iPoint] = iPoint;
     }
   }
-
-  /*--- Sort the list and remove duplicates. ---*/
-
-  sort(LocalPoints.begin(), LocalPoints.end());
-  it = unique(LocalPoints.begin(), LocalPoints.end());
-  LocalPoints.resize(it - LocalPoints.begin());
 
   /*--- Error check to ensure that the number of points found for this
    rank matches the number in the mesh file (in serial). ---*/
 
-  if ((size == SINGLE_NODE) && (LocalPoints.size() < geometry->GetnPoint())) {
+  if ((size == SINGLE_NODE) && (Point_Map.size() < geometry->GetnPoint())) {
     SU2_MPI::Error( string("Mismatch between NPOIN and number of points")
                    +string(" listed in mesh file.\n")
                    +string("Please check the mesh file for correctness.\n"),
@@ -5452,11 +5454,15 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
     Global2Local[geometry->node[iPoint]->GetGlobalIndex()] = iPoint;
   }
+  
+  /*--- Find extra points that carry an index higher than nPoint. ---*/
+  
   jPoint = geometry->GetnPoint();
-  for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
-    if ((LocalPoints[iPoint] <  geometry->starting_node[rank]) ||
-        (LocalPoints[iPoint] >= geometry->ending_node[rank])){
-      Global2Local[LocalPoints[iPoint]] = jPoint;
+  for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
+    iPoint = MI->first;
+    if ((Point_Map[iPoint] <  geometry->starting_node[rank]) ||
+        (Point_Map[iPoint] >= geometry->ending_node[rank])){
+      Global2Local[Point_Map[iPoint]] = jPoint;
       jPoint++;
     }
   }
@@ -5464,7 +5470,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   /*--- Now create the neighbor list for each owned node (self-inclusive). ---*/
 
   Neighbors.clear();
-  Neighbors.resize(LocalPoints.size());
+  Neighbors.resize(Point_Map.size());
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
     for (iNode = 0; iNode < geometry->elem[iElem]->GetnNodes(); iNode++) {
       iPoint = Global2Local[geometry->elem[iElem]->GetNode(iNode)];
@@ -5477,7 +5483,7 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Post-process the neighbor lists. ---*/
 
-  for (iPoint = 0; iPoint < LocalPoints.size(); iPoint++) {
+  for (iPoint = 0; iPoint < Point_Map.size(); iPoint++) {
     sort(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
     it = unique(Neighbors[iPoint].begin(), Neighbors[iPoint].end());
     Neighbors[iPoint].resize(it - Neighbors[iPoint].begin());
@@ -5735,11 +5741,9 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   map<unsigned long, unsigned long> Local2GlobalElem;
   map<unsigned long, unsigned long>::iterator MI;
 
-  for (iElem = 0; iElem < geometry->GetGlobal_nElem(); iElem++) {
-    MI = geometry->Global_to_Local_Elem.find(iElem);
-    if (MI != geometry->Global_to_Local_Elem.end()) {
-      Local2GlobalElem[geometry->Global_to_Local_Elem[iElem]] = iElem;
-    }
+  for (MI = geometry->Global_to_Local_Elem.begin();
+       MI != geometry->Global_to_Local_Elem.end(); MI++) {
+    Local2GlobalElem[MI->second] = MI->first;
   }
 
   /*--- We start with the connectivity distributed across all procs in a
@@ -7188,7 +7192,7 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   unsigned short NODES_PER_ELEMENT;
 
-  unsigned long iElem, jElem, iNode, Local_Elem, iGlobal_Index;
+  unsigned long iElem, jElem, kElem, iNode, Local_Elem, iGlobal_Index;
   unsigned long Local_Nodes[N_POINTS_HEXAHEDRON];
   
   unsigned long iElemTria = 0;
@@ -7200,73 +7204,58 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   unsigned long nTria, nQuad, nTetr, nHexa, nPris, nPyra;
 
-  vector<unsigned long> Tria_List;
-  vector<unsigned long> Quad_List;
-  vector<unsigned long> Tetr_List;
-  vector<unsigned long> Hexa_List;
-  vector<unsigned long> Pris_List;
-  vector<unsigned long> Pyra_List;
-  vector<unsigned long>::iterator it;
+  map<unsigned long, unsigned long> Tria_List;
+  map<unsigned long, unsigned long> Quad_List;
+  map<unsigned long, unsigned long> Tetr_List;
+  map<unsigned long, unsigned long> Hexa_List;
+  map<unsigned long, unsigned long> Pris_List;
+  map<unsigned long, unsigned long> Pyra_List;
+  map<unsigned long, unsigned long>::iterator it;
 
   /*--- It is possible that we have repeated elements during the previous
    communications, as we mostly focus on the grid points and their colors.
-   First, loop through our local elements, count the local total for each
-   type, and build a vector so we can avoid duplicates. ---*/
+   First, loop through our local elements and build a mapping by simply
+   overwriting the duplicate entries. ---*/
 
-  for (iElem = 0; iElem < nLocal_Tria; iElem++)
-    Tria_List.push_back(ID_Tria[iElem]);
-  sort(Tria_List.begin(), Tria_List.end());
-  it = unique(Tria_List.begin(), Tria_List.end());
-  Tria_List.resize(it - Tria_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Tria; iElem++) {
+    Tria_List[ID_Tria[iElem]] = iElem;
+  }
   nTria = Tria_List.size();
 
-  for (iElem = 0; iElem < nLocal_Quad; iElem++)
-    Quad_List.push_back(ID_Quad[iElem]);
-  sort(Quad_List.begin(), Quad_List.end());
-  it = unique(Quad_List.begin(), Quad_List.end());
-  Quad_List.resize(it - Quad_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Quad; iElem++) {
+    Quad_List[ID_Quad[iElem]] = iElem;
+  }
   nQuad = Quad_List.size();
 
-  for (iElem = 0; iElem < nLocal_Tetr; iElem++)
-    Tetr_List.push_back(ID_Tetr[iElem]);
-  sort(Tetr_List.begin(), Tetr_List.end());
-  it = unique(Tetr_List.begin(), Tetr_List.end());
-  Tetr_List.resize(it - Tetr_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Tetr; iElem++) {
+    Tetr_List[ID_Tetr[iElem]] = iElem;
+  }
   nTetr = Tetr_List.size();
 
-  for (iElem = 0; iElem < nLocal_Hexa; iElem++)
-    Hexa_List.push_back(ID_Hexa[iElem]);
-  sort(Hexa_List.begin(), Hexa_List.end());
-  it = unique(Hexa_List.begin(), Hexa_List.end());
-  Hexa_List.resize(it - Hexa_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Hexa; iElem++) {
+    Hexa_List[ID_Hexa[iElem]] = iElem;
+  }
   nHexa = Hexa_List.size();
 
-  for (iElem = 0; iElem < nLocal_Pris; iElem++)
-    Pris_List.push_back(ID_Pris[iElem]);
-  sort(Pris_List.begin(), Pris_List.end());
-  it = unique(Pris_List.begin(), Pris_List.end());
-  Pris_List.resize(it - Pris_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Pris; iElem++) {
+    Pris_List[ID_Pris[iElem]] = iElem;
+  }
   nPris = Pris_List.size();
 
-  for (iElem = 0; iElem < nLocal_Pyra; iElem++)
-    Pyra_List.push_back(ID_Pyra[iElem]);
-  sort(Pyra_List.begin(), Pyra_List.end());
-  it = unique(Pyra_List.begin(), Pyra_List.end());
-  Pyra_List.resize(it - Pyra_List.begin());
+  jElem = 0;
+  for (iElem=0; iElem < nLocal_Pyra; iElem++) {
+    Pyra_List[ID_Pyra[iElem]] = iElem;
+  }
   nPyra = Pyra_List.size();
 
   /*--- Reduce the final count of non-repeated elements on this rank. ---*/
 
   Local_Elem = nTria + nQuad + nTetr + nHexa + nPris + nPyra;
-
-  /*--- Clear vectors so that we can build again when creating objects. ---*/
-
-  Tria_List.clear();
-  Quad_List.clear();
-  Tetr_List.clear();
-  Hexa_List.clear();
-  Pris_List.clear();
-  Pyra_List.clear();
 
   /*--- Create the basic structures for holding the grid elements. ---*/
 
@@ -7276,10 +7265,10 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
 
   /*--- Store the elements of each type in the proper containers. ---*/
 
-  for (iElem = 0; iElem < nLocal_Tria; iElem++) {
+  for (it = Tria_List.begin(); it != Tria_List.end(); it++) {
 
-    if (find(Tria_List.begin(), Tria_List.end(),
-             ID_Tria[iElem]) == Tria_List.end()) {
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7296,21 +7285,22 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                   Local_Nodes[1],
                                   Local_Nodes[2], 2);
 
-      elem[jElem]->SetGlobalIndex(ID_Tria[iElem]);
-
-      Tria_List.push_back(ID_Tria[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
       jElem++; iElemTria++;
 
     }
-  }
 
-  for (iElem = 0; iElem < nLocal_Quad; iElem++) {
+  /*--- Free memory as we go. ---*/
+  
+  Tria_List.clear();
 
-    if (find(Quad_List.begin(), Quad_List.end(),
-             ID_Quad[iElem]) == Quad_List.end()) {
+  for (it = Quad_List.begin(); it != Quad_List.end(); it++) {
+    
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7328,21 +7318,22 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                        Local_Nodes[2],
                                        Local_Nodes[3], 2);
 
-      elem[jElem]->SetGlobalIndex(ID_Quad[iElem]);
-
-      Quad_List.push_back(ID_Quad[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
       jElem++; iElemQuad++;
 
     }
-  }
 
-  for (iElem = 0; iElem < nLocal_Tetr; iElem++) {
+  /*--- Free memory as we go. ---*/
 
-    if (find(Tetr_List.begin(), Tetr_List.end(),
-             ID_Tetr[iElem]) == Tetr_List.end()) {
+  Quad_List.clear();
+  
+  for (it = Tetr_List.begin(); it != Tetr_List.end(); it++) {
+    
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7360,21 +7351,22 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                      Local_Nodes[2],
                                      Local_Nodes[3]);
 
-      elem[jElem]->SetGlobalIndex(ID_Tetr[iElem]);
-
-      Tetr_List.push_back(ID_Tetr[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
       jElem++; iElemTetr++;
 
     }
-  }
 
-  for (iElem = 0; iElem < nLocal_Hexa; iElem++) {
+  /*--- Free memory as we go. ---*/
+  
+  Tetr_List.clear();
+  
+  for (it = Hexa_List.begin(); it != Hexa_List.end(); it++) {
 
-    if (find(Hexa_List.begin(), Hexa_List.end(),
-             ID_Hexa[iElem]) == Hexa_List.end()) {
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7396,21 +7388,22 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                     Local_Nodes[6],
                                     Local_Nodes[7]);
 
-      elem[jElem]->SetGlobalIndex(ID_Hexa[iElem]);
-
-      Hexa_List.push_back(ID_Hexa[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
       jElem++; iElemHexa++;
 
     }
-  }
 
-  for (iElem = 0; iElem < nLocal_Pris; iElem++) {
+  /*--- Free memory as we go. ---*/
+  
+  Hexa_List.clear();
 
-    if (find(Pris_List.begin(), Pris_List.end(),
-             ID_Pris[iElem]) == Pris_List.end()) {
+  for (it = Pris_List.begin(); it != Pris_List.end(); it++) {
+    
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7430,21 +7423,22 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                Local_Nodes[4],
                                Local_Nodes[5]);
 
-      elem[jElem]->SetGlobalIndex(ID_Pris[iElem]);
-
-      Pris_List.push_back(ID_Pris[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
 
       jElem++; iElemPris++;
 
     }
-  }
 
-  for (iElem = 0; iElem < nLocal_Pyra; iElem++) {
+  /*--- Free memory as we go. ---*/
 
-    if (find(Pyra_List.begin(), Pyra_List.end(),
-             ID_Pyra[iElem]) == Pyra_List.end()) {
+  Pris_List.clear();
+  
+  for (it = Pyra_List.begin(); it != Pyra_List.end(); it++) {
+    
+    kElem = it->first;
+    iElem = it->second;
 
       /*--- Transform the stored connectivity for this element from global
        to local values on this rank. ---*/
@@ -7463,16 +7457,17 @@ void CPhysicalGeometry::LoadVolumeElements(CConfig *config, CGeometry *geometry)
                                  Local_Nodes[3],
                                  Local_Nodes[4]);
       
-      elem[jElem]->SetGlobalIndex(ID_Pyra[iElem]);
-
-      Pyra_List.push_back(ID_Pyra[iElem]);
+    elem[jElem]->SetGlobalIndex(kElem);
 
       /*--- Increment our local counters. ---*/
       
       jElem++; iElemPyra++;
       
     }
-  }
+  
+  /*--- Free memory as we go. ---*/
+  
+  Pyra_List.clear();
 
   /*--- Communicate the number of each element type to all processors. These
    values are important for merging and writing output later. ---*/
@@ -7812,24 +7807,9 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     config->SetMarker_All_SendRecv(iMarker, Marker_All_SendRecv[iMarker]);
 
   }
-
-  /*--- Periodic transormations is not implemented yet. Store default 
-   zeros to avoid issues. We will rewrite the periodic BCs from scratch. ---*/
   
-  unsigned short nPeriodic = 1, iPeriodic = 0;
-  config->SetnPeriodicIndex(nPeriodic);
-  su2double* center    = new su2double[3];
-  su2double* rotation  = new su2double[3];
-  su2double* translate = new su2double[3];
-  for (unsigned short iDim = 0; iDim < 3; iDim++) {
-    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-  }
-  config->SetPeriodicCenter(iPeriodic, center);
-  config->SetPeriodicRotation(iPeriodic, rotation);
-  config->SetPeriodicTranslate(iPeriodic, translate);
-  delete [] center; delete [] rotation; delete [] translate;
-
-  /*--- initialize pointers for turbomachinery computations  ---*/
+  /*--- Initialize pointers for turbomachinery computations  ---*/
+  
   nSpanWiseSections       = new unsigned short[2];
   SpanWiseValue           = new su2double*[2];
   for (unsigned short iMarker = 0; iMarker < 2; iMarker++){
@@ -7865,7 +7845,8 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
     MinRelAngularCoord[iMarker]     = NULL;
   }
 
-  /*--- initialize pointers for turbomachinery performance computation  ---*/
+  /*--- Initialize pointers for turbomachinery performance computation  ---*/
+  
   nTurboPerf     = config->GetnMarker_TurboPerformance();
   TangGridVelIn  = new su2double*[config->GetnMarker_TurboPerformance()];
   SpanAreaIn     = new su2double*[config->GetnMarker_TurboPerformance()];
@@ -8557,7 +8538,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   unsigned long iElem_Bound = 0, iPoint = 0, ielem = 0;
   unsigned long vnodes_edge[2], vnodes_triangle[3], vnodes_quad[4];
   unsigned long vnodes_tetra[4], vnodes_hexa[8], vnodes_prism[6],
-  vnodes_pyramid[5], dummyLong, GlobalIndex;
+  vnodes_pyramid[5], dummyLong, GlobalIndex, LocalIndex;
   unsigned long i;
   long local_index;
   vector<unsigned long>::iterator it;
@@ -8587,7 +8568,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- Initialize counters for local/global points & elements ---*/
   
 #ifdef HAVE_MPI
-  unsigned long LocalIndex, j;
+  unsigned long j;
 #endif
   
   /*--- Actuator disk preprocesing ---*/
@@ -9114,7 +9095,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   if (val_nZone > 1 || harmonic_balance) {
     if (harmonic_balance) {
-      if (rank == MASTER_NODE) cout << "Reading time instance " << val_iZone+1 << "." << endl;
+      if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
     } else {
       while (getline (mesh_file,text_line)) {
         /*--- Search for the current domain ---*/
@@ -9302,7 +9283,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
           else {
             ostringstream strsX, strsY, strsZ;
             unsigned long BackActDisk_Index = node_count;
-            unsigned long LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
+            LocalIndex = BackActDisk_Index - (Global_nPoint-ActDiskNewPoints);
             strsX.precision(20); strsY.precision(20); strsZ.precision(20);
             su2double CoordX = CoordXActDisk[LocalIndex]; strsX << scientific << CoordX;
             su2double CoordY = CoordYActDisk[LocalIndex]; strsY << scientific << CoordY;
@@ -9368,7 +9349,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -9913,7 +9894,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -10255,7 +10236,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- If more than one, find the zone in the mesh file ---*/
   
 
-  if (val_nZone > 1 && !harmonic_balance) {
+  if (val_nZone > 1) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -12036,21 +12017,23 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel(CConfig *config, string val_me
       }
     }
     
-    /*--- Periodic transormations is not implement, store default zeros ---*/
-    unsigned short nPeriodic = 1, iPeriodic = 0;
-    config->SetnPeriodicIndex(nPeriodic);
-    su2double* center    = new su2double[3];
-    su2double* rotation  = new su2double[3];
-    su2double* translate = new su2double[3];
-    for (unsigned short iDim = 0; iDim < 3; iDim++) {
-      center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
-    }
-    config->SetPeriodicCenter(iPeriodic, center);
-    config->SetPeriodicRotation(iPeriodic, rotation);
-    config->SetPeriodicTranslate(iPeriodic, translate);
-    delete [] center; delete [] rotation; delete [] translate;
-    
   }
+
+  /*--- Periodic transformations are not implemented yet for CGNS.
+   Store default zeros. ---*/
+  
+  unsigned short nPeriodic = 1, iPeriodic = 0;
+  config->SetnPeriodicIndex(nPeriodic);
+  su2double* center    = new su2double[3];
+  su2double* rotation  = new su2double[3];
+  su2double* translate = new su2double[3];
+  for (unsigned short iDim = 0; iDim < 3; iDim++) {
+    center[iDim] = 0.0; rotation[iDim] = 0.0; translate[iDim] = 0.0;
+  }
+  config->SetPeriodicCenter(iPeriodic, center);
+  config->SetPeriodicRotation(iPeriodic, rotation);
+  config->SetPeriodicTranslate(iPeriodic, translate);
+  delete [] center; delete [] rotation; delete [] translate;
   
   /*--- Deallocate temporary memory. ---*/
   
@@ -14970,6 +14953,59 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   
 }
 
+void CPhysicalGeometry::SetMaxLength(CConfig* config) {
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
+    const unsigned short nNeigh = node[iPoint]->GetnPoint();
+    const su2double* Coord_i = node[iPoint]->GetCoord();
+
+    /*--- If using AD, computing the maximum grid length can generate
+     * a lot of unnecessary overhead since we would store all computations
+     * of each grid length, even though we only need the maximum value.
+     * We solve that by finding the neighbor that's furthest away
+     * (corresponding to the maximum distance) using passive calculations,
+     * then set the max using the AD datatype. ---*/
+
+    passivedouble passive_max_delta=0;
+    unsigned short max_neighbor = 0;
+    for (unsigned short iNeigh = 0; iNeigh < nNeigh; iNeigh++) {
+
+      /*-- Calculate the cell-center to cell-center length ---*/
+
+      const unsigned long jPoint  = node[iPoint]->GetPoint(iNeigh);
+      const su2double* Coord_j = node[jPoint]->GetCoord();
+
+      passivedouble delta_aux = 0;
+      for (unsigned short iDim = 0;iDim < nDim; iDim++){
+        delta_aux += pow(SU2_TYPE::GetValue(Coord_j[iDim])-SU2_TYPE::GetValue(Coord_i[iDim]), 2.);
+      }
+
+      /*--- Only keep the maximum length ---*/
+
+      if (delta_aux > passive_max_delta) {
+        passive_max_delta = delta_aux;
+        max_neighbor = iNeigh;
+      }
+    }
+
+    /*--- Now that we know where the maximum distance is, repeat
+     * calculation with the AD-friendly su2double datatype ---*/
+
+    const unsigned long jPoint  = node[iPoint]->GetPoint(max_neighbor);
+    const su2double* Coord_j = node[jPoint]->GetCoord();
+
+    su2double max_delta = 0;
+    for (unsigned short iDim = 0;iDim < nDim; iDim++) {
+      max_delta += pow((Coord_j[iDim]-Coord_i[iDim]), 2.);
+    }
+    max_delta = sqrt(max_delta);
+
+    node[iPoint]->SetMaxLength(max_delta);
+  }
+
+  Set_MPI_MaxLength(config);
+}
+
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
   
   su2double epsilon = 1e-1;
@@ -17467,6 +17503,79 @@ void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
 
 }
 
+void CPhysicalGeometry::Set_MPI_MaxLength(CConfig *config) {
+
+  unsigned short iMarker, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS, nBufferR;
+  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
+      nBufferS = nVertexS;          nBufferR = nVertexR;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive = new su2double [nBufferR];
+      Buffer_Send = new su2double[nBufferS];
+
+      /*--- Copy the grid velocity that should be sent ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = vertex[MarkerS][iVertex]->GetNode();
+        const su2double max_length = node[iPoint]->GetMaxLength();
+        Buffer_Send[iVertex] = max_length;
+      }
+
+#ifdef HAVE_MPI
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send, nBufferS, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive, nBufferR, MPI_DOUBLE, receive_from, 0,
+                        MPI_COMM_WORLD, &status);
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        Buffer_Receive[iVertex] = Buffer_Send[iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send;
+
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        iPoint = vertex[MarkerR][iVertex]->GetNode();
+        node[iPoint]->SetMaxLength(Buffer_Receive[iVertex]);
+      }
+
+      /*--- Deallocate receive buffer ---*/
+
+      delete [] Buffer_Receive;
+
+    }
+
+  }
+
+}
+
 void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {
   
   unsigned short iMarker, jMarker, kMarker = 0, iPeriodic, iDim, nPeriodic = 0, VTK_Type;
@@ -19955,7 +20064,11 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
     
     /*--- Apply roll to cut the nacelle ---*/
 
-    Angle = iPlane*dAngle*PI_NUMBER/180.0;
+    Angle = MinAngle + iPlane*dAngle*PI_NUMBER/180.0;
+    
+    if (Angle <= 0) Angle = 1E-6;
+    if (Angle >= 360) Angle = 359.999999;
+
     Plane_Normal[iPlane][0] = 0.0;
     Plane_Normal[iPlane][1] = -sin(Angle);
     Plane_Normal[iPlane][2] = cos(Angle);
@@ -20201,12 +20314,12 @@ void CPhysicalGeometry::Compute_Nacelle(CConfig *config, bool original_surface,
   
 }
 
-CMultiGridGeometry::CMultiGridGeometry(CGeometry ***geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone) : CGeometry() {
+CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_container, unsigned short iMesh, unsigned short iZone, unsigned short iInst) : CGeometry() {
   
   /*--- CGeometry & CConfig pointers to the fine grid level for clarity. We may
    need access to the other zones in the mesh for zone boundaries. ---*/
   
-  CGeometry *fine_grid = geometry[iZone][iMesh-1];
+  CGeometry *fine_grid = geometry[iZone][iInst][iMesh-1];
   CConfig *config = config_container[iZone];
   
   /*--- Local variables ---*/

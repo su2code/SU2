@@ -3,7 +3,7 @@
 ## \file serial_regression.py
 #  \brief Python script for automated regression testing of SU2 examples
 #  \author A. Aranake, A. Campos, T. Economon, T. Lukaczyk, S. Padron
-#  \version 6.0.1 "Falcon"
+#  \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
 # SU2 International Developers Society <www.su2devsociety.org>
@@ -124,7 +124,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.804182, -2.196161, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.802148, -2.228080, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "SU2_CFD_AD"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -161,6 +161,22 @@ def main():
     discadj_cylinder.unsteady  = True
     test_list.append(discadj_cylinder)
     
+    ##########################################################################
+    ### Unsteady Disc. adj. compressible RANS DualTimeStepping 1st order   ###
+    ##########################################################################
+
+    # Turbulent Cylinder
+    discadj_DT_1ST_cylinder           = TestCase('unsteady_cylinder_DT_1ST')
+    discadj_DT_1ST_cylinder.cfg_dir   = "disc_adj_rans/cylinder_DT_1ST"
+    discadj_DT_1ST_cylinder.cfg_file  = "cylinder.cfg"
+    discadj_DT_1ST_cylinder.test_iter = 9
+    discadj_DT_1ST_cylinder.test_vals = [3.698165, -1.607052, -2.2500e-03, 2.7211e-05] #last 4 columns
+    discadj_DT_1ST_cylinder.su2_exec  = "SU2_CFD_AD"
+    discadj_DT_1ST_cylinder.timeout   = 1600
+    discadj_DT_1ST_cylinder.tol       = 0.00001
+    discadj_DT_1ST_cylinder.unsteady  = True
+    test_list.append(discadj_DT_1ST_cylinder)
+
     ###################################
     ### Structural Adjoint          ###
     ###################################
@@ -170,7 +186,7 @@ def main():
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-6.403771, -6.404196, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.test_vals = [-6.282767, -6.361594, -3.6413e-04, -8.7087e+00] #last 4 columns
     discadj_fea.su2_exec  = "SU2_CFD_AD"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
@@ -213,6 +229,18 @@ def main():
     pass_list.append(discadj_euler_py.run_filediff())
     test_list.append(discadj_euler_py)
     
+    # test discrete_adjoint with multiple ffd boxes
+    discadj_multiple_ffd_py = TestCase('discadj_multiple_ffd_py')
+    discadj_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
+    discadj_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
+    discadj_multiple_ffd_py.test_iter = 9
+    discadj_multiple_ffd_py.su2_exec  = "discrete_adjoint.py"
+    discadj_multiple_ffd_py.timeout   = 1600
+    discadj_multiple_ffd_py.reference_file = "of_grad_cd.dat.ref"
+    discadj_multiple_ffd_py.test_file = "of_grad_cd.dat"
+    pass_list.append(discadj_multiple_ffd_py.run_filediff())
+    test_list.append(discadj_multiple_ffd_py)
+
     # test direct_differentiation.py
     directdiff_euler_py = TestCase('directdiff_euler_py')
     directdiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
@@ -224,6 +252,18 @@ def main():
     directdiff_euler_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
     pass_list.append(directdiff_euler_py.run_filediff())
     test_list.append(directdiff_euler_py)
+
+    # test direct_differentiation.py with multiple ffd boxes
+    directdiff_multiple_ffd_py = TestCase('directdiff_multiple_ffd_py')
+    directdiff_multiple_ffd_py.cfg_dir = "multiple_ffd/naca0012"
+    directdiff_multiple_ffd_py.cfg_file  = "inv_NACA0012_ffd.cfg"
+    directdiff_multiple_ffd_py.test_iter = 9
+    directdiff_multiple_ffd_py.su2_exec  = "direct_differentiation.py"
+    directdiff_multiple_ffd_py.timeout   = 1600
+    directdiff_multiple_ffd_py.reference_file = "of_grad_directdiff.dat.ref"
+    directdiff_multiple_ffd_py.test_file = "DIRECTDIFF/of_grad_directdiff.dat"
+    pass_list.append(directdiff_multiple_ffd_py.run_filediff())
+    test_list.append(directdiff_multiple_ffd_py)
 
     # test continuous_adjoint.py, with multiple objectives
     discadj_multi_py            = TestCase('discadj_multi_py')

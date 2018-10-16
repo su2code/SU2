@@ -3,7 +3,7 @@
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, B. Tracey
- * \version 6.0.1 "Falcon"
+ * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -232,6 +232,9 @@ private:
   nMarker_CfgFile;					/*!< \brief Total number of markers using the config file
                              (note that using parallel computation this number can be different
                              from nMarker_All). */
+  bool Inlet_From_File; /*!< \brief True if the inlet profile is to be loaded from a file. */
+  string Inlet_Filename; /*!< \brief Filename specifying an inlet profile. */
+  su2double Inlet_Matching_Tol; /*!< \brief Tolerance used when matching a point to a point from the inlet file. */
   string *Marker_Euler,			/*!< \brief Euler wall markers. */
   *Marker_FarField,				/*!< \brief Far field markers. */
   *Marker_Custom,
@@ -434,6 +437,7 @@ private:
   unsigned short nGridMovement;		/*!< \brief Number of grid movement types specified. */
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
+  string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -486,10 +490,8 @@ private:
   Kind_TimeIntScheme_AdjFlow,		/*!< \brief Time integration for the adjoint flow equations. */
   Kind_TimeIntScheme_Turb,	/*!< \brief Time integration for the turbulence model. */
   Kind_TimeIntScheme_AdjTurb,	/*!< \brief Time integration for the adjoint turbulence model. */
-  Kind_TimeIntScheme_Wave,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_Heat,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeStep_Heat, /*!< \brief Time stepping method for the (fvm) heat equation. */
-  Kind_TimeIntScheme_Poisson,	/*!< \brief Time integration for the wave equations. */
   Kind_TimeIntScheme_FEA,	/*!< \brief Time integration for the FEA equations. */
   Kind_SpaceIteScheme_FEA,	/*!< \brief Iterative scheme for nonlinear structural analysis. */
   Kind_ConvNumScheme,			/*!< \brief Global definition of the convective term. */
@@ -584,7 +586,8 @@ private:
   unsigned short FFD_Continuity; /*!< Surface continuity at the intersection with the FFD */
   unsigned short FFD_CoordSystem; /*!< Define the coordinates system */
   su2double Deform_ElasticityMod, Deform_PoissonRatio; /*!< young's modulus and poisson ratio for volume deformation stiffness model */
-  bool Visualize_Deformation;	/*!< \brief Flag to visualize the deformation in MDC. */
+  bool Visualize_Surface_Def;  /*!< \brief Flag to visualize the surface deformacion in SU2_DEF. */
+  bool Visualize_Volume_Def; /*!< \brief Flag to visualize the volume deformation in SU2_DEF. */
   bool FFD_Symmetry_Plane;	/*!< \brief FFD symmetry plane. */
   su2double Mach;		/*!< \brief Mach number. */
   su2double Reynolds;	/*!< \brief Reynolds number. */
@@ -717,17 +720,13 @@ private:
   SurfStructure_FileName,					/*!< \brief Surface structure variables output file. */
   AdjStructure_FileName,         /*!< \brief Structure variables output file. */
   AdjSurfStructure_FileName,         /*!< \brief Surface structure variables output file. */
-  SurfWave_FileName,					/*!< \brief Surface structure variables output file. */
   SurfHeat_FileName,					/*!< \brief Surface structure variables output file. */
-  Wave_FileName,					/*!< \brief Wave variables output file. */
   Heat_FileName,					/*!< \brief Heat variables output file. */
-  AdjWave_FileName,					/*!< \brief Adjoint wave variables output file. */
   Residual_FileName,				/*!< \brief Residual variables output file. */
   Conv_FileName,					/*!< \brief Convergence history output file. */
   Breakdown_FileName,			    /*!< \brief Breakdown output file. */
   Conv_FileName_FSI,					/*!< \brief Convergence history output file. */
   Restart_FlowFileName,			/*!< \brief Restart file for flow variables. */
-  Restart_WaveFileName,			/*!< \brief Restart file for wave variables. */
   Restart_HeatFileName,			/*!< \brief Restart file for heat variables. */
   Restart_AdjFileName,			/*!< \brief Restart file for adjoint variables, drag functional. */
   Restart_FEMFileName,			/*!< \brief Restart file for FEM elasticity. */
@@ -744,20 +743,24 @@ private:
   Wrt_Vol_Sol,                /*!< \brief Write a volume solution file */
   Wrt_Srf_Sol,                /*!< \brief Write a surface solution file */
   Wrt_Csv_Sol,                /*!< \brief Write a surface comma-separated values solution file */
+  Wrt_Crd_Sol,                /*!< \brief Write a binary file with the grid coordinates only. */
   Wrt_Residuals,              /*!< \brief Write residuals to solution file */
   Wrt_Surface,                /*!< \brief Write solution at each surface */
   Wrt_Limiters,              /*!< \brief Write residuals to solution file */
   Wrt_SharpEdges,              /*!< \brief Write residuals to solution file */
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
+  Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
+  Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
-  ArtComp_Factor,			/*!< \brief Value of the artificial compresibility factor for incompressible flows. */
+  Beta_Factor,			/*!< \brief Value of the epsilon^2 multiplier for Beta for the incompressible preconditioner. */
   Gas_Constant,     /*!< \brief Specific gas constant. */
   Gas_ConstantND,     /*!< \brief Non-dimensional specific gas constant. */
+  Molecular_Weight,     /*!< \brief Molecular weight of an incompressible ideal gas (g/mol). */
   Specific_Heat_Cp,     /*!< \brief Specific heat at constant pressure. */
   Specific_Heat_CpND,     /*!< \brief Non-dimensional specific heat at constant pressure. */
   Specific_Heat_Cp_Solid, /*!< \brief Specific heat in solids. */
@@ -846,17 +849,16 @@ private:
   unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
+  unsigned short iInst;       /*!< \brief Current instance value */
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
   su2double AitkenDynMinInit;	/*!< \brief Aitken's minimum dynamic relaxation factor for the first iteration */
   bool RampAndRelease;        /*!< \brief option for ramp load and release */
   bool Sine_Load;             /*!< \brief option for sine load */
   su2double *SineLoad_Coeff;  /*!< \brief Stores the load coefficient */
-  su2double Wave_Speed;			  /*!< \brief Wave speed used in the wave solver. */
   su2double Thermal_Diffusivity;			/*!< \brief Thermal diffusivity used in the heat solver. */
   su2double Cyclic_Pitch,     /*!< \brief Cyclic pitch for rotorcraft simulations. */
   Collective_Pitch;           /*!< \brief Collective pitch for rotorcraft simulations. */
-  string Motion_Filename;			/*!< \brief Arbitrary mesh motion input base filename. */
   su2double Mach_Motion;			/*!< \brief Mach number based on mesh velocity and freestream quantities. */
   su2double *Motion_Origin_X, /*!< \brief X-coordinate of the mesh motion origin. */
   *Motion_Origin_Y,           /*!< \brief Y-coordinate of the mesh motion origin. */
@@ -931,6 +933,7 @@ private:
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
+  bool Wall_Functions;         /*!< \brief Use wall functions with the turbulence model */
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
@@ -960,6 +963,10 @@ private:
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
+  bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
+  unsigned short Kind_RadialBasisFunction; /*!\brief type of radial basis function to use for radial basis FSI. */
+  bool RadialBasisFunction_PolynomialOption; /*!\brief Option of whether to include polynomial terms in Radial Basis Function Interpolation or not. */
+  su2double RadialBasisFunction_Parameter; /*!\brief Radial basis function parameter. */
   bool Prestretch;            /*!< Read a reference geometry for optimization purposes. */
   string Prestretch_FEMFileName;         /*!< \brief File name for reference geometry. */
   string FEA_FileName;         /*!< \brief File name for element-based properties. */
@@ -1018,7 +1025,9 @@ private:
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
-  su2double Max_Beta; /*!< \brief Maximum Beta parameter (incompressible preconditioning) in the domain */
+  su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
+  su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
@@ -1573,10 +1582,10 @@ public:
   su2double GetBulk_Modulus(void);
   
   /*!
-   * \brief Get the artificial compresibility factor.
-   * \return Value of the artificial compresibility factor.
+   * \brief Get the epsilon^2 multiplier for Beta in the incompressible preconditioner.
+   * \return Value of the epsilon^2 multiplier for Beta in the incompressible preconditioner.
    */
-  su2double GetArtComp_Factor(void);
+  su2double GetBeta_Factor(void);
   
   /*!
    * \brief Get the value of specific gas constant.
@@ -1589,6 +1598,12 @@ public:
    * \return Value of the constant: Gamma
    */
   su2double GetGas_ConstantND(void);
+  
+  /*!
+   * \brief Get the value of the molecular weight for an incompressible ideal gas (g/mol).
+   * \return Value of the molecular weight for an incompressible ideal gas (g/mol).
+   */
+  su2double GetMolecular_Weight(void);
   
   /*!
    * \brief Get the value of specific heat at constant pressure.
@@ -1966,12 +1981,6 @@ public:
    * \return Value of the reference area for coefficient computation.
    */
   su2double GetRefArea(void);
-  
-  /*!
-   * \brief Get the wave speed.
-   * \return Value of the wave speed.
-   */
-  su2double GetWaveSpeed(void);
   
   /*!
    * \brief Get the wave speed.
@@ -2834,13 +2843,13 @@ public:
    * \return Total number of boundary markers.
    */
   unsigned short GetnMarker_Fluid_InterfaceBound(void);
-
+  
   /*!
    * \brief Get the total number of transpiration markers.
    * \return Total number of moving markers.
    */
   unsigned short GetnMarker_Transpiration(void);
-  
+
   /*!
    * \brief Get the total number of boundary markers.
    * \return Total number of boundary markers.
@@ -2858,6 +2867,12 @@ public:
    * \return Total number of monitoring markers.
    */
   unsigned short GetnMarker_Monitoring(void);
+  
+  /*!
+   * \brief Get the total number of DV markers.
+   * \return Total number of DV markers.
+   */
+  unsigned short GetnMarker_DV(void);
   
   /*!
    * \brief Get the total number of moving markers.
@@ -2942,7 +2957,7 @@ public:
    * \return Restart iteration number for dynamic structural simulations.
    */
   long GetDyn_RestartIter(void);
-  
+
   /*!
    * \brief Retrieves the number of periodic time instances for Harmonic Balance.
    * \return: Number of periodic time instances for Harmonic Balance.
@@ -3072,6 +3087,12 @@ public:
   bool GetWrt_Csv_Sol(void);
   
   /*!
+   * \brief Get information about writing a binary coordinates file.
+   * \return <code>TRUE</code> means that a binary coordinates file will be written.
+   */
+  bool GetWrt_Crd_Sol(void);
+  
+  /*!
    * \brief Get information about writing residuals to volume solution file.
    * \return <code>TRUE</code> means that residuals will be written to the solution file.
    */
@@ -3100,6 +3121,24 @@ public:
    * \return <code>TRUE</code> means that rind layers will be written to the solution file.
    */
   bool GetWrt_Halo(void);
+
+  /*!
+   * \brief Get information about writing the performance summary at the end of a calculation.
+   * \return <code>TRUE</code> means that the performance summary will be written at the end of a calculation.
+   */
+  bool GetWrt_Performance(void);
+  
+  /*!
+   * \brief Get information about writing a template inlet profile file.
+   * \return <code>TRUE</code> means that a template inlet profile file will be written.
+   */
+  bool GetWrt_InletFile(void);
+
+  /*!
+   * \brief Set information about writing a template inlet profile file.
+   * \param[in] val_wrt_inletfile - flag for whether to write a template inlet profile file.
+   */
+  void SetWrt_InletFile(bool val_wrt_inletfile);
 
   /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
@@ -3901,10 +3940,16 @@ public:
   unsigned short GetDeform_Stiffness_Type(void);
   
   /*!
-   * \brief Creates a teot file to visualize the deformation made by the MDC software.
+   * \brief Creates a tecplot file to visualize the volume deformation deformation made by the DEF software.
    * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
    */
-  bool GetVisualize_Deformation(void);
+  bool GetVisualize_Volume_Def(void);
+  
+  /*!
+   * \brief Creates a teot file to visualize the surface deformation deformation made by the DEF software.
+   * \return <code>TRUE</code> if the deformation is going to be plotted; otherwise <code>FALSE</code>.
+   */
+  bool GetVisualize_Surface_Def(void);
   
   /*!
    * \brief Define the FFD box with a symetry plane.
@@ -4066,15 +4111,6 @@ public:
    *       during the computation.
    * \return Kind of integration scheme for the plasma equations.
    */
-  unsigned short GetKind_TimeIntScheme_Wave(void);
-  
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
   unsigned short GetKind_TimeIntScheme_Heat(void);
   
   /*!
@@ -4085,15 +4121,6 @@ public:
    * \return Kind of time stepping for the heat equation.
    */
   unsigned short GetKind_TimeStep_Heat(void);
-
-  /*!
-   * \brief Get the kind of integration scheme (explicit or implicit)
-   *        for the flow equations.
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of integration scheme for the plasma equations.
-   */
-  unsigned short GetKind_TimeIntScheme_Poisson(void);
   
   /*!
    * \brief Get the kind of integration scheme (explicit or implicit)
@@ -4405,6 +4432,24 @@ public:
    * \return Kind of inlet boundary condition.
    */
   unsigned short GetKind_Inlet(void);
+  
+  /*!
+   * \brief Check if the inlet profile(s) are specified in an input file
+   * \return True if an input file is to be used for the inlet profile(s)
+   */
+  bool GetInlet_Profile_From_File(void);
+
+  /*!
+   * \brief Get name of the input file for the specified inlet profile.
+   * \return Name of the input file for the specified inlet profile.
+   */
+  string GetInlet_FileName(void);
+
+  /*!
+   * \brief Get the tolerance used for matching two points on a specified inlet
+   * \return Tolerance used for matching a point to a specified inlet
+   */
+  su2double GetInlet_Profile_Matching_Tolerance(void);
   
   /*!
    * \brief Get the type of incompressible inlet from the list.
@@ -5093,37 +5138,13 @@ public:
    * \brief Get the name of the file with the structure variables.
    * \return Name of the file with the structure variables.
    */
-  string GetSurfWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the structure variables.
-   * \return Name of the file with the structure variables.
-   */
   string GetSurfHeat_FileName(void);
   
   /*!
    * \brief Get the name of the file with the wave variables.
    * \return Name of the file with the wave variables.
    */
-  string GetWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the wave variables.
-   * \return Name of the file with the wave variables.
-   */
   string GetHeat_FileName(void);
-  
-  /*!
-   * \brief Get the name of the file with the adjoint wave variables.
-   * \return Name of the file with the adjoint wave variables.
-   */
-  string GetAdjWave_FileName(void);
-  
-  /*!
-   * \brief Get the name of the restart file for the wave variables.
-   * \return Name of the restart file for the flow variables.
-   */
-  string GetRestart_WaveFileName(void);
   
   /*!
    * \brief Get the name of the restart file for the heat variables.
@@ -5143,6 +5164,18 @@ public:
    */
   string GetMultizone_HistoryFileName(string val_filename, int val_iZone);
   
+  /*!
+   * \brief Append the instance index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultiInstance_FileName(string val_filename, int val_iInst);
+
+  /*!
+   * \brief Append the instance index to the restart or the solution files.
+   * \return Name of the restart file for the flow variables.
+   */
+  string GetMultiInstance_HistoryFileName(string val_filename, int val_iInst);
+
   /*!
    * \brief Get the name of the restart file for the flow variables.
    * \return Name of the restart file for the flow variables.
@@ -7707,7 +7740,7 @@ public:
    * \brief Get name of the arbitrary mesh motion input file.
    * \return File name of the arbitrary mesh motion input file.
    */
-  string GetMotion_FileName(void);
+  string GetDV_Filename(void);
   
   /*!
    * \brief Set the config options.
@@ -8201,6 +8234,18 @@ public:
   su2double GetCurrent_DynTime(void);
   
   /*!
+   * \brief Get the current instance.
+   * \return Current instance identifier.
+   */
+  unsigned short GetiInst(void);
+
+  /*!
+   * \brief Set the current instance.
+   * \param[in] iInst - current instance identifier.
+   */
+  void SetiInst(unsigned short val_iInst);
+
+  /*!
    * \brief Get information about writing dynamic structural analysis headers and file extensions.
    * \return 	<code>TRUE</code> means that dynamic structural analysis solution files will be written.
    */
@@ -8379,23 +8424,60 @@ public:
    * \brief Get the interpolation method used for matching between zones.
    */
   inline unsigned short GetKindInterpolation(void);
-
+	
+	/*!
+	 * \brief Get option of whether to use conservative interpolation between zones.
+	 */
+  inline bool GetConservativeInterpolation(void);
+	
+  /*!
+   * \brief Get the basis function to use for radial basis function interpolation for FSI.
+   */
+  inline unsigned short GetKindRadialBasisFunction(void);
+	
+  /*!
+   * \brief Get option of whether to use polynomial terms in Radial Basis Function interpolation.
+   */
+  inline bool GetRadialBasisFunctionPolynomialOption(void);
+	
+  /*!
+   * \brief Get the basis function radius to use for radial basis function interpolation for FSI.
+   */
+  inline su2double GetRadialBasisFunctionParameter(void);
+  
+  /*!
+   * \brief Get information about whether to use wall functions.
+   * \return <code>TRUE</code> if wall functions are on; otherwise <code>FALSE</code>.
+   */
+  bool GetWall_Functions(void);
   /*!
    * \brief Get the AD support.
    */
   bool GetAD_Mode(void);
 
   /*!
-   * \brief Set the maximum Beta parameter (artificial compressibility) in the domain.
-   * \param[in] Value of the max Beta parameter (artificial compressibility).
+   * \brief Set the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \param[in] Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  void SetMax_Beta(su2double val_maxBeta);
+  void SetMax_Vel2(su2double val_max_vel2);
 
   /*!
-   * \brief Get the maximum Beta parameter (artificial compressibility) in the domain.
-   * \return Value of the max Beta parameter (artificial compressibility) in the domain.
+   * \brief Get the maximum velocity^2 in the domain for the incompressible preconditioner.
+   * \return Value of the maximum velocity^2 in the domain for the incompressible preconditioner.
    */
-  su2double GetMax_Beta(void);
+  su2double GetMax_Vel2(void);
+  
+  /*!
+   * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
+   * \param[in] Sum of the bandwidth for writing binary restarts.
+   */
+  void SetRestart_Bandwidth_Agg(su2double val_restart_bandwidth_sum);
+  
+  /*!
+   * \brief Set the sum of the bandwidth for writing binary restarts (to be averaged later).
+   * \return Sum of the bandwidth for writing binary restarts.
+   */
+  su2double GetRestart_Bandwidth_Agg(void);
 
   /*!
    * \brief Get the frequency for writing the surface solution file in Dual Time.
