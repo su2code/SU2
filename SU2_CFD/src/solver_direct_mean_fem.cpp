@@ -6188,7 +6188,7 @@ void CFEM_DG_EulerSolver::Boundary_Conditions(const unsigned short timeLevel,
         switch (config->GetMarker_All_KindBC(iMarker)) {
           case EULER_WALL:
             BC_Euler_Wall(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
-                          numerics[CONV_BOUND_TERM], iMarker, workArray);
+                          numerics[CONV_BOUND_TERM], workArray);
             break;
           case FAR_FIELD:
             BC_Far_Field(config, surfElemBeg, surfElemEnd, surfElem, resFaces,
@@ -8077,7 +8077,6 @@ void CFEM_DG_EulerSolver::BC_Euler_Wall(CConfig                  *config,
                                         const CSurfaceElementFEM *surfElem,
                                         su2double                *resFaces,
                                         CNumerics                *conv_numerics,
-                                        unsigned short           val_marker,
                                         su2double                *workArray) {
 
   /* Initialization of the counter in resFaces. */
@@ -14231,7 +14230,6 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
                                      const CSurfaceElementFEM *surfElem,
                                      su2double                *resFaces,
                                      CNumerics                *conv_numerics,
-                                     unsigned short           val_marker,
                                      su2double                *workArray){
 
   /* Initialization of the counter in resFaces. */
@@ -14284,7 +14282,7 @@ void CFEM_DG_NSSolver::BC_Euler_Wall(CConfig                  *config,
     ViscousBoundaryFacesBCTreatment(config, conv_numerics, llEnd, NPad,
                                     0.0, false, 0.0, false, &surfElem[l],
                                     solIntL, solIntR, work, resFaces,
-                                    indResFaces, boundaries[val_marker].wallModel);
+                                    indResFaces, NULL);
 
     /* Update the value of the counter l to the end index of the
        current chunk. */
