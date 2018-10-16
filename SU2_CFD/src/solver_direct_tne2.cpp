@@ -2959,7 +2959,7 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 		for (iVar = 0; iVar < nVar; iVar++) {
 			total_index = iPoint*nVar + iVar;
 			LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar]);
-      LinSysSol[total_index] = 0.0;
+            LinSysSol[total_index] = 0.0;
 			AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
 			AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry-> node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
 		}
@@ -2995,7 +2995,6 @@ void CTNE2EulerSolver::ImplicitEuler_Iteration(CGeometry *geometry,
 
 	/*--- Compute the root mean square residual ---*/
 	SetResidual_RMS(geometry, config);
-
 }
 
 void CTNE2EulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *config) {
@@ -3684,10 +3683,8 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   Pressure_FreeStream     = config->GetPressure_FreeStream();
   Temperature_FreeStream  = config->GetTemperature_FreeStream();
-  Gas_Constant  				  = config->GetGas_Constant();
-	cout << Pressure_FreeStream << endl;
-	cout << Gas_Constant << endl;
-	Mach2Vel_FreeStream = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
+  Gas_Constant  		  = config->GetGas_Constant();
+  Mach2Vel_FreeStream     = sqrt(Gamma*Gas_Constant*Temperature_FreeStream);
 
   /*--- Compute the Free Stream velocity, using the Mach number ---*/
 
@@ -3751,7 +3748,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 		 Viscosity_FreeStream = 1.853E-5*(pow(Temperature_FreeStream/300.0,3.0/2.0) * (300.0+110.3)/(Temperature_FreeStream+110.3));
 		 Density_FreeStream   = Reynolds*Viscosity_FreeStream/(Velocity_Reynolds* config->GetLength_Reynolds());
 		 Pressure_FreeStream  = Density_FreeStream*Gas_Constant*Temperature_FreeStream;
-     Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
+     	 Energy_FreeStream    = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream ;
     }
 
     /*--- Turbulence kinetic energy ---*/
@@ -3841,7 +3838,7 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
 
   /*--- Initialize the dimensionless Fluid Model that will be used to solve the dimensionless problem ---*/
 
-  /*--- Delete the original (dimensional) FluidModel object before replacing. ---*/
+  Energy_FreeStreamND = Pressure_FreeStream/(Density_FreeStream*Gamma_Minus_One)+0.5*ModVel_FreeStream *ModVel_FreeStream;
 
   if (viscous) {
 
@@ -4059,7 +4056,6 @@ void CTNE2EulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *co
       if (config->GetSystemMeasurements() == SI) cout << " W/m^2.K." << endl;
       else if (config->GetSystemMeasurements() == US) cout << " lbf/ft.s.R." << endl;
     }
-
 
     if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
 
