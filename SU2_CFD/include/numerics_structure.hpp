@@ -4083,6 +4083,9 @@ public:
   virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
 
   virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+  
+protected:
+  void Compute_Lame_Parameters(void);
 
 };
 
