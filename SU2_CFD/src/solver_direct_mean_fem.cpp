@@ -15023,43 +15023,60 @@ void CFEM_DG_NSSolver::BC_HeatFlux_Wall(CConfig                  *config,
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             work, solIntL);
 
-    /*--- Loop over the number of faces in this chunk and the number of
-          integration points and apply the heat flux wall boundary conditions
-          to compute the right state. There are two options. Either the velocity
-          is negated or it is set to zero. Some experiments are needed to see
-          which formulation gives better results. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      const unsigned long  lll    = l + ll;
-      const unsigned short llNVar = ll*nVar;
+    /*--- Compute the right states. A distinction must be made whether or not
+          all functions are used. ---*/
+    if( boundaries[val_marker].wallModel ) {
 
-      for(unsigned short i=0; i<nInt; ++i) {
+      /*--- Wall functions are used to model the lower part of the boundary
+            layer. Consequently, a slip boundary condition is used for the
+            velocities and the skin friction and heat flux from the wall
+            should drive the velocities towards the no-slip and prescribed
+            heat flux. Therefore the right states for the actual flow solver
+            can be computed using BoundaryStates_Euler_Wall. ---*/
+      BoundaryStates_Euler_Wall(config, llEnd, NPad, &surfElem[l],
+                                solIntL, solIntR);
+    }
+    else {
 
-        /* Easier storage of the grid velocity and the left and right solution
-           for this integration point. */
-        const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
-        const su2double *UL      = solIntL + NPad*i + llNVar;
-              su2double *UR      = solIntR + NPad*i + llNVar;
+      /*--- Integration to the wall is used, so the no-slip condition is enforced,
+            albeit weakly. Loop over the number of faces in this chunk and the
+            number of integration points and apply the heat flux wall boundary
+            conditions to compute the right state. There are two options. Either
+            the velocity is negated or it is set to zero. Some experiments are
+            needed to see which formulation gives better results. ---*/
+      for(unsigned short ll=0; ll<llEnd; ++ll) {
+        const unsigned long  lll    = l + ll;
+        const unsigned short llNVar = ll*nVar;
 
-        /* Set the right state. The initial value of the total energy is the
-           energy of the left state. Also compute the difference in kinetic
-           energy between the left and right state. */
-        UR[0]      = UL[0];
-        UR[nDim+1] = UL[nDim+1];
+        for(unsigned short i=0; i<nInt; ++i) {
 
-        su2double DensityInv = 1.0/UL[0];
-        su2double diffKin    = 0.0;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-          const su2double velL = DensityInv*UL[iDim+1];
-          const su2double dV   = factWallVel*(velL-gridVel[iDim]);
-          const su2double velR = gridVel[iDim] - dV;
+          /* Easier storage of the grid velocity and the left and right solution
+             for this integration point. */
+          const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
+          const su2double *UL      = solIntL + NPad*i + llNVar;
+                su2double *UR      = solIntR + NPad*i + llNVar;
 
-          UR[iDim+1] = UR[0]*velR;
-          diffKin   += velL*velL - velR*velR;
+          /* Set the right state. The initial value of the total energy is the
+             energy of the left state. Also compute the difference in kinetic
+             energy between the left and right state. */
+          UR[0]      = UL[0];
+          UR[nDim+1] = UL[nDim+1];
+
+          su2double DensityInv = 1.0/UL[0];
+          su2double diffKin    = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+            const su2double velL = DensityInv*UL[iDim+1];
+            const su2double dV   = factWallVel*(velL-gridVel[iDim]);
+            const su2double velR = gridVel[iDim] - dV;
+
+            UR[iDim+1] = UR[0]*velR;
+            diffKin   += velL*velL - velR*velR;
+          }
+
+          /* As only the internal energy of UR is equal to UL, the difference
+             in kinetic energy must be subtracted. */
+          UR[nDim+1] -= 0.5*UR[0]*diffKin;
         }
-
-        /* As only the internal energy of UR is equal to UL, the difference
-           in kinetic energy must be subtracted. */
-        UR[nDim+1] -= 0.5*UR[0]*diffKin;
       }
     }
 
@@ -15143,39 +15160,56 @@ void CFEM_DG_NSSolver::BC_Isothermal_Wall(CConfig                  *config,
     LeftStatesIntegrationPointsBoundaryFace(config, llEnd, NPad, &surfElem[l],
                                             work, solIntL);
 
-    /*--- Loop over the number of faces in this chunk and the number of
-          integration points and apply the isothermal wall boundary conditions
-          to compute the right state. There are two options. Either the velocity
-          is negated or it is set to zero. Some experiments are needed to see
-          which formulation gives better results. ---*/
-    for(unsigned short ll=0; ll<llEnd; ++ll) {
-      const unsigned long  lll    = l + ll;
-      const unsigned short llNVar = ll*nVar;
+    /*--- Compute the right states. A distinction must be made whether or not
+          all functions are used. ---*/
+    if( boundaries[val_marker].wallModel ) {
 
-      for(unsigned short i=0; i<nInt; ++i) {
+      /*--- Wall functions are used to model the lower part of the boundary
+            layer. Consequently, a slip boundary condition is used for the
+            velocities and the skin friction and heat flux from the wall
+            should drive the velocities towards the no-slip and prescribed
+            temperature. Therefore the right states for the actual flow solver
+            can be computed using BoundaryStates_Euler_Wall. ---*/
+      BoundaryStates_Euler_Wall(config, llEnd, NPad, &surfElem[l],
+                                solIntL, solIntR);
+    }
+    else {
 
-         /* Easier storage of the grid velocity and the left and right solution
-           for this integration point. */
-        const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
-        const su2double *UL      = solIntL + NPad*i + llNVar;
-              su2double *UR      = solIntR + NPad*i + llNVar;
+      /*--- Integration to the wall is used, so the no-slip condition is enforced,
+            albeit weakly. Loop over the number of faces in this chunk and the
+            number of integration points and apply the isothermal wall boundary
+            conditions to compute the right state. There are two options. Either
+            the velocity is negated or it is set to zero. Some experiments are
+            needed to see which formulation gives better results. ---*/
+      for(unsigned short ll=0; ll<llEnd; ++ll) {
+        const unsigned long  lll    = l + ll;
+        const unsigned short llNVar = ll*nVar;
 
-        /* Set the right state for the density and the momentum variables of the
-           right state. Compute twice the possible kinetic energy. */
-        UR[0] = UL[0];
-        su2double DensityInv = 1.0/UL[0];
-        su2double kinEner    = 0.0;
-        for(unsigned short iDim=0; iDim<nDim; ++iDim) {
-          const su2double velL = DensityInv*UL[iDim+1];
-          const su2double dV   = factWallVel*(velL-gridVel[iDim]);
-          const su2double velR = gridVel[iDim] - dV;
+        for(unsigned short i=0; i<nInt; ++i) {
 
-          UR[iDim+1] = UR[0]*velR;
-          kinEner   += velR*velR;
+           /* Easier storage of the grid velocity and the left and right solution
+             for this integration point. */
+          const su2double *gridVel = surfElem[lll].gridVelocities.data() + i*nDim;
+          const su2double *UL      = solIntL + NPad*i + llNVar;
+                su2double *UR      = solIntR + NPad*i + llNVar;
+
+          /* Set the right state for the density and the momentum variables of the
+             right state. Compute twice the possible kinetic energy. */
+          UR[0] = UL[0];
+          su2double DensityInv = 1.0/UL[0];
+          su2double kinEner    = 0.0;
+          for(unsigned short iDim=0; iDim<nDim; ++iDim) {
+            const su2double velL = DensityInv*UL[iDim+1];
+            const su2double dV   = factWallVel*(velL-gridVel[iDim]);
+            const su2double velR = gridVel[iDim] - dV;
+
+            UR[iDim+1] = UR[0]*velR;
+            kinEner   += velR*velR;
+          }
+
+          /* Compute the total energy of the right state. */
+          UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
         }
-
-        /* Compute the total energy of the right state. */
-        UR[nDim+1] = UR[0]*(StaticEnergy + 0.5*kinEner);
       }
     }
 
