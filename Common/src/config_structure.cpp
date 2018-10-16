@@ -4686,6 +4686,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case IMPLICIT_LES: cout << "Implicit LES" << endl; break;
           case SMAGORINSKY:  cout << "Smagorinsky " << endl; break;
           case WALE:         cout << "WALE"         << endl; break;
+          case VREMAN:       cout << "VREMAN"         << endl; break;
           default:
             SU2_MPI::Error("Subgrid Scale model not specified.", CURRENT_FUNCTION);
 
