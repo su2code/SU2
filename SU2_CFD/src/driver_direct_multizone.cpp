@@ -96,7 +96,7 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
     case FEM_ELASTICITY:
       structural_zone = true;
       break;
-    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION_FVM:
       heat_zone = true;
       break;
     }
