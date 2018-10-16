@@ -5485,7 +5485,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
   su2double Pressure = 0.0, *Normal = NULL, MomentDist[3] = {0.0,0.0,0.0}, *Coord,
   factor, NFPressOF, RefVel2, RefTemp, RefDensity, RefPressure, Mach2Vel, Mach_Motion,
   Force[3] = {0.0,0.0,0.0},
-  Momentum = 0.0, Density, Area, MassFlow, Velocity[3];
+  Momentum = 0.0, Density, Area, MassFlow = 0.0, Velocity[3], Velocity2 = 0.0;
   string Marker_Tag, Monitoring_Tag;
   su2double MomentX_Force[3] = {0.0,0.0,0.0}, MomentY_Force[3] = {0.0,0.0,0.0}, MomentZ_Force[3] = {0.0,0.0,0.0};
   su2double AxiFactor;
@@ -5664,11 +5664,13 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
           if(Boundary == TRANSPIRATION){
             Density   = node[iPoint]->GetDensity();
             Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+            Velocity2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity[iDim]  = node[iPoint]->GetVelocity(iDim);
               MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
-              Momentum += abs(MassFlow*Velocity[iDim]*factor); // TODO: Include pressure term for under-expanded jets
+              Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
+            Momentum = abs(MassFlow*sqrt(Velocity2)*factor);
           }
 
         }
