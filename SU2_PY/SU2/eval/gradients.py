@@ -282,10 +282,8 @@ def adjoint( func_name, config, state=None ):
             state.update(info)
 
             # Gradient Projection
-            # CVC: Temporary FSI fix
-            if config.NZONES == 1:
-                info = su2run.projection(config,state)
-                state.update(info)
+            info = su2run.projection(config,state)
+            state.update(info)
 
             # solution files to push
             name = state.FILES[ADJ_NAME]
@@ -690,6 +688,7 @@ def findiff( config, state=None ):
     # files: direct solution
     if 'DIRECT' in files:
         name = files['DIRECT']
+        name = su2io.expand_zones(name, config)
         name = su2io.expand_time(name,config)
         link.extend(name)
 

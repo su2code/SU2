@@ -126,7 +126,8 @@ def read_plot( filename ):
         # store to dictionary
         for i_Var in range(n_Vars):
             this_variable = Variables[i_Var] 
-	    # CVC: Temporary FSI fix
+	    # CVC: Temporary fix till full dataset is populated for FSI
+        # CVC: VM Stress and Time have header but no data in history file for FSI
             try:
                 plot_data[this_variable] = plot_data[this_variable] + [ line_data[i_Var] ]
             except (IndexError):

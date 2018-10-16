@@ -66,10 +66,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config_container          = NULL;
-  CGeometry **geometry_container      = NULL;
+  CGeometry ***geometry_container     = NULL;
   CSurfaceMovement **surface_movement = NULL;
   CVolumetricMovement **grid_movement = NULL;
   COutput *output                     = NULL;
+  unsigned short *nInst               = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -90,15 +91,17 @@ int main(int argc, char *argv[]) {
   /*--- Definition of the containers per zones ---*/
   
   config_container = new CConfig*[nZone];
-  geometry_container = new CGeometry*[nZone];
+  geometry_container = new CGeometry**[nZone];
   surface_movement   = new CSurfaceMovement*[nZone];
   grid_movement      = new CVolumetricMovement*[nZone];
+  nInst = new unsigned short[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
     grid_movement [iZone]     = NULL;
     surface_movement[iZone]   = NULL;
+    nInst[iZone]                  = 1;
   }
   
   /*--- Loop over all zones to initialize the various classes. In most
@@ -106,6 +109,7 @@ int main(int argc, char *argv[]) {
    differential equation on a single block, unstructured mesh. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++) {
+    geometry_container[iZone] = new CGeometry*[nInst[iZone]];
     
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
@@ -133,9 +137,9 @@ int main(int argc, char *argv[]) {
      will be entirely removed eventually in favor of the new methods. ---*/
 
     if (periodic) {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+      geometry_container[iZone][INST_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
     } else {
-      geometry_container[iZone] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+      geometry_container[iZone][INST_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
     }
     
     /*--- Deallocate the memory of geometry_aux ---*/
@@ -144,11 +148,11 @@ int main(int argc, char *argv[]) {
     
     /*--- Add the Send/Receive boundaries ---*/
     
-    geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+    geometry_container[iZone][INST_0]->SetSendReceive(config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
-    geometry_container[iZone]->SetBoundaries(config_container[iZone]);
+    geometry_container[iZone][INST_0]->SetBoundaries(config_container[iZone]);
     
   }
   
@@ -168,51 +172,51 @@ int main(int argc, char *argv[]) {
   /*--- Compute elements surrounding points, points surrounding points ---*/
   
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
-    geometry_container[iZone]->SetPoint_Connectivity();
+    geometry_container[iZone][INST_0]->SetPoint_Connectivity();
   
   /*--- Check the orientation before computing geometrical quantities ---*/
   
-    geometry_container[iZone]->SetBoundVolume();
+    geometry_container[iZone][INST_0]->SetBoundVolume();
     if (config_container[iZone]->GetReorientElements()) {
       if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the elements." <<endl;
-      geometry_container[iZone]->Check_IntElem_Orientation(config_container[iZone]);
-      geometry_container[iZone]->Check_BoundElem_Orientation(config_container[iZone]);
+      geometry_container[iZone][INST_0]->Check_IntElem_Orientation(config_container[iZone]);
+      geometry_container[iZone][INST_0]->Check_BoundElem_Orientation(config_container[iZone]);
     }
   
   /*--- Create the edge structure ---*/
   
   if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
-    geometry_container[iZone]->SetEdges(); geometry_container[iZone]->SetVertex(config_container[iZone]);
+    geometry_container[iZone][INST_0]->SetEdges(); geometry_container[iZone][INST_0]->SetVertex(config_container[iZone]);
   
   /*--- Compute center of gravity ---*/
   
   if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
-  geometry_container[iZone]->SetCoord_CG();
+  geometry_container[iZone][INST_0]->SetCoord_CG();
   
   /*--- Create the dual control volume structures ---*/
   
   if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
-  geometry_container[iZone]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
+  geometry_container[iZone][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
   /*--- Store the global to local mapping after preprocessing. ---*/
  
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-  geometry_container[iZone]->SetGlobal_to_Local_Point();
+  geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
  
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
     if (!config_container[iZone]->GetDiscrete_Adjoint()){
       if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
-      geometry_container[iZone]->SetBoundSensitivity(config_container[iZone]);
+      geometry_container[iZone][INST_0]->SetBoundSensitivity(config_container[iZone]);
     } else {
       if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
-      geometry_container[iZone]->SetSensitivity(config_container[iZone]);
+      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
+      geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
 
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;
-      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone], config_container[iZone], false, true);
+      grid_movement[iZone]->SetVolume_Deformation(geometry_container[iZone][INST_0], config_container[iZone], false, true);
 
     }
   }
@@ -258,15 +262,15 @@ int main(int argc, char *argv[]) {
 
        /*--- Copy coordinates to the surface structure ---*/
 
-       surface_movement[iZone]->CopyBoundary(geometry_container[iZone], config_container[iZone]);
+       surface_movement[iZone]->CopyBoundary(geometry_container[iZone][INST_0], config_container[iZone]);
 
        /*--- If AD mode is enabled we can use it to compute the projection,
         *    otherwise we use finite differences. ---*/
 
        if (config_container[iZone]->GetAD_Mode()){
-         SetProjection_AD(geometry_container[iZone], config_container[iZone], surface_movement[iZone] , Gradient);
+         SetProjection_AD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
        }else{
-         SetProjection_FD(geometry_container[iZone], config_container[iZone], surface_movement[iZone] , Gradient);
+         SetProjection_FD(geometry_container[iZone][INST_0], config_container[iZone], surface_movement[iZone] , Gradient);
        }
      }
 

@@ -98,12 +98,12 @@ def direct ( config ):
     # filenames
     plot_format      = konfig['OUTPUT_FORMAT']
     plot_extension   = su2io.get_extension(plot_format)
-    # CVC: Temporary FSI fix
-    if config.NZONES == 1:
-        history_filename = konfig['CONV_FILENAME'] + plot_extension
-    elif config.NZONES == 2:
+    # CVC: Adjustment needed as FSI history filenames are different
+    if konfig['PHYSICAL_PROBLEM'] == 'FLUID_STRUCTURE_INTERACTION':
         shutil.copy(konfig['CONV_FILENAME_FSI'] + '.vtk',konfig['CONV_FILENAME_FSI'] + '.csv')
         history_filename = konfig['CONV_FILENAME_FSI'] + '.csv'
+    else:
+        history_filename = konfig['CONV_FILENAME'] + plot_extension
     special_cases    = su2io.get_specialCases(konfig)
     
     # averaging final iterations
@@ -111,11 +111,7 @@ def direct ( config ):
 
     # get history and objectives
     history      = su2io.read_history( history_filename , config.NZONES)
-    # CVC: Temporary FSI fix
-    if config.NZONES == 1:
-        aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
-    elif config.NZONES == 2:
-        aerodynamics = su2io.read_aerodynamics( history_filename , 1, special_cases, final_avg )
+    aerodynamics = su2io.read_aerodynamics( history_filename , config.NZONES, special_cases, final_avg )
     
     # update super config
     config.update({ 'MATH_PROBLEM' : konfig['MATH_PROBLEM']  })
