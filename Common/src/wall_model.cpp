@@ -114,6 +114,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   double h_bc   = c_p * tExchange;
   double tauWall_lam = muExchange * velExchange / h_wm;
   unsigned short nfa = numPoints + 1;
+  unsigned short info;
 
   /*--- Set up vectors ---*/
   
@@ -129,7 +130,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   // Set parameters for control
   bool converged = false;
   unsigned short iter = 0, max_iter = 25;
-  su2double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-6,  aux_rhs=0.0;
+  su2double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-3,  aux_rhs=0.0;
   su2double mut, nu, mu_lam, rho, utau, y_plus, D;
   
   while (converged == false){
@@ -183,7 +184,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     // Solve the matrix problem to get the velocity field
     // rhs returned the solution
     //********LAPACK CALL*******
-    LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+    if (info > 0) {
+      cout << info << endl;
+      SU2_MPI::Error("The diagonal element of the triangular factor of A,\n is zero, so A is singular. The solution cannot\n be computed", CURRENT_FUNCTION);
+    }
     u = rhs;
     
     // update total viscosity
