@@ -3644,28 +3644,8 @@ void COutput::SetCFL_Number(CSolver *****solver_container, CConfig **config, uns
       break;
     }
 
-<<<<<<< HEAD
     config[val_iZone]->SetCFL(iMesh, CFL);
   }
-=======
-    /*--- WARNING: These buffers have hard-coded lengths. Note that you
-     may have to adjust them to be larger if adding more entries. ---*/
-    
-    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
-    adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
-    adj_turb_resid[1000],
-    begin_fem[1000], fem_coeff[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
-
-
-    su2double dummy = 0.0, *Coord;
-    unsigned short iVar, iMarker_Monitoring;
-    
-    unsigned long LinSolvIter = 0, iPointMaxResid;
-    su2double timeiter = timeused/su2double(iExtIter+1);
-    
-    unsigned short nDim = geometry[val_iZone][val_iInst][FinestMesh]->GetnDim();
->>>>>>> develop
 
   switch( config[val_iZone]->GetKind_Solver()) {
   case EULER : case NAVIER_STOKES : case RANS:
