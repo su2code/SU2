@@ -1194,10 +1194,11 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   if (Kind_Solver == FEM_ELASTICITY) {
     if (surf_sol)
       filename = config->GetSurfStructure_FileName().c_str();
-    else
+    else {
       filename = config->GetStructure_FileName().c_str();
-    if (!new_file) {
-      filename = filename + "_def";
+      if (!new_file) {
+        filename = filename + "_def";
+      }
     }
   }
   
