@@ -276,6 +276,21 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 //  cout << "PROPERTY: " << element->Get_iProp() << " and DV " << element->Get_iDV() << endl;
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
+  
+  /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  AD::SetPreaccIn(Rho_s);
+  AD::SetPreaccIn(Rho_s_DL);
+  if (maxwell_stress) {
+    AD::SetPreaccIn(EFieldMod_Ref);
+    AD::SetPreaccIn(ke_DE);
+  }
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+
   /*-----------------------------------------------------------*/
 
   /*--- Initialize auxiliary matrices ---*/
@@ -494,6 +509,10 @@ void CFEANonlinearElasticity::Compute_Tangent_Matrix(CElement *element, CConfig 
 
   }
 
+  /*--- Register the stress residual as preaccumulation output ---*/
+  element->SetPreaccOut_Kt_a();
+  AD::EndPreacc();
+
 }
 
 void CFEANonlinearElasticity::Compute_MeanDilatation_Term(CElement *element, CConfig *config) {
@@ -608,6 +627,21 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
   /*--- TODO: Initialize values for the material model considered ---*/
   SetElement_Properties(element, config);
   if (maxwell_stress) SetElectric_Properties(element, config);
+  
+  /*--- Register pre-accumulation inputs, material props and nodal coords ---*/
+  AD::StartPreacc();
+  AD::SetPreaccIn(E);
+  AD::SetPreaccIn(Nu);
+  AD::SetPreaccIn(Rho_s);
+  AD::SetPreaccIn(Rho_s_DL);
+  if (maxwell_stress) {
+    AD::SetPreaccIn(EFieldMod_Ref);
+    AD::SetPreaccIn(ke_DE);
+  }
+  element->SetPreaccIn_Coords();
+  /*--- Recompute Lame parameters as they depend on the material properties ---*/
+  Compute_Lame_Parameters();
+  
   /*-----------------------------------------------------------*/
 
   su2double Weight, Jac_x;
@@ -713,6 +747,10 @@ void CFEANonlinearElasticity::Compute_NodalStress_Term(CElement *element, CConfi
 
   }
 
+  /*--- Register the stress residual as preaccumulation output ---*/
+  element->SetPreaccOut_Kt_a();
+  AD::EndPreacc();
+
 }
 
 void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *config){
@@ -749,7 +787,8 @@ void CFEANonlinearElasticity::Add_MaxwellStress(CElement *element, CConfig *conf
 void CFEANonlinearElasticity::SetElectric_Properties(CElement *element, CConfig *config){
 
   // Set the modulus of the electric field in the current element
-
+  /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
+  Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
   EFieldMod_Ref = EField_Ref_Mod[element->Get_iDe()];
   ke_DE = ke_DE_i[element->Get_iDe()];
 
