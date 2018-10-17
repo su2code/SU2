@@ -2440,6 +2440,12 @@ public:
    * \return Value of the wave strength.
    */
   virtual su2double GetTotal_CHeat(void);
+
+  /*!
+   * \brief A virtual member.
+   * \return Value of momentum added to the flow due to transpiration
+   */
+  virtual su2double GetTotal_Cmu(void);
   
   /*!
    * \brief A virtual member.
@@ -5897,6 +5903,12 @@ public:
    * \return Value of the heat load (viscous contribution).
    */
   su2double GetTotal_MaxHeatFlux(void);
+
+  /*!
+   * \brief Provide the momentum added by transpiration
+   * \return Value of momentum added to flow via transpiration BC
+   */
+  su2double GetTotal_Cmu(void);
   
   /*!
    * \brief Store the total (inviscid + viscous) non dimensional torque coefficient.

@@ -4402,6 +4402,8 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool incload = config->GetIncrementalLoad();
 
+  bool transp = (config->GetnMarker_Transpiration() > 0); /* flag for if transpiration BC is being used */
+
   bool thermal = false; /* Flag for whether to print heat flux values */
   bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
@@ -4463,6 +4465,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char d_engine[] = ",\"D(NetThrust)\",\"D(Power)\",\"D(AeroCDrag)\",\"D(SolidCDrag)\",\"D(Radial_Distortion)\",\"D(Circumferential_Distortion)\"";
   char d_turbo_coeff[] = ",\"D(TotalPressureLoss_0)\",\"D(FlowAngleOut_0)\",\"D(TotalEfficency)\",\"D(TotalStaticEfficiency)\", \"D(EntropyGen)\"";
   char d_surface_outputs[]= ",\"D(Uniformity)\",\"D(Secondary_Strength)\",\"D(Momentum_Distortion)\",\"D(Secondary_Over_Uniformity)\",\"D(Pressure_Drop)\"";
+  char transp_coeff[]= ", \"Cmu\"";
 
   /*--- Find the markers being monitored and create a header for them ---*/
   
@@ -4549,6 +4552,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     case EULER : case NAVIER_STOKES: case RANS :
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
+      if (transp) ConvHist_file[0] << transp_coeff;
       if (turbo) ConvHist_file[0] << turbo_coeff;
       if (thermal && !turbo) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
@@ -4558,7 +4562,6 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
         if (thermal && !turbo) ConvHist_file[0] << Heat_inverse_design;
       }
       if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
-
       ConvHist_file[0] << flow_resid;
       if (turbulent) ConvHist_file[0] << turb_resid;
       if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
@@ -4752,7 +4755,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000],
     begin_fem[1000], fem_coeff[1000], heat_resid[1000], combo_obj[1000],
-    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000];
+    fem_resid[1000], end[1000], end_fem[1000], surface_outputs[1000], d_surface_outputs[1000], d_direct_coeff[1000], turbo_coeff[10000], 
+    transp_coeff[1000];
 
 
     su2double dummy = 0.0, *Coord;
@@ -4789,6 +4793,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
     bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
     
+    bool transp = (config[val_iZone]->GetnMarker_Transpiration() > 0); /* flag for if transpiration BC is being used */
+
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
@@ -4827,6 +4833,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0, Total_IncLoad = 0.0;
     su2double Total_SensE = 0.0, Total_SensNu = 0.0;
+    su2double Total_Cmu = 0.0;
 
     unsigned short iSpan;
 
@@ -4949,6 +4956,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         Total_ComboObj       = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_ComboObj();
         Total_AoA            = config[val_iZone]->GetAoA() - config[val_iZone]->GetAoA_Offset();
         Total_Custom_ObjFunc = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Custom_ObjFunc();
+        Total_Cmu            = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Cmu();
 
         if (thermal) {
           Total_Heat         = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_HeatFlux();
@@ -5284,6 +5292,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
+            if (transp) SPRINTF(transp_coeff, ", %14.8e", Total_Cmu);
             if (thermal || heat) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Total_Temperature);
             if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_NetThrust, Total_Power, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
@@ -5954,6 +5963,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
+              if (transp) ConvHist_file[0] << transp_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
               if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
               if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
@@ -6048,6 +6058,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
+              if (transp) ConvHist_file[0] << transp_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
               if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
               if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;

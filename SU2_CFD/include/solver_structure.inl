@@ -396,6 +396,8 @@ inline su2double CSolver::Get_PressureDrag() { return 0; }
 
 inline su2double CSolver::Get_ViscDrag() { return 0; }
 
+inline su2double CSolver::GetTotal_Cmu() { return 0; }
+
 inline void CSolver::SetTotal_CQ(su2double val_Total_CQ) { }
 
 inline void CSolver::SetTotal_HeatFlux(su2double val_Total_Heat) { }
@@ -1386,6 +1388,8 @@ inline su2double CEulerSolver::GetTotal_CQ() { return Total_CQ; }
 inline su2double CEulerSolver::GetTotal_HeatFlux() { return Total_Heat; }
 
 inline su2double CEulerSolver::GetTotal_MaxHeatFlux() { return Total_MaxHeat; }
+
+inline su2double CEulerSolver::GetTotal_Cmu() { return Total_Cmu; }
 
 inline void CEulerSolver::SetTotal_CQ(su2double val_Total_CQ) { Total_CQ = val_Total_CQ; }
 
