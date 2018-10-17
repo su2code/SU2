@@ -897,7 +897,7 @@ private:
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
   
-  map<string, vector<su2double>> Time_Signal;
+  map<string, vector<su2double> > Time_Signal;
   
   map<string, su2double> Average;
 
