@@ -5663,14 +5663,14 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
           if(Boundary == TRANSPIRATION){
             Density   = node[iPoint]->GetDensity();
-            Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+            MassFlow = 0.0;
             Velocity2 = 0.0;
             for (iDim = 0; iDim < nDim; iDim++) {
               Velocity[iDim]  = node[iPoint]->GetVelocity(iDim);
               MassFlow -= Normal[iDim]*Velocity[iDim]*Density;
               Velocity2 += Velocity[iDim]*Velocity[iDim];
             }
-            Momentum = abs(MassFlow*sqrt(Velocity2)*factor);
+            Momentum += abs(MassFlow*sqrt(Velocity2)*factor);
           }
 
         }
