@@ -87,8 +87,8 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
 	
 	
    su2double MeanDensity;
-	/*--- Primitive variables at point i and j ---*/
-  
+   
+  /*--- Primitive variables at point i and j ---*/
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
   DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
 	
@@ -172,7 +172,6 @@ CCentJSTPB_Flow::~CCentJSTPB_Flow(void) {
 void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
                                            su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
   
-  su2double U_i[3] = {0.0,0.0,0.0}, U_j[3] = {0.0,0.0,0.0};
 
   /*--- Primitive variables at point i and j ---*/
   
@@ -187,13 +186,6 @@ void CCentJSTPB_Flow::ComputeResidual(su2double *val_residual,
     sq_vel_i += 0.5*Velocity_i[iDim]*Velocity_i[iDim];
     sq_vel_j += 0.5*Velocity_j[iDim]*Velocity_j[iDim];
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
-  }
-  
-  /*--- Recompute conservative variables ---*/
-  
-  //U_i[0] = Pressure_i; U_j[0] = Pressure_j;
-  for (iDim = 0; iDim < nDim; iDim++) {
-    U_i[iDim] = DensityInc_i*Velocity_i[iDim]; U_j[iDim] = DensityInc_j*Velocity_j[iDim];
   }
   
   /*--- Compute mean values of the variables ---*/
