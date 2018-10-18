@@ -184,12 +184,19 @@ CONFIGURE_TECIO
 if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
-# Attempt to get pthread to work
+  # Check if boost directory exists, otherwise extract the sources
+  if ( ! test -d "externals/tecio/boost" ); then
+    AC_MSG_RESULT([Extracting boost source ...])
+    mkdir externals/tecio/boost
+    tar -xzf externals/tecio/boost.tar.gz -C externals/tecio/
+  fi
+   # Attempt to get pthread to work
    AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
   su2_externals_LIBPTHREAD="$LIBPTHREAD"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
+
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
 AC_CONFIG_FILES([externals/tecio/Makefile])
 
