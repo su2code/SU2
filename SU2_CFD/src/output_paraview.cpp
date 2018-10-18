@@ -2675,6 +2675,8 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  if (conn_buf != NULL) delete [] conn_buf;
+  
   /*--- Load/write the cell type for all elements in the file. ---*/
   
   if (surf_sol) {

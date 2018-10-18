@@ -9402,6 +9402,9 @@ protected:
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
+  su2double ***DonorPrimVar,    /*!< \brief Value of the donor variables at each boundary. */
+  ****DonorJacobian;    /*!< \brief Value of the donor Jacobian at each boundary. */
+  unsigned long **DonorGlobalIndex;    /*!< \brief Value of the donor global index. */
   
   /* Sliding meshes variables */
 
@@ -9533,6 +9536,120 @@ public:
   void BC_Giles(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config,
                      unsigned short val_marker);
 
+  /*!
+   * \brief Impose a periodic boundary condition by summing contributions from the complete control volume.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                   CNumerics *numerics, CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_GG(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Least Squares gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_LS(CGeometry *geometry,
+                      CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter1(CGeometry *geometry,
+                            CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Correct the Green-Gauss gradient at the vertices on periodic boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   */
+  void BC_Periodic_Limiter2(CGeometry *geometry,
+                            CConfig *config, unsigned short val_periodic_index);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  su2double *GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  void SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \param[in] val_value - Value of the Jacobian entry.
+   */
+  void SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value);
+  
+  /*!
+   * \brief Value of the characteristic variables at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  su2double GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \param[in] val_var_i - Row variable index of the Jacobian entry.
+   * \param[in] val_var_j - Column variable index of the Jacobian entry.
+   * \return Value of the Jacobian entry.
+   */
+  su2double GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j);
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  unsigned long GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex);
+  
+  /*!
+   * \brief Value of the characteristic global index at the boundaries.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the pressure coefficient.
+   */
+  void SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index);
   
   /*!
    * \brief Update the solution using an implicit solver.
