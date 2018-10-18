@@ -185,10 +185,10 @@ if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
   # Check if boost directory exists, otherwise extract the sources
-  if ( ! test -d "externals/tecio/boost" ); then
+  if ( ! test -d "$srcdir/externals/tecio/boost" ); then
     AC_MSG_RESULT([Extracting boost source ...])
-    mkdir externals/tecio/boost
-    tar -xzf externals/tecio/boost.tar.gz -C externals/tecio/
+    mkdir $srcdir/externals/tecio/boost
+    tar -xzf $srcdir/externals/tecio/boost.tar.gz -C $srcdir/externals/tecio/
   fi
    # Attempt to get pthread to work
    AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
