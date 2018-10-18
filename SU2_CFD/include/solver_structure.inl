@@ -2267,6 +2267,20 @@ inline void CTurbSolver::SetInlet_TurbVar(unsigned short val_marker, unsigned lo
     Inlet_TurbVars[val_marker][val_vertex][val_dim] = val_turb_var;
 }
 
+inline su2double *CTurbSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex) { return DonorPrimVar[val_marker][val_vertex]; }
+
+inline void CTurbSolver::SetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var, su2double val_value) { DonorPrimVar[val_marker][val_vertex][val_var] = val_value; }
+
+inline void CTurbSolver::SetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j, su2double val_value) { DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j] = val_value; }
+
+inline su2double CTurbSolver::GetDonorPrimVar(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var) { return DonorPrimVar[val_marker][val_vertex][val_var]; }
+
+inline su2double CTurbSolver::GetDonorJacobian(unsigned short val_marker, unsigned long val_vertex, unsigned short val_var_i, unsigned short val_var_j) { return DonorJacobian[val_marker][val_vertex][val_var_i][val_var_j]; }
+
+inline unsigned long CTurbSolver::GetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex) { return DonorGlobalIndex[val_marker][val_vertex]; }
+
+inline void CTurbSolver::SetDonorGlobalIndex(unsigned short val_marker, unsigned long val_vertex, unsigned long val_index) { DonorGlobalIndex[val_marker][val_vertex] = val_index; }
+
 inline void CTurbSASolver::SetFreeStream_Solution(CConfig *config) {
   for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
     node[iPoint]->SetSolution(0, nu_tilde_Inf);

@@ -14775,7 +14775,7 @@ void CEulerSolver::BC_Periodic_Limiter1(CGeometry *geometry, CConfig *config, un
               jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
               jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
               
-              for (iVar = 0; iVar < nPrimVar; iVar++) {
+              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetSolution_Min(iVar);
                 Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+nPrimVar+iVar] = node[iPoint]->GetSolution_Max(iVar);
               }
@@ -15198,7 +15198,7 @@ void CEulerSolver::BC_Periodic_Limiter2(CGeometry *geometry, CConfig *config, un
               jVertex = geometry->vertex[iMarker][iVertex]->GetDonorVertex();
               jMarker = geometry->vertex[iMarker][iVertex]->GetDonorMarker();
               
-              for (iVar = 0; iVar < nPrimVar; iVar++) {
+              for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
                 Buffer_Send_PrimVar[(buff_size)*(PointTotal_Counter+iPointTotal)+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
               }
               
