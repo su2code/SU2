@@ -877,9 +877,7 @@ public:
       
   virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
-  
-  void ComputeAverage(std::map<string, std::vector<su2double> > &Signal, std::map<string, double> &Average);
-  
+    
 };
 
 /*! \class CFlowOutput
@@ -897,10 +895,8 @@ private:
   bool grid_movement;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
-  
-  map<string, vector<su2double>> Time_Signal;
-  
-  map<string, su2double> Average;
+
+  map<string, Signal_Processing::RunningAverage> RunningAverages;
 
 public:
 
@@ -960,9 +956,6 @@ public:
 class CIncFlowOutput : public COutput {
 private:
 
-  char char_histfile[200];
-
-  unsigned short nDim;
   unsigned short turb_model;
   bool heat, weakly_coupled_heat;
   
@@ -970,6 +963,8 @@ private:
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
  
+  map<string, Signal_Processing::RunningAverage> RunningAverages;  
+  
 public:
 
   /*!

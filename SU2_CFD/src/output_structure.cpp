@@ -8902,18 +8902,3 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
     }
   }
 }
-
-void COutput::ComputeAverage(std::map<string, std::vector<su2double>> &Signal, std::map<string, double> &Average){
-  
-  Average.clear();
-  map<string, vector<su2double>>::iterator it;
-  for (it = Signal.begin(); it != Signal.end(); it++){
-    Average[it->first] = 0.0;  
-    if (it->second.size() > 0){  
-      for (unsigned int i = 0; i < it->second.size(); i++){
-        Average[it->first] += (it->second)[i];
-      }
-      Average[it->first] /= it->second.size();
-    }
-  }
-}

@@ -141,6 +141,17 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
   AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
   
+  AddHistoryOutput("DRAG_AVG",       "CD(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("LIFT_AVG",       "CL(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("SIDEFORCE_AVG",  "CSF(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-X_AVG",   "CMx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-Y_AVG",   "CMy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("MOMENT-Z_AVG",   "CMz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-X_AVG",    "CFx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-Y_AVG",    "CFy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("FORCE-Z_AVG",    "CFz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
+  AddHistoryOutput("EFFICIENCY_AVG", "CEff(Avg)", FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");  
+  
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
@@ -251,6 +262,25 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
+  
+  /*--- Only update time-averaged values if we are running unsteady simulation and if this is not a dual-time iteration ---*/  
+  
+  if (config[val_iZone]->GetUnsteady_Simulation() != STEADY && !DualTime){
+    SetHistoryOutputValue("DRAG_AVG", RunningAverages["DRAG"].Update(flow_solver->GetTotal_CD()));
+    SetHistoryOutputValue("LIFT_AVG", RunningAverages["LIFT"].Update(flow_solver->GetTotal_CL()));
+    if (nDim == 3)
+      SetHistoryOutputValue("SIDEFORCE_AVG", RunningAverages["SIDEFORCE"].Update(flow_solver->GetTotal_CSF()));
+    if (nDim == 3){
+      SetHistoryOutputValue("MOMENT-X_AVG", RunningAverages["MOMENT-X"].Update(flow_solver->GetTotal_CMx()));
+      SetHistoryOutputValue("MOMENT-Y_AVG", RunningAverages["MOMENT-Y"].Update(flow_solver->GetTotal_CMy()));
+    }
+    SetHistoryOutputValue("MOMENT-Z_AVG", RunningAverages["MOMENT-Z"].Update(flow_solver->GetTotal_CMz()));
+    SetHistoryOutputValue("FORCE-X_AVG", RunningAverages["FORCE-X"].Update(flow_solver->GetTotal_CFx()));
+    SetHistoryOutputValue("FORCE-Y_AVG", RunningAverages["FORCE-Y"].Update(flow_solver->GetTotal_CFy()));
+    if (nDim == 3)
+      SetHistoryOutputValue("FORCE-Z_AVG",  RunningAverages["FORCE-Z"].Update(flow_solver->GetTotal_CFz()));
+    SetHistoryOutputValue("EFFICIENCY_AVG", RunningAverages["EFFICIENCY"].Update(flow_solver->GetTotal_CEff()));
+  }
   
   SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
   SetHistoryOutputValue("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
