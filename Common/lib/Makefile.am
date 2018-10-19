@@ -101,7 +101,8 @@ lib_sources = \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
-  ../src/tools.cpp 
+  ../src/toolboxes/printing_toolbox.cpp \
+  ../src/toolboxes/signal_processing_toolbox.cpp
 
 lib_cxxflags = -fPIC
 lib_ldadd =

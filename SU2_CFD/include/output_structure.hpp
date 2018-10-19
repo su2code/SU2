@@ -56,7 +56,8 @@
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 
-#include "../../Common/include/tools.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
 using namespace std;
 

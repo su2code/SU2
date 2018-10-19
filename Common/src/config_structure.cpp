@@ -38,7 +38,7 @@
 #include "../include/config_structure.hpp"
 
 #include "../include/ad_structure.hpp"
-#include "../include/tools.hpp"
+#include "../include/toolboxes/printing_toolbox.hpp"
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
