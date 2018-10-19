@@ -441,6 +441,15 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
   }
+  
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION");
+      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION");
+    }
+    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION");
+    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION");  
+  }
 }
 
 void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
@@ -559,6 +568,15 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
     SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
   }  
+  
+  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
+    if (nDim == 3){
+      SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity()[0]);
+      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity()[1]);      
+    } 
+    SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity()[2]);      
+    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, Node_Flow));      
+  }
 }
 
 void CIncFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
@@ -572,4 +590,32 @@ void CIncFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
     SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
     SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
   }
+}
+
+su2double CIncFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
+  
+  unsigned short iDim, jDim;
+  su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+      Grad_Vel[iDim][jDim] = node_flow->GetGradient_Primitive(iDim+1, jDim);
+      Strain[iDim][jDim]   = 0.5*(Grad_Vel[iDim][jDim] + Grad_Vel[jDim][iDim]);
+      Omega[iDim][jDim]    = 0.5*(Grad_Vel[iDim][jDim] - Grad_Vel[jDim][iDim]);
+    }
+  }
+  
+  su2double OmegaMag = 0.0, StrainMag = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0 ; jDim < nDim; jDim++) {
+      StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
+      OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
+    }
+  }
+  StrainMag = sqrt(StrainMag); OmegaMag = sqrt(OmegaMag);
+  
+  su2double Q = 0.5*(OmegaMag - StrainMag);
+  
+  return Q;
 }

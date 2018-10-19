@@ -1012,6 +1012,9 @@ public:
   void SetVolumeOutputFields(CConfig *config);
   
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+  
 };
 
 /*! \class CFEAOutput
