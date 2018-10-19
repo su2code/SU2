@@ -416,7 +416,6 @@ inline void CWALEModel::ComputeGradEddyViscosity_3D(const su2double rho,
 inline CVremanModel::CVremanModel(void) : CSGSModel() {
   
   /* const_Vreman = 2.5*Cs*Cs where Cs is the Smagorinsky constant */
-  
   const_Vreman = 0.07;
 }
 
@@ -450,7 +449,7 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
   su2double alpha22 = dvdy;
   su2double alpha33 = dwdz;
 
-  //remove trace
+  //Check if it is necessary to remove the trace.
   const su2double tmp = (alpha11 + alpha22 + alpha33)/3.0;
   alpha11 -= tmp;
   alpha22 -= tmp;
@@ -473,14 +472,14 @@ inline su2double CVremanModel::ComputeEddyViscosity_3D(const su2double rho,
 
   su2double B = beta11*beta22-beta12*beta12+beta11*beta33-beta13*beta13+beta22*beta33-beta23*beta23;
             B = (B + fabs(B))*0.5;
-  const su2double alal    = alpha11*alpha11+alpha22*alpha22+alpha33*alpha33 +
+  const su2double denon    = alpha11*alpha11+alpha22*alpha22+alpha33*alpha33 +
                             alpha12*alpha12+alpha13*alpha13+alpha23*alpha23 +
                             alpha21*alpha21+alpha31*alpha31+alpha32*alpha32;
 
-  const su2double s_mag = sqrt(B/(alal+1.0E-20)); // includes lengthscale squared too
+  const su2double lenScale_Vreman = sqrt(B/(denon+1.0E-20));
 
  /* Return the SGS dynamic viscosity. */
- return rho*const_Vreman*s_mag;
+ return rho*const_Vreman*lenScale_Vreman;
 
 }
 
