@@ -187,9 +187,6 @@ if (test $enabletecio = yes); then
   # Check if boost directory exists, otherwise extract the sources
   if ( ! test -d "$srcdir/externals/tecio/boost" ); then
     AC_MSG_RESULT([Extracting boost source ...])
-    if ( ! mkdir $srcdir/externals/tecio/boost ); then
-    	AC_MSG_ERROR([ Creating directory $srcdir/externals/tecio/boost failed ...])	    
-    fi
     if ( ! tar -xzf $srcdir/externals/tecio/boost.tar.gz -C $srcdir/externals/tecio/ ); then
 	AC_MSG_ERROR([Extraction of boost sources to $srcdir/externals/tecio/boost using 'tar' failed ...])	    
     fi
