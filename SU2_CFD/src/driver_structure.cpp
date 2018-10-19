@@ -2098,7 +2098,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
     if (pressure_based) {
 		numerics_container[val_iInst][MESH_0][FLOW_SOL][SOURCE_SECOND_TERM] = new CPressureSource(nDim, nVar_Flow, config);
-		cout<<"Assigned pressure gradient as a source."<<endl;
 	}
 	
   }
@@ -2201,10 +2200,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   
  /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
-		  cout<<"Allocating numerics container for poisson problem...."<<iMGlevel<<endl;
 		  /*--- Pressure correction (Poisson) equation ---*/
            numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+		   /*--- Assign the convective boundary term as well to account for flow BCs as well --*/
+		   numerics_container[val_iInst][MESH_0][POISSON_SOL][CONV_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 
  		  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);

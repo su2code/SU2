@@ -5401,42 +5401,6 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++)
         V_infty[iDim+1] = GetVelocity_Inf(iDim);
       
-      /*--- Vortex correction (2-D only) ---*/
-      Cl = GetTotal_CL();
-      Circulation = 0.5*config->GetModVel_FreeStream()*config->GetRefLength()*Cl;
-      Mach = config->GetMach();
-      Coord_i = geometry->node[iPoint]->GetCoord();
-      Ref_Coord = config->GetRefOriginMoment(0);
-      polar_dist = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-         polar_dist += (Coord_i[iDim]-Ref_Coord[iDim])*(Coord_i[iDim]-Ref_Coord[iDim]);
-      
-      polar_dist = sqrt(polar_dist);
-      
-      polar_angle = atan((Coord_i[1]-Ref_Coord[1])/(Coord_i[0]-Ref_Coord[0]));
-      Pi = 4.0*atan(1.0);
-      AoA = config->GetAoA();
-      
-      Vortex_Corr[0] = Circulation*sqrt(1-Mach*Mach)/(2.0*Pi*polar_dist);
-      Vortex_Corr[0] = Vortex_Corr[0]*(sin(polar_angle))/(1-Mach*Mach*sin(polar_angle-AoA)*sin(polar_angle-AoA));
-      Vortex_Corr[1] = Vortex_Corr[0]*(cos(polar_angle))/(1-Mach*Mach*sin(polar_angle-AoA)*sin(polar_angle-AoA));
-      
-      V_infty[1] = V_infty[1] + Vortex_Corr[0];
-      V_infty[2] = V_infty[2] - Vortex_Corr[1];
-      
-      ModVel_InftyCorr = 0.0;
-      for(iDim = 0; iDim < nDim; iDim++)
-       ModVel_InftyCorr += V_infty[iDim+1]*V_infty[iDim+1];
-      
-      //ModVel_InftyCorr = sqrt(ModVel_InftyCorr);
-      
-      /*--- Far-field pressure set to static pressure (0.0). ---*/
-
-      V_infty[0] = GetPressure_Inf() + 0.5*GetDensity_Inf()*(GetModVelocity_Inf() - ModVel_InftyCorr);
-      cout<<ModVel_InftyCorr<<" correction"<<endl;
-      cout<<GetModVelocity_Inf()<<" from solver"<<endl;
-          
-
       /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
 
       V_infty[nDim+1] = GetTemperature_Inf();

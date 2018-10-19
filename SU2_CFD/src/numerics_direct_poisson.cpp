@@ -331,7 +331,10 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
+  if (dist_ij_2 == 0.0) {
+	  proj_vector_ij = 0.0;
+	  cout<<"BC"<<endl;
+  }
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
@@ -354,7 +357,7 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
      Poisson_Coeff_Mean = 0.0;
      for (iDim = 0; iDim < nDim; iDim++)
          Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
-     Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
+     //Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
      if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
   }
   else {
