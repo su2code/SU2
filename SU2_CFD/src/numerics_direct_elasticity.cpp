@@ -75,9 +75,7 @@ CFEAElasticity::CFEAElasticity(unsigned short val_nDim, unsigned short val_nVar,
   Rho_s = Rho_s_i[0];
   Rho_s_DL = Rho_s_DL_i[0];
 
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-  Kappa  = Lambda + (2/3)*Mu;
+  Compute_Lame_Parameters();
 
   // Auxiliary vector for body forces (dead load)
   if (body_forces) FAux_Dead_Load = new su2double [nDim]; else FAux_Dead_Load = NULL;
@@ -311,6 +309,8 @@ void CFEAElasticity::Compute_Dead_Load(CElement *element, CConfig *config) {
 
 void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
 
+  /*--- These variables are set as preaccumulation inputs in Compute_Tangent_Matrix and
+  Compute_NodalStress_Term, if you add variables here be sure to register them in those routines too. ---*/
   E   = E_i[element->Get_iProp()];
   Nu  = Nu_i[element->Get_iProp()];
   Rho_s = Rho_s_i[element->Get_iProp()];
@@ -331,9 +331,7 @@ void CFEAElasticity::SetElement_Properties(CElement *element, CConfig *config) {
       break;
   }
 
-  Mu     = E / (2.0*(1.0 + Nu));
-  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
-  Kappa  = Lambda + (2/3)*Mu;
+  Compute_Lame_Parameters();
 
 }
 
