@@ -822,35 +822,35 @@ void CDriver::Postprocessing() {
     cout.precision(6);
     cout << endl << endl <<"-------------------------- Performance Summary --------------------------" << endl;
     cout << "Simulation totals:" << endl;
-    cout << setw(25) << "Cores:" << setw(12) << size;
+    cout << setw(25) << "Cores:" << setw(12) << size << " | ";
     cout << setw(20) << "DOFs/point:" << setw(12) << (su2double)DOFsPerPoint << endl;
-    cout << setw(25) << "DOFs/core:" << setw(12) << 1.0e6*MDOFsDomain/(su2double)size;
+    cout << setw(25) << "DOFs/core:" << setw(12) << 1.0e6*MDOFsDomain/(su2double)size << " | ";
     cout << setw(20) << "Ghost DOFs/core:" << setw(12) << 1.0e6*(MDOFs-MDOFsDomain)/(su2double)size << endl;
-    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0);
+    cout << setw(25) << "Wall-clock time (hrs):" << setw(12) << (TotalTime)/(60.0*60.0) << " | ";
     cout << setw(20) << "Core-hrs:" << setw(12) << (su2double)size*(TotalTime)/(60.0*60.0) << endl;
     cout << endl;
     cout << "Preprocessing phase:" << endl;
-    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimePreproc;
-    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimePreproc * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Preproc. Time (s):"  << setw(12)<< UsedTimePreproc << " | ";
+    cout << setw(20) << "Preproc. Time (%):" << setw(12)<< ((UsedTimePreproc * 100.0) / (TotalTime)) << endl;
     cout << endl;
     cout << "Compute phase:" << endl;
-    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeCompute;
-    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
-    cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount;
+    cout << setw(25) << "Compute Time (s):"  << setw(12)<< UsedTimeCompute << " | ";
+    cout << setw(20) << "Compute Time (%):" << setw(12)<< ((UsedTimeCompute * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Iteration count:"  << setw(12)<< IterCount << " | ";
     if (IterCount != 0) {
       cout << setw(20) << "Avg. s/iter:" << setw(12)<< UsedTimeCompute/(su2double)IterCount << endl;
-      cout << setw(25) << "Core-s/iter/MDOFs:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/MDOFsDomain;
+      cout << setw(25) << "Core-s/iter/MDOFs:" << setw(12)<< (su2double)size*UsedTimeCompute/(su2double)IterCount/MDOFsDomain << " | ";
       cout << setw(20) << "MDOFs/s:" << setw(12)<< MDOFsDomain*(su2double)IterCount/UsedTimeCompute << endl;
     } else cout << endl;
     cout << endl;
     cout << "Output phase:" << endl;
-    cout << setw(25) << "Time (s):"  << setw(12)<< UsedTimeOutput;
-    cout << setw(20) << "% of total time:" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
-    cout << setw(25) << "Output count:" << setw(12)<< OutputCount;
+    cout << setw(25) << "Output Time (s):"  << setw(12)<< UsedTimeOutput << " | ";
+    cout << setw(20) << "Output Time (%):" << setw(12)<< ((UsedTimeOutput * 100.0) / (TotalTime)) << endl;
+    cout << setw(25) << "Output count:" << setw(12)<< OutputCount << " | ";
     if (OutputCount != 0) {
       cout << setw(20)<< "Avg. s/output:" << setw(12)<< UsedTimeOutput/(su2double)OutputCount << endl;
       if (isBinary) {
-        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount;
+        cout << setw(25)<< "Restart Aggr. BW (MB/s):" << setw(12)<< BandwidthSum/(su2double)OutputCount << " | ";
         cout << setw(20)<< "MB/s/core:" << setw(12)<< BandwidthSum/(su2double)OutputCount/(su2double)size << endl;
       }
     } else cout << endl;
@@ -1344,7 +1344,9 @@ void CDriver::Inlet_Preprocessing(CSolver ***solver_container, CGeometry **geome
                                   CConfig *config) {
 
   bool euler, ns, turbulent,
-  adj_euler, adj_ns, adj_turb, heat, fem,
+  adj_euler, adj_ns, adj_turb,
+  heat,
+  fem,
   template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
   int val_iter = 0;
   unsigned short iMesh;
