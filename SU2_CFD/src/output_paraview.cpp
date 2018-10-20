@@ -2529,12 +2529,12 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nSurf_Elem_Par,
              (int)nSurf_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nSurf_Elem_Par*N_POINTS_QUADRILATERAL];
+    conn_buf = new int[nSurf_Elem_Par*(N_POINTS_QUADRILATERAL+1)];
   } else {
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nGlobal_Elem_Par,
              (int)nGlobal_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nGlobal_Elem_Par*N_POINTS_HEXAHEDRON];
+    conn_buf = new int[nGlobal_Elem_Par*(N_POINTS_HEXAHEDRON+1)];
   }
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
@@ -2675,6 +2675,8 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  if (conn_buf != NULL) delete [] conn_buf;
+  
   /*--- Load/write the cell type for all elements in the file. ---*/
   
   if (surf_sol) {
@@ -2759,7 +2761,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector data (reuse the counts above). ---*/
   
@@ -2858,6 +2860,11 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  /*--- Close the file. ---*/
+  
+  fclose(fhw);
+  
+  
 #else
   
   /*--- Parallel binary output using MPI I/O. ---*/
@@ -2877,6 +2884,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
+    MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
     ierr = MPI_File_open(MPI_COMM_WORLD, fname,
@@ -3335,7 +3343,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Free the derived datatype. ---*/
   
   MPI_Type_free(&filetype);
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector point data. ---*/
   
