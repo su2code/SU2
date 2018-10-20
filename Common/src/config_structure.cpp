@@ -161,9 +161,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
-      if (mesh_file.fail()) {
-        SU2_MPI::Error(string("There is no geometry file called ") + string(cstr), CURRENT_FUNCTION);
-      }
 
       /*--- Read the SU2 mesh file ---*/
 
@@ -190,19 +187,22 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  short nDim = 3;
+  short nDim = -1;
   unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
 
-  /*--- Open grid file ---*/
-
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
-
   switch (val_format) {
-  case SU2:
+    case SU2:
 
+      /*--- Open grid file ---*/
+      
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        SU2_MPI::Error(string("The SU2 mesh file named ") + string(cstr) + string(" was not found."), CURRENT_FUNCTION);
+      }
+      
     /*--- Read SU2 mesh file ---*/
 
     for (iLine = 0; iLine < nLine ; iLine++) {
@@ -216,6 +216,16 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
         text_line.erase (0,6); nDim = atoi(text_line.c_str());
       }
     }
+      
+      mesh_file.close();
+      
+      /*--- Throw an error if the dimension was not found. ---*/
+      
+      if (nDim == -1) {
+        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found in first 10 lines). Please check."),
+                       CURRENT_FUNCTION);
+      }
+      
     break;
 
   case CGNS:
@@ -231,7 +241,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
     /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
     if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file."),
+      SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
                      CURRENT_FUNCTION);
     }
 
@@ -277,8 +287,10 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   }
 
-  mesh_file.close();
-
+  /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
+  
+  assert((nDim == 2) || (nDim == 3));
+  
   return (unsigned short) nDim;
 }
 
@@ -2473,7 +2485,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         nObjW = nObj;
       }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIORING must be the same length or length 1.\n ") +
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n ") +
                        string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
                        string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
                        string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
@@ -2494,6 +2506,42 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Weight_ObjFunc[iObj] = 1.0;
   }
 
+  /*--- One final check for multi-objective with the set of objectives
+   that are not counted per-surface. We will disable multi-objective here. ---*/
+  
+  if (nObj > 1) {
+    unsigned short Obj_0 = Kind_ObjFunc[0];
+    for (unsigned short iObj=1; iObj<nObj; iObj++){
+      switch(Kind_ObjFunc[iObj]) {
+        case INVERSE_DESIGN_PRESSURE:
+        case INVERSE_DESIGN_HEATFLUX:
+        case THRUST_COEFFICIENT:
+        case TORQUE_COEFFICIENT:
+        case FIGURE_OF_MERIT:
+        case SURFACE_TOTAL_PRESSURE:
+        case SURFACE_STATIC_PRESSURE:
+        case SURFACE_MASSFLOW:
+        case SURFACE_UNIFORMITY:
+        case SURFACE_SECONDARY:
+        case SURFACE_MOM_DISTORTION:
+        case SURFACE_SECOND_OVER_UNIFORM:
+        case SURFACE_PRESSURE_DROP:
+        case CUSTOM_OBJFUNC:
+          if (Kind_ObjFunc[iObj] != Obj_0) {
+            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
+                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
+                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
+                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
+                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
+                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
