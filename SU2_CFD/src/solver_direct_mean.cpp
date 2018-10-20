@@ -8858,62 +8858,70 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
-        
-        /*--- The following are not per-surface, and as a result will be
-         double-counted iff multiple surfaces are specified as well as multi-objective ---*/
-        
-      case EQUIVALENT_AREA:
-        Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-        break;
-      case NEARFIELD_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-        break;
-      case INVERSE_DESIGN_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-        break;
-      case INVERSE_DESIGN_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-        break;
-      case THRUST_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CT;
-        break;
-      case TORQUE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-        break;
-      case FIGURE_OF_MERIT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-        break;
-      case SURFACE_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-        break;
-      case SURFACE_STATIC_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-        break;
-      case SURFACE_MASSFLOW:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-        break;
-      case SURFACE_MACH:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-        break;
-      case SURFACE_UNIFORMITY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-        break;
-      case SURFACE_SECONDARY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-        break;
-      case SURFACE_MOM_DISTORTION:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-        break;
-      case SURFACE_SECOND_OVER_UNIFORM:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-        break;
-      case CUSTOM_OBJFUNC:
-        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-        break;
       default:
         break;
-
     }
+  }
+  
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+  
+  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+  
+  switch(Kind_ObjFunc) {
+    case EQUIVALENT_AREA:
+      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+      break;
+    case NEARFIELD_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
+      break;
+    case INVERSE_DESIGN_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+      break;
+    case FIGURE_OF_MERIT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+      break;
+    case SURFACE_TOTAL_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+      break;
+    case SURFACE_STATIC_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+      break;
+    case SURFACE_MASSFLOW:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+      break;
+    case SURFACE_MACH:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+      break;
+    case SURFACE_UNIFORMITY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+      break;
+    default:
+      break;
   }
   
 }
