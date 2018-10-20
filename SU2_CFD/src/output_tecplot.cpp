@@ -2905,7 +2905,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   stringstream variables; variables.str(string());
   unsigned short iVar;
   *NVar = 0;
-  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   bool grid_movement = config->GetGrid_Movement();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
