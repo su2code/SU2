@@ -152,6 +152,12 @@ inline void CFEAElasticity::Compute_Stress_Tensor(CElement *element_container, C
 
 inline void CFEANonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
+inline void CFEAElasticity::Compute_Lame_Parameters(void) {
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+  Kappa  = Lambda + (2/3)*Mu;
+}
+
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j) { }
