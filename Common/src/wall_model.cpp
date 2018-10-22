@@ -130,7 +130,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   // Set parameters for control
   bool converged = false;
   unsigned short iter = 0, max_iter = 25;
-  su2double tauWall_prev = 0.0, qWall_prev=0.0, tol = 1e-3,  aux_rhs=0.0;
+  su2double tauWall_prev = 0.0, tol = 1e-3,  aux_rhs=0.0;
+  //su2double qWall_prev=0.0;
   su2double mut, nu, mu_lam, rho, utau, y_plus, D;
   
   while (converged == false){
@@ -139,7 +140,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     if (iter == max_iter) converged = true;
     
     tauWall_prev = tauWall;
-    qWall_prev = qWall;
+    //qWall_prev = qWall;
     
     // total viscosity
     // note: rho and mu_lam will be a function of temperature when solving an energy equation
@@ -343,7 +344,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   
 
   // Note: I replaced pExchange by muExchange
-  su2double fval, fprime, newton_step, y_plus, u_tau = 0.0;
+  su2double fval, fprime, newton_step, u_tau = 0.0;
   su2double k = 0.38;
   su2double C = 4.1;
   su2double u_tau0 = 0.001;
@@ -362,7 +363,7 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double rhoExchange,
   
   for (unsigned short i=0; i < maxIter; i++){
     counter += 1;
-    y_plus = h_wm * u_tau0 / nuExchange;
+    //y_plus = h_wm * u_tau0 / nuExchange;
     //fval = (velExchange /u_tau0) - ((1.0/k) * log(y_plus) + C);
     //fprime = -velExchange/pow(u_tau0,2) - 1.0/(k*u_tau0);
 
