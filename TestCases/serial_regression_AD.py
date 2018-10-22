@@ -48,22 +48,6 @@ def main():
 
     test_list = []
 
-    ######################################
-    ### Checkpointing                  ###
-    ######################################
-
-    # checkpointing_cylinder
-    checkpointing_cylinder           = TestCase('checkpointing_cylinder')
-    checkpointing_cylinder.cfg_dir   = "checkpointing/SU2_implementation/"
-    checkpointing_cylinder.cfg_file  = "cylinder_CP.cfg"
-    checkpointing_cylinder.test_iter = 9
-    checkpointing_cylinder.test_vals = [4.332534, -0.975925, 1.9055e-05, 1.6986e-07] #last 4 columns
-    checkpointing_cylinder.su2_exec  = "SU2_CFD_AD"
-    checkpointing_cylinder.timeout   = 1600
-    checkpointing_cylinder.tol       = 0.00001
-    checkpointing_cylinder.unsteady  = True
-    test_list.append(checkpointing_cylinder)
-
     #####################################
     ### Disc. adj. compressible Euler ###
     #####################################
@@ -228,6 +212,49 @@ def main():
     ######################################  
 
     pass_list = [ test.run_test() for test in test_list ]
+
+    ######################################
+    ### Checkpointing PYTHON TESTS     ###
+    ######################################
+
+    # checkpointing_cylinder
+    checkpointing_cylinder           = TestCase('checkpointing_cylinder_SU2_re_DISK')
+    checkpointing_cylinder.cfg_dir   = "checkpointing/SU2_implementation_DISK"
+    checkpointing_cylinder.cfg_file  = "cylinder_CP.cfg"
+    checkpointing_cylinder.test_iter = 9
+    checkpointing_cylinder.su2_exec  = "discrete_adjoint.py -a True"
+    checkpointing_cylinder.timeout   = 1600
+    checkpointing_cylinder.unsteady  = True
+    checkpointing_cylinder.reference_file  = "of_grad_cd.dat.ref"
+    checkpointing_cylinder.test_file  = "of_grad_cd.dat"
+    pass_list.append(checkpointing_cylinder.run_filediff())
+    test_list.append(checkpointing_cylinder)
+
+    # checkpointing_cylinder
+    checkpointing_cylinder2           = TestCase('checkpointing_cylinder_SU2_re_RAM')
+    checkpointing_cylinder2.cfg_dir   = "checkpointing/SU2_implementation_RAM"
+    checkpointing_cylinder2.cfg_file  = "cylinder_CP.cfg"
+    checkpointing_cylinder2.test_iter = 9
+    checkpointing_cylinder2.su2_exec  = "discrete_adjoint.py -a True"
+    checkpointing_cylinder2.timeout   = 1600
+    checkpointing_cylinder2.unsteady  = True
+    checkpointing_cylinder2.reference_file  = "of_grad_cd.dat.ref"
+    checkpointing_cylinder2.test_file  = "of_grad_cd.dat"
+    pass_list.append(checkpointing_cylinder2.run_filediff())
+    test_list.append(checkpointing_cylinder2)
+
+    # checkpointing_cylinder
+    checkpointing_equidistant           = TestCase('checkpointing_cylinder_equidistant')
+    checkpointing_equidistant.cfg_dir   = "checkpointing/equidistant"
+    checkpointing_equidistant.cfg_file  = "cylinder_CP.cfg"
+    checkpointing_equidistant.test_iter = 14
+    checkpointing_equidistant.su2_exec  = "discrete_adjoint.py -a True"
+    checkpointing_equidistant.timeout   = 1600
+    checkpointing_equidistant.unsteady  = True
+    checkpointing_equidistant.reference_file  = "of_grad_cd.dat.ref"
+    checkpointing_equidistant.test_file  = "of_grad_cd.dat"
+    pass_list.append(checkpointing_equidistant.run_filediff())
+    test_list.append(checkpointing_equidistant)
     
     ######################################
     ### RUN PYTHON TESTS               ###

@@ -1046,11 +1046,6 @@ public:
    * \brief A virtual member.
    */
   void AdjointStep();
-
-  /*!
-   * \brief A virtual member.
-   */
-  void Firsturn();
 };
 
 /*!

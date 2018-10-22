@@ -64,22 +64,12 @@ void CDiscAdjFluidDriver::PrimalAdvance()
   //added: this loads the restart files, in iteration_structure.cpp - CDiscAdjFluidIteration->Preprocess()
   //Here it has to be checked whether it is the beginning of an advance cycle and then for DualTime2nd just 2 steps has to be loaded
   //as it is a simple primal solver restart, maybe just set ExtIter to 0 at the beginning of every advance cycle
-  if (ExtIter == 0)
-  {
+
     for (iZone = 0; iZone < nZone; iZone++)
     {
-      /*--- loads time steps for adjoint taping ---*/
-      //iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
-
-      /*--- Initializes Primal with freestream values, not explicitly necessary as initialization is done with fressstream valuies anyway ---*/
-      //cout << "Initialze Primal by using the values at infinity (freestream)." << endl;
-      //solver_container[iZone][MESH_0][FLOW_SOL]->SetFreeStream_Solution(config_container[iZone]);
-      //for (iPoint = 0; iPoint < geometry_container[ZONE_0][MESH_0]->GetnPoint(); iPoint++) {
-      //solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->Set_Solution_time_n();
-      //solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->Set_Solution_time_n1();
-      //}
+        /*--- loads time steps for adjoint taping ---*/
+        //iteration_container[iZone]->Preprocess(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone);
     }
-  }
 
   /*--- applies only to windgust and fsi ---*/
   for (iZone = 0; iZone < nZone; iZone++)
@@ -105,21 +95,6 @@ void CDiscAdjFluidDriver::PrimalAdvance()
   for (IntIter = 0; IntIter < nIntIter; IntIter++)
   {
 
-    ///*--- Print cons[0] for the first 10 points for the timesteps n-1, n, n+1 ---*/
-    //for(iZone = 0; iZone < nZone; iZone++) {
-    ///*--- Print cons[0] for the first 10 points for the timesteps n-1, n, n+1 ---*/
-    //cout << "Print Cons[0] for the first 10 points in the mesh. 1st Solution, 2nd Solution_n, 3rd Solution_n1 " << endl;
-    //for (int iPoint = 1000; iPoint < 1010; iPoint++)
-    //cout << setprecision(15) << scientific << solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution(0) << " ";
-    //cout << endl;
-    //for (int iPoint = 1000; iPoint < 1010; iPoint++)
-    //cout << setprecision(15) << scientific << solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution_time_n(0) << " ";
-    //cout << endl;
-    //for (int iPoint = 1000; iPoint < 1010; iPoint++)
-    //cout << setprecision(15) << scientific << solver_container[iZone][MESH_0][FLOW_SOL]->node[iPoint]->GetSolution_time_n1(0) << " ";
-    //cout << endl;
-    //}
-
     /*--- Do one iteration of the direct solver  --*/
 
     /*--- At each pseudo time-step updates transfer data ---*/
@@ -135,21 +110,10 @@ void CDiscAdjFluidDriver::PrimalAdvance()
 
       config_container[iZone]->SetIntIter(IntIter);
       direct_iteration[iZone]->Iterate(output, integration_container, geometry_container, solver_container, numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-      //cout << "Jacobian set to zero." << endl;
+      
       //See CEuler/NSSolver::Preprocessing, jacobian is not set to zero as it is needed for taping.
       solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Jacobian.SetValZero();
     }
-
-    ///*--- Print residuals in the first iteration ---*/
-    //for (iZone = 0; iZone < nZone; iZone++) {
-    //if (rank == MASTER_NODE && ((ExtIter == 0) || (config_container[iZone]->GetUnsteady_Simulation() != STEADY)) ) {
-    //cout << "At IntIter: " << IntIter;
-    //cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(solver_container[iZone][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
-    //if ( config_container[iZone]->GetKind_Turb_Model() != NONE && !config_container[iZone]->GetFrozen_Visc_Disc()) {
-    //cout <<"       log10[RMS k]: " << log10(solver_container[iZone][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
-    //}
-    //}
-    //}
   }
 }
 
@@ -165,6 +129,11 @@ void CDiscAdjFluidDriver::Update()
       direct_iteration[iZone]->Update(output, integration_container, geometry_container,
                                       solver_container, numerics_container, config_container,
                                       surface_movement, grid_movement, FFDBox, iZone, INST_0);
+                                      
+    // this is what basically happens, see integration_structure.cpp at SetDualtimesolver
+    //for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+        //solver->node[iPoint]->Set_Solution_time_n1();
+        //solver->node[iPoint]->Set_Solution_time_n();}
   }
 }
 
@@ -293,7 +262,8 @@ void CDiscAdjFluidDriver::RestoreSingleState()
     /*--- 1 Load checkpoint (into sol) ---*/
     //last variable updategeo always true except for FSI
     //int val_iter = 1000 + r->getcheck() * 3 + 0;
-    int val_iter = r->getcurrent_timestep() - 3; // -3 du to dual time stepping 2nd order
+    //int val_iter = r->getcurrent_timestep() - 3; // -3 du to dual time stepping 2nd order
+    int val_iter = r->getcurrent_timestep(); // New implementation, possibly breaking old one, TODO
     solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
     if (turbulent)
       solver_container[ZONE_0][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[ZONE_0][INST_0], solver_container[ZONE_0][INST_0], config_container[ZONE_0], val_iter, true);
@@ -508,16 +478,8 @@ void CDiscAdjFluidDriver::PrimalStep()
   /*--- Here Flow-solver initial conditions are called, well noe not anymore as first step is taken at takeshot ---*/
   PreprocessExtIter(val_iter);
 
-  /*--- Pushes soltion down for a new timestep. Therefore this must be done after takeshot. Directly before takeshot however update is omitted. ---*/
-  //if (j == r->getoldcapo() + 1)
-  //  Update();
-
-  /*--- Advance one physical primal step by looping over multiple internal iter ---*/
+  /*--- Advance one physical primal step by looping over multiple internal iter via self-written function ---*/
   PrimalAdvance();
-
-  /*--- No Update as solution needs to at their place for takeshot ---*/
-  //if (j != r->getcapo() + 1 - 1)
-  //  Update();
 
   //Monitor(j);
 
@@ -615,7 +577,8 @@ void CDiscAdjFluidDriver::AdjointStep()
 {
   int info = 3;
   /*--- Do one adjoint step ---*/
-  ExtIter = r->getsteps() - r->getcurrent_timestep() - 1;
+  //ExtIter = r->getsteps() - r->getcurrent_timestep() - 1;
+  ExtIter = r->getcurrent_timestep(); // TODO sort this out with above line
   PreprocessExtIter(ExtIter);
   DynamicMeshUpdate(ExtIter);
   Run();
@@ -623,27 +586,8 @@ void CDiscAdjFluidDriver::AdjointStep()
   solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->Jacobian.SetValZero();
   Monitor(ExtIter);
   Output(ExtIter);
-  ExtIter++;
+  ExtIter++; // TODO erase this most likely
 
   if (info > 2 && rank == MASTER_NODE)
     cout << "Adjoint Step at timestep " << setw(7) << r->getcurrent_timestep() << endl;
-}
-
-/* Equivalent to adjoint step, could probably be completely removed */
-void CDiscAdjFluidDriver::Firsturn()
-{
-  int info = 3;
-  /*--- Do first Adjoint Step. As it comes after advance without Update() the correct primals are already set. ---*/
-  PreprocessExtIter(ExtIter);
-  DynamicMeshUpdate(ExtIter);
-  Run();
-  /*--- Otherwise wrong primal solution after restore and 1 iteration if Jacobian not set to zero ---*/
-  solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL]->Jacobian.SetValZero();
-  /*--- Update(); no update for adjoint solver only for primal, therefore update before PrimalAdvance. Primal Solutions are always restored completely, so no updating necessary---*/
-  Monitor(ExtIter);
-  Output(ExtIter);
-  ExtIter++;
-
-  if (info > 2 && rank == MASTER_NODE)
-    cout << " THIS SHOULD NOT RUN at " << setw(6) << r->getcapo() << endl;
 }

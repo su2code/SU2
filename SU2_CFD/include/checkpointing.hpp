@@ -63,7 +63,8 @@ class CP_state
 {
     public:
         ACTION::action whattodo;
-        int iCheckpoint, current_timestep;
+        int iCheckpoint;
+        int current_timestep;
         bool where_to_put;
 
         void print_state() {
@@ -132,6 +133,7 @@ class CP_state
         int steps;                          /*!< \brief Number of time steps. */
         int counter;                        /*!< \brief Counts the actions taken  */
         int current_timestep;               /*!< \brief stores the physical timestep during forward and reverse sweep */
+        int current_timestep_temp;          /*!< \brief For SU2-reimplement counts down timestep and cts is needed for reverse adjoint counting and reloading of timesteps */
         unsigned short timestepping_order;  /*!< \brief Number of timesteps necessary for restart, i.e. DT_2ND = 2. */
         unsigned short depth;               /*!< \brief Number of timesteps necessary for one adjoint iteration, i.e. DT_2ND = 2+1. */
         bool just_advanced;                 /*!< \brief Marks whether a new solution was computed, such that afterwards a store/restore is called */

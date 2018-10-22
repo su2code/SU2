@@ -60,6 +60,8 @@ def main():
                       help="Validate the gradient using direct diff. mode", metavar="VALIDATION")
     parser.add_option("-z", "--zones", dest="nzones", default="1",
                       help="Number of Zones", metavar="ZONES")
+    parser.add_option("-a", "--adjointonly", dest="adjointonly", default="false",
+                      help="Don't compute direct problem. Only adjoint and projection.", metavar="ADJOINTONLY")
     
     (options, args)=parser.parse_args()
     options.partitions  = int( options.partitions )
@@ -67,10 +69,12 @@ def main():
     options.compute     = options.compute.upper() == 'TRUE'
     options.validate    = options.validate.upper() == 'TRUE'
     options.nzones      = int( options.nzones )
+    options.adjointonly = options.adjointonly.upper() == 'TRUE'
     
     discrete_adjoint( options.filename    ,
                       options.partitions  ,
                       options.compute     ,
+                      options.adjointonly ,
                       options.step        ,
                       options.nzones       )
         
@@ -84,6 +88,7 @@ def main():
 def discrete_adjoint( filename           ,
                       partitions  = 0    , 
                       compute     = True ,
+                      adjointonly = False,
                       step        = 1e-4 ,
                       nzones      = 1     ):
     
@@ -109,7 +114,7 @@ def discrete_adjoint( filename           ,
         state.FILES.MESH = config.MESH_FILENAME
     
     # Direct Solution
-    if compute:
+    if compute and not adjointonly:
         info = SU2.run.direct(config) 
         state.update(info)
         SU2.io.restart2solution(config,state)

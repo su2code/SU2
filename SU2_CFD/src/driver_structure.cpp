@@ -1354,7 +1354,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
 
   if (dual_time) {
-    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1; // y is adjoint here a single option? should depend on ts-scheme as well?
     else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
       val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
     else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
@@ -1391,7 +1391,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
    these restart routines fill the fine grid and interpolate to all MG levels. ---*/
 
   if (restart || restart_flow) {
-      if(rank == MASTER_NODE) cout << "Restart in driver: Loading flow solution from direct iteration " << val_iter << "." << endl;
+    if(rank == MASTER_NODE) cout << "Restart in driver: Loading flow solution from direct iteration " << val_iter << "." << endl;
     if (euler || ns) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
@@ -1427,6 +1427,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
       no_restart = true;
     }
     if (disc_adj) {
+        if(rank == MASTER_NODE) cout << "Restart in driver: Loading DiscAdj flow solution from direct iteration " << val_iter << "." << endl;
       solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
       if (disc_adj_turb)
         solver_container[val_iInst][MESH_0][ADJTURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -3629,10 +3630,15 @@ void CDriver::StartSolverRevolve() {
     // !r = new Checkpointing(steps,snaps,snaps_in_ram,"EVERYTHING");
     //r = new CheckpointEverything(steps,snaps,snaps_in_ram);
     //r->set_info(info);
-
+    r->CP_scheme->Create_vector_with_ACTIONS();
     do
     {
         whatodo = r->revolve();
+        if (config_container[ZONE_0]->GetCheckpointing() == EQUIDISTANT) {
+            r->CP_scheme->setwhere(r->CP_scheme->CP_state_vector[r->getcounter()-1].where_to_put);
+            r->CP_scheme->setcheck(r->CP_scheme->CP_state_vector[r->getcounter()-1].iCheckpoint);
+            r->CP_scheme->setcurrent_timestep(r->CP_scheme->CP_state_vector[r->getcounter()-1].current_timestep); // Here set EXT_ITER as it should be used throughout functions
+        }
         if (whatodo == ACTION::store_full_checkpoint)
         {
            StoreFullCheckpoint();

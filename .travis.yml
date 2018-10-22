@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - develop
+        - feature_checkpointing
 
 python:
     - 2.7

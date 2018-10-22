@@ -224,10 +224,12 @@ ACTION::action Equidistant::revolve()
 
 void Equidistant::Create_vector_with_ACTIONS()
 {
+    current_timestep++; // start at actually correct timestep
+
     CP_state state;
     iCheckpoint = 0;
     state.iCheckpoint = iCheckpoint;
-    state.current_timestep = ++current_timestep; // TODO change to start current timestep such that current_ts++ is possible
+    state.current_timestep = current_timestep++; // TODO change to start current timestep such that current_ts++ is possible
     state.where_to_put = false;
     state.whattodo = ACTION::store_full_checkpoint;
     CP_state_vector.push_back(state);
@@ -236,7 +238,7 @@ void Equidistant::Create_vector_with_ACTIONS()
     {
         state.whattodo = ACTION::primal_update;
         CP_state_vector.push_back(state);
-        state.current_timestep = ++current_timestep;
+        state.current_timestep = current_timestep++;
         state.whattodo = ACTION::primal_step;
         CP_state_vector.push_back(state);
         if(iCheckpoint < snaps_in_RAM || iCheckpoint >= snaps_in_RAM+depth) {
@@ -256,10 +258,12 @@ void Equidistant::Create_vector_with_ACTIONS()
     // First adjoint step outside the loop have the loop order load->adjointstep
     // If primal finishes during disk checkpoints, the iCheckpoint is reset to correct value
     if(iCheckpoint >= snaps_in_RAM) iCheckpoint = snaps_in_RAM;
+    current_timestep--; // as in primal loop cts++ is used which 
 
     // Do one adjoint (time)step
     state.whattodo = ACTION::adjoint_step;
-    state.current_timestep = current_timestep--;
+    state.current_timestep = - (current_timestep-- - steps + 1 - timestepping_order);
+    //state.current_timestep = current_timestep--;
     CP_state_vector.push_back(state);
 
     while(current_timestep >= timestepping_order) // TODO
@@ -273,6 +277,7 @@ void Equidistant::Create_vector_with_ACTIONS()
         } else if (iCheckpoint>-depth) { // TODO CP available on DISK
             state.where_to_put=false;
             state.iCheckpoint = --iCheckpoint;
+            state.current_timestep = current_timestep+1 - depth;
             state.whattodo = ACTION::restore_single_state;
             CP_state_vector.push_back(state);
         } else {
@@ -285,7 +290,7 @@ void Equidistant::Create_vector_with_ACTIONS()
             for(int i=0; i<snaps_in_RAM; i++){
                 state.whattodo = ACTION::primal_update;
                 CP_state_vector.push_back(state);
-                //state.current_timestep = ++current_timestep;
+                state.current_timestep = current_timestep+1 - snaps_in_RAM - depth + i+1;
                 state.whattodo = ACTION::primal_step;
                 CP_state_vector.push_back(state);
                 state.where_to_put=true;
@@ -293,6 +298,7 @@ void Equidistant::Create_vector_with_ACTIONS()
                 state.whattodo = ACTION::store_single_state;
                 CP_state_vector.push_back(state);
             }
+
             // Load appropriate timesteps by first loading full timestep, then restoring latest RAM which goes to sol_time_n1
             state.where_to_put=false;
             state.current_timestep = current_timestep+1;
@@ -306,7 +312,8 @@ void Equidistant::Create_vector_with_ACTIONS()
         }
         // Do one adjoint (time)step
         state.whattodo = ACTION::adjoint_step;
-        state.current_timestep = current_timestep--;
+        state.current_timestep = - (current_timestep-- - steps + 1 - timestepping_order);
+        //state.current_timestep = current_timestep--;
         CP_state_vector.push_back(state);
 
     } // adjoint loop
@@ -364,27 +371,31 @@ ACTION::action SU2_implementation::revolve()
             current_timestep++;
             if (current_timestep < steps-1)
                 just_stored_checkpoint = true;
-            return ACTION::primal_step; std::cout << "hi" << std::endl;
+            return ACTION::primal_step;
         }
         // first adjoint step here to have correct current_timestep
         if (current_timestep == steps-1) {
             just_advanced = true;
             primal_sweep = false;
             iCheckpoint++; // artificially add 1 as later iCheckpoint-- is used.
+            current_timestep_temp = current_timestep; 
+            current_timestep = - (current_timestep_temp - steps + 1);
             return ACTION::adjoint_step;
         }
     /*--- Reverse sweep ---*/
 
     } else {
 
-        if (current_timestep > timestepping_order) {
+        if (current_timestep_temp > timestepping_order) {
             if(!just_advanced) {
-                current_timestep--;
+                current_timestep_temp--;
+                current_timestep = - (current_timestep_temp - steps + 1);
                 just_advanced = true;
                 return ACTION::adjoint_step;
             } else {
                 just_advanced = false;
                 iCheckpoint--;
+                current_timestep = current_timestep_temp - depth; 
                 return ACTION::restore_single_state;
             }
         }
@@ -392,21 +403,22 @@ ACTION::action SU2_implementation::revolve()
 
     return ACTION::terminate;
 }
-/* int main()
+
+/*  int main()
 {
     std::string CP_type = "TEMP_1";
     Checkpointing *r;
     //r = new Checkpointing(10, 3, 3, "hi");
-    r = new Checkpointing(14, 4, 4, 2); // Equidistant
-    //r = new Checkpointing(12, 9, 9, 4); // SU2 reimplement
+    //r = new Checkpointing(15, 4, 4, 2); // Equidistant
+    r = new Checkpointing(12, 9, 0, 4); // SU2 reimplement
     r->CP_scheme->Create_vector_with_ACTIONS();
     ACTION::action whattodo;
     do
     {
         whattodo = r->revolve();
-        r->CP_scheme->setwhere(r->CP_scheme->CP_state_vector[r->getcounter()-1].where_to_put);
-        r->CP_scheme->setcheck(r->CP_scheme->CP_state_vector[r->getcounter()-1].iCheckpoint);
-        r->CP_scheme->setcurrent_timestep(r->CP_scheme->CP_state_vector[r->getcounter()-1].current_timestep);
+        //r->CP_scheme->setwhere(r->CP_scheme->CP_state_vector[r->getcounter()-1].where_to_put);
+        //r->CP_scheme->setcheck(r->CP_scheme->CP_state_vector[r->getcounter()-1].iCheckpoint);
+        //r->CP_scheme->setcurrent_timestep(r->CP_scheme->CP_state_vector[r->getcounter()-1].current_timestep);
         std::cout << "counter: " << r->getcounter() << '\t' << "current_timestep: " << r->getcurrent_timestep() << '\t' << "iCheckpoint: " << r->getcheck() << '\t' << "where: " << r->getwhere() << '\t';
 
         if(whattodo == ACTION::primal_step) {
@@ -451,4 +463,4 @@ ACTION::action SU2_implementation::revolve()
     delete r;
 
     return 0;
-} */
+}  */
