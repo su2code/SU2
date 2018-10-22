@@ -12,7 +12,7 @@ compiler:
 notifications:
     email:
         recipients:
-            - tobias.kattmann@de.bosch.com
+            - tobias.kattmann@de.bosch.com 
   
 branches:
     only:
