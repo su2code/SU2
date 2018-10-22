@@ -73,15 +73,15 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
   
   if (nHistoryOutput == 0){
     HistoryFields.push_back("EXT_ITER");
-    HistoryFields.push_back("RESIDUALS");
+    HistoryFields.push_back("RMS_RES");
     nHistoryOutput = HistoryFields.size();
   }
   if (nScreenOutput == 0){
     ScreenFields.push_back("EXT_ITER");
-    ScreenFields.push_back("DENSITY");
-    ScreenFields.push_back("MOMENTUM-X");
-    ScreenFields.push_back("MOMENTUM-Y");
-    ScreenFields.push_back("ENERGY");
+    ScreenFields.push_back("RMS_DENSITY");
+    ScreenFields.push_back("RMS_MOMENTUM-X");
+    ScreenFields.push_back("RMS_MOMENTUM-Y");
+    ScreenFields.push_back("RMS_ENERGY");
     nScreenOutput = ScreenFields.size();
   }
   
@@ -108,56 +108,54 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME");
   
   // Residuals
-  AddHistoryOutput("DENSITY",    "Res[Rho]",  FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("MOMENTUM-X", "Res[RhoU]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("MOMENTUM-Y", "Res[RhoV]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("MOMENTUM-Z", "Res[RhoW]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("ENERGY",     "Res[RhoE]", FORMAT_FIXED,   "RESIDUALS");
+  AddHistoryOutput("RMS_DENSITY",    "rms[Rho]",  FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-X", "rms[RhoU]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Y", "rms[RhoV]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   
+  AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
 
-  AddHistoryOutput("NU_TILDE",       "Res[nu]", FORMAT_FIXED, "RESIDUALS");
-  AddHistoryOutput("KINETIC_ENERGY", "Res[k]",  FORMAT_FIXED, "RESIDUALS");
-  AddHistoryOutput("DISSIPATION",    "Res[w]",  FORMAT_FIXED, "RESIDUALS");
-
+  AddHistoryOutput("MAX_DENSITY",    "max[Rho]",  FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-X", "max[RhoU]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Y", "max[RhoV]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  
+  AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
   
   // Aerodynamic coefficients
-  AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
+  AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
   
-  AddHistoryOutput("DRAG_AVG",       "CD(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("LIFT_AVG",       "CL(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("SIDEFORCE_AVG",  "CSF(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-X_AVG",   "CMx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-Y_AVG",   "CMy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-Z_AVG",   "CMz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-X_AVG",    "CFx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-Y_AVG",    "CFy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-Z_AVG",    "CFz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("EFFICIENCY_AVG", "CEff(Avg)", FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
   
   // Aerodynamic coefficients (per surface)  
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
   }  
-  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
  
   
   // Misc.
@@ -169,35 +167,35 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
     Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
   }  
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
+  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
   
   // Engine output
-  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT");
-  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT");
-  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT");
-  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT");
+  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
+  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
   
   // Rotating Frame
-  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME");
-  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME");
-  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME");
+  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
+  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
+  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
   
   //Equivalent area
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA");
+  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
+  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
 
 
 }
@@ -469,23 +467,44 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());  
   SetHistoryOutputValue("PHYS_TIME", timeused);
   
-  SetHistoryOutputValue("DENSITY", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputValue("MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputValue("MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
+  SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_MOMENTUM-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_MOMENTUM-Y", log10(flow_solver->GetRes_RMS(2)));
   if (nDim == 2)
-    SetHistoryOutputValue("ENERGY", log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(3)));
   else {
-    SetHistoryOutputValue("MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
-    SetHistoryOutputValue("ENERGY", log10(flow_solver->GetRes_RMS(4)));
+    SetHistoryOutputValue("RMS_MOMENTUM-Z", log10(flow_solver->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
   }
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputValue("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    break;
+  default: break;
+  }
+  
+  SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_MOMENTUM-X", log10(flow_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_MOMENTUM-Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 2)
+    SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(3)));
+  else {
+    SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
+  }
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
+    break;  
+  case SST:
+    SetHistoryOutputValue("MAX_KINETIC_ENERGY", log10(turb_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
     break;
   default: break;
   }
@@ -504,25 +523,6 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   if (nDim == 3)
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
   SetHistoryOutputValue("EFFICIENCY", flow_solver->GetTotal_CEff());
-  
-  /*--- Only update time-averaged values if we are running unsteady simulation and if this is not a dual-time iteration ---*/
-  
-  if (config[val_iZone]->GetUnsteady_Simulation() != STEADY && !DualTime){
-    SetHistoryOutputValue("DRAG_AVG", RunningAverages["DRAG"].Update(flow_solver->GetTotal_CD()));
-    SetHistoryOutputValue("LIFT_AVG", RunningAverages["LIFT"].Update(flow_solver->GetTotal_CL()));
-    if (nDim == 3)
-      SetHistoryOutputValue("SIDEFORCE_AVG", RunningAverages["SIDEFORCE"].Update(flow_solver->GetTotal_CSF()));
-    if (nDim == 3){
-      SetHistoryOutputValue("MOMENT-X_AVG", RunningAverages["MOMENT-X"].Update(flow_solver->GetTotal_CMx()));
-      SetHistoryOutputValue("MOMENT-Y_AVG", RunningAverages["MOMENT-Y"].Update(flow_solver->GetTotal_CMy()));
-    }
-    SetHistoryOutputValue("MOMENT-Z_AVG", RunningAverages["MOMENT-Z"].Update(flow_solver->GetTotal_CMz()));
-    SetHistoryOutputValue("FORCE-X_AVG", RunningAverages["FORCE-X"].Update(flow_solver->GetTotal_CFx()));
-    SetHistoryOutputValue("FORCE-Y_AVG", RunningAverages["FORCE-Y"].Update(flow_solver->GetTotal_CFy()));
-    if (nDim == 3)
-      SetHistoryOutputValue("FORCE-Z_AVG",  RunningAverages["FORCE-Z"].Update(flow_solver->GetTotal_CFz()));
-    SetHistoryOutputValue("EFFICIENCY_AVG", RunningAverages["EFFICIENCY"].Update(flow_solver->GetTotal_CEff()));
-  }
   
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config[val_iZone]->GetnMarker_Monitoring(); iMarker_Monitoring++) {
     SetHistoryOutputPerSurfaceValue("DRAG_ON_SURFACE", flow_solver->GetSurface_CD(iMarker_Monitoring), iMarker_Monitoring);
@@ -586,23 +586,18 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   bool write_output = false;
   
   if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-      && write_dualtime && 
-      (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0)){
-    write_output = true;
+      && write_dualtime ){
+    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
-  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) ) && (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ){
-    write_output = true;    
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
+    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
   return write_output;
 }
 
-
-
-
-
 su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
-  unsigned short iDim;
+  unsigned short iDim, jDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   su2double Omega[3][3]    = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
   su2double Strain[3][3]   = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
@@ -616,7 +611,7 @@ su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVar
   
   su2double OmegaMag = 0.0, StrainMag = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
-    for (unsigned short jDim = 0 ; jDim < nDim; jDim++) {
+    for (jDim = 0 ; jDim < nDim; jDim++) {
       StrainMag += Strain[iDim][jDim]*Strain[iDim][jDim];
       OmegaMag  += Omega[iDim][jDim]*Omega[iDim][jDim];
     }
@@ -628,5 +623,18 @@ su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVar
   return Q;
 }
 
+
+bool CFlowOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
+        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  
+}
+
+bool CFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+      
+}
 
 

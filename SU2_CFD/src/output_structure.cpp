@@ -3553,7 +3553,9 @@ void COutput::SetConvHistory_Body(CGeometry ****geometry,
 
     LoadHistoryData(geometry, solver_container, config, integration, DualTime_Iteration,
                     timeused, val_iZone, val_iInst);
-
+    
+    Postprocess_HistoryData(config[val_iZone], DualTime_Iteration);
+        
     /*--- Write the history file ---------------------------------------------------------------------------*/
     write_history = WriteHistoryFile_Output(config[val_iZone], DualTime_Iteration);
     if (write_history) SetHistoryFile_Output(config[val_iZone]);
@@ -8754,6 +8756,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     SetHistoryOutputFields(config);
     
+    Postprocess_HistoryFields(config);
+    
     /*--- Open the history file ---*/
     
     cout << "History filename: " << char_histfile << endl;
@@ -8899,6 +8903,34 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
         }
       }
       jPoint++;
+    }
+  }
+}
+
+void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
+  
+  map<string, HistoryOutputField>::iterator it;
+  for (it = HistoryOutput_Map.begin(); it != HistoryOutput_Map.end(); it++){
+    if (it->second.FieldType == TYPE_RESIDUAL){
+      if ( SetInit_Residuals(config) ) {
+        Init_Residuals[it->first] = it->second.Value;
+      }
+      SetHistoryOutputValue("REL_" + it->first, it->second.Value - Init_Residuals[it->first]);
+    }
+    if ((it->second.FieldType == TYPE_COEFFICIENT) && SetUpdate_Averages(config, dualtime)){
+      SetHistoryOutputValue("TAVG_" + it->first, RunningAverages[it->first].Update(it->second.Value));
+    }
+  }
+}
+
+void COutput::Postprocess_HistoryFields(CConfig *config){
+  map<string, HistoryOutputField>::iterator it;
+  for (it = HistoryOutput_Map.begin(); it != HistoryOutput_Map.end(); it++){
+    if (it->second.FieldType == TYPE_RESIDUAL){
+      AddHistoryOutput("REL_" + it->first, "rel" + it->second.FieldName, it->second.ScreenFormat, "REL_" + it->second.OutputGroup);
+    }
+    if (it->second.FieldType == TYPE_COEFFICIENT){
+      AddHistoryOutput("TAVG_" + it->first, "tavg" + it->second.FieldName, it->second.ScreenFormat, "TAVG_" + it->second.OutputGroup);
     }
   }
 }

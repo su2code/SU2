@@ -77,15 +77,15 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   if (nHistoryOutput == 0){
     HistoryFields.push_back("EXT_ITER");
-    HistoryFields.push_back("RESIDUALS");
+    HistoryFields.push_back("RMS_RES");
     nHistoryOutput = HistoryFields.size();
   }
   
   if (nScreenOutput == 0){
     ScreenFields.push_back("EXT_ITER");
-    ScreenFields.push_back("PRESSURE");
-    ScreenFields.push_back("VELOCITY-X");
-    ScreenFields.push_back("VELOCITY-Y");
+    ScreenFields.push_back("RMS_PRESSURE");
+    ScreenFields.push_back("RMS_VELOCITY-X");
+    ScreenFields.push_back("RMS_VELOCITY-Y");
     nScreenOutput = ScreenFields.size();
   }
 }
@@ -107,51 +107,58 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
   
   // Residuals
-  AddHistoryOutput("PRESSURE",   "Res[P]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("VELOCITY-X", "Res[U]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("VELOCITY-Y", "Res[V]", FORMAT_FIXED,   "RESIDUALS");
-  AddHistoryOutput("VELOCITY-Z", "Res[W]", FORMAT_FIXED,   "RESIDUALS");
+  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("NU_TILDE", "Res[nu]", FORMAT_FIXED, "RESIDUALS");
+    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     break;  
   case SST:
-    AddHistoryOutput("KINETIC_ENERGY", "Res[k]", FORMAT_FIXED, "RESIDUALS");
-    AddHistoryOutput("DISSIPATION",    "Res[w]", FORMAT_FIXED, "RESIDUALS");
+    AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    break;
+  }
+  
+  // Residuals
+  AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddHistoryOutput("MAX_NU_TILDE", "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    break;  
+  case SST:
+    AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
     break;
   }
   
   if (heat || weakly_coupled_heat){
-    AddHistoryOutput("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
-    AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT");
-    AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
-    AddHistoryOutput("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
+    AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    
+    AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+    AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+    AddHistoryOutput("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
   }
   
   // Aerodynamic coefficients
-  AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF");
-  AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF");
-  
-  AddHistoryOutput("DRAG_AVG",       "CD(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("LIFT_AVG",       "CL(Avg)",   FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("SIDEFORCE_AVG",  "CSF(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-X_AVG",   "CMx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-Y_AVG",   "CMy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("MOMENT-Z_AVG",   "CMz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-X_AVG",    "CFx(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-Y_AVG",    "CFy(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("FORCE-Z_AVG",    "CFz(Avg)",  FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");
-  AddHistoryOutput("EFFICIENCY_AVG", "CEff(Avg)", FORMAT_SCIENTIFIC, "AERO_COEFF_AVG");  
-  
+  AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
@@ -197,20 +204,39 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
 
   
 }
-inline bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
-  return true;
+
+bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+ if (!write_dualtime){
+   return true;
+ }
+ else {
+   return false;
+ }
 }
 
-inline bool CIncFlowOutput::WriteScreen_Header(CConfig *config) {  
-  bool write_header;
-  write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) ||
-     ( (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() ==DT_STEPPING_2ND) && config->GetIntIter() == 0);
-  
+bool CIncFlowOutput::WriteScreen_Header(CConfig *config) {  
+  bool write_header = false;
+  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+  } else {
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+  }
   return write_header;
 }
-inline bool CIncFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  return true;
+
+bool CIncFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  bool write_output = false;
+  
+  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+      && write_dualtime ){
+    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
+  }
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
+    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+  } 
+  return write_output;
 }
+
 
 
 inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
@@ -222,32 +248,54 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   
   SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
   SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
-  SetHistoryOutputValue("PRESSURE", log10(flow_solver->GetRes_RMS(0)));
-  SetHistoryOutputValue("VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
-  SetHistoryOutputValue("VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
-  if (nDim == 3) SetHistoryOutputValue("VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
+  
+  SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_VELOCITY-Y", log10(flow_solver->GetRes_RMS(2)));
+  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_RMS(3)));
  
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputValue("KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
     break;
   }
+  
+  SetHistoryOutputValue("MAX_PRESSURE", log10(flow_solver->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_VELOCITY-X", log10(flow_solver->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_VELOCITY-Y", log10(flow_solver->GetRes_Max(2)));
+  if (nDim == 3) SetHistoryOutputValue("RMS_VELOCITY-Z", log10(flow_solver->GetRes_Max(3)));
+ 
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
+    break;  
+  case SST:
+    SetHistoryOutputValue("MAX_KINETIC_ENERGY", log10(turb_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
+    break;
+  }
+  
   if (weakly_coupled_heat){
     SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-    SetHistoryOutputValue("HEAT",         log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
+    SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
+    
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    if (nDim == 3) SetHistoryOutputValue("HEAT",         log10(flow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputValue("HEAT",         log10(flow_solver->GetRes_RMS(3)));
+    if (nDim == 3) SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(4)));
+    else           SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(3)));
+    
+    if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
+    else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
 
   }
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
@@ -262,25 +310,6 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   SetHistoryOutputValue("FORCE-Y", flow_solver->GetTotal_CFy());
   if (nDim == 3)
     SetHistoryOutputValue("FORCE-Z", flow_solver->GetTotal_CFz());
-  
-  /*--- Only update time-averaged values if we are running unsteady simulation and if this is not a dual-time iteration ---*/  
-  
-  if (config[val_iZone]->GetUnsteady_Simulation() != STEADY && !DualTime){
-    SetHistoryOutputValue("DRAG_AVG", RunningAverages["DRAG"].Update(flow_solver->GetTotal_CD()));
-    SetHistoryOutputValue("LIFT_AVG", RunningAverages["LIFT"].Update(flow_solver->GetTotal_CL()));
-    if (nDim == 3)
-      SetHistoryOutputValue("SIDEFORCE_AVG", RunningAverages["SIDEFORCE"].Update(flow_solver->GetTotal_CSF()));
-    if (nDim == 3){
-      SetHistoryOutputValue("MOMENT-X_AVG", RunningAverages["MOMENT-X"].Update(flow_solver->GetTotal_CMx()));
-      SetHistoryOutputValue("MOMENT-Y_AVG", RunningAverages["MOMENT-Y"].Update(flow_solver->GetTotal_CMy()));
-    }
-    SetHistoryOutputValue("MOMENT-Z_AVG", RunningAverages["MOMENT-Z"].Update(flow_solver->GetTotal_CMz()));
-    SetHistoryOutputValue("FORCE-X_AVG", RunningAverages["FORCE-X"].Update(flow_solver->GetTotal_CFx()));
-    SetHistoryOutputValue("FORCE-Y_AVG", RunningAverages["FORCE-Y"].Update(flow_solver->GetTotal_CFy()));
-    if (nDim == 3)
-      SetHistoryOutputValue("FORCE-Z_AVG",  RunningAverages["FORCE-Z"].Update(flow_solver->GetTotal_CFz()));
-    SetHistoryOutputValue("EFFICIENCY_AVG", RunningAverages["EFFICIENCY"].Update(flow_solver->GetTotal_CEff()));
-  }
   
   SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
   SetHistoryOutputValue("EFFICIENCY", HistoryOutput_Map["DRAG"].Value/HistoryOutput_Map["LIFT"].Value);
@@ -618,4 +647,17 @@ su2double CIncFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, C
   su2double Q = 0.5*(OmegaMag - StrainMag);
   
   return Q;
+}
+
+bool CIncFlowOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
+        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  
+}
+
+bool CIncFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+      
 }
