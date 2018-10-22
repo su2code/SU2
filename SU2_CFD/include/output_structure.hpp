@@ -215,6 +215,12 @@ protected:
     FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
+  enum HistoryFieldType {           
+    TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
+    TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  };
+  
   string HistorySep;                  /*!< \brief Character which separates values in the history file */
   
   vector<string>    HistoryHeader;    /*!< \brief Vector containing the names of the fields printed to the history file. */
@@ -231,9 +237,10 @@ protected:
     su2double           Value;        /*!< \brief The value of the field. */
     unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
     string              OutputGroup;  /*!< \brief The group this field belongs to. */
+    unsigned short      FieldType;
     HistoryOutputField() {}           /*!< \brief Default constructor. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup){}
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype):
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype){}
   };
   
   /** \brief Structure to store information for a volume output field.
@@ -266,6 +273,12 @@ protected:
   ofstream HistFile;
   
   TablePrinter* ConvergenceTable;
+  
+  std::map<string, su2double> Init_Residuals;
+  
+  map<string, Signal_Processing::RunningAverage> RunningAverages;
+  
+  
   
 public:
 
@@ -855,11 +868,11 @@ public:
   
   void PrintHistorySep(stringstream& stream);
   
-  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname );
+  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, unsigned short field_type = TYPE_DEFAULT );
   
   void SetHistoryOutputValue(string name, su2double value);
   
-  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
+  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names, unsigned short field_type = TYPE_DEFAULT);
   
   void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker);
   
@@ -877,7 +890,14 @@ public:
       
   virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
-    
+  
+  void Postprocess_HistoryData(CConfig *config, bool dualtime);
+
+  virtual bool SetInit_Residuals(CConfig *config);
+  
+  virtual bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
+  void Postprocess_HistoryFields(CConfig *config);
 };
 
 /*! \class CFlowOutput
@@ -895,8 +915,6 @@ private:
   bool grid_movement;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
-
-  map<string, Signal_Processing::RunningAverage> RunningAverages;
 
 public:
 
@@ -946,6 +964,10 @@ public:
   
   su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
   
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
 };
 
 /*! \class CFlowOutput
@@ -962,9 +984,7 @@ private:
   bool grid_movement;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
- 
-  map<string, Signal_Processing::RunningAverage> RunningAverages;  
-  
+
 public:
 
   /*!
@@ -1014,6 +1034,10 @@ public:
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
   
   su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
   
 };
 
