@@ -15640,7 +15640,6 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
            the wall model. */
         su2double tauWall, qWall, ViscosityWall, kOverCvWall;
         
-        //cout << solInt[0] << " " << velTan << " " << LaminarViscosity << " " << Pressure << " " << Temperature <<   endl;
         wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
@@ -15653,18 +15652,17 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         viscosityInt[ind] = ViscosityWall;
         kOverCvInt[ind]   = kOverCvWall;
 
-        /* Compute the magnitude of the prescribed velocity. */
+        /* Compute the prescribed velocity in tangential direction. */
         su2double velTanPrescribed = 0.0;
         for(unsigned short k=0; k<nDim; ++k)
-          velTanPrescribed += gridVel[k]*gridVel[k];
-        velTanPrescribed = sqrt(velTanPrescribed);
+          velTanPrescribed += gridVel[k]*dirTan[k];
 
         /* Compute the viscous normal flux. Note that the unscaled normals
            must be used, hence the multiplication with normals[nDim]. */
         normalFlux[0] = 0.0;
         for(unsigned short k=0; k<nDim; ++k)
-          normalFlux[k+1] = normals[nDim]*tauWall*dirTan[k];
-        normalFlux[nVar-1] = normals[nDim]*(tauWall*velTanPrescribed - qWall);
+          normalFlux[k+1] = -normals[nDim]*tauWall*dirTan[k];
+        normalFlux[nVar-1] = normals[nDim]*(qWall - tauWall*velTanPrescribed);
       }
     }
   }

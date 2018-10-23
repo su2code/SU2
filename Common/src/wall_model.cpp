@@ -98,21 +98,21 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   
   // Set some constants, assuming air at standard conditions
   // TO DO: Get these values from solver or config classes
-  //double C_1 = 2.03929e-04;
-  double C_1 = 1.716e-5;
-  double S = 110.4;
-  double T_ref = 273.15;
-  double R = 287.058;
-  double kappa = 0.41;
-  double A = 17;
-  double gamma = 1.4;
-  double Pr_lam = 0.7;
-  double Pr_turb = 0.9;
-  double c_p = (gamma*R)/(gamma-1);
-  double c_v = R/(gamma-1);
-  double h_wall = c_p * TWall;
-  double h_bc   = c_p * tExchange;
-  double tauWall_lam = muExchange * velExchange / h_wm;
+  //su2double C_1 = 2.03929e-04;
+  su2double C_1 = 1.716e-5;
+  su2double S = 110.4;
+  su2double T_ref = 273.15;
+  su2double R = 287.058;
+  su2double kappa = 0.41;
+  su2double A = 17;
+  su2double gamma = 1.4;
+  su2double Pr_lam = 0.7;
+  su2double Pr_turb = 0.9;
+  su2double c_p = (gamma*R)/(gamma-1);
+  su2double c_v = R/(gamma-1);
+  su2double h_wall = c_p * TWall;
+  su2double h_bc   = c_p * tExchange;
+  su2double tauWall_lam = muExchange * velExchange / h_wm;
   unsigned short nfa = numPoints + 1;
 
   /*--- Set up vectors ---*/
