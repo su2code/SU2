@@ -917,10 +917,11 @@ void CPBFluidIteration::Iterate(COutput *output,
  /*--- Solve the poisson equation ---*/
 	config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
 	
-    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) 
+    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) {
+		//cout<<"PIter: "<<PressureIter<<endl;
 		integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
-    
+    }
     /*--- Correct pressure and velocities ---*/
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     

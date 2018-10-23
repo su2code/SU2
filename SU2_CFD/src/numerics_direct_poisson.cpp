@@ -331,10 +331,7 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
     dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
     proj_vector_ij += Edge_Vector[iDim]*Normal[iDim];
   }
-  if (dist_ij_2 == 0.0) {
-	  proj_vector_ij = 0.0;
-	  cout<<"BC"<<endl;
-  }
+  if (dist_ij_2 == 0.0) proj_vector_ij = 0.0;
   else proj_vector_ij = proj_vector_ij/dist_ij_2;
 
   /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
@@ -347,18 +344,19 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
       Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
       
       Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
+      //cout<<iDim<<" "<<Mean_GradPoissonVar[iVar][iDim]<<", "<<Normal[iDim]<<", "<<Coeff_Mean<<endl;
     }
     Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }
 
   val_residual[0] = Proj_Mean_GradPoissonVar_Corrected[0];
+  //cout<<val_residual[0]<<endl;
   
   if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
      Poisson_Coeff_Mean = 0.0;
      for (iDim = 0; iDim < nDim; iDim++)
          Poisson_Coeff_Mean += 0.5*Edge_Vector[iDim]*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*Normal[iDim];
-     //Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
-     if (dist_ij_2 == 0.0) cout<<"dist_ij is zero"<<endl;
+      Poisson_Coeff_Mean = Poisson_Coeff_Mean/dist_ij_2;
   }
   else {
 	 Poisson_Coeff_Mean = 1.0;
@@ -443,8 +441,7 @@ void CSource_PoissonFVM::ComputeResidual(su2double *val_residual, su2double **va
  if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
     val_residual[0] = Source_Term;
  else 
-   val_residual[0] = Source_Term*Volume;
-    
+   val_residual[0] = Source_Term*Volume; 
 }
 
 
