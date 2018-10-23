@@ -2720,8 +2720,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           
           jPoint = (iProcessor+1)*nBuffer_Scalar;
         }
-<<<<<<< HEAD
-=======
       }
     }
 
