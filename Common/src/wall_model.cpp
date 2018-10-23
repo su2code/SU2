@@ -34,11 +34,10 @@
 
 #include "../include/wall_model.hpp"
 
-/* MKL or LAPACKE include files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_LAPACKE
-#include "lapacke.h"
+/* Prototypes for Lapack functions, if MKL or LAPACK is used. */
+#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+extern "C" void dgtsv_(int*, int*, passivedouble*, passivedouble*,
+                       passivedouble*, passivedouble*, int*, int*);
 #endif
 
 void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
@@ -184,13 +183,14 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     // Solve the matrix problem to get the velocity field
     // rhs returned the solution
     //********LAPACK CALL*******
-#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
-    int info;
-    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+    int info, nrhs = 1;
+
+    dgtsv_(&numPoints,&nrhs,lower.data(),diagonal.data(),upper.data(),rhs.data(),&numPoints, &info);
     if (info != 0)
-      SU2_MPI::Error("Unsuccessful call to LAPACKE_dgtsv", CURRENT_FUNCTION);
+      SU2_MPI::Error("Unsuccessful call to dgtsv_", CURRENT_FUNCTION);
 #else
-    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
+    SU2_MPI::Error("Not compiled with MKL or LAPACK support", CURRENT_FUNCTION);
 #endif
 
     u = rhs;
@@ -262,14 +262,14 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     
     // Solve the matrix problem to get the temperature field
     // *******LAPACK CALL********
-#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
-    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+    dgtsv_(&numPoints,&nrhs,lower.data(),diagonal.data(),upper.data(),rhs.data(),&numPoints, &info);
     if (info != 0)
-      SU2_MPI::Error("Unsuccessful call to LAPACKE_dgtsv", CURRENT_FUNCTION);
+      SU2_MPI::Error("Unsuccessful call to dgtsv_", CURRENT_FUNCTION);
 #else
-    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
+    SU2_MPI::Error("Not compiled with MKL or LAPACK support", CURRENT_FUNCTION);
 #endif
-    
+
     // Get Temperature from enthalpy
     // Temperature will be at cv or face?
     T[0] = h_wall/c_p;
