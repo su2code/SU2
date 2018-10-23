@@ -15465,12 +15465,6 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
                                       viscosityInt, kOverCvInt);
   }
 
-  // Debug
-  //cout << fluxes[0] << " " << gradSolInt[0] << " " <<  viscFluxes[0] << " " << viscosityInt[0] << " " << kOverCvInt[0] << " " << endl;
-  //cout << fluxes[1] << " " << gradSolInt[1] << " " <<  viscFluxes[1] << " " << viscosityInt[1] << " " << kOverCvInt[1] << " " << endl;
-  
-  // end Debug
-  
   /* The remainder of the boundary condition treatment is the same for all
      types of boundary conditions, including the symmetry plane and the
      wall function treatment. The function ResidualViscousBoundaryFace will
