@@ -85,6 +85,7 @@ endif
 # always link to built dependencies from ./externals
 su2_dot_cxx_flags += @su2_externals_INCLUDES@
 su2_dot_ldadd += @su2_externals_LIBS@
+su2_dot_ldadd += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
 su2_dot_cxx_flags += @MUTATIONPP_CXX@
