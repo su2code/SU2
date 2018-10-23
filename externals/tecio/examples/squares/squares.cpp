@@ -4,25 +4,37 @@
 #pragma warning (disable: 4996) /* Windows strcpy warning off */
 #endif
 
+// Internal testing flags
+// RUNFLAGS:none
+// RUNFLAGS:--szl
+
 /* DOCSTART:tecgeo.txt*/
 #include "TECIO.h"
 #include <string.h>
 
-int main()
+int main(int argc, const char *argv[])
 {
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 0;
-    INTEGER4 I         = 0; /* use to check return values */
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+
+    INTEGER4 fileFormat; // 0 == PLT, 1 == SZPLT
+    if (argc == 2 && strncmp(argv[1],"--szl",5) == 0)
+        fileFormat = 1; 
+    else
+        fileFormat = 0; 
+
+    INTEGER4 FileType   = 0;
+    INTEGER4 I          = 0; /* use to check return values */
 
 
     /* Open the file and write the tecplot datafile
      * header information
      */
-    I = TECINI112((char*)"Square Geometries",
+    I = TECINI142((char*)"Square Geometries",
                   (char*)"X Y P",
                   (char*)"squares.plt",
                   (char*)".",
+                  &fileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
@@ -87,7 +99,7 @@ int main()
         XPos                   = (double) ii;
         YPos                   = (double) ii;
 
-        I = TECGEO112(&XPos,
+        I = TECGEO142(&XPos,
                       &YPos,
                       &ZPos,
                       &PosCoordMode,
@@ -115,7 +127,7 @@ int main()
                       MFC);
     }
 
-    I = TECEND112();
+    I = TECEND142();
 
     delete MFC;
     return 0;
