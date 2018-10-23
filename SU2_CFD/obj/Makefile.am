@@ -160,6 +160,7 @@ su2_cfd_ldadd =
 # always link to built dependencies from ./externals
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
+su2_cfd_ldadd += @su2_externals_LIBPTHREAD@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
