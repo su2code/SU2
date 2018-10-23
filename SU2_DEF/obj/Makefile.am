@@ -61,6 +61,7 @@ ___bin_SU2_DEF_LDADD = ../../Common/lib/libSU2.a \
 # always link to built dependencies from ./externals
 ___bin_SU2_DEF_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_DEF_LDADD += @su2_externals_LIBS@
+___bin_SU2_DEF_LDADD += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
 ___bin_SU2_DEF_CXXFLAGS += @MUTATIONPP_CXX@
