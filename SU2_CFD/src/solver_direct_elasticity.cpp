@@ -3384,6 +3384,79 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
     }
   }
 
+#ifdef HAVE_MPI
+  /*--- Perform a global reduction, every rank will get the nodal values of all halo elements ---*/
+  /*--- This should be cheaper than the "normal" way, since very few points are both halo and interface ---*/
+  vector<unsigned long> halo_point_loc, halo_point_glb;
+  vector<su2double> halo_force;
+
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nElem = geometry->GetnElem_Bound(iMarker);
+
+    for (iElem = 0; iElem < nElem; ++iElem) {
+      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
+      nNode = quad? 4 : nDim;
+
+      /*--- If this is an halo element we share the nodal forces ---*/
+      for (iNode = 0; iNode < nNode; ++iNode)
+        if (!geometry->node[geometry->bound[iMarker][iElem]->GetNode(iNode)]->GetDomain())
+          break;
+
+      if (iNode < nNode) {
+        for (iNode = 0; iNode < nNode; ++iNode) {
+          iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
+          /*--- local is for when later we update the values in this rank ---*/
+          halo_point_loc.push_back(iPoint);
+          halo_point_glb.push_back(geometry->node[iPoint]->GetGlobalIndex());
+          for (iDim = 0; iDim < nDim; ++iDim)
+            halo_force.push_back(node[iPoint]->Get_FlowTraction(iDim));
+        }
+      }
+    }
+  }
+  /*--- Determine the size of the arrays we need ---*/
+  unsigned long nHaloLoc = halo_point_loc.size();
+  unsigned long nHaloMax;
+  MPI_Allreduce(&nHaloLoc,&nHaloMax,1,MPI_UNSIGNED_LONG,MPI_MAX,MPI_COMM_WORLD);
+
+  /*--- Shared arrays, all the: number of halo points; halo point global indices; respective forces ---*/
+  unsigned long *halo_point_num = new unsigned long[size];
+  unsigned long *halo_point_all = new unsigned long[size*nHaloMax];
+  su2double *halo_force_all = new su2double[size*nHaloMax*nDim];
+  
+  /*--- If necessary put dummy values in the vectors to get a valid pointer ---*/
+  if (nHaloLoc==0) {
+    halo_point_glb.resize(1); halo_force.resize(1);
+  }
+  MPI_Allgather(&nHaloLoc,1,MPI_UNSIGNED_LONG,halo_point_num,1,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+  MPI_Allgather(&halo_point_glb[0],nHaloLoc,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&halo_force[0],nHaloLoc*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
+
+  /*--- Find shared points with other ranks and update our values ---*/
+  for (int proc = 0; proc < size; ++proc)
+  if (proc != rank) {
+    unsigned long offset = proc*nHaloMax;
+    for (iPoint = 0; iPoint < halo_point_num[proc]; ++iPoint) {
+      unsigned long iPoint_glb = halo_point_all[offset+iPoint];
+      ptrdiff_t pos = find(halo_point_glb.begin(),halo_point_glb.end(),iPoint_glb)-halo_point_glb.begin();
+      if (pos < long(halo_point_glb.size())) {
+        unsigned long iPoint_loc = halo_point_loc[pos];
+        node[iPoint_loc]->Add_FlowTraction(&halo_force_all[(offset+iPoint)*nDim]);
+      }
+    }
+  }
+
+  delete [] halo_point_num;
+  delete [] halo_point_all;
+  delete [] halo_force_all;
+#endif
 }
 
 su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config){
