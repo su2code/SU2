@@ -1,0 +1,80 @@
+Tecplot, Inc. LICENSE AGREEMENT FOR Tecplot's TecIO ("TecIO")
+
+TecIO is a software library provided by Tecplot, Inc. to enable software
+developed by others to write data in Tecplot's proprietary binary file
+formats, .plt and .szplt, and to read Tecplot binary data in .plt and .szplt
+format. TecIO is included with Tecplot 360 EX and may also be downloaded from
+http://www.tecplot.com/downloads/tecio-library/.
+
+This license applies to versions of the TecIO library distributed with Tecplot
+360 EX 2016 R2 and later and covers both the serial and parallel (MPI) versions
+of the library.
+
+1. This LICENSE AGREEMENT is between Tecplot, Inc. ("Tecplot"), and the
+Individual or Organization ("Licensee") accessing and otherwise using TecIO
+software in source or binary form and its associated documentation.
+
+2. Licensee acknowledges that this is only a limited nonexclusive license.
+Tecplot is and remains the owner of all titles, rights, and interests in TecIO
+Software. Title to TecIO and all copies thereof remain with Tecplot. The
+Materials are copyrighted and are protected by United States copyright laws and
+international treaty provisions. Licensee will not remove any copyright notice
+from the Materials. Tecplot does not grant any express or implied right to you
+under Tecplot patents, copyrights, trademarks, or trade secret information.
+
+3. Subject to the terms and conditions of this License Agreement, Tecplot
+hereby grants Licensee a nonexclusive, royalty-free, world-wide license to
+reproduce, analyze, test, perform and/or display publicly, prepare derivative
+works, distribute, and otherwise use TecIO alone or in any derivative version,
+provided, however, that Tecplot's License Agreement and Tecplot's notice of
+copyright, i.e., "Copyright © 1988-2016 Tecplot, Inc.  All rights reserved
+worldwide." are retained in TecIO alone or in any derivative version prepared
+by Licensee.
+
+4. In the event Licensee prepares a derivative work that is based on or
+incorporates TecIO or any part thereof, and wants to publish the derivative
+work as provided herein, Licensee hereby agrees to provide to all end users of
+any such work a brief summary of all changes made to TecIO, and to convey to
+Tecplot a copy of the modified TecIO source code within 30 days after
+publication of any work containing any such changes.
+
+5. Tecplot is making TecIO available to Licensee on an "AS IS" basis. NO OTHER
+WARRANTIES. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, TECPLOT, INC.
+AND ITS SUPPLIERS DISCLAIM ALL OTHER WARRANTIES AND CONDITIONS, EITHER EXPRESS
+OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, IMPLIED WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NONINFRINGEMENT,
+WITH REGARD TO THE SOFTWARE, AND THE PROVISION OF OR FAILURE TO PROVIDE SUPPORT
+SERVICES. APART FROM THE WARRANTIES STATED ABOVE, TECPLOT, INC. MAKES NO
+WARRANTY THAT THE SOFTWARE OR SERVICES WILL: MEET REQUIREMENTS; PROVIDE
+UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE, USE OF COMPUTERS OR NETWORKS;
+PROVIDE RESULTS WHICH ARE ACCURATE OR RELIABLE; MEET EXPECTATIONS, OR; CORRECT
+ANY ERRORS IN THE SOFTWARE. TECPLOT, INC. SHALL NOT BE RESPONSIBLE FOR MISUSE
+OF THE SOFTWARE OR ANY LOSS OF DATA. THIS LIMITED WARRANTY GIVES YOU SPECIFIC
+LEGAL RIGHTS. YOU MAY HAVE OTHERS, WHICH VARY FROM STATE/JURISDICTION TO
+STATE/JURISDICTION.
+
+6. TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL
+TECPLOT, INC. OR ITS SUPPLIERS BE LIABLE FOR ANY SPECIAL, INCIDENTAL, INDIRECT,
+OR CONSEQUENTIAL DAMAGES WHATSOEVER (INCLUDING, WITHOUT LIMITATION, DAMAGES FOR
+LOSS OF BUSINESS PROFITS, BUSINESS INTERRUPTION, LOSS OF BUSINESS INFORMATION,
+OR ANY OTHER PECUNIARY LOSS) ARISING OUT OF THE USE OF OR INABILITY TO USE THE
+SOFTWARE OR THE PROVISION OF OR FAILURE TO PROVIDE SUPPORT SERVICES, EVEN IF
+TECPLOT, INC. HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES. THIS SHALL
+BE TRUE EVEN IN THE EVENT OF THE FAILURE OF AN AGREED REMEDY. IN ANY CASE,
+TECPLOT, INC.'S ENTIRE LIABILITY FOR CLAIMS ARISING OUT OF USE OF THE SOFTWARE,
+SERVICE OR ARISING FROM ANY PROVISION OF THIS AGREEMENT SHALL BE LIMITED TO THE
+AMOUNT ACTUALLY PAID BY LICENSEE FOR THE SOFTWARE OR SERVICE COMPLAINED OF.
+BECAUSE SOME STATES AND JURISDICTIONS DO NOT ALLOW THE EXCLUSION OR LIMITATION
+OF LIABILITY, THE ABOVE LIMITATION MAY NOT APPLY TO YOU.
+
+7. This License Agreement will automatically terminate upon a material breach
+of its terms and conditions.
+
+8. Nothing in this License Agreement shall be deemed to create any relationship
+of agency, partnership, or joint venture between Tecplot and Licensee.  This
+License Agreement does not grant permission to use Tecplot trademarks or trade
+name in a trademark sense to endorse or promote products or services of
+Licensee, or any third party.
+
+9. By copying, installing or otherwise using TecIO, Licensee agrees to be bound
+by the terms and conditions of this License Agreement.
