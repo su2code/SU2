@@ -315,6 +315,7 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBPTHREAD = @su2_externals_LIBPTHREAD@
 su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@

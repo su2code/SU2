@@ -315,6 +315,7 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 su2_externals_INCLUDES = @su2_externals_INCLUDES@
+su2_externals_LIBPTHREAD = @su2_externals_LIBPTHREAD@
 su2_externals_LIBS = @su2_externals_LIBS@
 sysconfdir = @sysconfdir@
 target = @target@
@@ -359,8 +360,9 @@ ___bin_SU2_SOL_LDADD =  \
 	../../SU2_CFD/src/libSU2Core_a-output_su2.o \
 	../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
 	../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
-	../../Common/lib/libSU2.a @su2_externals_LIBS@ @HDF5_LD@ \
-	@SZIP_LD@ @ZLIB_LD@ @MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
+	../../Common/lib/libSU2.a @su2_externals_LIBS@ \
+	@su2_externals_LIBPTHREAD@ @HDF5_LD@ @SZIP_LD@ @ZLIB_LD@ \
+	@MUTATIONPP_LD@ @JSONCPP_LD@ $(am__empty)
 all: all-am
 
 .SUFFIXES:
