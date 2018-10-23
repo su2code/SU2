@@ -32,7 +32,7 @@ You will find more information and the latest news in:
   SU2 INSTALLATION
 ---------------------------------------------------
 
-To build SU2 from the source code, just open a terminal and run the './configure', 'make', and 'make install' commands in the root directory of the source distribution. You can provide an install location using the prefix option to configure. If there are issues with autotool version requirements, run the ./bootstrap script provided in the root directory in order to build local versions of the tools and reset the makefiles (before trying configure/make/make install again). Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
+To build SU2 from the source code, first open a terminal and execute the ./bootstrap script provided in the root directory of the source distribution in order to set the makefiles for your local system. Then, simply run the './configure', 'make', and 'make install' commands. You can provide an install location using the prefix option to configure. Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
 
 ----------------------------------------------------------
   SU2 PATH SETUP 
