@@ -223,10 +223,6 @@ protected:
   
   string HistorySep;                  /*!< \brief Character which separates values in the history file */
   
-  vector<string>    HistoryHeader;    /*!< \brief Vector containing the names of the fields printed to the history file. */
-  vector<su2double> HistoryValues;    /*!< \brief Vector containing the values of the fields printed to the history file. */
- 
-  
   /** \brief Structure to store information for a history output field.
    * 
    *  The stored information is printed to the history file and to screen. 
@@ -264,10 +260,12 @@ protected:
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
   
-  std::vector<string> HistoryFields;
-  unsigned short nHistoryOutput;
-  std::vector<string> ScreenFields;
-  unsigned short nScreenOutput;
+  std::vector<string> RequestedHistoryFields;
+  unsigned short nRequestedHistoryFields;
+  std::vector<string> RequestedScreenFields;
+  unsigned short nRequestedScreenFields;
+  std::vector<string> RequestedVolumeFields;
+  unsigned short nRequestedVolumeFields;
   char char_histfile[200];
 
   ofstream HistFile;
@@ -861,10 +859,6 @@ public:
   void PrintScreenInteger(stringstream &stream, unsigned long val);
   
   void PrintScreenHeaderString(stringstream &stream, string header);
-  
-  void AddHistoryValue(su2double val);
-
-  void AddHistoryHeaderString(string header);
   
   void PrintHistorySep(stringstream& stream);
   

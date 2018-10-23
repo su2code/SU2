@@ -81,14 +81,6 @@ inline void COutput::PrintScreenHeaderString(stringstream& stream, string header
   stream << std::right << std::setw(field_width) << header; 
 }
 
-inline void COutput::AddHistoryValue(su2double val) { 
-  HistoryValues.push_back(val);
-}
-
-inline void COutput::AddHistoryHeaderString(string header) {
-  HistoryHeader.push_back(header); 
-}
-
 inline void COutput::PrintHistorySep(stringstream& stream){
   stream << HistorySep;
 }

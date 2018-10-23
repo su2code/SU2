@@ -310,14 +310,19 @@ COutput::COutput(CConfig *config) {
     }
   }
   
-  nHistoryOutput = config->GetnHistoryOutput();
-  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
-    HistoryFields.push_back(config->GetHistoryOutput_Field(iField));
+  nRequestedHistoryFields = config->GetnHistoryOutput();
+  for (unsigned short iField = 0; iField < nRequestedHistoryFields; iField++){
+    RequestedHistoryFields.push_back(config->GetHistoryOutput_Field(iField));
   }
   
-  nScreenOutput = config->GetnScreenOutput();
-  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
-    ScreenFields.push_back(config->GetScreenOutput_Field(iField));
+  nRequestedScreenFields = config->GetnScreenOutput();
+  for (unsigned short iField = 0; iField < nRequestedScreenFields; iField++){
+    RequestedScreenFields.push_back(config->GetScreenOutput_Field(iField));
+  }
+  
+  nRequestedVolumeFields = config->GetnVolumeOutput();
+  for (unsigned short iField = 0; iField < nRequestedVolumeFields; iField++){
+    RequestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
   
 }
@@ -8577,51 +8582,51 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
     HistFile << "VARIABLES = ";
   }
   
-  string currentField;
-  
-  bool found_field = false;
-  
-  for (unsigned short iField = 0; iField <nHistoryOutput; iField++){
-    currentField = HistoryFields[iField];   
-    found_field = false;
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
-      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
-      if (currentField == Field.OutputGroup){
-        AddHistoryHeaderString(Field.FieldName);
-        found_field = true;
-      }
-    }
+  stringstream out;
+  string RequestedField;
+  std::vector<bool> found_field(nRequestedHistoryFields, false);
     
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
-      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
-        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
-        if (currentField == Field.OutputGroup){
-          AddHistoryHeaderString(Field.FieldName);
-          found_field = true;
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+    HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      RequestedField = RequestedHistoryFields[iReqField];   
+      if (RequestedField == Field.OutputGroup || (RequestedField == HistoryOutput_List[iField_Output])){
+        found_field[iReqField] = true;        
+        out << "\"" << Field.FieldName << "\"" << HistorySep;
+      }
+    }  
+  }
+  
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+    for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){  
+      HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup || (RequestedField == HistoryOutputPerSurface_List[iField_Output])){
+          found_field[iReqField] = true;          
+          out << "\"" << Field.FieldName << "\"" << HistorySep;        
         }
       }
     }
-    if (!found_field){
-      SU2_MPI::Error(string("There is no history output field/group with name ") + currentField + string(" defined in the current solver."), CURRENT_FUNCTION);
-    }
-  }
-    
-  stringstream out;
-  for (unsigned short iHeader = 0; iHeader < HistoryHeader.size(); iHeader++){
-    out << "\"" << HistoryHeader[iHeader] << "\"";
-    if (iHeader !=  HistoryHeader.size() - 1) out << HistorySep;
   }
   
-  out << endl;
-  HistFile << out.str();
-  HistFile.flush();
-
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+    if (!found_field[iReqField]){
+      SU2_MPI::Error("Requested history field " + RequestedHistoryFields[iReqField] + " not defined in the current solver.", CURRENT_FUNCTION);
+    }
+  }
+  
+  /*--- Print the string to file and remove the last character (a separator) ---*/
+  HistFile << out.str().substr(0, out.str().size() - 1);
+  HistFile << endl;
   if (config->GetOutput_FileFormat() == TECPLOT ||
       config->GetOutput_FileFormat() == TECPLOT_BINARY ||
       config->GetOutput_FileFormat() == FIELDVIEW ||
       config->GetOutput_FileFormat() == FIELDVIEW_BINARY) {
     HistFile << "ZONE T= \"Convergence history\"" << endl;
   }
+  HistFile.flush();
   
 }
 
@@ -8629,42 +8634,35 @@ void COutput::SetHistoryFile_Header(CConfig *config) {
 void COutput::SetHistoryFile_Output(CConfig *config) { 
   
   stringstream out;
-  string currentField;
+  string RequestedField;
   
-  HistoryValues.clear();
   
-  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
-    currentField = HistoryFields[iField];   
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
-      HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
-      if (currentField == Field.OutputGroup){
-        AddHistoryValue(Field.Value);
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutput_List.size(); iField_Output++){
+    HistoryOutputField &Field = HistoryOutput_Map[HistoryOutput_List[iField_Output]];
+    for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+      RequestedField = RequestedHistoryFields[iReqField];   
+      if (RequestedField == Field.OutputGroup){
+        out << std::setprecision(10) << Field.Value << HistorySep << " ";
       }
     }
   }
   
-  
-  for (unsigned short iField = 0; iField < nHistoryOutput; iField++){
-    currentField = HistoryFields[iField];   
-    
-    for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
-      for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
-        HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
-        if (currentField == Field.OutputGroup){
-          AddHistoryValue(Field.Value);
+  for (unsigned short iField_Output = 0; iField_Output < HistoryOutputPerSurface_List.size(); iField_Output++){
+    for (unsigned short iMarker = 0; iMarker < HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]].size(); iMarker++){
+      HistoryOutputField &Field = HistoryOutputPerSurface_Map[HistoryOutputPerSurface_List[iField_Output]][iMarker];
+      for (unsigned short iReqField = 0; iReqField < nRequestedHistoryFields; iReqField++){
+        RequestedField = RequestedHistoryFields[iReqField];   
+        if (RequestedField == Field.OutputGroup){
+          out << std::setprecision(10) << Field.Value << HistorySep << " ";
         }
       }
     }
   }
   
-  for (unsigned short iValue = 0; iValue < HistoryValues.size(); iValue++){
-    out << std::setprecision(10) << HistoryValues[iValue];
-    if (iValue !=  HistoryValues.size() - 1) out << HistorySep;
-    out << " ";
-  }
-  out << endl;
-  HistFile << out.str();
+  /*--- Print the string to file and remove the last two characters (a separator and a space) ---*/
+  
+  HistFile << out.str().substr(0, out.str().size()-2);
+  HistFile << endl;
   HistFile.flush();
 }
 
@@ -8676,34 +8674,34 @@ void COutput::SetScreen_Header(CConfig *config) {
 void COutput::SetScreen_Output(CConfig *config) {
   
 
-  string currentField;
+  string RequestedField;
   
-  for (unsigned short iField = 0; iField < nScreenOutput; iField++){
+  for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
     stringstream out;
-    currentField = ScreenFields[iField]; 
-    if (HistoryOutput_Map.count(currentField) > 0){  
-      switch (HistoryOutput_Map[currentField].ScreenFormat) {
+    RequestedField = RequestedScreenFields[iReqField]; 
+    if (HistoryOutput_Map.count(RequestedField) > 0){  
+      switch (HistoryOutput_Map[RequestedField].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[currentField].Value));
+          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutput_Map[RequestedField].Value));
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutput_Map[currentField].Value);
+          PrintScreenFixed(out, HistoryOutput_Map[RequestedField].Value);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutput_Map[currentField].Value);
+          PrintScreenScientific(out, HistoryOutput_Map[RequestedField].Value);
           break;      
       }
     }
-    if (HistoryOutputPerSurface_Map.count(currentField) > 0){
-      switch (HistoryOutputPerSurface_Map[currentField][0].ScreenFormat) {
+    if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+      switch (HistoryOutputPerSurface_Map[RequestedField][0].ScreenFormat) {
         case FORMAT_INTEGER:
-          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[currentField][0].Value));
+          PrintScreenInteger(out, SU2_TYPE::Int(HistoryOutputPerSurface_Map[RequestedField][0].Value));
           break;
         case FORMAT_FIXED:
-          PrintScreenFixed(out, HistoryOutputPerSurface_Map[currentField][0].Value);
+          PrintScreenFixed(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
           break;
         case FORMAT_SCIENTIFIC:
-          PrintScreenScientific(out, HistoryOutputPerSurface_Map[currentField][0].Value);
+          PrintScreenScientific(out, HistoryOutputPerSurface_Map[RequestedField][0].Value);
           break;   
       }
     }      
@@ -8752,10 +8750,15 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
     
+    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
+      RequestedHistoryFields.push_back("EXT_ITER");
+      nRequestedHistoryFields++;
+    }
+    
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     
     SetHistoryOutputFields(config);
-    
+   
     Postprocess_HistoryFields(config);
     
     /*--- Open the history file ---*/
@@ -8768,20 +8771,20 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     SetHistoryFile_Header(config);    
     
-    string currentField;
+    string RequestedField;
   
     /*--- Set screen convergence output header ---*/
     
     // Evaluate the requested output
-    for (unsigned short iField = 0; iField < nScreenOutput; iField++){
-      currentField = ScreenFields[iField];  
-      if (HistoryOutput_Map.count(currentField) > 0){ 
-        ConvergenceTable->AddColumn(HistoryOutput_Map[currentField].FieldName, field_width);
+    for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
+      RequestedField = RequestedScreenFields[iReqField];  
+      if (HistoryOutput_Map.count(RequestedField) > 0){ 
+        ConvergenceTable->AddColumn(HistoryOutput_Map[RequestedField].FieldName, field_width);
       } else {
   //      SU2_MPI::Error(string("Requested screen output field not found: ") + currentField, CURRENT_FUNCTION);
       }
-      if (HistoryOutputPerSurface_Map.count(currentField) > 0){
-        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[currentField][0].FieldName, field_width);
+      if (HistoryOutputPerSurface_Map.count(RequestedField) > 0){
+        ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
       }
     }
   }
@@ -8790,45 +8793,55 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   
+  /*--- Make sure that coordinates are always in the volume output --- */
+  
+  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
+    RequestedVolumeFields.push_back("COORDINATES");
+    nRequestedVolumeFields++;
+  }
+  
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
   SetVolumeOutputFields(config);
+ 
+  // TODO: Add check for coordinates in solver output 
   
   GlobalField_Counter = 0;
   
-  string currentField;
-  bool found_field = false;
+  string RequestedField;
+  std::vector<bool> found_field(nRequestedVolumeFields, false);
   
-  /*--- Loop through all fields specified in the config ---*/
   
-  for (unsigned short iField = 0; iField < config->GetnVolumeOutput(); iField++){
-    currentField = config->GetVolumeOutput_Field(iField);  
+  /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields(). 
+ * If it is also defined in the config (either as part of a group or a single field), the field 
+ * object gets an offset so that we know where to find the data in the Local_Data() array.
+ *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
+
+  for (unsigned short iField_Output = 0; iField_Output < VolumeOutput_List.size(); iField_Output++){
     
-    found_field = false;
+    VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField_Output]];
     
-    /*--- Loop through all fields defined in the corresponding SetVolumeOutputFields(). 
-     * If it is also defined in the config (either as part of a group or a single field), the field 
-     * object gets an offset so that we know where to find the data in the Local_Data() array.
-     *  Note that the default offset is -1. An index !=-1 defines this field as part of the output. ---*/
+    /*--- Loop through all fields specified in the config ---*/
     
-    for (unsigned short iField_Output = 0; iField_Output < VolumeOutput_List.size(); iField_Output++){
+    for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
       
-      VolumeOutputField &Field = VolumeOutput_Map[VolumeOutput_List[iField_Output]];
-      
-      if (((currentField == Field.OutputGroup) || (currentField == VolumeOutput_List[iField_Output])) && (Field.Offset == -1)){
+      RequestedField = RequestedVolumeFields[iReqField];  
+            
+      if (((RequestedField == Field.OutputGroup) || (RequestedField == VolumeOutput_List[iField_Output])) && (Field.Offset == -1)){
         Field.Offset = GlobalField_Counter;
         Variable_Names.push_back(Field.FieldName);
         GlobalField_Counter++;
         
-        found_field = true;
+        found_field[iReqField] = true;
       }
     }
     
-    if (!found_field){
-      SU2_MPI::Error(string("There is no volume output field/group with name ") + currentField + string(" defined in the current solver."), CURRENT_FUNCTION);
-    }
+    
+//    if ((std::find(found_field.begin(), found_field.end(), false) != found_field.end())){
+////      SU2_MPI::Error(string("There is no volume output field/group with name ") + std::find(found_field.begin(), found_field.end(), false) + string(" defined in the current solver."), CURRENT_FUNCTION);
+//    }
   }
-
+  
   
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
@@ -8909,28 +8922,29 @@ void COutput::CollectVolumeData(CConfig* config, CGeometry* geometry, CSolver** 
 
 void COutput::Postprocess_HistoryData(CConfig *config, bool dualtime){
   
-  map<string, HistoryOutputField>::iterator it;
-  for (it = HistoryOutput_Map.begin(); it != HistoryOutput_Map.end(); it++){
-    if (it->second.FieldType == TYPE_RESIDUAL){
+  for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+    HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
+    if (currentField.FieldType == TYPE_RESIDUAL){
       if ( SetInit_Residuals(config) ) {
-        Init_Residuals[it->first] = it->second.Value;
+        Init_Residuals[HistoryOutput_List[iField]] = currentField.Value;
       }
-      SetHistoryOutputValue("REL_" + it->first, it->second.Value - Init_Residuals[it->first]);
+      SetHistoryOutputValue("REL_" + HistoryOutput_List[iField], currentField.Value - Init_Residuals[HistoryOutput_List[iField]]);
     }
-    if ((it->second.FieldType == TYPE_COEFFICIENT) && SetUpdate_Averages(config, dualtime)){
-      SetHistoryOutputValue("TAVG_" + it->first, RunningAverages[it->first].Update(it->second.Value));
+    if ((currentField.FieldType == TYPE_COEFFICIENT) && SetUpdate_Averages(config, dualtime)){
+      SetHistoryOutputValue("TAVG_" + HistoryOutput_List[iField], RunningAverages[HistoryOutput_List[iField]].Update(currentField.Value));
     }
   }
 }
 
 void COutput::Postprocess_HistoryFields(CConfig *config){
-  map<string, HistoryOutputField>::iterator it;
-  for (it = HistoryOutput_Map.begin(); it != HistoryOutput_Map.end(); it++){
-    if (it->second.FieldType == TYPE_RESIDUAL){
-      AddHistoryOutput("REL_" + it->first, "rel" + it->second.FieldName, it->second.ScreenFormat, "REL_" + it->second.OutputGroup);
+  
+  for (unsigned short iField = 0; iField < HistoryOutput_List.size(); iField++){
+    HistoryOutputField &currentField = HistoryOutput_Map[HistoryOutput_List[iField]];
+    if (currentField.FieldType == TYPE_RESIDUAL){
+      AddHistoryOutput("REL_" + HistoryOutput_List[iField], "rel" + currentField.FieldName, currentField.ScreenFormat, "REL_" + currentField.OutputGroup);
     }
-    if (it->second.FieldType == TYPE_COEFFICIENT){
-      AddHistoryOutput("TAVG_" + it->first, "tavg" + it->second.FieldName, it->second.ScreenFormat, "TAVG_" + it->second.OutputGroup);
+    if (currentField.FieldType == TYPE_COEFFICIENT){
+      AddHistoryOutput("TAVG_" + HistoryOutput_List[iField], "tavg" + currentField.FieldName, currentField.ScreenFormat, "TAVG_" + currentField.OutputGroup);
     }
   }
 }
