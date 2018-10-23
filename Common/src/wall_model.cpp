@@ -114,7 +114,6 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   double h_bc   = c_p * tExchange;
   double tauWall_lam = muExchange * velExchange / h_wm;
   unsigned short nfa = numPoints + 1;
-  unsigned short info;
 
   /*--- Set up vectors ---*/
   
@@ -185,11 +184,15 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     // Solve the matrix problem to get the velocity field
     // rhs returned the solution
     //********LAPACK CALL*******
+#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
+    int info;
     info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
-    if (info > 0) {
-      cout << info << endl;
-      SU2_MPI::Error("The diagonal element of the triangular factor of A,\n is zero, so A is singular. The solution cannot\n be computed", CURRENT_FUNCTION);
-    }
+    if (info != 0)
+      SU2_MPI::Error("Unsuccessful call to LAPACKE_dgtsv", CURRENT_FUNCTION);
+#else
+    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
+#endif
+
     u = rhs;
     
     // update total viscosity
@@ -259,7 +262,13 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     
     // Solve the matrix problem to get the temperature field
     // *******LAPACK CALL********
-    LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
+    info = LAPACKE_dgtsv(LAPACK_COL_MAJOR,numPoints,1,lower.data(),diagonal.data(),upper.data(),rhs.data(),numPoints);
+    if (info != 0)
+      SU2_MPI::Error("Unsuccessful call to LAPACKE_dgtsv", CURRENT_FUNCTION);
+#else
+    SU2_MPI::Error("Not compiled with LAPACKE support", CURRENT_FUNCTION);
+#endif
     
     // Get Temperature from enthalpy
     // Temperature will be at cv or face?
