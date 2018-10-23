@@ -75,19 +75,27 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
-  if (nHistoryOutput == 0){
-    HistoryFields.push_back("EXT_ITER");
-    HistoryFields.push_back("RMS_RES");
-    nHistoryOutput = HistoryFields.size();
+  if (nRequestedHistoryFields == 0){
+    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
-  if (nScreenOutput == 0){
-    ScreenFields.push_back("EXT_ITER");
-    ScreenFields.push_back("RMS_PRESSURE");
-    ScreenFields.push_back("RMS_VELOCITY-X");
-    ScreenFields.push_back("RMS_VELOCITY-Y");
-    nScreenOutput = ScreenFields.size();
+  if (nRequestedScreenFields == 0){
+    RequestedScreenFields.push_back("EXT_ITER");
+    RequestedScreenFields.push_back("RMS_PRESSURE");
+    RequestedScreenFields.push_back("RMS_VELOCITY-X");
+    RequestedScreenFields.push_back("RMS_VELOCITY-Y");
+    nRequestedScreenFields = RequestedScreenFields.size();
   }
+  
+  if (nRequestedVolumeFields == 0){
+    RequestedVolumeFields.push_back("COORDINATES");
+    RequestedVolumeFields.push_back("CONSERVATIVE");
+    RequestedVolumeFields.push_back("PRIMITIVE");
+    nRequestedVolumeFields = RequestedVolumeFields.size();
+  }
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {
