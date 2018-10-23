@@ -162,8 +162,8 @@ public:
 
 private:
 
-  su2double      expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
-  unsigned short numPoints;        /*!< \brief  Number of points used in the wall model grid. */
+  su2double expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
+  int       numPoints;        /*!< \brief  Number of points used in the wall model grid. */
 
   vector<su2double> y_cv;    /*!< \brief  The coordinates in normal direction of the wall model grid (control volumes). */
   vector<su2double> y_fa;    /*!< \brief  The coordinates in normal direction of the wall model grid (faces of CV). */
@@ -225,8 +225,8 @@ public:
   
 private:
   
-  su2double      expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
-  unsigned short numPoints;        /*!< \brief  Number of points used in the wall model grid. */
+  su2double expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
+  int       numPoints;        /*!< \brief  Number of points used in the wall model grid. */
   
   vector<su2double> coorGridPoints;    /*!< \brief  The coordinates in normal direction of the wall model grid. */
 };

@@ -32,11 +32,10 @@
 #include "../include/fem_geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
 
-/* MKL or LAPACKE include files, if supported. */
-#ifdef HAVE_MKL
-#include "mkl.h"
-#elif HAVE_LAPACKE
-#include "lapacke.h"
+/* Prototypes for Lapack functions, if MKL or LAPACK is used. */
+#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+extern "C" void dpotrf_(char *, int*, passivedouble*, int*, int*);
+extern "C" void dpotri_(char *, int*, passivedouble*, int*, int*);
 #endif
 
 bool long3T::operator<(const long3T &other) const {
@@ -5817,21 +5816,21 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     /*--- Check if the inverse of mass matrix is needed. ---*/
     if( FullInverseMassMatrix ) {
 
-      /*--- Check if LAPACKE/MKL can be used to compute the inverse. ---*/
+      /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
 
-#if defined (HAVE_LAPACKE) || defined(HAVE_MKL)
+#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
 
-      /* The inverse can be computed using the Lapack routines LAPACKE_dpotrf
-         and LAPACKE_dpotri. As the mass matrix is positive definite, a
-         Cholesky decomposition is used, which is much more efficient than
-         a standard inverse. */
-      lapack_int errorCode;
-      errorCode = LAPACKE_dpotrf(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   massMat.data(), nDOFs);
+      /* The inverse can be computed using the Lapack routines dpotrf
+         and dpotri. As the mass matrix is positive definite, a
+         Cholesky decomposition is used, which is much more efficient
+         than a standard inverse. */
+      char uplo = 'L';
+      int  NN = nDOFs, errorCode;
+      dpotrf_(&uplo, &NN, massMat.data(), &NN, &errorCode);
       if(errorCode != 0) {
         ostringstream message;
         if(errorCode < 0)  {
-          message << "Something wrong when calling LAPACKE_dpotrf. Error code: "
+          message << "Something wrong when calling dpotrf. Error code: "
                   << errorCode;
         }
         else {
@@ -5844,12 +5843,11 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
       }
 
-      errorCode = LAPACKE_dpotri(LAPACK_ROW_MAJOR, 'U', nDOFs,
-                                   massMat.data(), nDOFs);
+      dpotri_(&uplo, &NN, massMat.data(), &NN, &errorCode);
       if(errorCode != 0) {
         ostringstream message;
         if(errorCode < 0) {
-          message << "Something wrong when calling LAPACKE_dpotri. Error code: "
+          message << "Something wrong when calling dpotri. Error code: "
                   << errorCode;
         }
         else {
@@ -5871,7 +5869,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
       }
 #else
       /* No support for Lapack. Hence an internal routine is used.
-         This does not all the checking the Lapack routine does. */
+         This does not do all the checking the Lapack routines do. */
       FEMStandardElementBaseClass::InverseMatrix(nDOFs, massMat);
 #endif
       /* Store the inverse of the mass matrix in volElem[i]. */
