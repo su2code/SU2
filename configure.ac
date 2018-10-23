@@ -177,15 +177,27 @@ fi
 # --------------------------------------------------------------
 su2_externals_INCLUDES=""
 su2_externals_LIBS=""
+su2_externals_LIBPTHREAD=""
 
 # Tecplot
 CONFIGURE_TECIO
 if (test $enabletecio = yes); then
   su2_externals_INCLUDES="-DHAVE_TECIO $TECIO_INCLUDE $su2_externals_INCLUDES"
   su2_externals_LIBS="$TECIO_LIB $su2_externals_LIBS"
+  # Check if boost directory exists, otherwise extract the sources
+  if ( ! test -d "$srcdir/externals/tecio/boost" ); then
+    AC_MSG_RESULT([Extracting boost source ...])
+    if ( ! tar -xzf $srcdir/externals/tecio/boost.tar.gz -C $srcdir/externals/tecio/ ); then
+	AC_MSG_ERROR([Extraction of boost sources to $srcdir/externals/tecio/boost using 'tar' failed ...])	    
+    fi
+  fi
+   # Attempt to get pthread to work
+   AC_CHECK_LIB(pthread,pthread_create,LIBPTHREAD="-lpthread")
+  su2_externals_LIBPTHREAD="$LIBPTHREAD"
 else
   su2_externals_INCLUDES="$su2_externals_INCLUDES"
 fi
+
 AM_CONDITIONAL(BUILD_TECIO, test x$enabletecio = xyes)
 AC_CONFIG_FILES([externals/tecio/Makefile])
 
@@ -224,6 +236,7 @@ AC_CONFIG_FILES([externals/cgns/Makefile])
 
 AC_SUBST([su2_externals_INCLUDES])
 AC_SUBST([su2_externals_LIBS])
+AC_SUBST([su2_externals_LIBPTHREAD])
 
 
 ##########################
@@ -642,6 +655,7 @@ Build Configuration Summary:
 
     External includes:    $su2_externals_INCLUDES
     External libs:        $su2_externals_LIBS
+    External libpthreads: $su2_externals_LIBPTHREAD
 
     Build SU2_CFD:        $build_CFD
     Build SU2_DOT:        $build_DOT
