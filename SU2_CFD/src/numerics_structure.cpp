@@ -2877,8 +2877,8 @@ void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
       Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
   }
-  tred2(Eig_Vec, Eig_Val, e);
-  tql2(Eig_Vec, Eig_Val, e);
+  tred2(Eig_Vec, Eig_Val, e, 3);
+  tql2(Eig_Vec, Eig_Val, e, 3);
 
   delete [] e;
 }
@@ -2915,7 +2915,7 @@ void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
   delete [] tmp;
 }
 
-void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
+void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short n) {
 
     unsigned short i,j,k;
     /*  This is derived from the Algol procedures tred2 by        */
@@ -2923,13 +2923,13 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
     /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
     /*  Fortran subroutine in EISPACK.                            */
 
-    for (j = 0; j < 3; j++) {
-        d[j] = V[3-1][j];
+    for (j = 0; j < n; j++) {
+        d[j] = V[n-1][j];
     }
 
     /* Householder reduction to tridiagonal form. */
 
-    for (i = 3-1; i > 0; i--) {
+    for (i = n-1; i > 0; i--) {
 
         /* Scale to avoid under/overflow. */
 
@@ -3002,8 +3002,8 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
 
     /* Accumulate transformations. */
 
-    for (i = 0; i < 3-1; i++) {
-        V[3-1][i] = V[i][i];
+    for (i = 0; i < n-1; i++) {
+        V[n-1][i] = V[i][i];
         V[i][i] = 1.0;
         su2double h = d[i+1];
         if (h != 0.0) {
@@ -3024,33 +3024,33 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e) {
             V[k][i+1] = 0.0;
         }
     }
-    for (j = 0; j < 3; j++) {
-        d[j] = V[3-1][j];
-        V[3-1][j] = 0.0;
+    for (j = 0; j < n; j++) {
+        d[j] = V[n-1][j];
+        V[n-1][j] = 0.0;
     }
-    V[3-1][3-1] = 1.0;
+    V[n-1][n-1] = 1.0;
     e[0] = 0.0;
 }
 
 /* Symmetric tridiagonal QL algorithm */
-void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
+void CNumerics::tql2(su2double **V, su2double *d, su2double *e, unsigned short n) {
 
     int i,j,k,l;
-    for (i = 1; i < 3; i++) {
+    for (i = 1; i < n; i++) {
         e[i-1] = e[i];
     }
-    e[3-1] = 0.0;
+    e[n-1] = 0.0;
 
     su2double f = 0.0;
     su2double tst1 = 0.0;
     su2double eps = pow(2.0,-52.0);
-    for (l = 0; l < 3; l++) {
+    for (l = 0; l < n; l++) {
 
         /* Find small subdiagonal element */
 
         tst1 = max(tst1,(fabs(d[l]) + fabs(e[l])));
         int m = l;
-        while (m < 3) {
+        while (m < n) {
             if (fabs(e[m]) <= eps*tst1) {
                 break;
             }
@@ -3077,7 +3077,7 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
                 d[l+1] = e[l] * (p + r);
                 su2double dl1 = d[l+1];
                 su2double h = g - d[l];
-                for (i = l+2; i < 3; i++) {
+                for (i = l+2; i < n; i++) {
                     d[i] -= h;
                 }
                 f = f + h;
@@ -3106,7 +3106,7 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
 
                     /* Accumulate transformation. */
 
-                    for (k = 0; k < 3; k++) {
+                    for (k = 0; k < n; k++) {
                         h = V[k][i+1];
                         V[k][i+1] = s * V[k][i] + c * h;
                         V[k][i] = c * V[k][i] - s * h;
@@ -3126,10 +3126,10 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
 
     /* Sort eigenvalues and corresponding vectors. */
 
-    for (i = 0; i < 3-1; i++) {
+    for (i = 0; i < n-1; i++) {
         k = i;
         su2double p = d[i];
-        for (j = i+1; j < 3; j++) {
+        for (j = i+1; j < n; j++) {
             if (d[j] < p) {
                 k = j;
                 p = d[j];
@@ -3138,7 +3138,7 @@ void CNumerics::tql2(su2double **V, su2double *d, su2double *e) {
         if (k != i) {
             d[k] = d[i];
             d[i] = p;
-            for (j = 0; j < 3; j++) {
+            for (j = 0; j < n; j++) {
                 p = V[j][i];
                 V[j][i] = V[j][k];
                 V[j][k] = p;
