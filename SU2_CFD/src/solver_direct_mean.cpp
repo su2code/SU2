@@ -858,9 +858,17 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  
+  PreprocessComms(geometry, config, nPrimVarGrad*nDim);
+  
+  LoadComms(geometry, config, SOLUTION);
+  InitiateComms(COMM_TYPE_DOUBLE);
+  CompleteComms();
+  UnpackComms(geometry, config, SOLUTION);
+  
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
 }
 
@@ -6402,7 +6410,12 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  LoadComms(geometry, config, SOLUTION);
+  InitiateComms(COMM_TYPE_DOUBLE);
+  CompleteComms();
+  UnpackComms(geometry, config, SOLUTION);
+  
+  //Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
   

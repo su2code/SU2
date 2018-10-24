@@ -1814,6 +1814,14 @@ static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM
 ("SU2", SU2_REF)
 ("CUSTOM", CUSTOM_REF);
 
+/*!
+ * \brief Vertex-based quantities exchanged in point-to-point communications.
+ */
+enum MPI_QUANTITIES {
+  SOLUTION = 0,    /*!< \brief Conservative solution communication. */
+  PRIMITIVE = 1    /*!< \brief Primitive solution communication. */
+};
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {

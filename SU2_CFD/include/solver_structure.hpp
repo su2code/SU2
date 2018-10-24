@@ -134,6 +134,18 @@ protected:
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
+  int countPerPoint;          /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int nSends;                 /*!< \brief Number of sends during point-to-point comms. */
+  int nRecvs;                 /*!< \brief Number of receives during point-to-point comms. */
+  int *nElem_Send;            /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
+  int *nElem_Recv;            /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  unsigned long *Local_Point_Send;            /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
+  unsigned long *Local_Point_Recv;            /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
+  su2double *bufRecv;          /*!< \brief Data structure for point-to-point receive. */
+  su2double *bufSend;          /*!< \brief Data structure for point-to-point send. */
+  SU2_MPI::Request *sendReq;  /*!< \brief Data structure for point-to-point send requests. */
+  SU2_MPI::Request *recvReq;  /*!< \brief Data structure for point-to-point recv requests. */
+  
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -164,6 +176,49 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void SetIterLinSolver(unsigned short val_iterlinsolver);
+  
+  /*!
+   * \brief Method for applying a rotation matrix to a vector (periodic rotations).
+   * \param[in] rotMatrix - Rotation matrix in a 3x3 format.
+   * \param[in] vec - Vector to be rotated.
+   * \param[in] index - Index position of first entry that should be rotated in vec.
+   */
+  void Rotate_Vector(su2double** rotMatrix, su2double* vec, unsigned short index);
+  
+  /*!
+   * \brief Routine to allocate persistent data structures for point-to-point MPI communications
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_packetSize - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
+   */
+  void PreprocessComms(CGeometry *geometry, CConfig *config, int val_maxCountPerPoint);
+  
+  /*!
+   * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void LoadComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
+   * \param[in] commType - Enumerated type for the communicated MPI data type.
+   */
+  void InitiateComms(unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
+   */
+  void CompleteComms(void);
+  
+  /*!
+   * \brief Routine to unpack and store a specified quantity after MPI point-to-point communication.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void UnpackComms(CGeometry *geometry, CConfig *config, unsigned short commType);
   
   /*!
    * \brief Set number of linear solver iterations.
@@ -487,13 +542,6 @@ public:
    * \return Pointer to the location (x, y, z) of the biggest residual for the variable <i>val_var</i>.
    */
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
-  
-  /*!
-   * \brief Set Value of the residual if there is a grid movement.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Impose the send-receive boundary condition.

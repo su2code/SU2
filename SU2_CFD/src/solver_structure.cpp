@@ -88,7 +88,14 @@ CSolver::CSolver(void) {
   nRow_InletFile    = NULL;
   nCol_InletFile    = NULL;
   Inlet_Data        = NULL;
-
+  
+  /*--- MPI point-to-point data structures ---*/
+  
+  bufRecv  = NULL;
+  bufSend  = NULL;
+  sendReq  = NULL;
+  recvReq  = NULL;
+  
 }
 
 CSolver::~CSolver(void) {
@@ -206,6 +213,16 @@ CSolver::~CSolver(void) {
   if (nCol_InletFile    != NULL) delete [] nCol_InletFile;    nCol_InletFile    = NULL;
   if (Inlet_Data        != NULL) delete [] Inlet_Data;        Inlet_Data        = NULL;
 
+  /*--- Delete structures for MPI point-to-point communication. ---*/
+
+  if (bufRecv != NULL) delete [] bufRecv;
+  if (bufSend != NULL) delete [] bufSend;
+  if (sendReq != NULL) delete [] sendReq;
+  if (recvReq != NULL) delete [] recvReq;
+  
+  if (nElem_Recv != NULL) delete [] nElem_Recv;
+  if (nElem_Send != NULL) delete [] nElem_Send;
+  
 }
 
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
@@ -388,75 +405,475 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 }
 
-void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
+void CSolver::PreprocessComms(CGeometry *geometry,
+                              CConfig *config,
+                              int val_countPerPoint) {
   
-  unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
-  unsigned long iVertex, iEdge;
-  su2double ProjGridVel, *Normal;
+  unsigned short iMarker, MarkerS, MarkerR;
+  unsigned long  nVertexS, nVertexR, iVertex;
   
-  /*--- Loop interior edges ---*/
-   
-  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+  int iProc = 0, iProcessor, iSend, iRecv;
+  
+  countPerPoint = val_countPerPoint;
+  
+  /*--- We start with the connectivity distributed across all procs in a
+   linear partitioning. We need to loop through our local partition
+   and decide how many elements we must send to each other rank in order to
+   have all elements distributed according to the ParMETIS coloring. ---*/
+  
+  nElem_Send = new int[size+1]; nElem_Send[0] = 0;
+  nElem_Recv = new int[size+1]; nElem_Recv[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (iProc = 0; iProc < size; iProc++) {
+    nElem_Send[iProc] = 0; nElem_Recv[iProc] = 0; nElem_Flag[iProc]= -1;
+  }
+  nElem_Send[size] = 0; nElem_Recv[size] = 0;
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;
+      
+      nVertexS = geometry->nVertex[MarkerS];
+      
+      iProcessor = config->GetMarker_All_SendRecv(MarkerS)-1;
+      
+      /*--- If we have not visited this element yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
+      
+      if ((nElem_Flag[iProcessor] != (int)MarkerS)) {
+        nElem_Flag[iProcessor]    = (int)MarkerS;
+        nElem_Send[iProcessor+1] += nVertexS;
+      }
+      
+    }
+  }
+  
+  delete [] nElem_Flag;
+  
+  /*--- Communicate the number of cells to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+  SU2_MPI::Alltoall(&(nElem_Send[1]), 1, MPI_INT,
+                    &(nElem_Recv[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  nSends = 0; nRecvs = 0;
+  
+  for (iProc = 0; iProc < size; iProc++) {
+    if ((iProc != rank) && (nElem_Send[iProc+1] > 0)) nSends++;
+    if ((iProc != rank) && (nElem_Recv[iProc+1] > 0)) nRecvs++;
     
-    const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
-    const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
+    nElem_Send[iProc+1] += nElem_Send[iProc];
+    nElem_Recv[iProc+1] += nElem_Recv[iProc];
+  }
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  bufSend = NULL;
+  bufSend = new su2double[countPerPoint*nElem_Send[size]];
+  for (iSend = 0; iSend < countPerPoint*nElem_Send[size]; iSend++)
+    bufSend[iSend] = 0.0;
+  
+  Local_Point_Send = NULL;
+  Local_Point_Send = new unsigned long[nElem_Send[size]];
+  for (iSend = 0; iSend < nElem_Send[size]; iSend++)
+    Local_Point_Send[iSend] = 0;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  bufRecv = NULL;
+  bufRecv = new su2double[countPerPoint*nElem_Recv[size]];
+  for (iRecv = 0; iRecv < countPerPoint*nElem_Recv[size]; iRecv++)
+    bufRecv[iRecv] = 0.0;
+  
+  Local_Point_Recv = NULL;
+  Local_Point_Recv = new unsigned long[nElem_Recv[size]];
+  for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++)
+    Local_Point_Recv[iRecv] = 0;
+  
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  if (nSends > 0) {
+    sendReq   = new SU2_MPI::Request[nSends];
+  }
+  if (nRecvs > 0) {
+    recvReq   = new SU2_MPI::Request[nRecvs];
+  }
+  
+  vector<int> send_to;
+  vector<int> recv_from;
+  
+  int count = 0;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+      
+      send_to.push_back(config->GetMarker_All_SendRecv(MarkerS)-1);
+      recv_from.push_back(abs(config->GetMarker_All_SendRecv(MarkerR))-1);
+      
+    }
+  }
+  
+  sort(send_to.begin(), send_to.end());
+  sort(recv_from.begin(), recv_from.end());
+
+  count = 0;
+  for (unsigned long i = 0; i < send_to.size(); i++) {
     
-    /*--- Solution at each edge point ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+        
+        MarkerS = iMarker;
+        
+        nVertexS = geometry->nVertex[MarkerS];
+
+        iProcessor = config->GetMarker_All_SendRecv(MarkerS)-1;
+        
+        if (iProcessor == send_to[i]) {
+          
+          for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+            Local_Point_Send[count] = geometry->vertex[MarkerS][iVertex]->GetNode();
+            count++;
+          }
+          
+        }
+        
+
+      }
+    }
+  }
     
-    su2double *Solution_i = node[iPoint]->GetSolution();
-    su2double *Solution_j = node[jPoint]->GetSolution();
+    count = 0;
+    for (unsigned long i = 0; i < recv_from.size(); i++) {
+      
+      for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+        if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+            (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+          
+          MarkerR = iMarker+1;
+          
+          nVertexR = geometry->nVertex[MarkerR];
+          
+          iProcessor = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+          
+          if (iProcessor == recv_from[i]) {
+            
+            for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+              Local_Point_Recv[count] = geometry->vertex[MarkerR][iVertex]->GetNode();
+              count++;
+            }
+            
+          }
+          
+          
+        }
+      }
+      
+  }
+  
+  // collapse nElem_Send & Recv so we don't need to loop over all procs for send
+  
+  // create flags so that we can process boundaries and internal separately
+  // need points and edges for this.. use Local_Points_Send
+  
+  // collapse load/unpack into initiate/complete
+  
+}
+
+void CSolver::LoadComms(CGeometry *geometry,
+                        CConfig *config,
+                        unsigned short commType) {
+  
+  unsigned short iVar;
+  unsigned long iPoint;
+  
+  int iSend;
+  SU2_MPI::Status status;
+  
+  unsigned short COUNT_PER_POINT = 0;
+  
+  switch (commType) {
+    case SOLUTION:
+      COUNT_PER_POINT  = nVar;
+      break;
+    case PRIMITIVE:
+      COUNT_PER_POINT  = nPrimVar;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized element type.", CURRENT_FUNCTION);
+      break;
+  }
+  
+  for (iSend = 0; iSend < nElem_Send[size]; iSend++) {
     
-    for (iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = 0.5* (Solution_i[iVar] + Solution_j[iVar]);
+    iPoint = Local_Point_Send[iSend];
     
-    /*--- Grid Velocity at each edge point ---*/
+    for (iVar = 0; iVar < COUNT_PER_POINT; iVar++) {
+      
+      switch (commType) {
+        case SOLUTION:
+          bufSend[iSend*countPerPoint + iVar] = node[iPoint]->GetSolution(iVar);
+          break;
+        case PRIMITIVE:
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized element type.", CURRENT_FUNCTION);
+          break;
+      }
+    }
     
-    su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
-    su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
-    for (iDim = 0; iDim < nDim; iDim++)
-      Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
-    
-    Normal = geometry->edge[iEdge]->GetNormal();
-    
-    ProjGridVel = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      ProjGridVel += Vector[iDim]*Normal[iDim];
-    
-    for (iVar = 0; iVar < nVar; iVar++)
-      Residual[iVar] = ProjGridVel*Solution[iVar];
-    
-    LinSysRes.SubtractBlock(iPoint, Residual);
-    LinSysRes.AddBlock(jPoint, Residual);
     
   }
   
-  /*--- Loop boundary edges ---*/
+}
+
+void CSolver::InitiateComms(unsigned short commType) {
   
-  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-      const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
+  /*--- Local variables ---*/
+  
+  int iMessage, iProc, offset, nElem, count, source, dest, tag;
+  int iSend, iRecv, myStart, myFinal;
+
+  /*--- Launch the non-blocking recv's first. ---*/
+  
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+    
+    /*--- Post recv's only if another proc is sending us data. We do
+     not communicate with ourselves or post recv's for zero length
+     messages to keep overhead down. ---*/
+    
+    if ((nElem_Recv[iProc+1] > nElem_Recv[iProc]) && (iProc != rank)) {
       
-      /*--- Solution at each edge point ---*/
+      /*--- Compute our location in the recv buffer. ---*/
       
-      su2double *Solution = node[Point]->GetSolution();
+      offset = countPerPoint*nElem_Recv[iProc];
       
-      /*--- Grid Velocity at each edge point ---*/
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. ---*/
       
-      su2double *GridVel = geometry->node[Point]->GetGridVel();
+      nElem = nElem_Recv[iProc+1] - nElem_Recv[iProc];
       
-      /*--- Summed normal components ---*/
+      /*--- Total count can include multiple pieces of data per element. ---*/
       
-      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      count = countPerPoint*nElem;
       
-      ProjGridVel = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++)
-        ProjGridVel -= GridVel[iDim]*Normal[iDim];
+      /*--- Post non-blocking recv for this proc. ---*/
       
-      for (iVar = 0; iVar < nVar; iVar++)
-        Residual[iVar] = ProjGridVel*Solution[iVar];
+      source = iProc; tag = iProc + 1;
       
-      LinSysRes.AddBlock(Point, Residual);
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(static_cast<su2double*>(bufRecv)[offset]),
+                         count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                         &(recvReq[iMessage]));
+          break;
+//        case COMM_TYPE_UNSIGNED_LONG:
+//          SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufRecv)[offset]),
+//                         count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+//        case COMM_TYPE_LONG:
+//          SU2_MPI::Irecv(&(static_cast<long*>(bufRecv)[offset]),
+//                         count, MPI_LONG, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+//        case COMM_TYPE_UNSIGNED_SHORT:
+//          SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufRecv)[offset]),
+//                         count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+//        case COMM_TYPE_CHAR:
+//          SU2_MPI::Irecv(&(static_cast<char*>(bufRecv)[offset]),
+//                         count, MPI_CHAR, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+//        case COMM_TYPE_SHORT:
+//          SU2_MPI::Irecv(&(static_cast<short*>(bufRecv)[offset]),
+//                         count, MPI_SHORT, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+//        case COMM_TYPE_INT:
+//          SU2_MPI::Irecv(&(static_cast<int*>(bufRecv)[offset]),
+//                         count, MPI_INT, source, tag, MPI_COMM_WORLD,
+//                         &(recvReq[iMessage]));
+//          break;
+        default:
+          break;
+      }
+      
+      /*--- Increment message counter. ---*/
+      
+      iMessage++;
+      
+    }
+  }
+  
+  /*--- Launch the non-blocking sends next. ---*/
+  
+  iMessage = 0;
+  for (iProc = 0; iProc < size; iProc++) {
+    
+    /*--- Post sends only if we are sending another proc data. We do
+     not communicate with ourselves or post sends for zero length
+     messages to keep overhead down. ---*/
+    
+    if ((nElem_Send[iProc+1] > nElem_Send[iProc]) && (iProc != rank)) {
+      
+      /*--- Compute our location in the send buffer. ---*/
+      
+      offset = (int)countPerPoint*nElem_Send[iProc];
+      
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to send. ---*/
+      
+      nElem = nElem_Send[iProc+1] - nElem_Send[iProc];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      count = countPerPoint*nElem;
+      
+      /*--- Post non-blocking send for this proc. ---*/
+      
+      dest = iProc; tag = rank + 1;
+      
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Isend(&(static_cast<su2double*>(bufSend)[offset]),
+                         count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                         &(sendReq[iMessage]));
+          break;
+//        case COMM_TYPE_UNSIGNED_LONG:
+//          SU2_MPI::Isend(&(static_cast<unsigned long*>(bufSend)[offset]),
+//                         count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+//        case COMM_TYPE_LONG:
+//          SU2_MPI::Isend(&(static_cast<long*>(bufSend)[offset]),
+//                         count, MPI_LONG, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+//        case COMM_TYPE_UNSIGNED_SHORT:
+//          SU2_MPI::Isend(&(static_cast<unsigned short*>(bufSend)[offset]),
+//                         count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+//        case COMM_TYPE_CHAR:
+//          SU2_MPI::Isend(&(static_cast<char*>(bufSend)[offset]),
+//                         count, MPI_CHAR, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+//        case COMM_TYPE_SHORT:
+//          SU2_MPI::Isend(&(static_cast<short*>(bufSend)[offset]),
+//                         count, MPI_SHORT, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+//        case COMM_TYPE_INT:
+//          SU2_MPI::Isend(&(static_cast<int*>(bufSend)[offset]),
+//                         count, MPI_INT, dest, tag, MPI_COMM_WORLD,
+//                         &(sendReq[iMessage]));
+//          break;
+        default:
+          break;
+      }
+      
+      /*--- Increment message counter. ---*/
+      
+      iMessage++;
+      
+    }
+  }
+  
+  /*--- Copy my own rank's data into the recv buffer directly. ---*/
+  
+  iRecv   = countPerPoint*nElem_Recv[rank];
+  myStart = countPerPoint*nElem_Send[rank];
+  myFinal = countPerPoint*nElem_Send[rank+1];
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    bufRecv[iRecv] = bufSend[iSend];
+    iRecv++;
+  }
+  
+}
+
+void CSolver::CompleteComms(void) {
+  
+  /*--- Local variables ---*/
+  
+  int ind, iSend, iRecv;
+  SU2_MPI::Status status;
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+  for (iSend = 0; iSend < nSends; iSend++)
+    SU2_MPI::Waitany(nSends, sendReq, &ind, &status);
+  
+  /*--- Wait for the non-blocking recvs to complete. ---*/
+  
+  for (iRecv = 0; iRecv < nRecvs; iRecv++)
+    SU2_MPI::Waitany(nRecvs, recvReq, &ind, &status);
+  
+}
+
+void CSolver::UnpackComms(CGeometry *geometry,
+                          CConfig *config,
+                          unsigned short commType) {
+  
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned long iPoint;
+  int iRecv, iVar;
+  
+  switch (commType) {
+    case SOLUTION:
+      COUNT_PER_POINT  = nVar;
+      break;
+    case PRIMITIVE:
+      COUNT_PER_POINT  = nPrimVar;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized comm quantity.", CURRENT_FUNCTION);
+      break;
+  }
+  
+  /*--- Store the connectivity for this rank in the proper data
+   structure. It will be loaded into the geometry objects in a later step. ---*/
+  
+  if (nElem_Recv[size] > 0) {
+
+    for (iRecv = 0; iRecv < nElem_Recv[size]; iRecv++) {
+      
+      iPoint = Local_Point_Recv[iRecv];
+          
+      for (iVar = 0; iVar < COUNT_PER_POINT; iVar++) {
+        
+        switch (commType) {
+          case SOLUTION:
+            node[iPoint]->SetSolution(iVar, bufRecv[iRecv*countPerPoint+iVar]);
+            break;
+          case PRIMITIVE:
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized element type.", CURRENT_FUNCTION);
+            break;
+        }
+        
+      }
+
     }
   }
   

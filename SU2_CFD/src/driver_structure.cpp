@@ -968,6 +968,14 @@ void CDriver::Geometrical_Preprocessing() {
     }
   }
 
+  /*--- Pre-compute any rotation matrices for periodic transformations ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->AllocateRotationMatrix();
+    for (unsigned short iPeriodic = 0; iPeriodic < config_container[iZone]->GetnPeriodicIndex(); iPeriodic++)
+      config_container[iZone]->SetRotationMatrix(iPeriodic);
+  }
+  
 }
 
 void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry,

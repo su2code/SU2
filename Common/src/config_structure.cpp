@@ -384,16 +384,15 @@ void CConfig::SetPointersNull(void) {
   
   Periodic_Translate   = NULL;   Periodic_Rotation  = NULL;   Periodic_Center    = NULL;
   Periodic_Translation = NULL;   Periodic_RotAngles = NULL;   Periodic_RotCenter = NULL;
-
+  Rotation_Matrix      = NULL;
+  
   Dirichlet_Value           = NULL;     Exhaust_Temperature_Target  = NULL;     Exhaust_Temperature   = NULL;
   Exhaust_Pressure_Target   = NULL;     Inlet_Ttotal                = NULL;     Inlet_Ptotal          = NULL;
   Inlet_FlowDir             = NULL;     Inlet_Temperature           = NULL;     Inlet_Pressure        = NULL;
   Inlet_Velocity            = NULL;     Inflow_Mach                 = NULL;     Inflow_Pressure       = NULL;
   Exhaust_Pressure          = NULL;     Outlet_Pressure             = NULL;     Isothermal_Temperature= NULL;
   Heat_Flux                 = NULL;     Displ_Value                 = NULL;     Load_Value            = NULL;
-  FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
-  Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
-  Periodic_Translate        = NULL;
+  FlowLoad_Value            = NULL;
 
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
@@ -481,7 +480,7 @@ void CConfig::SetPointersNull(void) {
   MoveMotion_Origin   = NULL;
   Periodic_Translate  = NULL;    Periodic_Rotation   = NULL;    Periodic_Center     = NULL;
   Periodic_Translation= NULL;    Periodic_RotAngles  = NULL;    Periodic_RotCenter  = NULL;
-
+  Rotation_Matrix     = NULL;
 
   /* Harmonic Balance Frequency pointer */
   Omega_HB = NULL;
@@ -6572,6 +6571,11 @@ CConfig::~CConfig(void) {
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
   
+    for (iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+      if (Rotation_Matrix != NULL) delete [] Rotation_Matrix[iPeriodic];
+    }
+    if (Rotation_Matrix   != NULL) delete [] Rotation_Matrix;
+  
   if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)        delete[] PlaneTag;
   if (CFL != NULL)             delete[] CFL;
@@ -7177,6 +7181,51 @@ void CConfig::SetnPeriodicIndex(unsigned short val_index) {
     Periodic_Center[i]    = new su2double[3];
     Periodic_Rotation[i]  = new su2double[3];
     Periodic_Translate[i] = new su2double[3];
+  }
+  
+}
+
+void CConfig::AllocateRotationMatrix(void) {
+  
+  /*--- Initial allocate of memory for rotation matrix ---*/
+  
+  Rotation_Matrix = new su2double**[nPeriodic_Index];
+  for (unsigned short iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    Rotation_Matrix[iPeriodic] = new su2double*[3];
+    for (unsigned short iDim = 0; iDim < 3; iDim++)
+      Rotation_Matrix[iPeriodic][iDim] = new su2double[3];
+  }
+  
+}
+void CConfig::SetRotationMatrix(unsigned short val_index) {
+  
+  su2double tht, cosTht, sinTht, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
+  
+  /*--- Build and store the periodic rotations for fast access later ---*/
+  
+  for (unsigned short iPeriodic = 0; iPeriodic < nPeriodic_Index; iPeriodic++) {
+    
+    /*--- Store angles separately for clarity. ---*/
+    
+    tht = Periodic_Rotation[iPeriodic][0]; cosTht = cos(tht); sinTht = sin(tht);
+    phi = Periodic_Rotation[iPeriodic][1]; cosPhi = cos(phi); sinPhi = sin(phi);
+    psi = Periodic_Rotation[iPeriodic][2]; cosPsi = cos(psi); sinPsi = sin(psi);
+    
+    /*--- Compute the rotation matrix. Note that the implicit ordering is
+     rotation about the x-axis, y-axis, then z-axis. Note that this is the
+     transpose of the matrix used during the preprocessing stage. ---*/
+    
+    Rotation_Matrix[iPeriodic][0][0] = cosPhi*cosPsi;
+    Rotation_Matrix[iPeriodic][0][1] = cosPhi*sinPsi;
+    Rotation_Matrix[iPeriodic][0][2] = -sinPhi;
+    
+    Rotation_Matrix[iPeriodic][1][0] = sinTht*sinPhi*cosPsi - cosTht*sinPsi;
+    Rotation_Matrix[iPeriodic][1][1] = sinTht*sinPhi*sinPsi + cosTht*cosPsi;
+    Rotation_Matrix[iPeriodic][1][2] = sinTht*cosPhi;
+    
+    Rotation_Matrix[iPeriodic][2][0] = cosTht*sinPhi*cosPsi + sinTht*sinPsi;
+    Rotation_Matrix[iPeriodic][2][1] = cosTht*sinPhi*sinPsi - sinTht*cosPsi;
+    Rotation_Matrix[iPeriodic][2][2] = cosTht*cosPhi;
   }
   
 }
