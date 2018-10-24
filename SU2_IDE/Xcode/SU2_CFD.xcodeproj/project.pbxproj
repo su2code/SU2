@@ -795,18 +795,8 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = /opt/intel/mkl/include;
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = /opt/intel/mkl/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				OTHER_CPLUSPLUSFLAGS = "-DHAVE_MKL";
-				OTHER_LDFLAGS = (
-					"-lmkl_intel_lp64",
-					"-lmkl_intel_thread",
-					"-lmkl_core",
-					"-lpthread",
-					"-lm",
-				);
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
@@ -857,18 +847,8 @@
 				GCC_WARN_UNUSED_PARAMETER = NO;
 				GCC_WARN_UNUSED_VALUE = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				HEADER_SEARCH_PATHS = /opt/intel/mkl/include;
 				INSTALL_PATH = /usr/local/bin;
-				LIBRARY_SEARCH_PATHS = /opt/intel/mkl/lib;
 				MACOSX_DEPLOYMENT_TARGET = 10.13;
-				OTHER_CPLUSPLUSFLAGS = "-DHAVE_MKL";
-				OTHER_LDFLAGS = (
-					"-lmkl_intel_lp64",
-					"-lmkl_intel_thread",
-					"-lmkl_core",
-					"-lpthread",
-					"-lm",
-				);
 				PRODUCT_NAME = SU2_CFD;
 				WARNING_CFLAGS = (
 					"-Wall",
