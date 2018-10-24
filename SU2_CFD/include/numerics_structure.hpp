@@ -1603,16 +1603,19 @@ public:
    * \param[in] V: matrix that needs to be decomposed
    * \param[in] d: holds eigenvalues
    * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
    */
-  void tred2(su2double **V, su2double *d, su2double *e);
+  void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
 
   /*!
    * \brief tql2
    * \param[in] V: matrix that will hold the eigenvectors
    * \param[in] d: array that will hold the ordered eigenvalues
    * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
+
    */
-  void tql2(su2double **V, su2double *d, su2double *e);
+  void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
   
 };
 
