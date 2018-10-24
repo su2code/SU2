@@ -3739,15 +3739,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   /* --- Throw error if UQ used for any turbulence model other that SST --- */
 
   if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
-      cout << "UQ capabilities only implemented for SST turbulence model" << endl;
-      exit(EXIT_FAILURE);
+    SU2_MPI::Error("UQ capabilities only implemented for SST turbulence model", CURRENT_FUNCTION);
   }
 
   /* --- Throw error if invalid componentiality used --- */
 
   if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
-      cout << "Componentality should be either 1, 2, or 3!" << endl;
-      exit(EXIT_FAILURE);
+    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
   }
 
   /*--- If there are not design variables defined in the file ---*/
