@@ -16081,6 +16081,8 @@ void CNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container
     
     numerics->SetTauWall(node[iPoint]->GetTauWall(), node[iPoint]->GetTauWall());
 
+    /*--- Set boolean for UQ methodology ---*/
+
     numerics->SetUsing_UQ(config->GetUsing_UQ());
 
     /*--- Compute and update residual ---*/

@@ -1231,7 +1231,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
    
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
-   if (config->GetUsing_UQ()){
+   if (using_uq){
      SetReynoldsStressMatrix(TurbVar_i[0]);
      SetPerturbedRSM(TurbVar_i[0], config);
      SetPerturbedStrainMag(TurbVar_i[0]);
@@ -1250,7 +1250,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
 
    /* if using UQ methodolgy, calculate production using perturbed Reynolds stress matrix */
 
-   if (config->GetUsing_UQ()){
+   if (using_uq){
     pw = PerturbedStrainMag * PerturbedStrainMag - 2.0/3.0*zeta*diverg;
    }
    else {
