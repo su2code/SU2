@@ -4687,17 +4687,12 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
 
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
-  if (config->GetUsing_UQ()){
+  if (using_uq){
     SetReynoldsStressMatrix(Mean_turb_ke);
     SetPerturbedRSM(Mean_turb_ke, config);
-    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal,
-     Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
-     MeanReynoldsStress, MeanPerturbedRSM);
   }
 
-  else {
-    GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall, QCR);
-  }
+  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall, QCR);
 
   /*--- Save residual value ---*/
   
