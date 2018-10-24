@@ -138,9 +138,9 @@ CDriver::CDriver(char* confFile,
                   (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
                   (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
                   (config_container[iZone]->GetKind_Solver() == FEM_LES)           ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_EULER) ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_NS)    ||
-                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_DG_RANS));
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
     /*--- Set the MPI communicator ---*/
 
@@ -1174,9 +1174,9 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_DG_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_DG_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -1529,9 +1529,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_DG_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_DG_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1639,9 +1639,9 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_DG_EULER: euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_NS: ns = true; disc_adj = true; break;
-    case DISC_ADJ_DG_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_FEM_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
   
@@ -1744,9 +1744,9 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
     case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_DG_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
@@ -1819,9 +1819,9 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     case DISC_ADJ_EULER : euler = true; disc_adj = true; break;
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case DISC_ADJ_DG_EULER: fem_euler = true; disc_adj = true; break;
-    case DISC_ADJ_DG_NS: fem_ns = true; disc_adj = true; break;
-    case DISC_ADJ_DG_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
   }
 
@@ -1901,9 +1901,9 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     case EULER : case DISC_ADJ_EULER: euler = true; break;
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case FEM_EULER : case DISC_ADJ_DG_EULER : fem_euler = true; break;
-    case FEM_NAVIER_STOKES: case DISC_ADJ_DG_NS : fem_ns = true; break;
-    case FEM_RANS : case DISC_ADJ_DG_RANS : fem_ns = true; fem_turbulent = true; break;
+    case FEM_EULER : case DISC_ADJ_FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS : fem_ns = true; break;
+    case FEM_RANS : case DISC_ADJ_FEM_RANS : fem_ns = true; fem_turbulent = true; break;
     case FEM_LES :  fem_ns = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
@@ -2726,9 +2726,9 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     case EULER : case DISC_ADJ_EULER: euler = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES: ns = true;  heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case RANS : case DISC_ADJ_RANS:  ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
-    case FEM_EULER : case DISC_ADJ_DG_EULER : fem_euler = true; break;
-    case FEM_NAVIER_STOKES: case DISC_ADJ_DG_NS : fem_ns = true; break;
-    case FEM_RANS : case DISC_ADJ_DG_RANS : fem_ns = true; fem_turbulent = true; break;
+    case FEM_EULER : case DISC_ADJ_FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS : fem_ns = true; break;
+    case FEM_RANS : case DISC_ADJ_FEM_RANS : fem_ns = true; fem_turbulent = true; break;
     case FEM_LES :  fem_ns = true; break;
     case HEAT_EQUATION_FVM: heat_fvm = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
@@ -3164,7 +3164,7 @@ void CDriver::Iteration_Preprocessing() {
       iteration_container[iZone][iInst] = new CDiscAdjFluidIteration(config_container[iZone]);
       break;
 
-    case DISC_ADJ_DG_EULER : case DISC_ADJ_DG_NS : case DISC_ADJ_DG_RANS :
+    case DISC_ADJ_FEM_EULER : case DISC_ADJ_FEM_NS : case DISC_ADJ_FEM_RANS :
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint finite element Euler/Navier-Stokes/RANS fluid iteration." << endl;
       iteration_container[iZone][iInst] = new CDiscAdjFluidIteration(config_container[iZone]);
@@ -3875,7 +3875,7 @@ bool CDriver::Monitor(unsigned long ExtIter) {
       StopCalc = integration_container[ZONE_0][INST_0][FEA_SOL]->GetConvergence(); break;
     case ADJ_EULER: case ADJ_NAVIER_STOKES: case ADJ_RANS:
     case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-    case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
+    case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
       StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
   
@@ -4425,7 +4425,7 @@ bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
   case EULER: case NAVIER_STOKES: case RANS:
     StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
   case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-  case DISC_ADJ_DG_EULER: case DISC_ADJ_DG_NS: case DISC_ADJ_DG_RANS:
+  case DISC_ADJ_FEM_EULER: case DISC_ADJ_FEM_NS: case DISC_ADJ_FEM_RANS:
     StopCalc = integration_container[ZONE_0][INST_0][ADJFLOW_SOL]->GetConvergence(); break;
   }
 
@@ -4710,9 +4710,9 @@ void CDiscAdjFluidDriver::SetObjFunction(){
 
   for (iZone = 0; iZone < nZone; iZone++){
     switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
-      case DISC_ADJ_DG_EULER:       case DISC_ADJ_DG_NS:                  case DISC_ADJ_DG_RANS:
+      case EULER:                    case NAVIER_STOKES:                   case RANS:
+      case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
         
         if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
           output->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);

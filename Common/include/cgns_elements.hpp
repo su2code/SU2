@@ -1,5 +1,5 @@
 /*!
- * \file cngs_elements.hpp
+ * \file cgns_elements.hpp
  * \brief Headers of the classes and functions for reading CGNS files
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
