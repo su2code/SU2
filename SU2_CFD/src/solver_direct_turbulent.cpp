@@ -3888,6 +3888,10 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
     
     numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
+
+    /*--- Set boolean for UQ methodology ---*/
+
+    numerics->SetUsing_UQ(config->GetUsing_UQ());
     
     /*--- Compute the source term ---*/
     
