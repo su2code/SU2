@@ -1981,69 +1981,6 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 
 }
 
-void CNumerics::GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                        su2double val_turb_ke, su2double *val_normal,
-                        su2double val_laminar_viscosity,
-                        su2double val_eddy_viscosity,
-                        su2double **val_reynolds_stress,
-                        su2double **val_perturbed_rsm) {
-
-
-  unsigned short iVar, iDim, jDim;
-  su2double heat_flux_factor, div_vel, Cp, Density;
-
-  Density = val_primvar[nDim+2];
-  Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
-  heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
-
-  /*--- Set new tau tensor using perturbed Reynolds stresses ---*/
-  div_vel = 0.0;
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    div_vel += val_gradprimvar[iDim+1][iDim];
-  for (iDim = 0 ; iDim < nDim; iDim++)
-    for (jDim = 0 ; jDim < nDim; jDim++)
-        tau[iDim][jDim] = val_laminar_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
-        - TWO3*val_laminar_viscosity*div_vel*delta[iDim][jDim] - Density * val_perturbed_rsm[iDim][jDim];
-
-  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
-  if (nDim == 2) {
-    Flux_Tensor[0][0] = 0.0;
-    Flux_Tensor[1][0] = tau[0][0];
-    Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
-        heat_flux_factor*val_gradprimvar[0][0];
-    Flux_Tensor[0][1] = 0.0;
-    Flux_Tensor[1][1] = tau[1][0];
-    Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
-        heat_flux_factor*val_gradprimvar[0][1];
-  } else {
-    Flux_Tensor[0][0] = 0.0;
-    Flux_Tensor[1][0] = tau[0][0];
-    Flux_Tensor[2][0] = tau[0][1];
-    Flux_Tensor[3][0] = tau[0][2];
-    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
-        heat_flux_factor*val_gradprimvar[0][0];
-    Flux_Tensor[0][1] = 0.0;
-    Flux_Tensor[1][1] = tau[1][0];
-    Flux_Tensor[2][1] = tau[1][1];
-    Flux_Tensor[3][1] = tau[1][2];
-    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
-        heat_flux_factor*val_gradprimvar[0][1];
-    Flux_Tensor[0][2] = 0.0;
-    Flux_Tensor[1][2] = tau[2][0];
-    Flux_Tensor[2][2] = tau[2][1];
-    Flux_Tensor[3][2] = tau[2][2];
-    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
-        heat_flux_factor*val_gradprimvar[0][2];
-  }
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Proj_Flux_Tensor[iVar] = 0.0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
-  }
-}
-
 void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
                                           su2double **val_gradprimvar,
                                           su2double *val_normal,

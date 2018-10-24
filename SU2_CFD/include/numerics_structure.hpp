@@ -827,25 +827,6 @@ public:
                           su2double val_thermal_conductivity,
                           su2double val_heat_capacity_cp);
     
-  /*!
-   * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_turb_ke - Turbulent kinetic energy
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_reynolds_stress - Reynolds stress.
-   * \param[in] val_perturbed_rsm - Perturbed Reynolds Stress Matrix
-   */
-
-  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                          su2double val_turb_ke, su2double *val_normal,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double **val_reynolds_stress,
-                          su2double **val_perturbed_rsm);
-
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
@@ -3126,7 +3107,26 @@ public:
 	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
 	 */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
-  
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
@@ -3174,6 +3174,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
@@ -3586,6 +3606,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
