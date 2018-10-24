@@ -1344,7 +1344,7 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
   delete [] S_ij;
 }
 
-void CSourcePieceWise_TurbSST::SetPerturbedRSM (su2double turb_ke, CConfig *config){
+void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   unsigned short iDim,jDim;
   su2double **A_ij;
