@@ -111,29 +111,9 @@ lib_ldadd =
 lib_cxxflags += @su2_externals_INCLUDES@
 lib_ldadd += @su2_externals_LIBS@
 
-# if BUILD_HDF5
-lib_cxxflags += @HDF5_CXX@
-lib_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-lib_cxxflags += @SZIP_CXX@
-lib_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-lib_cxxflags += @ZLIB_CXX@
-lib_ldadd += @ZLIB_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 lib_cxxflags += @MUTATIONPP_CXX@
 lib_ldadd += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-lib_cxxflags += @JSONCPP_CXX@
-lib_ldadd += @JSONCPP_LD@
 # endif
 
 if BUILD_NORMAL
