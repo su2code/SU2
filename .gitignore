@@ -10,6 +10,13 @@
 *.log
 *.status
 autom4te.cache
+*.in
+compile
+config.guess
+config.sub
+configure
+depcomp
+missing
 
 # Compiled Dynamic libraries
 *.so
