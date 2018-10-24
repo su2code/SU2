@@ -1596,34 +1596,40 @@ public:
                           su2double& Dissipation_ij, CConfig *config);
 
   /*!
+   * \brief Setting the UQ framework usage
+   * \param[in] val_using_uq
+   */
+  void SetUsing_UQ(bool val_using_uq);
+
+  /*!
    * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
-   * \param A_i: symmetric matrix to be decomposed
-   * \param Eig_Vec: strores the eigenvectors
-   * \param Eig_Val: stores the eigenvalues
+   * \param[in] A_i: symmetric matrix to be decomposed
+   * \param[in] Eig_Vec: strores the eigenvectors
+   * \param[in] Eig_Val: stores the eigenvalues
    */
   void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
 
   /*!
    * \brief Recomposes the eigenvectors and eigenvalues into a matrix
-   * \param A_ij: recomposed matrix
-   * \param Eig_Vec: eigenvectors
-   * \param Eig_Val: eigenvalues
+   * \param[in] A_ij: recomposed matrix
+   * \param[in] Eig_Vec: eigenvectors
+   * \param[in] Eig_Val: eigenvalues
    */
   void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
 
   /*!
    * \brief tred2
-   * \param V: matrix that needs to be decomposed
-   * \param d: holds eigenvalues
-   * \param e: supplemental data structure
+   * \param[in] V: matrix that needs to be decomposed
+   * \param[in] d: holds eigenvalues
+   * \param[in] e: supplemental data structure
    */
   void tred2(su2double **V, su2double *d, su2double *e);
 
   /*!
    * \brief tql2
-   * \param V: matrix that will hold the eigenvectors
-   * \param d: array that will hold the ordered eigenvalues
-   * \param e: supplemental data structure
+   * \param[in] V: matrix that will hold the eigenvectors
+   * \param[in] d: array that will hold the ordered eigenvalues
+   * \param[in] e: supplemental data structure
    */
   void tql2(su2double **V, su2double *d, su2double *e);
   
@@ -3514,29 +3520,24 @@ public:
 
   /*!
    * \brief Initialize the Reynolds Stress Matrix
-   * \param turb_ke turbulent kinetic energy of node
+   * \param[in] turb_ke turbulent kinetic energy of node
    */
   void SetReynoldsStressMatrix(su2double turb_ke);
 
   /*!
    * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param turb_ke: turbulent kinetic energy of the noce
-   * \param Eig_Val_Comp: Defines type of eigenspace perturbation
-   * \param beta_delta: Defines the amount of eigenvalue perturbation
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
    */
   void SetPerturbedRSM(su2double turb_ke, CConfig *config);
 
   /*!
    * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param S_ij
+   * \param[in] S_ij
    */
   void GetMeanRateOfStrainMatrix(su2double **S_ij);
 
-  /*!
-   * \brief Setting the UQ framework usage
-   * \param val_using_uq
-   */
-  void SetUsing_uq(bool val_using_uq);
 };
 
 
@@ -5043,33 +5044,28 @@ public:
   
   /*!
    * \brief Initialize the Reynolds Stress Matrix
-   * \param turb_ke turbulent kinetic energy of node
+   * \param[in] turb_ke turbulent kinetic energy of node
    */
   void SetReynoldsStressMatrix(su2double turb_ke);
 
   /*!
    * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param turb_ke: turbulent kinetic energy of the noce
-   * \param config: config file
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] config: config file
    */
   void SetPerturbedRSM(su2double turb_ke, CConfig *config);
   /*!
      * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
-     * \param turb_ke: turbulent kinetic energy of the node
+     * \param[in] turb_ke: turbulent kinetic energy of the node
      */
   void SetPerturbedStrainMag(su2double turb_ke);
 
   /*!
    * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param S_ij
+   * \param[in] S_ij
    */
   void GetMeanRateOfStrainMatrix(su2double **S_ij);
 
-  /*!
-   * \brief Setting the UQ framework usage
-   * \param val_using_uq
-   */
-  void SetUsing_uq(bool val_using_uq);
 };
 
 /*!
