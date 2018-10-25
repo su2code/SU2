@@ -31,7 +31,7 @@
 
 #include "../include/fem_standard_element.hpp"
 #include "../include/gauss_jacobi_quadrature.hpp"
-#include "../include/su2_blas.hpp"
+#include "../include/blas_structure.hpp"
 
 #ifdef HAVE_MKL
 #include "mkl.h"
@@ -2036,7 +2036,8 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   vector<su2double> dummyLagBasis;
   vector<su2double> dummyMatVandermondeInv;
   CreateBasisFunctionsAndMatrixDerivatives(rDOFs, sDOFs, tDOFs,
-                                           dummyMatVandermondeInv, dummyLagBasis, matDerBasisOwnDOFs);
+                                           dummyMatVandermondeInv, dummyLagBasis,
+                                           matDerBasisOwnDOFs);
 
   /*--------------------------------------------------------------------------*/
   /*--- Create the data of the second derivatives of the basis functions   ---*/
@@ -2045,6 +2046,9 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   /*--- solved and can be obtained by multiplying matBasisIntegration and  ---*/
   /*--- matDerBasisSolDOFs.                                                ---*/
   /*--------------------------------------------------------------------------*/
+
+  /* Definition of the object that is used to carry out the BLAS calls. */
+  CBlasStructure blasFunctions;
 
   /* Easier storage of the offset between the derivatives for matBasisIntegration
      and matDerBasisSolDOFs. */
@@ -2073,9 +2077,9 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
       /* Carry out the matrix multiplication. The last argument is NULL, such
          that this gemm call is ignored in the profiling. Replace by config if
          if should be included. */
-      su2_gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
-               matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
-               mat2ndDerBasisIntPoint, NULL);
+      blasFunctions.gemm(nIntegration, nDOFs, nDOFs, matDerBasisInt,
+                         matDerBasisSolDOFs.data() + iDim*offsetDerDOFs,
+                         mat2ndDerBasisIntPoint, NULL);
 
       /* Update the pointer to the position where the next second
          derivative will be stored. */

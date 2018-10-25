@@ -33,6 +33,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
+#include "../include/blas_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -3114,6 +3115,9 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
 void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config) {
 
+  /* Definition of the object that is used to carry out the BLAS calls. */
+  CBlasStructure blasFunctions;
+
   /*--- Determine a mapping from the global point ID to the local index
         of the points.    ---*/
   map<unsigned long,unsigned long> globalPointIDToLocalInd;
@@ -3183,8 +3187,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     /* Carry out the matrix matrix product. The last argument is NULL, such
        that this gemm call is ignored in the profiling. Replace by config if
        if should be included. */
-    su2_gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
-             vecRHS.data(), vecResult.data(), NULL);
+    blasFunctions.gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
+                       vecRHS.data(), vecResult.data(), NULL);
 
     /*--- Compute the Jacobians in the integration points and determine
           the minimum and maximum values. Make a distinction between

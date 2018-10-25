@@ -65,7 +65,6 @@ extern "C" {
 #include "dual_grid_structure.hpp"
 #include "config_structure.hpp"
 #include "fem_standard_element.hpp"
-#include "su2_blas.hpp"
 
 using namespace std;
 

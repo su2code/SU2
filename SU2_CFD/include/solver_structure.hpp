@@ -66,7 +66,7 @@
 #include "../../Common/include/vector_structure.hpp"
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
-#include "../../Common/include/su2_blas.hpp"
+#include "../../Common/include/blas_structure.hpp"
 #include "../../Common/include/graph_vertex_coloring.hpp"
 
 using namespace std;
@@ -13287,6 +13287,9 @@ protected:
                                                                   entry in the Jacobian. A -1 indicates that
                                                                   the color does not contribute to the Jacobian
                                                                   of the DOF. */
+
+  CBlasStructure *blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+
 private:
 
 #ifdef HAVE_MPI
