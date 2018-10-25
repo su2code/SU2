@@ -62,9 +62,9 @@ void gemm_arbitrary(int m, int n, int k, const su2double *a, int lda,
 /* Blocking parameters for the outer kernel.  We multiply mc x kc blocks of A
    with kc x nc panels of B (this approach is referred to as `gebp` in the
    literature). */
-constexpr int mc = 256;
-constexpr int kc = 128;
-constexpr int nc = 128;
+const int mc = 256;
+const int kc = 128;
+const int nc = 128;
 
 /* Compute a portion of C one block at a time.  Handle ragged edges with calls
    to a slow but general function. */
