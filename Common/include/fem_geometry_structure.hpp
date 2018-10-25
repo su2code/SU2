@@ -32,8 +32,9 @@
 
 #pragma once
 
-#include "./geometry_structure.hpp"
-#include "./wall_model.hpp"
+#include "geometry_structure.hpp"
+#include "wall_model.hpp"
+#include "blas_structure.hpp"
 
 using namespace std;
 
@@ -630,6 +631,9 @@ protected:
                                                                               faces used for the solution of the DG solver. */
   vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
                                                                               faces used for the geometry of the DG solver. */
+
+  CBlasStructure *blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
+
 public:
   /*!
   * \brief Constructor of the class.

@@ -102,9 +102,9 @@ inline CBoundaryFEM::CBoundaryFEM(void) { periodicBoundary = haloInfoNeededForBC
 
 inline CBoundaryFEM::~CBoundaryFEM(void) { if( wallModel ) delete wallModel; }
 
-inline CMeshFEM::CMeshFEM(void) { }
+inline CMeshFEM::CMeshFEM(void) { blasFunctions = NULL; }
 
-inline CMeshFEM::~CMeshFEM(void) { }
+inline CMeshFEM::~CMeshFEM(void) { if( blasFunctions ) {delete blasFunctions; blasFunctions = NULL;} }
 
 inline CBoundaryFEM* CMeshFEM::GetBoundaries(void) {return boundaries.data();}
 
