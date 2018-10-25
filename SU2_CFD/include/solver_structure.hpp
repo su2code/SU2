@@ -212,6 +212,13 @@ public:
   void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
   
   /*!
+   * \brief Compute the residual due to grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
+  
+  /*!
    * \brief Set number of linear solver iterations.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */

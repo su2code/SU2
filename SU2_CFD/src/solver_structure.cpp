@@ -960,6 +960,80 @@ void CSolver::CompleteComms(CGeometry *geometry,
   
 }
 
+void CSolver::SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config) {
+  
+  unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
+  unsigned long iVertex, iEdge;
+  su2double ProjGridVel, *Normal;
+  
+  /*--- Loop interior edges ---*/
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
+    const unsigned long jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    /*--- Solution at each edge point ---*/
+    
+    su2double *Solution_i = node[iPoint]->GetSolution();
+    su2double *Solution_j = node[jPoint]->GetSolution();
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      Solution[iVar] = 0.5* (Solution_i[iVar] + Solution_j[iVar]);
+    
+    /*--- Grid Velocity at each edge point ---*/
+    
+    su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+    su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+    for (iDim = 0; iDim < nDim; iDim++)
+      Vector[iDim] = 0.5* (GridVel_i[iDim] + GridVel_j[iDim]);
+    
+    Normal = geometry->edge[iEdge]->GetNormal();
+    
+    ProjGridVel = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      ProjGridVel += Vector[iDim]*Normal[iDim];
+    
+    for (iVar = 0; iVar < nVar; iVar++)
+      Residual[iVar] = ProjGridVel*Solution[iVar];
+    
+    LinSysRes.SubtractBlock(iPoint, Residual);
+    LinSysRes.AddBlock(jPoint, Residual);
+    
+  }
+  
+  /*--- Loop boundary edges ---*/
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+        const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Solution at each edge point ---*/
+        
+        su2double *Solution = node[Point]->GetSolution();
+        
+        /*--- Grid Velocity at each edge point ---*/
+        
+        su2double *GridVel = geometry->node[Point]->GetGridVel();
+        
+        /*--- Summed normal components ---*/
+        
+        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+        
+        ProjGridVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjGridVel -= GridVel[iDim]*Normal[iDim];
+        
+        for (iVar = 0; iVar < nVar; iVar++)
+          Residual[iVar] = ProjGridVel*Solution[iVar];
+        
+        LinSysRes.AddBlock(Point, Residual);
+      }
+  }
+  
+}
+
 void CSolver::Set_MPI_AuxVar_Gradient(CGeometry *geometry, CConfig *config) {
   unsigned short iVar, iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
