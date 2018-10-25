@@ -454,6 +454,10 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
   PenaltyValue = 0.0;
 
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*3);
+  
   /*--- Perform the MPI communication of the solution ---*/
   
   Set_MPI_Solution(geometry, config);
@@ -1139,7 +1143,6 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
   
   /*--- The first line is the header ---*/
   
@@ -1168,17 +1171,11 @@ void CFEASolver::Set_Prestretch(CGeometry *geometry, CConfig *config) {
   
   /*--- Detect a wrong solution file ---*/
   
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-  
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  if (iPoint_Global_Local < nPointDomain)
+      SU2_MPI::Error(string("The solution file ") + filename +
+                     string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
   
   /*--- Close the restart file ---*/
   
@@ -1319,7 +1316,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0; string text_line;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- The first line is the header ---*/
 
@@ -1349,18 +1345,11 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n")  + 
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  if (iPoint_Global_Local < nPointDomain)
+    SU2_MPI::Error(string("The solution file ") + filename +
+                   string(" doesn't match with the mesh file!\n")  +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- I don't think we need to communicate ---*/
 
@@ -4654,7 +4643,6 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   int counter = 0;
   long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Read the restart data from either an ASCII or binary SU2 file. ---*/
 
@@ -4709,16 +4697,11 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  if (iPoint_Global_Local < nPointDomain)
+    SU2_MPI::Error(string("The solution file ") + filename +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- MPI. If dynamic, we also need to communicate the old solution ---*/
 

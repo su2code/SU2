@@ -222,6 +222,10 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       else
         node[iPoint] = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*nDim);
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 }
@@ -281,15 +285,9 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   for (iDim = 0; iDim < nDim; iDim++)
     Coord[iDim] = 0.0;
 
-  int rank = MASTER_NODE;
-#ifdef HAVE_MPI
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-#endif
-
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   /*--- Skip coordinates ---*/
 
@@ -365,26 +363,11 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    if (rank == MASTER_NODE) {
-      cout << endl << "The solution file " << restart_filename.data() << " doesn't match with the mesh file!" << endl;
-      cout << "It could be empty lines at the end of the file." << endl << endl;
-    }
-#ifndef HAVE_MPI
-    exit(EXIT_FAILURE);
-#else
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Abort(MPI_COMM_WORLD,1);
-    MPI_Finalize();
-#endif
-  }
+  if (iPoint_Global_Local < nPointDomain)
+    SU2_MPI::Error(string("The solution file ") + restart_filename +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We alo call the preprocessing routine
@@ -1532,7 +1515,7 @@ void CHeatSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
   }
 
   /*--- Compute the max and the min dt (in parallel) ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     su2double rbuf_time, sbuf_time;
     sbuf_time = Min_Delta_Time;

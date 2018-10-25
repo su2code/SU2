@@ -376,6 +376,10 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     }
   }
 
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*nDim);
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
 
@@ -2665,7 +2669,7 @@ void CAdjEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   
   /*--- Error message ---*/
   
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
     SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -5748,7 +5752,6 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   int counter = 0;
   long iPoint_Local = 0; unsigned long iPoint_Global = 0;
   unsigned long iPoint_Global_Local = 0;
-  unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
   for (iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++ ) {
     
@@ -5775,17 +5778,11 @@ void CAdjEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- Detect a wrong solution file ---*/
 
-  if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  if (iPoint_Global_Local < nPointDomain)
+    SU2_MPI::Error(string("The solution file ") + filename +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- Communicate the loaded solution on the fine grid before we transfer
    it down to the coarse levels. We also call the preprocessing routine
@@ -6103,6 +6100,10 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
      }
    }
 
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*nDim);
+  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   
@@ -6195,7 +6196,7 @@ void CAdjNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Error message ---*/
   
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
     SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);

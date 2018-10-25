@@ -175,17 +175,17 @@ enum ANSWER {
 };
 
 /*!
- * \brief Verbosity level
+ * \brief MPI communication level
  */
-enum VERB_LEVEL {
-  VERB_NONE = 0,   /*!< \brief No verbosity. */
-  VERB_MEDIUM = 1,   /*!< \brief Medium level of verbosity. */
-  VERB_HIGH = 2			/*!< \brief High level of verbosity. */
+enum COMM_LEVEL {
+  COMM_NONE    = 0,   /*!< \brief Disable all MPI comms. Purely for testing, as results are incorrect. */
+  COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
+  COMM_FULL    = 2		/*!< \brief Perform all MPI communications. */
 };
-static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
-("NONE", VERB_NONE)
-("MEDIUM", VERB_MEDIUM)
-("HIGH", VERB_HIGH);
+static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
+("NONE", COMM_NONE)
+("MINIMAL", COMM_MINIMAL)
+("FULL", COMM_FULL);
 
 /*!
  * \brief Average method for marker analyze

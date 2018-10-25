@@ -736,7 +736,7 @@ private:
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
-  unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
+  unsigned short Comm_Level,  /*!< \brief Level of MPI communications to be performed. */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
   su2double Gamma,			/*!< \brief Ratio of specific heats of the gas. */
   Bulk_Modulus,			/*!< \brief Value of the bulk modulus for incompressible flows. */
@@ -1305,7 +1305,7 @@ public:
   /*!
    * \brief Constructor of the class which reads the input file.
    */
-  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level);
+  CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high);
   
   /*!
    * \brief Constructor of the class which reads the input file.
@@ -8067,10 +8067,10 @@ public:
   su2double* GetFreeStreamTurboNormal(void);
 
   /*!
-   * \brief Get the verbosity level of the console output.
-   * \return Verbosity level for the console output.
+   * \brief Get the level of MPI communications to be performed.
+   * \return Level of MPI communications.
    */
-  unsigned short GetConsole_Output_Verb(void);
+  unsigned short GetComm_Level(void);
   
   /*!
    * \brief Get the kind of marker analyze marker (area-averaged, mass flux averaged, etc).

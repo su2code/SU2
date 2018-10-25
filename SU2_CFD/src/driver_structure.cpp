@@ -125,7 +125,7 @@ CDriver::CDriver(char* confFile,
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, true);
 
     /*--- Set the MPI communicator ---*/
 
@@ -3432,10 +3432,6 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
       }
     }
   }
-
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
 
 }
 

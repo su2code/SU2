@@ -278,10 +278,19 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
   Local_nPointDomain = geometry->GetnPointDomain();
   
-  
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Global_nPointDomain = geometry->GetGlobal_nPointDomain();
+    
+  } else {
+    
+    /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
+    
+    for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
+    Global_nPointDomain = geometry->GetnPointDomain();
+    
+  }
   
   for (iVar = 0; iVar < nVar; iVar++) {
     
@@ -297,6 +306,9 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   delete [] rbuf_residual;
   
   /*--- Set the Maximum residual in all the processors ---*/
+  
+    if (config->GetComm_Level() == COMM_FULL) {
+      
   sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
   sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
   sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
@@ -331,6 +343,7 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   
   delete [] sbuf_coord;
   delete [] rbuf_coord;
+    }
   
 #endif
   
@@ -2612,7 +2625,6 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   string text_line;
   long iPoint_Local;
   unsigned long iPoint_Global_Local = 0, iPoint_Global = 0;
-  unsigned short rbuf_NotMatching, sbuf_NotMatching;
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -2666,19 +2678,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- Detect a wrong solution file ---*/
 
-  rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-  if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-  rbuf_NotMatching = sbuf_NotMatching;
-#else
-  SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (rbuf_NotMatching != 0) {
-    SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                   string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-  }
+  if (iPoint_Global_Local < geometry->GetnPointDomain())
+    SU2_MPI::Error(string("The solution file ") + filename +
+                   string(" doesn't match with the mesh file!\n") +
+                   string("It could be empty lines at the end of the file."),
+                   CURRENT_FUNCTION);
 
   /*--- Close the restart file ---*/
 
@@ -2739,19 +2743,11 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
     /*--- Detect a wrong solution file ---*/
 
-    rbuf_NotMatching = 0; sbuf_NotMatching = 0;
-
-    if (iPoint_Global_Local < geometry->GetnPointDomain()) { sbuf_NotMatching = 1; }
-
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
-      SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                     string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-    }
+    if (iPoint_Global_Local < geometry->GetnPointDomain())
+      SU2_MPI::Error(string("The solution file ") + filename +
+                     string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
 
     /*--- Close the restart file ---*/
 
@@ -3813,7 +3809,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     Inlet_Values = new su2double[maxCol_InletFile];
     Inlet_Fine   = new su2double[maxCol_InletFile];
 
-    unsigned short global_failure = 0, local_failure = 0;
+    unsigned short local_failure = 0;
     ostringstream error_msg;
 
     const su2double tolerance = config->GetInlet_Profile_Matching_Tolerance();
@@ -3900,14 +3896,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
       if (local_failure > 0) break;
     }
 
-#ifdef HAVE_MPI
-    SU2_MPI::Allreduce(&local_failure, &global_failure, 1, MPI_UNSIGNED_SHORT,
-                       MPI_SUM, MPI_COMM_WORLD);
-#else
-    global_failure = local_failure;
-#endif
-
-    if (global_failure > 0) {
+    if (local_failure > 0) {
       SU2_MPI::Error(string("Prescribed inlet data does not match markers within tolerance."), CURRENT_FUNCTION);
     }
 

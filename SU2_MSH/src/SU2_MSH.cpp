@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/

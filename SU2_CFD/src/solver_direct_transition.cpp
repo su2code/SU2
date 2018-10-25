@@ -182,6 +182,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     restart_file.close();
   }
 
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*nDim);
+  
 }
 
 CTransLMSolver::~CTransLMSolver(void) {

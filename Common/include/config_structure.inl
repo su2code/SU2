@@ -1748,7 +1748,7 @@ inline void CConfig::SetNonphysical_Reconstr(unsigned long val_nonphys_reconstr)
 
 inline unsigned long CConfig::GetNonphysical_Reconstr(void) { return Nonphys_Reconstr; }
 
-inline unsigned short CConfig::GetConsole_Output_Verb(void) { return Console_Output_Verb; }
+inline unsigned short CConfig::GetComm_Level(void) { return Comm_Level; }
 
 inline unsigned short CConfig::GetKind_Average(void) { return Kind_Average; }
 

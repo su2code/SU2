@@ -3355,7 +3355,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
   MaxDiff = my_MaxDiff;

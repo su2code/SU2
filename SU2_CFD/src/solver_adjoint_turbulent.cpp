@@ -146,7 +146,6 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Read all lines in the restart file ---*/
     long iPoint_Local; unsigned long iPoint_Global = 0; unsigned long iPoint_Global_Local = 0;
-    unsigned short rbuf_NotMatching = 0, sbuf_NotMatching = 0;
 
     /*--- The first line is the header ---*/
     
@@ -175,17 +174,11 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     /*--- Detect a wrong solution file ---*/
     
-    if (iPoint_Global_Local < nPointDomain) { sbuf_NotMatching = 1; }
-    
-#ifndef HAVE_MPI
-    rbuf_NotMatching = sbuf_NotMatching;
-#else
-    SU2_MPI::Allreduce(&sbuf_NotMatching, &rbuf_NotMatching, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-    if (rbuf_NotMatching != 0) {
-        SU2_MPI::Error(string("The solution file ") + filename + string(" doesn't match with the mesh file!\n") +
-                       string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
-    }
+    if (iPoint_Global_Local < nPointDomain)
+      SU2_MPI::Error(string("The solution file ") + filename +
+                     string(" doesn't match with the mesh file!\n") +
+                     string("It could be empty lines at the end of the file."),
+                     CURRENT_FUNCTION);
     
     /*--- Instantiate the variable class with an arbitrary solution
      at any halo/periodic nodes. The initial solution can be arbitrary,
@@ -198,6 +191,10 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     restart_file.close();
     
   }
+  
+  /*--- Initialize the point-to-point MPI communications. ---*/
+  
+  PreprocessComms(geometry, config, nVar*nDim);
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
