@@ -8733,7 +8733,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
      /*--- Append the restart iteration: if dynamic problem and restart ---*/
     
     if (config->GetWrt_Unsteady() && config->GetRestart()) {
-      long iExtIter = config->GetDyn_RestartIter();
+      long iExtIter = config->GetUnst_RestartIter();
       if (SU2_TYPE::Int(iExtIter) < 10) SPRINTF (buffer, "_0000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 10) && (SU2_TYPE::Int(iExtIter) < 100)) SPRINTF (buffer, "_000%d", SU2_TYPE::Int(iExtIter));
       if ((SU2_TYPE::Int(iExtIter) >= 100) && (SU2_TYPE::Int(iExtIter) < 1000)) SPRINTF (buffer, "_00%d", SU2_TYPE::Int(iExtIter));
