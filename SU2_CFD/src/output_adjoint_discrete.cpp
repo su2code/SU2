@@ -88,11 +88,11 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("RMS_ADJOINT_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     break;  
   case SST:
-    AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     break;
   default: break;
   }
@@ -104,11 +104,11 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("MAX_ADJOINT_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
     break;  
   case SST:
-    AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("MAX_ADJT_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
     break;
   default: break;
   }
@@ -129,22 +129,41 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
   SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
   SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
   
-  SetHistoryOutputValue("ADJOINT_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)));
-  SetHistoryOutputValue("ADJOINT_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)));
-  SetHistoryOutputValue("ADJOINT_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(2)));
+  SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(2)));
   if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
-    SetHistoryOutputValue("ADJOINT_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));
-    SetHistoryOutputValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(4)));
+    SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));
+    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(4)));
   } else {
-    SetHistoryOutputValue("ADJOINT_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));    
+    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));    
   }
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("ADJOINT_NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_ADJ_NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
     break;  
   case SST:
-    SetHistoryOutputValue("ADJOINT_KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
-    SetHistoryOutputValue("ADJOINT_DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(1)));
+    SetHistoryOutputValue("RMS_ADJ_KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(0)));
+    SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_RMS(1)));
+    break;
+  default: break;
+  }
+  SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(2)));
+  if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
+    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(3)));
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(4)));
+  } else {
+    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(3)));    
+  }
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("MAX_ADJ_NU_TILDE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_Max(0)));
+    break;  
+  case SST:
+    SetHistoryOutputValue("MAX_ADJ_KINETIC_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_Max(0)));
+    SetHistoryOutputValue("MAX_ADJOINT_DISSIPATION",    log10(solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL]->GetRes_Max(1)));
     break;
   default: break;
   }
@@ -297,10 +316,35 @@ void CDiscAdjFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, C
 }
 
 bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
-  return true;
+ if (!write_dualtime){
+   return true;
+ }
+ else {
+   return false;
+ }
 }
 
-bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) {return true;  }
+bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) {  
+  bool write_header = false;
+  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+  } else {
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+  }
+  return write_header;
+}
 
-bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {return true;  }
+bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  bool write_output = false;
+  
+  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+      && write_dualtime ){
+    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
+  }
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
+    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+  } 
+  return write_output;
+}
+
 
