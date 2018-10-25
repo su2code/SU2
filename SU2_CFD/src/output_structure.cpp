@@ -8217,6 +8217,16 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
             DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
             break;
             
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a ParaView ASCII file instead for now in serial. ---*/
+            
+            if (rank == MASTER_NODE) cout << "ParaView binary volume files not available in this mode." << endl;
+            if (rank == MASTER_NODE) cout << " Writing ParaView ASCII volume solution file instead." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], false);
+            break;
+            
           default:
             break;
         }
@@ -8249,6 +8259,16 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
             /*--- Write a Paraview ASCII file ---*/
             
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], true);
+            break;
+            
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a ParaView ASCII file instead for now in serial. ---*/
+            
+            if (rank == MASTER_NODE) cout << "ParaView binary surface files not available in this mode." << endl;
+            if (rank == MASTER_NODE) cout << " Writing ParaView ASCII surface solution file instead." << endl;
             SetParaview_ASCII(config[iZone], geometry[iZone][INST_0][MESH_0], iZone, val_nZone, true);
             DeallocateConnectivity(config[iZone], geometry[iZone][INST_0][MESH_0], true);
             break;
@@ -8371,6 +8391,16 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
             SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
             DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
             break;
+              
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a ParaView ASCII file instead for now in serial. ---*/
+            
+            if (rank == MASTER_NODE) cout << "ParaView binary volume files not available in this mode." << endl;
+            if (rank == MASTER_NODE) cout << " Writing ParaView ASCII volume solution file instead." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, false);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], false);
+            break;
 
           default:
             break;
@@ -8409,6 +8439,16 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
             DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
             break;
 
+          case PARAVIEW_BINARY:
+            
+            /*--- Write a ParaView ASCII file instead for now in serial. ---*/
+            
+            if (rank == MASTER_NODE) cout << "ParaView binary surface files not available in this mode." << endl;
+            if (rank == MASTER_NODE) cout << " Writing ParaView ASCII surface solution file instead." << endl;
+            SetParaview_ASCII(config[iZone], geometry[iZone][iInst], iZone, val_nZone, true);
+            DeallocateConnectivity(config[iZone], geometry[iZone][iInst], true);
+            break;
+              
           default:
             break;
           }
@@ -12537,9 +12577,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
-        nVar_Par += 2;
+        nVar_Par += 1;
         Variable_Names.push_back("Heat_Flux");
-        Variable_Names.push_back("Y_Plus");
       } else {
         nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
         nVar_Par += 2;
@@ -12548,21 +12587,22 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
-        nVar_Par += 2;
+        nVar_Par += 1;
         Variable_Names.push_back("h");
-        Variable_Names.push_back("y<sup>+</sup>");
       }
     }
     
     /*--- Add Eddy Viscosity. ---*/
     
     if (Kind_Solver == RANS) {
-      nVar_Par += 1;
+      nVar_Par += 2;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
+        Variable_Names.push_back("Y_Plus");
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
+        Variable_Names.push_back("y<sup>+</sup>");
       }
     }
     
@@ -12791,13 +12831,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             iVar++;
           }
           Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
-          Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           
         }
         
         /*--- Load data for the Eddy viscosity for RANS. ---*/
         
         if (Kind_Solver == RANS) {
+          Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
         
@@ -12866,10 +12906,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
 
-  bool transition       = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement    = (config->GetGrid_Movement());
-  bool Wrt_Halo         = config->GetWrt_Halo(), isPeriodic;
-  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool transition           = (config->GetKind_Trans_Model() == BC);
+  bool grid_movement        = (config->GetGrid_Movement());
+  bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
+  bool variable_density     = (config->GetKind_DensityModel() == VARIABLE);
+  bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
 
   int *Local_Halo = NULL;
@@ -12912,6 +12953,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
+  if ((!energy) && (!weakly_coupled_heat)) nVar_First--;
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
 
@@ -12944,7 +12986,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   Variable_Names.push_back("Velocity_x");
   Variable_Names.push_back("Velocity_y");
   if (geometry->GetnDim() == 3) Variable_Names.push_back("Velocity_z");
-  Variable_Names.push_back("Temperature");
+  if (energy || weakly_coupled_heat) Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
@@ -12970,7 +13012,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Limiter_Velocity_x");
       Variable_Names.push_back("Limiter_Velocity_y");
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Limiter_Velocity_z");
-      Variable_Names.push_back("Limiter_Temperature");
+      if (energy || weakly_coupled_heat)
+        Variable_Names.push_back("Limiter_Temperature");
 
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
@@ -12992,7 +13035,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       Variable_Names.push_back("Residual_Velocity_x");
       Variable_Names.push_back("Residual_Velocity_y");
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Residual_Velocity_z");
-      Variable_Names.push_back("Residual_Temperature");
+      if (energy || weakly_coupled_heat)
+        Variable_Names.push_back("Residual_Temperature");
 
       if (SecondIndex != NONE) {
         if (config->GetKind_Turb_Model() == SST) {
@@ -13016,18 +13060,17 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (geometry->GetnDim() == 3) Variable_Names.push_back("Grid_Velocity_z");
     }
 
-    /*--- Add Cp, Mach. ---*/
+    /*--- Add Cp. ---*/
 
-    nVar_Par += 2;
+    nVar_Par += 1;
     if ((config->GetOutput_FileFormat() == PARAVIEW) ||
         (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
       Variable_Names.push_back("Pressure_Coefficient");
     } else {
       Variable_Names.push_back("C<sub>p</sub>");
     }
-    Variable_Names.push_back("Mach");
 
-    /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
+    /*--- Add Laminar Viscosity, Skin Friction, and Heat Flux to the restart file ---*/
 
     if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
@@ -13039,9 +13082,10 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("Skin_Friction_Coefficient_z");
         }
-        nVar_Par += 2;
-        Variable_Names.push_back("Heat_Flux");
-        Variable_Names.push_back("Y_Plus");
+        if (energy || weakly_coupled_heat) {
+          nVar_Par += 1;
+          Variable_Names.push_back("Heat_Flux");
+        }
       } else {
         nVar_Par += 1; Variable_Names.push_back("<greek>m</greek>");
         nVar_Par += 2;
@@ -13050,20 +13094,23 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
-        nVar_Par += 2;
-        Variable_Names.push_back("h");
-        Variable_Names.push_back("y<sup>+</sup>");
+        if (energy || weakly_coupled_heat) {
+          nVar_Par += 1;
+          Variable_Names.push_back("h");
+        }
       }
     }
 
-    /*--- Add Eddy Viscosity. ---*/
+    /*--- Add Y+ and Eddy Viscosity. ---*/
 
     if (Kind_Solver == RANS) {
-      nVar_Par += 1;
+      nVar_Par += 2;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
+        Variable_Names.push_back("Y_Plus");
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
+        Variable_Names.push_back("y<sup>+</sup>");
         Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
       }
     }
@@ -13089,9 +13136,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- New variables get registered here before the end of the loop. ---*/
 
-    nVar_Par += 1;
-    Variable_Names.push_back("Density");
-
+    if (variable_density) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Density");
+    }
+    
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13203,8 +13252,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       if (weakly_coupled_heat) {
         Local_Data[jPoint][iVar] = solver[HEAT_SOL]->node[iPoint]->GetSolution(0);
         iVar++;
-      }
-      else {
+      } else if (energy) {
         Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(nDim+1);
         iVar++;
       }
@@ -13272,18 +13320,6 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
         Local_Data[jPoint][iVar] = (solver[FLOW_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
 
-        /*--- Mach depends on whether we have variable density or not. ---*/
-
-        if (variable_density) {
-          Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        sqrt(solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCp()*config->GetPressure_ThermodynamicND()/(solver[FLOW_SOL]->node[iPoint]->GetSpecificHeatCv()*solver[FLOW_SOL]->node[iPoint]->GetDensity())); 
-          iVar++;
-        } else {
-          Local_Data[jPoint][iVar] = sqrt(solver[FLOW_SOL]->node[iPoint]->GetVelocity2())/
-        sqrt(config->GetBulk_Modulus()/(solver[FLOW_SOL]->node[iPoint]->GetDensity())); 
-          iVar++;
-        }
-
         if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
 
           /*--- Load data for the laminar viscosity. ---*/
@@ -13298,14 +13334,17 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
             Local_Data[jPoint][iVar] = Aux_Frict_z[iPoint];
             iVar++;
           }
-          Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
-          Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
+          
+          if (energy || weakly_coupled_heat) {
+            Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
+          }
 
         }
 
         /*--- Load data for the Eddy viscosity for RANS. ---*/
 
         if (Kind_Solver == RANS) {
+          Local_Data[jPoint][iVar] = Aux_yPlus[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetEddyViscosity(); iVar++;
         }
 
@@ -13321,10 +13360,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
         }
 
+        /*--- Load density if we are solving a variable density problem. ---*/
+        
+        if (variable_density) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
+        }
+        
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
-
-        Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetDensity(); iVar++;
 
       }
 
@@ -13345,7 +13388,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     delete [] Aux_Heat;
     delete [] Aux_yPlus;
   }
-  
+
   delete [] Local_Halo;
   
 }
@@ -17639,6 +17682,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
+    MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
     ierr = MPI_File_open(MPI_COMM_WORLD, fname,

@@ -1,0 +1,3 @@
+ #pragma once
+#include "basicTypes.h"
+namespace tecplot { namespace ___3933 { class FileWriterInterface; class ___37; class ClassicFEZoneConnectivityWriter { public: ClassicFEZoneConnectivityWriter( ___4636 zone, ___4636 ___341, ___37& ___36); static uint64_t nodeMapHeaderSizeInFile(bool ___2002); uint64_t sizeInFile(bool ___2002); ___372 write(FileWriterInterface& fileWriter); private: uint64_t cellConnectivitySizeInFile(bool ___2002); ___372 writeCellConnectivity(FileWriterInterface& fileWriter); ___372 ___4530(FileWriterInterface& file); ___4636 const ___2677; ___4636 const m_baseZone; ___37&       ___2337; std::string const m_zoneNumberLabel; }; }}
