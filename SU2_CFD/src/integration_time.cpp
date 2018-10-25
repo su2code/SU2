@@ -488,7 +488,10 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   }
   
   /*--- MPI the new interpolated solution ---*/
-  sol_fine->Set_MPI_Solution(geo_fine, config);
+  //sol_fine->Set_MPI_Solution(geo_fine, config);
+  
+  sol_fine->InitiateComms(geo_fine, config, SOLUTION);
+  sol_fine->CompleteComms(geo_fine, config, SOLUTION);
   
   delete [] Solution;
 }
@@ -662,7 +665,10 @@ void CMultiGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSyst
   
   /*--- MPI the new interpolated solution ---*/
   
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  //sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
   
   delete [] Solution;
   
@@ -867,7 +873,10 @@ void CSingleGridIntegration::SetRestricted_Solution(unsigned short RunTime_EqSys
   
   /*--- MPI the new interpolated solution ---*/
   
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  //sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION);
   
   delete [] Solution;
   
@@ -914,8 +923,11 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 
   /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
   
-  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  //sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
+  sol_coarse->InitiateComms(geo_coarse, config, SOLUTION_EDDY);
+  sol_coarse->CompleteComms(geo_coarse, config, SOLUTION_EDDY);
+    
 }
 
 

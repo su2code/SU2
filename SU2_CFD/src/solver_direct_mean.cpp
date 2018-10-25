@@ -861,10 +861,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   
   PreprocessComms(geometry, config, nPrimVarGrad*nDim);
   
-  LoadComms(geometry, config, SOLUTION);
-  InitiateComms(COMM_TYPE_DOUBLE);
-  CompleteComms();
-  UnpackComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Perform the MPI communication of the solution ---*/
 
@@ -4214,7 +4212,11 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
         
         /*--- Set the MPI communication ---*/
         
-        solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        //solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+        
+        solver_container[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+        solver_container[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+        
         solver_container[iMesh][FLOW_SOL]->Set_MPI_Solution_Old(geometry[iMesh], config);
         
       }
@@ -6203,12 +6205,14 @@ void CEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver_co
   
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
-  
   
 }
 
@@ -6264,12 +6268,16 @@ void CEulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **solver_
 
   /*--- MPI solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
 
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
 
+  
 }
 
 void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
@@ -6306,11 +6314,15 @@ void CEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
   
 }
 
@@ -6409,17 +6421,16 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   }
   
   /*--- MPI solution ---*/
-  
-  LoadComms(geometry, config, SOLUTION);
-  InitiateComms(COMM_TYPE_DOUBLE);
-  CompleteComms();
-  UnpackComms(geometry, config, SOLUTION);
-  
+
   //Set_MPI_Solution(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
+
   /*--- Compute the root mean square residual ---*/
   
   SetResidual_RMS(geometry, config);
+  
   
 }
 
@@ -13629,8 +13640,12 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
    on the fine level in order to have all necessary quantities updated,
    especially if this is a turbulent simulation (eddy viscosity). ---*/
 
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  //solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  //solver[MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  
+  solver[MESH_0][FLOW_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION);
+  solver[MESH_0][FLOW_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION);
+  
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Interpolate the solution down to the coarse multigrid levels ---*/
@@ -13649,8 +13664,12 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       }
       solver[iMesh][FLOW_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
-    solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    //solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    //solver[iMesh][FLOW_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    
+    solver[iMesh][FLOW_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION);
+    solver[iMesh][FLOW_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION);
+    
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   }
 
@@ -15609,7 +15628,12 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  PreprocessComms(geometry, config, nPrimVarGrad*nDim);
+
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 

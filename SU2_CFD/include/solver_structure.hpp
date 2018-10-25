@@ -139,6 +139,8 @@ protected:
   int nRecvs;                 /*!< \brief Number of receives during point-to-point comms. */
   int *nElem_Send;            /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
   int *nElem_Recv;            /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  int *Neighbors_Send;            /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
+  int *Neighbors_Recv;            /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
   unsigned long *Local_Point_Send;            /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
   unsigned long *Local_Point_Recv;            /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
   su2double *bufRecv;          /*!< \brief Data structure for point-to-point receive. */
@@ -189,36 +191,25 @@ public:
    * \brief Routine to allocate persistent data structures for point-to-point MPI communications
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] val_packetSize - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
+   * \param[in] val_countPerPoint - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
    */
-  void PreprocessComms(CGeometry *geometry, CConfig *config, int val_maxCountPerPoint);
+  void PreprocessComms(CGeometry *geometry, CConfig *config, int val_countPerPoint);
   
   /*!
-   * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication.
+   * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs amongst all processors.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void LoadComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
   
   /*!
-   * \brief Routine to launch non-blocking sends and recvs amongst all processors.
-   * \param[in] commType - Enumerated type for the communicated MPI data type.
-   */
-  void InitiateComms(unsigned short commType);
-  
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
-   */
-  void CompleteComms(void);
-  
-  /*!
-   * \brief Routine to unpack and store a specified quantity after MPI point-to-point communication.
+   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany() and unpacking of the data.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void UnpackComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
   
   /*!
    * \brief Set number of linear solver iterations.
@@ -4316,13 +4307,6 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CBaselineSolver(void);
-
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Load a solution from a restart file.
@@ -6992,42 +6976,7 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CIncEulerSolver(void);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
-  
+
   /*!
    * \brief Set the fluid solver nondimensionalization.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -7187,14 +7136,6 @@ public:
   void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Parallelization of SetPressure_Sensor.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Compute the gradient of the primitive variables using Green-Gauss method,
    *        and stores the result in the <i>Gradient_Primitive</i> variable.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -7211,14 +7152,6 @@ public:
   void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Compute the gradient of the primitive variables using a Least-Squares method,
-   *        and stores the result in the <i>Gradient_Primitive</i> variable.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Compute the limiter of the primitive variables.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -7233,25 +7166,11 @@ public:
   void SetUndivided_Laplacian(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Compute the max eigenvalue.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
   void SetMax_Eigenvalue(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Parallelization of the Max eigenvalue.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
 
   /*!
    * \author H. Kline
@@ -9106,34 +9025,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CTurbSolver(CGeometry* geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Compute the spatial integration using a upwind scheme.
