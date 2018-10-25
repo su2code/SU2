@@ -152,31 +152,12 @@ su2_cfd_ldadd =
 # always link to built dependencies from ./externals
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
+su2_cfd_ldadd += @su2_externals_LIBPTHREAD@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-su2_cfd_cxx_flags += @JSONCPP_CXX@
-su2_cfd_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_HDF5
-su2_cfd_cxx_flags += @HDF5_CXX@
-su2_cfd_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-su2_cfd_cxx_flags += @SZIP_CXX@
-su2_cfd_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-su2_cfd_cxx_flags += @ZLIB_CXX@
-su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
 if BUILD_NORMAL
