@@ -328,6 +328,9 @@ void CSurfaceElementFEM::Copy(const CSurfaceElementFEM &other) {
 
 CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
+  /*--- Allocate the memory for blasFunctions. ---*/
+  blasFunctions = new CBlasStructure;
+
   /*--- The new FEM mesh class has the same problem dimension/zone. ---*/
   nDim  = geometry->GetnDim();
   nZone = geometry->GetnZone();
@@ -2278,8 +2281,8 @@ void CMeshFEM::ComputeGradientsCoorWRTParam(const unsigned short nIntegration,
   /* Carry out the matrix matrix product The last argument is NULL, such
      that this gemm call is ignored in the profiling. Replace by config if
      if should be included. */
-  su2_gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
-           vecRHS.data(), derivCoor, NULL);
+  blasFunctions->gemm(nDim*nIntegration, nDim, nDOFs, matDerBasisInt,
+                      vecRHS.data(), derivCoor, NULL);
 }
 
 void CMeshFEM::ComputeNormalsFace(const unsigned short nIntegration,
@@ -5599,9 +5602,9 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       /* Carry out the matrix multiplication. The last argument is NULL, such
          that this gemm call is ignored in the profiling. Replace by config if
-         if should be included. */
-      su2_gemm(nDim*nInt, nMetricPerPoint-1, nDOFsGrid, matDerBasisInt,
-               metricGridDOFs.data(), vecDerMetrics, NULL);
+         it should be included. */
+      blasFunctions->gemm(nDim*nInt, nMetricPerPoint-1, nDOFsGrid, matDerBasisInt,
+                          metricGridDOFs.data(), vecDerMetrics, NULL);
 
       /* Allocate the memory for the additional metric terms needed to
          compute the second derivatives. */
@@ -5793,7 +5796,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
     vector<su2double> massMat(nDOFs2);
 
     /* Create the mass matrix, which is a BLAS gemv operation. */
-    su2_gemv(nDOFs2, nInt, valInt, Jac, massMat.data());
+    blasFunctions->gemv(nDOFs2, nInt, valInt, Jac, massMat.data());
 
     /* Store the full mass matrix in volElem[i], if needed. */
     if( FullMassMatrix ) volElem[i].massMatrix = massMat;

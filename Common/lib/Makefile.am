@@ -55,7 +55,7 @@ lib_sources = \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
-  ../include/su2_blas.hpp \
+  ../include/blas_structure.hpp \
   ../include/dual_grid_structure.hpp \
   ../include/dual_grid_structure.inl \
   ../include/fem_geometry_structure.hpp \
@@ -96,7 +96,7 @@ lib_sources = \
   ../include/wall_model.inl \
   ../src/cgns_elements.cpp \
   ../src/config_structure.cpp \
-  ../src/su2_blas.cpp \
+  ../src/blas_structure.cpp \
   ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \
