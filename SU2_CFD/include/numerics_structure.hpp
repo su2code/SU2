@@ -800,6 +800,7 @@ public:
                           su2double val_turb_ke, su2double *val_normal,
                           su2double val_laminar_viscosity,
                           su2double val_eddy_viscosity,
+                          su2double val_tau_wall,
                           bool val_qcr);
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
@@ -1543,9 +1544,29 @@ public:
    */
   void CreateBasis(su2double *val_Normal);
   
+  /*!
+   * \brief Set the value of the Tauwall
+   * \param[in] val_tauwall_i - Tauwall at point i
+   * \param[in] val_tauwall_j - Tauwall at point j
+   */
+  virtual void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
   
-  void SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
-                          const su2double Dissipation_i, const su2double Dissipation_j,
+  /*!
+   * \brief - Calculate the central/upwind blending function for a face
+   *
+   * At its simplest level, this function will calculate the average
+   * value of the "Roe dissipation" or central/upwind blending function
+   * at a face. If Ducros shock sensors are used, then this method will
+   * also adjust the central/upwind blending to account for shocks.
+   *
+   * \param[in] Dissipation_i - Value of the blending function at point i
+   * \param[in] Dissipation_j - Value of the bledning function at point j
+   * \param[in] Sensor_i - Shock sensor at point i
+   * \param[in] Sensor_j - Shock sensor at point j
+   * \param[out] Dissipation_ij - Blending parameter at face
+   */
+  void SetRoe_Dissipation(const su2double Dissipation_i,
+                          const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,
                           su2double& Dissipation_ij, CConfig *config);
   
@@ -3007,7 +3028,9 @@ private:
   Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij;            /*!< \brief Length of the edge and face. */
+  dist_ij,           /*!< \brief Length of the edge and face. */
+  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
   bool implicit; /*!< \brief Implicit calculus. */
   
 public:
@@ -3033,6 +3056,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+  
 };
 
 /*!
@@ -3040,7 +3071,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author M.Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 
 class CGeneralAvgGrad_Flow : public CNumerics {
@@ -3388,7 +3418,9 @@ private:
   Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
   Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2;           /*!< \brief Length of the edge and face. */
+  dist_ij_2,           /*!< \brief Length of the edge and face. */
+  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
+  Mean_TauWall;     /*!< \brief Mean wall shear stress (wall functions). */
   bool implicit;      /*!< \brief Implicit calculus. */
   
 public:
@@ -3414,6 +3446,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  
+  /*!
+	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
+	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+	 */
+  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 };
 
 
@@ -3422,7 +3462,6 @@ public:
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
  * \author M. Pini, S. Vitale
- * \version 3.2.1 "eagle"
  */
 class CGeneralAvgGradCorrected_Flow : public CNumerics {
 private:
@@ -3961,6 +4000,9 @@ public:
   virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
 
   virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+  
+protected:
+  void Compute_Lame_Parameters(void);
 
 };
 
@@ -3992,8 +4034,7 @@ public:
 
   void Compute_Tangent_Matrix(CElement *element_container, CConfig *config);
 
-  void Compute_Constitutive_Matrix(void);
-  using CNumerics::Compute_Constitutive_Matrix;
+  void Compute_Constitutive_Matrix(CElement *element_container, CConfig *config);
 
   void Compute_Averaged_NodalStress(CElement *element_container, CConfig *config);
 

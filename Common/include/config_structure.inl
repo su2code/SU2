@@ -355,8 +355,6 @@ inline long CConfig::GetExtraHeatOutputZone(void) { return ExtraHeatOutputZone; 
 
 inline su2double CConfig::GetRefArea(void) { return RefArea; }
 
-inline su2double CConfig::GetWaveSpeed(void) { return Wave_Speed; }
-
 inline su2double CConfig::GetThermalDiffusivity(void) { return Thermal_Diffusivity; }
 
 inline su2double CConfig::GetThermalDiffusivity_Solid(void) { return Thermal_Diffusivity_Solid; }
@@ -1025,7 +1023,9 @@ inline su2double CConfig::GetDeform_PoissonRatio(void) { return Deform_PoissonRa
 
 inline unsigned short CConfig::GetDeform_Stiffness_Type(void) { return Deform_Stiffness_Type; }
 
-inline bool CConfig::GetVisualize_Deformation(void) { return Visualize_Deformation; }
+inline bool CConfig::GetVisualize_Volume_Def(void) { return Visualize_Volume_Def; }
+
+inline bool CConfig::GetVisualize_Surface_Def(void) { return Visualize_Surface_Def; }
 
 inline bool CConfig::GetFFD_Symmetry_Plane(void) { return FFD_Symmetry_Plane; }
 
@@ -1055,13 +1055,9 @@ inline bool CConfig::GetMUSCL_AdjTurb(void) { return MUSCL_AdjTurb; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Flow(void) { return Kind_TimeIntScheme_Flow; }
 
-inline unsigned short CConfig::GetKind_TimeIntScheme_Wave(void) { return Kind_TimeIntScheme_Wave; }
-
 inline unsigned short CConfig::GetKind_TimeIntScheme_Heat(void) { return Kind_TimeIntScheme_Heat; }
 
 inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeStep_Heat; }
-
-inline unsigned short CConfig::GetKind_TimeIntScheme_Poisson(void) { return Kind_TimeIntScheme_Poisson; }
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
@@ -1426,19 +1422,11 @@ inline string CConfig::GetAdjStructure_FileName(void) { return Structure_FileNam
 
 inline string CConfig::GetAdjSurfStructure_FileName(void) { return SurfStructure_FileName; }
 
-inline string CConfig::GetSurfWave_FileName(void) { return SurfWave_FileName; }
-
 inline string CConfig::GetSurfHeat_FileName(void) { return SurfHeat_FileName; }
-
-inline string CConfig::GetWave_FileName(void) { return Wave_FileName; }
 
 inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
-inline string CConfig::GetAdjWave_FileName(void) { return AdjWave_FileName; }
-
 inline string CConfig::GetRestart_FlowFileName(void) { return Restart_FlowFileName; }
-
-inline string CConfig::GetRestart_WaveFileName(void) { return Restart_WaveFileName; }
 
 inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileName; }
 
@@ -1714,6 +1702,8 @@ inline void CConfig::SetOpt_RelaxFactor(su2double val_scale) {Opt_RelaxFactor = 
 
 inline long CConfig::GetVisualize_CV(void) { return Visualize_CV; }
 
+inline bool CConfig::GetWall_Functions(void) { return Wall_Functions; }
+
 inline bool CConfig::GetFixed_CL_Mode(void) { return Fixed_CL_Mode; }
 
 inline bool CConfig::GetFixed_CM_Mode(void) { return Fixed_CM_Mode; }
@@ -1786,6 +1776,10 @@ inline su2double CConfig::GetTotal_DynTime(void) { return Total_DynTime; }
 
 inline su2double CConfig::GetCurrent_DynTime(void) { return Current_DynTime; }
 
+inline unsigned short CConfig::GetiInst(void) { return iInst; }
+
+inline void CConfig::SetiInst(unsigned short val_iInst) { iInst = val_iInst; }
+
 inline bool CConfig::GetWrt_Dynamic(void) { return Wrt_Dynamic; }
 
 inline su2double CConfig::GetNewmark_beta(void) { return Newmark_beta; }
@@ -1833,6 +1827,14 @@ inline bool CConfig::GetFSI_Simulation(void) { return FSI_Problem; }
 inline unsigned short CConfig::GetnID_DV(void) { return nID_DV; }
 
 inline unsigned short CConfig::GetKindInterpolation(void) { return Kind_Interpolation; }
+
+inline unsigned short CConfig::GetKindRadialBasisFunction(void) { return Kind_RadialBasisFunction; }
+
+inline bool CConfig::GetRadialBasisFunctionPolynomialOption(void) {return RadialBasisFunction_PolynomialOption; }
+
+inline su2double CConfig::GetRadialBasisFunctionParameter(void) {return RadialBasisFunction_Parameter; }
+
+inline bool CConfig::GetConservativeInterpolation(void) { return ConservativeInterpolation; }
 
 inline unsigned short CConfig::GetRelaxation_Method_FSI(void) { return Kind_BGS_RelaxMethod; }
 
