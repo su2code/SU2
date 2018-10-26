@@ -4,23 +4,35 @@
 #if defined _MSC_VER
 #pragma warning (disable: 4996) /* Windows strcpy warning off */
 #endif
+
+// Internal testing flags
+// RUNFLAGS:none
+// RUNFLAGS:--szl
+
 /* DOCSTART:mulitplefiles.txt */
 #include "TECIO.h"
 #include "MASTER.h" /* for defintion of NULL */
 #include <string.h>
 
-int main()
+int main(int argc, const char *argv[])
 {
     /*
      * Open the file and write the tecplot datafile
      * header information
      */
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 0;
-    INTEGER4 I         = 0;   /* Used to check the return value */
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+    INTEGER4 FileType   = 0;
 
-    I = TECINI112((char*)"SIMPLE DATASET", /* Name of the entire dataset.*/
+    INTEGER4 fileFormat; // 0 == PLT, 1 == SZPLT
+    if (argc == 2 && strncmp(argv[1],"--szl",5) == 0)
+        fileFormat = 1; 
+    else
+        fileFormat = 0; 
+
+    INTEGER4 I          = 0;   /* Used to check the return value */
+
+    I = TECINI142((char*)"SIMPLE DATASET", /* Name of the entire dataset.*/
 
                   (char*)"X1 Y1 P1",  /* Defines the variables for the data
                                        * file. Each zone must contain each of
@@ -29,8 +41,9 @@ int main()
                                        * to define the variable number (e.g.
                                        * X1 is Var 1).
                                        */
-                  (char*)"file1.plt",
+                  (char*)"multiplefiles-file1.plt",
                   (char*)".",      /* Scratch Directory */
+                  &fileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
@@ -68,7 +81,7 @@ int main()
 
 
     /* Create an Ordered Zone */
-    I = TECZNE112((char*)"Ordered Zone",
+    I = TECZNE142((char*)"Ordered Zone",
                   &ZoneType,
                   &IMax,
                   &JMax,
@@ -116,33 +129,34 @@ int main()
                               */
 
     INTEGER4 III = IMax * JMax * KMax;
-    I   = TECDAT112(&III, X1, &DIsDouble);
-    I   = TECDAT112(&III, Y1, &DIsDouble);
-    I   = TECDAT112(&III, P1, &DIsDouble);
+    I   = TECDAT142(&III, X1, &DIsDouble);
+    I   = TECDAT142(&III, Y1, &DIsDouble);
+    I   = TECDAT142(&III, P1, &DIsDouble);
 
     /* Open a new data file.  note: the first file is still open
      * because TecEnd was not called.
      */
-    I = TECINI112((char*)"Auxiliary Data",
+    I = TECINI142((char*)"Auxiliary Data",
                   (char*)"X1 Y1 P1",
-                  (char*)"file2.plt",
+                  (char*)"multiplefiles-file2.plt",
                   (char*)".",
+                  &fileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
 
     /* Switch the active file to the newly created data file
-     * (file2.plt) which is the second file opened with TECINI112
+     * (file2.plt) which is the second file opened with TECINI142
      * so we use 2.
      */
     INTEGER4 WhichFile = 2;
-    I = TECFIL112(&WhichFile);
+    I = TECFIL142(&WhichFile);
 
     /* Create a second zone, using many of the values from the first
      * zone, and write it to the second data file.
      */
 
-    I = TECZNE112((char*)"Ordered Zone2",
+    I = TECZNE142((char*)"Ordered Zone2",
                   &ZoneType,
                   &IMax,
                   &JMax,
@@ -185,28 +199,28 @@ int main()
     P2[3] = 7.5;
 
     III = IMax * JMax * KMax;
-    I   = TECDAT112(&III, X2, &DIsDouble);
-    I   = TECDAT112(&III, Y2, &DIsDouble);
-    I   = TECDAT112(&III, P2, &DIsDouble);
+    I   = TECDAT142(&III, X2, &DIsDouble);
+    I   = TECDAT142(&III, Y2, &DIsDouble);
+    I   = TECDAT142(&III, P2, &DIsDouble);
 
     /* Switch to the first file. */
     WhichFile = 1;
-    I = TECFIL112(&WhichFile);
+    I = TECFIL142(&WhichFile);
 
     /* Create an auxiliary data value and write it to the file */
     char DeformationValue[128];
     strcpy(DeformationValue, "0.98");
 
-    I = TECAUXSTR112((char*)"DeformationValue",
+    I = TECAUXSTR142((char*)"DeformationValue",
                      DeformationValue);
     /* Close the first file */
-    I = TECEND112();
+    I = TECEND142();
 
     /* The remaining file will become the active file.  As such,
      * TecFil does not need to be called again to close the second
      * file.
      */
-    I = TECEND112();
+    I = TECEND142();
 
     return 0;
 }

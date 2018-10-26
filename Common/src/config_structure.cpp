@@ -161,9 +161,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
       strcpy (cstr, val_mesh_filename.c_str());
       mesh_file.open(cstr, ios::in);
-      if (mesh_file.fail()) {
-        SU2_MPI::Error(string("There is no geometry file called ") + string(cstr), CURRENT_FUNCTION);
-      }
 
       /*--- Read the SU2 mesh file ---*/
 
@@ -183,12 +180,6 @@ unsigned short CConfig::GetnZone(string val_mesh_filename, unsigned short val_fo
 
   }
 
-  /*--- For harmonic balance integration, nZones = nTimeInstances. ---*/
-
-  if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE && (config->GetKind_SU2() != SU2_DEF)   ) {
-  	nZone = config->GetnTimeInstances();
-  }
-
   return (unsigned short) nZone;
 }
 
@@ -196,19 +187,22 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   string text_line, Marker_Tag;
   ifstream mesh_file;
-  short nDim = 3;
+  short nDim = -1;
   unsigned short iLine, nLine = 10;
   char cstr[200];
   string::size_type position;
 
-  /*--- Open grid file ---*/
-
-  strcpy (cstr, val_mesh_filename.c_str());
-  mesh_file.open(cstr, ios::in);
-
   switch (val_format) {
-  case SU2:
+    case SU2:
 
+      /*--- Open grid file ---*/
+      
+      strcpy (cstr, val_mesh_filename.c_str());
+      mesh_file.open(cstr, ios::in);
+      if (mesh_file.fail()) {
+        SU2_MPI::Error(string("The SU2 mesh file named ") + string(cstr) + string(" was not found."), CURRENT_FUNCTION);
+      }
+      
     /*--- Read SU2 mesh file ---*/
 
     for (iLine = 0; iLine < nLine ; iLine++) {
@@ -222,6 +216,16 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
         text_line.erase (0,6); nDim = atoi(text_line.c_str());
       }
     }
+      
+      mesh_file.close();
+      
+      /*--- Throw an error if the dimension was not found. ---*/
+      
+      if (nDim == -1) {
+        SU2_MPI::Error(val_mesh_filename + string(" is not an SU2 mesh file or has the wrong format \n ('NDIME=' not found in first 10 lines). Please check."),
+                       CURRENT_FUNCTION);
+      }
+      
     break;
 
   case CGNS:
@@ -237,7 +241,7 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
     /*--- Check whether the supplied file is truly a CGNS file. ---*/
 
     if ( cg_is_cgns(val_mesh_filename.c_str(), &file_type) != CG_OK ) {
-      SU2_MPI::Error(val_mesh_filename + string(" is not a CGNS file."),
+      SU2_MPI::Error(val_mesh_filename + string(" was not found or is not a CGNS file."),
                      CURRENT_FUNCTION);
     }
 
@@ -283,8 +287,10 @@ unsigned short CConfig::GetnDim(string val_mesh_filename, unsigned short val_for
 
   }
 
-  mesh_file.close();
-
+  /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
+  
+  assert((nDim == 2) || (nDim == 3));
+  
   return (unsigned short) nDim;
 }
 
@@ -626,11 +632,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
-
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
 
-  /*!\brief HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
+  /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
@@ -1135,15 +1140,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_ADJTURB", Kind_TimeIntScheme_AdjTurb, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_WAVE", Kind_TimeIntScheme_Wave, Time_Int_Map, EULER_IMPLICIT);
-  /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_FEA", Kind_TimeIntScheme_FEA, Time_Int_Map_FEA, NEWMARK_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIME_DISCRE_HEAT", Kind_TimeIntScheme_Heat, Time_Int_Map, EULER_IMPLICIT);
   /* DESCRIPTION: Time discretization */
   addEnumOption("TIMESTEP_HEAT", Kind_TimeStep_Heat, Heat_TimeStep_Map, MINIMUM);
-  /* DESCRIPTION: Time discretization */
-  addEnumOption("TIME_DISCRE_POISSON", Kind_TimeIntScheme_Poisson, Time_Int_Map, EULER_IMPLICIT);
 
   /*!\par CONFIG_CATEGORY: Linear solver definition \ingroup Config*/
   /*--- Options related to the linear solvers ---*/
@@ -1447,8 +1448,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("RESTART_FLOW_FILENAME", Restart_FlowFileName, string("restart_flow.dat"));
   /*!\brief RESTART_ADJ_FILENAME  \n DESCRIPTION: Output file restart adjoint. Objective function abbreviation will be appended. \ingroup Config*/
   addStringOption("RESTART_ADJ_FILENAME", Restart_AdjFileName, string("restart_adj.dat"));
-  /*!\brief RESTART_WAVE_FILENAME \n DESCRIPTION: Output file restart wave \ingroup Config*/
-  addStringOption("RESTART_WAVE_FILENAME", Restart_WaveFileName, string("restart_wave.dat"));
   /*!\brief RESTART_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
   addStringOption("RESTART_STRUCTURE_FILENAME", Restart_FEMFileName, string("restart_structure.dat"));
   /*!\brief RESTART_ADJ_STRUCTURE_FILENAME \n DESCRIPTION: Output file restart structure \ingroup Config*/
@@ -1467,21 +1466,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief SURFACE_STRUCTURE_FILENAME
    *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
   addStringOption("SURFACE_ADJ_STRUCTURE_FILENAME", AdjSurfStructure_FileName, string("adj_surface_structure"));
-  /*!\brief SURFACE_WAVE_FILENAME
-   *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config*/
-  addStringOption("SURFACE_WAVE_FILENAME", SurfWave_FileName, string("surface_wave"));
   /*!\brief SURFACE_HEAT_FILENAME
    *  \n DESCRIPTION: Output file structure (w/o extension) variables \ingroup Config */
   addStringOption("SURFACE_HEAT_FILENAME", SurfHeat_FileName, string("surface_heat"));
-  /*!\brief VOLUME_WAVE_FILENAME
-   *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_WAVE_FILENAME", Wave_FileName, string("wave"));
   /*!\brief VOLUME_HEAT_FILENAME
    *  \n DESCRIPTION: Output file wave (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_HEAT_FILENAME", Heat_FileName, string("heat"));
-  /*!\brief VOLUME_ADJWAVE_FILENAME
-   *  \n DESCRIPTION: Output file adj. wave (w/o extension) variables  \ingroup Config*/
-  addStringOption("VOLUME_ADJWAVE_FILENAME", AdjWave_FileName, string("adjoint_wave"));
   /*!\brief VOLUME_ADJ_FILENAME
    *  \n DESCRIPTION: Output file adjoint (w/o extension) variables  \ingroup Config*/
   addStringOption("VOLUME_ADJ_FILENAME", Adj_FileName, string("adjoint"));
@@ -1735,8 +1725,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 	default_grid_fix[3] =  1E15; default_grid_fix[4] =  1E15; default_grid_fix[5] =  1E15;
 	/* DESCRIPTION: Coordinates of the box where the grid will be deformed (Xmin, Ymin, Zmin, Xmax, Ymax, Zmax) */
 	addDoubleArrayOption("HOLD_GRID_FIXED_COORD", 6, Hold_GridFixed_Coord, default_grid_fix);
-	/* DESCRIPTION: Visualize the deformation */
-  addBoolOption("VISUALIZE_DEFORMATION", Visualize_Deformation, false);
+	/* DESCRIPTION: Visualize the deformation (surface grid) */
+  addBoolOption("VISUALIZE_SURFACE_DEF", Visualize_Surface_Def, true);
+  /* DESCRIPTION: Visualize the deformation (volume grid) */
+  addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
   addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
@@ -1922,12 +1914,29 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
   addBoolOption("MATCHING_MESH", MatchingMesh, true);
+  
+  /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
 
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink
    * Sets Kind_Interpolation \ingroup Config
    */
   addEnumOption("KIND_INTERPOLATION", Kind_Interpolation, Interpolator_Map, NEAREST_NEIGHBOR);
+    
+  /*!\par KIND_INTERPOLATION \n
+   * DESCRIPTION: Type of radial basis function to use for radial basis function interpolation. \n OPTIONS: see \link RadialBasis_Map \endlink
+   * Sets Kind_RadialBasis \ingroup Config
+   */
+  addEnumOption("KIND_RADIAL_BASIS_FUNCTION", Kind_RadialBasisFunction, RadialBasisFunction_Map, WENDLAND_C2);
+  
+  /*  DESCRIPTION: Use polynomial term in radial basis function interpolation.
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("RADIAL_BASIS_FUNCTION_POLYNOMIAL_TERM", RadialBasisFunction_PolynomialOption, true);
+  
+  /* DESCRIPTION: Radius for radial basis function */
+  addDoubleOption("RADIAL_BASIS_FUNCTION_PARAMETER", RadialBasisFunction_Parameter, 1);
 
   /* DESCRIPTION: Maximum number of FSI iterations */
   addUnsignedShortOption("FSI_ITER", nIterFSI, 1);
@@ -1941,13 +1950,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
   /* DESCRIPTION: Type of gust */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
-
-
-  /*!\par CONFIG_CATEGORY: Wave solver \ingroup Config*/
-  /*--- options related to the wave solver ---*/
-
-  /* DESCRIPTION: Constant wave speed */
-  addDoubleOption("WAVE_SPEED", Wave_Speed, 331.79);
 
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
@@ -2346,6 +2348,23 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 #endif
 
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions ---*/
+
+  Wall_Functions = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+        Wall_Functions = true;
+      
+      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
+        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
+
+        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
+
+    }
+  }
+  
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
   if (Fixed_CM_Mode) {
@@ -2452,7 +2471,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
         nObjW = nObj;
       }
       else if(nObj>1) {
-        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONTIORING must be the same length or length 1.\n ") +
+        SU2_MPI::Error(string("When using more than one OBJECTIVE_FUNCTION, MARKER_MONITORING must be the same length or length 1.\n ") +
                        string("For multiple surfaces per objective, either use one objective or list the objective multiple times.\n") +
                        string("For multiple objectives per marker either use one marker or list the marker multiple times.\n")+
                        string("Similar rules apply for multi-objective optimization using OPT_OBJECTIVE rather than OBJECTIVE_FUNCTION."),
@@ -2473,6 +2492,42 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       Weight_ObjFunc[iObj] = 1.0;
   }
 
+  /*--- One final check for multi-objective with the set of objectives
+   that are not counted per-surface. We will disable multi-objective here. ---*/
+  
+  if (nObj > 1) {
+    unsigned short Obj_0 = Kind_ObjFunc[0];
+    for (unsigned short iObj=1; iObj<nObj; iObj++){
+      switch(Kind_ObjFunc[iObj]) {
+        case INVERSE_DESIGN_PRESSURE:
+        case INVERSE_DESIGN_HEATFLUX:
+        case THRUST_COEFFICIENT:
+        case TORQUE_COEFFICIENT:
+        case FIGURE_OF_MERIT:
+        case SURFACE_TOTAL_PRESSURE:
+        case SURFACE_STATIC_PRESSURE:
+        case SURFACE_MASSFLOW:
+        case SURFACE_UNIFORMITY:
+        case SURFACE_SECONDARY:
+        case SURFACE_MOM_DISTORTION:
+        case SURFACE_SECOND_OVER_UNIFORM:
+        case SURFACE_PRESSURE_DROP:
+        case CUSTOM_OBJFUNC:
+          if (Kind_ObjFunc[iObj] != Obj_0) {
+            SU2_MPI::Error(string("The following objectives can only be used for the first surface in a multi-objective \n")+
+                           string("problem or as a single objective applied to multiple monitoring markers:\n")+
+                           string("INVERSE_DESIGN_PRESSURE, INVERSE_DESIGN_HEATFLUX, THRUST_COEFFICIENT, TORQUE_COEFFICIENT\n")+
+                           string("FIGURE_OF_MERIT, SURFACE_TOTAL_PRESSURE, SURFACE_STATIC_PRESSURE, SURFACE_MASSFLOW\n")+
+                           string("SURFACE_UNIFORMITY, SURFACE_SECONDARY, SURFACE_MOM_DISTORTION, SURFACE_SECOND_OVER_UNIFORM\n")+
+                           string("SURFACE_PRESSURE_DROP, CUSTOM_OBJFUNC.\n"), CURRENT_FUNCTION);
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+  
   /*--- Low memory only for ASCII Tecplot ---*/
 
   if (Output_FileFormat != TECPLOT) Low_MemoryOutput = NO;
@@ -2519,19 +2574,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   Nonphys_Points   = 0;
   Nonphys_Reconstr = 0;
-
-  if (Kind_Solver == POISSON_EQUATION) {
-    Unsteady_Simulation = STEADY;
-  }
   
   /*--- Set the number of external iterations to 1 for the steady state problem ---*/
-
-  if ((Kind_Solver == HEAT_EQUATION) ||
-      (Kind_Solver == WAVE_EQUATION) || (Kind_Solver == POISSON_EQUATION)) {
-    nMGLevels = 0;
-    if (Unsteady_Simulation == STEADY) nExtIter = 1;
-    else Unst_nIntIter = 2;
-  }
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
@@ -3630,7 +3674,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
 
       if (Unst_AdjointIter- long(nExtIter) < 0){
         SU2_MPI::Error(string("Invalid iteration number requested for unsteady adjoint.\n" ) +
-                       string("Make sure EXT_ITER is larger or equal than UNST_ADJ_ITER."),
+                       string("Make sure EXT_ITER is larger or equal than UNST_ADJOINT_ITER."),
                        CURRENT_FUNCTION);
       }
 
@@ -4478,9 +4522,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
         break;
-      case POISSON_EQUATION: cout << "Poisson equation." << endl; break;
-      case WAVE_EQUATION: cout << "Wave equation." << endl; break;
-      case HEAT_EQUATION: cout << "Heat equation." << endl; break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
     	  if (Kind_Struct_Solver == SMALL_DEFORMATIONS) cout << "Geometrically linear elasticity solver." << endl;
     	  if (Kind_Struct_Solver == LARGE_DEFORMATIONS) cout << "Geometrically non-linear elasticity solver." << endl;
@@ -4507,8 +4548,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     }
 
-    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY) &&
-        (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Regime == COMPRESSIBLE) && (Kind_Solver != FEM_ELASTICITY)) {
       cout << "Mach number: " << Mach <<"."<< endl;
       cout << "Angle of attack (AoA): " << AoA <<" deg, and angle of sideslip (AoS): " << AoS <<" deg."<< endl;
       if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == ADJ_NAVIER_STOKES) ||
@@ -4736,7 +4776,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   cout << endl <<"-------------------- Surface deformation parameters ---------------------" << endl;
   }
 
-  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NONE)) {
+  if (((val_software == SU2_DEF) || (val_software == SU2_DOT)) && (Design_Variable[0] != NO_DEFORMATION)) {
 
     for (unsigned short iDV = 0; iDV < nDV; iDV++) {
 
@@ -5168,10 +5208,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Average of gradients with correction (viscous turbulence terms)." << endl;
     }
 
-    if (Kind_Solver == POISSON_EQUATION) {
-      cout << "Galerkin method for viscous terms computation of the poisson potential equation." << endl;
-    }
-
     if ((Kind_Solver == ADJ_RANS) && (!Frozen_Visc_Cont)) {
       cout << "Average of gradients with correction (2nd order) for computation of adjoint viscous turbulence terms." << endl;
       if (Kind_TimeIntScheme_AdjTurb == EULER_IMPLICIT) cout << "Euler implicit method for the turbulent adjoint equation." << endl;
@@ -5340,8 +5376,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       cout << "Damping factor for the correction prolongation: " << Damp_Correc_Prolong <<"."<< endl;
     }
 
-    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != DISC_ADJ_FEM)
-        && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((Kind_Solver != FEM_ELASTICITY) && (Kind_Solver != DISC_ADJ_FEM)) {
 
       if (!CFL_Adapt) cout << "No CFL adaptation." << endl;
       else cout << "CFL adaptation. Factor down: "<< CFL_AdaptParam[0] <<", factor up: "<< CFL_AdaptParam[1]
@@ -5510,7 +5545,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     }
 
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5522,7 +5558,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << "Forces breakdown file name: " << Breakdown_FileName << "." << endl;
 
-    if ((!fea) && (Kind_Solver != HEAT_EQUATION) && (Kind_Solver != WAVE_EQUATION)) {
+    if ((!fea)) {
       if (!ContinuousAdjoint && !DiscreteAdjoint) {
         cout << "Surface flow coefficients file name: " << SurfFlowCoeff_FileName << "." << endl;
         cout << "Flow variables file name: " << Flow_FileName << "." << endl;
@@ -5559,7 +5595,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (val_software == SU2_SOL) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
     switch (Output_FileFormat) {
-      case PARAVIEW: cout << "The output file format is Paraview ASCII (.vtk)." << endl; break;
+      case PARAVIEW: cout << "The output file format is Paraview ASCII legacy (.vtk)." << endl; break;
+      case PARAVIEW_BINARY: cout << "The output file format is Paraview binary legacy (.vtk)." << endl; break;
       case TECPLOT: cout << "The output file format is Tecplot ASCII (.dat)." << endl; break;
       case TECPLOT_BINARY: cout << "The output file format is Tecplot binary (.plt)." << endl; break;
       case FIELDVIEW: cout << "The output file format is FieldView ASCII (.uns)." << endl; break;
@@ -5571,7 +5608,8 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_DEF) {
     cout << "Output mesh file name: " << Mesh_Out_FileName << ". " << endl;
-    if (Visualize_Deformation) cout << "A file will be created to visualize the deformation." << endl;
+    if (Visualize_Surface_Def) cout << "A file will be created to visualize the surface deformation." << endl;
+    if (Visualize_Volume_Def) cout << "A file will be created to visualize the volume deformation." << endl;
     else cout << "No file for visualizing the deformation." << endl;
     switch (GetDeform_Stiffness_Type()) {
       case INVERSE_VOLUME:
@@ -6689,6 +6727,32 @@ string CConfig::GetMultizone_HistoryFileName(string val_filename, int val_iZone)
     return multizone_filename;
 }
 
+string CConfig::GetMultiInstance_FileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d.dat", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
+string CConfig::GetMultiInstance_HistoryFileName(string val_filename, int val_iInst) {
+
+    string multizone_filename = val_filename;
+    char buffer[50];
+
+    unsigned short lastindex = multizone_filename.find_last_of(".");
+    multizone_filename = multizone_filename.substr(0, lastindex);
+    SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iInst));
+    multizone_filename.append(string(buffer));
+
+    return multizone_filename;
+}
+
 string CConfig::GetObjFunc_Extension(string val_filename) {
 
   string AdjExt, Filename = val_filename;
@@ -6764,8 +6828,6 @@ unsigned short CConfig::GetContainerPosition(unsigned short val_eqsystem) {
     case RUNTIME_FLOW_SYS:      return FLOW_SOL;
     case RUNTIME_TURB_SYS:      return TURB_SOL;
     case RUNTIME_TRANS_SYS:     return TRANS_SOL;
-    case RUNTIME_POISSON_SYS:   return POISSON_SOL;
-    case RUNTIME_WAVE_SYS:      return WAVE_SOL;
     case RUNTIME_HEAT_SYS:      return HEAT_SOL;
     case RUNTIME_FEA_SYS:       return FEA_SOL;
     case RUNTIME_ADJPOT_SYS:    return ADJFLOW_SOL;
@@ -6899,19 +6961,7 @@ void CConfig::SetGlobalParam(unsigned short val_solver,
         SetKind_TimeIntScheme(Kind_TimeIntScheme_AdjTurb);
       }
       break;
-    case POISSON_EQUATION:
-      if (val_system == RUNTIME_POISSON_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Poisson);
-      }
-      break;
-    case WAVE_EQUATION:
-      if (val_system == RUNTIME_WAVE_SYS) {
-        SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
-        SetKind_TimeIntScheme(Kind_TimeIntScheme_Wave);
-      }
-      break;
-    case HEAT_EQUATION: case HEAT_EQUATION_FVM:
+    case HEAT_EQUATION_FVM:
       if (val_system == RUNTIME_HEAT_SYS) {
         SetKind_ConvNumScheme(NONE, NONE, NONE, NONE, NONE);
         SetKind_TimeIntScheme(Kind_TimeIntScheme_Heat);

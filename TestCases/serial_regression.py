@@ -262,7 +262,7 @@ def main():
     propeller.cfg_dir   = "rans/propeller"
     propeller.cfg_file  = "propeller.cfg"
     propeller.test_iter = 10
-    propeller.test_vals = [-3.378804, -8.130405, 0.000051, 0.055764] #last 4 columns
+    propeller.test_vals = [-3.378876, -8.397629, 0.000047, 0.055591] #last 4 columns
     propeller.su2_exec  = "SU2_CFD"
     propeller.timeout   = 3200
     propeller.tol       = 0.00001
@@ -791,6 +791,17 @@ def main():
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)    
+
+    # FSI, 2D airfoil with RBF interpolation
+    airfoilRBF           = TestCase('airfoil_fsi_rbf')
+    airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
+    airfoilRBF.cfg_file  = "settings.cfg"
+    airfoilRBF.test_iter = 50
+    airfoilRBF.test_vals = [-8.000964, -2.600088, 0.276433, 0.000824] #last 4 columns
+    airfoilRBF.su2_exec  = "SU2_CFD"
+    airfoilRBF.timeout   = 1600
+    airfoilRBF.tol       = 0.00001
+    test_list.append(airfoilRBF)
    
     ##########################
     ### Zonal multiphysics ###
@@ -1018,18 +1029,6 @@ def main():
     pass_list.append(contadj_euler_py.run_filediff())
     test_list.append(contadj_euler_py)
 
-#    # test finite_difference.py
-#    findiff_euler_py = TestCase('findiff_euler_py')
-#    findiff_euler_py.cfg_dir = "cont_adj_euler/naca0012"
-#    findiff_euler_py.cfg_file  = "inv_NACA0012_FD.cfg"
-#    findiff_euler_py.test_iter = 10
-#    findiff_euler_py.su2_exec  = "finite_differences.py"
-#    findiff_euler_py.timeout   = 1600
-#    findiff_euler_py.reference_file = "of_grad_findiff.dat.ref"
-#    findiff_euler_py.test_file = "FINDIFF/of_grad_findiff.dat"
-#    pass_list.append(findiff_euler_py.run_filediff())
-#    test_list.append(findiff_euler_py)
-    
     # test shape_optimization.py
     shape_opt_euler_py           = TestCase('shape_opt_euler_py')
     shape_opt_euler_py.cfg_dir   = "optimization_euler/steady_naca0012"
