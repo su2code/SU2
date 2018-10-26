@@ -120,8 +120,10 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   /*--- Always instantiate and initialize the variable to a zero value. ---*/
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    if (config->GetKind_Incomp_System()==PRESSURE_BASED) node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
-    else node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+    if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
+        node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+    else 
+        node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
 }
 
 CPoissonSolverFVM::~CPoissonSolverFVM(void) {
@@ -1064,25 +1066,21 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   }
   
   /*--- Update the solution ---*/
-  //cout<<"Exp euler"<<endl;
-  //cout<<endl;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time()/Vol;
     
     if (config->GetnMGLevels() > 0) local_Res_TruncError = node[iPoint]->GetResTruncError();
     local_Residual = LinSysRes.GetBlock(iPoint);
-
+    
     if (!adjoint) {
       for (iVar = 0; iVar < nVar; iVar++) {
         Res = local_Residual[iVar] ;//+ local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
-        //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t "<<Res;
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
-    //cout<<endl;
   }
 
   /*--- MPI solution ---*/
@@ -1504,7 +1502,7 @@ su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
 unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
-
+//cout<<endl;
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -1515,7 +1513,7 @@ su2double *Normal = new su2double[nDim];
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      //for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = node[iPoint]->GetSolution(0);
@@ -1534,6 +1532,7 @@ su2double *Normal = new su2double[nDim];
         for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
         }
+       // cout<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<Residual[iVar]<<endl;
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/

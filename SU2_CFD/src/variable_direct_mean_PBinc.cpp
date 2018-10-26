@@ -137,10 +137,6 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   }
   
   /*--- Solution and old solution initialization ---*/
-
-  //Solution[0] = val_pressure;
-  //Solution_Old[0] = val_pressure;
-  /*--- Changed iDim+1 to iDim ---*/
   for (iDim = 0; iDim < nDim; iDim++) {
     Solution[iDim] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     Solution_Old[iDim] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
@@ -150,8 +146,6 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
   /*--- Allocate and initialize solution for dual time strategy ---*/
   
   if (dual_time) {
-   // Solution_time_n[0]  =  val_pressure;
-    //Solution_time_n1[0] =  val_pressure;
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution_time_n[iDim] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
       Solution_time_n1[iDim] = val_velocity[iDim]*config->GetDensity_FreeStreamND();

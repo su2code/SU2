@@ -101,19 +101,20 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
   
-  //cout<<"Faceflux: "<<Face_Flux<<endl;
+  cout<<"Faceflux: "<<Face_Flux<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<endl;
   
   if (Face_Flux > 0) 
    for (iVar = 0; iVar < nVar; iVar++) {
-	   val_residual[iVar] = 0.0;
-	   for (iDim = 0; iDim < nDim; iDim++) 
-	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_i[iVar+1];
+	   val_residual[iVar] = Face_Flux*V_i[iVar+1];
+	   /*for (iDim = 0; iDim < nDim; iDim++) 
+	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_i[iVar+1];*/
+	      
 	}
   else
     for (iVar = 0; iVar < nVar; iVar++) {
-	   val_residual[iVar] = 0.0;
-	   for (iDim = 0; iDim < nDim; iDim++) 
-	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_j[iVar+1];
+	   val_residual[iVar] = Face_Flux*V_j[iVar+1];
+	   /*for (iDim = 0; iDim < nDim; iDim++) 
+	      val_residual[iVar] += MeanDensity*MeanVelocity[iDim]*Normal[iDim]*V_j[iVar+1];*/
     }
     
   if (implicit) {

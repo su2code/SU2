@@ -8364,6 +8364,9 @@ protected:
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *PrimVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
+  su2double **Inlet_Ptotal,    /*!< \brief Value of the Total P. */
+  **Inlet_Ttotal,    /*!< \brief Value of the Total T. */
+  ***Inlet_FlowDir;    /*!< \brief Value of the Flow Direction. */
   unsigned long nMarker,        /*!< \brief Total number of markers using the grid information. */
   *nVertex;       /*!< \brief Store nVertex at each marker for deallocation */
   bool space_centered,  /*!< \brief True if space centered scheeme used. */
@@ -8512,6 +8515,17 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief Set a uniform inlet profile
+   *
+   * The values at the inlet are set to match the values specified for
+   * inlets in the configuration file.
+   *
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMarker - Surface marker where the coefficient is computed.
+   */
+  void SetUniformInlet(CConfig* config, unsigned short iMarker);
   
     /*!
    * \brief Compute the density at the infinity.

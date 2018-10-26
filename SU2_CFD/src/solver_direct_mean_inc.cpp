@@ -4132,7 +4132,7 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
       }
     }
   }
-  
+  SetIterLinSolver(1);
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);

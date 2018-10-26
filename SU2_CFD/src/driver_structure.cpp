@@ -1763,9 +1763,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
   if (euler && pressure_based) poisson = true;
   
-  if (poisson) cout<<"Poisson detected"<<endl;
-  else cout<<"Poisson is not true"<<endl;
-  
   /*--- Number of variables for the template ---*/
   
   if (template_solver) nVar_Flow = solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
