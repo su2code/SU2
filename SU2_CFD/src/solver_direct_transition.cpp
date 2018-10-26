@@ -264,10 +264,11 @@ void CTransLMSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
     for (iVar = 0; iVar < nVar; iVar++)
       node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
   }
+
+  /*--- MPI parallelization ---*/
   
-  /*--- MPI solution ---*/
-  
-  Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   

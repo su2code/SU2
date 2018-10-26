@@ -145,7 +145,8 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
+
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetBoundaries(config_container[iZone]);
