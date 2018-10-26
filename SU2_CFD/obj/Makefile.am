@@ -101,7 +101,6 @@ libSU2Core_sources = \
   ../src/numerics_adjoint_turbulent.cpp \
   ../src/numerics_direct_heat.cpp \
   ../src/numerics_direct_mean.cpp \
-  ../src/numerics_direct_mean_fem.cpp \
   ../src/numerics_direct_mean_inc.cpp \
   ../src/numerics_direct_transition.cpp \
   ../src/numerics_direct_turbulent.cpp \
