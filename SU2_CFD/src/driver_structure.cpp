@@ -2218,7 +2218,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     
   }
 
-  /*--- Riemann solver definition for the Potential, Euler, Navier-Stokes problems ---*/
+  /*--- Riemann solver definition for the Euler, Navier-Stokes problems for the FEM discretization. ---*/
   if ((fem_euler) || (fem_ns)) {
 
     switch (config->GetRiemann_Solver_FEM()) {
@@ -2266,26 +2266,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
       default :
         SU2_MPI::Error("Riemann solver not implemented.", CURRENT_FUNCTION);
-    }
-
-    /*--- Note: if we don't end up using the other numerics classes for DG, we should remove them. ---*/
-
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-
-    numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
-    for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
-
-    /*--- Definition of the boundary condition method ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CFEMVisc_Flow(nDim, nVar_Flow, config);
-
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-      numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceFEM(nDim, nVar_Flow, config);
-
-      numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
 
   }
@@ -2871,21 +2851,6 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
           delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
         }
         break;
-    }
-
-    /*--- Definition of the viscous scheme for each equation and mesh level ---*/
-    delete numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM];
-    for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM];
-
-    /*--- Definition of the boundary condition method ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM];
-
-    /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM];
-      delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM];
     }
   }
 
