@@ -107,6 +107,31 @@ CGeometry::CGeometry(void) {
   CustomBoundaryHeatFlux = NULL;      //Customized heat flux wall
   CustomBoundaryTemperature = NULL;   //Customized temperature wall
 
+  /*--- MPI point-to-point data structures ---*/
+  
+  nP2PSend = 0;
+  nP2PRecv = 0;
+  
+  countPerPoint = 0;
+  
+  bufD_P2PSend = NULL;
+  bufD_P2PRecv = NULL;
+  
+  bufL_P2PSend = NULL;
+  bufL_P2PRecv = NULL;
+  
+  req_P2PSend = NULL;
+  req_P2PRecv = NULL;
+  
+  nPoint_P2PSend = NULL;
+  nPoint_P2PRecv = NULL;
+  
+  Neighbors_P2PSend = NULL;
+  Neighbors_P2PRecv = NULL;
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PRecv = NULL;
+  
 }
 
 CGeometry::~CGeometry(void) {
@@ -194,6 +219,26 @@ CGeometry::~CGeometry(void) {
     delete [] CustomBoundaryTemperature;
   }
 
+  /*--- Delete structures for MPI point-to-point communication. ---*/
+  
+  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  
+  if (bufL_P2PRecv != NULL) delete [] bufL_P2PRecv;
+  if (bufL_P2PSend != NULL) delete [] bufL_P2PSend;
+  
+  if (req_P2PSend != NULL) delete [] req_P2PSend;
+  if (req_P2PRecv != NULL) delete [] req_P2PRecv;
+  
+  if (nPoint_P2PRecv != NULL) delete [] nPoint_P2PRecv;
+  if (nPoint_P2PSend != NULL) delete [] nPoint_P2PSend;
+  
+  if (Neighbors_P2PSend != NULL) delete [] Neighbors_P2PSend;
+  if (Neighbors_P2PRecv != NULL) delete [] Neighbors_P2PRecv;
+  
+  if (Local_Point_P2PSend != NULL) delete [] Local_Point_P2PSend;
+  if (Local_Point_P2PRecv != NULL) delete [] Local_Point_P2PRecv;
+  
 }
 
 su2double CGeometry::Point2Plane_Distance(su2double *Coord, su2double *iCoord, su2double *jCoord, su2double *kCoord) {
@@ -1373,15 +1418,19 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;
-  geometry_container[MESH_0]->Set_MPI_Coord(config);
-  if (config->GetGrid_Movement()){
-    geometry_container[MESH_0]->Set_MPI_GridVel(config);
+  
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+
+  if (config->GetGrid_Movement()){    
+    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
+    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
   
   geometry_container[MESH_0]->SetCoord_CG();
   geometry_container[MESH_0]->SetControlVolume(config, UPDATE);
   geometry_container[MESH_0]->SetBoundControlVolume(config, UPDATE);
-  geometry_container[MESH_0]->SetMaxLength(config);
+  geometry_container[MESH_0]->SetMaxLength(geometry_container[MESH_0], config);
   
   for (iMesh = 1; iMesh <= config->GetnMGLevels(); iMesh++) {
     /*--- Update the control volume structures ---*/
@@ -1852,6 +1901,527 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   delete[] Buffer_Receive_Coord;
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
+  
+}
+
+void CGeometry::PreprocessP2PComms(CGeometry *geometry,
+                                   CConfig *config) {
+  
+  /*--- We start with the send and receive lists already available in
+   the form of SEND_RECEIVE boundary markers. We will loop through
+   these markers and establish the neighboring ranks and number of
+   send/recv points per pair. We will store this information and set
+   up persistent data structures so that we can reuse them throughout
+   the calculation for any point-to-point communications. The goal
+   is to break the non-blocking comms into InitiateComms() and
+   CompleteComms() in separate routines so that we can overlap the
+   communication and compuation to hide the communication latency. ---*/
+  
+  /*--- Local variables. ---*/
+  
+  unsigned short iMarker;
+  unsigned long  nVertexS, nVertexR, iVertex, MarkerS, MarkerR;
+  
+  int iRank, iSend, iRecv, count;
+  
+  /*--- Create some temporary structures for tracking sends/recvs. ---*/
+  
+  int *nElem_Send_All = new int[size+1]; nElem_Send_All[0] = 0;
+  int *nElem_Recv_All = new int[size+1]; nElem_Recv_All[0] = 0;
+  int *nElem_Flag = new int[size];
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    nElem_Send_All[iRank] = 0; nElem_Recv_All[iRank] = 0; nElem_Flag[iRank]= -1;
+  }
+  nElem_Send_All[size] = 0; nElem_Recv_All[size] = 0;
+  
+  /*--- Loop through all of our SEND_RECEIVE markers and track
+   our sends with each rank. ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+      
+      /*--- Get the destination rank and number of points to send. ---*/
+      
+      iRank    = config->GetMarker_All_SendRecv(iMarker)-1;
+      nVertexS = geometry->nVertex[iMarker];
+      
+      /*--- If we have not visited this element yet, increment our
+       number of elements that must be sent to a particular proc. ---*/
+      
+      if ((nElem_Flag[iRank] != (int)iMarker)) {
+        nElem_Flag[iRank]    = (int)iMarker;
+        nElem_Send_All[iRank+1] += nVertexS;
+      }
+      
+    }
+  }
+  
+  delete [] nElem_Flag;
+  
+  /*--- Communicate the number of points to be sent/recv'd amongst
+   all processors. After this communication, each proc knows how
+   many cells it will receive from each other processor. ---*/
+  
+  SU2_MPI::Alltoall(&(nElem_Send_All[1]), 1, MPI_INT,
+                    &(nElem_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
+  
+  /*--- Prepare to send connectivities. First check how many
+   messages we will be sending and receiving. Here we also put
+   the counters into cumulative storage format to make the
+   communications simpler. ---*/
+  
+  nP2PSend = 0; nP2PRecv = 0;
+  
+  for (iRank = 0; iRank < size; iRank++) {
+    if ((iRank != rank) && (nElem_Send_All[iRank+1] > 0)) nP2PSend++;
+    if ((iRank != rank) && (nElem_Recv_All[iRank+1] > 0)) nP2PRecv++;
+    
+    nElem_Send_All[iRank+1] += nElem_Send_All[iRank];
+    nElem_Recv_All[iRank+1] += nElem_Recv_All[iRank];
+  }
+  
+  // create shortened lists
+  
+  nPoint_P2PSend = new int[nP2PSend+1]; nPoint_P2PSend[0] = 0;
+  nPoint_P2PRecv = new int[nP2PRecv+1]; nPoint_P2PRecv[0] = 0;
+  
+  Neighbors_P2PSend = new int[nP2PSend];
+  Neighbors_P2PRecv = new int[nP2PRecv];
+  
+  iSend = 0; iRecv = 0;
+  for (iRank = 0; iRank < size; iRank++) {
+    
+    if ((nElem_Send_All[iRank+1] > nElem_Send_All[iRank]) && (iRank != rank)) {
+      Neighbors_P2PSend[iSend] = iRank;
+      nPoint_P2PSend[iSend+1] = nElem_Send_All[iRank+1];
+      iSend++;
+    }
+    
+    if ((nElem_Recv_All[iRank+1] > nElem_Recv_All[iRank]) && (iRank != rank)) {
+      Neighbors_P2PRecv[iRecv] = iRank;
+      nPoint_P2PRecv[iRecv+1] = nElem_Recv_All[iRank+1];
+      iRecv++;
+    }
+  }
+  
+  delete [] nElem_Send_All;
+  delete [] nElem_Recv_All;
+  
+  /*--- Allocate memory to hold the connectivity that we are
+   sending. ---*/
+  
+  bufD_P2PSend = NULL;
+  
+  bufL_P2PSend = NULL;
+  bufL_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
+    bufL_P2PSend[iSend] = 0;
+  
+  Local_Point_P2PSend = NULL;
+  Local_Point_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
+    Local_Point_P2PSend[iSend] = 0;
+  
+  /*--- Allocate the memory that we need for receiving the conn
+   values and then cue up the non-blocking receives. Note that
+   we do not include our own rank in the communications. We will
+   directly copy our own data later. ---*/
+  
+  bufD_P2PRecv = NULL;
+  
+  bufL_P2PRecv = NULL;
+  bufL_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    bufL_P2PRecv[iRecv] = 0.0;
+  
+  Local_Point_P2PRecv = NULL;
+  Local_Point_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    Local_Point_P2PRecv[iRecv] = 0;
+  
+  /*--- Allocate memory for the MPI requests if we need to communicate. ---*/
+  
+  if (nP2PSend > 0) {
+    req_P2PSend   = new SU2_MPI::Request[nP2PSend];
+  }
+  if (nP2PRecv > 0) {
+    req_P2PRecv   = new SU2_MPI::Request[nP2PRecv];
+  }
+  
+  /*--- Build lists of local index values for send. ---*/
+  
+  count = 0;
+  for (iSend = 0; iSend < nP2PSend; iSend++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+        
+        MarkerS  = iMarker;
+        nVertexS = geometry->nVertex[MarkerS];
+        iRank    = config->GetMarker_All_SendRecv(MarkerS)-1;
+        
+        if (iRank == Neighbors_P2PSend[iSend]) {
+          for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+            Local_Point_P2PSend[count] = geometry->vertex[MarkerS][iVertex]->GetNode();
+            count++;
+          }
+        }
+        
+      }
+    }
+  }
+  
+  count = 0;
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+          (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+        
+        MarkerR  = iMarker+1;
+        nVertexR = geometry->nVertex[MarkerR];
+        iRank    = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+        
+        if (iRank == Neighbors_P2PRecv[iRecv]) {
+          for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+            Local_Point_P2PRecv[count] = geometry->vertex[MarkerR][iVertex]->GetNode();
+            count++;
+          }
+        }
+        
+      }
+    }
+  }
+  
+  // create flags so that we can process boundaries and internal separately
+  // need points and edges for this.. use Local_Points_Send
+  
+}
+
+void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
+  
+  int iSend, iRecv;
+  
+  countPerPoint = val_countPerPoint;
+  
+  if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
+  
+  bufD_P2PSend = new su2double[countPerPoint*nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
+    bufD_P2PSend[iSend] = 0.0;
+  
+  if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
+
+  bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    bufD_P2PRecv[iRecv] = 0.0;
+
+  
+}
+
+void CGeometry::InitiateP2PComms(CGeometry *geometry,
+                                 CConfig *config,
+                                 unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  int iMessage, iSend, iRecv, offset, nPointP2P, count, source, dest, tag;
+  
+  /*--- Launch the non-blocking recv's first. ---*/
+  
+  iMessage = 0;
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
+    
+    /*--- Compute our location in the recv buffer. ---*/
+    
+    offset = countPerPoint*nPoint_P2PRecv[iRecv];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of elems that we need to recv. ---*/
+    
+    nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+
+    /*--- Get the rank from which we receive the message. ---*/
+
+    source = Neighbors_P2PRecv[iRecv];
+    tag    = source + 1;
+    
+    /*--- Post non-blocking recv for this proc. ---*/
+
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_P2PRecv)[offset]),
+                       count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
+                       &(req_P2PRecv[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_LONG:
+        SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufL_P2PRecv)[offset]),
+                       count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+                       &(req_P2PRecv[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+  /*--- Launch the non-blocking sends next. ---*/
+  
+  iMessage = 0;
+  for (iSend = 0; iSend < nP2PSend; iSend++) {
+    
+    /*--- Compute our location in the send buffer. ---*/
+    
+    offset = countPerPoint*nPoint_P2PSend[iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. ---*/
+    
+    nPointP2P = nPoint_P2PSend[iSend+1] - nPoint_P2PSend[iSend];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+    
+    /*--- Get the rank to which we send the message. ---*/
+
+    dest = Neighbors_P2PSend[iSend];
+    tag  = rank + 1;
+
+    /*--- Post non-blocking send for this proc. ---*/
+    
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Isend(&(static_cast<su2double*>(bufD_P2PSend)[offset]),
+                       count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
+                       &(req_P2PSend[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_LONG:
+        SU2_MPI::Isend(&(static_cast<unsigned long*>(bufL_P2PSend)[offset]),
+                       count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+                       &(req_P2PSend[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
+  }
+  
+}
+
+void CGeometry::CompleteP2PComms(CGeometry *geometry,
+                                 CConfig *config) {
+  
+  /*--- Local variables ---*/
+  
+  int ind, iSend, iRecv;
+  SU2_MPI::Status status;
+
+  /*--- Wait for the non-blocking sends to complete. ---*/
+  
+  for (iSend = 0; iSend < nP2PSend; iSend++)
+    SU2_MPI::Waitany(nP2PSend, req_P2PSend, &ind, &status);
+  
+  /*--- Wait for the non-blocking recvs to complete. ---*/
+  
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++)
+    SU2_MPI::Waitany(nP2PRecv, req_P2PRecv, &ind, &status);
+  
+}
+
+void CGeometry::InitiateComms(CGeometry *geometry,
+                              CConfig *config,
+                              unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  
+  unsigned long iPoint, iSend, nSend, offset;
+  
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+  
+  switch (commType) {
+    case COORDINATES:
+    case GRID_VELOCITY:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case COORDINATES_OLD:
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        COUNT_PER_POINT  = nDim*2;
+      else
+        COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case MAX_LENGTH:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case NEIGHBORS:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_UNSIGNED_LONG;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  
+  /*--- Check to make sure we have created a large enough buffer
+   for these comms during preprocessing. This is only for the su2double
+   buffer. It will be reallocated whenever we find a larger count
+   per point. After the first cycle of comms, this should be inactive. ---*/
+  
+  if (COUNT_PER_POINT > geometry->countPerPoint) {
+    geometry->AllocateP2PComms(COUNT_PER_POINT);
+  }
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  nSend = geometry->nPoint_P2PSend[geometry->nP2PSend];
+  
+  su2double *bufDSend = geometry->bufD_P2PSend;
+  
+  unsigned long *bufLSend = geometry->bufL_P2PSend;
+  
+  /*--- Load the specified quantity from the solver into the generic
+   communication buffer in the geometry class. ---*/
+  
+  if (nSend > 0) {
+    
+    for (iSend = 0; iSend < nSend; iSend++) {
+      
+      /*--- Get the local index for this communicated data. ---*/
+      
+      iPoint = geometry->Local_Point_P2PSend[iSend];
+      
+      /*--- Compute the offset in the recv buffer for this point. ---*/
+      
+      offset = iSend*geometry->countPerPoint;
+      
+      switch (commType) {
+        case COORDINATES:
+          for (iDim = 0; iDim < nDim; iDim++)
+            bufDSend[offset+iDim] = node[iPoint]->GetCoord()[iDim];
+          break;
+        case GRID_VELOCITY:
+          for (iDim = 0; iDim < nDim; iDim++)
+            bufDSend[offset+iDim] = node[iPoint]->GetGridVel()[iDim];
+          break;
+        case COORDINATES_OLD:
+          for (iDim = 0; iDim < nDim; iDim++) {
+            bufDSend[offset+iDim] = node[iPoint]->GetCoord_n()[iDim];
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              bufDSend[offset+nDim+iDim] = node[iPoint]->GetCoord_n1()[iDim];
+          }
+          break;
+        case MAX_LENGTH:
+          bufDSend[offset] = node[iPoint]->GetMaxLength();
+          break;
+        case NEIGHBORS:
+          bufLSend[offset] = node[iPoint]->GetnPoint();
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+    }
+    
+  }
+  
+  /*--- Launch the point-to-point MPI communications. ---*/
+  
+  geometry->InitiateP2PComms(geometry, config, MPI_TYPE);
+  
+}
+
+void CGeometry::CompleteComms(CGeometry *geometry,
+                              CConfig *config,
+                              unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iDim;
+  unsigned long iPoint, iRecv, nRecv, offset;
+  
+  /*--- Verify that all non-blocking point-to-point comms have finished. ---*/
+  
+  geometry->CompleteP2PComms(geometry, config);
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  nRecv = geometry->nPoint_P2PRecv[geometry->nP2PRecv];
+  
+  su2double *bufDRecv = geometry->bufD_P2PRecv;
+  
+  unsigned long *bufLRecv = geometry->bufL_P2PRecv;
+  
+  /*--- Store the data that was communicated into the appropriate
+   location within the local class data structures. ---*/
+  
+  if (nRecv > 0) {
+    
+    for (iRecv = 0; iRecv < nRecv; iRecv++) {
+      
+      /*--- Get the local index for this communicated data. ---*/
+      
+      iPoint = geometry->Local_Point_P2PRecv[iRecv];
+      
+      /*--- Compute the offset in the recv buffer for this point. ---*/
+      
+      offset = iRecv*geometry->countPerPoint;
+      
+      /*--- Store the data correctly depending on the quantity. ---*/
+      
+      switch (commType) {
+        case COORDINATES:
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetCoord(iDim, bufDRecv[offset+iDim]);
+          break;
+        case GRID_VELOCITY:
+          for (iDim = 0; iDim < nDim; iDim++)
+            node[iPoint]->SetGridVel(iDim, bufDRecv[offset+iDim]);
+          break;
+        case COORDINATES_OLD:
+          node[iPoint]->SetCoord_n(&bufDRecv[offset]);
+          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+            node[iPoint]->SetCoord_n1(&bufDRecv[offset+nDim]);
+          break;
+        case MAX_LENGTH:
+          node[iPoint]->SetMaxLength(bufDRecv[offset]);
+          break;
+        case NEIGHBORS:
+          node[iPoint]->SetnNeighbor(bufLRecv[offset]);
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+      
+    }
+  }
   
 }
 
@@ -5642,13 +6212,13 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(colorSend, nPoint_Send, colorSendReq,
-                colorRecv, nPoint_Recv, colorRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(idSend, nPoint_Send, idSendReq,
-                idRecv, nPoint_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
+                   colorRecv, nPoint_Recv, colorRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq,
+                   idRecv, nPoint_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -5663,8 +6233,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
-  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
+  CompleteCommsAll(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteCommsAll(nSends,    idSendReq, nRecvs,    idRecvReq);
 
   /*--- Store the complete color map for this rank in class data. Now,
    each rank has a color value for all owned nodes as well as any repeated
@@ -5906,13 +6476,13 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -5934,8 +6504,8 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, connSendReq, nRecvs, connRecvReq);
-  CompleteComms(nSends,   idSendReq, nRecvs,   idRecvReq);
+  CompleteCommsAll(nSends, connSendReq, nRecvs, connRecvReq);
+  CompleteCommsAll(nSends,   idSendReq, nRecvs,   idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper structure
    It will be loaded into the geometry objects in a later step. ---*/
@@ -6214,17 +6784,17 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(colorSend, nPoint_Send, colorSendReq,
-                colorRecv, nPoint_Recv, colorRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(idSend, nPoint_Send, idSendReq,
-                idRecv, nPoint_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(coordSend, nPoint_Send, coordSendReq,
-                coordRecv, nPoint_Recv, coordRecvReq,
-                nDim, COMM_TYPE_DOUBLE);
+  InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
+                   colorRecv, nPoint_Recv, colorRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(idSend, nPoint_Send, idSendReq,
+                   idRecv, nPoint_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(coordSend, nPoint_Send, coordSendReq,
+                   coordRecv, nPoint_Recv, coordRecvReq,
+                   nDim, COMM_TYPE_DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6247,9 +6817,9 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends, colorSendReq, nRecvs, colorRecvReq);
-  CompleteComms(nSends,    idSendReq, nRecvs,    idRecvReq);
-  CompleteComms(nSends, coordSendReq, nRecvs, coordRecvReq);
+  CompleteCommsAll(nSends, colorSendReq, nRecvs, colorRecvReq);
+  CompleteCommsAll(nSends,    idSendReq, nRecvs,    idRecvReq);
+  CompleteCommsAll(nSends, coordSendReq, nRecvs, coordRecvReq);
 
   /*--- Store the total number of local points my rank has for
    the current section after completing the communications. ---*/
@@ -6559,17 +7129,17 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(markerSend, nElem_Send, markerSendReq,
-                markerRecv, nElem_Recv, markerRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
+                   markerRecv, nElem_Recv, markerRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6596,9 +7166,9 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
-  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
-  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
+  CompleteCommsAll(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteCommsAll(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteCommsAll(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure before post-processing below. First, allocate
@@ -6913,17 +7483,17 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Launch the non-blocking sends and receives. ---*/
 
-  InitiateComms(connSend, nElem_Send, connSendReq,
-                connRecv, nElem_Recv, connRecvReq,
-                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(markerSend, nElem_Send, markerSendReq,
-                markerRecv, nElem_Recv, markerRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
-
-  InitiateComms(idSend, nElem_Send, idSendReq,
-                idRecv, nElem_Recv, idRecvReq,
-                1, COMM_TYPE_UNSIGNED_LONG);
+  InitiateCommsAll(connSend, nElem_Send, connSendReq,
+                   connRecv, nElem_Recv, connRecvReq,
+                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
+                   markerRecv, nElem_Recv, markerRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
+  
+  InitiateCommsAll(idSend, nElem_Send, idSendReq,
+                   idRecv, nElem_Recv, idRecvReq,
+                   1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6946,9 +7516,9 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
 
   /*--- Complete the non-blocking communications. ---*/
 
-  CompleteComms(nSends,   connSendReq, nRecvs,   connRecvReq);
-  CompleteComms(nSends, markerSendReq, nRecvs, markerRecvReq);
-  CompleteComms(nSends,     idSendReq, nRecvs,     idRecvReq);
+  CompleteCommsAll(nSends,   connSendReq, nRecvs,   connRecvReq);
+  CompleteCommsAll(nSends, markerSendReq, nRecvs, markerRecvReq);
+  CompleteCommsAll(nSends,     idSendReq, nRecvs,     idRecvReq);
 
   /*--- Store the connectivity for this rank in the proper data
    structure. It will be loaded into the geometry objects in a later step. ---*/
@@ -7866,14 +8436,14 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 
 }
 
-void CPhysicalGeometry::InitiateComms(void *bufSend,
-                                      int *nElemSend,
-                                      SU2_MPI::Request *sendReq,
-                                      void *bufRecv,
-                                      int *nElemRecv,
-                                      SU2_MPI::Request *recvReq,
-                                      unsigned short countPerElem,
-                                      unsigned short commType) {
+void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
+                                         int *nElemSend,
+                                         SU2_MPI::Request *sendReq,
+                                         void *bufRecv,
+                                         int *nElemRecv,
+                                         SU2_MPI::Request *recvReq,
+                                         unsigned short countPerElem,
+                                         unsigned short commType) {
 
   /*--- Local variables ---*/
 
@@ -8031,10 +8601,10 @@ void CPhysicalGeometry::InitiateComms(void *bufSend,
 
 }
 
-void CPhysicalGeometry::CompleteComms(int nSends,
-                                      SU2_MPI::Request *sendReq,
-                                      int nRecvs,
-                                      SU2_MPI::Request *recvReq) {
+void CPhysicalGeometry::CompleteCommsAll(int nSends,
+                                         SU2_MPI::Request *sendReq,
+                                         int nRecvs,
+                                         SU2_MPI::Request *recvReq) {
 
   /*--- Local variables ---*/
 
@@ -14948,7 +15518,7 @@ void CPhysicalGeometry::SetBoundControlVolume(CConfig *config, unsigned short ac
   
 }
 
-void CPhysicalGeometry::SetMaxLength(CConfig* config) {
+void CPhysicalGeometry::SetMaxLength(CGeometry* geometry, CConfig* config) {
 
   for (unsigned long iPoint = 0; iPoint < nPointDomain; iPoint++){
     const unsigned short nNeigh = node[iPoint]->GetnPoint();
@@ -14997,8 +15567,10 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
 
     node[iPoint]->SetMaxLength(max_delta);
   }
-
-  Set_MPI_MaxLength(config);
+  
+  geometry->InitiateComms(geometry, config, MAX_LENGTH);
+  geometry->CompleteComms(geometry, config, MAX_LENGTH);
+  
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {
@@ -16972,603 +17544,6 @@ void CPhysicalGeometry::SetGridVelocity(CConfig *config, unsigned long iter) {
     }
   }
   
-}
-
-void CPhysicalGeometry::Set_MPI_Coord(CConfig *config) {
-  
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Coord = NULL, *Buffer_Send_Coord = NULL, *Coord = NULL, *newCoord = NULL;
-  su2double *translation;
-  newCoord = new su2double[nDim];
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-      
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      
-      Buffer_Receive_Coord = new su2double [nBufferR_Vector];
-      Buffer_Send_Coord = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the coordinates that should be sended ---*/
-      
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = vertex[MarkerS][iVertex]->GetNode();
-        Coord = node[iPoint]->GetCoord();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[iDim*nVertexS+iVertex] = Coord[iDim];
-      }
-      
-#ifdef HAVE_MPI
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Coord, nBufferS_Vector, MPI_DOUBLE, send_to,0,
-                   Buffer_Receive_Coord, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Receive_Coord[iDim*nVertexR+iVertex] = Buffer_Send_Coord[iDim*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      
-      delete [] Buffer_Send_Coord;
-      
-      /*--- Do the coordinate transformation ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        
-        iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
-        
-        /*--- Retrieve the supplied periodic information. ---*/
-        
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-        translation = config->GetPeriodicTranslate(iPeriodic_Index);
-        
-        /*--- Store angles separately for clarity. ---*/
-        
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-        
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-        
-        /*--- Copy coordinates before performing transformation. ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          newCoord[iDim] = Buffer_Receive_Coord[iDim*nVertexR+iVertex];
-        
-        /*--- Rotate the coordinates. ---*/
-        
-        if (nDim == 2) {
-          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[0];
-          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex]) - translation[1];
-        }
-        else {
-          newCoord[0] = (rotMatrix[0][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-                         rotMatrix[0][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
-          newCoord[1] = (rotMatrix[1][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-                         rotMatrix[1][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
-          newCoord[2] = (rotMatrix[2][0]*Buffer_Receive_Coord[0*nVertexR+iVertex] +
-                         rotMatrix[2][1]*Buffer_Receive_Coord[1*nVertexR+iVertex] +
-                         rotMatrix[2][2]*Buffer_Receive_Coord[2*nVertexR+iVertex]);
-        }
-        
-        /*--- Copy transformed coordinates back into buffer. ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          node[iPoint]->SetCoord(iDim, newCoord[iDim]);
-        
-      }
-      
-      /*--- Deallocate receive buffer. ---*/
-      
-      delete [] Buffer_Receive_Coord;
-      
-    }
-    
-  }
-  
-  delete [] newCoord;
-  
-}
-
-void CPhysicalGeometry::Set_MPI_GridVel(CConfig *config) {
-  
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_GridVel = NULL, *Buffer_Send_GridVel = NULL, *GridVel = NULL, *newGridVel = NULL;
-  
-  newGridVel = new su2double[nDim];
-  
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-      
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-     
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-   
-      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
-      
-      /*--- Allocate Receive and send buffers  ---*/
-      
-      Buffer_Receive_GridVel = new su2double [nBufferR_Vector];
-      Buffer_Send_GridVel = new su2double[nBufferS_Vector];
-      
-      /*--- Copy the grid velocity that should be sended ---*/
-      
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = vertex[MarkerS][iVertex]->GetNode();
-        GridVel = node[iPoint]->GetGridVel();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_GridVel[iDim*nVertexS+iVertex] = GridVel[iDim];
-      }
-      
-#ifdef HAVE_MPI
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_GridVel, nBufferS_Vector, MPI_DOUBLE, send_to,0,
-                   Buffer_Receive_GridVel, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
-#else
-      
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Receive_GridVel[iDim*nVertexR+iVertex] = Buffer_Send_GridVel[iDim*nVertexR+iVertex];
-      }
-      
-#endif
-      
-      /*--- Deallocate send buffer ---*/
-      
-      delete [] Buffer_Send_GridVel;
-      
-      /*--- Do the coordinate transformation ---*/
-      
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        
-        /*--- Find point and its type of transformation ---*/
-        
-        iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
-        
-        /*--- Retrieve the supplied periodic information. ---*/
-        
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-        
-        /*--- Store angles separately for clarity. ---*/
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-        
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-        
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-        
-        /*--- Copy grid velocity before performing transformation. ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          newGridVel[iDim] = Buffer_Receive_GridVel[iDim*nVertexR+iVertex];
-        
-        if (nDim == 2) {
-          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
-                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
-          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
-                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex]);
-        }
-        else {
-          newGridVel[0] = (rotMatrix[0][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
-                           rotMatrix[0][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-                           rotMatrix[0][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
-          newGridVel[1] = (rotMatrix[1][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
-                           rotMatrix[1][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-                           rotMatrix[1][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
-          newGridVel[2] = (rotMatrix[2][0]*Buffer_Receive_GridVel[0*nVertexR+iVertex] +
-                           rotMatrix[2][1]*Buffer_Receive_GridVel[1*nVertexR+iVertex] +
-                           rotMatrix[2][2]*Buffer_Receive_GridVel[2*nVertexR+iVertex]);
-        }
-        
-        /*--- Copy transformed grid velocity back into buffer. ---*/
-        
-        for (iDim = 0; iDim < nDim; iDim++)
-          node[iPoint]->SetGridVel(iDim, newGridVel[iDim]);
-        
-      }
-      
-      /*--- Deallocate receive buffer ---*/
-      
-      delete [] Buffer_Receive_GridVel;
-      
-    }
-    
-  }
-  
-  delete [] newGridVel;
-  
-}
-
-void CPhysicalGeometry::Set_MPI_OldCoord(CConfig *config) {
-
-  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi;
-
-  su2double *Buffer_Receive_Coord_n = NULL, *Buffer_Send_Coord_n = NULL, *Coord_n = NULL, *newCoord_n = NULL;
-
-  newCoord_n = new su2double[nDim];
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
-      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
-
-      /*--- Allocate Receive and send buffers  ---*/
-
-      Buffer_Receive_Coord_n = new su2double [nBufferR_Vector];
-      Buffer_Send_Coord_n = new su2double[nBufferS_Vector];
-
-      /*--- Copy the coordinates that should be sended ---*/
-
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = vertex[MarkerS][iVertex]->GetNode();
-        Coord_n = node[iPoint]->GetCoord_n();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord_n[iDim*nVertexS+iVertex] = Coord_n[iDim];
-      }
-
-#ifdef HAVE_MPI
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send_Coord_n, nBufferS_Vector, MPI_DOUBLE, send_to,0,
-                   Buffer_Receive_Coord_n, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Receive_Coord_n[iDim*nVertexR+iVertex] = Buffer_Send_Coord_n[iDim*nVertexR+iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-
-      delete [] Buffer_Send_Coord_n;
-
-      /*--- Do the coordinate transformation ---*/
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-        /*--- Find point and its type of transformation ---*/
-
-        iPoint = vertex[MarkerR][iVertex]->GetNode();
-        iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
-
-        /*--- Retrieve the supplied periodic information. ---*/
-
-        angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-        /*--- Store angles separately for clarity. ---*/
-
-        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-        /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-
-        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-        /*--- Copy coordinates before performing transformation. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          newCoord_n[iDim] = Buffer_Receive_Coord_n[iDim*nVertexR+iVertex];
-
-        /*--- Rotate the coordinates. ---*/
-
-        if (nDim == 2) {
-          newCoord_n[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex]);
-          newCoord_n[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex]);
-        }
-        else {
-          newCoord_n[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
-                         rotMatrix[0][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
-                         rotMatrix[0][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
-          newCoord_n[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
-                         rotMatrix[1][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
-                         rotMatrix[1][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
-          newCoord_n[2] = (rotMatrix[2][0]*Buffer_Receive_Coord_n[0*nVertexR+iVertex] +
-                         rotMatrix[2][1]*Buffer_Receive_Coord_n[1*nVertexR+iVertex] +
-                         rotMatrix[2][2]*Buffer_Receive_Coord_n[2*nVertexR+iVertex]);
-        }
-
-        /*--- Copy transformed coordinates back into buffer. ---*/
-
-        node[iPoint]->SetCoord_n(newCoord_n);
-
-      }
-
-      /*--- Deallocate receive buffer. ---*/
-
-      delete [] Buffer_Receive_Coord_n;
-
-    }
-
-  }
-
-  delete [] newCoord_n;
-
-  /*--------------------------------------------------------------------------------------------------*/
-  /*--- We repeat the process for the coordinate n-1, in the case that the simulation is 2nd order ---*/
-  /*--------------------------------------------------------------------------------------------------*/
-
-  if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
-
-	  su2double *Buffer_Receive_Coord_n1 = NULL, *Buffer_Send_Coord_n1 = NULL, *Coord_n1 = NULL, *newCoord_n1 = NULL;
-	  newCoord_n1 = new su2double[nDim];
-
-	  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-		  if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-				  (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-			  MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-			  send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-			  receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-			  nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
-			  nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
-
-			  /*--- Allocate Receive and send buffers  ---*/
-
-			  Buffer_Receive_Coord_n1 = new su2double [nBufferR_Vector];
-			  Buffer_Send_Coord_n1 = new su2double[nBufferS_Vector];
-
-			  /*--- Copy the coordinates that should be sended ---*/
-
-			  for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-				  iPoint = vertex[MarkerS][iVertex]->GetNode();
-				  Coord_n1 = node[iPoint]->GetCoord_n1();
-				  for (iDim = 0; iDim < nDim; iDim++)
-					  Buffer_Send_Coord_n1[iDim*nVertexS+iVertex] = Coord_n1[iDim];
-			  }
-
-#ifdef HAVE_MPI
-			  /*--- Send/Receive information using Sendrecv ---*/
-			  SU2_MPI::Sendrecv(Buffer_Send_Coord_n1, nBufferS_Vector, MPI_DOUBLE, send_to,0,
-					  Buffer_Receive_Coord_n1, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
-#else
-
-			  /*--- Receive information without MPI ---*/
-			  for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-				  for (iDim = 0; iDim < nDim; iDim++)
-					  Buffer_Receive_Coord_n1[iDim*nVertexR+iVertex] = Buffer_Send_Coord_n1[iDim*nVertexR+iVertex];
-			  }
-
-#endif
-
-			  /*--- Deallocate send buffer ---*/
-
-			  delete [] Buffer_Send_Coord_n1;
-
-			  /*--- Do the coordinate transformation ---*/
-
-			  for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-
-				  /*--- Find point and its type of transformation ---*/
-
-				  iPoint = vertex[MarkerR][iVertex]->GetNode();
-				  iPeriodic_Index = vertex[MarkerR][iVertex]->GetRotation_Type();
-
-				  /*--- Retrieve the supplied periodic information. ---*/
-
-				  angles = config->GetPeriodicRotation(iPeriodic_Index);
-
-				  /*--- Store angles separately for clarity. ---*/
-
-				  theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
-				  cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
-				  sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
-
-				  /*--- Compute the rotation matrix. Note that the implicit
-         ordering is rotation about the x-axis, y-axis,
-         then z-axis. Note that this is the transpose of the matrix
-         used during the preprocessing stage. ---*/
-
-				  rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-				  rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-				  rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
-
-				  /*--- Copy coordinates before performing transformation. ---*/
-
-				  for (iDim = 0; iDim < nDim; iDim++)
-					  newCoord_n1[iDim] = Buffer_Receive_Coord_n1[iDim*nVertexR+iVertex];
-
-				  /*--- Rotate the coordinates. ---*/
-
-				  if (nDim == 2) {
-					  newCoord_n1[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
-							  rotMatrix[0][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex]);
-					  newCoord_n1[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
-							  rotMatrix[1][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex]);
-				  }
-				  else {
-					  newCoord_n1[0] = (rotMatrix[0][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
-							  rotMatrix[0][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
-							  rotMatrix[0][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
-					  newCoord_n1[1] = (rotMatrix[1][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
-							  rotMatrix[1][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
-							  rotMatrix[1][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
-					  newCoord_n1[2] = (rotMatrix[2][0]*Buffer_Receive_Coord_n1[0*nVertexR+iVertex] +
-							  rotMatrix[2][1]*Buffer_Receive_Coord_n1[1*nVertexR+iVertex] +
-							  rotMatrix[2][2]*Buffer_Receive_Coord_n1[2*nVertexR+iVertex]);
-				  }
-
-				  /*--- Copy transformed coordinates back into buffer. ---*/
-
-				  node[iPoint]->SetCoord_n1(newCoord_n1);
-
-			  }
-
-			  /*--- Deallocate receive buffer. ---*/
-
-			  delete [] Buffer_Receive_Coord_n1;
-
-		  }
-
-	  }
-
-	  delete [] newCoord_n1;
-
-  }
-
-  /*--------------------------------------------------------------------------------------------------*/
-
-}
-
-void CPhysicalGeometry::Set_MPI_MaxLength(CConfig *config) {
-
-  unsigned short iMarker, MarkerS, MarkerR;
-  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS, nBufferR;
-  su2double *Buffer_Receive = NULL, *Buffer_Send = NULL;
-
-#ifdef HAVE_MPI
-  int send_to, receive_from;
-  SU2_MPI::Status status;
-#endif
-
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-
-    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
-        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
-
-      MarkerS = iMarker;  MarkerR = iMarker+1;
-
-#ifdef HAVE_MPI
-      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
-      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
-#endif
-
-      nVertexS = nVertex[MarkerS];  nVertexR = nVertex[MarkerR];
-      nBufferS = nVertexS;          nBufferR = nVertexR;
-
-      /*--- Allocate Receive and send buffers  ---*/
-
-      Buffer_Receive = new su2double [nBufferR];
-      Buffer_Send = new su2double[nBufferS];
-
-      /*--- Copy the grid velocity that should be sent ---*/
-
-      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
-        iPoint = vertex[MarkerS][iVertex]->GetNode();
-        const su2double max_length = node[iPoint]->GetMaxLength();
-        Buffer_Send[iVertex] = max_length;
-      }
-
-#ifdef HAVE_MPI
-      /*--- Send/Receive information using Sendrecv ---*/
-      SU2_MPI::Sendrecv(Buffer_Send, nBufferS, MPI_DOUBLE, send_to, 0,
-                        Buffer_Receive, nBufferR, MPI_DOUBLE, receive_from, 0,
-                        MPI_COMM_WORLD, &status);
-#else
-
-      /*--- Receive information without MPI ---*/
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        Buffer_Receive[iVertex] = Buffer_Send[iVertex];
-      }
-
-#endif
-
-      /*--- Deallocate send buffer ---*/
-
-      delete [] Buffer_Send;
-
-
-      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
-        iPoint = vertex[MarkerR][iVertex]->GetNode();
-        node[iPoint]->SetMaxLength(Buffer_Receive[iVertex]);
-      }
-
-      /*--- Deallocate receive buffer ---*/
-
-      delete [] Buffer_Receive;
-
-    }
-
-  }
-
 }
 
 void CPhysicalGeometry::SetPeriodicBoundary(CConfig *config) {

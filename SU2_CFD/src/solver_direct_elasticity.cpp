@@ -453,10 +453,6 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   /*--- Penalty value - to maintain constant the stiffness in optimization problems - TODO: this has to be improved ---*/
   PenaltyValue = 0.0;
-
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nVar*3);
   
   /*--- Perform the MPI communication of the solution ---*/
   

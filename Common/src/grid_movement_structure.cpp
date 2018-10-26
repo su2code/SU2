@@ -96,8 +96,9 @@ void CVolumetricMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config) 
   /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
-
-  geometry->Set_MPI_Coord(config);
+  
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
 
 }
 
@@ -109,7 +110,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
 	geometry->SetCoord_CG();
 	geometry->SetControlVolume(config, UPDATE);
 	geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
+  geometry->SetMaxLength(geometry, config);
   
 }
 
@@ -196,9 +197,12 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
 
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
+    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    
+    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
     /*--- If we want no derivatives or the direct derivatives,
@@ -9268,8 +9272,9 @@ void CElasticityMovement::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
    * Hence we still need a communication of the transformed coordinates, otherwise periodicity
    * is not maintained. ---*/
-
-  geometry->Set_MPI_Coord(config);
+  
+  geometry->InitiateComms(geometry, config, COORDINATES);
+  geometry->CompleteComms(geometry, config, COORDINATES);
 
 }
 
@@ -9282,7 +9287,7 @@ void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
-  geometry->SetMaxLength(config);
+  geometry->SetMaxLength(geometry, config);
 
 }
 
@@ -9548,9 +9553,12 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
    so that all nodes have the same solution and r.h.s. entries
    across all partitions. ---*/
 
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-
+  StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  
+  StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  
   /*--- Solve the linear system using a Krylov subspace method ---*/
 
   if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||

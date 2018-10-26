@@ -857,17 +857,11 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nPrimVarGrad*nDim);
-  
-  InitiateComms(geometry, config, SOLUTION);
-  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Perform the MPI communication of the solution ---*/
 
-  //Set_MPI_Solution(geometry, config);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 
@@ -13681,8 +13675,13 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[MESH_0]->Set_MPI_Coord(config);
-    geometry[MESH_0]->Set_MPI_GridVel(config);
+    //geometry[MESH_0]->Set_MPI_Coord(config);
+    //geometry[MESH_0]->Set_MPI_GridVel(config);
+    
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, GRID_VELOCITY);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, GRID_VELOCITY);
 
     /*--- Recompute the edges and dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -13690,7 +13689,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
+    geometry[MESH_0]->SetMaxLength(geometry[MESH_0], config);
 
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
@@ -13701,7 +13700,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
       geometry[iMesh]->SetRestricted_GridVelocity(geometry[iMeshFine], config);
-      geometry[iMesh]->SetMaxLength(config);
+      geometry[iMesh]->SetMaxLength(geometry[iMesh], config);
       }
     }
 
@@ -13711,7 +13710,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
 
-    geometry[MESH_0]->Set_MPI_Coord(config);
+    //geometry[MESH_0]->Set_MPI_Coord(config);
+    
+    geometry[MESH_0]->InitiateComms(geometry[MESH_0], config, COORDINATES);
+    geometry[MESH_0]->CompleteComms(geometry[MESH_0], config, COORDINATES);
 
     /*--- Recompute the edges and  dual mesh control volumes in the
      domain and on the boundaries. ---*/
@@ -13719,7 +13721,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
-    geometry[MESH_0]->SetMaxLength(config);
+    geometry[MESH_0]->SetMaxLength(geometry[MESH_0], config);
 
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
@@ -13729,7 +13731,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
-      geometry[iMesh]->SetMaxLength(config);
+      geometry[iMesh]->SetMaxLength(geometry[iMesh], config);
     }
   }
   
@@ -15627,10 +15629,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
-
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nPrimVarGrad*nDim);
 
   //Set_MPI_Solution(geometry, config);
   

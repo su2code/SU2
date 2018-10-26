@@ -375,10 +375,6 @@ CAdjEulerSolver::CAdjEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
        config->SetWeight_ObjFunc(iMarker_Monitoring, Weight_ObjFunc);
     }
   }
-
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nVar*nDim);
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
@@ -6099,10 +6095,6 @@ CAdjNSSolver::CAdjNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
      }
    }
-
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nVar*nDim);
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);

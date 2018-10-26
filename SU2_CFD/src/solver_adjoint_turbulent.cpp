@@ -192,10 +192,6 @@ CAdjTurbSolver::CAdjTurbSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
   }
   
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nVar*nDim);
-  
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
   

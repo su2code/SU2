@@ -222,9 +222,6 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
       else
         node[iPoint] = new CHeatFVMVariable(Temperature_Solid_Freestream_ND, nDim, nVar, config);
 
-  /*--- Initialize the point-to-point MPI communications. ---*/
-  
-  PreprocessComms(geometry, config, nVar*nDim);
   
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);

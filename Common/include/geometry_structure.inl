@@ -99,14 +99,6 @@ inline void CGeometry::SetGridVelocity(CConfig *config, unsigned long iter) { }
 
 inline void CGeometry::SetRestricted_GridVelocity(CGeometry *fine_mesh, CConfig *config) { } 
 
-inline void CGeometry::Set_MPI_Coord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_GridVel(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_OldCoord(CConfig *config) { } 
-
-inline void CGeometry::Set_MPI_MaxLength(CConfig *config) { }
-
 inline void CGeometry::SetPeriodicBoundary(CConfig *config) { }
 
 inline void CGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config) { }
@@ -251,7 +243,7 @@ inline void CGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) { }
 
 inline void CGeometry::SetCoord_CG(void) { }
 
-inline void CGeometry::SetMaxLength(CConfig* config) { }
+inline void CGeometry::SetMaxLength(CGeometry *geometry, CConfig* config) { }
 
 inline void CGeometry::SetControlVolume(CConfig *config, unsigned short action) { }
 

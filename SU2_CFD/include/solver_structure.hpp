@@ -133,20 +133,6 @@ protected:
   unsigned long maxCol_InletFile;       /*!< \brief Auxiliary structure for holding the maximum number of columns in all inlet marker profiles (for data structure size) */
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
-
-  int countPerPoint;          /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
-  int nSends;                 /*!< \brief Number of sends during point-to-point comms. */
-  int nRecvs;                 /*!< \brief Number of receives during point-to-point comms. */
-  int *nElem_Send;            /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
-  int *nElem_Recv;            /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
-  int *Neighbors_Send;            /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
-  int *Neighbors_Recv;            /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
-  unsigned long *Local_Point_Send;            /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
-  unsigned long *Local_Point_Recv;            /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
-  su2double *bufRecv;          /*!< \brief Data structure for point-to-point receive. */
-  su2double *bufSend;          /*!< \brief Data structure for point-to-point send. */
-  SU2_MPI::Request *sendReq;  /*!< \brief Data structure for point-to-point send requests. */
-  SU2_MPI::Request *recvReq;  /*!< \brief Data structure for point-to-point recv requests. */
   
 public:
   
@@ -186,14 +172,6 @@ public:
    * \param[in] index - Index position of first entry that should be rotated in vec.
    */
   void Rotate_Vector(su2double** rotMatrix, su2double* vec, unsigned short index);
-  
-  /*!
-   * \brief Routine to allocate persistent data structures for point-to-point MPI communications
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] val_countPerPoint - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
-   */
-  void PreprocessComms(CGeometry *geometry, CConfig *config, int val_countPerPoint);
   
   /*!
    * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs amongst all processors.

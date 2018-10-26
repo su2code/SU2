@@ -851,11 +851,6 @@ void CDriver::Geometrical_Preprocessing() {
       geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
       geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
 
-      /*--- Compute the max length. ---*/
-
-      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
-      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
-
       /*--- Visualize a dual control volume if requested ---*/
 
       if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
@@ -920,10 +915,6 @@ void CDriver::Geometrical_Preprocessing() {
         geometry_container[iZone][iInst][iMGlevel]->SetBoundControlVolume(config_container[iZone], geometry_container[iZone][iInst][iMGlevel-1], ALLOCATE);
         geometry_container[iZone][iInst][iMGlevel]->SetCoord(geometry_container[iZone][iInst][iMGlevel-1]);
 
-        /*--- Compute the max length. ---*/
-
-        geometry_container[iZone][iInst][iMGlevel]->SetMaxLength(config_container[iZone]);
-
         /*--- Find closest neighbor to a surface point ---*/
 
         geometry_container[iZone][iInst][iMGlevel]->FindNormal_Neighbor(config_container[iZone]);
@@ -974,6 +965,34 @@ void CDriver::Geometrical_Preprocessing() {
     config_container[iZone]->AllocateRotationMatrix();
     for (unsigned short iPeriodic = 0; iPeriodic < config_container[iZone]->GetnPeriodicIndex(); iPeriodic++)
       config_container[iZone]->SetRotationMatrix(iPeriodic);
+  }
+  
+  /*--- Create the data structure for MPI point-to-point communications. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++)
+    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+      for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++)
+        geometry_container[iZone][iInst][iMGlevel]->PreprocessP2PComms(geometry_container[iZone][iInst][iMGlevel], config_container[iZone]);
+
+  /*--- Perform a few preprocessing routine and communications. ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
+      for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++) {
+        
+        /*--- Compute the max length. ---*/
+        
+        if ((rank == MASTER_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Finding max control volume width." << endl;
+        geometry_container[iZone][iInst][iMGlevel]->SetMaxLength(geometry_container[iZone][iInst][iMGlevel], config_container[iZone]);
+        
+        /*--- Communicate the number of neighbors. ---*/
+        
+        if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Communicating number of neighbors." << endl;
+        geometry_container[iZone][iInst][iMGlevel]->InitiateComms(geometry_container[iZone][iInst][iMGlevel], config_container[iZone], NEIGHBORS);
+        geometry_container[iZone][iInst][iMGlevel]->CompleteComms(geometry_container[iZone][iInst][iMGlevel], config_container[iZone], NEIGHBORS);
+
+      }
+    }
   }
   
 }

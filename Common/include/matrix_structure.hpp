@@ -357,21 +357,29 @@ public:
   void DiagonalProduct(CSysVector & vec, unsigned long row_i);
   
   /*!
-   * \brief Send receive the solution using MPI.
-   * \param[in] x - Solution..
+   * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs amongst all processors.
+   * \param[in] x - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
    */
-  void SendReceive_Solution(CSysVector & x, CGeometry *geometry, CConfig *config);
+  void InitiateComms(CSysVector & x,
+                     CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
   
   /*!
-   * \brief Send receive the solution using MPI and the transposed structure of the matrix.
-   * \param[in] x - Solution..
+   * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany() and unpacking of the data.
+   * \param[in] x - CSysVector holding the array of data.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
    */
-  void SendReceive_SolutionTransposed(CSysVector & x, CGeometry *geometry, CConfig *config);
-  
+  void CompleteComms(CSysVector & x,
+                     CGeometry *geometry,
+                     CConfig *config,
+                     unsigned short commType);
+
   /*!
    * \brief Performs the product of i-th row of a sparse matrix by a vector.
    * \param[in] vec - Vector to be multiplied by the row of the sparse matrix A.
