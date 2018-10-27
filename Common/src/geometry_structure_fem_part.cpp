@@ -3540,8 +3540,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   }
 
   /* Build the local ADT. */
-  su2_adtElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                                  subElementIDInParent, parentElement, false);
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */

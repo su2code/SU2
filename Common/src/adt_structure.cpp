@@ -43,14 +43,14 @@ const su2double tolInsideElem   =  1.e-10;
 const su2double paramLowerBound = -1.0 - tolInsideElem;
 const su2double paramUpperBound =  1.0 + tolInsideElem;
 
-su2_adtComparePointClass::su2_adtComparePointClass(const su2double      *coor,
-                                                   const unsigned short splitDir,
-                                                   const unsigned short nDimADT)
+CADTComparePointClass::CADTComparePointClass(const su2double      *coor,
+                                             const unsigned short splitDir,
+                                             const unsigned short nDimADT)
   : pointCoor(coor),
     splitDirection(splitDir),
     nDim(nDimADT) {}
 
-su2_BBoxTargetClass::su2_BBoxTargetClass(const unsigned long val_BBoxID,
+CBBoxTargetClass::CBBoxTargetClass(const unsigned long val_BBoxID,
                                          const su2double     val_posDist2,
                                          const su2double     val_guarDist2) {
   boundingBoxID      = val_BBoxID;
@@ -58,7 +58,7 @@ su2_BBoxTargetClass::su2_BBoxTargetClass(const unsigned long val_BBoxID,
   guaranteedMinDist2 = val_guarDist2;
 }
 
-bool su2_BBoxTargetClass::operator <(const su2_BBoxTargetClass &other) const {
+bool CBBoxTargetClass::operator <(const CBBoxTargetClass &other) const {
 
   /* Make sure that the bounding boxes with the smallest possible distances
      are stored first. */
@@ -70,13 +70,13 @@ bool su2_BBoxTargetClass::operator <(const su2_BBoxTargetClass &other) const {
   return false;
 }
 
-void su2_BBoxTargetClass::Copy(const su2_BBoxTargetClass &other) {
+void CBBoxTargetClass::Copy(const CBBoxTargetClass &other) {
   boundingBoxID      = other.boundingBoxID;
   possibleMinDist2   = other.possibleMinDist2;
   guaranteedMinDist2 = other.guaranteedMinDist2;
 }
 
-void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
+void CADTNodeClass::Copy(const CADTNodeClass &other) {
 
   childrenAreTerminal[0] = other.childrenAreTerminal[0];
   childrenAreTerminal[1] = other.childrenAreTerminal[1];
@@ -90,9 +90,9 @@ void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
   xMax = other.xMax;
 }
 
-void su2_adtBaseClass::BuildADT(unsigned short  nDim,
-                                unsigned long   nPoints,
-                                const su2double *coor) {
+void CADTBaseClass::BuildADT(unsigned short  nDim,
+                             unsigned long   nPoints,
+                             const su2double *coor) {
 
   /*---  Determine the number of leaves. It can be proved that nLeaves equals
          nPoints-1 for an optimally balanced tree. Take the exceptional case of
@@ -181,9 +181,9 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
 
       /* Sort the points of the current leaf in increasing order. The sorting
          is based on the coordinate in the split direction, for which the
-         functor su2_adtComparePointClass is used. */
+         functor CADTComparePointClass is used. */
       sort(pointIDs.data() + nPointIDs[i], pointIDs.data() + nPointIDs[i+1],
-           su2_adtComparePointClass(coor, splitDir, nDim));
+           CADTComparePointClass(coor, splitDir, nDim));
 
       /* Determine the index of the node, which is approximately central
          in this leave. */
@@ -271,11 +271,11 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   }
 }
 
-su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short nDim,
-                                               unsigned long  nPoints,
-                                               su2double      *coor,
-                                               unsigned long  *pointID,
-                                               const bool     globalTree) {
+CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
+                                         unsigned long  nPoints,
+                                         su2double      *coor,
+                                         unsigned long  *pointID,
+                                         const bool     globalTree) {
 
   /*--- Make a distinction between parallel and sequential mode. ---*/
 
@@ -350,10 +350,10 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short nDim,
   frontLeavesNew.reserve(200);
 }
 
-void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
-                                                  su2double       &dist,
-                                                  unsigned long   &pointID,
-                                                  int             &rankID) {
+void CADTPointsOnlyClass::DetermineNearestNode(const su2double *coor,
+                                               su2double       &dist,
+                                               unsigned long   &pointID,
+                                               int             &rankID) {
 
   AD_BEGIN_PASSIVE
 
@@ -488,13 +488,13 @@ void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
 }
 
-su2_adtElemClass::su2_adtElemClass(unsigned short         val_nDim,
-                                   vector<su2double>      &val_coor,
-                                   vector<unsigned long>  &val_connElem,
-                                   vector<unsigned short> &val_VTKElem,
-                                   vector<unsigned short> &val_markerID,
-                                   vector<unsigned long>  &val_elemID,
-                                   const bool             globalTree) {
+CADTElemClass::CADTElemClass(unsigned short         val_nDim,
+                             vector<su2double>      &val_coor,
+                             vector<unsigned long>  &val_connElem,
+                             vector<unsigned short> &val_VTKElem,
+                             vector<unsigned short> &val_markerID,
+                             vector<unsigned long>  &val_elemID,
+                             const bool             globalTree) {
 
   /* Copy the dimension of the problem into nDim. */
   nDim = val_nDim;
@@ -709,12 +709,12 @@ su2_adtElemClass::su2_adtElemClass(unsigned short         val_nDim,
   BBoxTargets.reserve(200);
 }
 
-bool su2_adtElemClass::DetermineContainingElement(const su2double *coor,
-                                                  unsigned short  &markerID,
-                                                  unsigned long   &elemID,
-                                                  int             &rankID,
-                                                  su2double       *parCoor,
-                                                  su2double       *weightsInterpol) {
+bool CADTElemClass::DetermineContainingElement(const su2double *coor,
+                                               unsigned short  &markerID,
+                                               unsigned long   &elemID,
+                                               int             &rankID,
+                                               su2double       *parCoor,
+                                               su2double       *weightsInterpol) {
 
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
@@ -795,11 +795,11 @@ bool su2_adtElemClass::DetermineContainingElement(const su2double *coor,
   return false;
 }
 
-void su2_adtElemClass::DetermineNearestElement(const su2double *coor,
-                                               su2double       &dist,
-                                               unsigned short  &markerID,
-                                               unsigned long   &elemID,
-                                               int             &rankID) {
+void CADTElemClass::DetermineNearestElement(const su2double *coor,
+                                            su2double       &dist,
+                                            unsigned short  &markerID,
+                                            unsigned long   &elemID,
+                                            int             &rankID) {
 
   AD_BEGIN_PASSIVE
 
@@ -884,7 +884,7 @@ void su2_adtElemClass::DetermineNearestElement(const su2double *coor,
 
             /* Store this bounding box in BBoxTargets and update the currently
                stored value of the distance squared. */
-            BBoxTargets.push_back(su2_BBoxTargetClass(kk, posDist2, guarDist2));
+            BBoxTargets.push_back(CBBoxTargetClass(kk, posDist2, guarDist2));
             dist = min(dist, guarDist2);
           }
         }
@@ -980,10 +980,10 @@ void su2_adtElemClass::DetermineNearestElement(const su2double *coor,
   dist = sqrt(dist);
 }
 
-bool su2_adtElemClass::CoorInElement(const unsigned long elemID,
-                                     const su2double     *coor,
-                                     su2double           *parCoor,
-                                     su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInElement(const unsigned long elemID,
+                                  const su2double     *coor,
+                                  su2double           *parCoor,
+                                  su2double           *weightsInterpol) {
 
   /*--- Make a distinction between the element types. ---*/
   switch( elemVTK_Type[elemID] ) {
@@ -1002,9 +1002,9 @@ bool su2_adtElemClass::CoorInElement(const unsigned long elemID,
   }
 }
 
-void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
-                                      const su2double     *coor,
-                                      su2double           &dist2Elem) {
+void CADTElemClass::Dist2ToElement(const unsigned long elemID,
+                                   const su2double     *coor,
+                                   su2double           &dist2Elem) {
 
   /*--- Make a distinction between the element types. ---*/
   switch( elemVTK_Type[elemID] ) {
@@ -1093,10 +1093,10 @@ void su2_adtElemClass::Dist2ToElement(const unsigned long elemID,
   }
 }
 
-bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
-                                      const su2double     *coor,
-                                      su2double           *parCoor,
-                                      su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInTriangle(const unsigned long elemID,
+                                   const su2double     *coor,
+                                   su2double           *parCoor,
+                                   su2double           *weightsInterpol) {
 
   /* Determine the indices of the three vertices of the triangle,
      multiplied by nDim (which is 2). This gives the position in the
@@ -1140,10 +1140,10 @@ bool su2_adtElemClass::CoorInTriangle(const unsigned long elemID,
   return coorIsInside;
 }
 
-bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
-                                           const su2double     *coor,
-                                           su2double           *parCoor,
-                                           su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInQuadrilateral(const unsigned long elemID,
+                                        const su2double     *coor,
+                                        su2double           *parCoor,
+                                        su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -1275,10 +1275,10 @@ bool su2_adtElemClass::CoorInQuadrilateral(const unsigned long elemID,
   return true;
 }
 
-bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
-                                         const su2double     *coor,
-                                         su2double           *parCoor,
-                                         su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInTetrahedron(const unsigned long elemID,
+                                      const su2double     *coor,
+                                      su2double           *parCoor,
+                                      su2double           *weightsInterpol) {
 
   /* Determine the indices of the four vertices of the tetrahedron,
      multiplied by nDim (which is 3). This gives the position in the
@@ -1333,10 +1333,10 @@ bool su2_adtElemClass::CoorInTetrahedron(const unsigned long elemID,
   return coorIsInside;
 }
 
-bool su2_adtElemClass::CoorInPyramid(const unsigned long elemID,
-                                     const su2double     *coor,
-                                     su2double           *parCoor,
-                                     su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInPyramid(const unsigned long elemID,
+                                  const su2double     *coor,
+                                  su2double           *parCoor,
+                                  su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -1504,9 +1504,9 @@ bool su2_adtElemClass::CoorInPyramid(const unsigned long elemID,
   return coorIsInside;
 }
 
-bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
-                                                      const su2double xRel[5][3],
-                                                      su2double       *parCoor) {
+bool CADTElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
+                                                   const su2double xRel[5][3],
+                                                   su2double       *parCoor) {
   /* Tetrahedron, 0-1-3-4.
      Create the coordinates of the tetrahedron and of the point. */
   su2double x1 = xRel[1][0], y1 = xRel[1][1], z1 = xRel[1][2];
@@ -1606,10 +1606,10 @@ bool su2_adtElemClass::InitialGuessContainmentPyramid(const su2double xRelC[3],
   return false;
 }
 
-bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
-                                   const su2double     *coor,
-                                   su2double           *parCoor,
-                                   su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInPrism(const unsigned long elemID,
+                                const su2double     *coor,
+                                su2double           *parCoor,
+                                su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -1764,9 +1764,9 @@ bool su2_adtElemClass::CoorInPrism(const unsigned long elemID,
   return coorIsInside;
 }
 
-bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
-                                                    const su2double xRel[6][3],
-                                                    su2double       *parCoor) {
+bool CADTElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
+                                                 const su2double xRel[6][3],
+                                                 su2double       *parCoor) {
 
   /* Tetrahedron, 0-1-2-3.
      Create the coordinates of the tetrahedron and of the point. */
@@ -1906,10 +1906,10 @@ bool su2_adtElemClass::InitialGuessContainmentPrism(const su2double xRelC[3],
   return false;
 }
 
-bool su2_adtElemClass::CoorInHexahedron(const unsigned long elemID,
-                                        const su2double     *coor,
-                                        su2double           *parCoor,
-                                        su2double           *weightsInterpol) {
+bool CADTElemClass::CoorInHexahedron(const unsigned long elemID,
+                                     const su2double     *coor,
+                                     su2double           *parCoor,
+                                     su2double           *weightsInterpol) {
 
   /* Definition of the maximum number of iterations in the Newton solver
      and the tolerance level. */
@@ -2092,9 +2092,9 @@ bool su2_adtElemClass::CoorInHexahedron(const unsigned long elemID,
   return coorIsInside;
 }
 
-bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
-                                                         const su2double xRel[8][3],
-                                                         su2double       *parCoor) {
+bool CADTElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3],
+                                                      const su2double xRel[8][3],
+                                                      su2double       *parCoor) {
   /* Tetrahedron, 0-1-2-5.
      Create the coordinates of the tetrahedron and of the point. */
   su2double x1 = xRel[1][0], y1 = xRel[1][1], z1 = xRel[1][2];
@@ -2321,10 +2321,10 @@ bool su2_adtElemClass::InitialGuessContainmentHexahedron(const su2double xRelC[3
   return false;
 }
 
-void su2_adtElemClass::Dist2ToLine(const unsigned long i0,
-                                   const unsigned long i1,
-                                   const su2double     *coor,
-                                   su2double           &dist2Line) {
+void CADTElemClass::Dist2ToLine(const unsigned long i0,
+                                const unsigned long i1,
+                                const su2double     *coor,
+                                su2double           &dist2Line) {
 
   /*--- The line is parametrized by X = X0 + (r+1)*(X1-X0)/2, -1 <= r <= 1.
         As a consequence the minimum distance is found where the expression
@@ -2357,13 +2357,13 @@ void su2_adtElemClass::Dist2ToLine(const unsigned long i0,
   }
 }
 
-bool su2_adtElemClass::Dist2ToTriangle(const unsigned long i0,
-                                       const unsigned long i1,
-                                       const unsigned long i2,
-                                       const su2double     *coor,
-                                       su2double           &dist2Tria,
-                                       su2double           &r,
-                                       su2double           &s) {
+bool CADTElemClass::Dist2ToTriangle(const unsigned long i0,
+                                    const unsigned long i1,
+                                    const unsigned long i2,
+                                    const su2double     *coor,
+                                    su2double           &dist2Tria,
+                                    su2double           &r,
+                                    su2double           &s) {
 
   /*--- The triangle is parametrized by X = X0 + (r+1)*(X1-X0)/2 + (s+1)*(X2-X0)/2,
         r, s >= -1, r+s <= 0. As a consequence the minimum distance is found where
@@ -2413,14 +2413,14 @@ bool su2_adtElemClass::Dist2ToTriangle(const unsigned long i0,
   return false;
 }
 
-bool su2_adtElemClass::Dist2ToQuadrilateral(const unsigned long i0,
-                                            const unsigned long i1,
-                                            const unsigned long i2,
-                                            const unsigned long i3,
-                                            const su2double     *coor,
-                                            su2double           &r,
-                                            su2double           &s,
-                                            su2double           &dist2Quad) {
+bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
+                                         const unsigned long i1,
+                                         const unsigned long i2,
+                                         const unsigned long i3,
+                                         const su2double     *coor,
+                                         su2double           &r,
+                                         su2double           &s,
+                                         su2double           &dist2Quad) {
 
   /* Definition of the maximum number of iterations in the iterative solver
      and the tolerance level. */
