@@ -6205,7 +6205,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   
   unsigned short nVar_Restart = nVar;
   if ((!energy) && (!weakly_coupled_heat)) nVar_Restart--;
-
+  Solution[nVar-1] = GetTemperature_Inf();
+  
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -6235,10 +6236,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     iPoint_Local = geometry[MESH_0]->GetGlobal_to_Local_Point(iPoint_Global);
 
     if (iPoint_Local > -1) {
-
-      /*--- Initialize the solution to zero, in case we don't have energy. ---*/
-      
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = 0.0;
 
       /*--- We need to store this point's data, so jump to the correct
        offset in the buffer of data from the restart file and load it. ---*/
