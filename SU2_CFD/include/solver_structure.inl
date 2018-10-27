@@ -45,8 +45,6 @@ inline void CSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive(CGeometry *geometry, CConfig *config) { }
 
-//inline void CSolver::Set_MPI_Secondary(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config) { }
@@ -57,17 +55,11 @@ inline void CSolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *con
 
 inline void CSolver::Set_MPI_RefGeom(CGeometry *geometry, CConfig *config) { }
 
-inline void CSolver::Set_MPI_CrossTerm(CGeometry *geometry, CConfig *config) { }
-
-inline void CSolver::Set_MPI_CrossTerm_Geometry(CGeometry *geometry, CConfig *config) { }
-
 inline void CSolver::Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config) { }
-
-//inline void CSolver::Set_MPI_Secondary_Limiter(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) { }
 
