@@ -52,11 +52,11 @@
 using namespace std;
 
 /*! 
- * \class su2_adtComparePointClass
+ * \class CADTComparePointClass
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
  */
-class su2_adtComparePointClass {
+class CADTComparePointClass {
 private:
   const su2double      *pointCoor;      /*!< \brief Pointer to the coordinates of the points. */
   const unsigned short splitDirection;  /*!< \brief Split direction used in the sorting. */
@@ -69,13 +69,13 @@ public:
    * \param[in] splitDir  Direction that must be used to sort the coordinates.
    * \param[in] nDimADT   Number of spatial dimensions of the ADT and coordinates.
    */
-  su2_adtComparePointClass(const su2double      *coor,
-                           const unsigned short splitDir,
-                           const unsigned short nDimADT);
+  CADTComparePointClass(const su2double      *coor,
+                        const unsigned short splitDir,
+                        const unsigned short nDimADT);
   /*!
    * \brief Destructor, nothing to be done.
    */
-  ~su2_adtComparePointClass();
+  ~CADTComparePointClass();
 
   /*!
    * \brief Operator used for the sorting of the points.
@@ -88,17 +88,17 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  su2_adtComparePointClass();
+  CADTComparePointClass();
 };
 
 /*! 
- * \class su2_BBoxTargetClass
+ * \class CBBoxTargetClass
  * \brief  Class for storing the information of a possible bounding box candidate
            during a minimum distance search.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class su2_BBoxTargetClass {
+class CBBoxTargetClass {
 public:
   unsigned long boundingBoxID;      /*!< \brief Corresponding bounding box ID. */
   su2double     possibleMinDist2;   /*!< \brief Possible minimimum distance squared to the
@@ -109,12 +109,12 @@ public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  su2_BBoxTargetClass();
+  CBBoxTargetClass();
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_BBoxTargetClass();
+  ~CBBoxTargetClass();
 
   /*!
    * \brief Constructor of the class, which initializes the member variables.
@@ -124,27 +124,27 @@ public:
    * \param[in] val_guarDist2 - Guaranteed minimum distance squared to the target
                                 for this bounding box.
    */
-  su2_BBoxTargetClass(const unsigned long val_BBoxID,
-                      const su2double     val_posDist2,
-                      const su2double     val_guarDist2);
+  CBBoxTargetClass(const unsigned long val_BBoxID,
+                   const su2double     val_posDist2,
+                   const su2double     val_guarDist2);
 
   /*!
    * \brief Copy constructor of the class.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_BBoxTargetClass(const su2_BBoxTargetClass &other);
+  CBBoxTargetClass(const CBBoxTargetClass &other);
 
   /*!
    * \brief Assignment operator.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_BBoxTargetClass& operator=(const su2_BBoxTargetClass &other);
+  CBBoxTargetClass& operator=(const CBBoxTargetClass &other);
 
   /*!
    * \brief Less than operator. Needed for the sorting of the candidates.
    * \param[in] other  Object to which the current object must be compared.
    */
-  bool operator <(const su2_BBoxTargetClass &other) const;
+  bool operator <(const CBBoxTargetClass &other) const;
 
 private:
 
@@ -152,15 +152,15 @@ private:
    * \brief Copy function, which copies the data from the given object.
    * \param[in] other  Object from which the data must be copied.
    */
-  void Copy(const su2_BBoxTargetClass &other);
+  void Copy(const CBBoxTargetClass &other);
 };
 
 /*! 
- * \class su2_adtNodeClass
+ * \class CADTNodeClass
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
  */
-class su2_adtNodeClass {
+class CADTNodeClass {
 public:
   bool          childrenAreTerminal[2];  /*!< \brief Whether or not the child leaves are terminal. */
   unsigned long children[2];             /*!< \brief Child leaves. If childrenAreTerminal is true the children
@@ -176,24 +176,24 @@ public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  su2_adtNodeClass();
+  CADTNodeClass();
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_adtNodeClass();
+  ~CADTNodeClass();
 
   /*!
    * \brief Copy constructor of the class.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_adtNodeClass(const su2_adtNodeClass &other);
+  CADTNodeClass(const CADTNodeClass &other);
 
   /*!
    * \brief Assignment operator.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_adtNodeClass& operator=(const su2_adtNodeClass &other);
+  CADTNodeClass& operator=(const CADTNodeClass &other);
 
 private:
 
@@ -201,21 +201,21 @@ private:
    * \brief Copy function, which copies the data from the given object.
    * \param[in] other  Object from which the data must be copied.
    */
-  void Copy(const su2_adtNodeClass &other);
+  void Copy(const CADTNodeClass &other);
 };
 
 /*! 
- * \class su2_adtBaseClass
+ * \class CADTBaseClass
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
  */
-class su2_adtBaseClass {
+class CADTBaseClass {
 protected:
   unsigned long nLeaves;    /*!< \brief Number of leaves in the ADT. */
   unsigned short nDimADT;   /*!< \brief Number of dimensions of the ADT. */
   bool           isEmpty;   /*!< \brief Whether or not the ADT is empty. */
 
-  vector<su2_adtNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
+  vector<CADTNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
 
   vector<unsigned long> frontLeaves;    /*!< \brief Vector used in the tree traversal. */
   vector<unsigned long> frontLeavesNew; /*!< \brief Vector used in the tree traversal. */
@@ -229,12 +229,12 @@ protected:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  su2_adtBaseClass();
+  CADTBaseClass();
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  virtual ~su2_adtBaseClass();  
+  virtual ~CADTBaseClass();  
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -257,20 +257,20 @@ private:
   /*!
    * \brief Copy constructor of the class, disabled.
    */
-  su2_adtBaseClass(const su2_adtBaseClass &);
+  CADTBaseClass(const CADTBaseClass &);
 
   /*!
    * \brief Assignment operator, disabled.
    */
-  su2_adtBaseClass& operator=(const su2_adtBaseClass &);
+  CADTBaseClass& operator=(const CADTBaseClass &);
 };
 
 /*! 
- * \class su2_adtPointsOnlyClass
+ * \class CADTPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
  */
-class su2_adtPointsOnlyClass : public su2_adtBaseClass {
+class CADTPointsOnlyClass : public CADTBaseClass {
 private:
   vector<su2double>     coorPoints;    /*!< \brief Vector, which contains the coordinates
                                                    of the points in the ADT. */
@@ -288,16 +288,16 @@ public:
    * \param[in] globalTree Whether or not a global tree must be built. If false
                            a local ADT is built.
    */
-  su2_adtPointsOnlyClass(unsigned short nDim,
-                         unsigned long  nPoints,
-                         su2double      *coor,
-                         unsigned long  *pointID,
-                         const bool     globalTree);
+  CADTPointsOnlyClass(unsigned short nDim,
+                      unsigned long  nPoints,
+                      su2double      *coor,
+                      unsigned long  *pointID,
+                      const bool     globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_adtPointsOnlyClass();
+  ~CADTPointsOnlyClass();
 
   /*!
    * \brief Function, which determines the nearest node in the ADT for the
@@ -315,26 +315,26 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  su2_adtPointsOnlyClass();
+  CADTPointsOnlyClass();
 
   /*!
    * \brief Copy constructor of the class, disabled.
    */
-  su2_adtPointsOnlyClass(const su2_adtPointsOnlyClass &);
+  CADTPointsOnlyClass(const CADTPointsOnlyClass &);
 
   /*!
    * \brief Assignment operator, disabled.
    */
-  su2_adtPointsOnlyClass& operator=(const su2_adtPointsOnlyClass &);
+  CADTPointsOnlyClass& operator=(const CADTPointsOnlyClass &);
 };
 
 /*! 
- * \class su2_adtElemClass
+ * \class CADTElemClass
  * \brief  Class for storing an ADT of (linear) elements in an arbitrary number of dimensions.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class su2_adtElemClass : public su2_adtBaseClass {
+class CADTElemClass : public CADTBaseClass {
 private:
   unsigned short nDim; /*!< \brief Number of spatial dimensions. */
 
@@ -357,9 +357,9 @@ private:
   vector<int>           ranksOfElems;  /*!< \brief Vector, which contains the ranks
                                                     of the elements in the ADT. */
 
-  vector<su2_BBoxTargetClass> BBoxTargets; /*!< \brief Vector, used to store possible bounding
-                                                       box candidates during the nearest element
-                                                       search. */
+  vector<CBBoxTargetClass> BBoxTargets; /*!< \brief Vector, used to store possible bounding
+                                                    box candidates during the nearest element
+                                                    search. */
 public:
   /*!
    * \brief Constructor of the class.
@@ -374,18 +374,18 @@ public:
    * \param[in]     globalTree   Whether or not a global tree must be built. If false
                                  a local ADT is built.
    */
-  su2_adtElemClass(unsigned short         val_nDim,
-                   vector<su2double>      &val_coor,
-                   vector<unsigned long>  &val_connElem,
-                   vector<unsigned short> &val_VTKElem,
-                   vector<unsigned short> &val_markerID,
-                   vector<unsigned long>  &val_elemID,
-                   const bool             globalTree);
+  CADTElemClass(unsigned short         val_nDim,
+                vector<su2double>      &val_coor,
+                vector<unsigned long>  &val_connElem,
+                vector<unsigned short> &val_VTKElem,
+                vector<unsigned short> &val_markerID,
+                vector<unsigned long>  &val_elemID,
+                const bool             globalTree);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_adtElemClass();
+  ~CADTElemClass();
 
   /*!
    * \brief Function, which determines the element that contains the given
@@ -662,17 +662,17 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  su2_adtElemClass();
+  CADTElemClass();
 
   /*!
    * \brief Copy constructor of the class, disabled.
    */
-  su2_adtElemClass(const su2_adtElemClass &);
+  CADTElemClass(const CADTElemClass &);
 
   /*!
    * \brief Assignment operator, disabled.
    */
-  su2_adtElemClass& operator=(const su2_adtElemClass &);
+  CADTElemClass& operator=(const CADTElemClass &);
 };
 
 #include "adt_structure.inl"
