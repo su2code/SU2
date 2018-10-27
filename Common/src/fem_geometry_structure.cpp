@@ -2050,8 +2050,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       }
 
       /* Create a local ADT of the points on the periodic boundary. */
-      su2_adtPointsOnlyClass periodicADT(nDim, IDsPoints.size(), coordPoints.data(),
-                                         IDsPoints.data(), false);
+      CADTPointsOnlyClass periodicADT(nDim, IDsPoints.size(), coordPoints.data(),
+                                      IDsPoints.data(), false);
 
       /* Get the data for the periodic transformation to the donor. */
       su2double *center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(perIndex));
@@ -6266,8 +6266,8 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
   }
 
   /* Build the local ADT. */
-  su2_adtElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                                  subElementIDInParent, parentElement, false);
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
