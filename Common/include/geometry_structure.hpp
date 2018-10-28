@@ -127,11 +127,11 @@ private:
 };
 
 /*!
- * \class FaceOfElementClass
+ * \class CFaceOfElement
  * \brief Class used in the partitioning of the FEM grid as well as the building of
           the faces of DG. It stores a face of an element.
  */
-class FaceOfElementClass {
+class CFaceOfElement {
 public:
   unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
   unsigned long  cornerPoints[4];        /*!< \brief Global ID's of ther corner points. */
@@ -156,24 +156,24 @@ public:
                                                      of the face. If false, element 1 is the owner. */
 
   /* Standard constructor and destructor. */
-  FaceOfElementClass();
-  ~FaceOfElementClass(){}
+  CFaceOfElement();
+  ~CFaceOfElement(){}
 
   /* Alternative constructor to set the corner points. */
-  FaceOfElementClass(const unsigned short VTK_Type,
-                     const unsigned short nPoly,
-                     const unsigned long  *Nodes);
+  CFaceOfElement(const unsigned short VTK_Type,
+                 const unsigned short nPoly,
+                 const unsigned long  *Nodes);
 
   /* Copy constructor and assignment operator. */
-  FaceOfElementClass(const FaceOfElementClass &other);
+  CFaceOfElement(const CFaceOfElement &other);
 
-  FaceOfElementClass& operator=(const FaceOfElementClass &other);
+  CFaceOfElement& operator=(const CFaceOfElement &other);
 
   /* Less than operator. Needed for the sorting and searching. */
-  bool operator<(const FaceOfElementClass &other) const;
+  bool operator<(const CFaceOfElement &other) const;
 
   /* Equal operator. Needed for removing double entities. */
-  bool operator ==(const FaceOfElementClass &other) const;
+  bool operator ==(const CFaceOfElement &other) const;
 
   /*--- Member function, which creates a unique numbering for the corner points.
         A sort in increasing order is OK for this purpose.                       ---*/
@@ -185,42 +185,42 @@ public:
 
 private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const FaceOfElementClass &other);
+  void Copy(const CFaceOfElement &other);
 };
 
 /*!
- * \class BoundaryFaceClass
+ * \class CBoundaryFace
  * \brief Help class used in the partitioning of the FEM grid.
           It stores a boundary element.
  */
-class BoundaryFaceClass {
+class CBoundaryFace {
  public:
   unsigned short VTK_Type, nPolyGrid, nDOFsGrid;
   unsigned long  globalBoundElemID, domainElementID;
   vector<unsigned long>  Nodes;
 
   /* Standard constructor and destructor. Nothing to be done. */
-  BoundaryFaceClass(){}
-  ~BoundaryFaceClass(){}
+  CBoundaryFace(){}
+  ~CBoundaryFace(){}
 
   /* Copy constructor and assignment operator. */
-  BoundaryFaceClass(const BoundaryFaceClass &other);
+  CBoundaryFace(const CBoundaryFace &other);
 
-  BoundaryFaceClass& operator=(const BoundaryFaceClass &other);
+  CBoundaryFace& operator=(const CBoundaryFace &other);
 
   /* Less than operator. Needed for the sorting. */
-  bool operator<(const BoundaryFaceClass &other) const;
+  bool operator<(const CBoundaryFace &other) const;
 
 private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const BoundaryFaceClass &other);
+  void Copy(const CBoundaryFace &other);
 };
 
 /*!
- * \class MatchingFaceClass
+ * \class CMatchingFace
  * \brief Help class used to determine whether or not (periodic) faces match.
  */
-class MatchingFaceClass {
+class CMatchingFace {
 public:
   unsigned short nCornerPoints;          /*!< \brief Number of corner points of the face. */
   unsigned short nDim;                   /*!< \brief Number of spatial dimensions. */
@@ -232,25 +232,25 @@ public:
   su2double tolForMatching;              /*!< \brief Tolerance for this face for matching points. */
 
   /* Standard constructor. */
-  MatchingFaceClass();
+  CMatchingFace();
 
   /* Destructor, nothing to be done. */
-  ~MatchingFaceClass(){}
+  ~CMatchingFace(){}
 
   /* Copy constructor and assignment operator. */
-  MatchingFaceClass(const MatchingFaceClass &other);
+  CMatchingFace(const CMatchingFace &other);
 
-  MatchingFaceClass& operator=(const MatchingFaceClass &other);
+  CMatchingFace& operator=(const CMatchingFace &other);
 
   /* Less than operator. Needed for the sorting and searching. */
-  bool operator<(const MatchingFaceClass &other) const;
+  bool operator<(const CMatchingFace &other) const;
 
   /*--- Member function, which sorts the coordinates of the face. ---*/
   void SortFaceCoordinates(void);
 
 private:
   /*--- Copy function, which copies the data of the given object into the current object. ---*/
-  void Copy(const MatchingFaceClass &other);
+  void Copy(const CMatchingFace &other);
 };
 
 /*!
@@ -2032,8 +2032,8 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
   void ComputeFEMGraphWeights(
-              CConfig                                  *config,
-              const vector<FaceOfElementClass>          &localFaces,
+              CConfig                                   *config,
+              const vector<CFaceOfElement>              &localFaces,
               const vector<vector<unsigned long> >      &adjacency,
               const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
                     vector<su2double>                   &vwgt,
@@ -2058,8 +2058,8 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in]     config      - Definition of the particular problem.
    * \param[in,out] localFaces  - Vector, which contains the element faces of this rank.
    */
-  void DeterminePeriodicFacesFEMGrid(CConfig                    *config,
-                                     vector<FaceOfElementClass> &localFaces);
+  void DeterminePeriodicFacesFEMGrid(CConfig                *config,
+                                     vector<CFaceOfElement> &localFaces);
 
   /*!
    * \brief Determine the time level of the elements when time accurate
@@ -2071,7 +2071,7 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
                                                 their time level and number of DOFs.
    */
   void DetermineTimeLevelElements(CConfig                             *config,
-                                  const vector<FaceOfElementClass>    &localFaces,
+                                  const vector<CFaceOfElement>        &localFaces,
                                   map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!

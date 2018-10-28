@@ -13211,13 +13211,13 @@ protected:
   unsigned short nStandardElementsSol;      /*!< \brief Number of standard volume elements used for solution of the DG solver. */
   unsigned short nStandardMatchingFacesSol; /*!< \brief Number of standard matching internal faces used for solution of the DG solver. */
 
-  const FEMStandardBoundaryFaceClass *standardBoundaryFacesSol; /*!< \brief Array that contains the standard boundary
-                                                                 faces used for the solution of the DG solver. */
-  const FEMStandardElementClass *standardElementsSol; /*!< \brief Array that contains the standard volume elements
-                                                       used for the solution of the DG solver. */
-  const FEMStandardInternalFaceClass *standardMatchingFacesSol;  /*!< \brief Array that contains the standard matching
-                                                                  internal faces used for the solution of
-                                                                  the DG solver. */
+  const CFEMStandardBoundaryFace *standardBoundaryFacesSol; /*!< \brief Array that contains the standard boundary
+                                                                        faces used for the solution of the DG solver. */
+  const CFEMStandardElement *standardElementsSol; /*!< \brief Array that contains the standard volume elements
+                                                              used for the solution of the DG solver. */
+  const CFEMStandardInternalFace *standardMatchingFacesSol;  /*!< \brief Array that contains the standard matching
+                                                                         internal faces used for the solution of
+                                                                         the DG solver. */
 
   const su2double *timeCoefADER_DG;                        /*!< \brief The time coefficients in the iteration matrix of
                                                                        the ADER-DG predictor step. */

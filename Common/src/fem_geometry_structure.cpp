@@ -38,7 +38,7 @@ extern "C" void dpotrf_(char *, int*, passivedouble*, int*, int*);
 extern "C" void dpotri_(char *, int*, passivedouble*, int*, int*);
 #endif
 
-bool long3T::operator<(const long3T &other) const {
+bool CLong3T::operator<(const CLong3T &other) const {
   if(long0 != other.long0) return (long0 < other.long0);
   if(long1 != other.long1) return (long1 < other.long1);
   if(long2 != other.long2) return (long2 < other.long2);
@@ -46,18 +46,18 @@ bool long3T::operator<(const long3T &other) const {
   return false;
 }
 
-void long3T::Copy(const long3T &other) {
+void CLong3T::Copy(const CLong3T &other) {
   long0 = other.long0;
   long1 = other.long1;
   long2 = other.long2;
 }
 
-CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID,
-                                           const unsigned short val_TimeLevel,
-                                           const bool           val_CommSolution,
-                                           const unsigned short val_VTK_Type,
-                                           const unsigned short val_nPolySol,
-                                           const bool           val_JacConstant) {
+CReorderElements::CReorderElements(const unsigned long  val_GlobalElemID,
+                                   const unsigned short val_TimeLevel,
+                                   const bool           val_CommSolution,
+                                   const unsigned short val_VTK_Type,
+                                   const unsigned short val_nPolySol,
+                                   const bool           val_JacConstant) {
 
   /* Copy the global elment ID, time level and whether or not this element
      must be communicated. */
@@ -74,7 +74,7 @@ CReorderElementClass::CReorderElementClass(const unsigned long  val_GlobalElemID
   if( !val_JacConstant ) elemType += 50;
 }
 
-bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
+bool CReorderElements::operator< (const CReorderElements &other) const {
 
   /* Elements with the lowest time level are stored first. */
   if(timeLevel != other.timeLevel) return timeLevel < other.timeLevel;
@@ -93,15 +93,15 @@ bool CReorderElementClass::operator< (const CReorderElementClass &other) const {
   return globalElemID < other.globalElemID;
 }
 
-void CReorderElementClass::Copy(const CReorderElementClass &other) {
+void CReorderElements::Copy(const CReorderElements &other) {
   globalElemID = other.globalElemID;
   timeLevel    = other.timeLevel;
   commSolution = other.commSolution;
   elemType     = other.elemType;
 }
 
-bool SortFacesClass::operator()(const FaceOfElementClass &f0,
-                                const FaceOfElementClass &f1) {
+bool CSortFaces::operator()(const CFaceOfElement &f0,
+                            const CFaceOfElement &f1) {
 
   /*--- Comparison in case both faces are boundary faces. ---*/
   if(f0.faceIndicator >= 0 && f1.faceIndicator >= 0) {
@@ -194,8 +194,8 @@ bool SortFacesClass::operator()(const FaceOfElementClass &f0,
   return f0.faceIndicator > f1.faceIndicator;
 }
 
-bool SortBoundaryFacesClass::operator()(const CSurfaceElementFEM &f0,
-                                        const CSurfaceElementFEM &f1) {
+bool CSortBoundaryFaces::operator()(const CSurfaceElementFEM &f0,
+                                    const CSurfaceElementFEM &f1) {
 
   /* First sorting criterion is the index of the standard element. The
      boundary faces should be sorted per standard element. Note that the
@@ -655,11 +655,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         unsignedLong2T is used for this purpose, such that a possible periodic
         transformation can be taken into account. Neighbors with a periodic
         transformation will always become a halo element, even if the element
-        is stored on this rank. Furthermore a vector of CReorderElementClass
+        is stored on this rank. Furthermore a vector of CReorderElements
         is created for the owned elements to be able to reorder the elements,
         see step 2 below. ---*/
   vector<unsignedLong2T> haloElements;
-  vector<CReorderElementClass> ownedElements;
+  vector<CReorderElements> ownedElements;
   unsigned short maxTimeLevelLoc = 0;
 
   for(int i=0; i<nRankRecv; ++i) {
@@ -729,8 +729,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       }
 
       /* Store the required data for this element in ownedElements. */
-      ownedElements.push_back(CReorderElementClass(globalID, timeLevel, commSol,
-                                                   VTK_Type, nPolySol, JacConstant));
+      ownedElements.push_back(CReorderElements(globalID, timeLevel, commSol,
+                                               VTK_Type, nPolySol, JacConstant));
     }
 
     /* Skip the part with the node numbers. */
@@ -1015,17 +1015,17 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<nRankRecv; ++i)
     vector<long>().swap(longSendBuf[i]);
 
-  /* Copy the data from the receive buffers into a class of long3T, such that
+  /* Copy the data from the receive buffers into a class of CLong3T, such that
      it can be sorted in increasing order. Note that the rank of the element
      is stored first, followed by its global ID and last the periodic index. */
-  vector<long3T> haloData;
+  vector<CLong3T> haloData;
   for(int i=0; i<nRankSend; ++i) {
     const long nElemBuf = longSecondRecvBuf[i].size()/3;
 
     for(long j=0; j<nElemBuf; ++j) {
       const long j3 = 3*j;
-      haloData.push_back(long3T(longSecondRecvBuf[i][j3+2], longSecondRecvBuf[i][j3],
-                                longSecondRecvBuf[i][j3+1]));
+      haloData.push_back(CLong3T(longSecondRecvBuf[i][j3+2], longSecondRecvBuf[i][j3],
+                                 longSecondRecvBuf[i][j3+1]));
     }
 
     /* Release the memory of this receive buffer. */
@@ -1196,8 +1196,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Determine the number of different element types present. */
   map<unsigned short, unsigned short> mapElemTypeToInd;
-  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
-                                             OEI!=ownedElements.end(); ++OEI) {
+  for(vector<CReorderElements>::iterator OEI =ownedElements.begin();
+                                         OEI!=ownedElements.end(); ++OEI) {
     const unsigned short elType = OEI->GetElemType();
 
     if(mapElemTypeToInd.find(elType) == mapElemTypeToInd.end()) {
@@ -1223,8 +1223,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
-                                             OEI!=ownedElements.end(); ++OEI) {
+  for(vector<CReorderElements>::iterator OEI =ownedElements.begin();
+                                         OEI!=ownedElements.end(); ++OEI) {
     const unsigned short elType = OEI->GetElemType();
     map<unsigned short, unsigned short>::const_iterator MI = mapElemTypeToInd.find(elType);
     unsigned short ind = MI->second +1;
@@ -1238,8 +1238,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /* Loop again over the owned elements and check if elements, which do not
      have to send their solution, should be flagged as such in order to improve
      the gemm performance. */
-  for(vector<CReorderElementClass>::iterator OEI =ownedElements.begin();
-                                             OEI!=ownedElements.end(); ++OEI) {
+  for(vector<CReorderElements>::iterator OEI =ownedElements.begin();
+                                         OEI!=ownedElements.end(); ++OEI) {
 
     /* Check for an internal element, i.e. an element for which the solution
        does not need to be communicated. */
@@ -1835,8 +1835,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /*--- The halo elements must be sorted first based on the time level, followed
         by the rank and finally the index in the receive buffers (which represents
         the sequence on the sending rank. This sorting can be accomplished by
-        using a vector of long3T. The contents of this vector is build below. ---*/
-  vector<long3T> haloElemInfo;
+        using a vector of CLong3T. The contents of this vector is build below. ---*/
+  vector<CLong3T> haloElemInfo;
   haloElemInfo.reserve(nVolElemTot - nVolElemOwned);
 
   for(int i=0; i<nRankSend; ++i) {
@@ -1844,7 +1844,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
       const unsigned short nFaces = shortRecvBuf[i][indS+6];
-      haloElemInfo.push_back(long3T(shortRecvBuf[i][indS+7], sourceRank[i], j));
+      haloElemInfo.push_back(CLong3T(shortRecvBuf[i][indS+7], sourceRank[i], j));
       indS += nFaces + 8;
     }
   }
@@ -1862,11 +1862,11 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     /* Loop over the halo elements received from this rank. */
     for(long j=0; j<longRecvBuf[i][0]; ++j) {
 
-      /* Create an object of long3T and search for its position
+      /* Create an object of CLong3T and search for its position
          in haloElemInfo to determine the index in volElem, where
          this element is stored. */
-      long3T thisElem(shortRecvBuf[i][indS+7], sourceRank[i], j);
-      vector<long3T>::iterator low;
+      CLong3T thisElem(shortRecvBuf[i][indS+7], sourceRank[i], j);
+      vector<CLong3T>::iterator low;
       low = lower_bound(haloElemInfo.begin(), haloElemInfo.end(), thisElem);
 
       unsigned long indV = low - haloElemInfo.begin();
@@ -2669,7 +2669,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*---------------------------------------------------------------------------*/
 
   /*--- Loop over the volume elements stored on this rank, including the halos. ---*/
-  vector<FaceOfElementClass> localFaces;
+  vector<CFaceOfElement> localFaces;
 
   for(unsigned long k=0; k<nVolElemTot; ++k) {
 
@@ -2683,7 +2683,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
     /* Loop over the faces of this element, set the appropriate information,
        create a unique numbering and add the faces to localFaces. */
     for(unsigned short i=0; i<nFaces; ++i) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
@@ -2793,8 +2793,8 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
         boundaries[iMarker].surfElem[k].GetCornerPointsFace(nPointsPerFace, faceConn);
 
-        /* Create an object of FaceOfElementClass to carry out the search. */
-        FaceOfElementClass thisFace;
+        /* Create an object of CFaceOfElement to carry out the search. */
+        CFaceOfElement thisFace;
         thisFace.nCornerPoints = nPointsPerFace;
         for(unsigned short j=0; j<nPointsPerFace; ++j)
           thisFace.cornerPoints[j] = faceConn[j];
@@ -2802,7 +2802,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
         /* Search for thisFace in localFaces. It must be found. */
         if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-          vector<FaceOfElementClass>::iterator low;
+          vector<CFaceOfElement>::iterator low;
           low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
           low->faceIndicator = iMarker;
 
@@ -2836,7 +2836,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /*--- Remove the invalid faces. This is accomplished by giving the face four
         points and global node ID's that are larger than the largest local point
         ID in the grid. In this way the sorting operator puts these faces at the
-        end of the vector, see also the < operator of FaceOfElementClass. ---*/
+        end of the vector, see also the < operator of CFaceOfElement. ---*/
   unsigned long nFacesLoc = localFaces.size();
   for(unsigned long i=0; i<localFaces.size(); ++i) {
     if(localFaces[i].faceIndicator == -2) {
@@ -2863,11 +2863,11 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
   /* Sort localFaces again, but now such that the boundary faces are numbered
      first, followed by the matching faces and at the end of localFaces the
      non-matching faces are stored. In order to carry out this sorting the
-     functor SortFacesClass is used for comparison. Within the categories
+     functor CSortFaces is used for comparison. Within the categories
      the sorting depends on the time levels of the adjacent volume elements
      of the face. */
   sort(localFaces.begin(), localFaces.end(),
-       SortFacesClass(nVolElemOwned, nVolElemTot, volElem.data()));
+       CSortFaces(nVolElemOwned, nVolElemTot, volElem.data()));
 
   /*--- Carry out a possible swap of side 0 and side 1 of the faces. This is
         done for the following reasons (in order of importance).
@@ -3200,26 +3200,26 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       /* Create the new standard elements if no match was found. */
       if(j == standardMatchingFacesSol.size()) {
 
-        standardMatchingFacesSol.push_back(FEMStandardInternalFaceClass(VTK_Type,
-                                                                        localFaces[i].elemType0,
-                                                                        localFaces[i].nPolySol0,
-                                                                        localFaces[i].elemType1,
-                                                                        localFaces[i].nPolySol1,
-                                                                        localFaces[i].JacFaceIsConsideredConstant,
-                                                                        swapFaceInElementSide0,
-                                                                        swapFaceInElementSide1,
-                                                                        config) );
+        standardMatchingFacesSol.push_back(CFEMStandardInternalFace(VTK_Type,
+                                                                    localFaces[i].elemType0,
+                                                                    localFaces[i].nPolySol0,
+                                                                    localFaces[i].elemType1,
+                                                                    localFaces[i].nPolySol1,
+                                                                    localFaces[i].JacFaceIsConsideredConstant,
+                                                                    swapFaceInElementSide0,
+                                                                    swapFaceInElementSide1,
+                                                                    config) );
 
-        standardMatchingFacesGrid.push_back(FEMStandardInternalFaceClass(VTK_Type,
-                                                                         localFaces[i].elemType0,
-                                                                         localFaces[i].nPolyGrid0,
-                                                                         localFaces[i].elemType1,
-                                                                         localFaces[i].nPolyGrid1,
-                                                                         localFaces[i].JacFaceIsConsideredConstant,
-                                                                         swapFaceInElementSide0,
-                                                                         swapFaceInElementSide1,
-                                                                         config,
-                                                                         standardMatchingFacesSol[j].GetOrderExact()) );
+        standardMatchingFacesGrid.push_back(CFEMStandardInternalFace(VTK_Type,
+                                                                     localFaces[i].elemType0,
+                                                                     localFaces[i].nPolyGrid0,
+                                                                     localFaces[i].elemType1,
+                                                                     localFaces[i].nPolyGrid1,
+                                                                     localFaces[i].JacFaceIsConsideredConstant,
+                                                                     swapFaceInElementSide0,
+                                                                     swapFaceInElementSide1,
+                                                                     config,
+                                                                     standardMatchingFacesSol[j].GetOrderExact()) );
         matchingFaces[ii].indStandardElement = j;
       }
 
@@ -3308,7 +3308,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
 
       /* Determine the end index for this marker in localFaces. Note that
          localFaces is sorted such that the boundary faces are first and
-         also grouped per boundary, see the functor SortFacesClass. */
+         also grouped per boundary, see the functor CSortFaces. */
       unsigned long indEndMarker = indBegMarker;
       for(; indEndMarker<localFaces.size(); ++indEndMarker) {
         if(localFaces[indEndMarker].faceIndicator != (short) iMarker) break;
@@ -3415,20 +3415,20 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
         /* Create the new standard elements if no match was found. */
         if(j == standardBoundaryFacesSol.size()) {
 
-          standardBoundaryFacesSol.push_back(FEMStandardBoundaryFaceClass(VTK_Type,
-                                                                          localFaces[i].elemType0,
-                                                                          localFaces[i].nPolySol0,
-                                                                          localFaces[i].JacFaceIsConsideredConstant,
-                                                                          swapFaceInElement,
-                                                                          config) );
+          standardBoundaryFacesSol.push_back(CFEMStandardBoundaryFace(VTK_Type,
+                                                                      localFaces[i].elemType0,
+                                                                      localFaces[i].nPolySol0,
+                                                                      localFaces[i].JacFaceIsConsideredConstant,
+                                                                      swapFaceInElement,
+                                                                      config) );
 
-          standardBoundaryFacesGrid.push_back(FEMStandardBoundaryFaceClass(VTK_Type,
-                                                                           localFaces[i].elemType0,
-                                                                           localFaces[i].nPolyGrid0,
-                                                                           localFaces[i].JacFaceIsConsideredConstant,
-                                                                           swapFaceInElement,
-                                                                           config,
-                                                                           standardBoundaryFacesSol[j].GetOrderExact()) );
+          standardBoundaryFacesGrid.push_back(CFEMStandardBoundaryFace(VTK_Type,
+                                                                       localFaces[i].elemType0,
+                                                                       localFaces[i].nPolyGrid0,
+                                                                       localFaces[i].JacFaceIsConsideredConstant,
+                                                                       swapFaceInElement,
+                                                                       config,
+                                                                       standardBoundaryFacesSol[j].GetOrderExact()) );
           surfElem[ii].indStandardElement = j;
         }
       }
@@ -3448,7 +3448,7 @@ void CMeshFEM_DG::CreateFaces(CConfig *config) {
       for(unsigned short i=0; i<nTimeLevels; ++i)
         sort(surfElem.begin()+boundaries[iMarker].nSurfElem[i],
              surfElem.begin()+boundaries[iMarker].nSurfElem[i+1],
-             SortBoundaryFacesClass());
+             CSortBoundaryFaces());
     }
   }
 }
@@ -3481,19 +3481,19 @@ void CMeshFEM_DG::CreateStandardVolumeElements(CConfig *config) {
     /* Create the new standard elements if no match was found. */
     if(j == standardElementsSol.size()) {
 
-      standardElementsSol.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
-                                                            volElem[i].nPolySol,
-                                                            volElem[i].JacIsConsideredConstant,
-                                                            config) );
+      standardElementsSol.push_back(CFEMStandardElement(volElem[i].VTK_Type,
+                                                        volElem[i].nPolySol,
+                                                        volElem[i].JacIsConsideredConstant,
+                                                        config) );
 
-      standardElementsGrid.push_back(FEMStandardElementClass(volElem[i].VTK_Type,
-                                                             volElem[i].nPolyGrid,
-                                                             volElem[i].JacIsConsideredConstant,
-                                                             config,
-                                                             standardElementsSol[j].GetOrderExact(),
-                                                             standardElementsSol[j].GetRDOFs(),
-                                                             standardElementsSol[j].GetSDOFs(),
-                                                             standardElementsSol[j].GetTDOFs()) );
+      standardElementsGrid.push_back(CFEMStandardElement(volElem[i].VTK_Type,
+                                                         volElem[i].nPolyGrid,
+                                                         volElem[i].JacIsConsideredConstant,
+                                                         config,
+                                                         standardElementsSol[j].GetOrderExact(),
+                                                         standardElementsSol[j].GetRDOFs(),
+                                                         standardElementsSol[j].GetSDOFs(),
+                                                         standardElementsSol[j].GetTDOFs()) );
       volElem[i].indStandardElement = j;
     }
   }
@@ -5873,7 +5873,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 #else
       /* No support for Lapack. Hence an internal routine is used.
          This does not do all the checking the Lapack routines do. */
-      FEMStandardElementBaseClass::InverseMatrix(nDOFs, massMat);
+      CFEMStandardElementBase::InverseMatrix(nDOFs, massMat);
 #endif
       /* Store the inverse of the mass matrix in volElem[i]. */
       volElem[i].invMassMatrix = massMat;
@@ -5898,7 +5898,7 @@ void CMeshFEM_DG::TimeCoefficientsPredictorADER_DG(CConfig *config) {
   for(unsigned short i=0; i<nTimeDOFs; ++i) rTimeDOFs[i] = TimeDOFs[i];
 
   vector<su2double> V(nTimeDOFs*nTimeDOFs);
-  FEMStandardElementBaseClass timeElement;
+  CFEMStandardElementBase timeElement;
   timeElement.Vandermonde1D(nTimeDOFs, rTimeDOFs, V);
 
   vector<su2double> VInv = V;
