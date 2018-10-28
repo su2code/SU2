@@ -96,6 +96,14 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
 
   MeanReynoldsStress  = NULL; 
   MeanPerturbedRSM    = NULL;
+  A_ij                = NULL;
+  Eig_Vec             = NULL;
+  New_Eig_Vec         = NULL;
+  newA_ij             = NULL;
+  Corners             = NULL;
+  Eig_Val             = NULL;
+  Barycentric_Coord   = NULL;
+  New_Coord           = NULL;    
  
   nDim = val_nDim;
   nVar = val_nVar;
@@ -157,14 +165,29 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
   
   Dissipation_ij = 1.0;
 
-  if (config->GetUsing_UQ()){
-      MeanReynoldsStress = new su2double* [3];
-      MeanPerturbedRSM = new su2double* [3];
-      for (unsigned short iDim = 0; iDim < 3; iDim++){
-          MeanReynoldsStress[iDim] = new su2double [3];
-          MeanPerturbedRSM[iDim] = new su2double [3];
-
-      }
+  /* --- Initializing variables for the UQ methodology --- */
+  using_uq = config->GetUsing_UQ();
+  if (using_uq){
+    MeanReynoldsStress  = new su2double* [3];
+    MeanPerturbedRSM    = new su2double* [3];
+    A_ij                = new su2double* [3];          
+    newA_ij             = new su2double* [3];
+    Eig_Vec             = new su2double* [3];
+    New_Eig_Vec         = new su2double* [3];
+    Corners             = new su2double* [3];
+    Eig_Val             = new su2double [3];
+    Barycentric_Coord   = new su2double [2];
+    New_Coord           = new su2double [2];
+    for (iDim = 0; iDim < 3; iDim++){
+      MeanReynoldsStress[iDim]  = new su2double [3];
+      MeanPerturbedRSM[iDim]    = new su2double [3];
+      A_ij[iDim]                = new su2double [3];
+      newA_ij[iDim]             = new su2double [3];
+      Eig_Vec[iDim]             = new su2double [3];
+      New_Eig_Vec[iDim]         = new su2double [3];
+      Corners[iDim]             = new su2double [2];
+      Eig_Val[iDim]             = 0;
+    }
   }
   
 }
@@ -220,16 +243,38 @@ CNumerics::~CNumerics(void) {
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
 
-  if (MeanReynoldsStress != NULL) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++)
-      if (MeanReynoldsStress[iDim] != NULL) delete [] MeanReynoldsStress[iDim];
-    delete [] MeanReynoldsStress;
-  }
+  // if (MeanReynoldsStress != NULL) {
+  //   for (unsigned short iDim = 0; iDim < 3; iDim++)
+  //     if (MeanReynoldsStress[iDim] != NULL) delete [] MeanReynoldsStress[iDim];
+  //   delete [] MeanReynoldsStress;
+  // }
 
-  if (MeanPerturbedRSM != NULL) {
-    for (unsigned short iDim = 0; iDim < 3; iDim++)
-      if (MeanPerturbedRSM[iDim] != NULL) delete [] MeanPerturbedRSM[iDim];
+  // if (MeanPerturbedRSM != NULL) {
+  //   for (unsigned short iDim = 0; iDim < 3; iDim++)
+  //     if (MeanPerturbedRSM[iDim] != NULL) delete [] MeanPerturbedRSM[iDim];
+  //   delete [] MeanPerturbedRSM;
+  // }
+
+  if (using_uq) {
+    for (unsigned short iDim = 0; iDim < 3; iDim++){
+      delete [] MeanReynoldsStress[iDim];
+      delete [] MeanPerturbedRSM[iDim];
+      delete [] A_ij[iDim];
+      delete [] newA_ij[iDim];
+      delete [] Eig_Vec[iDim];
+      delete [] New_Eig_Vec[iDim];
+      delete [] Corners[iDim];
+    }
+    delete [] MeanReynoldsStress;
     delete [] MeanPerturbedRSM;
+    delete [] A_ij;
+    delete [] newA_ij;
+    delete [] Eig_Vec;
+    delete [] New_Eig_Vec;
+    delete [] Corners;
+    delete [] Eig_Val;
+    delete [] Barycentric_Coord;
+    delete [] New_Coord;
   }
 
 }
