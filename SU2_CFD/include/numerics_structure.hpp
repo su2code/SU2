@@ -213,14 +213,14 @@ public:
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
-  su2double **A_ij;
-  su2double **newA_ij;
-  su2double **Eig_Vec;
-  su2double **New_Eig_Vec;
-  su2double **Corners;
-  su2double *Eig_Val;
-  su2double *Barycentric_Coord;
-  su2double *New_Coord;
+  unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
+  su2double beta_delta;           /*!< \brief Magnitude of perturbation */
+  su2double urlx;                 /*!< \brief Under-relaxation factor for numerical stability */
+  bool permute;                   /*!< \brief Flag for eigenvector permutation */
+
+  /* Supporting data structures for the eigenspace perturbation for UQ methodology */
+  su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
+  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
   /*!
    * \brief Constructor of the class.
