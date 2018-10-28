@@ -213,6 +213,14 @@ public:
   su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
   bool using_uq;                  /*!< \brief Flag for UQ methodology  */
   su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
+  su2double **A_ij;
+  su2double **newA_ij;
+  su2double **Eig_Vec;
+  su2double **New_Eig_Vec;
+  su2double **Corners;
+  su2double *Eig_Val;
+  su2double *Barycentric_Coord;
+  su2double *New_Coord;
 
   /*!
    * \brief Constructor of the class.
