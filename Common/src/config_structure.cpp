@@ -44,7 +44,7 @@ vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for
 vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
 map<string, vector<int> > Profile_Map_tp; /*!< \brief Map containing the final results for profiled functions. */
 
-map<long3T, int> GEMM_Profile_MNK;        /*!< \brief Map, which maps the GEMM size to the index where
+map<CLong3T, int> GEMM_Profile_MNK;       /*!< \brief Map, which maps the GEMM size to the index where
                                                       the data for this GEMM is stored in several vectors. */
 vector<long>   GEMM_Profile_NCalls;       /*!< \brief Vector, which stores the number of calls to this
                                                       GEMM size. */
@@ -8575,10 +8575,10 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
   /* Compute the elapsed time. */
   const double val_elapsed_time = val_stop_time - val_start_time;
 
-  /* Create the long3T from the M-N-K values and check if it is already
+  /* Create the CLong3T from the M-N-K values and check if it is already
      stored in the map GEMM_Profile_MNK. */
-  long3T MNK(M, N, K);
-  map<long3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
+  CLong3T MNK(M, N, K);
+  map<CLong3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
 
   if(MI == GEMM_Profile_MNK.end()) {
 
@@ -8655,10 +8655,10 @@ void CConfig::GEMMProfilingCSV(void) {
       /* Loop over the number of entries. */
       for(int i=0; i<nEntries; ++i) {
 
-        /* Create the long3T from the M-N-K values and check if it is already
+        /* Create the CLong3T from the M-N-K values and check if it is already
            stored in the map GEMM_Profile_MNK. */
-        long3T MNK(recvBufMNK[3*i], recvBufMNK[3*i+1], recvBufMNK[3*i+2]);
-        map<long3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
+        CLong3T MNK(recvBufMNK[3*i], recvBufMNK[3*i+1], recvBufMNK[3*i+2]);
+        map<CLong3T, int>::iterator MI = GEMM_Profile_MNK.find(MNK);
 
         if(MI == GEMM_Profile_MNK.end()) {
 
@@ -8687,8 +8687,8 @@ void CConfig::GEMMProfilingCSV(void) {
 
     /* Not the master node. Create the send buffer for the MNK data. */
     vector<long> sendBufMNK(3*GEMM_Profile_NCalls.size());
-    for(map<long3T, int>::iterator MI =GEMM_Profile_MNK.begin();
-                                   MI!=GEMM_Profile_MNK.end(); ++MI) {
+    for(map<CLong3T, int>::iterator MI =GEMM_Profile_MNK.begin();
+                                    MI!=GEMM_Profile_MNK.end(); ++MI) {
 
       const int ind = 3*MI->second;
       sendBufMNK[ind]   = MI->first.long0;
@@ -8718,8 +8718,8 @@ void CConfig::GEMMProfilingCSV(void) {
        vectors for post processing reasons. */
     const unsigned int nItems = GEMM_Profile_MNK.size();
     vector<long> M(nItems), N(nItems), K(nItems);
-    for(map<long3T, int>::iterator MI =GEMM_Profile_MNK.begin();
-                                   MI!=GEMM_Profile_MNK.end(); ++MI) {
+    for(map<CLong3T, int>::iterator MI =GEMM_Profile_MNK.begin();
+                                    MI!=GEMM_Profile_MNK.end(); ++MI) {
 
       const int ind = MI->second;
       M[ind] = MI->first.long0;

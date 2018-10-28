@@ -19328,7 +19328,7 @@ void COutput::MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geomet
 
   CVolumeElementFEM *volElem = DGGeometry->GetVolElem();
 
-  const FEMStandardElementClass *standardElementsSol = DGGeometry->GetStandardElementsSol();
+  const CFEMStandardElement *standardElementsSol = DGGeometry->GetStandardElementsSol();
 
   /* Define the vectors for the connectivity of the local linear subelements. */
   vector<unsigned long> volumeConn;
@@ -19622,7 +19622,7 @@ void COutput::MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry,
 
   const CBoundaryFEM *boundaries = DGGeometry->GetBoundaries();
 
-  const FEMStandardBoundaryFaceClass *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
+  const CFEMStandardBoundaryFace *standardBoundaryFacesSol = DGGeometry->GetStandardBoundaryFacesSol();
 
   /*--- Create the map from the global DOF ID to the local index. ---*/
   map<unsigned long, unsigned long> mapLocal2Global;

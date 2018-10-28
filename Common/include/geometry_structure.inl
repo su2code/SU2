@@ -57,21 +57,21 @@ inline unsignedShort2T::unsignedShort2T(const unsignedShort2T &other){Copy(other
 
 inline unsignedShort2T& unsignedShort2T::operator=(const unsignedShort2T &other){Copy(other); return (*this);}
 
-inline FaceOfElementClass::FaceOfElementClass(const FaceOfElementClass &other){Copy(other);}
+inline CFaceOfElement::CFaceOfElement(const CFaceOfElement &other){Copy(other);}
 
-inline FaceOfElementClass& FaceOfElementClass::operator=(const FaceOfElementClass &other){Copy(other); return (*this);}
+inline CFaceOfElement& CFaceOfElement::operator=(const CFaceOfElement &other){Copy(other); return (*this);}
 
-inline void FaceOfElementClass::CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
+inline void CFaceOfElement::CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
 
-inline  BoundaryFaceClass::BoundaryFaceClass(const BoundaryFaceClass &other){Copy(other);}
+inline CBoundaryFace::CBoundaryFace(const CBoundaryFace &other){Copy(other);}
 
-inline BoundaryFaceClass& BoundaryFaceClass::operator=(const BoundaryFaceClass &other){Copy(other); return (*this);}
+inline CBoundaryFace& CBoundaryFace::operator=(const CBoundaryFace &other){Copy(other); return (*this);}
 
-inline bool BoundaryFaceClass::operator<(const BoundaryFaceClass &other) const {return (globalBoundElemID < other.globalBoundElemID);}
+inline bool CBoundaryFace::operator<(const CBoundaryFace &other) const {return (globalBoundElemID < other.globalBoundElemID);}
 
-inline MatchingFaceClass::MatchingFaceClass(const MatchingFaceClass &other){Copy(other);}
+inline CMatchingFace::CMatchingFace(const CMatchingFace &other){Copy(other);}
 
-inline MatchingFaceClass& MatchingFaceClass::operator=(const MatchingFaceClass &other){Copy(other); return (*this);}
+inline CMatchingFace& CMatchingFace::operator=(const CMatchingFace &other){Copy(other); return (*this);}
 
 inline void CGeometry::SetGlobal_to_Local_Point(void) { }
 

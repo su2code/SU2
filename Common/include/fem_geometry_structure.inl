@@ -31,42 +31,42 @@
 
 #pragma once
 
-inline long3T::long3T(){long0 = long1 = long2 = 0;}
+inline CLong3T::CLong3T(){long0 = long1 = long2 = 0;}
 
-inline long3T::long3T(const long a, const long b, const long c){long0 = a; long1 = b; long2 = c;}
+inline CLong3T::CLong3T(const long a, const long b, const long c){long0 = a; long1 = b; long2 = c;}
 
-inline long3T::~long3T(){}
+inline CLong3T::~CLong3T(){}
 
-inline long3T::long3T(const long3T &other){Copy(other);}
+inline CLong3T::CLong3T(const CLong3T &other){Copy(other);}
 
-inline long3T& long3T::operator=(const long3T &other){Copy(other); return (*this);}
+inline CLong3T& CLong3T::operator=(const CLong3T &other){Copy(other); return (*this);}
 
-inline CReorderElementClass::~CReorderElementClass(void) { }
+inline CReorderElements::~CReorderElements(void) { }
 
-inline CReorderElementClass::CReorderElementClass(const CReorderElementClass &other) { Copy(other); }
+inline CReorderElements::CReorderElements(const CReorderElements &other) { Copy(other); }
 
-inline CReorderElementClass& CReorderElementClass::operator=(const CReorderElementClass &other) { Copy(other); return (*this); }
+inline CReorderElements& CReorderElements::operator=(const CReorderElements &other) { Copy(other); return (*this); }
 
-inline bool CReorderElementClass::GetCommSolution(void) { return commSolution; }
+inline bool CReorderElements::GetCommSolution(void) { return commSolution; }
 
-inline unsigned short CReorderElementClass::GetElemType(void) { return elemType; }
+inline unsigned short CReorderElements::GetElemType(void) { return elemType; }
 
-inline unsigned long CReorderElementClass::GetGlobalElemID(void) { return globalElemID; }
+inline unsigned long CReorderElements::GetGlobalElemID(void) { return globalElemID; }
 
-inline unsigned short CReorderElementClass::GetTimeLevel(void) { return timeLevel; }
+inline unsigned short CReorderElements::GetTimeLevel(void) { return timeLevel; }
 
-inline void CReorderElementClass::SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
+inline void CReorderElements::SetCommSolution(const bool val_CommSolution) { commSolution = val_CommSolution; }
 
-inline SortFacesClass::SortFacesClass(unsigned long            val_nVolElemOwned,
-                                      unsigned long            val_nVolElemTot,
-                                      const CVolumeElementFEM *val_volElem)
+inline CSortFaces::CSortFaces(unsigned long            val_nVolElemOwned,
+                              unsigned long            val_nVolElemTot,
+                              const CVolumeElementFEM *val_volElem)
  {nVolElemOwned = val_nVolElemOwned; nVolElemTot = val_nVolElemTot; volElem = val_volElem;}
 
-inline SortFacesClass::~SortFacesClass(void) { }
+inline CSortFaces::~CSortFaces(void) { }
 
-inline SortBoundaryFacesClass::SortBoundaryFacesClass() { }
+inline CSortBoundaryFaces::CSortBoundaryFaces() { }
 
-inline SortBoundaryFacesClass::~SortBoundaryFacesClass() { }
+inline CSortBoundaryFaces::~CSortBoundaryFaces() { }
 
 inline CVolumeElementFEM::CVolumeElementFEM(void) { }
 
@@ -130,7 +130,7 @@ inline vector<vector<unsigned long> > CMeshFEM::GetHaloElemAdjLowTimeLevel(void)
 
 inline unsigned short CMeshFEM::GetNStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.size();}
 
-inline FEMStandardBoundaryFaceClass* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
+inline CFEMStandardBoundaryFace* CMeshFEM::GetStandardBoundaryFacesSol(void) {return standardBoundaryFacesSol.data();}
 
 inline const vector<int>& CMeshFEM::GetRanksRecv(void) const {return ranksRecv;}
 
@@ -185,8 +185,8 @@ inline CInternalFaceElementFEM* CMeshFEM_DG::GetMatchingFaces(void) {return matc
 
 inline unsigned short CMeshFEM_DG::GetNStandardElementsSol(void) {return standardElementsSol.size();}
 
-inline FEMStandardElementClass* CMeshFEM_DG::GetStandardElementsSol(void) {return standardElementsSol.data();}
+inline CFEMStandardElement* CMeshFEM_DG::GetStandardElementsSol(void) {return standardElementsSol.data();}
 
 inline unsigned short CMeshFEM_DG::GetNStandardMatchingFacesSol(void) {return standardMatchingFacesSol.size();}
 
-inline FEMStandardInternalFaceClass* CMeshFEM_DG::GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
+inline CFEMStandardInternalFace* CMeshFEM_DG::GetStandardMatchingFacesSol(void) {return standardMatchingFacesSol.data();}
