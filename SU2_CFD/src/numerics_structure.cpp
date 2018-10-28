@@ -188,6 +188,18 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
       Corners[iDim]             = new su2double [2];
       Eig_Val[iDim]             = 0;
     }
+    Eig_Val_Comp = config->GetEig_Val_Comp();
+    beta_delta = config->GetBeta_Delta();
+    urlx = config->GetURLX();
+    permute = config->GetPermute();
+
+    /* define barycentric traingle corner points */
+    Corners[0][0] = 1.0;
+    Corners[0][1] = 0.0;
+    Corners[1][0] = 0.0;
+    Corners[1][1] = 0.0;
+    Corners[2][0] = 0.5;
+    Corners[2][1] = 0.866025;
   }
   
 }
