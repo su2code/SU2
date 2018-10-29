@@ -8943,6 +8943,7 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
         Total_ComboObj+=Weight_ObjFunc*(Surface_CD[iMarker_Monitoring]);
         if (config->GetFixed_CL_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCL()*(Surface_CL[iMarker_Monitoring]);
         if (config->GetFixed_CM_Mode()) Total_ComboObj -= Weight_ObjFunc*config->GetdCD_dCMy()*(Surface_CMy[iMarker_Monitoring]);
+        if (config->GetTranspiration_Objective()) Total_ComboObj += Weight_ObjFunc*Surface_Cmu[iMarker_Monitoring];
         break;
       case LIFT_COEFFICIENT:
         Total_ComboObj+=Weight_ObjFunc*(Surface_CL[iMarker_Monitoring]);
@@ -9041,11 +9042,11 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     }
   }
 
-  if(config->GetTranspiration_Objective()){
-    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
-      Total_ComboObj+=Surface_Cmu[iMarker_Monitoring];
-    }
-  }
+//  if(config->GetTranspiration_Objective()){
+//    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+//      Total_ComboObj+=Surface_Cmu[iMarker_Monitoring];
+//    }
+//  }
   
 }
 

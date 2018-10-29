@@ -244,6 +244,10 @@ def obj_f(dvs,config,state=None):
         # otherwise evaluate the penalty function (OBJTYPE = '>','<', or '=')
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
+
+    if config['TRANSPIRATION_OBJECTIVE'] == 'YES':
+        func += state['FUNCTIONS']['JET_MOMENTUM'] * def_objs['DRAG']['SCALE'] * global_factor
+        
     vals_out.append(func)
 
     #: for each objective

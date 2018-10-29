@@ -117,8 +117,8 @@
 		E962E7E71E022ABB00AF4742 /* adt_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = adt_structure.inl; path = ../../Common/include/adt_structure.inl; sourceTree = "<group>"; };
 		E962E7E91E022ABB00AF4742 /* codi_forward_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_forward_structure.hpp; sourceTree = "<group>"; };
 		E962E7EA1E022ABB00AF4742 /* codi_forward_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_forward_structure.inl; sourceTree = "<group>"; };
-		E962E7EB1E022ABB00AF4742 /* codi_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_reverse_structure.hpp; sourceTree = "<group>"; };
-		E962E7EC1E022ABB00AF4742 /* codi_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_reverse_structure.inl; sourceTree = "<group>"; };
+		E962E7EB1E022ABB00AF4742 /* codi_reverse_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = codi_reverse_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E962E7EC1E022ABB00AF4742 /* codi_reverse_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = codi_reverse_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E962E7ED1E022ABB00AF4742 /* complex_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = complex_structure.hpp; sourceTree = "<group>"; };
 		E962E7EE1E022ABB00AF4742 /* complex_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = complex_structure.inl; sourceTree = "<group>"; };
 		E962E7EF1E022ABB00AF4742 /* primitive_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; path = primitive_structure.hpp; sourceTree = "<group>"; };
