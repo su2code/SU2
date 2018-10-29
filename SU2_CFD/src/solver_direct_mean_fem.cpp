@@ -692,9 +692,10 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
     DetermineGraphDOFs(DGGeometry, config);
 
     /* Carry out the vertex coloring of the graph. */
+    CGraphColoringStructure graphColoring;
     vector<int> colorLocalDOFs;
-    GraphVertexColoring(config, nDOFsPerRank, nonZeroEntriesJacobian,
-                        nGlobalColors, colorLocalDOFs);
+    graphColoring.GraphVertexColoring(config, nDOFsPerRank, nonZeroEntriesJacobian,
+                                      nGlobalColors, colorLocalDOFs);
 
     /* Write a message that the all volume DOFs have been colored. */
     if(rank == MASTER_NODE)
