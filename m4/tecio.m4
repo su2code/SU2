@@ -37,7 +37,7 @@ AC_DEFUN([CONFIGURE_TECIO],
 	;;
 
       *darwin*)
-	TECIO_CPPFLAGS="-DDARWIN -DLONGIS64 $TECIO_CPPFLAGS"
+	TECIO_CPPFLAGS="-DDARWIN -DMAC64 $TECIO_CPPFLAGS"
         ;;
 
         *)
@@ -46,7 +46,7 @@ AC_DEFUN([CONFIGURE_TECIO],
     esac
 
 
-     TECIO_INCLUDE="-I\$(top_srcdir)/externals/tecio/include"
+     TECIO_INCLUDE="-I\$(top_srcdir)/externals/tecio/teciosrc"
      TECIO_LIB="\$(top_builddir)/externals/tecio/libtecio.a"
      AC_DEFINE(HAVE_TECPLOT_API, 1, [Flag indicating whether the library will be compiled with Tecplot TecIO API support])
      AC_DEFINE(HAVE_TECPLOT_API_112, 1, [Flag indicating tecplot API understands newer features])

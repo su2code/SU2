@@ -107,13 +107,7 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
       fileroot = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION)
-    fileroot = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == POISSON_EQUATION)
-    fileroot = config->GetStructure_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     fileroot = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -124,8 +118,6 @@ string GetVTKFilename(CConfig *config, unsigned short val_iZone,
   }
   
   strcpy (cstr, fileroot.c_str());
-  if (Kind_Solver == POISSON_EQUATION)
-    strcpy (cstr, config->GetStructure_FileName().c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
@@ -223,14 +215,8 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
     else
       filename = config->GetAdjStructure_FileName().c_str();
   }
-  
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-  
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
 
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -241,8 +227,6 @@ void COutput::SetParaview_ASCII(CConfig *config, CGeometry *geometry, unsigned s
   }
 
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
-    
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
@@ -1214,17 +1198,11 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
       filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
   
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
-  
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
   
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
   
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS || Kind_Solver == FEM_ELASTICITY) &&
@@ -2018,13 +1996,7 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
       filename = config->GetStructure_FileName().c_str();
   }
 
-  if (Kind_Solver == WAVE_EQUATION)
-    filename = config->GetWave_FileName().c_str();
-
-  if (Kind_Solver == POISSON_EQUATION)
-    filename = config->GetStructure_FileName().c_str();
-
-  if (Kind_Solver == HEAT_EQUATION)
+  if (Kind_Solver == HEAT_EQUATION_FVM)
     filename = config->GetHeat_FileName().c_str();
 
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -2035,8 +2007,6 @@ void COutput::WriteParaViewASCII_Parallel(CConfig *config, CGeometry *geometry, 
   }
 
   strcpy (cstr, filename.c_str());
-  if (Kind_Solver == POISSON_EQUATION) strcpy (cstr, config->GetStructure_FileName().c_str());
-
 
   /*--- Special cases where a number needs to be appended to the file name. ---*/
 
@@ -2559,12 +2529,12 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nSurf_Elem_Par,
              (int)nSurf_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nSurf_Elem_Par*N_POINTS_QUADRILATERAL];
+    conn_buf = new int[nSurf_Elem_Par*(N_POINTS_QUADRILATERAL+1)];
   } else {
     SPRINTF (str_buf, "\nCELLS %i %i\n", (int)nGlobal_Elem_Par,
              (int)nGlobal_Elem_Storage);
     fwrite(str_buf, sizeof(char), strlen(str_buf), fhw);
-    conn_buf = new int[nGlobal_Elem_Par*N_POINTS_HEXAHEDRON];
+    conn_buf = new int[nGlobal_Elem_Par*(N_POINTS_HEXAHEDRON+1)];
   }
   
   /*--- Load/write 1D buffers for the connectivity of each element type. ---*/
@@ -2705,6 +2675,8 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  if (conn_buf != NULL) delete [] conn_buf;
+  
   /*--- Load/write the cell type for all elements in the file. ---*/
   
   if (surf_sol) {
@@ -2789,7 +2761,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector data (reuse the counts above). ---*/
   
@@ -2888,6 +2860,11 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
     
   }
   
+  /*--- Close the file. ---*/
+  
+  fclose(fhw);
+  
+  
 #else
   
   /*--- Parallel binary output using MPI I/O. ---*/
@@ -2907,6 +2884,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
                        MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY,
                        MPI_INFO_NULL, &fhw);
   if (ierr != MPI_SUCCESS)  {
+    MPI_File_close(&fhw);
     if (rank == 0)
       MPI_File_delete(fname, MPI_INFO_NULL);
     ierr = MPI_File_open(MPI_COMM_WORLD, fname,
@@ -3365,7 +3343,7 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
   /*--- Free the derived datatype. ---*/
   
   MPI_Type_free(&filetype);
-  delete [] type_buf;
+  if (type_buf != NULL) delete [] type_buf;
   
   /*--- Now write the scalar and vector point data. ---*/
   

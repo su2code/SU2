@@ -70,19 +70,9 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION) {
-    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
-    else filename = config->GetWave_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION || Kind_Solver == HEAT_EQUATION_FVM) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
     else filename = config->GetHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-    else filename = config->GetStructure_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -96,7 +86,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS ||
-       Kind_Solver == HEAT_EQUATION || Kind_Solver == HEAT_EQUATION_FVM) &&
+       Kind_Solver == HEAT_EQUATION_FVM) &&
       (val_nZone > 1) ) {
     SPRINTF (buffer, "_%d", SU2_TYPE::Int(val_iZone));
     strcat(cstr, buffer);
@@ -187,12 +177,6 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
         }
-      }
-      
-      if (Kind_Solver == POISSON_EQUATION) {
-        unsigned short iDim;
-        for (iDim = 0; iDim < geometry->GetnDim(); iDim++)
-          Tecplot_File << ",\"poissonField_" << iDim+1 << "\"";
       }
       
       if (( Kind_Solver == ADJ_EULER              ) ||
@@ -839,21 +823,6 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
     else filename = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION) {
-    if (surf_sol) filename = config->GetSurfWave_FileName().c_str();
-    else filename = config->GetWave_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION) {
-    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
-    else filename = config->GetHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    if (surf_sol) filename = config->GetSurfStructure_FileName().c_str();
-    else filename = config->GetStructure_FileName().c_str();
-  }
-  
   if (config->GetKind_SU2() == SU2_DOT) {
     if (surf_sol) filename = config->GetSurfSens_FileName();
     else filename = config->GetVolSens_FileName();
@@ -1052,14 +1021,15 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
 #ifdef HAVE_TECIO
   
   passivedouble   t;
-  INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
-  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
+  INTEGER4 i, err, Debug, NPts, NElm, N2DElm, NVolElm, IsDouble, KMax;
+  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileFormat, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
   bool first_zone = true;
   bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short dims = geometry->GetnDim();
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
@@ -1094,7 +1064,8 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
       buffer = config->GetVolSens_FileName();
     }
     
-    file << buffer << ".mesh.plt";
+    file << buffer << ".mesh.szplt";
+    FileFormat = SZPLT;
     FileType = GRID;
     
     if (dims == 2) variables = "x y";
@@ -1102,47 +1073,80 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
     else cout << "Error: wrong number of dimensions: " << dims << endl;
     
     /*--- Open Tecplot file ---*/
-    
-    err = TECINI112((char *)config->GetFlow_FileName().c_str(),
+    err = TECINI142((char *)config->GetFlow_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
                     (char *)".",
+                    &FileFormat,
                     &FileType,
                     &Debug,
                     &IsDouble);
     if (err) cout << "Error in opening Tecplot file" << endl;
     
     first_zone = true;
-//    ShareFromZone = new INTEGER4[dims];
-//    for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
     
-    if (nGlobal_Tria > 0) {
+    N2DElm = (INTEGER4)(nGlobal_Tria + nGlobal_Quad);
+    if (N2DElm > 0) {
       
       /*--- Write the zone header information ---*/
-      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
       
-      err = TECZNE112((char*)"Triangle Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
+      if ((INTEGER4)nGlobal_Tria < N2DElm) {   /* Create a Quad zone with a mixed element types */
+
+      
+        ZoneType = FEQUADRILATERAL; NElm = N2DElm;
+      
+        err = TECZNE142((char*)"Mixed Elements",
+                        &ZoneType,
+                        &NPts,
+                        &NElm,
+                        &KMax,
+                        &ICellMax,
+                        &JCellMax,
+                        &KCellMax,
+                        &t,
+                        &StrandID,
+                        &ParentZn,
+                        &IsBlock,
+                        &NumFaceConnections,
+                        &FaceNeighborMode,
+                        0,         /* TotalNumFaceNodes */
+                        0,         /* NumConnectedBoundaryFaces */
+                        0,         /* TotalNumBoundaryConnections */
+                        NULL,      /* PassiveVarList */
+                        NULL,      /* ValueLocation */
+                        ShareFromZone,      /* ShareVarFromZone */
+                        &ShareConnectivityFromZone);
+        if (err) cout << "Error writing Tecplot zone data" << endl;
+
+
+      } else {   /* Create a Tria zone */
+
+        ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
+      
+        err = TECZNE142((char*)"Triangle Elements",
+                        &ZoneType,
+                        &NPts,
+                        &NElm,
+                        &KMax,
+                        &ICellMax,
+                        &JCellMax,
+                        &KCellMax,
+                        &t,
+                        &StrandID,
+                        &ParentZn,
+                        &IsBlock,
+                        &NumFaceConnections,
+                        &FaceNeighborMode,
+                        0,         /* TotalNumFaceNodes */
+                        0,         /* NumConnectedBoundaryFaces */
+                        0,         /* TotalNumBoundaryConnections */
+                        NULL,      /* PassiveVarList */
+                        NULL,      /* ValueLocation */
+                        ShareFromZone,      /* ShareVarFromZone */
+                        &ShareConnectivityFromZone);
+        if (err) cout << "Error writing Tecplot zone data" << endl;
+
+      }
       
       /*--- write node coordinates and data if not done already---*/
       
@@ -1152,10 +1156,10 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
         
         if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            err = TECDAT142(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
           
@@ -1164,24 +1168,24 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
           passivedouble* PassiveData = new passivedouble[NPts];
           
           for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
           
           for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
           
           if (geometry->GetnDim() == 3) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            err = TECDAT142(&NPts, PassiveData, &IsDouble);
             ShareFromZone[2] = 1;
           }
           
           delete [] PassiveData;
           
         } else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
         }
@@ -1189,39 +1193,107 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         first_zone = false;
       }
       
-          
-      err = TECNOD112(Conn_Tria);
-      if (err) cout << "Error writing connectivity to Tecplot file" << endl;
+
+      if (nGlobal_Tria > 0) {
+        if ((INTEGER4)nGlobal_Tria < N2DElm) {   /* Write Tria connecivity as collapsed Quad */
+    
+          /*--- Convert the triangle connectivity from 3 nodes to 4 nodes for FEQUADRALATERL */
+          int *Conn_Tria_Mod = new int[nGlobal_Tria*N_POINTS_QUADRILATERAL];
+          unsigned long iNode_Tria, iNode_Quad;
+          for (unsigned long iElem = 0; iElem < nGlobal_Tria; iElem++) {
+            iNode_Tria = iElem*N_POINTS_TRIANGLE;
+            iNode_Quad = iElem*N_POINTS_QUADRILATERAL;
+            Conn_Tria_Mod[iNode_Quad+0] = Conn_Tria[iNode_Tria+0];
+            Conn_Tria_Mod[iNode_Quad+1] = Conn_Tria[iNode_Tria+1];
+            Conn_Tria_Mod[iNode_Quad+2] = Conn_Tria[iNode_Tria+2];
+            Conn_Tria_Mod[iNode_Quad+3] = Conn_Tria[iNode_Tria+2];
+          }
+          NElm = (INTEGER4)(nGlobal_Tria*N_POINTS_QUADRILATERAL);
+          err = TECNODE142(&NElm, Conn_Tria_Mod);
+          if (err) cout << "Error writing triangle connectivity to Tecplot file" << endl;
+          delete [] Conn_Tria_Mod;
+  
+        } else {   /* Write Tria connectivity */
+
+          err = TECNOD142(Conn_Tria);
+          if (err) cout << "Error writing connectivity to Tecplot file" << endl;
+        }
+      }
+
+      if (nGlobal_Quad > 0) {
+      
+        NElm = (INTEGER4)(nGlobal_Quad*N_POINTS_QUADRILATERAL);
+        err = TECNODE142(&NElm, Conn_Quad);
+        if (err) cout << "Error writing connectivity to Tecplot file" << endl;
+
+      }
       
     }
-    if (nGlobal_Quad > 0) {
+
+    /*--- Create 3D Volume Zone ---*/
+    NVolElm = (INTEGER4)(nGlobal_Tetr + nGlobal_Pyra + nGlobal_Pris + nGlobal_Hexa);
+    if (NVolElm > 0) {
       
       /*--- Write the zone header information ---*/
       
-      ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad;
+      if ((INTEGER4)nGlobal_Tetr < NVolElm) {   /* Create a Hexa zone with a mixed element types */
       
-      err = TECZNE112((char*)"Quadrilateral Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
+        /*--- Write the mixed-element zone header information ---*/
+      
+        ZoneType = FEBRICK; NElm = NVolElm;
+      
+        err = TECZNE142((char*)"Mixed Elements",
+                        &ZoneType,
+                        &NPts,
+                        &NElm,
+                        &KMax,
+                        &ICellMax,
+                        &JCellMax,
+                        &KCellMax,
+                        &t,
+                        &StrandID,
+                        &ParentZn,
+                        &IsBlock,
+                        &NumFaceConnections,
+                        &FaceNeighborMode,
+                        0,         /* TotalNumFaceNodes */
+                        0,         /* NumConnectedBoundaryFaces */
+                        0,         /* TotalNumBoundaryConnections */
+                        NULL,      /* PassiveVarList */
+                        NULL,      /* ValueLocation */
+                        ShareFromZone,      /* ShareVarFromZone */
+                        &ShareConnectivityFromZone);
+        if (err) cout << "Error writing Tecplot zone data" << endl;
+      
+      } else {   /* Create a Tetra zone */
+
+        /*--- Write the tetrahedral zone header information ---*/
+
+        ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
+        
+        err = TECZNE142((char*)"Tetrahedral Elements",
+                        &ZoneType,
+                        &NPts,
+                        &NElm,
+                        &KMax,
+                        &ICellMax,
+                        &JCellMax,
+                        &KCellMax,
+                        &t,
+                        &StrandID,
+                        &ParentZn,
+                        &IsBlock,
+                        &NumFaceConnections,
+                        &FaceNeighborMode,
+                        0,         /* TotalNumFaceNodes */
+                        0,         /* NumConnectedBoundaryFaces */
+                        0,         /* TotalNumBoundaryConnections */
+                        NULL,      /* PassiveVarList */
+                        NULL,      /* ValueLocation */
+                        ShareFromZone,      /* ShareVarFromZone */
+                        &ShareConnectivityFromZone);
+        if (err) cout << "Error writing Tecplot zone data" << endl;
+      }
       
       /*--- write node coordinates and data if not done already---*/
       
@@ -1231,10 +1303,10 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
         
         if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
+            err = TECDAT142(&NPts, Data[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
           
@@ -1243,265 +1315,73 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
           passivedouble* PassiveData = new passivedouble[NPts];
           
           for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
           
           for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
           
           if (geometry->GetnDim() == 3) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
+            err = TECDAT142(&NPts, PassiveData, &IsDouble);
             ShareFromZone[2] = 1;
           }
           
           delete [] PassiveData;
           
         }  else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
           if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             ShareFromZone[2] = 1;
           }
         }
         if (err) cout << "Error writing coordinates to Tecplot file" << endl;
         first_zone = false;
       }
-      
-      err = TECNOD112(Conn_Quad);
-      if (err) cout << "Error writing connectivity to Tecplot file" << endl;
-      
+
     }
+      
     if (nGlobal_Tetr > 0) {
-      
-      /*--- Write the zone header information ---*/
-      
-      ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
-      
-      err = TECZNE112((char*)"Tetrahedral Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
-      
-      /*--- write node coordinates and data if not done already---*/
-      
-      if (first_zone) {
-        
-        ShareFromZone = new INTEGER4[dims];
-        for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
-        
-        if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-        } else if (config->GetKind_SU2() == SU2_DOT) {
-          
-          passivedouble* PassiveData = new passivedouble[NPts];
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
-          
-          if (geometry->GetnDim() == 3) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-          delete [] PassiveData;
-          
-        }  else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
+      if ((INTEGER4)nGlobal_Tetr < NVolElm) {   /* Write tetra connecivity as collapsed hexa */
+    
+        /*--- Convert the tetrahedral connectivity from 4 nodes to 8 nodes for FEBRICK ---*/
+        int *Conn_Tetr_Mod = new int[nGlobal_Tetr*N_POINTS_HEXAHEDRON];
+        unsigned long iNode_Tetr, iNode_Hexa;
+        for (unsigned long iElem = 0; iElem < nGlobal_Tetr; iElem++) {
+          iNode_Tetr = iElem*N_POINTS_TETRAHEDRON;
+          iNode_Hexa = iElem*N_POINTS_HEXAHEDRON;
+          Conn_Tetr_Mod[iNode_Hexa+0] = Conn_Tetr[iNode_Tetr+0];
+          Conn_Tetr_Mod[iNode_Hexa+1] = Conn_Tetr[iNode_Tetr+1];
+          Conn_Tetr_Mod[iNode_Hexa+2] = Conn_Tetr[iNode_Tetr+2];
+          Conn_Tetr_Mod[iNode_Hexa+3] = Conn_Tetr[iNode_Tetr+2];
+          Conn_Tetr_Mod[iNode_Hexa+4] = Conn_Tetr[iNode_Tetr+3];
+          Conn_Tetr_Mod[iNode_Hexa+5] = Conn_Tetr[iNode_Tetr+3];
+          Conn_Tetr_Mod[iNode_Hexa+6] = Conn_Tetr[iNode_Tetr+3];
+          Conn_Tetr_Mod[iNode_Hexa+7] = Conn_Tetr[iNode_Tetr+3];
         }
-        if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-        first_zone = false;
+        NElm = (INTEGER4)(nGlobal_Tetr*N_POINTS_HEXAHEDRON);
+        err = TECNODE142(&NElm, Conn_Tetr_Mod);
+        if (err) cout << "Error writing tetrahedral connectivity to Tecplot file" << endl;
+        delete [] Conn_Tetr_Mod;
+  
+      } else {   /* Write Tetra connectivity */
+
+        err = TECNOD142(Conn_Tetr);
+        if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       }
-      
-      err = TECNOD112(Conn_Tetr);
-      if (err) cout << "Error writing connectivity to Tecplot file" << endl;
-      
+
     }
+
     if (nGlobal_Hexa > 0) {
       
-      /*--- Write the zone header information ---*/
-      
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa;
-      
-      err = TECZNE112((char*)"Hexahedral Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
-      
-      /*--- write node coordinates and data if not done already---*/
-      
-      if (first_zone) {
-        
-        ShareFromZone = new INTEGER4[dims];
-        for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
-        
-        if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-        } else if (config->GetKind_SU2() == SU2_DOT) {
-          
-          passivedouble* PassiveData = new passivedouble[NPts];
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
-          
-          if (geometry->GetnDim() == 3) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-          delete [] PassiveData;
-          
-        }  else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-        }
-        if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-        first_zone = false;
-      }
-      
-      err = TECNOD112(Conn_Hexa);
+      NElm = (INTEGER4)(nGlobal_Hexa*N_POINTS_HEXAHEDRON);
+      err = TECNODE142(&NElm, Conn_Hexa);
       if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       
     }
     
     if (nGlobal_Pyra > 0) {
-      
-      /*--- Here, we reuse the hex implementation to write pyramid elements.
-       Write the zone header information. ---*/
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra;
-      
-      err = TECZNE112((char*)"Pyramid Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
-      
-      /*--- write node coordinates and data if not done already---*/
-      
-      if (first_zone) {
-        
-        ShareFromZone = new INTEGER4[dims];
-        for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
-        
-        if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-        } else if (config->GetKind_SU2() == SU2_DOT) {
-          
-          passivedouble* PassiveData = new passivedouble[NPts];
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
-          
-          if (geometry->GetnDim() == 3) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-          delete [] PassiveData;
-          
-        }  else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-        }
-        if (err) cout << "Error writing grid coordinates to Tecplot file" << endl;
-        first_zone = false;
-      }
       
       /*--- Convert the pyramid connectivity from 5 nodes to 8 nodes for FEBRICK ---*/
       int *Conn_Pyra_Mod = new int[nGlobal_Pyra*N_POINTS_HEXAHEDRON];
@@ -1518,85 +1398,14 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         Conn_Pyra_Mod[iNode_Hexa+6] = Conn_Pyra[iNode_Pyra+2];
         Conn_Pyra_Mod[iNode_Hexa+7] = Conn_Pyra[iNode_Pyra+3];
       }
-      err = TECNOD112(Conn_Pyra_Mod);
+      NElm = (INTEGER4)(nGlobal_Pyra*N_POINTS_HEXAHEDRON);
+      err = TECNODE142(&NElm, Conn_Pyra_Mod);
       if (err) cout << "Error writing pyramid connectivity to Tecplot file" << endl;
       delete [] Conn_Pyra_Mod;
       
     }
     
     if (nGlobal_Pris > 0) {
-      
-      /*--- Here, we reuse the hex implementation to write prism elements.
-       Write the zone header information ---*/
-      ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris;
-      
-      err = TECZNE112((char*)"Prism Elements",
-                      &ZoneType,
-                      &NPts,
-                      &NElm,
-                      &KMax,
-                      &ICellMax,
-                      &JCellMax,
-                      &KCellMax,
-                      &t,
-                      &StrandID,
-                      &ParentZn,
-                      &IsBlock,
-                      &NumFaceConnections,
-                      &FaceNeighborMode,
-                      0,         /* TotalNumFaceNodes */
-                      0,         /* NumConnectedBoundaryFaces */
-                      0,         /* TotalNumBoundaryConnections */
-                      NULL,      /* PassiveVarList */
-                      NULL,      /* ValueLocation */
-                      ShareFromZone,      /* ShareVarFromZone */
-                      &ShareConnectivityFromZone);
-      if (err) cout << "Error writing Tecplot zone data" << endl;
-      
-      /*--- write node coordinates and data if not done already---*/
-      
-      if (first_zone) {
-        
-        ShareFromZone = new INTEGER4[dims];
-        for (i = 0; i < dims; i++) ShareFromZone[i] = 0;
-        
-        if (config->GetKind_SU2() == SU2_SOL) {
-          err = TECDAT112(&NPts, Data[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Data[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Data[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-        } else if (config->GetKind_SU2() == SU2_DOT) {
-          
-          passivedouble* PassiveData = new passivedouble[NPts];
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[0][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[0] = 1;
-          
-          for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[1][i]);
-          err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[1] = 1;
-          
-          if (geometry->GetnDim() == 3) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[2][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-          
-          delete [] PassiveData;
-          
-        }  else {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[0] = 1;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[1] = 1;
-          if (geometry->GetnDim() == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
-            ShareFromZone[2] = 1;
-          }
-        }
-        if (err) cout << "Error writing grid coordinates to Tecplot file" << endl;
-        first_zone = false;
-      }
       
       /*--- Convert the prism connectivity from 6 nodes to 8 nodes for FEBRICK ---*/
       int *Conn_Pris_Mod = new int[nGlobal_Pris*N_POINTS_HEXAHEDRON];
@@ -1613,17 +1422,17 @@ void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, 
         Conn_Pris_Mod[iNode_Hexa+6] = Conn_Pris[iNode_Pris+4];
         Conn_Pris_Mod[iNode_Hexa+7] = Conn_Pris[iNode_Pris+5];
       }
-      err = TECNOD112(Conn_Pris_Mod);
+      NElm = (INTEGER4)(nGlobal_Pris*N_POINTS_HEXAHEDRON);
+      err = TECNODE142(&NElm, Conn_Pris_Mod);
       if (err) cout << "Error writing prism connectivity to Tecplot file" << endl;
       delete [] Conn_Pris_Mod;
       
     }
     
     delete [] ShareFromZone;
-
     wrote_base_file = true;
     
-    err = TECEND112();
+    err = TECEND142();
     if (err) cout << "Error in closing Tecplot file" << endl;
     
   }
@@ -1637,8 +1446,8 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
 #ifdef HAVE_TECIO
   
   passivedouble   t;
-  INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
-  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
+  INTEGER4 i, iVar, err, Debug, NPts, NElm, N2DElm, NVolElm, IsDouble, KMax;
+  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileFormat, FileType;
   INTEGER4 *ShareFromZone = NULL, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
@@ -1647,11 +1456,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   unsigned long iExtIter = config->GetExtIter();
   unsigned short NVar, dims = geometry->GetnDim();
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
-  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint(); 
+  bool adjoint = config->GetContinuous_Adjoint() || config->GetDiscrete_Adjoint();
   unsigned short Kind_Solver = config->GetKind_Solver();
-  
+
   /*--- Consistent data for Tecplot zones ---*/
   Debug            = 0;
   IsDouble          = 1;
@@ -1680,16 +1490,8 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
     buffer = config->GetStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION) {
-    buffer = config->GetWave_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     buffer = config->GetHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    buffer = config->GetStructure_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -1704,7 +1506,9 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
     if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))  file << "_0" << iExtIter;
     if ((int)iExtIter >= 10000)              file << iExtIter;
   }
-  file << ".sol.plt";
+
+  file << ".sol.szplt";
+  FileFormat = SZPLT;
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
   if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
@@ -1713,46 +1517,80 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   }
 
   /*--- Open Tecplot file ---*/
-  err = TECINI112((char *)config->GetFlow_FileName().c_str(),
+  err = TECINI142((char *)config->GetFlow_FileName().c_str(),
                   (char *)variables.c_str(),
                   (char *)file.str().c_str(),
                   (char *)".",
+                  &FileFormat,
                   &FileType,
                   &Debug,
                   &IsDouble);
   if (err) cout << "Error in opening Tecplot file" << endl;
   
-//  first_zone = true;
-//  ShareFromZone = new INTEGER4[NVar];
-//  for (i = 0; i < NVar; i++) ShareFromZone[i] = 0;
+  first_zone = true;
+  ShareFromZone = new INTEGER4[NVar];
+  for (i = 0; i < NVar; i++) ShareFromZone[i] = 0;
   
-  if (nGlobal_Tria > 0) {
-    
+  N2DElm = (INTEGER4)(nGlobal_Tria + nGlobal_Quad);
+  if (N2DElm > 0) {
+      
     /*--- Write the zone header information ---*/
-    ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
+      
+    if ((INTEGER4)nGlobal_Tria < N2DElm) {   /* Create a Quad zone with a mixed element types */
+      
+      ZoneType = FEQUADRILATERAL; NElm = N2DElm;
+      
+      err = TECZNE142((char*)"Mixed Elements",
+                      &ZoneType,
+                      &NPts,
+                      &NElm,
+                      &KMax,
+                      &ICellMax,
+                      &JCellMax,
+                      &KCellMax,
+                      &t,
+                      &StrandID,
+                      &ParentZn,
+                      &IsBlock,
+                      &NumFaceConnections,
+                      &FaceNeighborMode,
+                      0,         /* TotalNumFaceNodes */
+                      0,         /* NumConnectedBoundaryFaces */
+                      0,         /* TotalNumBoundaryConnections */
+                      NULL,      /* PassiveVarList */
+                      NULL,      /* ValueLocation */
+                      ShareFromZone,      /* ShareVarFromZone */
+                      &ShareConnectivityFromZone);
+      if (err) cout << "Error writing Tecplot zone data" << endl;
+      
+      
+    } else {   /* Create a Tria zone */
+
+      ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_Tria;
     
-    err = TECZNE112((char*)"Triangle Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
+      err = TECZNE142((char*)"Triangle Elements",
+                      &ZoneType,
+                      &NPts,
+                      &NElm,
+                      &KMax,
+                      &ICellMax,
+                      &JCellMax,
+                      &KCellMax,
+                      &t,
+                      &StrandID,
+                      &ParentZn,
+                      &IsBlock,
+                      &NumFaceConnections,
+                      &FaceNeighborMode,
+                      0,         /* TotalNumFaceNodes */
+                      0,         /* NumConnectedBoundaryFaces */
+                      0,         /* TotalNumBoundaryConnections */
+                      NULL,      /* PassiveVarList */
+                      NULL,      /* ValueLocation */
+                      ShareFromZone,      /* ShareVarFromZone */
+                      &ShareConnectivityFromZone);
+      if (err) cout << "Error writing Tecplot zone data" << endl;
+    }
     
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
@@ -1764,12 +1602,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
       if (config->GetKind_SU2() == SU2_SOL) {
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -1780,13 +1618,13 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -1797,19 +1635,19 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
 
         if (Wrt_Unsteady && GridMovement) {
 
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
           if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             if (err) cout << "Error writing coordinates to Tecplot file" << endl;
             ShareFromZone[i++] = 1;
           }
         }
 
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -1819,31 +1657,132 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   }
   if (nGlobal_Quad > 0) {
     
-    /*--- Write the zone header information ---*/
-    ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_Quad;
+    /*--- write node coordinates and data if not done already---*/
+    if (first_zone) {
+      
+      ShareFromZone = new INTEGER4[NVar];
+      for (i = 0; i < NVar; i++) ShareFromZone[i] = 0;
+      
+      i = 0;
+      if (config->GetKind_SU2() == SU2_SOL) {
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+      } else if (config->GetKind_SU2() == SU2_DOT) {
+        
+        passivedouble* PassiveData = new passivedouble[NPts];
+        
+        if (Wrt_Unsteady && GridMovement) {
+          for (iVar = 0; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        } else {
+          for (iVar = dims; iVar < nVar_Total; iVar++) {
+            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            if (err) cout << "Error writing data to Tecplot file" << endl;
+          }
+        }
+        
+        delete [] PassiveData;
+        
+      } else {
+        if (Wrt_Unsteady && GridMovement) {
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+          if (dims == 3) {
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
+            if (err) cout << "Error writing coordinates to Tecplot file" << endl;
+            ShareFromZone[i++] = 1;
+          }
+        }
+        for (iVar = 0; iVar < nVar_Total; iVar++) {
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          if (err) cout << "Error writing data to Tecplot file" << endl;
+        }
+      }
+      
+      first_zone = false;
+    }
     
-    err = TECZNE112((char*)"Quadrilateral Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
+  }
+
+  /*--- Create 3D Volume Zone ---*/
+  NVolElm = (INTEGER4)(nGlobal_Tetr + nGlobal_Pyra + nGlobal_Pris + nGlobal_Hexa);
+  if (NVolElm > 0) {
+      
+    /*--- Write the zone header information ---*/
+      
+    if ((INTEGER4)nGlobal_Tetr < NVolElm) {   /* Create a Hexa zone with a mixed element types */
+      
+      /*--- Write the mixed-element zone header information ---*/
+      
+      ZoneType = FEBRICK; NElm = NVolElm;
+      
+      err = TECZNE142((char*)"Mixed Elements",
+                      &ZoneType,
+                      &NPts,
+                      &NElm,
+                      &KMax,
+                      &ICellMax,
+                      &JCellMax,
+                      &KCellMax,
+                      &t,
+                      &StrandID,
+                      &ParentZn,
+                      &IsBlock,
+                      &NumFaceConnections,
+                      &FaceNeighborMode,
+                      0,         /* TotalNumFaceNodes */
+                      0,         /* NumConnectedBoundaryFaces */
+                      0,         /* TotalNumBoundaryConnections */
+                      NULL,      /* PassiveVarList */
+                      NULL,      /* ValueLocation */
+                      ShareFromZone,      /* ShareVarFromZone */
+                      &ShareConnectivityFromZone);
+      if (err) cout << "Error writing Tecplot zone data" << endl;
+      
+    } else {   /* Create a Tetra zone */
+
+      /*--- Write the tetrahedral zone header information ---*/
+
+      ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
+    
+      err = TECZNE142((char*)"Tetrahedral Elements",
+                      &ZoneType,
+                      &NPts,
+                      &NElm,
+                      &KMax,
+                      &ICellMax,
+                      &JCellMax,
+                      &KCellMax,
+                      &t,
+                      &StrandID,
+                      &ParentZn,
+                      &IsBlock,
+                      &NumFaceConnections,
+                      &FaceNeighborMode,
+                      0,         /* TotalNumFaceNodes */
+                      0,         /* NumConnectedBoundaryFaces */
+                      0,         /* TotalNumBoundaryConnections */
+                      NULL,      /* PassiveVarList */
+                      NULL,      /* ValueLocation */
+                      ShareFromZone,      /* ShareVarFromZone */
+                      &ShareConnectivityFromZone);
+      if (err) cout << "Error writing Tecplot zone data" << endl;
+    }
     
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
@@ -1855,12 +1794,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
       if (config->GetKind_SU2() == SU2_SOL) {
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -1871,13 +1810,13 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -1886,143 +1825,29 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         
       } else {
         if (Wrt_Unsteady && GridMovement) {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
           if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             if (err) cout << "Error writing coordinates to Tecplot file" << endl;
             ShareFromZone[i++] = 1;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
       
       first_zone = false;
     }
-    
+
   }
-  if (nGlobal_Tetr > 0) {
-    
-    /*--- Write the zone header information ---*/
-    ZoneType = FETETRAHEDRON; NElm = (INTEGER4)nGlobal_Tetr;
-    
-    err = TECZNE112((char*)"Tetrahedral Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
-    
-    /*--- write node coordinates and data if not done already---*/
-    if (first_zone) {
-      
-      ShareFromZone = new INTEGER4[NVar];
-      for (i = 0; i < NVar; i++) ShareFromZone[i] = 0;
-      
-      i = 0;
-      if (config->GetKind_SU2() == SU2_SOL) {
-        if (Wrt_Unsteady && GridMovement) {
-          for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-            if (err) cout << "Error writing data to Tecplot file" << endl;
-          }
-        } else {
-          for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-            if (err) cout << "Error writing data to Tecplot file" << endl;
-          }
-        }
-      } else if (config->GetKind_SU2() == SU2_DOT) {
-        
-        passivedouble* PassiveData = new passivedouble[NPts];
-        
-        if (Wrt_Unsteady && GridMovement) {
-          for (iVar = 0; iVar < nVar_Total; iVar++) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
-            if (err) cout << "Error writing data to Tecplot file" << endl;
-          }
-        } else {
-          for (iVar = dims; iVar < nVar_Total; iVar++) {
-            for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
-            if (err) cout << "Error writing data to Tecplot file" << endl;
-          }
-        }
-        
-        delete [] PassiveData;
-        
-      } else {
-        if (Wrt_Unsteady && GridMovement) {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
-          if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
-          if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
-            if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-            ShareFromZone[i++] = 1;
-          }
-        }
-        for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
-          if (err) cout << "Error writing data to Tecplot file" << endl;
-        }
-      }
-      
-      first_zone = false;
-    }
-    
-  }
+
   if (nGlobal_Hexa > 0) {
     
-    /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Hexa;
-    
-    err = TECZNE112((char*)"Hexahedral Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
-    
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
       
@@ -2033,12 +1858,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
       if (config->GetKind_SU2() == SU2_SOL) {
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2049,13 +1874,13 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2064,18 +1889,18 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         
       } else {
         if (Wrt_Unsteady && GridMovement) {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
           if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             if (err) cout << "Error writing coordinates to Tecplot file" << endl;
             ShareFromZone[i++] = 1;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2086,32 +1911,6 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   }
   if (nGlobal_Pyra > 0) {
     
-    /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pyra;
-    
-    err = TECZNE112((char*)"Pyramid Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
-    
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
       
@@ -2122,12 +1921,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
       if (config->GetKind_SU2() == SU2_SOL) {
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2138,13 +1937,13 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2153,18 +1952,18 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         
       } else {
         if (Wrt_Unsteady && GridMovement) {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
           if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             if (err) cout << "Error writing coordinates to Tecplot file" << endl;
             ShareFromZone[i++] = 1;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2175,32 +1974,6 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   }
   if (nGlobal_Pris > 0) {
 
-    /*--- Write the zone header information ---*/
-    ZoneType = FEBRICK; NElm = (INTEGER4)nGlobal_Pris;
-    
-    err = TECZNE112((char*)"Prism Elements",
-                    &ZoneType,
-                    &NPts,
-                    &NElm,
-                    &KMax,
-                    &ICellMax,
-                    &JCellMax,
-                    &KCellMax,
-                    &t,
-                    &StrandID,
-                    &ParentZn,
-                    &IsBlock,
-                    &NumFaceConnections,
-                    &FaceNeighborMode,
-                    0,         /* TotalNumFaceNodes */
-                    0,         /* NumConnectedBoundaryFaces */
-                    0,         /* TotalNumBoundaryConnections */
-                    NULL,      /* PassiveVarList */
-                    NULL,      /* ValueLocation */
-                    ShareFromZone,      /* ShareVarFromZone */
-                    &ShareConnectivityFromZone);
-    if (err) cout << "Error writing Tecplot zone data" << endl;
-    
     /*--- write node coordinates and data if not done already---*/
     if (first_zone) {
       
@@ -2211,12 +1984,12 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
       if (config->GetKind_SU2() == SU2_SOL) {
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
-            err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2227,13 +2000,13 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         if (Wrt_Unsteady && GridMovement) {
           for (iVar = 0; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         } else {
           for (iVar = dims; iVar < nVar_Total; iVar++) {
             for (i = 0; i < NPts; i++) PassiveData[i] = SU2_TYPE::GetValue(Data[iVar][i]);
-            err = TECDAT112(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, PassiveData, &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
@@ -2242,18 +2015,18 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
         
       } else {
         if (Wrt_Unsteady && GridMovement) {
-          err = TECDAT112(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[0], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
-          err = TECDAT112(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Coords[1], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing coordinates to Tecplot file" << endl;
           if (dims == 3) {
-            err = TECDAT112(&NPts, Coords[2], &IsDouble);
+            err = TECDAT142(&NPts, Coords[2], &IsDouble);
             if (err) cout << "Error writing coordinates to Tecplot file" << endl;
             ShareFromZone[i++] = 1;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2264,7 +2037,7 @@ void COutput::SetTecplotBinary_DomainSolution(CConfig *config, CGeometry *geomet
   
   delete [] ShareFromZone;
   
-  err = TECEND112();
+  err = TECEND142();
   if (err) cout << "Error in closing Tecplot file" << endl;
   
 #endif
@@ -2277,13 +2050,14 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
   
   passivedouble   t;
   INTEGER4 i, err, Debug, NPts, NElm, IsDouble, KMax;
-  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
+  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileFormat, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
   bool first_zone = true;
   unsigned short iDim, dims = geometry->GetnDim();
   unsigned long iPoint, iElem, iNode;
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
@@ -2296,6 +2070,8 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       buffer = config->GetSurfSens_FileName();
     }
     
+    FileFormat = PLT;
+
     file << buffer << ".mesh.plt";
     FileType = GRID;
     
@@ -2374,10 +2150,11 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     ShareConnectivityFromZone  = 0;
     
     /*--- Open Tecplot file ---*/
-    err = TECINI112((char *)config->GetSurfFlowCoeff_FileName().c_str(),
+    err = TECINI142((char *)config->GetSurfFlowCoeff_FileName().c_str(),
                     (char *)variables.c_str(),
                     (char *)file.str().c_str(),
                     (char *)".",
+                    &FileFormat,
                     &FileType,
                     &Debug,
                     &IsDouble);
@@ -2398,7 +2175,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- Write the zone header information ---*/
       ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line;
       
-      err = TECZNE112((char*)"Line Elements",
+      err = TECZNE142((char*)"Line Elements",
                       &ZoneType,
                       &NPts,
                       &NElm,
@@ -2424,17 +2201,17 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- write node coordinates and data if not done already---*/
       if (first_zone) {
         
-        err = TECDAT112(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
-        err = TECDAT112(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
         if (geometry->GetnDim() == 3) {
-          err = TECDAT112(&NPts, Surf_Coords[2], &IsDouble);
+          err = TECDAT142(&NPts, Surf_Coords[2], &IsDouble);
           ShareFromZone[2] = 1;
         }
         if (err) cout << "Error writing coordinates to Tecplot file" << endl;
         first_zone = false;
       }
       
-      err = TECNOD112(Conn_Line_New);
+      err = TECNOD142(Conn_Line_New);
       if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       
       delete [] Conn_Line_New;
@@ -2456,7 +2233,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- Write the zone header information ---*/
       ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria;
       
-      err = TECZNE112((char*)"Triangle Elements",
+      err = TECZNE142((char*)"Triangle Elements",
                       &ZoneType,
                       &NPts,
                       &NElm,
@@ -2482,17 +2259,17 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- write node coordinates and data if not done already---*/
       if (first_zone) {
         
-        err = TECDAT112(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
-        err = TECDAT112(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
         if (geometry->GetnDim() == 3) {
-          err = TECDAT112(&NPts, Surf_Coords[2], &IsDouble);
+          err = TECDAT142(&NPts, Surf_Coords[2], &IsDouble);
           ShareFromZone[2] = 1;
         }
         if (err) cout << "Error writing coordinates to Tecplot file" << endl;
         first_zone = false;
       }
       
-      err = TECNOD112(Conn_BoundTria_New);
+      err = TECNOD142(Conn_BoundTria_New);
       if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       
       delete [] Conn_BoundTria_New;
@@ -2515,7 +2292,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- Write the zone header information ---*/
       ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad;
       
-      err = TECZNE112((char*)"Quadrilateral Elements",
+      err = TECZNE142((char*)"Quadrilateral Elements",
                       &ZoneType,
                       &NPts,
                       &NElm,
@@ -2541,17 +2318,17 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
       /*--- write node coordinates and data if not done already---*/
       if (first_zone) {
         
-        err = TECDAT112(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
-        err = TECDAT112(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[0], &IsDouble); ShareFromZone[0] = 1;
+        err = TECDAT142(&NPts, Surf_Coords[1], &IsDouble); ShareFromZone[1] = 1;
         if (geometry->GetnDim() == 3) {
-          err = TECDAT112(&NPts, Surf_Coords[2], &IsDouble);
+          err = TECDAT142(&NPts, Surf_Coords[2], &IsDouble);
           ShareFromZone[2] = 1;
         }
         if (err) cout << "Error writing coordinates to Tecplot file" << endl;
         first_zone = false;
       }
       
-      err = TECNOD112(Conn_BoundQuad_New);
+      err = TECNOD142(Conn_BoundQuad_New);
       if (err) cout << "Error writing connectivity to Tecplot file" << endl;
       
       delete [] Conn_BoundQuad_New;
@@ -2566,7 +2343,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     
     wrote_surf_file = true;
     
-    err = TECEND112();
+    err = TECEND142();
     if (err) cout << "Error in closing Tecplot file" << endl;
     
   }
@@ -2581,7 +2358,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   passivedouble   t;
   INTEGER4 i, iVar, err, Debug, NPts, NElm, IsDouble, KMax;
-  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileType;
+  INTEGER4 ICellMax, JCellMax, KCellMax, ZoneType, StrandID, ParentZn, FileFormat, FileType;
   INTEGER4 *ShareFromZone, IsBlock, NumFaceConnections, FaceNeighborMode, ShareConnectivityFromZone;
   string buffer, variables;
   stringstream file;
@@ -2589,6 +2366,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
   unsigned long iPoint, iElem, iNode, iSurf_Poin, iExtIter = config->GetExtIter();
   unsigned short iDim, NVar, dims = geometry->GetnDim();
+  enum     FileFormat { PLT = 0, SZPLT = 1 };
   enum     FileType { FULL = 0, GRID = 1, SOLUTION = 2 };
   enum   ZoneType { ORDERED=0, FELINESEG=1, FETRIANGLE=2, FEQUADRILATERAL=3, FETETRAHEDRON=4, FEBRICK=5, FEPOLYGON=6, FEPOLYHEDRON=7 };
   
@@ -2606,16 +2384,8 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     buffer = config->GetSurfStructure_FileName().c_str();
   }
   
-  if (Kind_Solver == WAVE_EQUATION) {
-    buffer = config->GetSurfWave_FileName().c_str();
-  }
-  
-  if (Kind_Solver == HEAT_EQUATION) {
+  if (Kind_Solver == HEAT_EQUATION_FVM) {
     buffer = config->GetSurfHeat_FileName().c_str();
-  }
-  
-  if (Kind_Solver == POISSON_EQUATION) {
-    buffer = config->GetSurfStructure_FileName().c_str();
   }
   
   if (config->GetKind_SU2() == SU2_DOT) {
@@ -2632,6 +2402,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     if ((int)iExtIter >= 10000)              file << iExtIter;
   }
   file << ".sol.plt";
+  FileFormat = PLT;
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
   if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
@@ -2737,10 +2508,11 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   
   
   /*--- Open Tecplot file ---*/
-  err = TECINI112((char *)config->GetFlow_FileName().c_str(),
+  err = TECINI142((char *)config->GetFlow_FileName().c_str(),
                   (char *)variables.c_str(),
                   (char *)file.str().c_str(),
                   (char *)".",
+                  &FileFormat,
                   &FileType,
                   &Debug,
                   &IsDouble);
@@ -2752,7 +2524,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     /*--- Write the zone header information ---*/
     ZoneType = FELINESEG; NElm = (INTEGER4)nGlobal_Line;
     
-    err = TECZNE112((char*)"Line Elements",
+    err = TECZNE142((char*)"Line Elements",
                     &ZoneType,
                     &NPts,
                     &NElm,
@@ -2782,23 +2554,23 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
       if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = dims; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       } else {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2812,7 +2584,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     /*--- Write the zone header information ---*/
     ZoneType = FETRIANGLE; NElm = (INTEGER4)nGlobal_BoundTria;
     
-    err = TECZNE112((char*)"Triangle Elements",
+    err = TECZNE142((char*)"Triangle Elements",
                     &ZoneType,
                     &NPts,
                     &NElm,
@@ -2842,23 +2614,23 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
       if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = dims; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       } else {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2872,7 +2644,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     /*--- Write the zone header information ---*/
     ZoneType = FEQUADRILATERAL; NElm = (INTEGER4)nGlobal_BoundQuad;
     
-    err = TECZNE112((char*)"Quadrilateral Elements",
+    err = TECZNE142((char*)"Quadrilateral Elements",
                     &ZoneType,
                     &NPts,
                     &NElm,
@@ -2902,23 +2674,23 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
       if ((config->GetKind_SU2() == SU2_SOL) || (config->GetKind_SU2() == SU2_DOT)) {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Data[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = dims; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       } else {
         if (Wrt_Unsteady && GridMovement) {
           for (iDim = 0; iDim < dims; iDim++) {
-            err = TECDAT112(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
+            err = TECDAT142(&NPts, Surf_Coords[iDim], &IsDouble); ShareFromZone[i++] = 1;
             if (err) cout << "Error writing data to Tecplot file" << endl;
           }
         }
         for (iVar = 0; iVar < nVar_Total; iVar++) {
-          err = TECDAT112(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
+          err = TECDAT142(&NPts, Surf_Data[iVar], &IsDouble); ShareFromZone[i++] = 1;
           if (err) cout << "Error writing data to Tecplot file" << endl;
         }
       }
@@ -2939,7 +2711,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
   delete [] SurfacePoint;
   delete [] ShareFromZone;
   
-  err = TECEND112();
+  err = TECEND142();
   if (err) cout << "Error in closing Tecplot file" << endl;
   
 #endif
@@ -2952,7 +2724,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
   stringstream variables; variables.str(string());
   unsigned short iVar;
   *NVar = 0;
-  unsigned short iDim, nDim = geometry->GetnDim();
+  unsigned short nDim = geometry->GetnDim();
   unsigned short Kind_Solver  = config->GetKind_Solver();
   bool grid_movement = config->GetGrid_Movement();
   bool Wrt_Unsteady = config->GetWrt_Unsteady();
@@ -3053,12 +2825,7 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
       }
     }
     
-    if (Kind_Solver == POISSON_EQUATION) {
-      for (iDim = 0; iDim < geometry->GetnDim(); iDim++) {
-        variables << "poissonField_" << iDim+1 << " ";
-        *NVar += 1;
-      }
-    }
+
     
     if (( Kind_Solver == ADJ_EULER              ) ||
         ( Kind_Solver == ADJ_NAVIER_STOKES      ) ||
