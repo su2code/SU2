@@ -4530,41 +4530,6 @@ void CAvgGrad_Flow::SetReynoldsStressMatrix(su2double turb_ke){
 void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   unsigned short iDim,jDim;
-  // su2double **A_ij;
-  // su2double **Eig_Vec;
-  // su2double **New_Eig_Vec;
-  // su2double **newA_ij;
-  // su2double **Corners;
-  // su2double *Eig_Val;
-  // su2double *Barycentric_Coord;
-  // su2double *New_Coord;
-
-  /* --- Get perturbation parameters from config options --- */
-
-  unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
-  su2double beta_delta = config->GetBeta_Delta();
-  su2double urlx = config->GetURLX();
-  bool permute = config->GetPermute();
-
-  /* --- Initialize data structures required to perform perturbation --- */
-
-  // A_ij = new su2double* [3];          
-  // newA_ij = new su2double* [3];
-  // Eig_Vec = new su2double* [3];
-  // New_Eig_Vec = new su2double* [3];
-  // Corners = new su2double* [3];
-  // Eig_Val = new su2double [3];
-  // Barycentric_Coord = new su2double [2];
-  // New_Coord = new su2double [2];
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   A_ij[iDim] = new su2double [3];
-  //   newA_ij[iDim] = new su2double [3];
-  //   Eig_Vec[iDim] = new su2double [3];
-  //   New_Eig_Vec[iDim] = new su2double [3];
-  //   Corners[iDim] = new su2double [2];
-  //   Eig_Val[iDim] = 0;
-  // }
 
   /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
 
@@ -4658,26 +4623,6 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
       urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
-
-
-    /* delete variables */
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   delete [] A_ij[iDim];
-  //   delete [] newA_ij[iDim];
-  //   delete [] Eig_Vec[iDim];
-  //   delete [] New_Eig_Vec[iDim];
-  //   delete [] Corners[iDim];
-  // }
-
-  // delete [] A_ij;
-  // delete [] newA_ij;
-  // delete [] Eig_Vec;
-  // delete [] New_Eig_Vec;
-  // delete [] Corners;
-  // delete [] Eig_Val;
-  // delete [] Barycentric_Coord;
-  // delete [] New_Coord;
 
 }
 
@@ -4966,26 +4911,6 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
     }
   }
 
-
-    /* delete variables */
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   delete [] A_ij[iDim];
-  //   delete [] newA_ij[iDim];
-  //   delete [] Eig_Vec[iDim];
-  //   delete [] New_Eig_Vec[iDim];
-  //   delete [] Corners[iDim];
-  // }
-
-  // delete [] A_ij;
-  // delete [] newA_ij;
-  // delete [] Eig_Vec;
-  // delete [] New_Eig_Vec;
-  // delete [] Corners;
-  // delete [] Eig_Val;
-  // delete [] Barycentric_Coord;
-  // delete [] New_Coord;
-
 }
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -5194,41 +5119,6 @@ void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
 void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   unsigned short iDim,jDim;
-  // su2double **A_ij;
-  // su2double **Eig_Vec;
-  // su2double **New_Eig_Vec;
-  // su2double **newA_ij;
-  // su2double **Corners;
-  // su2double *Eig_Val;
-  // su2double *Barycentric_Coord;
-  // su2double *New_Coord;
-
-  /* --- Get perturbation parameters from config options --- */
-
-  unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
-  su2double beta_delta = config->GetBeta_Delta();
-  su2double urlx = config->GetURLX();
-  bool permute = config->GetPermute();
-
-  /* --- Initialize data structures required to perform perturbation --- */
-
-  // A_ij = new su2double* [3];          
-  // newA_ij = new su2double* [3];
-  // Eig_Vec = new su2double* [3];
-  // New_Eig_Vec = new su2double* [3];
-  // Corners = new su2double* [3];
-  // Eig_Val = new su2double [3];
-  // Barycentric_Coord = new su2double [2];
-  // New_Coord = new su2double [2];
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   A_ij[iDim] = new su2double [3];
-  //   newA_ij[iDim] = new su2double [3];
-  //   Eig_Vec[iDim] = new su2double [3];
-  //   New_Eig_Vec[iDim] = new su2double [3];
-  //   Corners[iDim] = new su2double [2];
-  //   Eig_Val[iDim] = 0;
-  // }
 
   /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
    for (iDim = 0; iDim< 3; iDim++){
@@ -5321,26 +5211,6 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
       urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
-
-
-    /* delete variables */
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   delete [] A_ij[iDim];
-  //   delete [] newA_ij[iDim];
-  //   delete [] Eig_Vec[iDim];
-  //   delete [] New_Eig_Vec[iDim];
-  //   delete [] Corners[iDim];
-  // }
-
-  // delete [] A_ij;
-  // delete [] newA_ij;
-  // delete [] Eig_Vec;
-  // delete [] New_Eig_Vec;
-  // delete [] Corners;
-  // delete [] Eig_Val;
-  // delete [] Barycentric_Coord;
-  // delete [] New_Coord;
 
 }
 
@@ -5560,42 +5430,7 @@ void CGeneralAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
 void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   unsigned short iDim,jDim;
-  // su2double **A_ij;
-  // su2double **Eig_Vec;
-  // su2double **New_Eig_Vec;
-  // su2double **newA_ij;
-  // su2double **Corners;
-  // su2double *Eig_Val;
-  // su2double *Barycentric_Coord;
-  // su2double *New_Coord;
-
-  /* --- Get perturbation parameters from config options --- */
-
-  unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
-  su2double beta_delta = config->GetBeta_Delta();
-  su2double urlx = config->GetURLX();
-  bool permute = config->GetPermute();
-
-  /* --- Initialize data structures required to perform perturbation --- */
-
-  // A_ij = new su2double* [3];          
-  // newA_ij = new su2double* [3];
-  // Eig_Vec = new su2double* [3];
-  // New_Eig_Vec = new su2double* [3];
-  // Corners = new su2double* [3];
-  // Eig_Val = new su2double [3];
-  // Barycentric_Coord = new su2double [2];
-  // New_Coord = new su2double [2];
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   A_ij[iDim] = new su2double [3];
-  //   newA_ij[iDim] = new su2double [3];
-  //   Eig_Vec[iDim] = new su2double [3];
-  //   New_Eig_Vec[iDim] = new su2double [3];
-  //   Corners[iDim] = new su2double [2];
-  //   Eig_Val[iDim] = 0;
-  // }
-
+ 
   /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
 
   for (iDim = 0; iDim< 3; iDim++){
@@ -5688,26 +5523,6 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
       urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
-
-
-    /* delete variables */
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   delete [] A_ij[iDim];
-  //   delete [] newA_ij[iDim];
-  //   delete [] Eig_Vec[iDim];
-  //   delete [] New_Eig_Vec[iDim];
-  //   delete [] Corners[iDim];
-  // }
-
-  // delete [] A_ij;
-  // delete [] newA_ij;
-  // delete [] Eig_Vec;
-  // delete [] New_Eig_Vec;
-  // delete [] Corners;
-  // delete [] Eig_Val;
-  // delete [] Barycentric_Coord;
-  // delete [] New_Coord;
 
 }
 
