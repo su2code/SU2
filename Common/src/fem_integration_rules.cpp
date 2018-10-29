@@ -30,13 +30,13 @@
  */
 
 #include "../include/fem_standard_element.hpp"
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
-/*         Private member functions of FEMStandardElementBaseClass.                 */
+/*         Private member functions of CFEMStandardElementBase.                     */
 /*----------------------------------------------------------------------------------*/
 
-void FEMStandardElementBaseClass::IntegrationPointsLine(void) {
+void CFEMStandardElementBase::IntegrationPointsLine(void) {
 
   /*--- Allocate the memory for the integration points
         and weights and determine them.                ---*/
@@ -47,7 +47,7 @@ void FEMStandardElementBaseClass::IntegrationPointsLine(void) {
   GaussLegendrePoints1D(rIntegration, wIntegration);
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsQuadrilateral(void) {
+void CFEMStandardElementBase::IntegrationPointsQuadrilateral(void) {
 
   /*--- The 2D quadrature rule is a tensor product of the 1D Gauss-Legendre
         quadrature rule. First determine the number of integration points in 1D,
@@ -74,7 +74,7 @@ void FEMStandardElementBaseClass::IntegrationPointsQuadrilateral(void) {
   }
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsPrism(void) {
+void CFEMStandardElementBase::IntegrationPointsPrism(void) {
 
   /*--- The 3D quadrature rule for a prism is a tensor product of the 1D Gauss-Legendre
         quadrature rule with the triangle quadrature rule. Determine the number of
@@ -112,7 +112,7 @@ void FEMStandardElementBaseClass::IntegrationPointsPrism(void) {
   }
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsHexahedron(void) {
+void CFEMStandardElementBase::IntegrationPointsHexahedron(void) {
 
   /*--- The 3D quadrature rule is a tensor product of the 1D Gauss-Legendre
         quadrature rule. Determine the number of integration points in 1D, which
@@ -143,7 +143,7 @@ void FEMStandardElementBaseClass::IntegrationPointsHexahedron(void) {
   }
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsTriangle(void) {
+void CFEMStandardElementBase::IntegrationPointsTriangle(void) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -2033,7 +2033,7 @@ void FEMStandardElementBaseClass::IntegrationPointsTriangle(void) {
   }
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsTetrahedron(void) {
+void CFEMStandardElementBase::IntegrationPointsTetrahedron(void) {
 
   /*--- Set the number of integration points, depending on the order of
         polynomials that must be integrated exactly. ---*/
@@ -3287,7 +3287,7 @@ void FEMStandardElementBaseClass::IntegrationPointsTetrahedron(void) {
   }
 }
 
-void FEMStandardElementBaseClass::IntegrationPointsPyramid(void) {
+void CFEMStandardElementBase::IntegrationPointsPyramid(void) {
 
   /*--- The 3D quadrature rule for a pyramid is obtained by transforming the
         standard pyramid into a standard hexahedron by means of the Duffy

@@ -1,5 +1,5 @@
 /*!
- * \file cgns_elements.hpp
+ * \file fem_cgns_elements.hpp
  * \brief Headers of the classes and functions for reading CGNS files
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
@@ -43,12 +43,20 @@
 
 #include "primal_grid_structure.hpp"
 
-/* Forward declaration of BoundaryFaceClass to avoid problems. */
-class BoundaryFaceClass;
+/* Forward declaration of CBoundaryFace to avoid problems. */
+class CBoundaryFace;
 
 #ifdef HAVE_CGNS
 #if CGNS_VERSION >= 3300
-class CGNSElementTypeClass {
+
+/*!
+ * \class CCGNSElementType
+ * \brief Class which stores the CGNS element type info for a connectivity
+          section.
+ * \version 6.1.0 "Falcon"
+ */
+
+class CCGNSElementType {
 public:
   int           connID;      /*!< \brief CGNS connectivity ID of this connectivity. */
   ElementType_t elemType;    /*!< \brief Element type according to the CGNS convention,
@@ -63,10 +71,10 @@ public:
   bool surfaceConn;          /*!< \brief Whether or not this is a surface connectivity. */
 
   /* Standard constructor, nothing to be done. */
-  CGNSElementTypeClass(){}
+  CCGNSElementType(){}
 
   /* Destructor, nothing to be done. */
-  ~CGNSElementTypeClass(){}
+  ~CCGNSElementType(){}
 
   /*--- Member function, which determines the meta data for this element type. ---*/
   void DetermineMetaData(const unsigned short nDim,
@@ -76,14 +84,14 @@ public:
                          const int            iConn);
 
   /*--- Member function, which reads the required boundary connectivity range. ---*/
-  void ReadBoundaryConnectivityRange(const int           fn,
-                                     const int           iBase,
-                                     const int           iZone,
-                                     const unsigned long offsetRank,
-                                     const unsigned long nBoundElemRank,
-                                     const unsigned long startingBoundElemIDRank,
-                                     unsigned long       &locBoundElemCount,
-                                     vector<BoundaryFaceClass> &boundElems);
+  void ReadBoundaryConnectivityRange(const int             fn,
+                                     const int             iBase,
+                                     const int             iZone,
+                                     const unsigned long   offsetRank,
+                                     const unsigned long   nBoundElemRank,
+                                     const unsigned long   startingBoundElemIDRank,
+                                     unsigned long         &locBoundElemCount,
+                                     vector<CBoundaryFace> &boundElems);
 
   /*--- Member function, which reads the required connectivity range. ---*/
   void ReadConnectivityRange(const int           fn,

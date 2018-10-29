@@ -1,5 +1,5 @@
 /*!
- * \file cgns_elements.cpp
+ * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
@@ -36,11 +36,11 @@
 #ifdef HAVE_CGNS
 #if CGNS_VERSION >= 3300
 
-void CGNSElementTypeClass::DetermineMetaData(const unsigned short nDim,
-                                             const int            fn,
-                                             const int            iBase,
-                                             const int            iZone,
-                                             const int            iConn) {
+void CCGNSElementType::DetermineMetaData(const unsigned short nDim,
+                                         const int            fn,
+                                         const int            iBase,
+                                         const int            iZone,
+                                         const int            iConn) {
 
   /* Store the connectivity ID. */
   connID = iConn;
@@ -67,15 +67,15 @@ void CGNSElementTypeClass::DetermineMetaData(const unsigned short nDim,
   surfaceConn = (nDimElem == nDim-1);
 }
 
-void CGNSElementTypeClass::ReadBoundaryConnectivityRange(
-                                     const int           fn,
-                                     const int           iBase,
-                                     const int           iZone,
-                                     const unsigned long offsetRank,
-                                     const unsigned long nBoundElemRank,
-                                     const unsigned long startingBoundElemIDRank,
-                                     unsigned long       &locBoundElemCount,
-                                     vector<BoundaryFaceClass> &boundElems) {
+void CCGNSElementType::ReadBoundaryConnectivityRange(
+                                      const int             fn,
+                                      const int             iBase,
+                                      const int             iZone,
+                                      const unsigned long   offsetRank,
+                                      const unsigned long   nBoundElemRank,
+                                      const unsigned long   startingBoundElemIDRank,
+                                      unsigned long         &locBoundElemCount,
+                                      vector<CBoundaryFace> &boundElems) {
 
   /* Determine the index range to be read for this rank. */
   const cgsize_t iBeg = indBeg + offsetRank;
@@ -139,10 +139,10 @@ void CGNSElementTypeClass::ReadBoundaryConnectivityRange(
     const unsigned long globBoundElemID = startingBoundElemIDRank
                                         + locBoundElemCount;
 
-    /* Create an object of BoundaryFaceClass and store it in boundElems.
+    /* Create an object of CBoundaryFace and store it in boundElems.
        Note that the corresponding domain element is not known yet and
        is therefore set to ULONG_MAX. */
-    BoundaryFaceClass thisBoundFace;
+    CBoundaryFace thisBoundFace;
     thisBoundFace.VTK_Type          = VTK_Type[ind];
     thisBoundFace.nPolyGrid         = nPoly[ind];
     thisBoundFace.nDOFsGrid         = nDOFs[ind];
@@ -154,15 +154,15 @@ void CGNSElementTypeClass::ReadBoundaryConnectivityRange(
   }
 }
 
-void CGNSElementTypeClass::ReadConnectivityRange(const int           fn,
-                                                 const int           iBase,
-                                                 const int           iZone,
-                                                 const unsigned long offsetRank,
-                                                 const unsigned long nElemRank,
-                                                 const unsigned long startingElemIDRank,
-                                                 CPrimalGrid         **&elem,
-                                                 unsigned long       &locElemCount,
-                                                 unsigned long       &nDOFsLoc) {
+void CCGNSElementType::ReadConnectivityRange(const int           fn,
+                                             const int           iBase,
+                                             const int           iZone,
+                                             const unsigned long offsetRank,
+                                             const unsigned long nElemRank,
+                                             const unsigned long startingElemIDRank,
+                                             CPrimalGrid         **&elem,
+                                             unsigned long       &locElemCount,
+                                             unsigned long       &nDOFsLoc) {
 
   /* Determine the index range to be read for this rank. */
   const cgsize_t iBeg = indBeg + offsetRank;
@@ -240,9 +240,9 @@ void CGNSElementTypeClass::ReadConnectivityRange(const int           fn,
   }
 }
 
-unsigned short CGNSElementTypeClass::DetermineElementDimension(const int fn,
-                                                               const int iBase,
-                                                               const int iZone) {
+unsigned short CCGNSElementType::DetermineElementDimension(const int fn,
+                                                           const int iBase,
+                                                           const int iZone) {
 
   /*--- Determine the element type and return the appropriate element
         dimension, i.e. the number of parametric coordinates needed to
@@ -285,9 +285,9 @@ unsigned short CGNSElementTypeClass::DetermineElementDimension(const int fn,
   return 0;
 }
 
-unsigned short CGNSElementTypeClass::DetermineElementDimensionMixed(const int fn,
-                                                                    const int iBase,
-                                                                    const int iZone) {
+unsigned short CCGNSElementType::DetermineElementDimensionMixed(const int fn,
+                                                                const int iBase,
+                                                                const int iZone) {
   /* Determine the required size of the vector to read the
      data of the first element of this connectivity. */
   cgsize_t sizeNeeded;
@@ -311,7 +311,7 @@ unsigned short CGNSElementTypeClass::DetermineElementDimensionMixed(const int fn
   return nDimElem;
 }
 
-unsigned short CGNSElementTypeClass::IndexInStoredTypes(
+unsigned short CCGNSElementType::IndexInStoredTypes(
                                   const ElementType_t             typeElem,
                                   vector<ElementType_t>           &CGNS_Type,
                                   vector<unsigned short>          &VTK_Type,
@@ -344,7 +344,7 @@ unsigned short CGNSElementTypeClass::IndexInStoredTypes(
   return ind;
 }
 
-void CGNSElementTypeClass::CreateDataElementType(
+void CCGNSElementType::CreateDataElementType(
                                      const ElementType_t    typeElem,
                                      unsigned short         &VTK_Type,
                                      unsigned short         &nPoly,
@@ -398,10 +398,10 @@ void CGNSElementTypeClass::CreateDataElementType(
 /*--- CGNS and SU2 format for the specific elements.                   ---*/
 /*------------------------------------------------------------------------*/
 
-void CGNSElementTypeClass::CreateDataNODE(unsigned short         &VTK_Type,
-                                          unsigned short         &nPoly,
-                                          unsigned short         &nDOFs,
-                                          vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataNODE(unsigned short         &VTK_Type,
+                                      unsigned short         &nPoly,
+                                      unsigned short         &nDOFs,
+                                      vector<unsigned short> &SU2ToCGNS) {
 
   /* Set the required data for a NODE. */
   VTK_Type = VERTEX;
@@ -410,10 +410,10 @@ void CGNSElementTypeClass::CreateDataNODE(unsigned short         &VTK_Type,
   SU2ToCGNS.push_back(0);
 }
 
-void CGNSElementTypeClass::CreateDataBAR_2(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataBAR_2(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The BAR_2 element is a linear element. The numbering of the nodes is
      the same for CGNS and SU2. */
@@ -425,10 +425,10 @@ void CGNSElementTypeClass::CreateDataBAR_2(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 1;
 }
 
-void CGNSElementTypeClass::CreateDataBAR_3(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataBAR_3(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The BAR_3 element is a quadratic element. SU2 numbers to nodes with
      increasing parametric value, while in CGNS the internal node is
@@ -441,10 +441,10 @@ void CGNSElementTypeClass::CreateDataBAR_3(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 2; SU2ToCGNS[2] = 1;
 }
 
-void CGNSElementTypeClass::CreateDataBAR_4(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataBAR_4(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The BAR_4 element is a cubic element. SU2 numbers to nodes with
      increasing parametric value, while in CGNS the internal nodes are
@@ -457,10 +457,10 @@ void CGNSElementTypeClass::CreateDataBAR_4(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 2; SU2ToCGNS[2] = 3; SU2ToCGNS[3] = 1;
 }
 
-void CGNSElementTypeClass::CreateDataBAR_5(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataBAR_5(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The BAR_5 element is a quartic element. SU2 numbers to nodes with
      increasing parametric value, while in CGNS the internal nodes are
@@ -474,10 +474,10 @@ void CGNSElementTypeClass::CreateDataBAR_5(unsigned short         &VTK_Type,
   SU2ToCGNS[3] = 4; SU2ToCGNS[4] = 1;
 }
 
-void CGNSElementTypeClass::CreateDataTRI_3(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTRI_3(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The TRI_3 element is a linear triangle. The node numbering is the same
      in SU2 and CGNS. */
@@ -489,10 +489,10 @@ void CGNSElementTypeClass::CreateDataTRI_3(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 1; SU2ToCGNS[2] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataTRI_6(unsigned short         &VTK_Type,
-                                           unsigned short         &nPoly,
-                                           unsigned short         &nDOFs,
-                                           vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTRI_6(unsigned short         &VTK_Type,
+                                       unsigned short         &nPoly,
+                                       unsigned short         &nDOFs,
+                                       vector<unsigned short> &SU2ToCGNS) {
 
   /* The TRI_6 element is a quadratic triangle. In CGNS the nodes are numbered
      as follows: - First the vertex nodes.
@@ -510,10 +510,10 @@ void CGNSElementTypeClass::CreateDataTRI_6(unsigned short         &VTK_Type,
   SU2ToCGNS[3] = 5; SU2ToCGNS[4] = 4; SU2ToCGNS[5] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataTRI_10(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTRI_10(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The TRI_10 element is a cubic triangle. In CGNS the nodes are numbered
      as follows: - First the vertex nodes.
@@ -532,10 +532,10 @@ void CGNSElementTypeClass::CreateDataTRI_10(unsigned short         &VTK_Type,
   SU2ToCGNS[8] = 6; SU2ToCGNS[9] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataTRI_15(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTRI_15(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The TRI_15 element is a quartic triangle. In CGNS the nodes are numbered
      as follows: - First the vertex nodes.
@@ -558,10 +558,10 @@ void CGNSElementTypeClass::CreateDataTRI_15(unsigned short         &VTK_Type,
   SU2ToCGNS[12] = 9; SU2ToCGNS[13] =  8; SU2ToCGNS[14] =  2;
 }
 
-void CGNSElementTypeClass::CreateDataQUAD_4(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataQUAD_4(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The QUAD_4 element is a linear quadrilateral. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -578,10 +578,10 @@ void CGNSElementTypeClass::CreateDataQUAD_4(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 1; SU2ToCGNS[2] = 3; SU2ToCGNS[3] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataQUAD_9(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataQUAD_9(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The QUAD_9 element is a quadratic quadrilateral. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -600,10 +600,10 @@ void CGNSElementTypeClass::CreateDataQUAD_9(unsigned short         &VTK_Type,
   SU2ToCGNS[8] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataQUAD_16(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataQUAD_16(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The QUAD_16 element is a cubic quadrilateral. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -623,10 +623,10 @@ void CGNSElementTypeClass::CreateDataQUAD_16(unsigned short         &VTK_Type,
   SU2ToCGNS[12] =  3; SU2ToCGNS[13] =  9; SU2ToCGNS[14] =  8; SU2ToCGNS[15] = 2;
 }
 
-void CGNSElementTypeClass::CreateDataQUAD_25(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataQUAD_25(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The QUAD_25 element is a quartic quadrilateral. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -649,10 +649,10 @@ void CGNSElementTypeClass::CreateDataQUAD_25(unsigned short         &VTK_Type,
   SU2ToCGNS[24] =  2;
 }
 
-void CGNSElementTypeClass::CreateDataTETRA_4(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTETRA_4(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The TETRA_4 element is a linear tetrahedron. The node numbering is
      the same in SU2 and CGNS. */
@@ -664,10 +664,10 @@ void CGNSElementTypeClass::CreateDataTETRA_4(unsigned short         &VTK_Type,
   SU2ToCGNS[0] = 0; SU2ToCGNS[1] = 1; SU2ToCGNS[2] = 2; SU2ToCGNS[3] = 3;
 }
 
-void CGNSElementTypeClass::CreateDataTETRA_10(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTETRA_10(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The TETRA_10 element is a quadratic tetrahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -688,10 +688,10 @@ void CGNSElementTypeClass::CreateDataTETRA_10(unsigned short         &VTK_Type,
   SU2ToCGNS[8] = 9; SU2ToCGNS[9] = 3;
 }
 
-void CGNSElementTypeClass::CreateDataTETRA_20(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTETRA_20(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The TETRA_20 element is a cubic tetrahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -714,10 +714,10 @@ void CGNSElementTypeClass::CreateDataTETRA_20(unsigned short         &VTK_Type,
   SU2ToCGNS[16] = 11; SU2ToCGNS[17] = 13; SU2ToCGNS[18] = 15; SU2ToCGNS[19] =  3;
 }
 
-void CGNSElementTypeClass::CreateDataTETRA_35(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataTETRA_35(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The TETRA_35 element is a quartic tetrahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -747,10 +747,10 @@ void CGNSElementTypeClass::CreateDataTETRA_35(unsigned short         &VTK_Type,
   SU2ToCGNS[32] = 18; SU2ToCGNS[33] = 21; SU2ToCGNS[34] =  3;
 }
 
-void CGNSElementTypeClass::CreateDataPYRA_5(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPYRA_5(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The PYRA_5 element is a linear pyramid. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -770,10 +770,10 @@ void CGNSElementTypeClass::CreateDataPYRA_5(unsigned short         &VTK_Type,
   SU2ToCGNS[4] = 4;
 }
 
-void CGNSElementTypeClass::CreateDataPYRA_14(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPYRA_14(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The PYRA_14 element is a quadratic pyramid. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -795,10 +795,10 @@ void CGNSElementTypeClass::CreateDataPYRA_14(unsigned short         &VTK_Type,
   SU2ToCGNS[12] = 11; SU2ToCGNS[13] = 4;
 }
 
-void CGNSElementTypeClass::CreateDataPYRA_30(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPYRA_30(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The PYRA_30 element is a cubic pyramid. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -824,10 +824,10 @@ void CGNSElementTypeClass::CreateDataPYRA_30(unsigned short         &VTK_Type,
   SU2ToCGNS[28] = 18; SU2ToCGNS[29] =  4;
 }
 
-void CGNSElementTypeClass::CreateDataPYRA_55(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPYRA_55(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The PYRA_55 element is a quartic pyramid. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -862,10 +862,10 @@ void CGNSElementTypeClass::CreateDataPYRA_55(unsigned short         &VTK_Type,
   SU2ToCGNS[52] = 28; SU2ToCGNS[53] = 25; SU2ToCGNS[54] =  4;
 }
 
-void CGNSElementTypeClass::CreateDataPENTA_6(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPENTA_6(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The PENTA_6 element is a linear prism. The node numbering is
      the same in SU2 and CGNS. */
@@ -878,10 +878,10 @@ void CGNSElementTypeClass::CreateDataPENTA_6(unsigned short         &VTK_Type,
   SU2ToCGNS[3] = 3; SU2ToCGNS[4] = 4; SU2ToCGNS[5] = 5;
 }
 
-void CGNSElementTypeClass::CreateDataPENTA_18(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPENTA_18(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The PENTA_18 element is a quadratic prism. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -904,10 +904,10 @@ void CGNSElementTypeClass::CreateDataPENTA_18(unsigned short         &VTK_Type,
   SU2ToCGNS[16] = 13; SU2ToCGNS[17] =  5;
 }
 
-void CGNSElementTypeClass::CreateDataPENTA_40(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPENTA_40(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The PENTA_40 element is a cubic prism. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -935,10 +935,10 @@ void CGNSElementTypeClass::CreateDataPENTA_40(unsigned short         &VTK_Type,
   SU2ToCGNS[36] = 20; SU2ToCGNS[37] = 22; SU2ToCGNS[38] = 21; SU2ToCGNS[39] =  5;
 }
 
-void CGNSElementTypeClass::CreateDataPENTA_75(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataPENTA_75(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The PENTA_75 element is a quartic prism. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -978,10 +978,10 @@ void CGNSElementTypeClass::CreateDataPENTA_75(unsigned short         &VTK_Type,
   SU2ToCGNS[72] = 30; SU2ToCGNS[73] = 29; SU2ToCGNS[74] =  5;
 }
 
-void CGNSElementTypeClass::CreateDataHEXA_8(unsigned short         &VTK_Type,
-                                            unsigned short         &nPoly,
-                                            unsigned short         &nDOFs,
-                                            vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataHEXA_8(unsigned short         &VTK_Type,
+                                        unsigned short         &nPoly,
+                                        unsigned short         &nDOFs,
+                                        vector<unsigned short> &SU2ToCGNS) {
 
   /* The HEXA_8 element is a linear hexahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -1001,10 +1001,10 @@ void CGNSElementTypeClass::CreateDataHEXA_8(unsigned short         &VTK_Type,
   SU2ToCGNS[4] = 4; SU2ToCGNS[5] = 5; SU2ToCGNS[6] = 7; SU2ToCGNS[7] = 6;
 }
 
-void CGNSElementTypeClass::CreateDataHEXA_27(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataHEXA_27(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The HEXA_27 element is a quadratic hexahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -1029,10 +1029,10 @@ void CGNSElementTypeClass::CreateDataHEXA_27(unsigned short         &VTK_Type,
   SU2ToCGNS[24] =  7; SU2ToCGNS[25] = 18; SU2ToCGNS[26] =  6;
 }
 
-void CGNSElementTypeClass::CreateDataHEXA_64(unsigned short         &VTK_Type,
-                                             unsigned short         &nPoly,
-                                             unsigned short         &nDOFs,
-                                             vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataHEXA_64(unsigned short         &VTK_Type,
+                                         unsigned short         &nPoly,
+                                         unsigned short         &nDOFs,
+                                         vector<unsigned short> &SU2ToCGNS) {
 
   /* The HEXA_64 element is a cubic hexahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.
@@ -1066,10 +1066,10 @@ void CGNSElementTypeClass::CreateDataHEXA_64(unsigned short         &VTK_Type,
   SU2ToCGNS[60] =  7; SU2ToCGNS[61] = 29; SU2ToCGNS[62] = 28; SU2ToCGNS[63] =  6;
 }
 
-void CGNSElementTypeClass::CreateDataHEXA_125(unsigned short         &VTK_Type,
-                                              unsigned short         &nPoly,
-                                              unsigned short         &nDOFs,
-                                              vector<unsigned short> &SU2ToCGNS) {
+void CCGNSElementType::CreateDataHEXA_125(unsigned short         &VTK_Type,
+                                          unsigned short         &nPoly,
+                                          unsigned short         &nDOFs,
+                                          vector<unsigned short> &SU2ToCGNS) {
 
   /* The HEXA_125 element is a quartic hexahedron. In CGNS the nodes are
      numbered as follows: - First the vertex nodes.

@@ -41,12 +41,12 @@
 using namespace std;
 
 /*!
- * \class FEMStandardElementBaseClass
+ * \class CFEMStandardElementBase
  * \brief Base class for a FEM standard element.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class FEMStandardElementBaseClass {
+class CFEMStandardElementBase {
 protected:
   unsigned short VTK_Type;     /*!< \brief Element type using the VTK convention. */
   unsigned short orderExact;   /*!< \brief Polynomial order that must be integrated exactly by the integration rule. */
@@ -63,12 +63,12 @@ public:
   /*!
   * \brief Standard Constructor. Nothing to be done.
   */
-  FEMStandardElementBaseClass();
+  CFEMStandardElementBase();
 
   /*!
   * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
   */
-  virtual ~FEMStandardElementBaseClass();
+  virtual ~CFEMStandardElementBase();
 
 protected:
   /*!
@@ -82,11 +82,11 @@ protected:
                                 be determined from the polynomial degree and the
                                 parameters in config.
   */
-  FEMStandardElementBaseClass(unsigned short val_VTK_Type,
-                              unsigned short val_nPoly,
-                              bool           val_constJac,
-                              CConfig        *config,
-                              unsigned short val_orderExact);
+  CFEMStandardElementBase(unsigned short val_VTK_Type,
+                          unsigned short val_nPoly,
+                          bool           val_constJac,
+                          CConfig        *config,
+                          unsigned short val_orderExact);
 
 public:
   /*!
@@ -182,7 +182,7 @@ protected:
   * \brief Function, which copies the data of the given object into the current object.
   * \param[in] other - Object, whose data is copied.
   */
-  void Copy(const FEMStandardElementBaseClass &other);
+  void Copy(const CFEMStandardElementBase &other);
 
   /*!
   * \brief Function, which computes the values of the derivatives of the basis functions
@@ -782,12 +782,12 @@ private:
 };
 
 /*!
- * \class FEMStandardElementClass
+ * \class CFEMStandardElement
  * \brief Class to define a FEM standard element.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class FEMStandardElementClass : public FEMStandardElementBaseClass {
+class CFEMStandardElement : public CFEMStandardElementBase {
 private:
 
   unsigned short nPoly;        /*!< \brief Polynomial degree of the element. */
@@ -849,12 +849,12 @@ public:
   /*!
   * \brief Standard Constructor. Nothing to be done.
   */
-  FEMStandardElementClass();
+  CFEMStandardElement();
 
   /*!
   * \brief Destructor. Only the allocated pointers must be deleted explicitly.
   */
-  ~FEMStandardElementClass();
+  ~CFEMStandardElement();
 
   /*!
   * \brief Alternative constructor.
@@ -872,26 +872,26 @@ public:
   * \param[in] tLocSolDOFs    - Default argument. If specified, it contains the
                                 parametric t location of the solution DOFs.
   */
-  FEMStandardElementClass(unsigned short          val_VTK_Type,
-                          unsigned short          val_nPoly,
-                          bool                    val_constJac,
-                          CConfig                 *config,
-                          unsigned short          val_orderExact = 0,
-                          const vector<su2double> *rLocSolDOFs = NULL,
-                          const vector<su2double> *sLocSolDOFs = NULL,
-                          const vector<su2double> *tLocSolDOFs = NULL);
+  CFEMStandardElement(unsigned short          val_VTK_Type,
+                      unsigned short          val_nPoly,
+                      bool                    val_constJac,
+                      CConfig                 *config,
+                      unsigned short          val_orderExact = 0,
+                      const vector<su2double> *rLocSolDOFs = NULL,
+                      const vector<su2double> *sLocSolDOFs = NULL,
+                      const vector<su2double> *tLocSolDOFs = NULL);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
   */
-  FEMStandardElementClass(const FEMStandardElementClass &other);
+  CFEMStandardElement(const CFEMStandardElement &other);
 
   /*!
   * \brief Assignment operator.
   * \param[in] other - Object, to which this object must be assigned.
   * \return The current object, after the member variables were assigned the correct value.
   */
-  FEMStandardElementClass& operator=(const FEMStandardElementClass &other);
+  CFEMStandardElement& operator=(const CFEMStandardElement &other);
 
   /*!
   * \brief Function, which computes the Lagrangian basis functions for the
@@ -1150,7 +1150,7 @@ private:
   * \brief Function, which copies the data of the given object into the current object.
   * \param[in] other - Object, whose data is copied.
   */
-  void Copy(const FEMStandardElementClass &other);
+  void Copy(const CFEMStandardElement &other);
 
   /*!
   * \brief Function, which creates the basis functions and the matrix containing
@@ -1231,12 +1231,12 @@ private:
 };
 
 /*!
- * \class FEMStandardInternalFaceClass
+ * \class CFEMStandardInternalFace
  * \brief Class to define a FEM standard internal face.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class FEMStandardInternalFaceClass : public FEMStandardElementBaseClass {
+class CFEMStandardInternalFace : public CFEMStandardElementBase {
 private:
   unsigned short nDOFsFaceSide0;    /*!< \brief Number of DOFs on side 0 of the face. */
   unsigned short nDOFsFaceSide1;    /*!< \brief Number of DOFs on side 1 of the face. */
@@ -1310,12 +1310,12 @@ public:
   /*!
   * \brief Standard Constructor. Initialize some pointers to NULL.
   */
-  FEMStandardInternalFaceClass();
+  CFEMStandardInternalFace();
 
   /*!
   * \brief Destructor.
   */
-  ~FEMStandardInternalFaceClass();
+  ~CFEMStandardInternalFace();
 
   /*!
   * \brief Alternative constructor.
@@ -1340,28 +1340,28 @@ public:
                                              order of the polynomials that must be integrated
                                              exactly by the integration rule.
   */
-  FEMStandardInternalFaceClass(unsigned short val_VTK_TypeFace,
-                               unsigned short val_VTK_TypeSide0,
-                               unsigned short val_nPolySide0,
-                               unsigned short val_VTK_TypeSide1,
-                               unsigned short val_nPolySide1,
-                               bool           val_constJac,
-                               bool           val_swapFaceInElementSide0,
-                               bool           val_swapFaceInElementSide1,
-                               CConfig        *config,
-                               unsigned short val_orderExact = 0);
+  CFEMStandardInternalFace(unsigned short val_VTK_TypeFace,
+                           unsigned short val_VTK_TypeSide0,
+                           unsigned short val_nPolySide0,
+                           unsigned short val_VTK_TypeSide1,
+                           unsigned short val_nPolySide1,
+                           bool           val_constJac,
+                           bool           val_swapFaceInElementSide0,
+                           bool           val_swapFaceInElementSide1,
+                           CConfig        *config,
+                           unsigned short val_orderExact = 0);
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
   */
-  FEMStandardInternalFaceClass(const FEMStandardInternalFaceClass &other);
+  CFEMStandardInternalFace(const CFEMStandardInternalFace &other);
 
   /*!
   * \brief Assignment operator.
   * \param[in] other - Object, to which this object must be assigned.
   * \return The current object, after the member variables were assigned the correct value.
   */
-  FEMStandardInternalFaceClass& operator=(const FEMStandardInternalFaceClass &other);
+  CFEMStandardInternalFace& operator=(const CFEMStandardInternalFace &other);
 
   /*!
   * \brief Function, which makes available the r-derivatives of the elements
@@ -1563,16 +1563,16 @@ private:
   * \brief Function, which copies the data of the given object into the current object.
   * \param[in] other - Object, whose data is copied.
   */
-  void Copy(const FEMStandardInternalFaceClass &other);
+  void Copy(const CFEMStandardInternalFace &other);
 };
 
 /*!
- * \class FEMStandardBoundaryFaceClass
+ * \class CFEMStandardBoundaryFace
  * \brief Class to define a FEM standard boundary face.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class FEMStandardBoundaryFaceClass : public FEMStandardElementBaseClass {
+class CFEMStandardBoundaryFace : public CFEMStandardElementBase {
 private:
   unsigned short nDOFsFace;    /*!< \brief Number of DOFs of the face. */
 
@@ -1620,12 +1620,12 @@ public:
   /*!
   * \brief Standard Constructor. Initialize some pointers to NULL.
   */
-  FEMStandardBoundaryFaceClass();
+  CFEMStandardBoundaryFace();
 
   /*!
   * \brief Destructor. Nothing to be done, because the vectors are deleted automatically.
   */
-  ~FEMStandardBoundaryFaceClass();
+  ~CFEMStandardBoundaryFace();
 
   /*!
   * \brief Alternative constructor.
@@ -1639,26 +1639,26 @@ public:
   * \param[in] val_orderExact         - Default argument. If specified, it contains the order of the
                                         polynomials that must be integrated exactly by the integration rule.
   */
-  FEMStandardBoundaryFaceClass(unsigned short val_VTK_TypeFace,
-                               unsigned short val_VTK_TypeElem,
-                               unsigned short val_nPolyElem,
-                               bool           val_constJac,
-                               bool           val_swapFaceInElement,
-                               CConfig        *config,
-                               unsigned short val_orderExact = 0);
+  CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFace,
+                           unsigned short val_VTK_TypeElem,
+                           unsigned short val_nPolyElem,
+                           bool           val_constJac,
+                           bool           val_swapFaceInElement,
+                           CConfig        *config,
+                           unsigned short val_orderExact = 0);
 
   /*!
   * \brief Copy constructor.
   * \param[in] other - Object, whose data must be copied.
   */
-  FEMStandardBoundaryFaceClass(const FEMStandardBoundaryFaceClass &other);
+  CFEMStandardBoundaryFace(const CFEMStandardBoundaryFace &other);
 
   /*!
   * \brief Assignment operator.
   * \param[in] other - Object, to which this object must be assigned.
   * \return The current object, after the member variables were assigned the correct value.
   */
-  FEMStandardBoundaryFaceClass& operator=(const FEMStandardBoundaryFaceClass &other);
+  CFEMStandardBoundaryFace& operator=(const CFEMStandardBoundaryFace &other);
 
   /*!
   * \brief Function, which makes available the r-derivatives of the element
@@ -1800,7 +1800,7 @@ private:
   * \brief Function, which copies the data of the given object into the current object.
   * \param[in] other - Object, whose data is copied.
   */
-  void Copy(const FEMStandardBoundaryFaceClass &other);
+  void Copy(const CFEMStandardBoundaryFace &other);
 };
 
 #include "fem_standard_element.inl"

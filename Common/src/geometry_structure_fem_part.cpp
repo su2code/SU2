@@ -39,45 +39,45 @@
 #include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
-bool unsignedLong2T::operator<(const unsignedLong2T &other) const {
+bool CUnsignedLong2T::operator<(const CUnsignedLong2T &other) const {
   if(long0 != other.long0) return (long0 < other.long0);
   if(long1 != other.long1) return (long1 < other.long1);
 
   return false;
 }
 
-bool unsignedLong2T::operator==(const unsignedLong2T &other) const {
+bool CUnsignedLong2T::operator==(const CUnsignedLong2T &other) const {
   if(long0 != other.long0) return false;
   if(long1 != other.long1) return false;
 
   return true;
 }
 
-void unsignedLong2T::Copy(const unsignedLong2T &other) {
+void CUnsignedLong2T::Copy(const CUnsignedLong2T &other) {
   long0 = other.long0;
   long1 = other.long1;
 }
 
-bool unsignedShort2T::operator<(const unsignedShort2T &other) const {
+bool CUnsignedShort2T::operator<(const CUnsignedShort2T &other) const {
   if(short0 != other.short0) return (short0 < other.short0);
   if(short1 != other.short1) return (short1 < other.short1);
 
   return false;
 }
 
-bool unsignedShort2T::operator==(const unsignedShort2T &other) const {
+bool CUnsignedShort2T::operator==(const CUnsignedShort2T &other) const {
   if(short0 != other.short0) return false;
   if(short1 != other.short1) return false;
 
   return true;
 }
 
-void unsignedShort2T::Copy(const unsignedShort2T &other) {
+void CUnsignedShort2T::Copy(const CUnsignedShort2T &other) {
   short0 = other.short0;
   short1 = other.short1;
 }
 
-FaceOfElementClass::FaceOfElementClass(){
+CFaceOfElement::CFaceOfElement() {
   nCornerPoints   = 0;
   cornerPoints[0] = cornerPoints[1] = cornerPoints[2] = cornerPoints[3] = ULONG_MAX;
   elemID0         = elemID1 = ULONG_MAX;
@@ -93,9 +93,9 @@ FaceOfElementClass::FaceOfElementClass(){
   elem0IsOwner                = false;
 }
 
-FaceOfElementClass::FaceOfElementClass(const unsigned short VTK_Type,
-                                       const unsigned short nPoly,
-                                       const unsigned long  *Nodes) {
+CFaceOfElement::CFaceOfElement(const unsigned short VTK_Type,
+                               const unsigned short nPoly,
+                               const unsigned long  *Nodes) {
 
   /* Set the default values of the member variables. */
   nCornerPoints   = 0;
@@ -149,7 +149,7 @@ FaceOfElementClass::FaceOfElementClass(const unsigned short VTK_Type,
   }
 }
 
-bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
+bool CFaceOfElement::operator<(const CFaceOfElement &other) const {
   if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
 
   for(unsigned short i=0; i<nCornerPoints; ++i)
@@ -158,7 +158,7 @@ bool FaceOfElementClass::operator<(const FaceOfElementClass &other) const {
   return false;
 }
 
-bool FaceOfElementClass::operator ==(const FaceOfElementClass &other) const {
+bool CFaceOfElement::operator ==(const CFaceOfElement &other) const {
   if(nCornerPoints != other.nCornerPoints) return false;
   for(unsigned short i=0; i<nCornerPoints; ++i)
     if(cornerPoints[i] != other.cornerPoints[i]) return false;
@@ -166,7 +166,7 @@ bool FaceOfElementClass::operator ==(const FaceOfElementClass &other) const {
   return true;
 }
 
-void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
+void CFaceOfElement::Copy(const CFaceOfElement &other) {
   nCornerPoints = other.nCornerPoints;
   for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
   for(unsigned short i=nCornerPoints; i<4; ++i) cornerPoints[i] = ULONG_MAX;
@@ -193,7 +193,7 @@ void FaceOfElementClass::Copy(const FaceOfElementClass &other) {
   elem0IsOwner                = other.elem0IsOwner;
 }
 
-void FaceOfElementClass::CreateUniqueNumberingWithOrientation(void) {
+void CFaceOfElement::CreateUniqueNumberingWithOrientation(void) {
 
   /*--- Determine the element type and create the unique numbering accordingly. ---*/
   bool swapElements = false;
@@ -303,7 +303,7 @@ void FaceOfElementClass::CreateUniqueNumberingWithOrientation(void) {
   }
 }
 
-void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
+void CBoundaryFace::Copy(const CBoundaryFace &other) {
   VTK_Type          = other.VTK_Type;
   nPolyGrid         = other.nPolyGrid;
   nDOFsGrid         = other.nDOFsGrid;
@@ -312,7 +312,7 @@ void BoundaryFaceClass::Copy(const BoundaryFaceClass &other) {
   Nodes             = other.Nodes;
 }
 
-MatchingFaceClass::MatchingFaceClass() {
+CMatchingFace::CMatchingFace() {
   nCornerPoints = 0;
   nDim          = 0;
   nPoly         = 0;
@@ -328,7 +328,7 @@ MatchingFaceClass::MatchingFaceClass() {
   tolForMatching = 0.0;
 }
 
-bool MatchingFaceClass::operator<(const MatchingFaceClass &other) const {
+bool CMatchingFace::operator<(const CMatchingFace &other) const {
 
   /* First compare the number of corner points. ---*/
   if(nCornerPoints != other.nCornerPoints) return nCornerPoints < other.nCornerPoints;
@@ -350,7 +350,7 @@ bool MatchingFaceClass::operator<(const MatchingFaceClass &other) const {
   return false;
 }
 
-void MatchingFaceClass::SortFaceCoordinates(void) {
+void CMatchingFace::SortFaceCoordinates(void) {
 
   /*--- Determine the tolerance for a matching point for this face. This is
         accomplished by computing the minimum distance between the points of
@@ -397,7 +397,7 @@ void MatchingFaceClass::SortFaceCoordinates(void) {
   }
 }
 
-void MatchingFaceClass::Copy(const MatchingFaceClass &other) {
+void CMatchingFace::Copy(const CMatchingFace &other) {
   nCornerPoints = other.nCornerPoints;
   nDim          = other.nDim;
   nPoly         = other.nPoly;
@@ -575,10 +575,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
         unsigned short VTK_Type = typeRead%100;
 
-        unsigned short nDOFsGrid = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolyGrid,
-                                                                               typeReadErrorMessage);
-        unsigned short nDOFsSol  = FEMStandardElementBaseClass::GetNDOFsStatic(VTK_Type, nPolySol,
-                                                                               typeReadErrorMessage);
+        unsigned short nDOFsGrid = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolyGrid,
+                                                                           typeReadErrorMessage);
+        unsigned short nDOFsSol  = CFEMStandardElementBase::GetNDOFsStatic(VTK_Type, nPolySol,
+                                                                           typeReadErrorMessage);
 
         /*--- Allocate the memory for a new primary grid FEM element if
               this element must be stored on this rank.                 ---*/
@@ -682,7 +682,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   mesh_file.close();
 
   /*--- Determine the faces of the local elements. --- */
-  vector<FaceOfElementClass> localFaces;
+  vector<CFaceOfElement> localFaces;
   for(unsigned long k=0; k<loc_element_count; k++) {
 
     /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
@@ -694,7 +694,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
 
     /*--- Loop over the faces and add them to localFaces. ---*/
     for(unsigned short i=0; i<nFaces; ++i) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
@@ -708,7 +708,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
   /*--- Sort localFaces in increasing order and remove the double entities,
         such that the binary search later on is a bit more efficient.       ---*/
   sort(localFaces.begin(), localFaces.end());
-  vector<FaceOfElementClass>::iterator lastFace;
+  vector<CFaceOfElement>::iterator lastFace;
   lastFace = unique(localFaces.begin(), localFaces.end());
   localFaces.erase(lastFace, localFaces.end());
 
@@ -762,7 +762,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
                <<" (Marker = " <<Marker_Tag<< ")." << endl;
 
         /*--- Define a vector of FEM boundary elements to store the local boundary faces. ---*/
-        vector<BoundaryFaceClass> boundElems;
+        vector<CBoundaryFace> boundElems;
 
         /*--- Loop over the global boundary faces. ---*/
         for(unsigned long i=0; i<nElem_Bound_Global; ++i) {
@@ -777,7 +777,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           unsigned short nDOFEdgeGrid = nPolyGrid + 1;
 
           unsigned short nDOFsGrid = 0;
-          FaceOfElementClass thisFace;
+          CFaceOfElement thisFace;
           thisFace.cornerPoints[0] = 0; thisFace.cornerPoints[1] = nPolyGrid;
           switch( VTK_Type ) {
             case LINE:
@@ -815,13 +815,13 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
           thisFace.CreateUniqueNumbering();
 
           /*--- Check if this boundary face must be stored on this rank.
-                If so, create an object of BoundaryFaceClass and add it
+                If so, create an object of CBoundaryFace and add it
                 to boundElems.                                          ---*/
           if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-            vector<FaceOfElementClass>::iterator low;
+            vector<CFaceOfElement>::iterator low;
             low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
-            BoundaryFaceClass thisBoundFace;
+            CBoundaryFace thisBoundFace;
             thisBoundFace.VTK_Type          = VTK_Type;
             thisBoundFace.nPolyGrid         = nPolyGrid;
             thisBoundFace.nDOFsGrid         = nDOFsGrid;
@@ -979,7 +979,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /* Loop over the sections to store the meta data in CGNSElemTypes
      and to determine the number of volume elements.
      Note that the indices start at 1 in CGNS. */
-  vector<CGNSElementTypeClass> CGNSElemTypes(nsections);
+  vector<CCGNSElementType> CGNSElemTypes(nsections);
 
   for(int iConn=1; iConn<=nsections; ++iConn) {
     CGNSElemTypes[iConn-1].DetermineMetaData(nDim, fn, iBase, iZone, iConn);
@@ -1374,7 +1374,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--------------------------------------------------------------------------*/
 
   /*--- Determine the faces of the local elements. --- */
-  vector<FaceOfElementClass> localFaces;
+  vector<CFaceOfElement> localFaces;
   for(unsigned long k=0; k<nElem; ++k) {
 
     /*--- Get the global IDs of the corner points of all the faces of this elements. ---*/
@@ -1388,7 +1388,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
           between sequential and parallel mode the rank is stored at the
           position for the second element ID. ---*/
     for(unsigned short i=0; i<nFaces; ++i) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
@@ -1403,7 +1403,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   /*--- Sort localFaces in increasing order and remove the double entities,
         such that unnecessary data is not communicated later on. ---*/
   sort(localFaces.begin(), localFaces.end());
-  vector<FaceOfElementClass>::iterator lastFace;
+  vector<CFaceOfElement>::iterator lastFace;
   lastFace = unique(localFaces.begin(), localFaces.end());
   localFaces.erase(lastFace, localFaces.end());
 
@@ -1484,7 +1484,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
          second element ID. Note that it is not necessary to create a unique
          numbering anymore, because this has already been done before the
          communication buffer was created. */
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = (unsigned short) faceRecvBuf[ii++];
       for(unsigned short j=0; j<thisFace.nCornerPoints; ++j, ++ii)
         thisFace.cornerPoints[j] = faceRecvBuf[ii];
@@ -1670,7 +1670,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
     /* Define a vector of FEM boundary elements to store the local
        boundary faces to be read. */
-    vector<BoundaryFaceClass> boundElems;
+    vector<CBoundaryFace> boundElems;
 
     /* Loop over the connectivity sections that contribute. */
     elemCount = locElemCount = 0;
@@ -1711,12 +1711,12 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
          in the appropiate location in faceBuf. ---*/
     for(unsigned long i=0; i<boundElems.size(); ++i) {
 
-      /* Create an object of the class FaceOfElementClass to determine the
+      /* Create an object of the class CFaceOfElement to determine the
          node number that determines on which rank the corresponding face
          in localFaces is stored. */
-      FaceOfElementClass thisFace(boundElems[i].VTK_Type,
-                                  boundElems[i].nPolyGrid,
-                                  boundElems[i].Nodes.data());
+      CFaceOfElement thisFace(boundElems[i].VTK_Type,
+                              boundElems[i].nPolyGrid,
+                              boundElems[i].Nodes.data());
       thisFace.CreateUniqueNumbering();
 
       /* Determine the rank to which this face must be sent to. */
@@ -1803,8 +1803,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         ii += nDOFsGrid;
 
         /* Determine the corner nodes and store them in an object of
-           the class FaceOfElementClass to carry out the search in localFaces. */
-        FaceOfElementClass thisFace(VTK_Type, nPolyGrid, Nodes);
+           the class CFaceOfElement to carry out the search in localFaces. */
+        CFaceOfElement thisFace(VTK_Type, nPolyGrid, Nodes);
 
         /* Check if the face is actually present. If not, print an error message
            and exit. */
@@ -1816,7 +1816,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         /* Carry out the search again, but now with lower_bound to find the
            actual entry to determine the domain element and the rank where
            this boundary element should be sent to.. */
-        vector<FaceOfElementClass>::iterator low;
+        vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         const unsigned long domainElementID = low->elemID0;
@@ -1897,8 +1897,8 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
         const unsigned long *Nodes            = boundElemRecvBuf.data() + ii;
         ii += nDOFsGrid;
 
-        /* Create an object of BoundaryFaceClass and store it in boundElems. */
-        BoundaryFaceClass thisBoundFace;
+        /* Create an object of CBoundaryFace and store it in boundElems. */
+        CBoundaryFace thisBoundFace;
         thisBoundFace.VTK_Type          = VTK_Type;
         thisBoundFace.nPolyGrid         = nPolyGrid;
         thisBoundFace.nDOFsGrid         = nDOFsGrid;
@@ -1930,10 +1930,10 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
     for(unsigned long i=0; i<boundElems.size(); ++i) {
 
       /* Determine the corner nodes and store them in an object of
-         the class FaceOfElementClass to carry out the search in localFaces. */
-      FaceOfElementClass thisFace(boundElems[i].VTK_Type,
-                                  boundElems[i].nPolyGrid,
-                                  boundElems[i].Nodes.data());
+         the class CFaceOfElement to carry out the search in localFaces. */
+      CFaceOfElement thisFace(boundElems[i].VTK_Type,
+                              boundElems[i].nPolyGrid,
+                              boundElems[i].Nodes.data());
 
       /* Check if the face is actually present. If not, print an error message
          and exit. */
@@ -1944,7 +1944,7 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
 
       /* Carry out the search again, but now with lower_bound to find the
          actual entry to set the domain element. */
-      vector<FaceOfElementClass>::iterator low;
+      vector<CFaceOfElement>::iterator low;
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       boundElems[i].domainElementID = low->elemID0;
     }
@@ -2006,7 +2006,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     elem[i]->SetColor(0);
 
   /*--- Determine the faces of the elements. ---*/
-  vector<FaceOfElementClass> localFaces;
+  vector<CFaceOfElement> localFaces;
   for(unsigned long k=0; k<nElem; k++) {
 
     /*--- Get the global IDs of the corner points of all the faces of this element. ---*/
@@ -2018,7 +2018,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
     /*--- Loop over the faces and add them to localFaces. ---*/
     for(unsigned short i=0; i<nFaces; ++i) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
@@ -2049,13 +2049,13 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         unsigned long  faceConn[6][4];
         bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-        FaceOfElementClass thisFace;
+        CFaceOfElement thisFace;
         thisFace.nCornerPoints = nPointsPerFace[0];
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
           thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<FaceOfElementClass>::iterator low;
+        vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the corresponding element ID for the boundary element and
@@ -2084,7 +2084,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         face four points a global node ID that is larger than the largest
         point ID in the grid. In this way the sorting operator puts
         these faces at the end of the vector, see also the < operator
-        of FaceOfElementClass.                                         ---*/
+        of CFaceOfElement.                                         ---*/
   unsigned long nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLocOr; ++i) {
     if(localFaces[i].elemID0 > Global_nElem) {
@@ -2108,7 +2108,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
   /*--- Determine and store the faces, for which only one neighboring element
         was found. For these faces the other neighbor might be stored on
         a different rank (unless there are non-matching interfaces).     ---*/
-  vector<FaceOfElementClass> localFacesComm;
+  vector<CFaceOfElement> localFacesComm;
   for(unsigned long i=0; i<nFacesLoc; ++i)
     if(localFaces[i].elemID1 > Global_nElem) localFacesComm.push_back(localFaces[i]);
 
@@ -2208,7 +2208,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Loop over the number of ranks from which faces are received.
         Receive the messages and store them in facesRecv.         ---*/
-  vector<FaceOfElementClass> facesRecv;
+  vector<CFaceOfElement> facesRecv;
   vector<unsigned long> nFacesRecv(nMessRecv+1);
   vector<int>           rankRecv(nMessRecv);
   nFacesRecv[0] = 0;
@@ -2281,7 +2281,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       sendBufFace[ii+3] = facesRecv[j].cornerPoints[2];
       sendBufFace[ii+4] = facesRecv[j].cornerPoints[3];
 
-      vector<FaceOfElementClass>::iterator low;
+      vector<CFaceOfElement>::iterator low;
       low = lower_bound(localFacesComm.begin(), localFacesComm.end(),
                         facesRecv[j]);
       if(facesRecv[j].elemID0 == low->elemID0) {
@@ -2320,14 +2320,14 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     sizeMess /= 9;
     unsigned long jj = 0;
     for(unsigned long j=0; j<(unsigned long) sizeMess; ++j, jj+=9) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints   = recvBuf[jj];
       thisFace.cornerPoints[0] = recvBuf[jj+1];
       thisFace.cornerPoints[1] = recvBuf[jj+2];
       thisFace.cornerPoints[2] = recvBuf[jj+3];
       thisFace.cornerPoints[3] = recvBuf[jj+4];
 
-      vector<FaceOfElementClass>::iterator low;
+      vector<CFaceOfElement>::iterator low;
       low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
       low->elemID1    = recvBuf[jj+5];
       low->nPolySol1  = recvBuf[jj+6];
@@ -2384,15 +2384,15 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         direction, there are faces for which both adjacent elements are the
         same. This also means that these faces are still present twice and one
         must be removed. This is done below. ---*/
-  map<unsignedLong2T, unsigned long> mapFaceToInd;
+  map<CUnsignedLong2T, unsigned long> mapFaceToInd;
 
   nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLoc; ++i) {
     if(localFaces[i].elemID0 == localFaces[i].elemID1) {
 
       /* Search for this entry in mapFaceToInd. */
-      unsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
-      map<unsignedLong2T, unsigned long>::const_iterator MMI;
+      CUnsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
+      map<CUnsignedLong2T, unsigned long>::const_iterator MMI;
       MMI = mapFaceToInd.find(thisFace);
 
       if(MMI == mapFaceToInd.end()) {
@@ -2436,7 +2436,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the time levels of the elements. This is only relevant
         when time accurate local time stepping is employed. ---*/
-  map<unsigned long, unsignedShort2T> mapExternalElemIDToTimeLevel;
+  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
   DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
 
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
@@ -2461,7 +2461,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       }
       else {
 
-        map<unsigned long,unsignedShort2T>::const_iterator MI;
+        map<unsigned long,CUnsignedShort2T>::const_iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
         if(MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
@@ -2505,7 +2505,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
     elem[k]->InitializeNeighbors(nFaces);
 
     for(unsigned short i=0; i<nFaces; ++i) {
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[i];
       for(unsigned short j=0; j<nPointsPerFace[i]; ++j)
         thisFace.cornerPoints[j] = faceConn[i][j];
@@ -2516,7 +2516,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       thisFace.CreateUniqueNumbering();
 
       if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<FaceOfElementClass>::iterator low;
+        vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         if(low->elemID0 == thisFace.elemID0) {
@@ -2803,8 +2803,8 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 #endif  /* HAVE_MPI */
 }
 
-void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                    *config,
-                                                      vector<FaceOfElementClass> &localFaces) {
+void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                *config,
+                                                      vector<CFaceOfElement> &localFaces) {
 
   /*--- Determine a mapping from the global point ID to the local index
         of the points.            ---*/
@@ -2855,7 +2855,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
 
       /*--- Define the vector to store the faces of the donor. Initialize its
             size to the number of local donor faces.    ---*/
-      vector<MatchingFaceClass> facesDonor(nElem_Bound[jMarker]);
+      vector<CMatchingFace> facesDonor(nElem_Bound[jMarker]);
 
       /*------------------------------------------------------------------*/
       /*--- Step 1: Store the information of the local faces of the donor
@@ -2874,13 +2874,13 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         bound[jMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
         /*--- Search for this face in localFaces. It must be present. ---*/
-        FaceOfElementClass thisFace;
+        CFaceOfElement thisFace;
         thisFace.nCornerPoints = nPointsPerFace[0];
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
           thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<FaceOfElementClass>::iterator low;
+        vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Store the relevant data in facesDonor. ---*/
@@ -2939,8 +2939,8 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         vector<su2double>      doubleLocBuf(13*sizeLocal);
 
         unsigned long cS=0, cL=0, cD=0;
-        for(vector<MatchingFaceClass>::const_iterator fIt =facesDonor.begin();
-                                                      fIt!=facesDonor.end(); ++fIt) {
+        for(vector<CMatchingFace>::const_iterator fIt =facesDonor.begin();
+                                                  fIt!=facesDonor.end(); ++fIt) {
           shortLocBuf[cS++] = fIt->nCornerPoints;
           shortLocBuf[cS++] = fIt->nDim;
           shortLocBuf[cS++] = fIt->nPoly;
@@ -3000,8 +3000,8 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         facesDonor.resize(sizeGlobal);
         cS = cL = cD = 0;
 
-        for(vector<MatchingFaceClass>::iterator fIt =facesDonor.begin();
-                                                fIt!=facesDonor.end(); ++fIt) {
+        for(vector<CMatchingFace>::iterator fIt =facesDonor.begin();
+                                            fIt!=facesDonor.end(); ++fIt) {
           fIt->nCornerPoints = shortGlobBuf[cS++];
           fIt->nDim          = shortGlobBuf[cS++];
           fIt->nPoly         = shortGlobBuf[cS++];
@@ -3051,13 +3051,13 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         bound[iMarker][k]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
         /*--- Search for this face in localFaces. It must be present. ---*/
-        FaceOfElementClass thisFace;
+        CFaceOfElement thisFace;
         thisFace.nCornerPoints = nPointsPerFace[0];
         for(unsigned short j=0; j<nPointsPerFace[0]; ++j)
           thisFace.cornerPoints[j] = faceConn[0][j];
         thisFace.CreateUniqueNumbering();
 
-        vector<FaceOfElementClass>::iterator low;
+        vector<CFaceOfElement>::iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /*--- Indicate that this face is a periodic face. This is accomplished
@@ -3067,7 +3067,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
         /*--- Store the data for this boundary element also in thisMatchingFace,
               such that a search can be carried out in donorFaces. Note that the
               periodic transformation must be applied to the coordinates. ---*/
-        MatchingFaceClass thisMatchingFace;
+        CMatchingFace thisMatchingFace;
         thisMatchingFace.nDim          = nDim;
         thisMatchingFace.nCornerPoints = nPointsPerFace[0];
         thisMatchingFace.elemID        = low->elemID0;
@@ -3100,7 +3100,7 @@ void CPhysicalGeometry::DeterminePeriodicFacesFEMGrid(CConfig                   
               missing information in the face corresponding to the iterator low. ---*/
         if( binary_search(facesDonor.begin(), facesDonor.end(), thisMatchingFace) ) {
 
-          vector<MatchingFaceClass>::const_iterator donorLow;
+          vector<CMatchingFace>::const_iterator donorLow;
           donorLow = lower_bound(facesDonor.begin(), facesDonor.end(), thisMatchingFace);
 
           low->elemID1    = donorLow->elemID;
@@ -3128,7 +3128,7 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
   /*--- Define the vectors to store the standard elements for the volume elements
         and surface faces. These standard elements will be created based on the
         polynomial degree of the grid.      ---*/
-  vector<FEMStandardElementClass> standardVolumeElements, standardFaceElements;
+  vector<CFEMStandardElement> standardVolumeElements, standardFaceElements;
 
   /*--- Loop over the local volume elements. ---*/
   for(unsigned long i=0; i<nElem; ++i) {
@@ -3152,8 +3152,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
     }
 
     if(ii == standardVolumeElements.size())
-      standardVolumeElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
-                                                               true, config));
+      standardVolumeElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid,
+                                                           true, config));
 
     /*--- Allocate the memory for some help vectors to carry out the matrix
           product to determine the derivatives of the coordinates w.r.t.
@@ -3283,8 +3283,8 @@ void CPhysicalGeometry::DetermineFEMConstantJacobiansAndLenScale(CConfig *config
       }
 
       if(jj == standardFaceElements.size())
-        standardFaceElements.push_back(FEMStandardElementClass(VTK_Type, nPolyGrid,
-                                                               true, config));
+        standardFaceElements.push_back(CFEMStandardElement(VTK_Type, nPolyGrid,
+                                                           true, config));
 
       /*--- Set the pointer to store the face connectivity of this face. ---*/
       unsigned short *connFace = NULL;
@@ -3457,7 +3457,7 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   }
 
   /* Define the vector to store the standard element for the volume elements. */
-  vector<FEMStandardElementClass> standardVolumeElements;
+  vector<CFEMStandardElement> standardVolumeElements;
 
   /* Define the vectors, which store the mapping from the subelement to the
      parent element, subelement ID within the parent element, the element
@@ -3485,8 +3485,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
     }
 
     if(ii == standardVolumeElements.size())
-      standardVolumeElements.push_back(FEMStandardElementClass(VTK_Parent, nPolyGrid,
-                                                               true, config));
+      standardVolumeElements.push_back(CFEMStandardElement(VTK_Parent, nPolyGrid,
+                                                           true, config));
 
     /* Determine the necessary data for splitting the element in its linear
        sub-elements. */
@@ -3540,8 +3540,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
   }
 
   /* Build the local ADT. */
-  su2_adtElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
-                                  subElementIDInParent, parentElement, false);
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */
@@ -3565,8 +3565,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 
 
   /* Define the standard boundary faces for the solution and the grid. */
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol,
-                                       standardBoundaryFacesGrid;
+  vector<CFEMStandardBoundaryFace> standardBoundaryFacesSol,
+                                   standardBoundaryFacesGrid;
 
   /* Loop over the markers and select the ones for which a wall function
      treatment must be carried out. */
@@ -3602,8 +3602,8 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
             unsigned long  faceConn[6][4];
             bound[iMarker][l]->GetCornerPointsAllFaces(nFaces, nPointsPerFace, faceConn);
 
-            /* Create an object of FaceOfElementClass to store the information. */
-            FaceOfElementClass boundaryFace;
+            /* Create an object of CFaceOfElement to store the information. */
+            CFaceOfElement boundaryFace;
             boundaryFace.nCornerPoints = nPointsPerFace[0];
             for(unsigned short i=0; i<nPointsPerFace[0]; ++i)
               boundaryFace.cornerPoints[i] = faceConn[0][i];
@@ -3623,9 +3623,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
             bool outwardPointing = true;   /* Initialized to avoid compiler warning. */
             for(ii=0; ii<nFaces; ++ii) {
 
-              /* Create an object of FaceOfElementClass to store the information.
+              /* Create an object of CFaceOfElement to store the information.
                  Renumber the corner points, but keep the orientation. */
-              FaceOfElementClass thisFace;
+              CFaceOfElement thisFace;
               thisFace.nCornerPoints = nPointsPerFace[ii];
               for(unsigned short i=0; i<nPointsPerFace[ii]; ++i)
                 thisFace.cornerPoints[i] = faceConn[ii][i];
@@ -3672,13 +3672,13 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
             }
 
             if(ii == standardBoundaryFacesSol.size()) {
-              standardBoundaryFacesSol.push_back(FEMStandardBoundaryFaceClass(VTK_Type, VTK_Elem,
-                                                                              nPolySol, constJac,
-                                                                              false, config));
-              standardBoundaryFacesGrid.push_back(FEMStandardBoundaryFaceClass(VTK_Type, VTK_Elem,
-                                                                               nPolyGrid, constJac,
-                                                                               false, config,
-                                                                               standardBoundaryFacesSol[ii].GetOrderExact()) );
+              standardBoundaryFacesSol.push_back(CFEMStandardBoundaryFace(VTK_Type, VTK_Elem,
+                                                                          nPolySol, constJac,
+                                                                          false, config));
+              standardBoundaryFacesGrid.push_back(CFEMStandardBoundaryFace(VTK_Type, VTK_Elem,
+                                                                           nPolyGrid, constJac,
+                                                                           false, config,
+                                                                           standardBoundaryFacesSol[ii].GetOrderExact()) );
             }
 
             /* Get the required information from the standard element. */
@@ -4047,9 +4047,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 }
 
 void CPhysicalGeometry::DetermineTimeLevelElements(
-                          CConfig *config,
-                          const vector<FaceOfElementClass>    &localFaces,
-                          map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel) {
+                          CConfig                              *config,
+                          const vector<CFaceOfElement>         &localFaces,
+                          map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the map mapExternalElemIDToTimeLevel.           ---*/
@@ -4057,8 +4057,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
   /*--- Initialize the time level of external elements to zero.
         First the externals from the faces. ---*/
-  for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
-                                                 FI!=localFaces.end(); ++FI) {
+  for(vector<CFaceOfElement>::const_iterator FI =localFaces.begin();
+                                             FI!=localFaces.end(); ++FI) {
     if(FI->elemID1 < Global_nElem) {     // Safeguard against non-matching faces.
 
       if(FI->elemID1 <  starting_node[rank] ||
@@ -4066,10 +4066,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
-        map<unsigned long,unsignedShort2T>::iterator MI;
+        map<unsigned long,CUnsignedShort2T>::iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if(MI == mapExternalElemIDToTimeLevel.end())
-          mapExternalElemIDToTimeLevel[FI->elemID1] = unsignedShort2T(0,0);
+          mapExternalElemIDToTimeLevel[FI->elemID1] = CUnsignedShort2T(0,0);
       }
     }
   }
@@ -4098,12 +4098,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
         if(donors[i] <  starting_node[rank] ||
            donors[i] >= starting_node[rank]+nElem) {
 
-          map<unsigned long,unsignedShort2T>::iterator MI;
+          map<unsigned long,CUnsignedShort2T>::iterator MI;
           MI = mapExternalElemIDToTimeLevel.find(donors[i]);
           if(MI == mapExternalElemIDToTimeLevel.end()) {
 
             /* Element not present in external. Add it. */
-            mapExternalElemIDToTimeLevel[donors[i]] = unsignedShort2T(0,0);
+            mapExternalElemIDToTimeLevel[donors[i]] = CUnsignedShort2T(0,0);
           }
 
           /* The reverse connection may not be present either. Store the global
@@ -4175,10 +4175,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Loop over the entries of recvBuf and add them to
        mapExternalElemIDToTimeLevel, if not present already. */
     for(int j=0; j<sizeMess; ++j) {
-      map<unsigned long,unsignedShort2T>::iterator MI;
+      map<unsigned long,CUnsignedShort2T>::iterator MI;
       MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
       if(MI == mapExternalElemIDToTimeLevel.end())
-        mapExternalElemIDToTimeLevel[recvBuf[j]] = unsignedShort2T(0,0);
+        mapExternalElemIDToTimeLevel[recvBuf[j]] = CUnsignedShort2T(0,0);
     }
   }
 
@@ -4282,7 +4282,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   /*---         of the external element data.                              ---*/
   /*--------------------------------------------------------------------------*/
 
-  map<unsigned long,unsignedShort2T>::iterator MI;
+  map<unsigned long,CUnsignedShort2T>::iterator MI;
 #ifdef HAVE_MPI
 
   /*--- Determine the ranks from which I receive element data during
@@ -4543,8 +4543,8 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
       /*--- Loop over the matching faces and update the time levels of the
             adjacent elements, if needed. ---*/
-      for(vector<FaceOfElementClass>::const_iterator FI =localFaces.begin();
-                                                     FI!=localFaces.end(); ++FI) {
+      for(vector<CFaceOfElement>::const_iterator FI =localFaces.begin();
+                                                 FI!=localFaces.end(); ++FI) {
         /* Safeguard against non-matching faces. */
         if(FI->elemID1 < Global_nElem) {
 
@@ -4716,12 +4716,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 }
 
 void CPhysicalGeometry::ComputeFEMGraphWeights(
-              CConfig                                  *config,
-              const vector<FaceOfElementClass>          &localFaces,
-              const vector<vector<unsigned long> >      &adjacency,
-              const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
-                    vector<su2double>                   &vwgt,
-                    vector<vector<su2double> >          &adjwgt) {
+              CConfig                                    *config,
+              const vector<CFaceOfElement>               &localFaces,
+              const vector<vector<unsigned long> >       &adjacency,
+              const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                    &vwgt,
+                    vector<vector<su2double> >           &adjwgt) {
 
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
@@ -4744,9 +4744,9 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 
   /*--- Define the standard elements for the volume elements, the boundary faces
         and the matching internal faces. ---*/
-  vector<FEMStandardElementClass>      standardElements;
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFaces;
-  vector<FEMStandardInternalFaceClass> standardMatchingFaces;
+  vector<CFEMStandardElement>      standardElements;
+  vector<CFEMStandardBoundaryFace> standardBoundaryFaces;
+  vector<CFEMStandardInternalFace> standardMatchingFaces;
 
   /*--- Loop over the elements to determine the amount of computational work.
         This amount has a contribution from both the volume integral and
@@ -4777,8 +4777,8 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
     }
 
     if(ii == standardElements.size())
-      standardElements.push_back(FEMStandardElementClass(VTK_Type, nPolySol,
-                                                         JacIsConstant, config));
+      standardElements.push_back(CFEMStandardElement(VTK_Type, nPolySol,
+                                                     JacIsConstant, config));
 
     /* Initialize the computational work for this element, which is stored
        in the 1st vertex weight. */
@@ -4814,14 +4814,14 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
       JacIsConstant = elem[i]->GetJacobianConstantFace(j);
 
       /*--- Check if this is a matching internal face. ---*/
-      FaceOfElementClass thisFace;
+      CFaceOfElement thisFace;
       thisFace.nCornerPoints = nPointsPerFace[j];
       for(unsigned short k=0; k<nPointsPerFace[j]; ++k)
         thisFace.cornerPoints[k] = faceConn[j][k];
       thisFace.CreateUniqueNumbering();
 
       if( binary_search(localFaces.begin(), localFaces.end(), thisFace) ) {
-        vector<FaceOfElementClass>::const_iterator low;
+        vector<CFaceOfElement>::const_iterator low;
         low = lower_bound(localFaces.begin(), localFaces.end(), thisFace);
 
         /* Check if this internal matching face is owned by this element. */
@@ -4842,11 +4842,11 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
           }
 
           if(ii == standardMatchingFaces.size())
-            standardMatchingFaces.push_back(FEMStandardInternalFaceClass(VTK_Type_Face,
-                                                                         low->elemType0, low->nPolySol0,
-                                                                         low->elemType1, low->nPolySol1,
-                                                                         JacIsConstant, false, false,
-                                                                         config));
+            standardMatchingFaces.push_back(CFEMStandardInternalFace(VTK_Type_Face,
+                                                                     low->elemType0, low->nPolySol0,
+                                                                     low->elemType1, low->nPolySol1,
+                                                                     JacIsConstant, false, false,
+                                                                     config));
 
           /* Update the computational work for this element, i.e. the 1st
              vertex weight. */
@@ -4865,10 +4865,10 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
         }
 
         if(ii == standardBoundaryFaces.size())
-          standardBoundaryFaces.push_back(FEMStandardBoundaryFaceClass(VTK_Type_Face,
-                                                                       VTK_Type, nPolySol,
-                                                                       JacIsConstant, false,
-                                                                       config));
+          standardBoundaryFaces.push_back(CFEMStandardBoundaryFace(VTK_Type_Face,
+                                                                   VTK_Type, nPolySol,
+                                                                   JacIsConstant, false,
+                                                                   config));
 
         /* Update the computational work for this element, i.e. the 1st
            vertex weight. */
@@ -5008,7 +5008,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 
         /* The neighbor is an external element. Find it in mapExternalElemIDToTimeLevel
            and set the time level and number of solution DOFs accordingly. */
-        map<unsigned long,unsignedShort2T>::const_iterator MI;
+        map<unsigned long,CUnsignedShort2T>::const_iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(adjacency[i][j]);
         if(MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);

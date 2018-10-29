@@ -39,71 +39,71 @@
 using namespace std;
 
 /*!
- * \class long3T
+ * \class CLong3T
  * \brief Help class used to store three longs as one entity.
  * \version 6.1.0 "Falcon"
  */
-class long3T {
+class CLong3T {
 public:
   long long0;  /*!< \brief First long to store in this class. */
   long long1;  /*!< \brief Second long to store in this class. */
   long long2;  /*!< \brief Third long to store in this class. */
 
   /* Constructors and destructors. */
-  long3T();
-  ~long3T();
+  CLong3T();
+  ~CLong3T();
 
-  long3T(const long a, const long b, const long c);
+  CLong3T(const long a, const long b, const long c);
 
-  long3T(const long3T &other);
+  CLong3T(const CLong3T &other);
 
   /* Operators. */
-  long3T& operator=(const long3T &other);
+  CLong3T& operator=(const CLong3T &other);
 
-  bool operator<(const long3T &other) const;
+  bool operator<(const CLong3T &other) const;
 
 private:
   /* Copy function. */
-  void Copy(const long3T &other);
+  void Copy(const CLong3T &other);
 };
 
 /*!
- * \class CReorderElementClass
+ * \class CReorderElements
  * \brief Class, used to reorder the owned elements after the partitioning.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class CReorderElementClass {
+class CReorderElements {
 public:
   /*!
    * \brief Constructor of the class, set the member variables to the arguments.
    */
-  CReorderElementClass(const unsigned long  val_GlobalElemID,
-                       const unsigned short val_TimeLevel,
-                       const bool           val_CommSolution,
-                       const unsigned short val_VTK_Type,
-                       const unsigned short val_nPolySol,
-                       const bool           val_JacConstant);
+  CReorderElements(const unsigned long  val_GlobalElemID,
+                   const unsigned short val_TimeLevel,
+                   const bool           val_CommSolution,
+                   const unsigned short val_VTK_Type,
+                   const unsigned short val_nPolySol,
+                   const bool           val_JacConstant);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~CReorderElementClass(void);
+  ~CReorderElements(void);
 
   /*!
    * \brief Copy constructor of the class.
    */
-  CReorderElementClass(const CReorderElementClass &other);
+  CReorderElements(const CReorderElements &other);
 
   /*!
    * \brief Assignment operator of the class.
    */
-  CReorderElementClass& operator=(const CReorderElementClass &other);
+  CReorderElements& operator=(const CReorderElements &other);
 
   /*!
    * \brief Less than operator of the class. Needed for the sorting.
    */
-  bool operator<(const CReorderElementClass &other) const;
+  bool operator<(const CReorderElements &other) const;
 
   /*!
    * \brief Function to make available the variable commSolution.
@@ -150,43 +150,43 @@ private:
   /*!
    * \brief Copy function. Needed for the copy constructor and assignment operator.
    */
-  void Copy(const CReorderElementClass &other);
+  void Copy(const CReorderElements &other);
 
   /*!
    * \brief Default constructor of the class. Disabled.
    */
-   CReorderElementClass(void);
+   CReorderElements(void);
 };
 
 /*!
- * \class SortFacesClass
+ * \class CSortFaces
  * \brief Functor, used for a different sorting of the faces than the < operator
- *        of FaceOfElementClass.
+ *        of CFaceOfElement.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
 class CVolumeElementFEM;   // Forward declaration to avoid problems.
-class SortFacesClass {
+class CSortFaces {
 public:
   /*!
    * \brief Constructor of the class. Set the values of the member variables.
    */
-  SortFacesClass(unsigned long            val_nVolElemOwned,
-                 unsigned long            val_nVolElemTot,
-                 const CVolumeElementFEM *val_volElem);
+  CSortFaces(unsigned long            val_nVolElemOwned,
+             unsigned long            val_nVolElemTot,
+             const CVolumeElementFEM *val_volElem);
 
  /*!
   * \brief Destructor of the class. Nothing to be done.
   */
-  ~SortFacesClass(void);
+  ~CSortFaces(void);
 
  /*!
   * \brief Operator used for the comparison.
   * \param[in] f0 - First face in the comparison.
   * \param[in] f1 - Second face in the comparison.
   */
-  bool operator()(const FaceOfElementClass &f0,
-                  const FaceOfElementClass &f1);
+  bool operator()(const CFaceOfElement &f0,
+                  const CFaceOfElement &f1);
 private:
   unsigned long nVolElemOwned; /*!< \brief Number of locally owned volume elements. */
   unsigned long nVolElemTot;   /*!< \brief Total number of local volume elements . */
@@ -196,28 +196,28 @@ private:
   /*!
    * \brief Default constructor of the class. Disabled.
    */
-   SortFacesClass(void);
+   CSortFaces(void);
 };
 
 /*!
- * \class SortBoundaryFacesClass
+ * \class CSortBoundaryFaces
  * \brief Functor, used for a different sorting of the faces than the < operator
  *        of CSurfaceElementFEM.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  */
 class CSurfaceElementFEM;   // Forward declaration to avoid problems.
-class SortBoundaryFacesClass {
+class CSortBoundaryFaces {
 public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  SortBoundaryFacesClass(void);
+  CSortBoundaryFaces(void);
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~SortBoundaryFacesClass(void);
+  ~CSortBoundaryFaces(void);
 
  /*!
   * \brief Operator used for the comparison.
@@ -627,10 +627,10 @@ protected:
                                                            an entity is an element, for regular FEM an entity
                                                            is a DOF. */
 
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
-                                                                              faces used for the solution of the DG solver. */
-  vector<FEMStandardBoundaryFaceClass> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
-                                                                              faces used for the geometry of the DG solver. */
+  vector<CFEMStandardBoundaryFace> standardBoundaryFacesSol;  /*!< \brief Vector that contains the standard boundary
+                                                                          faces used for the solution of the DG solver. */
+  vector<CFEMStandardBoundaryFace> standardBoundaryFacesGrid; /*!< \brief Vector that contains the standard boundary
+                                                                          faces used for the geometry of the DG solver. */
 
   CBlasStructure *blasFunctions; /*!< \brief  Pointer to the object to carry out the BLAS functionalities. */
 
@@ -731,7 +731,7 @@ public:
   * \brief Function, which makes available the standard boundary faces of the solution.
   * \return  Pointer to the standard boundary faces of the solution.
   */
-  FEMStandardBoundaryFaceClass *GetStandardBoundaryFacesSol(void);
+  CFEMStandardBoundaryFace *GetStandardBoundaryFacesSol(void);
 
   /*!
   * \brief Function, which makes available the vector of receive ranks as
@@ -859,17 +859,17 @@ protected:
  */
 class CMeshFEM_DG: public CMeshFEM {
 private:
-  vector<FEMStandardElementClass> standardElementsSol;  /*!< \brief Vector that contains the standard volume elements
-                                                                    used for the solution of the DG solver. */
-  vector<FEMStandardElementClass> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
-                                                                    used for the geometry of the DG solver. */
+  vector<CFEMStandardElement> standardElementsSol;  /*!< \brief Vector that contains the standard volume elements
+                                                                used for the solution of the DG solver. */
+  vector<CFEMStandardElement> standardElementsGrid; /*!< \brief Vector that contains the standard volume elements
+                                                                used for the geometry of the DG solver. */
 
-  vector<FEMStandardInternalFaceClass> standardMatchingFacesSol;  /*!< \brief Vector that contains the standard matching
-                                                                              internal faces used for the solution of
-                                                                              the DG solver. */
-  vector<FEMStandardInternalFaceClass> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
-                                                                              internal faces used for the geometry of
-                                                                              the DG solver. */
+  vector<CFEMStandardInternalFace> standardMatchingFacesSol;  /*!< \brief Vector that contains the standard matching
+                                                                          internal faces used for the solution of
+                                                                          the DG solver. */
+  vector<CFEMStandardInternalFace> standardMatchingFacesGrid; /*!< \brief Vector that contains the standard matching
+                                                                          internal faces used for the geometry of
+                                                                          the DG solver. */
 
   vector<su2double> timeCoefADER_DG;                        /*!< \brief The time coefficients in the iteration matrix of
                                                                         the ADER-DG predictor step. */
@@ -998,7 +998,7 @@ public:
   * \brief Function, which makes available the standard volume elements of the solution.
   * \return  Pointer to the standard volume elements of the solution.
   */
-  FEMStandardElementClass *GetStandardElementsSol(void);
+  CFEMStandardElement *GetStandardElementsSol(void);
 
  /*!
   * \brief Function, which makes available the number of standard internal matching faces of the solution.
@@ -1010,7 +1010,7 @@ public:
   * \brief Function, which makes available the standard internal matching faces of the solution.
   * \return  Pointer to the standard internal matching faces of the solution.
   */
-  FEMStandardInternalFaceClass *GetStandardMatchingFacesSol(void);
+  CFEMStandardInternalFace *GetStandardMatchingFacesSol(void);
 
  /*!
   * \brief Function, which computes a length scale of the volume elements.
