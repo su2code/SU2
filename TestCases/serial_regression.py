@@ -475,7 +475,7 @@ def main():
     turb_naca0012_1c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_1c.cfg_file  = "turb_NACA0012_uq_1c.cfg"
     turb_naca0012_1c.test_iter = 10
-    turb_naca0012_1c.test_vals = [-4.956194, 1.235230, 5.262522, 1.878800] #last 4 columns
+    turb_naca0012_1c.test_vals = [-4.946210, 1.262110, 5.576059, 2.057983] #last 4 columns
     turb_naca0012_1c.su2_exec  = "SU2_CFD"
     turb_naca0012_1c.timeout   = 1600
     turb_naca0012_1c.tol       = 0.00001
@@ -486,13 +486,13 @@ def main():
     turb_naca0012_2c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_2c.cfg_file  = "turb_NACA0012_uq_2c.cfg"
     turb_naca0012_2c.test_iter = 10
-    turb_naca0012_2c.test_vals = [-5.356413, 1.122262, 5.187186, 1.837538] #last 4 columns
+    turb_naca0012_2c.test_vals = [-5.343153, 1.137771, 5.336911, 1.919398] #last 4 columns
     turb_naca0012_2c.su2_exec  = "SU2_CFD"
     turb_naca0012_2c.timeout   = 1600
     turb_naca0012_2c.tol       = 0.00001
     test_list.append(turb_naca0012_2c)
 
-    # NACA0012 1c
+    # NACA0012 3c
     turb_naca0012_3c           = TestCase('turb_naca0012_3c')
     turb_naca0012_3c.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_3c.cfg_file  = "turb_NACA0012_uq_3c.cfg"
@@ -508,7 +508,7 @@ def main():
     turb_naca0012_p1c1.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c1.cfg_file  = "turb_NACA0012_uq_p1c1.cfg"
     turb_naca0012_p1c1.test_iter = 10
-    turb_naca0012_p1c1.test_vals = [-4.999704, 1.249795, 5.743994, 2.152156] #last 4 columns
+    turb_naca0012_p1c1.test_vals = [-5.022245, 1.280617, 5.960368, 2.302307] #last 4 columns
     turb_naca0012_p1c1.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c1.timeout   = 1600
     turb_naca0012_p1c1.tol       = 0.00001
@@ -519,7 +519,7 @@ def main():
     turb_naca0012_p1c2.cfg_dir   = "rans_uq/naca0012"
     turb_naca0012_p1c2.cfg_file  = "turb_NACA0012_uq_p1c2.cfg"
     turb_naca0012_p1c2.test_iter = 10
-    turb_naca0012_p1c2.test_vals = [-5.394134, 1.114721, 5.271163, 1.881672] #last 4 columns
+    turb_naca0012_p1c2.test_vals = [-5.356925, 1.155050, 5.636530, 2.088923] #last 4 columns
     turb_naca0012_p1c2.su2_exec  = "SU2_CFD"
     turb_naca0012_p1c2.timeout   = 1600
     turb_naca0012_p1c2.tol       = 0.00001
