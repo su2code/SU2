@@ -51,7 +51,7 @@ lib_sources = \
   ../include/datatypes/complex_structure.inl \
   ../include/ad_structure.hpp \
   ../include/ad_structure.inl \
-  ../include/cgns_elements.hpp \
+  ../include/fem_cgns_elements.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.hpp \
   ../include/config_structure.inl \
@@ -84,8 +84,8 @@ lib_sources = \
   ../include/datatype_structure.hpp \
   ../include/datatype_structure.inl \
   ../include/interpolation_structure.hpp \
-  ../include/gauss_jacobi_quadrature.hpp \
-  ../include/gauss_jacobi_quadrature.inl \
+  ../include/fem_gauss_jacobi_quadrature.hpp \
+  ../include/fem_gauss_jacobi_quadrature.inl \
   ../include/gauss_structure.hpp \
   ../include/gauss_structure.inl \
   ../include/element_structure.hpp \
@@ -94,7 +94,7 @@ lib_sources = \
   ../include/adt_structure.inl \
   ../include/wall_model.hpp \
   ../include/wall_model.inl \
-  ../src/cgns_elements.cpp \
+  ../src/fem_cgns_elements.cpp \
   ../src/config_structure.cpp \
   ../src/blas_structure.cpp \
   ../src/dual_grid_structure.cpp \
@@ -115,7 +115,7 @@ lib_sources = \
   ../src/mpi_structure.cpp \
   ../src/linear_solvers_structure_b.cpp \
   ../src/ad_structure.cpp \
-  ../src/gauss_jacobi_quadrature.cpp \
+  ../src/fem_gauss_jacobi_quadrature.cpp \
   ../src/gauss_structure.cpp \
   ../src/element_structure.cpp \
   ../src/element_linear.cpp \

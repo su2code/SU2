@@ -30,12 +30,8 @@
  */
 
 #include "../include/fem_standard_element.hpp"
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/blas_structure.hpp"
-
-#ifdef HAVE_MKL
-#include "mkl.h"
-#endif
 
 /*----------------------------------------------------------------------------------*/
 /*          Public member functions of CFEMStandardElementBase.                     */

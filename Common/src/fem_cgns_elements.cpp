@@ -1,5 +1,5 @@
 /*!
- * \file cgns_elements.cpp
+ * \file fem_cgns_elements.cpp
  * \brief CGNS element definitions and conversions to the SU2 standard.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"

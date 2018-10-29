@@ -37,25 +37,25 @@
  
 #pragma once
 
-inline unsignedLong2T::unsignedLong2T(){long0 = long1 = 0;}
+inline CUnsignedLong2T::CUnsignedLong2T(){long0 = long1 = 0;}
 
-inline unsignedLong2T::unsignedLong2T(const unsigned long a, const unsigned long b){long0 = a; long1 = b;}
+inline CUnsignedLong2T::CUnsignedLong2T(const unsigned long a, const unsigned long b){long0 = a; long1 = b;}
 
-inline unsignedLong2T::~unsignedLong2T(){}
+inline CUnsignedLong2T::~CUnsignedLong2T(){}
 
-inline unsignedLong2T::unsignedLong2T(const unsignedLong2T &other){Copy(other);}
+inline CUnsignedLong2T::CUnsignedLong2T(const CUnsignedLong2T &other){Copy(other);}
 
-inline unsignedLong2T& unsignedLong2T::operator=(const unsignedLong2T &other){Copy(other); return (*this);}
+inline CUnsignedLong2T& CUnsignedLong2T::operator=(const CUnsignedLong2T &other){Copy(other); return (*this);}
 
-inline unsignedShort2T::unsignedShort2T(){short0 = short1 = 0;}
+inline CUnsignedShort2T::CUnsignedShort2T(){short0 = short1 = 0;}
 
-inline unsignedShort2T::unsignedShort2T(const unsigned short a, const unsigned short b){short0 = a; short1 = b;}
+inline CUnsignedShort2T::CUnsignedShort2T(const unsigned short a, const unsigned short b){short0 = a; short1 = b;}
 
-inline unsignedShort2T::~unsignedShort2T(){}
+inline CUnsignedShort2T::~CUnsignedShort2T(){}
 
-inline unsignedShort2T::unsignedShort2T(const unsignedShort2T &other){Copy(other);}
+inline CUnsignedShort2T::CUnsignedShort2T(const CUnsignedShort2T &other){Copy(other);}
 
-inline unsignedShort2T& unsignedShort2T::operator=(const unsignedShort2T &other){Copy(other); return (*this);}
+inline CUnsignedShort2T& CUnsignedShort2T::operator=(const CUnsignedShort2T &other){Copy(other); return (*this);}
 
 inline CFaceOfElement::CFaceOfElement(const CFaceOfElement &other){Copy(other);}
 

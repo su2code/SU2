@@ -30,7 +30,7 @@
  */
 
 #include "../include/fem_standard_element.hpp"
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 
 /*----------------------------------------------------------------------------------*/
 /*         Private member functions of CFEMStandardElementBase.                     */

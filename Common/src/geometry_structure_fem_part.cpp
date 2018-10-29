@@ -39,40 +39,40 @@
 #include <sys/stat.h>
 /*--- Epsilon definition ---*/
 
-bool unsignedLong2T::operator<(const unsignedLong2T &other) const {
+bool CUnsignedLong2T::operator<(const CUnsignedLong2T &other) const {
   if(long0 != other.long0) return (long0 < other.long0);
   if(long1 != other.long1) return (long1 < other.long1);
 
   return false;
 }
 
-bool unsignedLong2T::operator==(const unsignedLong2T &other) const {
+bool CUnsignedLong2T::operator==(const CUnsignedLong2T &other) const {
   if(long0 != other.long0) return false;
   if(long1 != other.long1) return false;
 
   return true;
 }
 
-void unsignedLong2T::Copy(const unsignedLong2T &other) {
+void CUnsignedLong2T::Copy(const CUnsignedLong2T &other) {
   long0 = other.long0;
   long1 = other.long1;
 }
 
-bool unsignedShort2T::operator<(const unsignedShort2T &other) const {
+bool CUnsignedShort2T::operator<(const CUnsignedShort2T &other) const {
   if(short0 != other.short0) return (short0 < other.short0);
   if(short1 != other.short1) return (short1 < other.short1);
 
   return false;
 }
 
-bool unsignedShort2T::operator==(const unsignedShort2T &other) const {
+bool CUnsignedShort2T::operator==(const CUnsignedShort2T &other) const {
   if(short0 != other.short0) return false;
   if(short1 != other.short1) return false;
 
   return true;
 }
 
-void unsignedShort2T::Copy(const unsignedShort2T &other) {
+void CUnsignedShort2T::Copy(const CUnsignedShort2T &other) {
   short0 = other.short0;
   short1 = other.short1;
 }
@@ -2384,15 +2384,15 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
         direction, there are faces for which both adjacent elements are the
         same. This also means that these faces are still present twice and one
         must be removed. This is done below. ---*/
-  map<unsignedLong2T, unsigned long> mapFaceToInd;
+  map<CUnsignedLong2T, unsigned long> mapFaceToInd;
 
   nFacesLocOr = nFacesLoc;
   for(unsigned long i=0; i<nFacesLoc; ++i) {
     if(localFaces[i].elemID0 == localFaces[i].elemID1) {
 
       /* Search for this entry in mapFaceToInd. */
-      unsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
-      map<unsignedLong2T, unsigned long>::const_iterator MMI;
+      CUnsignedLong2T thisFace(localFaces[i].elemID0, localFaces[i].periodicIndex);
+      map<CUnsignedLong2T, unsigned long>::const_iterator MMI;
       MMI = mapFaceToInd.find(thisFace);
 
       if(MMI == mapFaceToInd.end()) {
@@ -2436,7 +2436,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
 
   /*--- Determine the time levels of the elements. This is only relevant
         when time accurate local time stepping is employed. ---*/
-  map<unsigned long, unsignedShort2T> mapExternalElemIDToTimeLevel;
+  map<unsigned long, CUnsignedShort2T> mapExternalElemIDToTimeLevel;
   DetermineTimeLevelElements(config, localFaces, mapExternalElemIDToTimeLevel);
 
   /*--- Determine the ownership of the internal faces, i.e. which adjacent
@@ -2461,7 +2461,7 @@ void CPhysicalGeometry::SetColorFEMGrid_Parallel(CConfig *config) {
       }
       else {
 
-        map<unsigned long,unsignedShort2T>::const_iterator MI;
+        map<unsigned long,CUnsignedShort2T>::const_iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(localFaces[i].elemID1);
         if(MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);
@@ -4047,9 +4047,9 @@ void CPhysicalGeometry::DetermineDonorElementsWallFunctions(CConfig *config) {
 }
 
 void CPhysicalGeometry::DetermineTimeLevelElements(
-                          CConfig                             *config,
-                          const vector<CFaceOfElement>        &localFaces,
-                          map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel) {
+                          CConfig                              *config,
+                          const vector<CFaceOfElement>         &localFaces,
+                          map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel) {
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the map mapExternalElemIDToTimeLevel.           ---*/
@@ -4066,10 +4066,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 
         /* This element is an external element. Store it in the map
            mapExternalElemIDToTimeLevel if not already done so. */
-        map<unsigned long,unsignedShort2T>::iterator MI;
+        map<unsigned long,CUnsignedShort2T>::iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(FI->elemID1);
         if(MI == mapExternalElemIDToTimeLevel.end())
-          mapExternalElemIDToTimeLevel[FI->elemID1] = unsignedShort2T(0,0);
+          mapExternalElemIDToTimeLevel[FI->elemID1] = CUnsignedShort2T(0,0);
       }
     }
   }
@@ -4098,12 +4098,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
         if(donors[i] <  starting_node[rank] ||
            donors[i] >= starting_node[rank]+nElem) {
 
-          map<unsigned long,unsignedShort2T>::iterator MI;
+          map<unsigned long,CUnsignedShort2T>::iterator MI;
           MI = mapExternalElemIDToTimeLevel.find(donors[i]);
           if(MI == mapExternalElemIDToTimeLevel.end()) {
 
             /* Element not present in external. Add it. */
-            mapExternalElemIDToTimeLevel[donors[i]] = unsignedShort2T(0,0);
+            mapExternalElemIDToTimeLevel[donors[i]] = CUnsignedShort2T(0,0);
           }
 
           /* The reverse connection may not be present either. Store the global
@@ -4175,10 +4175,10 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
     /* Loop over the entries of recvBuf and add them to
        mapExternalElemIDToTimeLevel, if not present already. */
     for(int j=0; j<sizeMess; ++j) {
-      map<unsigned long,unsignedShort2T>::iterator MI;
+      map<unsigned long,CUnsignedShort2T>::iterator MI;
       MI = mapExternalElemIDToTimeLevel.find(recvBuf[j]);
       if(MI == mapExternalElemIDToTimeLevel.end())
-        mapExternalElemIDToTimeLevel[recvBuf[j]] = unsignedShort2T(0,0);
+        mapExternalElemIDToTimeLevel[recvBuf[j]] = CUnsignedShort2T(0,0);
     }
   }
 
@@ -4282,7 +4282,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
   /*---         of the external element data.                              ---*/
   /*--------------------------------------------------------------------------*/
 
-  map<unsigned long,unsignedShort2T>::iterator MI;
+  map<unsigned long,CUnsignedShort2T>::iterator MI;
 #ifdef HAVE_MPI
 
   /*--- Determine the ranks from which I receive element data during
@@ -4716,12 +4716,12 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
 }
 
 void CPhysicalGeometry::ComputeFEMGraphWeights(
-              CConfig                                   *config,
-              const vector<CFaceOfElement>              &localFaces,
-              const vector<vector<unsigned long> >      &adjacency,
-              const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
-                    vector<su2double>                   &vwgt,
-                    vector<vector<su2double> >          &adjwgt) {
+              CConfig                                    *config,
+              const vector<CFaceOfElement>               &localFaces,
+              const vector<vector<unsigned long> >       &adjacency,
+              const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                    &vwgt,
+                    vector<vector<su2double> >           &adjwgt) {
 
   /*--- Determine the maximum time level that occurs in the grid. ---*/
   unsigned short maxTimeLevel = 0;
@@ -5008,7 +5008,7 @@ void CPhysicalGeometry::ComputeFEMGraphWeights(
 
         /* The neighbor is an external element. Find it in mapExternalElemIDToTimeLevel
            and set the time level and number of solution DOFs accordingly. */
-        map<unsigned long,unsignedShort2T>::const_iterator MI;
+        map<unsigned long,CUnsignedShort2T>::const_iterator MI;
         MI = mapExternalElemIDToTimeLevel.find(adjacency[i][j]);
         if(MI == mapExternalElemIDToTimeLevel.end())
           SU2_MPI::Error("Entry not found in mapExternalElemIDToTimeLevel", CURRENT_FUNCTION);

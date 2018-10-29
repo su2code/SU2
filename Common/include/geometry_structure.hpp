@@ -49,7 +49,7 @@ extern "C" {
 }
 #endif
 #ifdef HAVE_CGNS
-  #include "cgns_elements.hpp"
+  #include "fem_cgns_elements.hpp"
 #endif
 #include <string>
 #include <fstream>
@@ -69,61 +69,61 @@ extern "C" {
 using namespace std;
 
 /*!
- * \class unsignedLong2T
+ * \class CUnsignedLong2T
  * \brief Help class used to store two unsigned longs as one entity.
  */
-class unsignedLong2T {
+class CUnsignedLong2T {
 public:
   unsigned long long0;  /*!< \brief First long to store in this class. */
   unsigned long long1;  /*!< \brief Second long to store in this class. */
 
   /* Constructors and destructors. */
-  unsignedLong2T();
-  ~unsignedLong2T();
+  CUnsignedLong2T();
+  ~CUnsignedLong2T();
 
-  unsignedLong2T(const unsigned long a, const unsigned long b);
+  CUnsignedLong2T(const unsigned long a, const unsigned long b);
 
-  unsignedLong2T(const unsignedLong2T &other);
+  CUnsignedLong2T(const CUnsignedLong2T &other);
 
   /* Operators. */
-  unsignedLong2T& operator=(const unsignedLong2T &other);
+  CUnsignedLong2T& operator=(const CUnsignedLong2T &other);
 
-  bool operator<(const unsignedLong2T &other) const;
+  bool operator<(const CUnsignedLong2T &other) const;
 
-  bool operator==(const unsignedLong2T &other) const;
+  bool operator==(const CUnsignedLong2T &other) const;
 
 private:
   /* Copy function. */
-  void Copy(const unsignedLong2T &other);
+  void Copy(const CUnsignedLong2T &other);
 };
 
 /*!
- * \class unsignedShort2T
+ * \class CUnsignedShort2T
  * \brief Help class used to store two unsigned shorts as one entity.
  */
-class unsignedShort2T {
+class CUnsignedShort2T {
 public:
   unsigned short short0;  /*!< \brief First short to store in this class. */
   unsigned short short1;  /*!< \brief Second short to store in this class. */
 
   /* Constructors and destructors. */
-  unsignedShort2T();
-  ~unsignedShort2T();
+  CUnsignedShort2T();
+  ~CUnsignedShort2T();
 
-  unsignedShort2T(const unsigned short a, const unsigned short b);
+  CUnsignedShort2T(const unsigned short a, const unsigned short b);
 
-  unsignedShort2T(const unsignedShort2T &other);
+  CUnsignedShort2T(const CUnsignedShort2T &other);
 
   /* Operators. */
-  unsignedShort2T& operator=(const unsignedShort2T &other);
+  CUnsignedShort2T& operator=(const CUnsignedShort2T &other);
 
-  bool operator<(const unsignedShort2T &other) const;
+  bool operator<(const CUnsignedShort2T &other) const;
 
-  bool operator==(const unsignedShort2T &other) const;
+  bool operator==(const CUnsignedShort2T &other) const;
 
 private:
   /* Copy function. */
-  void Copy(const unsignedShort2T &other);
+  void Copy(const CUnsignedShort2T &other);
 };
 
 /*!
@@ -2032,12 +2032,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[out] adjwgt                       - Weights of the edges of the graph.
    */
   void ComputeFEMGraphWeights(
-              CConfig                                   *config,
-              const vector<CFaceOfElement>              &localFaces,
-              const vector<vector<unsigned long> >      &adjacency,
-              const map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel,
-                    vector<su2double>                   &vwgt,
-                    vector<vector<su2double> >          &adjwgt);
+              CConfig                                    *config,
+              const vector<CFaceOfElement>               &localFaces,
+              const vector<vector<unsigned long> >       &adjacency,
+              const map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel,
+                    vector<su2double>                    &vwgt,
+                    vector<vector<su2double> >           &adjwgt);
 
   /*!
    * \brief Determine the donor elements for the boundary elements on viscous
@@ -2070,9 +2070,9 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[out] mapExternalElemIDToTimeLevel - Map from the external element ID's to
                                                 their time level and number of DOFs.
    */
-  void DetermineTimeLevelElements(CConfig                             *config,
-                                  const vector<CFaceOfElement>        &localFaces,
-                                  map<unsigned long, unsignedShort2T> &mapExternalElemIDToTimeLevel);
+  void DetermineTimeLevelElements(CConfig                              *config,
+                                  const vector<CFaceOfElement>         &localFaces,
+                                  map<unsigned long, CUnsignedShort2T> &mapExternalElemIDToTimeLevel);
 
   /*!
    * \brief Set the rotational velocity at each node.
