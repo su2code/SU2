@@ -1,6 +1,6 @@
 /*!
- * \file graph_vertex_coloring.cpp
- * \brief Function used to carry out the vertex coloring of a given graph.
+ * \file graph_coloring_structure.cpp
+ * \brief Functions used to carry out the coloring of a given graph.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  *
@@ -29,9 +29,17 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/graph_vertex_coloring.hpp"
+#include "../include/graph_coloring_structure.hpp"
 
-void GraphVertexColoring(CConfig                              *config,
+/* Constructor. Nothing to be done. */
+CGraphColoringStructure::CGraphColoringStructure(void) {}
+
+/* Destructor. Nothing to be done. */
+CGraphColoringStructure::~CGraphColoringStructure(void) {}
+
+/* Function, which determines the colors for the vertices of the given graph. */
+void CGraphColoringStructure::GraphVertexColoring(
+                         CConfig                              *config,
                          const vector<unsigned long>          &nVerticesPerRank,
                          const vector<vector<unsigned long> > &entriesVertices,
                          int                                  &nGlobalColors,
