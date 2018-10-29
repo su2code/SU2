@@ -1842,7 +1842,9 @@ enum MPI_QUANTITIES {
   SOLUTION_EDDY        = 21,  /*!< \brief Turbulent solution plus eddy viscosity communication. */
   SOLUTION_MATRIX      = 22,  /*!< \brief Matrix solution communication. */
   SOLUTION_MATRIXTRANS = 23,  /*!< \brief Matrix transposed solution communication. */
-  NEIGHBORS            = 24   /*!< \brief Neighbor point count communication (for JST). */
+  NEIGHBORS            = 24,  /*!< \brief Neighbor point count communication (for JST). */
+  SOLUTION_FEA         = 25,  /*!< \brief FEA solution communication. */
+  SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
 };
 
 /* END_CONFIG_ENUMS */

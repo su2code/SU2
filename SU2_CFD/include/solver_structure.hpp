@@ -197,18 +197,6 @@ public:
   void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  virtual void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  virtual void Set_MPI_Primitive(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
@@ -231,60 +219,6 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   virtual void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  virtual void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for velocities and accelerations in structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for old predicted FSI structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for reference geometry (adjoint FEM).
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_RefGeom(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Set number of linear solver iterations.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  virtual void Set_MPI_Solution_Geometry(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Solution_Limiter(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Set the fluid solver nondimensionalization.
@@ -528,13 +462,6 @@ public:
   void SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief MPI gradients.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Solution_Gradient(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Compute the Least Squares gradient of the grid velocity.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -684,13 +611,6 @@ public:
     * \param[in] config - Definition of the particular problem.
     */
   virtual void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Undivided_Laplacian(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -702,25 +622,10 @@ public:
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_MaxEigenvalue(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Sensor(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -1397,13 +1302,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  virtual void Set_MPI_Primitive_Gradient(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -9864,27 +9762,6 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
-  
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Nearfield(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Interface(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Parallelization of Undivided Laplacian.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_ActDisk(CSolver **solver_container, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Created the force projection vector for adjoint boundary conditions.
@@ -11222,41 +11099,6 @@ public:
    * \brief Destructor of the class.
    */
   virtual ~CFEASolver(void);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Old(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition only for displacements in structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for predicted FSI structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Impose the send-receive boundary condition for old predicted FSI structural solutions.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Set residuals to zero.

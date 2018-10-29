@@ -2116,7 +2116,6 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
   bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
     bufD_P2PRecv[iRecv] = 0.0;
-
   
 }
 
