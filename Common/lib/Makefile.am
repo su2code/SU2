@@ -64,7 +64,7 @@ lib_sources = \
   ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
   ../include/geometry_structure.inl \
-  ../include/graph_vertex_coloring.hpp \
+  ../include/graph_coloring_structure.hpp \
   ../include/grid_adaptation_structure.hpp \
   ../include/grid_adaptation_structure.inl \
   ../include/grid_movement_structure.hpp \
@@ -105,7 +105,7 @@ lib_sources = \
   ../src/fem_work_estimate_metis.cpp \
   ../src/geometry_structure.cpp \
   ../src/geometry_structure_fem_part.cpp \
-  ../src/graph_vertex_coloring.cpp \
+  ../src/graph_coloring_structure.cpp \
   ../src/grid_adaptation_structure.cpp \
   ../src/grid_movement_structure.cpp \
   ../src/linear_solvers_structure.cpp \

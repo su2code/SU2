@@ -67,7 +67,7 @@
 #include "../../Common/include/linear_solvers_structure.hpp"
 #include "../../Common/include/grid_movement_structure.hpp"
 #include "../../Common/include/blas_structure.hpp"
-#include "../../Common/include/graph_vertex_coloring.hpp"
+#include "../../Common/include/graph_coloring_structure.hpp"
 
 using namespace std;
 
