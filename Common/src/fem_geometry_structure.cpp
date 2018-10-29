@@ -652,13 +652,13 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   sort(globalElemID.begin(), globalElemID.end());
 
   /*--- Determine the global element ID's of the halo elements. A vector of
-        unsignedLong2T is used for this purpose, such that a possible periodic
+        CUnsignedLong2T is used for this purpose, such that a possible periodic
         transformation can be taken into account. Neighbors with a periodic
         transformation will always become a halo element, even if the element
         is stored on this rank. Furthermore a vector of CReorderElements
         is created for the owned elements to be able to reorder the elements,
         see step 2 below. ---*/
-  vector<unsignedLong2T> haloElements;
+  vector<CUnsignedLong2T>  haloElements;
   vector<CReorderElements> ownedElements;
   unsigned short maxTimeLevelLoc = 0;
 
@@ -714,9 +714,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
               /* The face is owned by this element. As the neighboring element
                  is not owned, this implies that a halo element must be created. */
-              haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL],
-                                                    shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
-            }                                                                   /* are unsigned longs.          */
+              haloElements.push_back(CUnsignedLong2T(longRecvBuf[i][indL],
+                                                     shortRecvBuf[i][indS]+1));  /* The +1, because haloElements */
+            }                                                                    /* are unsigned longs.          */
             else {
 
               /* The face is not owned by this element and therefore it is owned
@@ -755,7 +755,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
              haloElements with no periodic transformation. */
           if( !binary_search(globalElemID.begin(), globalElemID.end(),
                              longRecvBuf[i][indL]) )
-            haloElements.push_back(unsignedLong2T(longRecvBuf[i][indL], 0));
+            haloElements.push_back(CUnsignedLong2T(longRecvBuf[i][indL], 0));
         }
       }
     }
@@ -763,7 +763,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /* Sort the halo elements in increasing order and remove the double entities. */
   sort(haloElements.begin(), haloElements.end());
-  vector<unsignedLong2T>::iterator lastHalo = unique(haloElements.begin(), haloElements.end());
+  vector<CUnsignedLong2T>::iterator lastHalo = unique(haloElements.begin(), haloElements.end());
   haloElements.erase(lastHalo, haloElements.end());
 
   /* Determine the maximum global time level and possibly reset the number
@@ -1643,10 +1643,10 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Loop over the elements in this receive buffer to determine the local
        index on this rank. Note that also the periodic index must be stored,
-       hence use an unsignedLong2T for this purpose. As -1 cannot be stored
+       hence use an CUnsignedLong2T for this purpose. As -1 cannot be stored
        for an unsigned long a 1 is added to the periodic transformation. */
     const unsigned long nElemBuf = longSecondRecvBuf[i].size()/2;
-    vector<unsignedLong2T> elemBuf(nElemBuf);
+    vector<CUnsignedLong2T> elemBuf(nElemBuf);
 
     for(unsigned long j=0; j<nElemBuf; ++j) {
       const unsigned long j2 = 2*j;
@@ -1671,8 +1671,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Vector with node IDs that must be returned to this calling rank.
        Note that also the periodic index must be stored, hence use an
-       unsignedLong2T for this purpose. */
-    vector<unsignedLong2T> nodeIDs;
+       CUnsignedLong2T for this purpose. */
+    vector<CUnsignedLong2T> nodeIDs;
 
     /* Loop over the elements to fill the send buffers. */
     for(unsigned long j=0; j<nElemBuf; ++j) {
@@ -1701,8 +1701,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
       for(unsigned short k=0; k<volElem[indV].nDOFsGrid; ++k) {
         longSendBuf[i].push_back(volElem[indV].nodeIDsGrid[k]);
-        nodeIDs.push_back(unsignedLong2T(volElem[indV].nodeIDsGrid[k],
-                                         elemBuf[j].long1));
+        nodeIDs.push_back(CUnsignedLong2T(volElem[indV].nodeIDsGrid[k],
+                                          elemBuf[j].long1));
       }
 
       for(unsigned short k=0; k<volElem[indV].nFaces; ++k)
@@ -1711,7 +1711,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
     /* Sort nodeIDs in increasing order and remove the double entities. */
     sort(nodeIDs.begin(), nodeIDs.end());
-    vector<unsignedLong2T>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
+    vector<CUnsignedLong2T>::iterator lastNodeID = unique(nodeIDs.begin(), nodeIDs.end());
     nodeIDs.erase(lastNodeID, nodeIDs.end());
 
     /* Add the number of node IDs and the node IDs itself to longSendBuf[i]
@@ -1967,9 +1967,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   /* Create a map from the global point ID and periodic index to the local
      index in the vector meshPoints. First store the points already present
      in meshPoints. */
-  map<unsignedLong2T, unsigned long> mapGlobalPointIDToInd;
+  map<CUnsignedLong2T, unsigned long> mapGlobalPointIDToInd;
   for(unsigned long i=0; i<meshPoints.size(); ++i) {
-    unsignedLong2T globIndAndPer;
+    CUnsignedLong2T globIndAndPer;
     globIndAndPer.long0 = meshPoints[i].globalID;
     globIndAndPer.long1 = meshPoints[i].periodIndexToDonor+1;  // Note the +1 again.
 
@@ -1984,8 +1984,8 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Convert the global node ID's to local values. Note that for these node
          ID's no periodic transformation can be present. */
       for(unsigned short j=0; j<boundaries[iMarker].surfElem[i].nDOFsGrid; ++j) {
-        unsignedLong2T searchItem(boundaries[iMarker].surfElem[i].nodeIDsGrid[j], 0);
-        map<unsignedLong2T, unsigned long>::const_iterator LLMI;
+        CUnsignedLong2T searchItem(boundaries[iMarker].surfElem[i].nodeIDsGrid[j], 0);
+        map<CUnsignedLong2T, unsigned long>::const_iterator LLMI;
         LLMI = mapGlobalPointIDToInd.find(searchItem);
         boundaries[iMarker].surfElem[i].nodeIDsGrid[j] = LLMI->second;
       }
@@ -2122,7 +2122,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
           /* The distance to the nearest point is less than the tolerance,
              hence this periodically transformed point is present on the
              boundary. Store it as such in the map mapGlobalPointIDToInd. */
-          unsignedLong2T globIndAndPer;
+          CUnsignedLong2T globIndAndPer;
           globIndAndPer.long0 = haloPoints[i].globalID;
           globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
 
@@ -2134,7 +2134,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
              hence this periodically transformed point is not present yet on
              this rank. Store it in the mapping to the local points and
              create it in meshPoints. */
-          unsignedLong2T globIndAndPer;
+          CUnsignedLong2T globIndAndPer;
           globIndAndPer.long0 = haloPoints[i].globalID;
           globIndAndPer.long1 = haloPoints[i].periodIndexToDonor+1;  // Note the +1 again.
 
@@ -2155,9 +2155,9 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
         used. ---*/
   for(unsigned long i=0; i<nVolElemTot; ++i) {
     for(unsigned short j=0; j<volElem[i].nDOFsGrid; ++j) {
-      unsignedLong2T searchItem(volElem[i].nodeIDsGrid[j],
-                                volElem[i].periodIndexToDonor+1); // Again the +1.
-      map<unsignedLong2T, unsigned long>::const_iterator LLMI;
+      CUnsignedLong2T searchItem(volElem[i].nodeIDsGrid[j],
+                                 volElem[i].periodIndexToDonor+1); // Again the +1.
+      map<CUnsignedLong2T, unsigned long>::const_iterator LLMI;
       LLMI = mapGlobalPointIDToInd.find(searchItem);
       volElem[i].nodeIDsGrid[j] = LLMI->second;
     }
@@ -6335,9 +6335,9 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
 
             /* Allocate the memory for the memory to store the donors and
                the parametric weights. The donor elements are stored in an
-               unsignedLong2T, such that they can be sorted. */
-            vector<unsignedLong2T> donorElements(nInt);
-            vector<su2double>      parCoorInDonor(nInt*nDim);
+               CUnsignedLong2T, such that they can be sorted. */
+            vector<CUnsignedLong2T> donorElements(nInt);
+            vector<su2double>       parCoorInDonor(nInt*nDim);
 
             /* Loop over the integration points. */
             for(unsigned short i=0; i<nInt; ++i) {

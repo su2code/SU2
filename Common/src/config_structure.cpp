@@ -36,7 +36,7 @@
  */
 
 #include "../include/config_structure.hpp"
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem_geometry_structure.hpp"
 
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
