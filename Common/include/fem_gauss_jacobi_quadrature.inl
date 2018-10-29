@@ -1,6 +1,6 @@
 /*!
- * \file gauss_jacobi_quadrature.inl
- * \brief In-Line functions of the <i>gauss_jacobi_quadrature.hpp</i> file.
+ * \file fem_gauss_jacobi_quadrature.inl
+ * \brief In-Line functions of the <i>fem_gauss_jacobi_quadrature.hpp</i> file.
  * \author E. van der Weide
  * \version 6.1.0 "Falcon"
  *

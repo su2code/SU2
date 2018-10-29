@@ -121,8 +121,8 @@ void CMeshFEM_DG::ComputeWall_Distance(CConfig *config) {
   /*--------------------------------------------------------------------------*/
 
   /* Build the ADT. */
-  su2_adtElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
-                           markerIDs, elemIDs, true);
+  CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
+                        markerIDs, elemIDs, true);
 
   /* Release the memory of the vectors used to build the ADT. To make sure
      that all the memory is deleted, the swap function is used. */

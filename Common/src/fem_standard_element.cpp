@@ -30,20 +30,16 @@
  */
 
 #include "../include/fem_standard_element.hpp"
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/blas_structure.hpp"
 
-#ifdef HAVE_MKL
-#include "mkl.h"
-#endif
-
 /*----------------------------------------------------------------------------------*/
-/*          Public member functions of FEMStandardElementBaseClass.                 */
+/*          Public member functions of CFEMStandardElementBase.                     */
 /*----------------------------------------------------------------------------------*/
 
-unsigned short FEMStandardElementBaseClass::GetNDOFsStatic(unsigned short VTK_Type,
-                                                           unsigned short nPoly,
-                                                           unsigned long  typeErrorMessage) {
+unsigned short CFEMStandardElementBase::GetNDOFsStatic(unsigned short VTK_Type,
+                                                       unsigned short nPoly,
+                                                       unsigned long  typeErrorMessage) {
   unsigned short nDOFsEdge = nPoly + 1;
   unsigned short nDOFs = 0;    // To avoid a compiler warning.
 
@@ -88,8 +84,8 @@ unsigned short FEMStandardElementBaseClass::GetNDOFsStatic(unsigned short VTK_Ty
 }
 
 
-void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
-                                                vector<su2double> &A) {
+void CFEMStandardElementBase::InverseMatrix(unsigned short    n,
+                                            vector<su2double> &A) {
 
  /*--- Check the dimensions of A. ---*/
  unsigned long nEntities = n*n;
@@ -157,9 +153,9 @@ void FEMStandardElementBaseClass::InverseMatrix(unsigned short    n,
       A[ii] = augmentedmatrix[i][j+n];
 }
 
-void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
-                                                const vector<su2double> &r,
-                                                vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde1D(unsigned short          nDOFs,
+                                            const vector<su2double> &r,
+                                            vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -177,9 +173,9 @@ void FEMStandardElementBaseClass::Vandermonde1D(unsigned short          nDOFs,
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOFs,
-                                                    const vector<su2double> &r,
-                                                    vector<su2double>       &VDr) {
+void CFEMStandardElementBase::GradVandermonde1D(unsigned short          nDOFs,
+                                                const vector<su2double> &r,
+                                                vector<su2double>       &VDr) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimension of VDr is correct.     ---*/
@@ -198,14 +194,14 @@ void FEMStandardElementBaseClass::GradVandermonde1D(unsigned short          nDOF
 }
 
 /*----------------------------------------------------------------------------------*/
-/*         Protected member functions of FEMStandardElementBaseClass.               */
+/*         Protected member functions of CFEMStandardElementBase.                   */
 /*----------------------------------------------------------------------------------*/
 
-FEMStandardElementBaseClass::FEMStandardElementBaseClass(unsigned short val_VTK_Type,
-                                                         unsigned short val_nPoly,
-                                                         bool           val_constJac,
-                                                         CConfig        *config,
-                                                         unsigned short val_orderExact) {
+CFEMStandardElementBase::CFEMStandardElementBase(unsigned short val_VTK_Type,
+                                                 unsigned short val_nPoly,
+                                                 bool           val_constJac,
+                                                 CConfig        *config,
+                                                 unsigned short val_orderExact) {
 
   /*--- Copy the function arguments that must be stored in the member variables. ---*/
   VTK_Type      = val_VTK_Type;
@@ -236,7 +232,7 @@ FEMStandardElementBaseClass::FEMStandardElementBaseClass(unsigned short val_VTK_
   }
 }
 
-void FEMStandardElementBaseClass::CheckSumDerivativesLagrangianBasisFunctions(
+void CFEMStandardElementBase::CheckSumDerivativesLagrangianBasisFunctions(
                                           const unsigned short    nPoints,
                                           const unsigned short    nDOFs,
                                           const vector<su2double> &dLagBasisPoints) {
@@ -253,7 +249,7 @@ void FEMStandardElementBaseClass::CheckSumDerivativesLagrangianBasisFunctions(
   }
 }
 
-void FEMStandardElementBaseClass::CheckSumLagrangianBasisFunctions(
+void CFEMStandardElementBase::CheckSumLagrangianBasisFunctions(
                                           const unsigned short nPoints,
                                           const unsigned short nDOFs,
                                           vector<su2double>    &lagBasisPoints) {
@@ -276,7 +272,7 @@ void FEMStandardElementBaseClass::CheckSumLagrangianBasisFunctions(
   }
 }
 
-void FEMStandardElementBaseClass::Copy(const FEMStandardElementBaseClass &other) {
+void CFEMStandardElementBase::Copy(const CFEMStandardElementBase &other) {
 
   VTK_Type      = other.VTK_Type;
   nIntegration  = other.nIntegration;
@@ -289,7 +285,7 @@ void FEMStandardElementBaseClass::Copy(const FEMStandardElementBaseClass &other)
   wIntegration = other.wIntegration;
 }
 
-void FEMStandardElementBaseClass::DerivativesBasisFunctionsAdjacentElement(
+void CFEMStandardElementBase::DerivativesBasisFunctionsAdjacentElement(
                                         unsigned short    VTK_TypeElem,
                                         unsigned short    nPolyElem,
                                         const bool        swapFaceInElement,
@@ -486,7 +482,7 @@ void FEMStandardElementBaseClass::DerivativesBasisFunctionsAdjacentElement(
   }
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesLine(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        unsigned short          &nDOFs,
@@ -540,7 +536,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesLine(
   MatMulRowMajor(nDOFs, nPoints, V, matVandermondeInv, drLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesTriangle(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -609,7 +605,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTriangle(
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilateral(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesQuadrilateral(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -679,7 +675,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesQuadrilat
   MatMulRowMajor(nDOFs, nPoints, VDs, matVandermondeInv, dsLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedron(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesTetrahedron(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -760,7 +756,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesTetrahedr
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesPyramid(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -853,7 +849,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPyramid(
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesPrism(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -935,7 +931,7 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesPrism(
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedron(
+void CFEMStandardElementBase::LagrangianBasisFunctionAndDerivativesHexahedron(
                                        const unsigned short    nPoly,
                                        const vector<su2double> &rPoints,
                                        const vector<su2double> &sPoints,
@@ -1015,11 +1011,11 @@ void FEMStandardElementBaseClass::LagrangianBasisFunctionAndDerivativesHexahedro
   MatMulRowMajor(nDOFs, nPoints, VDt, matVandermondeInv, dtLagBasisPoints);
 }
 
-void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
-                                                 const unsigned short nPoints,
-                                                 const vector<su2double> &A,
-                                                 const vector<su2double> &B,
-                                                 vector<su2double>       &C) {
+void CFEMStandardElementBase::MatMulRowMajor(const unsigned short nDOFs,
+                                             const unsigned short nPoints,
+                                             const vector<su2double> &A,
+                                             const vector<su2double> &B,
+                                             vector<su2double>       &C) {
 
   /*--- Check if the dimensions of the matrices correspond to the
         assumptions made in this function.                    ---*/
@@ -1046,7 +1042,7 @@ void FEMStandardElementBaseClass::MatMulRowMajor(const unsigned short nDOFs,
   }
 }
 
-void FEMStandardElementBaseClass::SubConnForPlottingLine(
+void CFEMStandardElementBase::SubConnForPlottingLine(
                                          const unsigned short   nPoly,
                                          vector<unsigned short> &subConn) {
 
@@ -1060,7 +1056,7 @@ void FEMStandardElementBaseClass::SubConnForPlottingLine(
   }
 }
 
-void FEMStandardElementBaseClass::SubConnForPlottingQuadrilateral(
+void CFEMStandardElementBase::SubConnForPlottingQuadrilateral(
                                          const unsigned short   nPoly,
                                          vector<unsigned short> &subConn) {
 
@@ -1080,7 +1076,7 @@ void FEMStandardElementBaseClass::SubConnForPlottingQuadrilateral(
   }
 }
 
-void FEMStandardElementBaseClass::SubConnForPlottingTriangle(
+void CFEMStandardElementBase::SubConnForPlottingTriangle(
                                          const unsigned short   nPoly,
                                          vector<unsigned short> &subConn) {
 
@@ -1127,11 +1123,11 @@ void FEMStandardElementBaseClass::SubConnForPlottingTriangle(
 }
 
 
-void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short          nPoly,
-                                                         unsigned short          nDOFs,
-                                                         const vector<su2double> &r,
-                                                         const vector<su2double> &s,
-                                                         vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde2D_Triangle(unsigned short          nPoly,
+                                                     unsigned short          nDOFs,
+                                                     const vector<su2double> &r,
+                                                     const vector<su2double> &s,
+                                                     vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1164,12 +1160,12 @@ void FEMStandardElementBaseClass::Vandermonde2D_Triangle(unsigned short         
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short          nPoly,
-                                                             unsigned short          nDOFs,
-                                                             const vector<su2double> &r,
-                                                             const vector<su2double> &s,
-                                                             vector<su2double>       &VDr,
-                                                             vector<su2double>       &VDs) {
+void CFEMStandardElementBase::GradVandermonde2D_Triangle(unsigned short          nPoly,
+                                                         unsigned short          nDOFs,
+                                                         const vector<su2double> &r,
+                                                         const vector<su2double> &s,
+                                                         vector<su2double>       &VDr,
+                                                         vector<su2double>       &VDs) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr and VDs are correct.     ---*/
@@ -1223,11 +1219,11 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Triangle(unsigned short     
   }
 }
 
-void FEMStandardElementBaseClass::Vandermonde2D_Quadrilateral(unsigned short          nPoly,
-                                                              unsigned short          nDOFs,
-                                                              const vector<su2double> &r,
-                                                              const vector<su2double> &s,
-                                                              vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde2D_Quadrilateral(unsigned short          nPoly,
+                                                          unsigned short          nDOFs,
+                                                          const vector<su2double> &r,
+                                                          const vector<su2double> &s,
+                                                          vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1249,12 +1245,12 @@ void FEMStandardElementBaseClass::Vandermonde2D_Quadrilateral(unsigned short    
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde2D_Quadrilateral(unsigned short          nPoly,
-                                                                  unsigned short          nDOFs,
-                                                                  const vector<su2double> &r,
-                                                                  const vector<su2double> &s,
-                                                                  vector<su2double>       &VDr,
-                                                                  vector<su2double>       &VDs) {
+void CFEMStandardElementBase::GradVandermonde2D_Quadrilateral(unsigned short          nPoly,
+                                                              unsigned short          nDOFs,
+                                                              const vector<su2double> &r,
+                                                              const vector<su2double> &s,
+                                                              vector<su2double>       &VDr,
+                                                              vector<su2double>       &VDs) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr and VDs are correct.     ---*/
@@ -1278,12 +1274,12 @@ void FEMStandardElementBaseClass::GradVandermonde2D_Quadrilateral(unsigned short
   }
 }
 
-void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short          nPoly,
-                                                            unsigned short          nDOFs,
-                                                            const vector<su2double> &r,
-                                                            const vector<su2double> &s,
-                                                            const vector<su2double> &t,
-                                                            vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde3D_Tetrahedron(unsigned short          nPoly,
+                                                        unsigned short          nDOFs,
+                                                        const vector<su2double> &r,
+                                                        const vector<su2double> &s,
+                                                        const vector<su2double> &t,
+                                                        vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1328,14 +1324,14 @@ void FEMStandardElementBaseClass::Vandermonde3D_Tetrahedron(unsigned short      
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short          nPoly,
-                                                                unsigned short          nDOFs,
-                                                                const vector<su2double> &r,
-                                                                const vector<su2double> &s,
-                                                                const vector<su2double> &t,
-                                                                vector<su2double>       &VDr,
-                                                                vector<su2double>       &VDs,
-                                                                vector<su2double>       &VDt) {
+void CFEMStandardElementBase::GradVandermonde3D_Tetrahedron(unsigned short          nPoly,
+                                                            unsigned short          nDOFs,
+                                                            const vector<su2double> &r,
+                                                            const vector<su2double> &s,
+                                                            const vector<su2double> &t,
+                                                            vector<su2double>       &VDr,
+                                                            vector<su2double>       &VDs,
+                                                            vector<su2double>       &VDt) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
@@ -1441,12 +1437,12 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Tetrahedron(unsigned short  
   }
 }
 
-void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          nPoly,
-                                                        unsigned short          nDOFs,
-                                                        const vector<su2double> &r,
-                                                        const vector<su2double> &s,
-                                                        const vector<su2double> &t,
-                                                        vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde3D_Pyramid(unsigned short          nPoly,
+                                                    unsigned short          nDOFs,
+                                                    const vector<su2double> &r,
+                                                    const vector<su2double> &s,
+                                                    const vector<su2double> &t,
+                                                    vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1489,14 +1485,14 @@ void FEMStandardElementBaseClass::Vandermonde3D_Pyramid(unsigned short          
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short          nPoly,
-                                                            unsigned short          nDOFs,
-                                                            const vector<su2double> &r,
-                                                            const vector<su2double> &s,
-                                                            const vector<su2double> &t,
-                                                            vector<su2double>       &VDr,
-                                                            vector<su2double>       &VDs,
-                                                            vector<su2double>       &VDt) {
+void CFEMStandardElementBase::GradVandermonde3D_Pyramid(unsigned short          nPoly,
+                                                        unsigned short          nDOFs,
+                                                        const vector<su2double> &r,
+                                                        const vector<su2double> &s,
+                                                        const vector<su2double> &t,
+                                                        vector<su2double>       &VDr,
+                                                        vector<su2double>       &VDs,
+                                                        vector<su2double>       &VDt) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
@@ -1582,12 +1578,12 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Pyramid(unsigned short      
   }
 }
 
-void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nPoly,
-                                                      unsigned short          nDOFs,
-                                                      const vector<su2double> &r,
-                                                      const vector<su2double> &s,
-                                                      const vector<su2double> &t,
-                                                      vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde3D_Prism(unsigned short          nPoly,
+                                                  unsigned short          nDOFs,
+                                                  const vector<su2double> &r,
+                                                  const vector<su2double> &s,
+                                                  const vector<su2double> &t,
+                                                  vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1627,14 +1623,14 @@ void FEMStandardElementBaseClass::Vandermonde3D_Prism(unsigned short          nP
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short          nPoly,
-                                                          unsigned short          nDOFs,
-                                                          const vector<su2double> &r,
-                                                          const vector<su2double> &s,
-                                                          const vector<su2double> &t,
-                                                          vector<su2double>       &VDr,
-                                                          vector<su2double>       &VDs,
-                                                          vector<su2double>       &VDt) {
+void CFEMStandardElementBase::GradVandermonde3D_Prism(unsigned short          nPoly,
+                                                      unsigned short          nDOFs,
+                                                      const vector<su2double> &r,
+                                                      const vector<su2double> &s,
+                                                      const vector<su2double> &t,
+                                                      vector<su2double>       &VDr,
+                                                      vector<su2double>       &VDs,
+                                                      vector<su2double>       &VDt) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
@@ -1703,12 +1699,12 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Prism(unsigned short        
   }
 }
 
-void FEMStandardElementBaseClass::Vandermonde3D_Hexahedron(unsigned short          nPoly,
-                                                           unsigned short          nDOFs,
-                                                           const vector<su2double> &r,
-                                                           const vector<su2double> &s,
-                                                           const vector<su2double> &t,
-                                                           vector<su2double>       &V) {
+void CFEMStandardElementBase::Vandermonde3D_Hexahedron(unsigned short          nPoly,
+                                                       unsigned short          nDOFs,
+                                                       const vector<su2double> &r,
+                                                       const vector<su2double> &s,
+                                                       const vector<su2double> &t,
+                                                       vector<su2double>       &V) {
 
   /*--- Determine the number or rows of the Vandermonde matrix and check
         if the dimension of V is correct.     ---*/
@@ -1733,14 +1729,14 @@ void FEMStandardElementBaseClass::Vandermonde3D_Hexahedron(unsigned short       
   }
 }
 
-void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short          nPoly,
-                                                               unsigned short          nDOFs,
-                                                               const vector<su2double> &r,
-                                                               const vector<su2double> &s,
-                                                               const vector<su2double> &t,
-                                                               vector<su2double>       &VDr,
-                                                               vector<su2double>       &VDs,
-                                                               vector<su2double>       &VDt) {
+void CFEMStandardElementBase::GradVandermonde3D_Hexahedron(unsigned short          nPoly,
+                                                           unsigned short          nDOFs,
+                                                           const vector<su2double> &r,
+                                                           const vector<su2double> &s,
+                                                           const vector<su2double> &t,
+                                                           vector<su2double>       &VDr,
+                                                           vector<su2double>       &VDs,
+                                                           vector<su2double>       &VDt) {
 
   /*--- Determine the number or rows of the gradient of the Vandermonde matrix
         and check if the dimensions of VDr, VDs and VDt are correct.     ---*/
@@ -1772,7 +1768,7 @@ void FEMStandardElementBaseClass::GradVandermonde3D_Hexahedron(unsigned short   
   }
 }
 
-su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
+su2double CFEMStandardElementBase::ViscousPenaltyParameter(
                                        const unsigned short VTK_TypeElem,
                                        const unsigned short nPolyElem) {
 
@@ -1808,11 +1804,11 @@ su2double FEMStandardElementBaseClass::ViscousPenaltyParameter(
 }
 
 /*----------------------------------------------------------------------------------*/
-/*          Private member functions of FEMStandardElementBaseClass.                */
+/*          Private member functions of CFEMStandardElementBase.                    */
 /*----------------------------------------------------------------------------------*/
 
-void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoints,
-                                                        vector<su2double> &GLWeights) {
+void CFEMStandardElementBase::GaussLegendrePoints1D(vector<su2double> &GLPoints,
+                                                    vector<su2double> &GLWeights) {
 
   /* The class used to determine the integration points operate on passivedoubles.
      Allocate the memory for the help vectors. */
@@ -1831,10 +1827,10 @@ void FEMStandardElementBaseClass::GaussLegendrePoints1D(vector<su2double> &GLPoi
   }
 }
 
-su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
-                                                  unsigned short alpha,
-                                                  unsigned short beta,
-                                                  su2double      x) {
+su2double CFEMStandardElementBase::NormJacobi(unsigned short n,
+                                              unsigned short alpha,
+                                              unsigned short beta,
+                                              su2double      x) {
   /*--- Some abbreviations. ---*/
   su2double ap1   = alpha + 1;
   su2double bp1   = beta  + 1;
@@ -1887,10 +1883,10 @@ su2double FEMStandardElementBaseClass::NormJacobi(unsigned short n,
   return Pn;
 }
 
-su2double FEMStandardElementBaseClass::GradNormJacobi(unsigned short n,
-                                                      unsigned short alpha,
-                                                      unsigned short beta,
-                                                      su2double      x) {
+su2double CFEMStandardElementBase::GradNormJacobi(unsigned short n,
+                                                  unsigned short alpha,
+                                                  unsigned short beta,
+                                                  su2double      x) {
 
   /*--- Make a distinction for n == 0 and n > 0. For n == 0 the derivative is
         zero, because the polynomial itself is constant. ---*/
@@ -1907,20 +1903,20 @@ su2double FEMStandardElementBaseClass::GradNormJacobi(unsigned short n,
 }
 
 /*----------------------------------------------------------------------------------*/
-/*           Public member functions of FEMStandardElementClass.                    */
+/*           Public member functions of CFEMStandardElement.                        */
 /*----------------------------------------------------------------------------------*/
 
-FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK_Type,
-                                                 unsigned short          val_nPoly,
-                                                 bool                    val_constJac,
-                                                 CConfig                 *config,
-                                                 unsigned short          val_orderExact,
-                                                 const vector<su2double> *rLocSolDOFs,
-                                                 const vector<su2double> *sLocSolDOFs,
-                                                 const vector<su2double> *tLocSolDOFs)
+CFEMStandardElement::CFEMStandardElement(unsigned short          val_VTK_Type,
+                                         unsigned short          val_nPoly,
+                                         bool                    val_constJac,
+                                         CConfig                 *config,
+                                         unsigned short          val_orderExact,
+                                         const vector<su2double> *rLocSolDOFs,
+                                         const vector<su2double> *sLocSolDOFs,
+                                         const vector<su2double> *tLocSolDOFs)
 
-  : FEMStandardElementBaseClass(val_VTK_Type, val_nPoly, val_constJac,
-                                config, val_orderExact) {
+  : CFEMStandardElementBase(val_VTK_Type, val_nPoly, val_constJac,
+                            config, val_orderExact) {
 
   /*--- Copy the function arguments to the member variables. ---*/
   nPoly = val_nPoly;
@@ -2088,8 +2084,8 @@ FEMStandardElementClass::FEMStandardElementClass(unsigned short          val_VTK
   }
 }
 
-void FEMStandardElementClass::BasisFunctionsInPoint(const su2double   *parCoor,
-                                                    vector<su2double> &lagBasis) {
+void CFEMStandardElement::BasisFunctionsInPoint(const su2double   *parCoor,
+                                                vector<su2double> &lagBasis) {
 
   /* Determine the number of parametric dimensions, depending on the
      element type. */
@@ -2151,7 +2147,7 @@ void FEMStandardElementClass::BasisFunctionsInPoint(const su2double   *parCoor,
   MatMulRowMajor(nDOFs, 1, V, matVandermondeInv, lagBasis);
 }
 
-void FEMStandardElementClass::BasisFunctionsAndDerivativesInPoint(
+void CFEMStandardElement::BasisFunctionsAndDerivativesInPoint(
                                            const su2double            *parCoor,
                                            vector<su2double>          &lagBasis,
                                            vector<vector<su2double> > &dLagBasis) {
@@ -2219,9 +2215,9 @@ void FEMStandardElementClass::BasisFunctionsAndDerivativesInPoint(
     MatMulRowMajor(nDOFs, 1, VDr[i], matVandermondeInv, dLagBasis[i]);
 }
 
-bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
-                                                  unsigned short val_nPoly,
-                                                  bool           val_constJac) {
+bool CFEMStandardElement::SameStandardElement(unsigned short val_VTK_Type,
+                                              unsigned short val_nPoly,
+                                              bool           val_constJac) {
   if(val_VTK_Type != VTK_Type)      return false;
   if(val_nPoly    != nPoly)         return false;
   if(val_constJac != constJacobian) return false;
@@ -2230,12 +2226,12 @@ bool FEMStandardElementClass::SameStandardElement(unsigned short val_VTK_Type,
 }
 
 /*----------------------------------------------------------------------------------*/
-/*           Private member functions of FEMStandardElementClass.                   */
+/*           Private member functions of CFEMStandardElement.                       */
 /*----------------------------------------------------------------------------------*/
 
-void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
+void CFEMStandardElement::Copy(const CFEMStandardElement &other) {
 
-  FEMStandardElementBaseClass::Copy(other);
+  CFEMStandardElementBase::Copy(other);
 
   nPoly = other.nPoly;
   nDOFs = other.nDOFs;
@@ -2273,7 +2269,7 @@ void FEMStandardElementClass::Copy(const FEMStandardElementClass &other) {
   mat2ndDerBasisInt   = other.mat2ndDerBasisInt;
 }
 
-void FEMStandardElementClass::CreateBasisFunctionsAndMatrixDerivatives(
+void CFEMStandardElement::CreateBasisFunctionsAndMatrixDerivatives(
                                        const vector<su2double> &rLoc,
                                        const vector<su2double> &sLoc,
                                        const vector<su2double> &tLoc,
@@ -2395,7 +2391,7 @@ void FEMStandardElementClass::CreateBasisFunctionsAndMatrixDerivatives(
     matDerBasis[ii] = dtLagBasisLoc[i];
 }
 
-void FEMStandardElementClass::DataStandardLine(void) {
+void CFEMStandardElement::DataStandardLine(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2418,7 +2414,7 @@ void FEMStandardElementClass::DataStandardLine(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::DataStandardTriangle(void) {
+void CFEMStandardElement::DataStandardTriangle(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2448,7 +2444,7 @@ void FEMStandardElementClass::DataStandardTriangle(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::DataStandardQuadrilateral(void) {
+void CFEMStandardElement::DataStandardQuadrilateral(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2483,7 +2479,7 @@ void FEMStandardElementClass::DataStandardQuadrilateral(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::DataStandardTetrahedron(void) {
+void CFEMStandardElement::DataStandardTetrahedron(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2538,7 +2534,7 @@ void FEMStandardElementClass::DataStandardTetrahedron(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::DataStandardPyramid(void) {
+void CFEMStandardElement::DataStandardPyramid(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2600,7 +2596,7 @@ void FEMStandardElementClass::DataStandardPyramid(void) {
   VTK_Type2 = TETRAHEDRON;
 }
 
-void FEMStandardElementClass::DataStandardPrism(void) {
+void CFEMStandardElement::DataStandardPrism(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2663,7 +2659,7 @@ void FEMStandardElementClass::DataStandardPrism(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::DataStandardHexahedron(void) {
+void CFEMStandardElement::DataStandardHexahedron(void) {
 
   /*--- Determine the Lagrangian basis functions and its derivatives
         in the integration points. ---*/
@@ -2729,7 +2725,7 @@ void FEMStandardElementClass::DataStandardHexahedron(void) {
   VTK_Type2 = NONE;
 }
 
-void FEMStandardElementClass::SubConnTetrahedron(void) {
+void CFEMStandardElement::SubConnTetrahedron(void) {
 
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges present in the tetrahedron. Also initialize the
@@ -2922,7 +2918,7 @@ void FEMStandardElementClass::SubConnTetrahedron(void) {
   }
 }
 
-void FEMStandardElementClass::SubConnPyramid(void) {
+void CFEMStandardElement::SubConnPyramid(void) {
 
   /*--- Initialize the number of DOFs for the current edges to the number of
         DOFs of the edges on the base of the pyramid. Also initialize the
@@ -3078,7 +3074,7 @@ void FEMStandardElementClass::SubConnPyramid(void) {
   }
 }
 
-void FEMStandardElementClass::SubConnPrism(void) {
+void CFEMStandardElement::SubConnPrism(void) {
 
   /*--- Determine the number of DOFs for a triangle. This is the offset in
         k-direction, the structured direction of a prisms.    ---*/
@@ -3152,7 +3148,7 @@ void FEMStandardElementClass::SubConnPrism(void) {
   }
 }
 
-void FEMStandardElementClass::SubConnHexahedron(void) {
+void CFEMStandardElement::SubConnHexahedron(void) {
 
   /*--- Determine the nodal offset in j- and k-direction. ---*/
   unsigned short jOff = nPoly+1;
@@ -3197,7 +3193,7 @@ void FEMStandardElementClass::SubConnHexahedron(void) {
   }
 }
 
-unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
+unsigned short CFEMStandardElement::GetNDOFsPerSubElem(unsigned short val_VTK_Type) const {
 
   /*--- Distinguish between the possible element types for a linear
    sub-element and set the nDOFs accordingly. ---*/
@@ -3222,11 +3218,11 @@ unsigned short FEMStandardElementClass::GetNDOFsPerSubElem(unsigned short val_VT
   return nDOFsSubElem;
 }
 
-void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
-                                                      unsigned short         vert0,
-                                                      unsigned short         vert1,
-                                                      unsigned short         vert2,
-                                                      unsigned short         vert3) {
+void CFEMStandardElement::ChangeDirectionQuadConn(vector<unsigned short> &connQuad,
+                                                  unsigned short         vert0,
+                                                  unsigned short         vert1,
+                                                  unsigned short         vert2,
+                                                  unsigned short         vert3) {
 
   /*--- Determine the indices of the 4 corner vertices of the quad. ---*/
   unsigned short ind0 = 0;
@@ -3384,10 +3380,10 @@ void FEMStandardElementClass::ChangeDirectionQuadConn(vector<unsigned short> &co
   }
 }
 
-void FEMStandardElementClass::ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
-                                                          unsigned short         vert0,
-                                                          unsigned short         vert1,
-                                                          unsigned short         vert2) {
+void CFEMStandardElement::ChangeDirectionTriangleConn(vector<unsigned short> &connTriangle,
+                                                      unsigned short         vert0,
+                                                      unsigned short         vert1,
+                                                      unsigned short         vert2) {
 
   /*--- Determine the indices of the 3 corner vertices of the triangle. ---*/
   unsigned short ind0 = 0;
@@ -3507,22 +3503,22 @@ void FEMStandardElementClass::ChangeDirectionTriangleConn(vector<unsigned short>
 }
 
 /*----------------------------------------------------------------------------------*/
-/*         Public member functions of FEMStandardInternalFaceClass.                 */
+/*         Public member functions of CFEMStandardInternalFace.                     */
 /*----------------------------------------------------------------------------------*/
 
-FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VTK_TypeFace,
-                                                           unsigned short val_VTK_TypeSide0,
-                                                           unsigned short val_nPolySide0,
-                                                           unsigned short val_VTK_TypeSide1,
-                                                           unsigned short val_nPolySide1,
-                                                           bool           val_constJac,
-                                                           bool           val_swapFaceInElementSide0,
-                                                           bool           val_swapFaceInElementSide1,
-                                                           CConfig        *config,
-                                                           unsigned short val_orderExact)
+CFEMStandardInternalFace::CFEMStandardInternalFace(unsigned short val_VTK_TypeFace,
+                                                   unsigned short val_VTK_TypeSide0,
+                                                   unsigned short val_nPolySide0,
+                                                   unsigned short val_VTK_TypeSide1,
+                                                   unsigned short val_nPolySide1,
+                                                   bool           val_constJac,
+                                                   bool           val_swapFaceInElementSide0,
+                                                   bool           val_swapFaceInElementSide1,
+                                                   CConfig        *config,
+                                                   unsigned short val_orderExact)
 
-  : FEMStandardElementBaseClass(val_VTK_TypeFace, max(val_nPolySide0, val_nPolySide1),
-                                val_constJac, config, val_orderExact) {
+  : CFEMStandardElementBase(val_VTK_TypeFace, max(val_nPolySide0, val_nPolySide1),
+                            val_constJac, config, val_orderExact) {
 
   /*--- Copy the function arguments to the member variables. ---*/
   nPolyElemSide0         = val_nPolySide0;
@@ -3731,14 +3727,14 @@ FEMStandardInternalFaceClass::FEMStandardInternalFaceClass(unsigned short val_VT
   }
 }
 
-bool FEMStandardInternalFaceClass::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
-                                                            bool           val_constJac,
-                                                            unsigned short val_VTK_TypeSide0,
-                                                            unsigned short val_nPolySide0,
-                                                            unsigned short val_VTK_TypeSide1,
-                                                            unsigned short val_nPolySide1,
-                                                            bool           val_swapFaceInElementSide0,
-                                                            bool           val_swapFaceInElementSide1) {
+bool CFEMStandardInternalFace::SameStandardMatchingFace(unsigned short val_VTK_TypeFace,
+                                                        bool           val_constJac,
+                                                        unsigned short val_VTK_TypeSide0,
+                                                        unsigned short val_nPolySide0,
+                                                        unsigned short val_VTK_TypeSide1,
+                                                        unsigned short val_nPolySide1,
+                                                        bool           val_swapFaceInElementSide0,
+                                                        bool           val_swapFaceInElementSide1) {
   if(val_VTK_TypeFace           != VTK_Type)               return false;
   if(val_constJac               != constJacobian)          return false;
   if(val_VTK_TypeSide0          != VTK_TypeElemSide0)      return false;
@@ -3752,12 +3748,12 @@ bool FEMStandardInternalFaceClass::SameStandardMatchingFace(unsigned short val_V
 }
 
 /*----------------------------------------------------------------------------------*/
-/*        Private member functions of FEMStandardInternalFaceClass.                 */
+/*        Private member functions of CFEMStandardInternalFace.                     */
 /*----------------------------------------------------------------------------------*/
 
-void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &other) {
+void CFEMStandardInternalFace::Copy(const CFEMStandardInternalFace &other) {
 
-  FEMStandardElementBaseClass::Copy(other);
+  CFEMStandardElementBase::Copy(other);
 
   nDOFsFaceSide0 = other.nDOFsFaceSide0;
   nDOFsFaceSide1 = other.nDOFsFaceSide1;
@@ -3806,19 +3802,19 @@ void FEMStandardInternalFaceClass::Copy(const FEMStandardInternalFaceClass &othe
 }
 
 /*----------------------------------------------------------------------------------*/
-/*         Public member functions of FEMStandardBoundaryFaceClass.                 */
+/*         Public member functions of CFEMStandardBoundaryFace.                     */
 /*----------------------------------------------------------------------------------*/
 
-FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VTK_TypeFace,
-                                                           unsigned short val_VTK_TypeElem,
-                                                           unsigned short val_nPolyElem,
-                                                           bool           val_constJac,
-                                                           bool           val_swapFaceInElement,
-                                                           CConfig        *config,
-                                                           unsigned short val_orderExact)
+CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFace,
+                                                   unsigned short val_VTK_TypeElem,
+                                                   unsigned short val_nPolyElem,
+                                                   bool           val_constJac,
+                                                   bool           val_swapFaceInElement,
+                                                   CConfig        *config,
+                                                   unsigned short val_orderExact)
 
-  : FEMStandardElementBaseClass(val_VTK_TypeFace, val_nPolyElem,
-                                val_constJac, config, val_orderExact) {
+  : CFEMStandardElementBase(val_VTK_TypeFace, val_nPolyElem,
+                            val_constJac, config, val_orderExact) {
 
   /*--- Copy the function arguments to the member variables. ---*/
   nPolyElem         = val_nPolyElem;
@@ -3945,7 +3941,7 @@ FEMStandardBoundaryFaceClass::FEMStandardBoundaryFaceClass(unsigned short val_VT
   }
 }
 
-unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
+unsigned short CFEMStandardBoundaryFace::GetNDOFsPerSubFace(void) const {
 
   /*--- Distinguish between the possible element types for a boundary surface
         and set the number nDOFs for a subface accordingly. ---*/
@@ -3965,11 +3961,11 @@ unsigned short FEMStandardBoundaryFaceClass::GetNDOFsPerSubFace(void) const {
   return nDOFsSubface;
 }
 
-bool FEMStandardBoundaryFaceClass::SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
-                                                            bool           val_constJac,
-                                                            unsigned short val_VTK_TypeElem,
-                                                            unsigned short val_nPolyElem,
-                                                            bool           val_swapFaceInElem) {
+bool CFEMStandardBoundaryFace::SameStandardBoundaryFace(unsigned short val_VTK_TypeFace,
+                                                        bool           val_constJac,
+                                                        unsigned short val_VTK_TypeElem,
+                                                        unsigned short val_nPolyElem,
+                                                        bool           val_swapFaceInElem) {
   if(val_VTK_TypeFace   != VTK_Type)          return false;
   if(val_constJac       != constJacobian)     return false;
   if(val_VTK_TypeElem   != VTK_TypeElem)      return false;
@@ -3980,12 +3976,12 @@ bool FEMStandardBoundaryFaceClass::SameStandardBoundaryFace(unsigned short val_V
 }
 
 /*----------------------------------------------------------------------------------*/
-/*        Private member functions of FEMStandardBoundaryFaceClass.                 */
+/*        Private member functions of CFEMStandardBoundaryFace.                     */
 /*----------------------------------------------------------------------------------*/
 
-void FEMStandardBoundaryFaceClass::Copy(const FEMStandardBoundaryFaceClass &other) {
+void CFEMStandardBoundaryFace::Copy(const CFEMStandardBoundaryFace &other) {
 
-  FEMStandardElementBaseClass::Copy(other);
+  CFEMStandardElementBase::Copy(other);
 
   nDOFsFace         = other.nDOFsFace;
   nPolyElem         = other.nPolyElem;
