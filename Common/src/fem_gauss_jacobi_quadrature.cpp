@@ -1,5 +1,5 @@
 /*!
- * \file gauss_jacobi_quadrature.cpp
+ * \file fem_gauss_jacobi_quadrature.cpp
  * \brief Functions to compute the points and weights for the Gauss-Jacobi
           quadrature rules. All the functions in this file are based on the
           program JACOBI_RULE of John Burkardt.
@@ -81,7 +81,7 @@ Thanks for the time and take care,
 Tom
 */
 
-#include "../include/gauss_jacobi_quadrature.hpp"
+#include "../include/fem_gauss_jacobi_quadrature.hpp"
 
 void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,     const passivedouble   beta,
                                                  const passivedouble   a,         const passivedouble   b,

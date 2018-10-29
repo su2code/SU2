@@ -1,8 +1,8 @@
 /*!
- * \file gauss_jacobi_quadrature.hpp
+ * \file fem_gauss_jacobi_quadrature.hpp
  * \brief Headers of the functions to compute the integration points of the
           Gauss Jacobi quadrature rules.
-          The functions are in the <i>gauss_jacobi_quadrature.cpp</i> file.
+          The functions are in the <i>fem_gauss_jacobi_quadrature.cpp</i> file.
           All the functions in this class are based on the program JACOBI_RULE
           of John Burkardt.
  * \author E. van der Weide
@@ -191,4 +191,4 @@ private:
             passivedouble wts[]);
 };
 
-#include "gauss_jacobi_quadrature.inl"
+#include "fem_gauss_jacobi_quadrature.inl"
