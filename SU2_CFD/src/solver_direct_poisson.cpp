@@ -145,9 +145,8 @@ void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
 
     /*--- Initialize the residual vector ---*/
-
     LinSysRes.SetBlock_Zero(iPoint);
-
+    
   }
 
   /*--- Initialize the Jacobian matrices ---*/
@@ -1079,6 +1078,7 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
+        //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<Res<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<endl;
       }
     }
   }

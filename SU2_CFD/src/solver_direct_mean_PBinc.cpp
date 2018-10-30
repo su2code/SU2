@@ -2211,7 +2211,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   bool grid_movement    = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
-   cout<<"Upwind Residual"<<endl;
+   //cout<<"Upwind Residual"<<endl;
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -2274,8 +2274,8 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
     }
     
     /*--- Compute the residual ---*/
-    cout<<"iPoint: "<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<endl;
-    cout<<"jPoint: "<<geometry->node[jPoint]->GetCoord(0)<<"\t"<<geometry->node[jPoint]->GetCoord(1)<<endl;
+   // cout<<"iPoint: "<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<endl;
+    //cout<<"jPoint: "<<geometry->node[jPoint]->GetCoord(0)<<"\t"<<geometry->node[jPoint]->GetCoord(1)<<endl;
     numerics->ComputeResidual(Res_Conv, Jacobian_i, Jacobian_j, config);
 
     /*--- Update residual value ---*/
@@ -2284,10 +2284,10 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
     LinSysRes.SubtractBlock(jPoint, Res_Conv);
    
     
-    for (iDim = 0; iDim < nDim; iDim++) {
-	 cout<<Res_Conv[iDim]<<"\t";
-   }
-   cout<<endl;
+    //for (iDim = 0; iDim < nDim; iDim++) {
+	 //cout<<Res_Conv[iDim]<<"\t";
+   //}
+   //cout<<endl;
     /*--- Set implicit Jacobians ---*/
     
     if (implicit) {
@@ -2441,13 +2441,13 @@ void CPBIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_co
   /*--- Compute pressure term ---*/
   //cout<<"Pressure Residual"<<endl;
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	//  cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+	  //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
 	  for (iDim = 0; iDim < nDim; iDim++) {
 		  Residual[iDim] = node[iPoint]->GetGradient_Primitive(0,iDim)*geometry->node[iPoint]->GetVolume();
-	//	  cout<<Residual[iDim]<<"\t"<<node[iPoint]->GetGradient_Primitive(0,iDim)<<"\t";
+		  //cout<<Residual[iDim]<<"\t"<<node[iPoint]->GetGradient_Primitive(0,iDim)<<"\t";
 	  }
 	  /*--- Add Residual ---*/
-	 // cout<<endl;
+	  //cout<<endl;
       LinSysRes.AddBlock(iPoint, Residual);
   }
   
@@ -3121,7 +3121,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
        Mom_Coeff_j[iVar] = node[jPoint]->Get_Mom_Coeff(iVar);
        
        Mom_Coeff_i[iVar] = node[iPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_i[iVar];
-	   Mom_Coeff_j[iVar] = node[jPoint]->GetDensity()*geometry->node[jPoint]->GetVolume()/Mom_Coeff_j[iVar];
+	   Mom_Coeff_j[iVar] = node[jPoint]->GetDensity()*geometry->node[iPoint]->GetVolume()/Mom_Coeff_j[iVar];
 	}
 
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3133,7 +3133,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
        
    
     for (iDim = 0; iDim < nDim; iDim++) {
-		//MassFlux_Part -= 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim] ;
+		MassFlux_Part -= 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim])*(GradP_f[iDim] - GradP_in[iDim])*Normal[iDim] ;
 	}
     
     
@@ -3219,7 +3219,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
            for (iDim = 0; iDim < nDim; iDim++) 
               MassFlux_Part += GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
              
-             node[iPoint]->SubtractMassFlux(MassFlux_Part); 
+             node[iPoint]->AddMassFlux(MassFlux_Part); 
             //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<MassFlux_Part<<endl;
 		   }
          }
@@ -3285,7 +3285,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	    vel_corr[iPoint][iVar] = 0.0;
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	  //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<node[iPoint]->GetPressure()<<"\t"<<solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0)<<endl;
+	  
 	   for (iVar = 0; iVar < nVar; iVar++) {
 			factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
 			vel_corr[iPoint][iVar] = factor*(solver_container[POISSON_SOL]->node[iPoint]->GetGradient(0,iVar));
@@ -3339,13 +3339,22 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	}
   }
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+	  cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t";
 	  for (iVar = 0; iVar < nVar; iVar++) {
            Vel = node[iPoint]->GetVelocity(iVar);
            Vel = Vel - vel_corr[iPoint][iVar];
            rho = node[iPoint]->GetDensity();
            Vel = rho*Vel;
            node[iPoint]->SetSolution(iVar,Vel);
+           factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
+           cout<<vel_corr[iPoint][iVar]<<"\t";
 		}
+		cout<<factor<<"\t"<<solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0)<<"\t"<<node[iPoint]->GetMassFlux()<<endl;
+   }
+   
+   
+   for (iPoint = 0; iPoint < nPoint; iPoint++) {
+	   solver_container[POISSON_SOL]->node[iPoint]->SetSolution(0,0.0);
    }
 	
 	for (iPoint = 0; iPoint < nPoint; iPoint++)

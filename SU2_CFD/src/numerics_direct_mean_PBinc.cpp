@@ -101,7 +101,7 @@ void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacob
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
   
-  cout<<"Faceflux: "<<Face_Flux<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<endl;
+  //cout<<"Faceflux: "<<Face_Flux<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<endl;
   
   if (Face_Flux > 0) 
    for (iVar = 0; iVar < nVar; iVar++) {
