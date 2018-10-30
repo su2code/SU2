@@ -3431,13 +3431,14 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
   unsigned long *halo_point_all = new unsigned long[size*nHaloMax];
   su2double *halo_force_all = new su2double[size*nHaloMax*nDim];
   
-  /*--- If necessary put dummy values in the vectors to get a valid pointer ---*/
-  if (nHaloLoc==0) {
-    halo_point_glb.resize(1); halo_force.resize(1);
-  }
+  /*--- If necessary put dummy values in halo_point_glb to get a valid pointer ---*/
+  if (halo_point_glb.empty()) halo_point_glb.resize(1);
+  /*--- Pad halo_force to avoid (observed) issues in the adjoint when nHaloLoc!=nHaloMax ---*/
+  while (halo_force.size() < nHaloMax*nDim) halo_force.push_back(0.0);
+  
   MPI_Allgather(&nHaloLoc,1,MPI_UNSIGNED_LONG,halo_point_num,1,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
   MPI_Allgather(&halo_point_glb[0],nHaloLoc,MPI_UNSIGNED_LONG,halo_point_all,nHaloMax,MPI_UNSIGNED_LONG,MPI_COMM_WORLD);
-  SU2_MPI::Allgather(&halo_force[0],nHaloLoc*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
+  SU2_MPI::Allgather(&halo_force[0],nHaloMax*nDim,MPI_DOUBLE,halo_force_all,nHaloMax*nDim,MPI_DOUBLE,MPI_COMM_WORLD);
 
   /*--- Find shared points with other ranks and update our values ---*/
   for (int proc = 0; proc < size; ++proc)
