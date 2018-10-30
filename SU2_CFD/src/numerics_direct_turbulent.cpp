@@ -1400,8 +1400,8 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
   }
   /* calculate perturbed barycentric coordinates */
 
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
 
   /* rebuild c1c,c2c,c3c based on new barycentric coordinates */
   c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -1414,7 +1414,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
   Eig_Val[2] = c1c + Eig_Val[1];
 
   /* permute eigenvectors if required */
-  if (permute) {
+  if (uq_permute) {
     for (iDim=0; iDim<3; iDim++) {
       for (jDim=0; jDim<3; jDim++) {
         New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
@@ -1437,7 +1437,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
     for (jDim = 0; jDim < 3; jDim++){
       MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
 

@@ -189,9 +189,9 @@ CNumerics::CNumerics(unsigned short val_nDim, unsigned short val_nVar,
       Eig_Val[iDim]             = 0;
     }
     Eig_Val_Comp = config->GetEig_Val_Comp();
-    beta_delta = config->GetBeta_Delta();
-    urlx = config->GetURLX();
-    permute = config->GetPermute();
+    uq_delta_b = config->GetUQ_Delta_B();
+    uq_urlx = config->GetUQ_URLX();
+    uq_permute = config->GetUQ_Permute();
 
     /* define barycentric traingle corner points */
     Corners[0][0] = 1.0;

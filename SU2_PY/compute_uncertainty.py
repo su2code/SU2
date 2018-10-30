@@ -49,16 +49,16 @@ def main():
                       help="read config from FILE", metavar="FILE")
     parser.add_option("-n", "--partitions", dest="partitions", default=1,
                       help="number of PARTITIONS", metavar="PARTITIONS")
-    parser.add_option("-u", "--underRelaxation", dest="urlx", default=0.1,
-                      help="under relaxation factor", metavar="URLX")
-    parser.add_option("-b", "--betaDelta", dest="beta_delta", default=1.0,
-                      help="magnitude of perturbation", metavar="BETA_DELTA")
+    parser.add_option("-u", "--underRelaxation", dest="uq_urlx", default=0.1,
+                      help="under relaxation factor", metavar="UQ_URLX")
+    parser.add_option("-b", "--deltaB", dest="uq_delta_b", default=1.0,
+                      help="magnitude of perturbation", metavar="UQ_DELTA_B")
 
     (options, args)=parser.parse_args()
     options.partitions = int( options.partitions )
     # check the typecasting
-    options.beta_delta = float( options.beta_delta )
-    options.urlx = float(options.urlx)
+    options.beta_delta = float( options.uq_delta_b )
+    options.urlx = float(options.uq_urlx)
 
     # load config, start state
     config = SU2.io.Config(options.filename)
@@ -70,9 +70,9 @@ def main():
     # prepare config
     config.NUMBER_PART = options.partitions
     config.USING_UQ = 'YES'
-    config.BETA_DELTA = options.beta_delta
-    config.URLX = options.urlx
-    config.PERMUTE = 'NO'
+    config.UQ_DELTA_B = options.beta_delta
+    config.UQ_URLX = options.urlx
+    config.UQ_PERMUTE = 'NO'
 
 
     # perform eigenvalue perturbations
@@ -84,7 +84,7 @@ def main():
         ztate  = copy.deepcopy(state)
 
 	# set componentality
-        konfig.COMPONENTALITY = comp
+        konfig.UQ_COMPONENT = comp
 
         # send output to a folder
         folderName = str(comp)+'c/'
@@ -110,8 +110,8 @@ def main():
     ztate  = copy.deepcopy(state)
 
     # set componentality
-    konfig.COMPONENTALITY = 1
-    konfig.PERMUTE = 'YES'
+    konfig.UQ_COMPONENT = 1
+    konfig.UQ_PERMUTE = 'YES'
 
     # send output to a folder
     folderName = 'p1c1/'
@@ -136,8 +136,8 @@ def main():
     ztate  = copy.deepcopy(state)
 
     # set componentality
-    konfig.COMPONENTALITY = 2
-    konfig.PERMUTE = 'YES'
+    konfig.UQ_COMPONENT = 2
+    konfig.UQ_PERMUTE = 'YES'
 
     # send output to a folder
     folderName = 'p1c2/'
