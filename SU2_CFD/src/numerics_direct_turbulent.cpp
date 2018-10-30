@@ -1347,41 +1347,6 @@ void CSourcePieceWise_TurbSST::SetReynoldsStressMatrix(su2double turb_ke){
 void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   unsigned short iDim,jDim;
-  // su2double **A_ij;
-  // su2double **Eig_Vec;
-  // su2double **New_Eig_Vec;
-  // su2double **newA_ij;
-  // su2double **Corners;
-  // su2double *Eig_Val;
-  // su2double *Barycentric_Coord;
-  // su2double *New_Coord;
-
-  /* --- Get perturbation parameters from config options --- */
-
-  unsigned short Eig_Val_Comp = config->GetEig_Val_Comp();
-  su2double beta_delta = config->GetBeta_Delta();
-  su2double urlx = config->GetURLX();
-  bool permute = config->GetPermute();
-
-  /* --- Initialize data structures required to perform perturbation --- */
-
-  // A_ij = new su2double* [3];
-  // newA_ij = new su2double* [3];
-  // Eig_Vec = new su2double* [3];
-  // New_Eig_Vec = new su2double* [3];
-  // Corners = new su2double* [3];
-  // Eig_Val = new su2double [3];
-  // Barycentric_Coord = new su2double [2];
-  // New_Coord = new su2double [2];
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   A_ij[iDim] = new su2double [3];
-  //   newA_ij[iDim] = new su2double [3];
-  //   Eig_Vec[iDim] = new su2double [3];
-  //   New_Eig_Vec[iDim] = new su2double [3];
-  //   Corners[iDim] = new su2double [2];
-  //   Eig_Val[iDim] = 0;
-  // }
 
   /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
 
@@ -1394,7 +1359,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
 
   /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
 
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
@@ -1465,7 +1430,7 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
     }
   }
 
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
@@ -1475,26 +1440,6 @@ void CSourcePieceWise_TurbSST::SetPerturbedRSM(su2double turb_ke, CConfig *confi
       urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
-
-
-  /* delete variables */
-
-  // for (iDim= 0; iDim< 3; iDim++){
-  //   delete [] A_ij[iDim];
-  //   delete [] newA_ij[iDim];
-  //   delete [] Eig_Vec[iDim];
-  //   delete [] New_Eig_Vec[iDim];
-  //   delete [] Corners[iDim];
-  // }
-
-  // delete [] A_ij;
-  // delete [] newA_ij;
-  // delete [] Eig_Vec;
-  // delete [] New_Eig_Vec;
-  // delete [] Corners;
-  // delete [] Eig_Val;
-  // delete [] Barycentric_Coord;
-  // delete [] New_Coord;
 
 }
 

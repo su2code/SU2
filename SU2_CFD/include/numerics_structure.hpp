@@ -1595,16 +1595,18 @@ public:
    * \param[in] A_i: symmetric matrix to be decomposed
    * \param[in] Eig_Vec: strores the eigenvectors
    * \param[in] Eig_Val: stores the eigenvalues
+   * \param[in] n: order of matrix A_ij
    */
-  void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+  static void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
 
   /*!
    * \brief Recomposes the eigenvectors and eigenvalues into a matrix
    * \param[in] A_ij: recomposed matrix
    * \param[in] Eig_Vec: eigenvectors
    * \param[in] Eig_Val: eigenvalues
+   * \param[in] n: order of matrix A_ij
    */
-  void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val);
+  static void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
 
   /*!
    * \brief tred2
@@ -1613,7 +1615,7 @@ public:
    * \param[in] e: supplemental data structure
    * \param[in] n: order of matrix V
    */
-  void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
+  static void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
 
   /*!
    * \brief tql2
@@ -1623,7 +1625,7 @@ public:
    * \param[in] n: order of matrix V
 
    */
-  void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
+  static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
   
 };
 

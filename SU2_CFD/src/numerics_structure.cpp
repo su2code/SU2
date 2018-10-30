@@ -255,18 +255,6 @@ CNumerics::~CNumerics(void) {
   if (l != NULL) delete [] l;
   if (m != NULL) delete [] m;
 
-  // if (MeanReynoldsStress != NULL) {
-  //   for (unsigned short iDim = 0; iDim < 3; iDim++)
-  //     if (MeanReynoldsStress[iDim] != NULL) delete [] MeanReynoldsStress[iDim];
-  //   delete [] MeanReynoldsStress;
-  // }
-
-  // if (MeanPerturbedRSM != NULL) {
-  //   for (unsigned short iDim = 0; iDim < 3; iDim++)
-  //     if (MeanPerturbedRSM[iDim] != NULL) delete [] MeanPerturbedRSM[iDim];
-  //   delete [] MeanPerturbedRSM;
-  // }
-
   if (using_uq) {
     for (unsigned short iDim = 0; iDim < 3; iDim++){
       delete [] MeanReynoldsStress[iDim];
@@ -2925,48 +2913,57 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
 
 }
 
-void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+void CNumerics::EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n){
   int iDim,jDim;
-  su2double *e = new su2double [3];
-  for (iDim= 0; iDim< 3; iDim++){
+  su2double *e = new su2double [n];
+  for (iDim= 0; iDim< n; iDim++){
     e[iDim] = 0;
-    for (jDim = 0; jDim < 3; jDim++){
+    for (jDim = 0; jDim < n; jDim++){
       Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
     }
   }
-  tred2(Eig_Vec, Eig_Val, e, 3);
-  tql2(Eig_Vec, Eig_Val, e, 3);
+  tred2(Eig_Vec, Eig_Val, e, n);
+  tql2(Eig_Vec, Eig_Val, e, n);
 
   delete [] e;
 }
 
-void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val){
+void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n){
   unsigned short i,j,k;
-  su2double **tmp = new su2double* [3];
+  su2double **tmp = new su2double* [n];
+  su2double **deltaN = new su2double* [n];
 
-  for (i= 0; i< 3; i++){
-    tmp[i] = new su2double [3];
+  for (i= 0; i< n; i++){
+    tmp[i] = new su2double [n];
+    deltaN[i] = new su2double [n];
   }
 
-  for (i= 0; i< 3; i++){
-    for (j = 0; j < 3; j++){
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < n; j++) {
+      if (i == j) deltaN[i][j] = 1.0;
+      else deltaN[i][j]=0.0;
+    }
+  }
+
+  for (i= 0; i< n; i++){
+    for (j = 0; j < n; j++){
       tmp[i][j] = 0.0;
-      for (k = 0; k < 3; k++){
-        tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * delta3[k][j];
+      for (k = 0; k < n; k++){
+        tmp[i][j] += Eig_Vec[i][k] * Eig_Val[k] * deltaN[k][j];
       }
     }
   }
 
-  for (i= 0; i< 3; i++){
-    for (j = 0; j < 3; j++){
+  for (i= 0; i< n; i++){
+    for (j = 0; j < n; j++){
       A_ij[i][j] = 0.0;
-      for (k = 0; k < 3; k++){
+      for (k = 0; k < n; k++){
         A_ij[i][j] += tmp[i][k] * Eig_Vec[j][k];
       }
     }
   }
 
-  for (i = 0; i < 3; i++){
+  for (i = 0; i < n; i++){
     delete [] tmp[i];
   }
   delete [] tmp;
@@ -2974,234 +2971,239 @@ void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
 
 void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short n) {
 
-    unsigned short i,j,k;
-    /*  This is derived from the Algol procedures tred2 by        */
-    /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
-    /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
-    /*  Fortran subroutine in EISPACK.                            */
+  unsigned short i,j,k;
+  /*  This is derived from the Algol procedures tred2 by        */
+  /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
+  /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
+  /*  Fortran subroutine in EISPACK.                            */
 
-    for (j = 0; j < n; j++) {
-        d[j] = V[n-1][j];
+  for (j = 0; j < n; j++) {
+    d[j] = V[n-1][j];
+  }
+
+  /* Householder reduction to tridiagonal form. */
+
+  for (i = n-1; i > 0; i--) {
+
+    /* Scale to avoid under/overflow. */
+
+    su2double scale = 0.0;
+    su2double h = 0.0;
+    for (k = 0; k < i; k++) {
+      scale = scale + fabs(d[k]);
     }
-
-    /* Householder reduction to tridiagonal form. */
-
-    for (i = n-1; i > 0; i--) {
-
-        /* Scale to avoid under/overflow. */
-
-        su2double scale = 0.0;
-        su2double h = 0.0;
-        for (k = 0; k < i; k++) {
-            scale = scale + fabs(d[k]);
-        }
-        if (scale == 0.0) {
-            e[i] = d[i-1];
-            for (j = 0; j < i; j++) {
-                d[j] = V[i-1][j];
-                V[i][j] = 0.0;
-                V[j][i] = 0.0;
-            }
-        }
-        else {
-
-            /* Generate Householder vector. */
-
-            for (k = 0; k < i; k++) {
-                d[k] /= scale;
-                h += d[k] * d[k];
-            }
-            su2double f = d[i-1];
-            su2double g = sqrt(h);
-            if (f > 0) {
-                g = -g;
-            }
-            e[i] = scale * g;
-            h = h - f * g;
-            d[i-1] = f - g;
-            for (j = 0; j < i; j++) {
-                e[j] = 0.0;
-            }
-
-            /* Apply similarity transformation to remaining columns. */
-
-            for (j = 0; j < i; j++) {
-                f = d[j];
-                V[j][i] = f;
-                g = e[j] + V[j][j] * f;
-                for (k = j+1; k <= i-1; k++) {
-                    g += V[k][j] * d[k];
-                    e[k] += V[k][j] * f;
-                }
-                e[j] = g;
-            }
-            f = 0.0;
-            for (j = 0; j < i; j++) {
-                e[j] /= h;
-                f += e[j] * d[j];
-            }
-            su2double hh = f / (h + h);
-            for (j = 0; j < i; j++) {
-                e[j] -= hh * d[j];
-            }
-            for (j = 0; j < i; j++) {
-                f = d[j];
-                g = e[j];
-                for (k = j; k <= i-1; k++) {
-                    V[k][j] -= (f * e[k] + g * d[k]);
-                }
-                d[j] = V[i-1][j];
-                V[i][j] = 0.0;
-            }
-        }
-        d[i] = h;
+    if (scale == 0.0) {
+      e[i] = d[i-1];
+      for (j = 0; j < i; j++) {
+        d[j] = V[i-1][j];
+        V[i][j] = 0.0;
+        V[j][i] = 0.0;
+      }
     }
+    else {
 
-    /* Accumulate transformations. */
+      /* Generate Householder vector. */
 
-    for (i = 0; i < n-1; i++) {
-        V[n-1][i] = V[i][i];
-        V[i][i] = 1.0;
-        su2double h = d[i+1];
-        if (h != 0.0) {
-            for (k = 0; k <= i; k++) {
-                d[k] = V[k][i+1] / h;
-            }
-            for (j = 0; j <= i; j++) {
-                su2double g = 0.0;
-                for (k = 0; k <= i; k++) {
-                    g += V[k][i+1] * V[k][j];
-                }
-                for (k = 0; k <= i; k++) {
-                    V[k][j] -= g * d[k];
-                }
-            }
+      for (k = 0; k < i; k++) {
+        d[k] /= scale;
+        h += d[k] * d[k];
+      }
+      su2double f = d[i-1];
+      su2double g = sqrt(h);
+      if (f > 0) {
+        g = -g;
+      }
+      e[i] = scale * g;
+      h = h - f * g;
+      d[i-1] = f - g;
+      for (j = 0; j < i; j++) {
+        e[j] = 0.0;
+      }
+
+      /* Apply similarity transformation to remaining columns. */
+
+      for (j = 0; j < i; j++) {
+        f = d[j];
+        V[j][i] = f;
+        g = e[j] + V[j][j] * f;
+        for (k = j+1; k <= i-1; k++) {
+          g += V[k][j] * d[k];
+          e[k] += V[k][j] * f;
+        }
+        e[j] = g;
+      }
+      f = 0.0;
+      for (j = 0; j < i; j++) {
+        e[j] /= h;
+        f += e[j] * d[j];
+      }
+      su2double hh = f / (h + h);
+      for (j = 0; j < i; j++) {
+        e[j] -= hh * d[j];
+      }
+      for (j = 0; j < i; j++) {
+        f = d[j];
+        g = e[j];
+        for (k = j; k <= i-1; k++) {
+            V[k][j] -= (f * e[k] + g * d[k]);
+        }
+        d[j] = V[i-1][j];
+        V[i][j] = 0.0;
+      }
+    }
+    d[i] = h;
+  }
+
+  /* Accumulate transformations. */
+
+  for (i = 0; i < n-1; i++) {
+    V[n-1][i] = V[i][i];
+    V[i][i] = 1.0;
+    su2double h = d[i+1];
+    if (h != 0.0) {
+      for (k = 0; k <= i; k++) {
+        d[k] = V[k][i+1] / h;
+      }
+      for (j = 0; j <= i; j++) {
+        su2double g = 0.0;
+        for (k = 0; k <= i; k++) {
+          g += V[k][i+1] * V[k][j];
         }
         for (k = 0; k <= i; k++) {
-            V[k][i+1] = 0.0;
+          V[k][j] -= g * d[k];
         }
+      }
     }
-    for (j = 0; j < n; j++) {
-        d[j] = V[n-1][j];
-        V[n-1][j] = 0.0;
+    for (k = 0; k <= i; k++) {
+      V[k][i+1] = 0.0;
     }
-    V[n-1][n-1] = 1.0;
-    e[0] = 0.0;
+  }
+  for (j = 0; j < n; j++) {
+    d[j] = V[n-1][j];
+    V[n-1][j] = 0.0;
+  }
+  V[n-1][n-1] = 1.0;
+  e[0] = 0.0;
 }
 
-/* Symmetric tridiagonal QL algorithm */
 void CNumerics::tql2(su2double **V, su2double *d, su2double *e, unsigned short n) {
+  /* Symmetric tridiagonal QL algorithm */
 
-    int i,j,k,l;
-    for (i = 1; i < n; i++) {
-        e[i-1] = e[i];
-    }
-    e[n-1] = 0.0;
+  /*  This is derived from the Algol procedures tql2 by        */
+  /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
+  /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
+  /*  Fortran subroutine in EISPACK.                            */
 
-    su2double f = 0.0;
-    su2double tst1 = 0.0;
-    su2double eps = pow(2.0,-52.0);
-    for (l = 0; l < n; l++) {
+  int i,j,k,l;
+  for (i = 1; i < n; i++) {
+    e[i-1] = e[i];
+  }
+  e[n-1] = 0.0;
 
-        /* Find small subdiagonal element */
+  su2double f = 0.0;
+  su2double tst1 = 0.0;
+  su2double eps = pow(2.0,-52.0);
+  for (l = 0; l < n; l++) {
 
-        tst1 = max(tst1,(fabs(d[l]) + fabs(e[l])));
-        int m = l;
-        while (m < n) {
-            if (fabs(e[m]) <= eps*tst1) {
-                break;
-            }
-            m++;
-        }
+    /* Find small subdiagonal element */
 
-        /* If m == l, d[l] is an eigenvalue, */
-        /* otherwise, iterate.               */
-
-        if (m > l) {
-            int iter = 0;
-            do {
-                iter = iter + 1;  /* (Could check iteration count here.) */
-
-                /* Compute implicit shift */
-
-                su2double g = d[l];
-                su2double p = (d[l+1] - g) / (2.0 * e[l]);
-                su2double r = sqrt(p*p+1.0);
-                if (p < 0) {
-                    r = -r;
-                }
-                d[l] = e[l] / (p + r);
-                d[l+1] = e[l] * (p + r);
-                su2double dl1 = d[l+1];
-                su2double h = g - d[l];
-                for (i = l+2; i < n; i++) {
-                    d[i] -= h;
-                }
-                f = f + h;
-
-                /* Implicit QL transformation. */
-
-                p = d[m];
-                su2double c = 1.0;
-                su2double c2 = c;
-                su2double c3 = c;
-                su2double el1 = e[l+1];
-                su2double s = 0.0;
-                su2double s2 = 0.0;
-                for (i = m-1; i >= l; i--) {
-                    c3 = c2;
-                    c2 = c;
-                    s2 = s;
-                    g = c * e[i];
-                    h = c * p;
-                    r = sqrt(p*p+e[i]*e[i]);
-                    e[i+1] = s * r;
-                    s = e[i] / r;
-                    c = p / r;
-                    p = c * d[i] - s * g;
-                    d[i+1] = h + s * (c * g + s * d[i]);
-
-                    /* Accumulate transformation. */
-
-                    for (k = 0; k < n; k++) {
-                        h = V[k][i+1];
-                        V[k][i+1] = s * V[k][i] + c * h;
-                        V[k][i] = c * V[k][i] - s * h;
-                    }
-                }
-                p = -s * s2 * c3 * el1 * e[l] / dl1;
-                e[l] = s * p;
-                d[l] = c * p;
-
-                /* Check for convergence. */
-
-            } while (fabs(e[l]) > eps*tst1);
-        }
-        d[l] = d[l] + f;
-        e[l] = 0.0;
+    tst1 = max(tst1,(fabs(d[l]) + fabs(e[l])));
+    int m = l;
+    while (m < n) {
+      if (fabs(e[m]) <= eps*tst1) {
+        break;
+      }
+      m++;
     }
 
-    /* Sort eigenvalues and corresponding vectors. */
+    /* If m == l, d[l] is an eigenvalue, */
+    /* otherwise, iterate.               */
 
-    for (i = 0; i < n-1; i++) {
-        k = i;
-        su2double p = d[i];
-        for (j = i+1; j < n; j++) {
-            if (d[j] < p) {
-                k = j;
-                p = d[j];
-            }
+    if (m > l) {
+      int iter = 0;
+      do {
+        iter = iter + 1;  /* (Could check iteration count here.) */
+
+        /* Compute implicit shift */
+
+        su2double g = d[l];
+        su2double p = (d[l+1] - g) / (2.0 * e[l]);
+        su2double r = sqrt(p*p+1.0);
+        if (p < 0) {
+          r = -r;
         }
-        if (k != i) {
-            d[k] = d[i];
-            d[i] = p;
-            for (j = 0; j < n; j++) {
-                p = V[j][i];
-                V[j][i] = V[j][k];
-                V[j][k] = p;
-            }
+        d[l] = e[l] / (p + r);
+        d[l+1] = e[l] * (p + r);
+        su2double dl1 = d[l+1];
+        su2double h = g - d[l];
+        for (i = l+2; i < n; i++) {
+          d[i] -= h;
         }
+        f = f + h;
+
+        /* Implicit QL transformation. */
+
+        p = d[m];
+        su2double c = 1.0;
+        su2double c2 = c;
+        su2double c3 = c;
+        su2double el1 = e[l+1];
+        su2double s = 0.0;
+        su2double s2 = 0.0;
+        for (i = m-1; i >= l; i--) {
+          c3 = c2;
+          c2 = c;
+          s2 = s;
+          g = c * e[i];
+          h = c * p;
+          r = sqrt(p*p+e[i]*e[i]);
+          e[i+1] = s * r;
+          s = e[i] / r;
+          c = p / r;
+          p = c * d[i] - s * g;
+          d[i+1] = h + s * (c * g + s * d[i]);
+
+          /* Accumulate transformation. */
+
+          for (k = 0; k < n; k++) {
+            h = V[k][i+1];
+            V[k][i+1] = s * V[k][i] + c * h;
+            V[k][i] = c * V[k][i] - s * h;
+          }
+        }
+        p = -s * s2 * c3 * el1 * e[l] / dl1;
+        e[l] = s * p;
+        d[l] = c * p;
+
+        /* Check for convergence. */
+
+      } while (fabs(e[l]) > eps*tst1);
     }
+    d[l] = d[l] + f;
+    e[l] = 0.0;
+  }
+
+  /* Sort eigenvalues and corresponding vectors. */
+
+  for (i = 0; i < n-1; i++) {
+    k = i;
+    su2double p = d[i];
+    for (j = i+1; j < n; j++) {
+      if (d[j] < p) {
+        k = j;
+        p = d[j];
+      }
+    }
+    if (k != i) {
+      d[k] = d[i];
+      d[i] = p;
+      for (j = 0; j < n; j++) {
+          p = V[j][i];
+          V[j][i] = V[j][k];
+          V[j][k] = p;
+      }
+    }
+  }
 }
 
 CSourceNothing::CSourceNothing(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
