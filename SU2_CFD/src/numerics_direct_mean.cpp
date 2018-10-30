@@ -4542,7 +4542,7 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
 
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
@@ -4613,7 +4613,7 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
     }
   }
 
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
@@ -4837,7 +4837,7 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
 
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
@@ -4900,7 +4900,7 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
     }
   }
 
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
@@ -5130,7 +5130,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
 
   /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
 
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
@@ -5201,7 +5201,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
     }
   }
 
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
@@ -5442,7 +5442,7 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
 
   /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
 
-  EigenDecomposition(A_ij, Eig_Vec, Eig_Val);
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val,3);
 
   /* compute convex combination coefficients */
   su2double c1c = Eig_Val[2] - Eig_Val[1];
@@ -5513,7 +5513,7 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
     }
   }
 
-  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val);
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
   /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
