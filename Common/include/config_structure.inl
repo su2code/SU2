@@ -1900,10 +1900,10 @@ inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; 
 
 inline bool CConfig::GetUsing_UQ(void) { return using_uq; }
 
-inline su2double CConfig::GetBeta_Delta(void) { return beta_delta; }
+inline su2double CConfig::GetUQ_Delta_B(void) { return uq_delta_b; }
 
 inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 
-inline su2double CConfig::GetURLX(void) {return urlx; }
+inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
-inline bool CConfig::GetPermute(void) { return permute; }
+inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }

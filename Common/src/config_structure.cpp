@@ -2147,16 +2147,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("USING_UQ", using_uq, false);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
-  addDoubleOption("BETA_DELTA", beta_delta, 1.0);
+  addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
 
   /* DESCRIPTION: Parameter to determine kind of perturbation */
-  addUnsignedShortOption("COMPONENTALITY", eig_val_comp, 1);
+  addUnsignedShortOption("UQ_COMPONENT", eig_val_comp, 1);
 
   /* DESCRIPTION: Parameter to perturb eigenvalues */
-  addDoubleOption("URLX", urlx, 0.1);
+  addDoubleOption("UQ_URLX", uq_urlx, 0.1);
 
-  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
-  addBoolOption("PERMUTE", permute, false);
+  /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
+  addBoolOption("UQ_PERMUTE", uq_permute, false);
 
   /* END_CONFIG_OPTIONS */
 
@@ -2212,6 +2212,11 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
           if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
+          if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
+          if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
+          if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
+          if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
+
           errorString.append(newString);
           err_count++;
         continue;
@@ -4550,7 +4555,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         if (using_uq){
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
-          if (permute) cout << "Permuting eigenvectors" << endl;  
+          if (uq_permute) cout << "Permuting eigenvectors" << endl;  
         } 
         break;
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
