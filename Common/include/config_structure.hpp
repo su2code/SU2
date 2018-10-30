@@ -1012,11 +1012,11 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
 
-  bool using_uq;              /*!< \brief Using uncertainty quantification with SST model */
-  su2double beta_delta;       /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
-  unsigned short eig_val_comp; /*!< \brief Parameter used to determine type of eigenvalue perturbation */
-  su2double urlx;             /*!< \brief Under-relaxation factor */
-  bool permute;               /*!< \brief Permutation of eigenvectors */
+  bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
+  su2double uq_delta_b;            /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
+  unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
+  su2double uq_urlx;            /*!< \brief Under-relaxation factor */
+  bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -8391,9 +8391,9 @@ public:
 
   /*!
    * \brief Get the amount of eigenvalue perturbation to be done
-   * \return Value of the beta_delta parameter
+   * \return Value of the uq_delta_b parameter
    */
-  su2double GetBeta_Delta(void);
+  su2double GetUQ_Delta_B(void);
 
   /*!
    * \brief Get the kind of eigenspace perturbation to be done
@@ -8403,15 +8403,15 @@ public:
 
   /*!
    * \brief Get the underelaxation factor
-   * \return Value of the urlx parameter
+   * \return Value of the uq_urlx parameter
    */
-  su2double GetURLX(void);
+  su2double GetUQ_URLX(void);
 
   /*!
    * \brief Get information about eigenspace perturbation
    * \return <code>TRUE</code> means eigenspace perterturbation will be used
    */
-  bool GetPermute(void);
+  bool GetUQ_Permute(void);
   
   /*!
    * \brief Get information about whether to use wall functions.

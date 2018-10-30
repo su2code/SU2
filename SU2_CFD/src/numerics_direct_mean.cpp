@@ -4583,8 +4583,8 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
   }
 
   /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
 
   /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
   c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -4597,7 +4597,7 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
   Eig_Val[2] = c1c + Eig_Val[1];
 
   /* permute eigenvectors if required */
-  if (permute) {
+  if (uq_permute) {
     for (iDim=0; iDim<3; iDim++) {
       for (jDim=0; jDim<3; jDim++) {
         New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
@@ -4615,12 +4615,12 @@ void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
       MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
 
@@ -4870,8 +4870,8 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
   }
 
   /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
 
   /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
   c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -4884,7 +4884,7 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
   Eig_Val[2] = c1c + Eig_Val[1];
 
   /* permute eigenvectors if required */
-  if (permute) {
+  if (uq_permute) {
     for (iDim=0; iDim<3; iDim++) {
       for (jDim=0; jDim<3; jDim++) {
         New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
@@ -4902,12 +4902,12 @@ void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
 
   EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
       MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
 
@@ -5171,8 +5171,8 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
   }
 
   /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
 
   /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
   c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -5185,7 +5185,7 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
   Eig_Val[2] = c1c + Eig_Val[1];
 
   /* permute eigenvectors if required */
-  if (permute) {
+  if (uq_permute) {
     for (iDim=0; iDim<3; iDim++) {
       for (jDim=0; jDim<3; jDim++) {
         New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
@@ -5203,12 +5203,12 @@ void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config)
 
   EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
       MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
 
@@ -5483,8 +5483,8 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
   }
 
   /* calculate perturbed barycentric coordinates */
-  Barycentric_Coord[0] = Barycentric_Coord[0] + (beta_delta) * (New_Coord[0] - Barycentric_Coord[0]);
-  Barycentric_Coord[1] = Barycentric_Coord[1] + (beta_delta) * (New_Coord[1] - Barycentric_Coord[1]);
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
 
   /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
   c3c = Barycentric_Coord[1] / Corners[2][1];
@@ -5497,7 +5497,7 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
   Eig_Val[2] = c1c + Eig_Val[1];
 
   /* permute eigenvectors if required */
-  if (permute) {
+  if (uq_permute) {
     for (iDim=0; iDim<3; iDim++) {
       for (jDim=0; jDim<3; jDim++) {
         New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
@@ -5515,12 +5515,12 @@ void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *
 
   EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
 
-  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (urlx)*/
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
   for (iDim = 0; iDim< 3; iDim++){
     for (jDim = 0; jDim < 3; jDim++){
       MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
       MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
-      urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
     }
   }
 
