@@ -244,7 +244,6 @@ CNumerics::~CNumerics(void) {
     delete [] delta3;
   }
 
-
   if (Diffusion_Coeff_i != NULL) delete [] Diffusion_Coeff_i;
   if (Diffusion_Coeff_j != NULL) delete [] Diffusion_Coeff_j;
   if (Vector != NULL) delete [] Vector;
