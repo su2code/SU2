@@ -316,6 +316,17 @@ def main():
     inc_lam_cylinder.tol       = 0.00001
     test_list.append(inc_lam_cylinder)
 
+    # Buoyancy-driven cavity
+    inc_buoyancy          = TestCase('inc_buoyancy')
+    inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
+    inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
+    inc_buoyancy.test_iter = 20
+    inc_buoyancy.test_vals = [-3.987107, -3.176477, -0.057813, 7.691336] #last 4 columns
+    inc_buoyancy.su2_exec  = "parallel_computation.py -f"
+    inc_buoyancy.timeout   = 1600
+    inc_buoyancy.tol       = 0.00001
+    test_list.append(inc_buoyancy)
+
     ############################
     ### Incompressible RANS  ###
     ############################

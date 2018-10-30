@@ -106,10 +106,10 @@ def main():
 
     # Adjoint Incompressible Inviscid NACA0012
     discadj_incomp_NACA0012           = TestCase('discadj_incomp_NACA0012')
-    discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
+    discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [-3.390480, -2.570105, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [-3.391214, -2.560170, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -119,12 +119,12 @@ def main():
     ### Disc. adj. incompressible N-S ###
     #####################################
 
-    # Adjoint Incompressible Viscous Cylinder
+    # Adjoint Incompressible Viscous Cylinder (Heated)
     discadj_incomp_cylinder           = TestCase('discadj_incomp_cylinder')
-    discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
-    discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
+    discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
+    discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.801904, -2.205107, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.802148, -2.228080, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -134,16 +134,27 @@ def main():
     ### Disc. adj. incompressible RANS ###
     ######################################
 
-    # Adjoint Incompressible Turbulent NACA 0012
-    discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
-    discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
-    discadj_incomp_turb_NACA0012.test_iter = 10
-    discadj_incomp_turb_NACA0012.test_vals = [-3.846610, -1.009853, 0.000000, 0.000000] #last 4 columns
-    discadj_incomp_turb_NACA0012.su2_exec  = "parallel_computation.py -f"
-    discadj_incomp_turb_NACA0012.timeout   = 1600
-    discadj_incomp_turb_NACA0012.tol       = 0.00001
-    test_list.append(discadj_incomp_turb_NACA0012)
+    # Adjoint Incompressible Turbulent NACA 0012 SA
+    discadj_incomp_turb_NACA0012_sa           = TestCase('discadj_incomp_turb_NACA0012_sa')
+    discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
+    discadj_incomp_turb_NACA0012_sa.test_iter = 10
+    discadj_incomp_turb_NACA0012_sa.test_vals = [-3.847506, -1.009607, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sa.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_turb_NACA0012_sa.timeout   = 1600
+    discadj_incomp_turb_NACA0012_sa.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012_sa)
+
+    # Adjoint Incompressible Turbulent NACA 0012 SST
+    discadj_incomp_turb_NACA0012_sst           = TestCase('discadj_incomp_turb_NACA0012_sst')
+    discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
+    discadj_incomp_turb_NACA0012_sst.test_iter = 10
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.847506, -1.009607, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_turb_NACA0012_sst.timeout   = 1600
+    discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
