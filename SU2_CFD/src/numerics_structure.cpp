@@ -2964,8 +2964,10 @@ void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
 
   for (i = 0; i < n; i++){
     delete [] tmp[i];
+    delete [] deltaN[i];
   }
   delete [] tmp;
+  delete [] deltaN;
 }
 
 void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short n) {
