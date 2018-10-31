@@ -375,7 +375,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -3480,7 +3480,7 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
@@ -15038,7 +15038,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -17529,6 +17529,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       
       string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
       
+      /*--- Get the specified wall heat flux from config ---*/
+      
+      // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+      
       /*--- Loop over all of the vertices on this boundary marker ---*/
       
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -17588,6 +17592,10 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           for (iDim = 0; iDim < nDim; iDim++)
             WallDistMod += WallDist[iDim]*WallDist[iDim];
           WallDistMod = sqrt(WallDistMod);
+          
+          /*--- Compute mach number ---*/
+          
+          // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
           
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
           //M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);

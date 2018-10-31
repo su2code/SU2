@@ -1116,6 +1116,18 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- Skip flow variables ---*/
   const unsigned short skipVars = solver[MESH_0][FLOW_SOL]->GetnVar() + nDim;  
 
+  /*--- Adjust the number of solution variables in the incompressible
+   restart. We always carry a space in nVar for the energy equation in the
+   mean flow solver, but we only write it to the restart if it is active.
+   Therefore, we must reduce skipVars here if energy is inactive so that
+   the turbulent variables are read correctly. ---*/
+  
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+  
   /*--- Load data from the restart into correct containers. ---*/
   unsigned long iPoint_Global_Local = 0;
   for (unsigned long iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
@@ -3004,6 +3016,14 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   su2double kappa = 0.4;
   su2double B = 5.5;
   
+  /*--- Identify the boundary by string name ---*/
+  
+  // string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+  
+  /*--- Get the specified wall heat flux from config ---*/
+  
+  // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
   for(iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
@@ -3068,6 +3088,10 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         for (iDim = 0; iDim < nDim; iDim++)
           WallDistMod += WallDist[iDim]*WallDist[iDim];
         WallDistMod = sqrt(WallDistMod);
+        
+        /*--- Compute mach number ---*/
+        
+        // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
         
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
         //M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
