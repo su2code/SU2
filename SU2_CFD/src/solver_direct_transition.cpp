@@ -269,6 +269,17 @@ void CTransLMSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   unsigned short skipVars = solver[MESH_0][FLOW_SOL]->GetnVar()
                           + solver[MESH_0][TURB_SOL]->GetnVar() + nDim;
 
+  /*--- Adjust the number of solution variables in the incompressible
+   restart. We always carry a space in nVar for the energy equation in the
+   mean flow solver, but we only write it to the restart if it is active.
+   Therefore, we must reduce skipVars here if energy is inactive so that
+   the turbulent variables are read correctly. ---*/
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+
   /*--- Load data from the restart into correct containers. ---*/
   unsigned long iPoint_Global_Local = 0;
   for (unsigned long iPoint_Global = 0; iPoint_Global < geometry[MESH_0]->GetGlobal_nPointDomain(); iPoint_Global++) {
