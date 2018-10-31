@@ -1136,6 +1136,18 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
 
+  /*--- Adjust the number of solution variables in the incompressible
+   restart. We always carry a space in nVar for the energy equation in the
+   mean flow solver, but we only write it to the restart if it is active.
+   Therefore, we must reduce skipVars here if energy is inactive so that
+   the turbulent variables are read correctly. ---*/
+  
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+  
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
