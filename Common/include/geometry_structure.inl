@@ -37,6 +37,42 @@
  
 #pragma once
 
+inline CUnsignedLong2T::CUnsignedLong2T(){long0 = long1 = 0;}
+
+inline CUnsignedLong2T::CUnsignedLong2T(const unsigned long a, const unsigned long b){long0 = a; long1 = b;}
+
+inline CUnsignedLong2T::~CUnsignedLong2T(){}
+
+inline CUnsignedLong2T::CUnsignedLong2T(const CUnsignedLong2T &other){Copy(other);}
+
+inline CUnsignedLong2T& CUnsignedLong2T::operator=(const CUnsignedLong2T &other){Copy(other); return (*this);}
+
+inline CUnsignedShort2T::CUnsignedShort2T(){short0 = short1 = 0;}
+
+inline CUnsignedShort2T::CUnsignedShort2T(const unsigned short a, const unsigned short b){short0 = a; short1 = b;}
+
+inline CUnsignedShort2T::~CUnsignedShort2T(){}
+
+inline CUnsignedShort2T::CUnsignedShort2T(const CUnsignedShort2T &other){Copy(other);}
+
+inline CUnsignedShort2T& CUnsignedShort2T::operator=(const CUnsignedShort2T &other){Copy(other); return (*this);}
+
+inline CFaceOfElement::CFaceOfElement(const CFaceOfElement &other){Copy(other);}
+
+inline CFaceOfElement& CFaceOfElement::operator=(const CFaceOfElement &other){Copy(other); return (*this);}
+
+inline void CFaceOfElement::CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
+
+inline CBoundaryFace::CBoundaryFace(const CBoundaryFace &other){Copy(other);}
+
+inline CBoundaryFace& CBoundaryFace::operator=(const CBoundaryFace &other){Copy(other); return (*this);}
+
+inline bool CBoundaryFace::operator<(const CBoundaryFace &other) const {return (globalBoundElemID < other.globalBoundElemID);}
+
+inline CMatchingFace::CMatchingFace(const CMatchingFace &other){Copy(other);}
+
+inline CMatchingFace& CMatchingFace::operator=(const CMatchingFace &other){Copy(other); return (*this);}
+
 inline void CGeometry::SetGlobal_to_Local_Point(void) { }
 
 inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { return 0; }
@@ -44,6 +80,8 @@ inline long CGeometry::GetGlobal_to_Local_Point(unsigned long val_ipoint) { retu
 inline unsigned short CGeometry::GetGlobal_to_Local_Marker(unsigned short val_imarker) { return 0; }
 
 inline unsigned long CGeometry::GetGlobal_nPoint(void) { return 0; }
+
+inline void CGeometry::SetGlobal_nPointDomain(unsigned long val_global_npoint) { }
 
 inline unsigned long CGeometry::GetGlobal_nPointDomain(void) { return 0; }
 
@@ -86,6 +124,8 @@ inline void CGeometry::Check_BoundElem_Orientation(CConfig *config) { }
 inline void CGeometry::SetColorGrid(CConfig *config) { }
 
 inline void CGeometry::SetColorGrid_Parallel(CConfig *config) { }
+
+inline void CGeometry::SetColorFEMGrid_Parallel(CConfig *config) { }
 
 inline void CGeometry::DivideConnectivity(CConfig *config, unsigned short Elem_Type) { }
 
