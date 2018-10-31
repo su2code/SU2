@@ -321,7 +321,7 @@ def main():
     inc_buoyancy.cfg_dir   = "incomp_navierstokes/buoyancy_cavity"
     inc_buoyancy.cfg_file  = "lam_buoyancy_cavity.cfg"
     inc_buoyancy.test_iter = 20
-    inc_buoyancy.test_vals = [-3.987107, -3.176477, -0.057813, 7.691336] #last 4 columns
+    inc_buoyancy.test_vals = [-4.436564, 0.508012, 0.000000, 0.000000] #last 4 columns
     inc_buoyancy.su2_exec  = "parallel_computation.py -f"
     inc_buoyancy.timeout   = 1600
     inc_buoyancy.tol       = 0.00001
