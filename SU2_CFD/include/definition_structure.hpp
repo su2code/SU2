@@ -51,6 +51,7 @@
 #include "output_structure.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/interpolation_structure.hpp"
@@ -65,3 +66,10 @@ using namespace std;
  * \param[in] config - Definition of the particular problem.
  */
 void Partition_Analysis(CGeometry *geometry, CConfig *config);
+
+/*!
+ * \brief Performs an analysis of the mesh partitions for distributed memory calculations for the FEM solver.
+ * \param[in] geometry - Geometrical definition of the problem.
+ * \param[in] config - Definition of the particular problem.
+ */
+void Partition_Analysis_FEM(CGeometry *geometry, CConfig *config);

@@ -411,7 +411,7 @@ su2double CGeometry::GetSpline(vector<su2double>&xa, vector<su2double>&ya, vecto
     else klo=k;							// they remain appropriate on the next call.
   }								// klo and khi now bracket the input value of x
   h = xa[khi-1] - xa[klo-1];
-  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa’s must be distinct.
+  if (h == 0.0) h = EPS; // cout << "Bad xa input to routine splint" << endl;	// The xa?s must be distinct.
   a = (xa[khi-1]-x)/h;
   b = (x-xa[klo-1])/h;				// Cubic spline polynomial is now evaluated.
   y = a*ya[klo-1]+b*ya[khi-1]+((a*a*a-a)*y2a[klo-1]+(b*b*b-b)*y2a[khi-1])*(h*h)/6.0;
@@ -1947,21 +1947,49 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
 
+  /*--- Determine whether or not a FEM discretization is used ---*/
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                           (config->GetKind_Solver() == FEM_RANS)           ||
+                           (config->GetKind_Solver() == FEM_LES)            ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
-  
-  switch (val_format) {
-    case SU2:
-      Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      break;
-    case CGNS:
-      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-      break;
+
+  if( fem_solver ) {
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      case CGNS:
+        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  else {
+
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      case CGNS:
+        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+        break;
+    }
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -2369,7 +2397,7 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
   }
   
   for (iDomain=0; iDomain < (unsigned long)size-1; iDomain++) {
-    MPI_Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
+    SU2_MPI::Probe(MPI_ANY_SOURCE, rank, MPI_COMM_WORLD, &status2);
     source = status2.MPI_SOURCE;
     SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
     SU2_MPI::Recv(&local_colour_values[geometry->starting_node[source]], recv_count,
@@ -2664,59 +2692,45 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         if ((unsigned long)rank != jDomain) {
           
 #ifdef HAVE_MPI
-          
-          /*--- Recv the data by probing for the current sender, jDomain,
-           first and then receiving the values from it. ---*/
-          
-          MPI_Probe(jDomain, 13*rank+0, MPI_COMM_WORLD, &status2);
+
+          /*--- Recv the data for the current sender, jDomain. ---*/
+
           SU2_MPI::Recv(&nDim_r[jDomain], 1, MPI_UNSIGNED_SHORT, jDomain,
                         rank*13+0, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+1, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nZone_r[jDomain], 1, MPI_UNSIGNED_SHORT, jDomain,
                         rank*13+1, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+2, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+2, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+3, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nPointDomainTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+3, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+4, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nPointGhost_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+4, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+5, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nPointPeriodic_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+5, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+6, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+6, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+7, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemTriangle_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+7, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+8, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemQuadrilateral_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+8, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+9, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemTetrahedron_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+9, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+10, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemHexahedron_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+10, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+11, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemPrism_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+11, MPI_COMM_WORLD, &status2);
-          
-          MPI_Probe(jDomain, 13*rank+12, MPI_COMM_WORLD, &status2);
+
           SU2_MPI::Recv(&nElemPyramid_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain,
                         rank*13+12, MPI_COMM_WORLD, &status2);
           
@@ -3131,20 +3145,20 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_GlobalPointIndex = new unsigned long [nPointTotal_r[iDomain]];
       
       /*--- Receive the buffers with the coords, global index, and colors ---*/
-      
-      MPI_Probe(iDomain, rank*16+0, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+0, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_DOUBLE, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Coord, recv_count , MPI_DOUBLE,
                     source, rank*16+0, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+1, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+1, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_GlobalPointIndex, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+1, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+2, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+2, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Color, recv_count, MPI_UNSIGNED_LONG,
@@ -3361,43 +3375,43 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_Pyramid_presence[iDomain]       = new unsigned long[nElemPyramid_r[iDomain]];
       
       /*--- Recv the element data ---*/
-      
-      MPI_Probe(iDomain, rank*16+10, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+10, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Triangle_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+10, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+11, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+11, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Quadrilateral_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+11, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+12, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+12, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Tetrahedron_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+12, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+13, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+13, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Hexahedron_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+13, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+14, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+14, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Prism_presence[iDomain][0],
                     recv_count, MPI_UNSIGNED_LONG, source,
                     rank*16+14, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+15, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+15, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(&Buffer_Receive_Pyramid_presence[iDomain][0],
@@ -3559,44 +3573,44 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_GlobElem      = new unsigned long[nElemTotal_r[iDomain]];
       
       /*--- Recv the element data ---*/
-      
-      MPI_Probe(iDomain, rank*16+3, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+3, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Triangle, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+3, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+4, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+4, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Quadrilateral, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+4, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+5, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+5, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Tetrahedron, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+5, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+6, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+6, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Hexahedron, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+6, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+7, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+7, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Prism, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+7, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+8, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+8, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_Pyramid, recv_count, MPI_UNSIGNED_LONG,
                     source, rank*16+8, MPI_COMM_WORLD, &status2);
-      
-      MPI_Probe(iDomain, rank*16+9, MPI_COMM_WORLD, &status2);
+
+      SU2_MPI::Probe(iDomain, rank*16+9, MPI_COMM_WORLD, &status2);
       source = status2.MPI_SOURCE;
       SU2_MPI::Get_count(&status2, MPI_UNSIGNED_LONG, &recv_count);
       SU2_MPI::Recv(Buffer_Receive_GlobElem, recv_count, MPI_UNSIGNED_LONG,
@@ -4282,58 +4296,58 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
       if (rank != MASTER_NODE) {
         
 #ifdef HAVE_MPI
-        
-        MPI_Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundLineTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 0, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundTriangleTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nBoundQuadrilateralTotal, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
         SU2_MPI::Recv(&nMarkerDomain, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 3, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nVertexDomain, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 4, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundLine, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundTriangle, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 6, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nBoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 7, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_SHORT, &recv_count);
         SU2_MPI::Recv(Marker_All_SendRecv, recv_count, MPI_SHORT,
                       MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_CHAR, &recv_count);
         SU2_MPI::Recv(Marker_All_TagBound, recv_count, MPI_CHAR,
                       MASTER_NODE, 9, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 10, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 10, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_SHORT, &recv_count);
         SU2_MPI::Recv(&nPeriodic, recv_count, MPI_UNSIGNED_SHORT,
                       MASTER_NODE, 10, MPI_COMM_WORLD, &status);
@@ -4358,38 +4372,38 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         Buffer_Receive_Translate = new su2double[nPeriodic*3];
         
 #ifdef HAVE_MPI
-        
-        MPI_Probe(MASTER_NODE, 11, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 11, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Center, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 11, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 12, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 12, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Rotation, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 12, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 13, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 13, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_DOUBLE, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Translate, recv_count, MPI_DOUBLE,
                       MASTER_NODE, 13, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 14, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 14, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nTotalSendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 14, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 15, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 15, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(&nTotalReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 15, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 16, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 16, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nSendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 16, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 17, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 17, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(nReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 17, MPI_COMM_WORLD, &status);
@@ -4661,53 +4675,53 @@ CPhysicalGeometry::CPhysicalGeometry(CGeometry *geometry, CConfig *config) {
         /*--- Receive the buffers with the geometrical information ---*/
         
 #ifdef HAVE_MPI
-        
-        MPI_Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 0, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundLine, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 0, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 1, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundTriangle, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 1, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 2, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_BoundQuadrilateral, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 2, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 3, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_Local2Global_Marker, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 3, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 4, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 4, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 5, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_PeriodicTrans, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 5, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 6, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_SendDomain_PeriodicReceptor, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 6, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 7, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_Periodic, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 7, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 8, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_PeriodicTrans, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 8, MPI_COMM_WORLD, &status);
-        
-        MPI_Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
+
+        SU2_MPI::Probe(MASTER_NODE, 9, MPI_COMM_WORLD, &status);
         SU2_MPI::Get_count(&status, MPI_UNSIGNED_LONG, &recv_count);
         SU2_MPI::Recv(Buffer_Receive_ReceivedDomain_PeriodicDonor, recv_count, MPI_UNSIGNED_LONG,
                       MASTER_NODE, 9, MPI_COMM_WORLD, &status);
@@ -8885,7 +8899,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
       
       position = text_line.find ("NELEM=",0);
       if (position != string::npos) {
-        text_line.erase (0,6); nElem = atoi(text_line.c_str());
+        text_line.erase (0,6); nElem = atol(text_line.c_str());
         for (iElem = 0; iElem < nElem; iElem++) {
           
           getline(mesh_file, text_line);
@@ -9303,8 +9317,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               point_line >> Coord_2D[0]; point_line >> Coord_2D[1];
 #else
-              if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count; }
-              else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; LocalIndex = iPoint; GlobalIndex = node_count; }
+              if (size > SINGLE_NODE) { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; GlobalIndex = node_count; }
+              else { point_line >> Coord_2D[0]; point_line >> Coord_2D[1]; GlobalIndex = node_count; }
 #endif
               node[iPoint] = new CPoint(Coord_2D[0], Coord_2D[1], GlobalIndex, config);
               iPoint++; break;
@@ -9313,8 +9327,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
 #ifndef HAVE_MPI
               point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2];
 #else
-              if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = node_count; }
-              else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; LocalIndex = iPoint; GlobalIndex = node_count; }
+              if (size > SINGLE_NODE) { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; GlobalIndex = node_count; }
+              else { point_line >> Coord_3D[0]; point_line >> Coord_3D[1]; point_line >> Coord_3D[2]; GlobalIndex = node_count; }
 #endif
               node[iPoint] = new CPoint(Coord_3D[0], Coord_3D[1], Coord_3D[2], GlobalIndex, config);
               iPoint++; break;
@@ -9368,8 +9382,8 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
     
     position = text_line.find ("NELEM=",0);
     if (position != string::npos) {
-      text_line.erase (0,6); nElem = atoi(text_line.c_str());
-      
+      text_line.erase (0,6); nElem = atol(text_line.c_str());
+
       /*--- Store total number of elements in the original mesh ---*/
       
       Global_nElem = nElem;
@@ -12586,7 +12600,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /*--- Build the ADT of the boundary nodes. ---*/
 
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
+                              PointIDs.data(), true);
 
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -16109,7 +16124,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
           output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file	<< iElem_Bound << endl;
+          output_file << iElem_Bound << endl;
         }
       }
       
@@ -16118,7 +16133,7 @@ void CPhysicalGeometry::SetMeshFile (CConfig *config, string val_mesh_out_filena
           output_file << bound[iMarker][iElem_Bound]->GetVTK_Type() << "\t" ;
           for (iNodes = 0; iNodes < bound[iMarker][iElem_Bound]->GetnNodes(); iNodes++)
             output_file << bound[iMarker][iElem_Bound]->GetNode(iNodes) << "\t" ;
-          output_file	<< iElem_Bound << endl;
+          output_file << iElem_Bound << endl;
         }
       }
       
@@ -17965,7 +17980,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
   
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double auxXCoord, auxYCoord, auxZCoord, *Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
@@ -17981,7 +17996,7 @@ void CPhysicalGeometry::SetGeometryPlanes(CConfig *config) {
    equivalent area, and nearfield weight ---*/
   Xcoord = new su2double[nVertex_Wall];
   Ycoord = new su2double[nVertex_Wall];
-  if (nDim == 3)	Zcoord = new su2double[nVertex_Wall];
+  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
   FaceArea = new su2double[nVertex_Wall];
   
   /*--- Copy the boundary information to an array ---*/
@@ -20284,9 +20299,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
         if (agglomerate_seed) {
           
           /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
-          
-          for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
-            
+
+          for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+
             CVPoint = fine_grid->node[iPoint]->GetPoint(iNode);
             
             /*--- The new point can be agglomerated ---*/
@@ -20311,9 +20326,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
             SetSuitableNeighbors(&Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
           
           /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
-          
-          for (iNode = 0; iNode <	Suitable_Indirect_Neighbors.size(); iNode ++) {
-            
+
+          for (iNode = 0; iNode < Suitable_Indirect_Neighbors.size(); iNode ++) {
+
             CVPoint = Suitable_Indirect_Neighbors[iNode];
             
             /*--- The new point can be agglomerated ---*/
@@ -20380,7 +20395,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
       /*--- Count the number of agglomerated neighbors, and modify the queue ---*/
       
       priority = 0;
-      for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+      for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
         jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
         if (fine_grid->node[jPoint]->GetAgglomerate() == true) priority++;
       }
@@ -20419,9 +20434,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
       MGQueue_InnerCV.Update(iPoint, fine_grid);
       
       /*--- Now we do a sweep over all the nodes that surround the seed point ---*/
-      
-      for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
-        
+
+      for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+
         CVPoint = fine_grid->node[iPoint]->GetPoint(iNode);
         
         /*--- Determine if the CVPoint can be agglomerated ---*/
@@ -20455,9 +20470,9 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
         SetSuitableNeighbors(&Suitable_Indirect_Neighbors, iPoint, Index_CoarseCV, fine_grid);
       
       /*--- Now we do a sweep over all the indirect nodes that can be added ---*/
-      
-      for (iNode = 0; iNode <	Suitable_Indirect_Neighbors.size(); iNode ++) {
-        
+
+      for (iNode = 0; iNode < Suitable_Indirect_Neighbors.size(); iNode ++) {
+
         CVPoint = Suitable_Indirect_Neighbors[iNode];
         
         /*--- The new point can be agglomerated ---*/
@@ -20878,12 +20893,12 @@ bool CMultiGridGeometry::GeometricalCheck(unsigned long iPoint, CGeometry *fine_
   /*--- Evaluate the stretching of the element ---*/
   
   bool Stretching = true;
-  
-  /*	unsigned short iNode, iDim;
+
+  /* unsigned short iNode, iDim;
    unsigned long jPoint;
    su2double *Coord_i = fine_grid->node[iPoint]->GetCoord();
    su2double max_dist = 0.0 ; su2double min_dist = 1E20;
-   for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+   for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
    jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
    su2double *Coord_j = fine_grid->node[jPoint]->GetCoord();
    su2double distance = 0.0;
@@ -20911,7 +20926,7 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   
   vector<unsigned long> First_Neighbor_Points;
   First_Neighbor_Points.push_back(iPoint);
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
     First_Neighbor_Points.push_back(jPoint);
   }
@@ -20919,17 +20934,17 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   /*--- Create a list with the second neighbors, without first, and seed neighbors ---*/
   
   vector<unsigned long> Second_Neighbor_Points, Second_Origin_Points, Suitable_Second_Neighbors;
-  
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
-    
-    for (jNode = 0; jNode <	fine_grid->node[jPoint]->GetnPoint(); jNode ++) {
+
+    for (jNode = 0; jNode < fine_grid->node[jPoint]->GetnPoint(); jNode ++) {
       kPoint = fine_grid->node[jPoint]->GetPoint(jNode);
       
       /*--- Check that the second neighbor do not belong to the first neighbor or the seed ---*/
       
       SecondNeighborSeed = true;
-      for (iNeighbor = 0; iNeighbor <	First_Neighbor_Points.size(); iNeighbor ++)
+      for (iNeighbor = 0; iNeighbor < First_Neighbor_Points.size(); iNeighbor ++)
         if (kPoint == First_Neighbor_Points[iNeighbor]) {
           SecondNeighborSeed = false; break;
         }
@@ -20943,11 +20958,11 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   }
   
   /*---  Identify those second neighbors that are repeated (candidate to be added) ---*/
-  
-  for (iNeighbor = 0; iNeighbor <	Second_Neighbor_Points.size(); iNeighbor ++)
-    
-    for (jNeighbor = 0; jNeighbor <	Second_Neighbor_Points.size(); jNeighbor ++)
-      
+
+  for (iNeighbor = 0; iNeighbor < Second_Neighbor_Points.size(); iNeighbor ++)
+
+    for (jNeighbor = 0; jNeighbor < Second_Neighbor_Points.size(); jNeighbor ++)
+
     /*--- Repeated second neighbor with different origin ---*/
       
       if ((Second_Neighbor_Points[iNeighbor] == Second_Neighbor_Points[jNeighbor]) &&
@@ -20979,26 +20994,26 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   /*--- Create a list with the third neighbors, without first, second, and seed neighbors ---*/
   
   vector<unsigned long> Third_Neighbor_Points, Third_Origin_Points;
-  
-  for (jNode = 0; jNode <	Suitable_Second_Neighbors.size(); jNode ++) {
+
+  for (jNode = 0; jNode < Suitable_Second_Neighbors.size(); jNode ++) {
     kPoint = Suitable_Second_Neighbors[jNode];
-    
-    for (kNode = 0; kNode <	fine_grid->node[kPoint]->GetnPoint(); kNode ++) {
+
+    for (kNode = 0; kNode < fine_grid->node[kPoint]->GetnPoint(); kNode ++) {
       lPoint = fine_grid->node[kPoint]->GetPoint(kNode);
       
       /*--- Check that the third neighbor do not belong to the first neighbors or the seed ---*/
       
       ThirdNeighborSeed = true;
-      
-      for (iNeighbor = 0; iNeighbor <	First_Neighbor_Points.size(); iNeighbor ++)
+
+      for (iNeighbor = 0; iNeighbor < First_Neighbor_Points.size(); iNeighbor ++)
         if (lPoint == First_Neighbor_Points[iNeighbor]) {
           ThirdNeighborSeed = false;
           break;
         }
       
       /*--- Check that the third neighbor do not belong to the second neighbors ---*/
-      
-      for (iNeighbor = 0; iNeighbor <	Suitable_Second_Neighbors.size(); iNeighbor ++)
+
+      for (iNeighbor = 0; iNeighbor < Suitable_Second_Neighbors.size(); iNeighbor ++)
         if (lPoint == Suitable_Second_Neighbors[iNeighbor]) {
           ThirdNeighborSeed = false;
           break;
@@ -21013,10 +21028,10 @@ void CMultiGridGeometry::SetSuitableNeighbors(vector<unsigned long> *Suitable_In
   }
   
   /*---  Identify those third neighbors that are repeated (candidate to be added) ---*/
-  
-  for (iNeighbor = 0; iNeighbor <	Third_Neighbor_Points.size(); iNeighbor ++)
-    for (jNeighbor = 0; jNeighbor <	Third_Neighbor_Points.size(); jNeighbor ++)
-      
+
+  for (iNeighbor = 0; iNeighbor < Third_Neighbor_Points.size(); iNeighbor ++)
+    for (jNeighbor = 0; jNeighbor < Third_Neighbor_Points.size(); jNeighbor ++)
+
     /*--- Repeated second neighbor with different origin ---*/
       
       if ((Third_Neighbor_Points[iNeighbor] == Third_Neighbor_Points[jNeighbor]) &&
@@ -21071,7 +21086,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   /*--- If any children node belong to the boundary then the entire control
    volume will belong to the boundary ---*/
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
-    for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+    for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
       iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
       if (fine_grid->node[iFinePoint]->GetBoundary()) {
         node[iCoarsePoint]->SetBoundary(nMarker);
@@ -21092,7 +21107,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++) {
     if (node[iCoarsePoint]->GetBoundary()) {
-      for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
         iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
         for (iMarker = 0; iMarker < nMarker; iMarker ++) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
@@ -21119,7 +21134,7 @@ void CMultiGridGeometry::SetVertex(CGeometry *fine_grid, CConfig *config) {
   
   for (iCoarsePoint = 0; iCoarsePoint < nPoint; iCoarsePoint ++)
     if (node[iCoarsePoint]->GetBoundary())
-      for (iChildren = 0; iChildren <	node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
+      for (iChildren = 0; iChildren < node[iCoarsePoint]->GetnChildren_CV(); iChildren ++) {
         iFinePoint = node[iCoarsePoint]->GetChildren_CV(iChildren);
         for (iMarker = 0; iMarker < fine_grid->GetnMarker(); iMarker ++) {
           if ((fine_grid->node[iFinePoint]->GetVertex(iMarker) != -1) && (node[iCoarsePoint]->GetVertex(iMarker) == -1)) {
@@ -21637,7 +21652,7 @@ void CMultiGridGeometry::FindNormal_Neighbor(CConfig *config) {
 void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
   bool loop_on;
   unsigned short iMarker = 0;
-  su2double auxXCoord, auxYCoord, auxZCoord,	*Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
+  su2double auxXCoord, auxYCoord, auxZCoord, *Face_Normal = NULL, auxArea, *Xcoord = NULL, *Ycoord = NULL, *Zcoord = NULL, *FaceArea = NULL;
   unsigned long jVertex, iVertex, ixCoord, iPoint, iVertex_Wall, nVertex_Wall = 0;
   
   /*--- Compute the total number of points on the near-field ---*/
@@ -21653,7 +21668,7 @@ void CMultiGridGeometry::SetGeometryPlanes(CConfig *config) {
    equivalent area, and nearfield weight ---*/
   Xcoord = new su2double[nVertex_Wall];
   Ycoord = new su2double[nVertex_Wall];
-  if (nDim == 3)	Zcoord = new su2double[nVertex_Wall];
+  if (nDim == 3) Zcoord = new su2double[nVertex_Wall];
   FaceArea = new su2double[nVertex_Wall];
   
   /*--- Copy the boundary information to an array ---*/
@@ -22086,7 +22101,7 @@ void CPeriodicGeometry::SetPeriodicBoundary(CGeometry *geometry, CConfig *config
       nPeriodic++;
   
   /*--- First compute the Send/Receive boundaries, count the number of points ---*/
-  Counter_Send = 0; 	Counter_Receive = 0;
+  Counter_Send = 0;  Counter_Receive = 0;
   for (iPeriodic = 1; iPeriodic <= nPeriodic; iPeriodic++) {
     if (geometry->PeriodicPoint[iPeriodic][0].size() != 0)
       Counter_Send += geometry->PeriodicPoint[iPeriodic][0].size();
@@ -22568,7 +22583,7 @@ void CMultiGridQueue::Update(unsigned long iPoint, CGeometry *fine_grid) {
   unsigned long jPoint;
   
   RemoveCV(iPoint);
-  for (iNode = 0; iNode <	fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
+  for (iNode = 0; iNode < fine_grid->node[iPoint]->GetnPoint(); iNode ++) {
     jPoint = fine_grid->node[iPoint]->GetPoint(iNode);
     if (fine_grid->node[jPoint]->GetAgglomerate() == false)
       IncrPriorityCV(jPoint);
