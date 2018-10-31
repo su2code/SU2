@@ -4791,6 +4791,15 @@ public:
   static su2double GetREth_crit(const su2double var_Re_theta);
 
   /*!
+   * \brief Static member function to compute the empirical correlation for Flength,
+            which controls the length of the transition region.
+   * \param[in] var_Re_theta - Value of Reynolds theta. Flength is a
+                               correlation based on this value.
+   * \return Value of the Flength.
+   */
+  static su2double GetFlength(const su2double var_Re_theta);
+
+  /*!
    * \brief Residual for source term integration.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).

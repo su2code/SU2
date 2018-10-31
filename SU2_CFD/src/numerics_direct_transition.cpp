@@ -143,28 +143,29 @@ su2double CSourcePieceWise_TransLM::GetREth_crit(const su2double var_Re_theta) {
 
   su2double Recrit;
 
-  /* Menter correlation, also mentioned at https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. */
+  /* Menter correlation, also mentioned at https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html.
+     The coefficients are slightly altered to have a better continuity at the interface. */
   if(var_Re_theta <= 1870.0) {
 
-   /* Quartic expression is used. Define the constants. */
-   const su2double a0 = -3.96035;
-   const su2double a1 =  1.0120656;
-   const su2double a2 = -8.68230e-4;
-   const su2double a3 =  6.96506e-7;
-   const su2double a4 = -1.74105e-10;
+    /* Quartic expression is used. Define the constants. */
+    const su2double a0 = -3.96035;
+    const su2double a1 =  1.0120656;
+    const su2double a2 = -8.68230e-4;
+    const su2double a3 =  6.96506e-7;
+    const su2double a4 = -1.74105e-10;
 
-   /* Compute the value of Recrit. */
-   const su2double val1 = var_Re_theta;
-   const su2double val2 = val1*val1;
-   const su2double val3 = val1*val2;
-   const su2double val4 = val2*val2;
+    /* Compute the value of Recrit. */
+    const su2double val1 = var_Re_theta;
+    const su2double val2 = val1*val1;
+    const su2double val3 = val1*val2;
+    const su2double val4 = val2*val2;
 
-   Recrit = a0 + a1*val1 + a2*val2 + a3*val3 + a4*val4;
+    Recrit = a0 + a1*val1 + a2*val2 + a3*val3 + a4*val4;
 
   } else {
 
     /* Use correlation valid for Re_theta larger than 1870.0. */
-    Recrit = var_Re_theta - (593.11 + 0.482*(var_Re_theta-1870.0));
+    Recrit = var_Re_theta - (591.926884931 + 0.482*(var_Re_theta-1870.0));
   }
 
   /* Malan correlation. */
@@ -172,6 +173,36 @@ su2double CSourcePieceWise_TransLM::GetREth_crit(const su2double var_Re_theta) {
 
   /* Return the value of Recrit. */
   return Recrit;
+}
+
+su2double CSourcePieceWise_TransLM::GetFlength(const su2double var_Re_theta) {
+
+  su2double Flength;
+
+  /* Menter correlation, also mentioned at https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html.
+     The coefficients are slightly changed to have a better continuity at the interfaces. */
+  if(var_Re_theta < 400.0) {
+    Flength = 39.825535395 - 1.1927e-2*var_Re_theta - 1.32567e-4*var_Re_theta*var_Re_theta;
+  }
+  else if(var_Re_theta < 596.0) {
+    Flength = 263.408015395 - 1.23939*var_Re_theta + 1.94548e-3*var_Re_theta*var_Re_theta
+            - 1.01695e-6*var_Re_theta*var_Re_theta*var_Re_theta;
+  }
+  else if(var_Re_theta < 1200.0) {
+    Flength = 0.5 - 3.0e-4*(var_Re_theta - 596.0);
+  }
+  else {
+    Flength = 0.3188;
+  }
+  
+  /* Malan correlation. */
+  /* const su2double tmp1 = 7.168 - 0.01173*var_Re_theta;
+     const su2double tmp2 = exp(tmp1) + 0.5;
+     Flength = min(tmp2, 300.0);
+  */
+
+  /* Return the value of Flength. */
+  return Flength;
 }
 
 void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
@@ -193,7 +224,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const su2double muLam  = Laminar_Viscosity_i;
   const su2double muTurb = Eddy_Viscosity_i;
   const su2double S      = StrainMag_i;
-  const su2double Omega  = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1]
+  const su2double Vort   = sqrt(Vorticity_i[0]*Vorticity_i[0] + Vorticity_i[1]*Vorticity_i[1]
                          +      Vorticity_i[2]*Vorticity_i[2]);
   const su2double dist   = dist_i;
 
@@ -203,19 +234,19 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const su2double intermittency = TransVar_i[0];
   const su2double Re_theta      = TransVar_i[1];
 
-  /*--- Compute the velocity magnitude. ---*/
+  /*--- Compute the velocity magnitude squared. ---*/
   su2double vel2 = 0.0;
   for(unsigned short iDim = 0; iDim < nDim; ++iDim)
     vel2 += vel[iDim]*vel[iDim];
 
-  vel2 = max(vel2, 1.e-10);
-  const su2double velMag = sqrt(vel2);
+  vel2 = max(vel2, 1.e-20);
 
   /*--- Compute the turbulence intensity. For Spalart-Allmaras type turbulence
         models the turbulence intensity of the free-stream is taken. For numerical
         robustness, the turbulence intensity must be larger than 0.027 percent. ---*/
-  su2double turbIntensity     = sqrt(2.0*kine/(3.0*vel2));
-  if( SA_turb ) turbIntensity = config->GetTurbulenceIntensity_FreeStream();
+  su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
+  if(dist < 1.e-10) turbIntensity = 0.0;
+  if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
 
   turbIntensity = min(max(turbIntensity, 0.00027), 2.0);
 
@@ -354,5 +385,61 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const su2double Re_theta_crit = GetREth_crit(Re_theta);
   const su2double Re_omega      = rho*omega*dist*dist/muLam;
 
-  SU2_MPI::Error("Not implemented yet", CURRENT_FUNCTION);
+  /*--- Compute the value of Fonset. ---*/
+  const su2double RT = SA_turb ? muTurb/muLam : rho*kine/(muLam*omega);
+
+  const su2double Fonset1 = Rev/(2.193*Re_theta_crit);
+  su2double       tmp     = Fonset1*Fonset1*Fonset1*Fonset1;
+  const su2double Fonset2 = min(max(Fonset1,tmp), 2.0);
+  tmp                     = 1.0 - 0.064*RT*RT*RT;          // 2.5^(-3) = 0.064.
+  const su2double Fonset3 = max(tmp, 0.0);
+  const su2double Fonset  = max(Fonset2-Fonset3, 0.0);
+
+  /*--- Compute the value of Fturb. ---*/
+  const su2double Fturb = exp(-0.00390625*RT*RT*RT*RT);       // 4^(-4) = 0.00390625.
+
+  /*--- Compute the values of Fsublayer and Fwake. When a
+        Spalart-Allmaras type model is used, these value
+        are set to be zero and one, respectively. ---*/
+  tmp                       = 2.5e-5*Re_omega*Re_omega;
+  const su2double Fsublayer = SA_turb ? 0.0 : exp(-tmp);
+  tmp                       = 1.e-10*Re_omega*Re_omega;
+  const su2double Fwake     = SA_turb ? 1.0 : exp(-tmp);
+
+  /*--- Compute the empirical correlation for Flength, which
+        controls the length of the transition region. It is,
+        possibly, corrected by Fsublayer. ---*/
+  const su2double Flength = (1.0-Fsublayer)*GetFlength(Re_theta)
+                          + 40.0*Fsublayer;
+
+  /*--- Compute the value of Ftheta_t. */
+  tmp                  = rho*vel2/(375.0*Vort*muLam*Re_theta);
+  const su2double val1 = Fwake*exp(-tmp*tmp*tmp*tmp);
+  const su2double val2 = (ce2*intermittency-1.0)/(ce2-1.0);
+  const su2double val3 = 1.0 - val2*val2;
+
+  const su2double Ftheta_t = min(max(val1,val3),1.0);
+
+  /*--- Compute the production and destruction term of the intermittency
+        equation. ---*/
+  const su2double Pintermittency = Flength*ca1*rho*S*sqrt(intermittency*Fonset)
+                                 * (1.0 - ce1*intermittency);
+  const su2double Eintermittency = ca2*rho*Vort*Fturb
+                                 * intermittency*(ce2*intermittency - 1.0);
+
+  /*--- Compute the production/destruction term of the Re_theta equation. ---*/
+  const su2double PRe_theta = cthetat*rho*rho*vel2*(Re_theta_eq - Re_theta)
+                            * (1.0 - Ftheta_t)/(500.0*muLam);
+
+  /*--- Compute the source terms and the approximate Jacobians for
+        both equations. ---*/
+  val_residual[0] = Volume*(Pintermittency - Eintermittency);
+  val_residual[1] = Volume*PRe_theta;
+
+
+  val_Jacobian_i[0][0] = -Volume*(2.0*ca2*ce2*Vort*intermittency*Fturb
+                       +          ca1*ce1*Flength*S*sqrt(intermittency*Fonset));
+  val_Jacobian_i[0][1] =  0.0;
+  val_Jacobian_i[1][0] =  0.0;
+  val_Jacobian_i[1][1] = -Volume*cthetat*rho*vel2/(500.0*muLam);
 }
