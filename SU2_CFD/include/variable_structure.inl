@@ -457,6 +457,10 @@ inline bool CVariable::SetVorticity(void) { return false; }
 
 inline bool CVariable::SetStrainMag(void) { return false; }
 
+inline void CVariable::SetTauWall(su2double val_tau_wall) { }
+
+inline su2double CVariable::GetTauWall(void) { return 0; }
+
 inline void CVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) { }
 
 inline void CVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { }
@@ -905,6 +909,9 @@ inline void CNSVariable::Setdktdrho_T(su2double dktdrho_T) {
 inline void CNSVariable::SetdktdT_rho(su2double dktdT_rho) {
   Secondary[7] = dktdT_rho;
 }
+inline void CNSVariable::SetTauWall(su2double val_tau_wall) { Tau_Wall = val_tau_wall; }
+
+inline su2double CNSVariable::GetTauWall(void) { return Tau_Wall; }
 
 inline void CNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+6] = eddy_visc; }
 
@@ -1273,10 +1280,6 @@ inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { 
 inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density;}
 
 inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
-
-inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
-
-inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 

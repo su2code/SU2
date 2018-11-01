@@ -152,6 +152,12 @@ inline void CFEAElasticity::Compute_Stress_Tensor(CElement *element_container, C
 
 inline void CFEANonlinearElasticity::Compute_Stress_Tensor(CElement *element_container, CConfig *config) { }
 
+inline void CFEAElasticity::Compute_Lame_Parameters(void) {
+  Mu     = E / (2.0*(1.0 + Nu));
+  Lambda = Nu*E/((1.0+Nu)*(1.0-2.0*Nu));
+  Kappa  = Lambda + (2/3)*Mu;
+}
+
 inline void CNumerics::ComputeResidual(su2double *val_residual, CConfig *config) { }
 
 inline void CNumerics::ComputeResidual(su2double *val_residual_i, su2double *val_residual_j) { }
@@ -568,3 +574,15 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 
 inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *val_Jacobian_mui, su2double ***val_Jacobian_gradi, 
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
+
+inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
+
+inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
+
+inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
