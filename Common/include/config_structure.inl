@@ -1622,6 +1622,8 @@ inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* ro
     for (unsigned short i = 0; i < 3; i++) Periodic_Rotation[val_index][i] = rotation[i];
 }
 
+inline su2double** CConfig::GetRotationMatrix(unsigned short val_index) { return Rotation_Matrix[val_index]; }
+
 inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
 
 inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {

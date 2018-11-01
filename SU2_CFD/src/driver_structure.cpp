@@ -1032,6 +1032,14 @@ void CDriver::Geometrical_Preprocessing() {
 
   }
 
+  /*--- Pre-compute any rotation matrices for periodic transformations ---*/
+  
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->AllocateRotationMatrix();
+    for (unsigned short iPeriodic = 0; iPeriodic < config_container[iZone]->GetnPeriodicIndex(); iPeriodic++)
+      config_container[iZone]->SetRotationMatrix(iPeriodic);
+  }
+
   /*--- For unsteady simulations, initialize the grid volumes
    and coordinates for previous solutions. Loop over all zones/grids ---*/
 
