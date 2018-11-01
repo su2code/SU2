@@ -60,7 +60,7 @@ using namespace std;
  * \class CTransfer
  * \brief Main class for defining the physical transfer of information.
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer {
@@ -262,7 +262,7 @@ public:
  * \class CTransfer_FlowTraction
  * \brief Transfer flow tractions from a fluid zone into a structural zone
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_FlowTraction : public CTransfer {
@@ -331,7 +331,7 @@ public:
  * \class CTransfer_StructuralDisplacements
  * \brief Transfer structural displacements from a structural zone into a fluid zone
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_StructuralDisplacements : public CTransfer {
@@ -400,7 +400,7 @@ public:
  * \class CTransfer_FlowTraction_DiscAdj
  * \brief Transfer flow tractions from a fluid zone into a structural zone in a discrete adjoint simulation
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_FlowTraction_DiscAdj : public CTransfer {
@@ -469,7 +469,7 @@ public:
  * \class CTransfer_StructuralDisplacements_DiscAdj
  * \brief Transfer structural displacements from a structural zone into a fluid zone in a discrete adjoint simulation
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_StructuralDisplacements_DiscAdj : public CTransfer {
@@ -538,7 +538,7 @@ public:
  * \class CTransfer_ConservativeVars
  * \brief Transfer conservative variables from a generic zone into another
  * \author R. Sanchez
- * \version 4.0.1 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_ConservativeVars : public CTransfer {
@@ -608,7 +608,7 @@ public:
  * \class CTransfer_MixingPlaneInterface
  * \brief Transfer average variables needed for MixingPlane computation from a generic zone into another one
  * \author S. Vitale
- * \version 4.3.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 
@@ -690,7 +690,7 @@ void SetSpanWiseLevels(CConfig *donor_config, CConfig *target_config);
  * \class CTransfer_SlidingInterface
  * \brief Transfer conservative variables from a generic zone into another
  * \author G. Gori Politecnico di Milano
- * \version 4.3.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CTransfer_SlidingInterface : public CTransfer {

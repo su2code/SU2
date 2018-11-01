@@ -77,13 +77,14 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     case SPACE_UPWIND:
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
       break;
+    case FINITE_ELEMENT:
+      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+      break;
   }
   
   /*--- Compute viscous residuals ---*/
   
   solver_container[MainSolver]->Viscous_Residual(geometry, solver_container, numerics[VISC_TERM], config, iMesh, iRKStep);
-  
-
   
   /*--- Compute source term residuals ---*/
 
@@ -108,6 +109,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
 
 
   /*--- Weak boundary conditions ---*/
+  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     KindBC = config->GetMarker_All_KindBC(iMarker);
     switch (KindBC) {
@@ -221,6 +223,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
     bool initial_calc = (config->GetExtIter() == 0);                  // Checks if it is the first calculation.
     bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
     bool first_iter = (config->GetIntIter() == 0);                  // Checks if it is the first iteration
+    bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
     unsigned short IterativeScheme = config->GetKind_SpaceIteScheme_FEA();       // Iterative schemes: NEWTON_RAPHSON, MODIFIED_NEWTON_RAPHSON
     unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
 
@@ -233,7 +236,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
     /*--- If the analysis is linear, only a the constitutive term of the stiffness matrix has to be computed ---*/
     /*--- This is done only once, at the beginning of the calculation. From then on, K is constant ---*/
-    if ((linear_analysis && initial_calc) ||
+    if ((linear_analysis && (initial_calc || dynamic)) ||
       (linear_analysis && restart && initial_calc_restart)) {
       solver_container[MainSolver]->Compute_StiffMatrix(geometry, solver_container, numerics, config);
     }
@@ -293,7 +296,7 @@ void CIntegration::Space_Integration_FEM(CGeometry *geometry,
 
 }
 
-void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_container, CConfig **config,
+void CIntegration::Adjoint_Setup(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
                                  unsigned short RunTime_EqSystem, unsigned long Iteration, unsigned short iZone) {
   
   unsigned short iMGLevel;
@@ -303,21 +306,21 @@ void CIntegration::Adjoint_Setup(CGeometry ***geometry, CSolver ****solver_conta
       
       /*--- Set the time step in all the MG levels ---*/
       
-      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][iMGLevel], solver_container[iZone][iMGLevel], config[iZone], iMGLevel, Iteration);
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTime_Step(geometry[iZone][INST_0][iMGLevel], solver_container[iZone][INST_0][iMGLevel], config[iZone], iMGLevel, Iteration);
       
       /*--- Set the force coefficients ---*/
-      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CD());
-      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CL());
-      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CT());
-      solver_container[iZone][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][MESH_0][FLOW_SOL]->GetTotal_CQ());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CD(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CD());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CL(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CL());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CT(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CT());
+      solver_container[iZone][INST_0][iMGLevel][FLOW_SOL]->SetTotal_CQ(solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_CQ());
       
       /*--- Restrict solution and gradients to the coarse levels ---*/
       
       if (iMGLevel != config[iZone]->GetnMGLevels()) {
-        SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
-        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][iMGLevel][FLOW_SOL], solver_container[iZone][iMGLevel+1][FLOW_SOL],
-                               geometry[iZone][iMGLevel], geometry[iZone][iMGLevel+1], config[iZone]);
+        SetRestricted_Solution(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
+        SetRestricted_Gradient(RUNTIME_FLOW_SYS, solver_container[iZone][INST_0][iMGLevel][FLOW_SOL], solver_container[iZone][INST_0][iMGLevel+1][FLOW_SOL],
+                               geometry[iZone][INST_0][iMGLevel], geometry[iZone][INST_0][iMGLevel+1], config[iZone]);
       }
       
     }
@@ -474,7 +477,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
         Cauchy_Value = 0.0;
         Cauchy_Counter = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Serie[iCounter] = 0.0;
+          Cauchy_Serie[iCounter] = 0.0;
       }
       
       Old_Func = New_Func;
@@ -490,7 +493,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       if (Iteration  >= config->GetCauchy_Elems()) {
         Cauchy_Value = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Value += Cauchy_Serie[iCounter];
+          Cauchy_Value += Cauchy_Serie[iCounter];
       }
       
       if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
@@ -602,7 +605,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     string Marker_Tag, Monitoring_Tag;
     int nProcessor = size;
 
-    /*--- Only if mater node allocate memory ---*/
+    /*--- Only if master node allocate memory ---*/
     
     if (rank == MASTER_NODE) {
       plunge_all = new su2double[nProcessor];
