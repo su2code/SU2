@@ -183,7 +183,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     // Solve the matrix problem to get the velocity field
     // rhs returned the solution
     //********LAPACK CALL*******
-#if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !defined(CODI_REVERSE_TYPE)
+#if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     int info, nrhs = 1;
 
     dgtsv_(&numPoints,&nrhs,lower.data(),diagonal.data(),upper.data(),rhs.data(),&numPoints, &info);
@@ -262,7 +262,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
     
     // Solve the matrix problem to get the temperature field
     // *******LAPACK CALL********
-#if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !defined(CODI_REVERSE_TYPE)
+#if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
     dgtsv_(&numPoints,&nrhs,lower.data(),diagonal.data(),upper.data(),rhs.data(),&numPoints, &info);
     if (info != 0)
       SU2_MPI::Error("Unsuccessful call to dgtsv_", CURRENT_FUNCTION);
