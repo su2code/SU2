@@ -375,7 +375,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -3480,7 +3480,7 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
@@ -15014,7 +15014,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -17463,11 +17463,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
   
-  su2double Wall_HeatFlux, Area, div_vel, UnitNormal[3], *Normal;
+  su2double Area, div_vel, UnitNormal[3], *Normal;
   su2double **grad_primvar, tau[3][3];
   
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double T_Normal, P_Normal, M_Normal;
+  su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0, Tau_Wall_Old = 0.0;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -17507,7 +17507,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Get the specified wall heat flux from config ---*/
       
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+      // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
       
       /*--- Loop over all of the vertices on this boundary marker ---*/
       
@@ -17571,7 +17571,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           /*--- Compute mach number ---*/
           
-          M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+          // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
           
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
           
