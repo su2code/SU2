@@ -255,7 +255,12 @@ def get_headerMap(nZones = 1):
                  "D(MassFlowOut_0)"           : "D_MASS_FLOW_OUT"          ,
                  "D(PressureRatio_0)"         : "D_PRESSURE_RATIO"         ,
                  "D(EnthalpyOut_0)"           : "D_ENTHALPY_OUT"           ,
-                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     }
+                 "D(TotalEnthalpy_0)"         : "D_TOTAL_ENTHALPY_OUT"     ,
+                 "D(Uniformity)"                : "D_SURFACE_UNIFORMITY"            ,
+                 "D(Secondary_Strength)"        : "D_SURFACE_SECONDARY"             ,
+                 "D(Momentum_Distortion)"       : "D_SURFACE_MOM_DISTORTION"        ,
+                 "D(Secondary_Over_Uniformity)" : "D_SURFACE_SECOND_OVER_UNIFORM"   ,
+                 "D(Pressure_Drop)"             : "D_SURFACE_PRESSURE_DROP"         }
  
     return history_header_map        
 
@@ -425,7 +430,12 @@ grad_names_directdiff = ["D_LIFT",
                          "D_MASS_FLOW_OUT",
                          "D_PRESSURE_RATIO",
                          "D_ENTHALPY_OUT",
-                         "D_TOTAL_ENTHALPY_OUT"]
+                         "D_TOTAL_ENTHALPY_OUT",
+                         "D_SURFACE_UNIFORMITY",
+                         "D_SURFACE_SECONDARY",
+                         "D_SURFACE_MOM_DISTORTION",
+                         "D_SURFACE_SECOND_OVER_UNIFORM",
+                         "D_SURFACE_PRESSURE_DROP"]
 
 grad_names_map = ordered_bunch()
 grad_names_map.MASS_FLOW_IN = "D_MASS_FLOW_IN"
@@ -452,6 +462,11 @@ grad_names_map.KINETIC_ENERGY_LOSS = "D_KINETIC_ENERGY_LOSS"
 grad_names_map.CUSTOM_OBJFUNC = "D_CUSTOM_OBJFUNC"
 grad_names_map.HEAT = "D_HEAT"
 grad_names_map.MAX_HEAT = "D_MAX_HEAT"
+grad_names_map.SURFACE_UNIFORMITY = "D_SURFACE_UNIFORMITY"
+grad_names_map.SURFACE_SECONDARY = "D_SURFACE_SECONDARY"
+grad_names_map.SURFACE_MOM_DISTORTION = "D_SURFACE_MOM_DISTORTION"
+grad_names_map.SURFACE_SECOND_OVER_UNIFORM = "D_SURFACE_SECOND_OVER_UNIFORM"
+grad_names_map.SURFACE_PRESSURE_DROP = "D_SURFACE_PRESSURE_DROP"
 
 # per-surface functions
 per_surface_map = {"LIFT"       :   "CL" ,
@@ -752,7 +767,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header.append('VARIABLES=')
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -878,7 +893,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header_format = header_format + 'VARIABLES='
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -932,6 +947,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
 def get_extension(output_format):
   
     if (output_format == "PARAVIEW")        : return ".csv"
+    if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  

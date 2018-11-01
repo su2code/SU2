@@ -10,11 +10,13 @@ int main()
     /* DOCSTART:gridsolution_grid_tecini.txt*/
     INTEGER4 I; /* use to check return values */
 
-    INTEGER4 Debug     = 1;
-    INTEGER4 VIsDouble = 0;
-    INTEGER4 FileType  = 1; /* 1 = grid file. */
+    INTEGER4 Debug      = 1;
+    INTEGER4 VIsDouble  = 0;
+    INTEGER4 FileType   = 1; /* 1 = grid file. */
+    INTEGER4 FileFormat = 0; // 0 == PLT, 1 == SZPLT; only PLT is currently
+                             // supported for grid/solution files
 
-    I = TECINI112((char*)"Example: Separate grid and solution files",
+    I = TECINI142((char*)"Example: Separate grid and solution files",
                   (char*)"X Y Z",  /* Defines the variables for the data file.
                                     * Each zone must contain each of the vars
                                     * listed here. The order of the variables
@@ -24,8 +26,9 @@ int main()
                                     * TecIO functions, you will refer to the
                                     * variable by its number.
                                     */
-                  (char*)"grid.plt",
+                  (char*)"gridsolution-grid.plt",
                   (char*)".",       /* scratch directory */
+                  &FileFormat,
                   &FileType,
                   &Debug,
                   &VIsDouble);
@@ -65,7 +68,7 @@ int main()
     INTEGER4 TotalNumBndryFaces = 0;
     INTEGER4 TotalNumBndryConns = 0;
 
-    I = TECZNE112((char*)"Dodecahedron", /* Name of the zone. */
+    I = TECZNE142((char*)"Dodecahedron", /* Name of the zone. */
                   &ZoneType,
                   &NumPts,
                   &NumElems,
@@ -89,7 +92,6 @@ int main()
     /* DOCEND */
 
     /* DOCSTART:gridsolution_grid_tecdat.txt*/
-
     /* TECDAT Parameters */
     double  Phi = 0.5 * (1.0 + sqrt(5.0));
     double  Pi  = 3.141592653578;
@@ -105,8 +107,8 @@ int main()
         Z[Count] = Phi + 1.0;
         Count++;
 
-        X[Count] = -X[Count - 1];	
-        Y[Count] = -Y[Count - 1];	
+        X[Count] = -X[Count - 1];
+        Y[Count] = -Y[Count - 1];
         Z[Count] = -Z[Count - 1];
         Count++;
 
@@ -115,26 +117,25 @@ int main()
         Z[Count] = Phi - 1.0;
         Count++;
 
-        X[Count] = -X[Count - 1];	
-        Y[Count] = -Y[Count - 1];	
+        X[Count] = -X[Count - 1];
+        Y[Count] = -Y[Count - 1];
         Z[Count] = -Z[Count - 1];
         Count++;
     }
 
     INTEGER4  IsDouble = 1;
     
-    I = TECDAT112(&NumPts, X, &IsDouble);
-    I = TECDAT112(&NumPts, Y, &IsDouble);
-    I = TECDAT112(&NumPts, Z, &IsDouble);
+    I = TECDAT142(&NumPts, X, &IsDouble);
+    I = TECDAT142(&NumPts, Y, &IsDouble);
+    I = TECDAT142(&NumPts, Z, &IsDouble);
     
     delete X;
     delete Y;
     delete Z;
-
     /* DOCEND */
 
     /* DOCSTART:gridsolution_grid_facenodes.txt*/
-    /* TecPoly Parameters */
+    /* TecPolyFace Parameters */
 
     /* Create a FaceNodes array, dimensioned by the total number
      * of face nodes in the zone.
@@ -225,7 +226,6 @@ int main()
     FaceNodes[n++] = 9;
     FaceNodes[n++] = 13;
     FaceNodes[n++] = 17;
-
     /* DOCEND */
 
     /* Specify the number of nodes for each face, and the right and
@@ -277,41 +277,37 @@ int main()
     FaceLeftElems[10] = 0;
     FaceLeftElems[11] = 1;
 
-    I = TECPOLY112(FaceNodeCounts,
-                   FaceNodes,
-                   FaceLeftElems,
-                   FaceRightElems,
-                   NULL, /* No boundary connections. */
-                   NULL,
-                   NULL);
+    I = TECPOLYFACE142(&NumFaces,
+                       FaceNodeCounts,
+                       FaceNodes,
+                       FaceLeftElems,
+                       FaceRightElems);
 
     delete FaceNodes;
     delete FaceLeftElems;
     delete FaceRightElems;
-
     /* DOCEND */
-
 
     /* DOCSTART:gridsolution_grid_tecend.txt*/
-    I = TECEND112();
+    I = TECEND142();
     /* DOCEND */
 
-    /* DOCSTART:gridsolution_solution_tecini.txt*/
     for(int J = 0; J < 5; J++)
     {
         char SolutionFileName[128];
-        sprintf(SolutionFileName, "solution%d.plt", J);
+        sprintf(SolutionFileName, "gridsolution-solution%d.plt", J);
 
         /* DOCSTART:gridsolution_solution_tecini.txt*/
-        FileType  = 2; /* 1 = solution file. */
+        FileType  = 2; /* 2 = solution file. */
 
-        I = TECINI112((char*)"Example: Separate grid and solution files",
+        I = TECINI142((char*)"Example: Separate grid and solution files",
                       (char*)"P T",  /* Defines the variables for the solution file.
                                       * Note that these are different variables from
                                       * the grid file.
                                       */
                       SolutionFileName,
                       (char*)".",       /* scratch directory */
+                      &FileFormat,
                       &FileType,
                       &Debug,
                       &VIsDouble);
@@ -324,7 +320,7 @@ int main()
 
         char ZoneName[128];
         sprintf(ZoneName, "Dodecahedron Time=%g", SolutionTime);
-        I = TECZNE112(ZoneName,
+        I = TECZNE142(ZoneName,
                       &ZoneType,
                       &NumPts,
                       &NumElems,
@@ -348,7 +344,6 @@ int main()
         /* DOCEND */
 
         /* DOCSTART:gridsolution_solution_tecdat.txt*/
-
         /* TECDAT Parameters */
         double *P = new double[NumPts];
         double *T = new double[NumPts];
@@ -359,16 +354,15 @@ int main()
             T[K] = 1.0 + K + K;
         }
 
-        I = TECDAT112(&NumPts, P, &IsDouble);
-        I = TECDAT112(&NumPts, T, &IsDouble);
+        I = TECDAT142(&NumPts, P, &IsDouble);
+        I = TECDAT142(&NumPts, T, &IsDouble);
 
         delete P;
         delete T;
-
         /* DOCEND */
 
         /* DOCSTART:gridsolution_solution_tecend.txt*/
-        I = TECEND112();
+        I = TECEND142();
         /* DOCEND */
     }
         
