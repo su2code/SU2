@@ -384,6 +384,7 @@ private:
   su2double **Periodic_Center;         /*!< \brief Rotational center for each SEND_RECEIVE boundary. */
   su2double **Periodic_Rotation;      /*!< \brief Rotation angles for each SEND_RECEIVE boundary. */
   su2double **Periodic_Translate;      /*!< \brief Translation vector for each SEND_RECEIVE boundary. */
+  su2double ***Rotation_Matrix;      /*!< \brief Rotation matrix for each SEND_RECEIVE boundary. */
   string *Marker_CfgFile_TagBound;			/*!< \brief Global index for markers using config file. */
   unsigned short *Marker_All_KindBC,			/*!< \brief Global index for boundaries using grid information. */
   *Marker_CfgFile_KindBC;		/*!< \brief Global index for boundaries using config file. */
@@ -6345,6 +6346,25 @@ public:
    * \param[in] translate - Pointer to a vector containing the coordinate of the center.
    */
   void SetPeriodicTranslate(unsigned short val_index, su2double* translate);
+  
+  /*!
+   * \brief Set the rotation matrix for a periodic transformation.
+   * \param[in] val_index - Index corresponding to the periodic transformation.
+   */
+  void AllocateRotationMatrix(void);
+  
+  /*!
+   * \brief Set the rotation matrix for a periodic transformation.
+   * \param[in] val_index - Index corresponding to the periodic transformation.
+   */
+  void SetRotationMatrix(unsigned short val_index);
+  
+  /*!
+   * \brief Get the rotation matrix for a periodic transformation.
+   * \param[in] val_index - Index corresponding to the periodic transformation.
+   * \return A double pointer to the rotation matrix.
+   */
+  su2double** GetRotationMatrix(unsigned short val_index);
   
   /*!
    * \brief Get the translation vector for a periodic transformation.
