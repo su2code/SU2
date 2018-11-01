@@ -5693,7 +5693,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             }
 
             if (transition) { cout << "      Res[Int]" << "       Res[Re]"; }
-            else if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)";
+            if (rotating_frame && nDim == 3 && !turbo ) cout << "   CThrust(Total)" << "   CTorque(Total)";
             else if (aeroelastic) cout << "   CLift(Total)" << "   CDrag(Total)" << "         plunge" << "          pitch";
             else if (equiv_area) cout << "   CLift(Total)" << "   CDrag(Total)" << "    CPress(N-F)";
             else if (turbo){

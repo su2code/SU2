@@ -215,6 +215,19 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const bool SA_turb  = (turbModel == SA) || (turbModel == SA_NEG) || (turbModel == SA_E) ||
                         (turbModel == SA_COMP) || (turbModel == SA_E_COMP);
 
+  /*--- Minimum and maximum value of lamt. The recommended values are -0.1 and
+        0.1, see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+  //const su2double lamt_min = -0.15;
+  //const su2double lamt_max =  0.25;
+  const su2double lamt_min = -0.1;
+  const su2double lamt_max =  0.1;
+
+  /*--- Minimum and maximum value of the turbulence intensity. The recommended
+        value for the minimum is 0.00027, see
+        see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
+  const su2double turbIntensity_min = 0.00027;
+  const su2double turbIntensity_max = 2.0;
+
   /*--- Maximum number of iterations in the Newton algorithm for Re_theta_eq. ---*/
   const unsigned short maxIt = 25;
 
@@ -243,12 +256,12 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
   /*--- Compute the turbulence intensity. For Spalart-Allmaras type turbulence
         models the turbulence intensity of the free-stream is taken. For numerical
-        robustness, the turbulence intensity must be larger than 0.027 percent. ---*/
+        robustness, the turbulence intensity is clipped within practical limits. ---*/
   su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
   if(dist < 1.e-10) turbIntensity = 0.0;
   if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
 
-  turbIntensity = min(max(turbIntensity, 0.00027), 2.0);
+  turbIntensity = min(max(turbIntensity, turbIntensity_min), turbIntensity_max);
 
   /*--- Compute the value of dUds, which is the gradient of the total velocity
         in streamwise direction. ---*/
@@ -281,24 +294,33 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
     const su2double a3 = 405.689*TITerm;
 
     /* Determine the lower limit of Re_theta_eq, which corresponds
-       lambda_theta = -0.1. */
-    const su2double Re_theta_low = Re_theta_far*(1.0 - 0.1*a1 + 0.01*a2 - 0.001*a3);
+       lambda_theta = lamt_min. */
+    su2double lamt  = lamt_min;
+    su2double lamt2 = lamt*lamt;
+    su2double lamt3 = lamt*lamt2;
+    su2double F     = 1.0 + a1*lamt + a2*lamt2 + a3*lamt3;
+    su2double dF;
+
+    const su2double Re_theta_low = Re_theta_far*F;
 
     /*--- Newton algorithm to compute Re_theta_eq. ---*/
     unsigned short iter;
     su2double deltaReOld = 1.0;
     for(iter=0; iter<maxIt; ++iter) {
 
-      /* Value of lamt. For stability this term cannot be smaller than -0.1. */
-      su2double lamt = Re_theta_eq*Re_theta_eq*termLam;
-      lamt           = max(lamt, -0.1);
+      /* Value of lamt. For stability this term is clipped. */
+      lamt = Re_theta_eq*Re_theta_eq*termLam;
+      if(lamt < lamt_min) {
+        lamt        = lamt_min;
+        Re_theta_eq = Re_theta_low;
+      }
 
       /* Compute the value of the function F(lamt) and its derivative
          w.r.t. lamt. */
-      const su2double lamt2 = lamt*lamt;
-      const su2double lamt3 = lamt*lamt2;
-      const su2double F     = 1.0 + a1*lamt + a2*lamt2 + a3*lamt3;
-      const su2double dF    = a1 + 2.0*a2*lamt + 3.0*a3*lamt2;
+      lamt2 = lamt*lamt;
+      lamt3 = lamt*lamt2;
+      F     = 1.0 + a1*lamt + a2*lamt2 + a3*lamt3;
+      dF    = a1 + 2.0*a2*lamt + 3.0*a3*lamt2;
 
       /* Compute the function for which the root must be determined
          as well as its derivative w.r.t. Re_theta_eq. */
@@ -337,23 +359,31 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
     const su2double a2 = -35.0;
 
     /* Determine the upper limit of Re_theta_eq, which corresponds
-       lambda_theta = 0.1. */
-    const su2double Re_theta_upp = Re_theta_far*(1.0 + a1*(1.0-exp(a2*0.1)));
+       lambda_theta = lamt_max. */
+    su2double lamt = lamt_max;
+    su2double valExp = exp(a2*lamt);
+    su2double F      = 1.0 + a1*(1.0 - valExp);
+    su2double dF;
+
+    const su2double Re_theta_upp = Re_theta_far*F;
 
     /*--- Newton algorithm to compute Re_theta_eq. ---*/
     unsigned short iter;
     su2double deltaReOld = 1.0;
     for(iter=0; iter<maxIt; ++iter) {
 
-      /* Value of lamt. For stability this term cannot be larger than 0.1. */
-      su2double lamt = Re_theta_eq*Re_theta_eq*termLam;
-      lamt           = min(lamt, 0.1);
+      /* Value of lamt. For stability this term is clipped. */
+      lamt = Re_theta_eq*Re_theta_eq*termLam;
+      if(lamt > lamt_max) {
+        lamt = lamt_max;
+        Re_theta_eq = Re_theta_upp;
+      }
 
       /* Compute the value of the function F(lamt) and its derivative
          w.r.t. lamt. */
-      const su2double valExp = exp(a2*lamt);
-      const su2double F      = 1.0 + a1*(1.0 - valExp);
-      const su2double dF     = -a1*a2*valExp;
+      valExp = exp(a2*lamt);
+      F      = 1.0 + a1*(1.0 - valExp);
+      dF     = -a1*a2*valExp;
 
       /* Compute the function for which the root must be determined
          as well as its derivative w.r.t. Re_theta_eq. */
