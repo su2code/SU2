@@ -12487,8 +12487,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   unsigned short nDim = geometry->GetnDim();
   
   unsigned long iVar, jVar;
-  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE;
+  unsigned long iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Third = 0, nVar_Consv_Par = 0;
   
   su2double RefArea = config->GetRefArea();
   su2double Gamma = config->GetGamma();
@@ -12497,9 +12498,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
   
-  bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement        = (config->GetGrid_Movement());
-  bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
+  bool transition    = (config->GetKind_Trans_Model() == LM);
+  bool transition_BC = (config->GetKind_Trans_Model() == BC);
+  bool grid_movement = (config->GetGrid_Movement());
+  bool Wrt_Halo      = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo = NULL;
   
@@ -12526,14 +12528,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
    in this zone for output. ---*/
   
   switch (config->GetKind_Solver()) {
-    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
-    default: SecondIndex = NONE; break;
+    case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if( transition ) ThirdIndex = TRANS_SOL; break;
+    default: break;
   }
   
   nVar_First = solver[FirstIndex]->GetnVar();
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
+  if (ThirdIndex  != NONE) nVar_Third  = solver[ThirdIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
   
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
@@ -12573,6 +12576,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Nu_Tilde");
     }
   }
+
+  if (ThirdIndex != NONE) {
+    Variable_Names.push_back("GammaIntermittency");
+    Variable_Names.push_back("ReTheta");
+  }
   
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -12599,6 +12607,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Variable_Names.push_back("Limiter_Nu_Tilde");
         }
       }
+
+      if (ThirdIndex != NONE) {
+        Variable_Names.push_back("Limiter_GammaIntermittency");
+        Variable_Names.push_back("Limiter_ReTheta");
+      }
     }
     
     /*--- Add the residuals ---*/
@@ -12620,6 +12633,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           /*--- S-A variants ---*/
           Variable_Names.push_back("Residual_Nu_Tilde");
         }
+      }
+
+      if (ThirdIndex != NONE) {
+        Variable_Names.push_back("Residual_GammaIntermittency");
+        Variable_Names.push_back("Residual_ReTheta");
       }
     }
     
@@ -12702,7 +12720,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     
     /*--- Add the intermittency for the BC trans. model. ---*/
     
-    if (transition) {
+    if (transition_BC) {
       nVar_Par += 1;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
@@ -12845,7 +12863,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           iVar++;
         }
       }
-      
+
+      /*--- If transition solver is used, i.e., the third solver container is not
+            empty, then load data for the conservative transition variables. ---*/
+      if (ThirdIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Third; jVar++) {
+          Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar);
+          iVar++;
+        }
+      }
+
       /*--- If limiters and/or residuals are requested. ---*/
       if (!config->GetLow_MemoryOutput()) {
         
@@ -12863,6 +12890,14 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
               iVar++;
             }
           }
+          /*--- Transition Limiters ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+              iVar++;
+            }
+          }
+
         }
         
         /*--- Residuals ---*/
@@ -12876,6 +12911,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (SecondIndex != NONE) {
             for (jVar = 0; jVar < nVar_Second; jVar++) {
               Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+              iVar++;
+            }
+          }
+          /*--- Transition Residuals ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, jVar);
               iVar++;
             }
           }
@@ -12936,7 +12978,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         /*--- Load data for the intermittency of the BC trans. model. ---*/
         
-        if (transition) {
+        if (transition_BC) {
           Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
         }
         
@@ -12983,8 +13025,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   unsigned short nDim = geometry->GetnDim();
 
   unsigned long iVar, jVar;
-  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, iMarker, iVertex;
-  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
+  unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE, ThirdIndex = NONE, iMarker, iVertex;
+  unsigned long nVar_First = 0, nVar_Second = 0, nVar_Third = 0, nVar_Consv_Par = 0;
 
   su2double RefArea = config->GetRefArea();
   su2double RefVel2 = 0.0;
@@ -12993,12 +13035,13 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
   su2double *Grid_Vel = NULL;
 
-  bool transition           = (config->GetKind_Trans_Model() == BC);
-  bool grid_movement        = (config->GetGrid_Movement());
-  bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
-  bool variable_density     = (config->GetKind_DensityModel() == VARIABLE);
-  bool energy               = config->GetEnergy_Equation();
-  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  bool transition          = (config->GetKind_Trans_Model() == LM);
+  bool transition_BC       = (config->GetKind_Trans_Model() == BC);
+  bool grid_movement       = (config->GetGrid_Movement());
+  bool Wrt_Halo            = config->GetWrt_Halo(), isPeriodic;
+  bool variable_density    = (config->GetKind_DensityModel() == VARIABLE);
+  bool energy              = config->GetEnergy_Equation();
+  bool weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
 
   int *Local_Halo = NULL;
 
@@ -13035,14 +13078,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
   switch (config->GetKind_Solver()) {
     case EULER : case NAVIER_STOKES: FirstIndex = FLOW_SOL; SecondIndex = NONE; break;
-    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; break;
+    case RANS : FirstIndex = FLOW_SOL; SecondIndex = TURB_SOL; if( transition ) ThirdIndex = TRANS_SOL; break;
     default: SecondIndex = NONE; break;
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
   if ((!energy) && (!weakly_coupled_heat)) nVar_First--;
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
-  nVar_Consv_Par = nVar_First + nVar_Second;
+  if (ThirdIndex  != NONE) nVar_Third  = solver[ThirdIndex]->GetnVar();
+  nVar_Consv_Par = nVar_First + nVar_Second + nVar_Third;
 
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Register the variables that will be output. To register a  ---*/
@@ -13085,6 +13129,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     }
   }
 
+  if (ThirdIndex != NONE) {
+    Variable_Names.push_back("GammaIntermittency");
+    Variable_Names.push_back("ReTheta");
+  }
+
+
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
 
@@ -13111,6 +13161,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Variable_Names.push_back("Limiter_Nu_Tilde");
         }
       }
+
+      if (ThirdIndex != NONE) {
+        Variable_Names.push_back("Limiter_GammaIntermittency");
+        Variable_Names.push_back("Limiter_ReTheta");
+      }
     }
 
     /*--- Add the residuals ---*/
@@ -13133,6 +13188,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           /*--- S-A variants ---*/
           Variable_Names.push_back("Residual_Nu_Tilde");
         }
+      }
+
+      if (ThirdIndex != NONE) {
+        Variable_Names.push_back("Residual_GammaIntermittency");
+        Variable_Names.push_back("Residual_ReTheta");
       }
     }
 
@@ -13211,7 +13271,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
     /*--- Add the intermittency for the BC trans. model. ---*/
 
-    if (transition) {
+    if (transition_BC) {
       nVar_Par += 1;
       if ((config->GetOutput_FileFormat() == PARAVIEW) ||
           (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
@@ -13353,6 +13413,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         }
       }
 
+      /*--- If transition solver is used, i.e., the third solver container is not
+            empty, then load data for the conservative transition variables. ---*/
+      if (ThirdIndex != NONE) {
+        for (jVar = 0; jVar < nVar_Third; jVar++) {
+          Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetSolution(jVar); iVar++;
+        }
+      }
+
       /*--- If limiters and/or residuals are requested. ---*/
       if (!config->GetLow_MemoryOutput()) {
 
@@ -13370,6 +13438,13 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
               iVar++;
             }
           }
+          /*--- Transition Limiters ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->node[iPoint]->GetLimiter_Primitive(jVar);
+              iVar++;
+            }
+          }
         }
 
         /*--- Residuals ---*/
@@ -13383,6 +13458,13 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           if (SecondIndex != NONE) {
             for (jVar = 0; jVar < nVar_Second; jVar++) {
               Local_Data[jPoint][iVar] = solver[SecondIndex]->LinSysRes.GetBlock(iPoint, jVar);
+              iVar++;
+            }
+          }
+          /*--- Transition Residuals ---*/
+          if (ThirdIndex != NONE) {
+            for (jVar = 0; jVar < nVar_Third; jVar++) {
+              Local_Data[jPoint][iVar] = solver[ThirdIndex]->LinSysRes.GetBlock(iPoint, jVar);
               iVar++;
             }
           }
@@ -13443,7 +13525,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
         /*--- Load data for the intermittency of the BC trans. model. ---*/
 
-        if (transition) {
+        if (transition_BC) {
           Local_Data[jPoint][iVar] = solver[TURB_SOL]->node[iPoint]->GetGammaBC(); iVar++;
         }
 
