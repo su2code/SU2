@@ -2734,20 +2734,23 @@ void CPBIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     local_Residual = LinSysRes.GetBlock(iPoint);
     
     if (!adjoint) {
+		//cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
       for (iVar = 0; iVar < nVar; iVar ++ ) {
         Res = local_Residual[iVar];
         node[iPoint]->AddSolution(iVar, -alfa*Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
         Mom_Coeff[iVar] = 1.0/(Delta*alfa);
+        //cout<<Res<<"\t";
       }
+      //cout<<endl;
       node[iPoint]->Set_Mom_Coeff(Mom_Coeff);
     }
        
   }
   SetIterLinSolver(1);
   /*--- MPI solution ---*/
-  
+  //cout<<endl;
   Set_MPI_Solution(geometry, config);
   
   /*--- Compute the root mean square residual ---*/
@@ -3239,7 +3242,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  Res_MassFlux += node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux();
 	  Net_Mass += node[iPoint]->GetMassFlux();
-	  //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<node[iPoint]->GetMassFlux()<<endl;
+	  //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<node[iPoint]->GetMassFlux()<<endl;
   }
   
   
@@ -3339,7 +3342,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	}
   }
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	  cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t";
+	  //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t";
 	  for (iVar = 0; iVar < nVar; iVar++) {
            Vel = node[iPoint]->GetVelocity(iVar);
            Vel = Vel - vel_corr[iPoint][iVar];
@@ -3347,9 +3350,9 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
            Vel = rho*Vel;
            node[iPoint]->SetSolution(iVar,Vel);
            factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
-           cout<<vel_corr[iPoint][iVar]<<"\t";
+           //cout<<vel_corr[iPoint][iVar]<<"\t";
 		}
-		cout<<factor<<"\t"<<solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0)<<"\t"<<node[iPoint]->GetMassFlux()<<endl;
+		//cout<<endl;//<<factor<<"\t"<<solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0)<<"\t"<<node[iPoint]->GetMassFlux()<<endl;
    }
    
    

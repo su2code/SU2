@@ -344,7 +344,7 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
       Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
       
       Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
-      //cout<<iDim<<" "<<Mean_GradPoissonVar[iVar][iDim]<<", "<<Normal[iDim]<<", "<<Coeff_Mean<<endl;
+      //cout<<Mean_GradPoissonVar[iVar][iDim]<<"\t";
     }
     Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }

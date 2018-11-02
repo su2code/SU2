@@ -13062,6 +13062,9 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   }
 
   nVar_First = solver[FirstIndex]->GetnVar();
+  /*--- For pressure based solver, Pressure is not part of the solution but we still want 
+   * it in the output and will be written from Primitive variables ---*/
+  if (pressure_based) nVar_First += 1; 
   if (SecondIndex != NONE) nVar_Second = solver[SecondIndex]->GetnVar();
   nVar_Consv_Par = nVar_First + nVar_Second;
 
@@ -13349,6 +13352,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
 
       /*--- Load the conservative variable states for the mean flow variables. ---*/
       if (pressure_based) {
+		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetPressure(); iVar++;
 		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(0); iVar++;
 		  Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetSolution(1); iVar++;
 		  if (nDim == 3) {
