@@ -2729,7 +2729,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+              (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
           }
@@ -8500,12 +8501,11 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   
   nDim = geometry->GetnDim();
   
-  if ((original) && (iFFDBox == 0)) new_file = true;
+  if (original) new_file = true;
   else new_file = false;
 
-  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
-  else SPRINTF (FFDBox_filename, "ffd_boxes_def.vtk");
-  
+  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes_%d.vtk", SU2_TYPE::Int(iFFDBox));
+  else SPRINTF (FFDBox_filename, "ffd_boxes_def_%d.vtk", SU2_TYPE::Int(iFFDBox));
   
   FFDBox_file.open(FFDBox_filename, ios::out);
   FFDBox_file << "# vtk DataFile Version 3.0" << endl;
