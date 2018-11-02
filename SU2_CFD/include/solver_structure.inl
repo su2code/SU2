@@ -2278,3 +2278,7 @@ inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+
+inline void CRadP1Solver::SetTemperature_Inf(su2double t_inf) {Temperature_Inf = t_inf;}
+
+inline su2double CRadP1Solver::GetTemperature_Inf(void) { return Temperature_Inf; }

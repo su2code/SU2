@@ -10047,6 +10047,10 @@ public:
 class CRadP1Solver: public CRadSolver {
 private:
 
+protected:
+
+  su2double Temperature_Inf;      /*!< \brief Temperature at the infinity. */
+
 public:
   /*!
    * \brief Constructor of the class.
@@ -10203,6 +10207,19 @@ public:
    */
   void SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration);
+
+  /*!
+   * \brief Set the freestream temperature.
+   * \param[in] Value of freestream temperature.
+   */
+  void SetTemperature_Inf(su2double t_inf);
+
+
+  /*!
+   * \brief Get the temperature value at infinity.
+   * \return Value of the temperature at infinity.
+   */
+  su2double GetTemperature_Inf(void);
 
 };
 
@@ -12556,6 +12573,7 @@ private:
   su2double Total_Sens_ModVel;    /*!< \brief Total sensitivity to inlet velocity (incompressible). */
   su2double ObjFunc_Value;        /*!< \brief Value of the objective function. */
   su2double Mach, Alpha, Beta, Pressure, Temperature, BPressure, ModVel;
+  su2double TemperatureRad, Total_Sens_Temp_Rad;
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */
   
   su2double *Solution_Geometry; /*!< \brief Auxiliary vector for the geometry solution (dimension nDim instead of nVar). */

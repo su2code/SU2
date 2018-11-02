@@ -174,8 +174,8 @@ void CAvgGradCorrected_P1::ComputeResidual(su2double *val_residual, su2double **
   AD::StartPreacc();
   AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
   AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
-  AD::SetPreaccIn(RadVar_Grad_i[0],nDim); AD::SetPreaccIn(RadVar_Grad_j[0],nDim);
+  AD::SetPreaccIn(RadVar_i,nVar); AD::SetPreaccIn(RadVar_j,nVar);
+  AD::SetPreaccIn(RadVar_Grad_i,nVar,nDim); AD::SetPreaccIn(RadVar_Grad_j,nVar,nDim);
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 

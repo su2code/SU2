@@ -1824,6 +1824,9 @@ void CDiscAdjFluidIteration::Iterate(COutput *output,
 
     solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
                                                                               config_container[val_iZone]);
+
+    solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL]->ExtractAdjoint_Variables(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+
   }
 
 
@@ -1881,6 +1884,8 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 
     if (radiation) {
       solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterSolution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+
+      solver_container[iZone][iInst][MESH_0][ADJRAD_SOL]->RegisterVariables(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     }
   }
   if (kind_recording == MESH_COORDS){
