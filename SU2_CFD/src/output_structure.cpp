@@ -5040,6 +5040,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           Total_Sens_BPressure = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_BPress();
           Total_Sens_ModVel    = solver_container[val_iZone][val_iInst][FinestMesh][ADJFLOW_SOL]->GetTotal_Sens_ModVel();
 
+          if (radiation){
+            Total_Sens_Temp      += solver_container[val_iZone][val_iInst][FinestMesh][ADJRAD_SOL]->GetTotal_Sens_Temp();
+          }
+
           /*--- Adjoint flow residuals ---*/
           
           for (iVar = 0; iVar < nVar_AdjFlow; iVar++) {
@@ -5130,8 +5134,15 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
     if (radiation){
-      for (iVar = 0; iVar < nVar_Rad; iVar++) {
-        residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][RAD_SOL]->GetRes_RMS(iVar);
+      if (disc_adj){
+        for (iVar = 0; iVar < nVar_Rad; iVar++) {
+          residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJRAD_SOL]->GetRes_RMS(iVar);
+        }
+      }
+      else{
+        for (iVar = 0; iVar < nVar_Rad; iVar++) {
+          residual_rad[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][RAD_SOL]->GetRes_RMS(iVar);
+        }
       }
     }
 
@@ -5753,6 +5764,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 else {cout << "   Res[Psi_Press]" << "   Res[Psi_Velx]";}
               }
               else cout << "   Res[Psi_Rho]" << "     Res[Psi_E]";
+
+              if (radiation){
+                cout << "     Res[Psi_P1]";
+              }
+
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -5807,6 +5823,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout << "   Res[Psi_Velx]";}}
                 else cout << "     Res[Psi_E]";
               }
+
+              if (radiation){
+                cout << "    Res[Psi_P1]";
+              }
+
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -6154,6 +6175,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 else {cout.width(16); cout << log10(residual_adjflow[1]);}
               }
 
+              if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
+
               if (disc_adj) {
                 cout.precision(4);
                 cout.setf(ios::scientific, ios::floatfield);
@@ -6213,6 +6236,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout.width(15); cout << log10(residual_adjflow[1]);}
                 }
               }
+
+            if (radiation) { cout.width(15); cout << log10(residual_rad[0]); }
+
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {

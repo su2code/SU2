@@ -323,7 +323,7 @@ void CRadSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   solver[MESH_0][RAD_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 
   /*--- Preprocess the fluid solver to compute the primitive variables ---*/
-  solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
 
   /*--- Postprocess the radiation solver to compute the source term that goes into the fluid equations ---*/
   solver[MESH_0][RAD_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
@@ -347,6 +347,7 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
 
   unsigned long iPoint;
   unsigned short iVar, iDim;
+  unsigned short direct_diff = config->GetDirectDiff();
 
   nDim =          geometry->GetnDim();
   nPoint =        geometry->GetnPoint();
@@ -394,6 +395,28 @@ CRadP1Solver::CRadP1Solver(CGeometry* geometry, CConfig *config) : CRadSolver(ge
   LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
   LinSysAux.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+  /*--- Read farfield conditions from config ---*/
+  Temperature_Inf = config->GetTemperature_FreeStreamND();
+
+  /*--- Initialize the secondary values for direct derivative approxiations ---*/
+
+  switch(direct_diff){
+    case NO_DERIVATIVE: case D_DENSITY:
+    case D_PRESSURE: case D_VISCOSITY:
+    case D_MACH: case D_AOA:
+    case D_SIDESLIP: case D_REYNOLDS:
+    case D_TURB2LAM: case D_DESIGN:
+      /*--- Not necessary here ---*/
+      break;
+    case D_TEMPERATURE:
+      SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
+      break;
+    default:
+      break;
+  }
+
+  SetTemperature_Inf(Temperature_Inf);
 
   /*--- Define some auxiliary vectors for computing flow variable
    gradients by least squares, S matrix := inv(R)*traspose(inv(R)),
@@ -735,8 +758,8 @@ void CRadP1Solver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   /*--- Compute the constant for the wall theta ---*/
   Theta = Wall_Emissivity / (2.0*(2.0 - Wall_Emissivity));
 
-    /*--- Retrieve the specified wall temperature ---*/
-  Twall = config->GetTemperature_FreeStreamND()/config->GetTemperature_Ref();
+  /*--- Retrieve the specified wall temperature ---*/
+  Twall = GetTemperature_Inf();
 
   /*--- Loop over all of the vertices on this boundary marker ---*/
 
