@@ -98,7 +98,7 @@ private:
   *LyVector, *FzVector;           /*!< \brief Arrays of the Linelet preconditioner methodology. */
   unsigned long max_nElem;
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   void * MatrixMatrixProductJitter;                   		/*!< \brief Jitter handle for MKL JIT based GEMM. */
   dgemm_jit_kernel_t MatrixMatrixProductKernel;               	/*!< \brief MKL JIT based GEMM kernel. */
   void * MatrixVectorProductJitterBetaZero;           		/*!< \brief Jitter handle for MKL JIT based GEMV. */
