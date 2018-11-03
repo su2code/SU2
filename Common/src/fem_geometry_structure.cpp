@@ -6304,7 +6304,7 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
             }
             case LOGARITHMIC_WALL_MODEL: {
               if(rank == MASTER_NODE)
-                cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
+                cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
               
               boundaries[iMarker].wallModel = new CWallModelLogLaw;
               break;
