@@ -138,15 +138,17 @@ protected:
 public:
 
   /*!
-   * \brief Constructor of the class.
+   * \brief Default constructor of the class.
    */
   CElementProperty(void);
 
    /*!
-    * \overload
-    * \param[in] val_iGauss - ID of the Gaussian Point
-    * \param[in] val_nDim - Number of dimensions of the problem.
-    * \param[in] config - Definition of the particular problem.
+    * \brief Constructor of the class.
+    * \param[in] valMat_Model - Type of material model (i.e. numerics) for the element, see FEA_TERM etc. in option_structure.hpp.
+    * \param[in] valMat_Prop - Index of the physical properties (E,nu,rho,rho_dead_load) assigned to the element.
+    * \param[in] valElectric_Prop - Index of the electric properties.
+    * \param[in] valDV - Index of the design variable assigned to the element (bound to a material property by "DESIGN_VARIABLE_FEA").
+    * \param[in] valDensity - Value for Design and Physical densities (topology optimization variables).
   */
   CElementProperty(unsigned long valMat_Model, unsigned long valMat_Prop, unsigned long valElectric_Prop, unsigned long valDV, su2double valDensity = 1.0);
 
@@ -155,24 +157,54 @@ public:
    */
   virtual ~CElementProperty(void);
 
+  /*!
+   * \brief Get the material model to use for the element.
+   */
   unsigned long GetMat_Mod(void);
 
+  /*!
+   * \brief Get index of the physical properties.
+   */
   unsigned long GetMat_Prop(void);
 
+  /*!
+   * \brief Get index of the electric properties.
+   */
   unsigned long GetElectric_Prop(void);
 
+  /*!
+   * \brief Get index of the design variable.
+   */
   unsigned long GetDV(void);
   
+  /*!
+   * \brief Set the Design density (topology optimization variable).
+   */
   void SetDesignDensity(su2double valDensity);
   
+  /*!
+   * \brief Get the value of the Design density.
+   */
   su2double GetDesignDensity(void);
   
+  /*!
+   * \brief Set the Physical density (used to penalize element stiffness by the FEM solver).
+   */
   void SetPhysicalDensity(su2double valDensity);
   
+  /*!
+   * \brief Get the value of the Physical density.
+   */
   su2double GetPhysicalDensity(void);
   
+  /*!
+   * \brief Extract the derivative of the Design density.
+   */
   su2double GetAdjointDensity(void);
   
+  /*!
+   * \brief Register the Design density as an AD input variable.
+   */
   void RegisterDensity(void);
 };
 
