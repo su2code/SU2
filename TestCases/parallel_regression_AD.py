@@ -239,6 +239,22 @@ def main():
 
     pass_list = [ test.run_test() for test in test_list ]
 
+    ##################################################
+    ### Structural Adjoint - Topology Optimization ###
+    ##################################################
+
+    # test discrete_adjoint.py
+    discadj_topol_optim = TestCase('discadj_topol_optim')
+    discadj_topol_optim.cfg_dir = "fea_topology"
+    discadj_topol_optim.cfg_file  = "config.cfg"
+    discadj_topol_optim.test_iter = 0
+    discadj_topol_optim.su2_exec  = "parallel_computation.py -f"
+    discadj_topol_optim.timeout   = 1600
+    discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
+    discadj_topol_optim.test_file = "grad_ref_node.dat"
+    pass_list.append(discadj_topol_optim.run_filediff())
+    test_list.append(discadj_topol_optim)
+
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')
