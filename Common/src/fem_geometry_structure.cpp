@@ -5821,7 +5821,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
 
       /*--- Check if LAPACK/MKL can be used to compute the inverse. ---*/
 
-#if defined (HAVE_MKL) || defined(HAVE_LAPACK)
+#if (defined(HAVE_MKL) || defined(HAVE_LAPACK)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
       /* The inverse can be computed using the Lapack routines dpotrf
          and dpotri. As the mass matrix is positive definite, a
