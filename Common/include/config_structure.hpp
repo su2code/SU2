@@ -530,9 +530,12 @@ private:
   Kind_Struct_Solver,		/*!< \brief Determines the geometric condition (small or large deformations) for structural analysis. */
   Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
+  unsigned short Kind_Trans_Model;                      /*!< \brief Transition model definition. */
+  bool           LM_Cross_Flow_Instability;             /*!< \brief Enable or disable the cross flow instability term in the LM transition model. */
   unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
-  unsigned short Kind_Trans_Model,			/*!< \brief Transition model definition. */
-  Kind_ActDisk, Kind_Engine_Inflow, Kind_Inlet, *Kind_Inc_Inlet, *Kind_Data_Riemann, *Kind_Data_Giles;           /*!< \brief Kind of inlet boundary treatment. */
+  unsigned short Kind_ActDisk, Kind_Engine_Inflow, 
+                 Kind_Inlet, *Kind_Inc_Inlet,
+                 *Kind_Data_Riemann, *Kind_Data_Giles;  /*!< \brief Kind of inlet boundary treatment. */
   unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -799,7 +802,6 @@ private:
   Density_FreeStream,     /*!< \brief Free-stream density of the fluid. */
   Viscosity_FreeStream,     /*!< \brief Free-stream viscosity of the fluid.  */
   Tke_FreeStream,     /*!< \brief Total turbulent kinetic energy of the fluid.  */
-  Intermittency_FreeStream,     /*!< \brief Freestream intermittency (for sagt transition model) of the fluid.  */
   TurbulenceIntensity_FreeStream,     /*!< \brief Freestream turbulent intensity (for sagt transition model) of the fluid.  */
   Turb2LamViscRatio_FreeStream,          /*!< \brief Ratio of turbulent to laminar viscosity. */
   NuFactor_FreeStream,  /*!< \brief Ratio of turbulent to laminar viscosity. */
@@ -1915,12 +1917,6 @@ public:
    * \return Non-dimensionalized freestream viscosity.
    */
   su2double GetOmega_FreeStream(void);
-  
-  /*!
-   * \brief Get the value of the non-dimensionalized freestream intermittency.
-   * \return Non-dimensionalized freestream intermittency.
-   */
-  su2double GetIntermittency_FreeStream(void);
   
   /*!
    * \brief Get the value of the non-dimensionalized freestream turbulence intensity.
@@ -4044,6 +4040,13 @@ public:
    * \return Kind of the transion model.
    */
   unsigned short GetKind_Trans_Model(void);
+
+  /*!
+   * \brief Get whether or not the cross flow instability term of the
+            LM transition model must be included.
+   * \return Whether or not the cross flow term must be included.
+   */
+  bool GetLM_Cross_Flow_Instability(void);
 
   /*!
    * \brief Get the kind of the subgrid scale model.

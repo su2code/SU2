@@ -120,11 +120,14 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim,
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
   /*--- Store the closure constants of the LM model in a more readable way. ---*/
-  ca1     = constants[0];
-  ca2     = constants[1];
-  ce1     = constants[2];
-  ce2     = constants[3];
-  cthetat = constants[4];
+  ca1          = constants[0];
+  ca2          = constants[1];
+  ce1          = constants[2];
+  ce2          = constants[3];
+  cthetat      = constants[4];
+  Flength_CF   = constants[8];
+  C_Fonset1_CF = constants[9];
+  CHe_max      = constants[10];
 }
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
@@ -231,8 +234,18 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   /*--- Maximum number of iterations in the Newton algorithm for Re_theta_eq. ---*/
   const unsigned short maxIt = 25;
 
+  /*--- Get the infinity state, which is needed for the cross flow instability. ---*/
+  const su2double Density_Inf   = config->GetDensity_FreeStreamND();
+  const su2double Pressure_Inf  = config->GetPressure_FreeStreamND();
+  const su2double *Velocity_Inf = config->GetVelocity_FreeStreamND();
+
+  /*--- Get the specific heat ratio. ---*/
+  const su2double Gamma = config->GetGamma();
+  const su2double Gamma_Minus_One = Gamma - 1.0;
+
   /*--- More readable storage of some variables. ---*/
   const su2double rho    = V_i[nDim+2];
+  const su2double p      = V_i[nDim+1];
   const su2double *vel   = V_i + 1;
   const su2double muLam  = Laminar_Viscosity_i;
   const su2double muTurb = Eddy_Viscosity_i;
@@ -247,19 +260,25 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const su2double intermittency = TransVar_i[0];
   const su2double Re_theta      = TransVar_i[1];
 
-  /*--- Compute the velocity magnitude squared. ---*/
-  su2double vel2 = 0.0;
-  for(unsigned short iDim = 0; iDim < nDim; ++iDim)
-    vel2 += vel[iDim]*vel[iDim];
+  /*--- Compute the velocity magnitude, velocity magnitude squared
+        of the free-stream and helicity. ---*/
+  su2double vel2 = 0.0, velInf2 = 0.0, helicity = 0.0;
+  for(unsigned short iDim = 0; iDim < nDim; ++iDim) {
+    vel2     += vel[iDim]*vel[iDim];
+    helicity += vel[iDim]*Vorticity_i[iDim];
+    velInf2  += Velocity_Inf[iDim]*Velocity_Inf[iDim];
+  }
 
-  vel2 = max(vel2, 1.e-20);
+  vel2 = max(vel2, 1.e-25);
+  const su2double velMag = sqrt(vel2);
 
   /*--- Compute the turbulence intensity. For Spalart-Allmaras type turbulence
         models the turbulence intensity of the free-stream is taken. For numerical
         robustness, the turbulence intensity is clipped within practical limits. ---*/
-  su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
-  if(dist < 1.e-10) turbIntensity = 0.0;
-  if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
+  // su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
+  // if(dist < 1.e-10) turbIntensity = 0.0;
+  // if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
+  su2double turbIntensity = config->GetTurbulenceIntensity_FreeStream();
 
   turbIntensity = min(max(turbIntensity, turbIntensity_min), turbIntensity_max);
 
@@ -450,10 +469,71 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
   const su2double Ftheta_t = min(max(val1,val3),1.0);
 
+  /*--- Compute the helicity Reynolds number. ---*/
+  const su2double Re_helicity = rho*dist*dist*helicity/(muLam*velMag);
+
+  /*--- Compute the velocity at the edge of the boundary layer. Here it is
+        assumed that the isentropic relation for total pressure is valid in
+        the outer flow and the pressure is constant through the boundary
+        layer. Note that this relation is not valid when motion is present. ---*/
+  const su2double pRatio = p/Pressure_Inf;
+  tmp  = 1.0 - pow(pRatio,(Gamma_Minus_One/Gamma));
+  tmp *= 2.0*Gamma*Pressure_Inf/(Gamma_Minus_One*Density_Inf);
+  tmp += velInf2;
+
+  su2double uEdge = sqrt(max(tmp,0.0));
+  uEdge = max(uEdge, 0.01*velMag);
+
+  /*--- Compute the dot product of the velocity and the pressure gradient.
+        Store this in duEdgeDs, because later on this value is transformed
+        to the gradient of uEdge in the direction of the streamline. ---*/
+  su2double duEdgeDs = 0.0;
+  for(unsigned short iDim=0; iDim<nDim; ++iDim)
+    duEdgeDs += vel[iDim]*PrimVar_Grad_i[nDim+1][iDim];
+
+  /*--- Multiply the dot product of velocity and pressure gradient with
+        the appropriate variables to obtain the gradient of the edge
+        velocity in the direction of the streamline. ---*/
+  tmp = pow(pRatio, 1.0/Gamma);
+  duEdgeDs *= -1.0/(tmp*Density_Inf*uEdge*velMag);
+
+  /*--- Compute the length scale that represents the momentum thickness
+        where the helicity Reynolds number reaches its maximum value
+        in the boundary layer and the modified pressure gradient parameter
+        that is needed to compute the shape factor H12. ---*/
+  const su2double lenHelMax = 2.0*dist/(15.0*CHe_max);
+  const su2double lamPlus   = rho*lenHelMax*lenHelMax*duEdgeDs/muLam;
+
+  /*--- Compute the empirical correlation for the helicity Reynolds number
+        at transition onset. ---*/
+  const su2double lamPlus2 = lamPlus*lamPlus;
+  const su2double lamPlus3 = lamPlus*lamPlus2;
+  const su2double lamPlus4 = lamPlus*lamPlus3;
+
+  tmp = -8838.4*lamPlus4 + 1105.1*lamPlus3 - 67.962*lamPlus2 + 17.574*lamPlus + 2.0593;
+  const su2double H12 = 4.02923 - sqrt(max(tmp,0.0));
+
+  tmp = -456.83*H12 + 1332.7;
+  const su2double Re_helicity_onset = max(tmp, 150.0);
+
+  /*--- Compute the value of Fonset_CF. ---*/
+  const su2double Fonset1_CF = Re_helicity/(C_Fonset1_CF*Re_helicity_onset);
+
+  tmp = Fonset1_CF*Fonset1_CF*Fonset1_CF*Fonset1_CF;
+  const su2double Fonset2_CF = min(max(Fonset1_CF,tmp), 2.0);
+
+  tmp = 1.0 - 0.125*RT*RT*RT;
+  const su2double Fonset3_CF = max(tmp, 0.0);
+
+  tmp = Fonset2_CF - Fonset3_CF;
+  const su2double Fonset_CF = max(tmp, 0.0);
+
   /*--- Compute the production and destruction term of the intermittency
-        equation. ---*/
-  const su2double Pintermittency = Flength*ca1*rho*S*sqrt(intermittency*Fonset)
-                                 * (1.0 - ce1*intermittency);
+        equation. Note that Flength_CF is set to zero when the crossflow
+       	instability part is switched off. ---*/
+  const su2double termPInter     = Flength*sqrt(intermittency*Fonset)
+                                 + Flength_CF*sqrt(intermittency*Fonset_CF);
+  const su2double Pintermittency = termPInter*ca1*rho*S*(1.0 - ce1*intermittency);
   const su2double Eintermittency = ca2*rho*Vort*Fturb
                                  * intermittency*(ce2*intermittency - 1.0);
 
@@ -466,9 +546,8 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   val_residual[0] = Volume*(Pintermittency - Eintermittency);
   val_residual[1] = Volume*PRe_theta;
 
-
   val_Jacobian_i[0][0] = -Volume*(2.0*ca2*ce2*Vort*intermittency*Fturb
-                       +          ca1*ce1*Flength*S*sqrt(intermittency*Fonset));
+                       +          ca1*ce1*S*termPInter);
   val_Jacobian_i[0][1] =  0.0;
   val_Jacobian_i[1][0] =  0.0;
   val_Jacobian_i[1][1] = -Volume*cthetat*rho*vel2/(500.0*muLam);

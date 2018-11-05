@@ -494,6 +494,11 @@ inline void CSourcePieceWise_TurbSST::SetCrossDiff(su2double val_CDkw_i, su2doub
   CDkw_j = val_CDkw_j;
 }      
 
+inline void CSourcePieceWise_TurbSST::SetGammaEff(su2double val_gammaEff_i, su2double val_gammaEff_j) {
+  gammaEff_i = val_gammaEff_i;
+  gammaEff_j = val_gammaEff_j;
+}
+
 inline CUpwSca_TurbSA::~CUpwSca_TurbSA(void) { }
 
 inline CAvgGrad_TurbSA::~CAvgGrad_TurbSA(void) { }

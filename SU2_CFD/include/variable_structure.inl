@@ -495,7 +495,8 @@ inline su2double **CVariable::GetGradient_Secondary(void) { return NULL; }
 
 inline su2double *CVariable::GetLimiter_Secondary(void) { return NULL; }
 
-inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density) { }
+inline void CVariable::SetBlendingFunc(su2double val_viscosity, su2double val_dist,
+                                       su2double val_density,   bool transitionLM) { }
 
 inline su2double CVariable::GetF1blending(void) { return 0; }
 

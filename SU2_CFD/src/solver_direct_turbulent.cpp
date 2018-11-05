@@ -47,6 +47,7 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
   nMarker       = 0;
   Inlet_TurbVars = NULL;
   
+  transitionSolver = false;
 }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
@@ -65,6 +66,7 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
   
+  transitionSolver = false;
 }
 
 CTurbSolver::~CTurbSolver(void) {
@@ -87,7 +89,6 @@ CTurbSolver::~CTurbSolver(void) {
   if (upperlimit != NULL) delete [] upperlimit;
   if (nVertex != NULL) delete [] nVertex;
   
-
 }
 
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -745,10 +746,15 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   /*--- Update solution (system written in terms of increments) ---*/
   
   if (!adjoint) {
-    
+
+    /*--- Store the turbulence solver. In case this routine is used for
+          the transition solver (LM model), overwrite it to SST, because
+          the treatment for the LM model is identical to SST. ---*/
+    unsigned short turbModel = config->GetKind_Turb_Model();
+    if (transitionSolver) turbModel = SST;
+
     /*--- Update and clip turbulent solution ---*/
-    
-    switch (config->GetKind_Turb_Model()) {
+    switch (turbModel) {
         
       case SA: case SA_E: case SA_COMP: case SA_E_COMP: 
         
@@ -782,7 +788,7 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
           for (iVar = 0; iVar < nVar; iVar++) {
             node[iPoint]->AddConservativeSolution(iVar, config->GetRelaxation_Factor_Turb()*LinSysSol[iPoint*nVar+iVar], density, density_old, lowerlimit[iVar], upperlimit[iVar]);
           }
-          
+
         }
         
         break;
@@ -819,6 +825,12 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
+  /*--- Store the turbulence solver. In case this routine is used for
+        the transition solver (LM model), overwrite it to SST, because
+        the treatment for the LM model is identical to SST. ---*/
+  unsigned short turbModel = config->GetKind_Turb_Model();
+  if (transitionSolver) turbModel = SST;
+
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -847,7 +859,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Compute the dual time-stepping source term based on the chosen
        time discretization scheme (1st- or 2nd-order).---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if (turbModel == SST) {
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
@@ -937,7 +949,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Multiply by density at node i for the SST model ---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if (turbModel == SST) {
         if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
         else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
@@ -954,7 +966,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       
       /*--- Multiply by density at node j for the SST model ---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if (turbModel == SST) {
         if (incompressible) Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetDensity(); // Temporary fix
         else Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
@@ -995,7 +1007,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- Multiply by density at node i for the SST model ---*/
         
-        if (config->GetKind_Turb_Model() == SST) {
+        if (turbModel == SST) {
           if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
           else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
           for (iVar = 0; iVar < nVar; iVar++)
@@ -1032,7 +1044,7 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
        introduction of the GCL term above, the remainder of the source residual
        due to the time discretization has a new form.---*/
       
-      if (config->GetKind_Turb_Model() == SST) {
+      if (turbModel == SST) {
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
@@ -3780,6 +3792,9 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
   su2double rho = 0.0, mu = 0.0, dist, omega, kine, strMag, F2, muT, zeta;
   su2double a1 = constants[7];
   unsigned long iPoint;
+
+  /*--- Determine whether or not the LM transition model is used. ---*/
+  const bool transitionLM = config->GetKind_Trans_Model() == LM;
   
   /*--- Compute mean flow and turbulence gradients ---*/
   
@@ -3801,7 +3816,7 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
     
     strMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
 
-    node[iPoint]->SetBlendingFunc(mu, dist, rho);
+    node[iPoint]->SetBlendingFunc(mu, dist, rho, transitionLM);
     
     F2 = node[iPoint]->GetF2blending();
     
@@ -3820,9 +3835,15 @@ void CTurbSSTSolver::Postprocessing(CGeometry *geometry, CSolver **solver_contai
 void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
   
   unsigned long iPoint;
+
+  /*--- Determine whether or not a transition model is used, only LM at the moment,
+        and initialize the effective intermittency to 1, which is the value of
+        the intermittency when no transition model is used. ---*/
+  const bool transitionLM = config->GetKind_Trans_Model() == LM;
+  su2double gammaEff = 1.0;
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    
+
     /*--- Primitive variables w/o reconstruction ---*/
     
     numerics->SetPrimitive(solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive(), NULL);
@@ -3861,6 +3882,11 @@ void CTurbSSTSolver::Source_Residual(CGeometry *geometry, CSolver **solver_conta
     /*--- Cross diffusion ---*/
     
     numerics->SetCrossDiff(node[iPoint]->GetCrossDiff(),0.0);
+
+    /*--- Get the effective intermittency if a transition model is used
+          and set it. ---*/
+    if ( transitionLM ) gammaEff = solver_container[TRANS_SOL]->node[iPoint]->GetGammaEff();
+    numerics->SetGammaEff(gammaEff, 0.0);
     
     /*--- Compute the source term ---*/
     

@@ -446,6 +446,13 @@ public:
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
   virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j) {/* empty */};
+
+  /*!
+   * \brief Set the value of the effective intermittency for a turbulence model.
+   * \param[in] val_gammaEff_i - Value of the effective intermittency at point i.
+   * \param[in] val_gammaEff_j - Value of the effective intermittency at point j.
+   */
+  virtual void SetGammaEff(su2double val_gammaEff_i, su2double val_gammaEff_j) {/* empty */};
   
   /*!
    * \brief Set the gradient of the auxiliary variables.
@@ -4753,7 +4760,9 @@ public:
 class CSourcePieceWise_TransLM : public CNumerics {
 private:
 
-  su2double ca1, ca2, ce1, ce2, cthetat; /*!< \brief Constants in the source term of the LM model. */
+  su2double ca1, ca2, ce1, ce2, cthetat;        /*!< \brief Constants in the source term of the LM model. */
+  su2double Flength_CF, C_Fonset1_CF, CHe_max;  /*!< \brief Constants in the source term of the LM model
+                                                            related to cross flow instabilities. */
 
   bool incompressible;  /*!< \brief Whether or not an incompressible simulation is carried out. */
 
@@ -4832,6 +4841,7 @@ private:
   a1;
   
   su2double CDkw_i, CDkw_j;
+  su2double gammaEff_i, gammaEff_j;
   
   bool incompressible;
   
@@ -4870,7 +4880,14 @@ public:
    * \param[in] val_CDkw_i - Value of the cross diffusion at point i.
    * \param[in] val_CDkw_j - Value of the cross diffusion at point j.
    */
-  virtual void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+  void SetCrossDiff(su2double val_CDkw_i, su2double val_CDkw_j);
+
+  /*!
+   * \brief Set the value of the effective intermittency for a turbulence model.
+   * \param[in] val_gammaEff_i - Value of the effective intermittency at point i.
+   * \param[in] val_gammaEff_j - Value of the effective intermittency at point j.
+   */
+  void SetGammaEff(su2double val_gammaEff_i, su2double val_gammaEff_j);
   
   /*!
    * \brief Residual for source term integration.

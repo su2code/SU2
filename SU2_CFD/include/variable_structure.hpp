@@ -1736,10 +1736,12 @@ public:
   /*!
    * \brief Set the blending function for the blending of k-w and k-eps.
    * \param[in] val_viscosity - Value of the vicosity.
-   * \param[in] val_density - Value of the density.
    * \param[in] val_dist - Value of the distance to the wall.
+   * \param[in] val_density - Value of the density.
+   * \param[in] transitionLM - Whether or not the Langtry-Menter transition model is used.
    */
-  virtual void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+  virtual void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density,
+                               bool      transitionLM);
   
   /*!
    * \brief Get the first blending function of the SST model.
@@ -4375,8 +4377,10 @@ public:
    * \param[in] val_viscosity - Value of the vicosity.
    * \param[in] val_dist - Value of the distance to the wall.
    * \param[in] val_density - Value of the density.
+   * \param[in] transitionLM - Whether or not the Langtry-Menter transition model is used.
    */
-  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density);
+  void SetBlendingFunc(su2double val_viscosity, su2double val_dist, su2double val_density,
+                       bool      transitionLM);
   
   /*!
    * \brief Get the first blending function.

@@ -567,8 +567,6 @@ inline su2double CConfig::GetInitial_BCThrust(void) { return Initial_BCThrust; }
 
 inline void CConfig::SetInitial_BCThrust(su2double val_bcthrust) { Initial_BCThrust = val_bcthrust; }
 
-inline su2double CConfig::GetIntermittency_FreeStream(void) { return Intermittency_FreeStream; }
-
 inline su2double CConfig::GetTurbulenceIntensity_FreeStream(void) { return TurbulenceIntensity_FreeStream; }
 
 inline su2double CConfig::GetTurb2LamViscRatio_FreeStream(void) { return Turb2LamViscRatio_FreeStream;}
@@ -1589,6 +1587,8 @@ inline void CConfig::SetSmoothNumGrid(bool val_smoothnumgrid) { SmoothNumGrid = 
 inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model; }
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
+
+inline bool CConfig::GetLM_Cross_Flow_Instability(void) { return LM_Cross_Flow_Instability; }
 
 inline unsigned short CConfig::GetKind_SGS_Model(void) { return Kind_SGS_Model; }
 

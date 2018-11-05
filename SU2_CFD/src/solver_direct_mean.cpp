@@ -3979,7 +3979,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
 
         if (config->GetKind_Trans_Model() == LM) {
-          const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
+          const su2double Intermittency_Inf = 1.0;
           const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
           const su2double REth_Inf          = CSourcePieceWise_TransLM::GetREth(tu_Inf);
 
@@ -4070,7 +4070,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         cout << "Free-stream specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
 
         if (config->GetKind_Trans_Model() == LM) {
-          const su2double Intermittency_Inf = config->GetIntermittency_FreeStream();
+          const su2double Intermittency_Inf = 1.0;
           const su2double tu_Inf            = config->GetTurbulenceIntensity_FreeStream();
           const su2double REth_Inf          = CSourcePieceWise_TransLM::GetREth(tu_Inf);
 

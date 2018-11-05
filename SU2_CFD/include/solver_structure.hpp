@@ -9183,6 +9183,8 @@ protected:
   su2double*** Inlet_TurbVars; /*!< \brief Turbulence variables at inlet profiles */
   unsigned long nMarker, /*!< \brief Total number of markers using the grid information. */
   *nVertex;              /*!< \brief Store nVertex at each marker for deallocation */
+
+  bool transitionSolver; /*!< \brief Whether or not the solver is actually a transition solver. */
   
   /* Sliding meshes variables */
 

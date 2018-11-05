@@ -42,6 +42,10 @@ CTransLMSolver::CTransLMSolver(void) : CTurbSolver() {
   /*--- Array initialization ---*/
   constants = NULL;
   Inlet_TurbVars = NULL;
+
+  /*--- Indicate that this is a solver for the transition model,
+        not for the turbulence model. ---*/
+  transitionSolver = true;
 }
 
 CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
@@ -49,6 +53,10 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- Array initialization ---*/
   constants = NULL;
+
+  /*--- Indicate that this is a solver for the transition model,
+        not for the turbulence model. ---*/
+  transitionSolver = true;
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -69,7 +77,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       nVarTurbModel = 1;
       break;
     case SST:
-      nVarTurbModel = 1;
+      nVarTurbModel = 2;
       break;
   }
 
@@ -143,15 +151,22 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*--- Initialize the values for the model constants ---*/
-  constants = new su2double[8];
+  constants = new su2double[11];
   constants[0] =  2.0;    // ca1
   constants[1] =  0.06;   // ca2
-  constants[2] =  1.0;    // ce1
-  constants[3] = 50.0;    // ce2
-  constants[4] =  0.03;   // cthetat
-  constants[5] =  2.0;    // s1
-  constants[6] =  1.0;    // sigmaf
-  constants[7] =  2.0;    // sigmathetat
+  constants[2]  =  1.0;    // ce1
+  constants[3]  = 50.0;    // ce2
+  constants[4]  =  0.03;   // cthetat
+  constants[5]  =  2.0;    // s1
+  constants[6]  =  1.0;    // sigmaf
+  constants[7]  =  2.0;    // sigmathetat
+  constants[8]  =  5.0;    // Flength_CF
+  constants[9]  =  0.7;    // C_Fonset1_CF
+  constants[10] =  0.6944; // CHe_max
+
+  /*--- If the cross flow instability term must not be added, set the
+        value of Flength_CF, constants[8], to zero. ---*/
+  if (!config->GetLM_Cross_Flow_Instability()) constants[8] = 0.0;
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
@@ -164,7 +179,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
   upperlimit[1] = 1.0e5;
 
   /*--- Store the far-field values of the intermittency and Re_theta. */
-  Intermittency_Inf = config->GetIntermittency_FreeStream();
+  Intermittency_Inf = 1.0;
   REth_Inf          = CSourcePieceWise_TransLM::GetREth(config->GetTurbulenceIntensity_FreeStream());
 
   /*--- Initialize the solution to the far-field state everywhere. ---*/

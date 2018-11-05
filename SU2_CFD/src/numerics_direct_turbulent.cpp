@@ -1206,8 +1206,15 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
   beta_blended = F1_i*beta_1 + (1.0 - F1_i)*beta_2;
   
   if (dist_i > 1e-10) {
-    
-    /*--- Production ---*/
+
+    /*--- Compute the intermittency for the destruction term of
+          the kinetic energy. Only when a transition model is used
+          this value can differ from 1.0. ---*/
+    const su2double gammaEffDestr = min(max(gammaEff_i, 0.1), 1.0);
+
+    /*--- Production. Note that only the production term of the
+          kinetic energy equation is multiplied by the intermittency
+          to account for transition. ---*/
     
     diverg = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
@@ -1221,12 +1228,13 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     pw = max(pw,0.0);
     
-    val_residual[0] += pk*Volume;
+    val_residual[0] += gammaEff_i*pk*Volume;
     val_residual[1] += alfa_blended*Density_i*pw*Volume;
     
-    /*--- Dissipation ---*/
+    /*--- Dissipation. Only the destruction term of the kinetic energy
+          equation is multiplied by gammaEffDestr. ---*/
     
-    val_residual[0] -= beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
+    val_residual[0] -= gammaEffDestr*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]*Volume;
     val_residual[1] -= beta_blended*Density_i*TurbVar_i[1]*TurbVar_i[1]*Volume;
     
     /*--- Cross diffusion ---*/
@@ -1235,8 +1243,8 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     /*--- Implicit part ---*/
     
-    val_Jacobian_i[0][0] = -beta_star*TurbVar_i[1]*Volume;
-    val_Jacobian_i[0][1] = -beta_star*TurbVar_i[0]*Volume;
+    val_Jacobian_i[0][0] = -gammaEffDestr*beta_star*TurbVar_i[1]*Volume;
+    val_Jacobian_i[0][1] = -gammaEffDestr*beta_star*TurbVar_i[0]*Volume;
     val_Jacobian_i[1][0] = 0.0;
     val_Jacobian_i[1][1] = -2.0*beta_blended*TurbVar_i[1]*Volume;
   }
