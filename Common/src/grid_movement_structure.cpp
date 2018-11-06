@@ -1660,12 +1660,19 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
       
+      su2double *Coord_0 = NULL;
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
+      
+      /*--- Store the coord of the first point to help identify the axis. ---*/
+      
+      iPoint  = geometry->vertex[iMarker][0]->GetNode();
+      Coord_0 = geometry->node[iPoint]->GetCoord();
+
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->node[iPoint]->GetCoord();
         for (iDim = 0; iDim < nDim; iDim++)
-          MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
+          MeanCoord[iDim] += (VarCoord[iDim]-Coord_0[iDim])*(VarCoord[iDim]-Coord_0[iDim]);
       }
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
       if (nDim==3) {
