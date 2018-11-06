@@ -144,7 +144,7 @@ public:
    * \param[out] tauWall                - Wall shear stress, to be computed.
    * \param[out] qWall                  - Wall hear flux, to be computed (if not prescribed).
    * \param[out] ViscosityWall          - Laminar viscosity at the wall, to be computed.
-   * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
+   * \param[out] kOverCvWall             - Thermal conductivity divided by Cv at the wall,
                                           to be computed.
    */
   void WallShearStressAndHeatFlux(const su2double tExchange,
@@ -207,7 +207,7 @@ public:
    * \param[out] tauWall                - Wall shear stress, to be computed.
    * \param[out] qWall                  - Wall hear flux, to be computed (if not prescribed).
    * \param[out] ViscosityWall          - Laminar viscosity at the wall, to be computed.
-   * \param[out] OverCvWall             - Thermal conductivity divided by Cv at the wall,
+   * \param[out] kOverCvWall             - Thermal conductivity divided by Cv at the wall,
    to be computed.
    */
   void WallShearStressAndHeatFlux(const su2double tExchange,
@@ -228,7 +228,6 @@ private:
   su2double expansionRatio;   /*!< \brief  Stretching factor used for the wall model grid. */
   int       numPoints;        /*!< \brief  Number of points used in the wall model grid. */
   
-  vector<su2double> coorGridPoints;    /*!< \brief  The coordinates in normal direction of the wall model grid. */
 };
 
 #include "wall_model.inl"
