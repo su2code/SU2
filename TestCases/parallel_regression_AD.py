@@ -248,7 +248,7 @@ def main():
     discadj_topol_optim.cfg_dir = "fea_topology"
     discadj_topol_optim.cfg_file  = "config.cfg"
     discadj_topol_optim.test_iter = 0
-    discadj_topol_optim.su2_exec  = "parallel_computation.py -f"
+    discadj_topol_optim.su2_exec  = "parallel_computation.py"
     discadj_topol_optim.timeout   = 1600
     discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
     discadj_topol_optim.test_file = "grad_ref_node.dat"
