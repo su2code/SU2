@@ -156,13 +156,7 @@ void CPoissonSolverFVM::Preprocessing(CGeometry *geometry, CSolver **solver_cont
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);
-  
-  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
-
-   cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<node[iPoint]->GetGradient(0,0)<<"\t"<<node[iPoint]->GetGradient(0,1)<<endl;
     
-  }
-  
 }
 
 
@@ -805,12 +799,21 @@ unsigned short iDim;
 void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh){
 							
-  
+  unsigned long iEdge, iPoint, jPoint;
+  unsigned short iDim;
+
   /*--- Compute gradients so we can use it to find the velocity corrections ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);							
+  
+  //for (iPoint = 0; iPoint < nPoint; iPoint++) {
+	//for (iDim = 0; iDim < nDim; iDim++)
+	  //cout<<geometry->node[iPoint]->GetCoord(iDim)<<"\t"<<node[iPoint]->GetGradient(0,iDim)<<"\t";
+	
+	//cout<<endl;
+  //}
 
 							
 }
@@ -1082,7 +1085,6 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
       }
     }
   }
-  cout<<endl;
   /*--- MPI solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -1396,7 +1398,7 @@ su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
 unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
-//cout<<"Euler wall"<<endl;
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -1521,7 +1523,7 @@ su2double *Normal = new su2double[nDim];
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      //for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = node[iPoint]->GetSolution(0);
@@ -1539,7 +1541,7 @@ su2double *Normal = new su2double[nDim];
         Residual[iVar] = 0.0;
         //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
+           Residual[iVar] -= Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
            //cout<<Sol_i_Grad[iVar][iDim]<<"\t"<<Mom_Coeff_i[iDim]<<"\t";
         }
         //cout<<Residual[iVar]<<endl;

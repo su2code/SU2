@@ -777,7 +777,6 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   /*--- Set Gradient to Zero ---*/
   for (iPoint = 0; iPoint < geometry->GetnPointDomain(); iPoint++)
     node[iPoint]->SetGradientZero();
-  cout<<"Green gauss"<<endl;
   /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -806,10 +805,6 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
       Point = geometry->vertex[iMarker][iVertex]->GetNode();
       Solution_Vertex = node[Point]->GetSolution();
       Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-      if (config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW || 
-          config->GetMarker_All_KindBC(iMarker) == INLET_FLOW )
-        for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
-        
       for (iVar = 0; iVar < nVar; iVar++)
         for (iDim = 0; iDim < nDim; iDim++) {
           Partial_Res = Solution_Vertex[iVar]*Normal[iDim];

@@ -3211,19 +3211,19 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 		break;
 		
 		case OUTLET_FLOW:
-		
+		//cout<<endl<<"set mass flux"<<endl;
 		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
            if (geometry->node[iPoint]->GetDomain()) {		
 		     Normal = geometry->vertex[iMarker][iVertex]->GetNormal(); 
-		     for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+		     //for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 		     
 		   MassFlux_Part = 0.0;
            for (iDim = 0; iDim < nDim; iDim++) 
-              MassFlux_Part += GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
+              MassFlux_Part -= GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
              
              node[iPoint]->AddMassFlux(MassFlux_Part); 
-            //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<MassFlux_Part<<endl;
+            //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<MassFlux_Part<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<endl;
 		   }
          }
 		
@@ -3252,7 +3252,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   Criteria = 1.0e-7;
   MassConvergence = false;
   
-  cout<<"Mass flux: "<<log10(Res_MassFlux)<<endl<<"Net Mass flux: "<<Net_Mass<<endl;
+ // cout<<"Mass flux: "<<log10(Res_MassFlux)<<endl<<"Net Mass flux: "<<Net_Mass<<endl;
   if (Res_MassFlux <= Criteria) MassConvergence = true; 
 }
 
@@ -3465,7 +3465,7 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
   su2double *Normal = new su2double[nDim];
   
   /*--- Loop over all the vertices on this boundary marker ---*/
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
    
@@ -3526,7 +3526,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 
   su2double *Normal = new su2double[nDim];
   /*--- Loop over all the vertices on this boundary marker ---*/
-  //cout<<endl;
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
    
@@ -3539,7 +3539,7 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      //for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       
       Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
@@ -3562,18 +3562,16 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       
       Face_Flux = 0.0;
 	  for (iDim = 0; iDim < nDim; iDim++) 
-		Face_Flux += V_domain[nDim+1]*V_domain[iDim+1]*Normal[iDim];
+		Face_Flux -= V_domain[nDim+1]*V_domain[iDim+1]*Normal[iDim];
 	  
-      //cout<<endl<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<Face_Flux<<"\t";
+      //cout<<endl<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<Face_Flux<<"\t"<<Normal[0]<<"\t"<<Normal[1]<<"\t";
 	  if (Face_Flux > 0.0) {
        for (iVar = 0; iVar < nVar; iVar++) {
 	     Residual[iVar] = 0.0;
 	     for (iDim = 0; iDim < nDim; iDim++) 
-	       Residual[iVar] += V_domain[nDim+1]*V_domain[iDim+1]*Normal[iDim]*V_domain[iVar+1];
-	     
-	     //cout<<Residual[iVar]<<"\t";
-	  }
-    }
+	       Residual[iVar] -= V_domain[nDim+1]*V_domain[iDim+1]*Normal[iDim]*V_domain[iVar+1];
+	    }
+      }
       /*--- Update residual value ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
