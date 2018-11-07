@@ -53,7 +53,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   
   if (nRequestedScreenFields == 0){
     RequestedScreenFields.push_back("EXT_ITER");
-    RequestedScreenFields.push_back("RMS_ADJ_PRESSURE");
+    RequestedScreenFields.push_back("RMS_ADJ_DENSITY");
     RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
     RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-Y");
     nRequestedScreenFields = RequestedScreenFields.size();
