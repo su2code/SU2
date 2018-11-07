@@ -33,6 +33,7 @@
  */
 
 #include "../include/wall_model.hpp"
+#include "../../SU2_CFD/include/fluid_model.hpp"
 
 /* Prototypes for Lapack functions, if MKL or LAPACK is used. */
 #if defined (HAVE_MKL) || defined(HAVE_LAPACK)
@@ -40,10 +41,39 @@ extern "C" void dgtsv_(int*, int*, passivedouble*, passivedouble*,
                        passivedouble*, passivedouble*, int*, int*);
 #endif
 
-void CWallModel1DEQ::Initialize(const unsigned short *intInfo,
-                                const su2double      *doubleInfo){
+CWallModel::CWallModel(CConfig *config) {
 
-  /* Copy the data from the arguments into the member variables. */
+  /* Get the laminar and turbulent Prandtl number from config. */
+  Pr_lam  = config->GetPrandtl_Lam();
+  Pr_turb = config->GetPrandtl_Turb();
+
+  karman = 0.41; // von Karman constant -> k = 0.41; or 0.38;
+}
+
+void CWallModel::WallShearStressAndHeatFlux(const su2double rhoExchange,
+                                            const su2double velExchange,
+                                            const su2double muExchange,
+                                            const su2double pExchange,
+                                            const su2double Wall_HeatFlux,
+                                            const bool      HeatFlux_Prescribed,
+                                            const su2double Wall_Temperature,
+                                            const bool      Temperature_Prescribed,
+                                            CFluidModel     *FluidModel,
+                                            su2double       &tauWall,
+                                            su2double       &qWall,
+                                            su2double       &ViscosityWall,
+                                            su2double       &kOverCvWall) {}
+
+CWallModel1DEQ::CWallModel1DEQ(CConfig      *config,
+                               const string &Marker_Tag)
+  :  CWallModel(config) {
+
+  /* Retrieve the integer and floating point information for this
+     boundary marker. */
+  const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
+  const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+
+  /* Copy the data into the member variables. */
   numPoints      = intInfo[0];
   h_wm           = doubleInfo[0];
   expansionRatio = doubleInfo[1];
@@ -83,10 +113,11 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
                                                 const bool      HeatFlux_Prescribed,
                                                 const su2double TWall,
                                                 const bool      Temperature_Prescribed,
-                                                      su2double &tauWall,
-                                                      su2double &qWall,
-                                                      su2double &ViscosityWall,
-                                                      su2double &kOverCvWall) {
+                                                CFluidModel    *FluidModel,
+                                                su2double &tauWall,
+                                                su2double &qWall,
+                                                su2double &ViscosityWall,
+                                                su2double &kOverCvWall) {
 
   
   /* Set tau wall to initial guess
@@ -104,11 +135,8 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   su2double S = 110.4;
   su2double T_ref = 273.15;
   su2double R = 287.058;
-  su2double kappa = 0.41;
   su2double A = 17;
   su2double gamma = 1.4;
-  su2double Pr_lam = 0.7;
-  su2double Pr_turb = 0.9;
   su2double c_p = (gamma*R)/(gamma-1);
   su2double c_v = R/(gamma-1);
   su2double h_wall = c_p * TWall;
@@ -156,7 +184,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
       utau = sqrt(tauWall / rho);
       y_plus = y_fa[i] * utau / nu;
       D = pow(1.0 - exp((-y_plus)/A),2.0);
-      mut = rho * kappa * y_fa[i] * utau * D;
+      mut = rho * karman * y_fa[i] * utau * D;
       mu_fa[i] += mut;
     }
     
@@ -218,7 +246,7 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
       utau = sqrt(tauWall / rho);
       y_plus = y_fa[i] * utau / nu;
       D = pow(1.0 - exp((-y_plus)/A),2.0);
-      mut = rho * kappa * y_fa[i] * utau * D;
+      mut = rho * karman * y_fa[i] * utau * D;
       mu_fa[i] += mut;
       tmp[i] += mut/Pr_turb;
     }
@@ -316,86 +344,80 @@ void CWallModel1DEQ::WallShearStressAndHeatFlux(const su2double tExchange,
   }
 }
 
-void CWallModelLogLaw::Initialize(const unsigned short *intInfo,
-                                const su2double      *doubleInfo){
-  
-  /* Copy the data from the arguments into the member variables. */
-  numPoints      = intInfo[0];
-  h_wm           = doubleInfo[0];
-  expansionRatio = doubleInfo[1];
-  
+CWallModelLogLaw::CWallModelLogLaw(CConfig      *config,
+                                   const string &Marker_Tag)
+  :  CWallModel(config) {
+
+  C = 5.25; /* Constant to match the Reichardt BL profile ->  C = 4.1;  or 5.25. */
+
+  /* Retrieve the floating point information for this boundary marker
+     and set the exchange height. */
+  const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+  h_wm = doubleInfo[0];
 }
 
 void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
-                                                const su2double velExchange,
-                                                const su2double muExchange,
-                                                const su2double pExchange,
-                                                const su2double Wall_HeatFlux,
-                                                const bool      HeatFlux_Prescribed,
-                                                const su2double Wall_Temperature,
-                                                const bool      Temperature_Prescribed,
-                                                su2double &tauWall,
-                                                su2double &qWall,
-                                                su2double &ViscosityWall,
-                                                su2double &kOverCvWall) {
-  
+                                                  const su2double velExchange,
+                                                  const su2double muExchange,
+                                                  const su2double pExchange,
+                                                  const su2double Wall_HeatFlux,
+                                                  const bool      HeatFlux_Prescribed,
+                                                  const su2double Wall_Temperature,
+                                                  const bool      Temperature_Prescribed,
+                                                  CFluidModel     *FluidModel,
+                                                  su2double       &tauWall,
+                                                  su2double       &qWall,
+                                                  su2double       &ViscosityWall,
+                                                  su2double       &kOverCvWall) {
 
+  /* Set the wall temperature, depending whether or not the temperature
+     was prescribed and initialize the fluid model. */
+  const su2double TWall = Temperature_Prescribed ? Wall_Temperature : tExchange;
+
+  FluidModel->SetTDState_PT(pExchange, TWall);
+
+  /* Get the required data from the fluid model. */
+  const su2double rho_wall = FluidModel->GetDensity();
+  const su2double mu_wall  = FluidModel->GetLaminarViscosity();
+  const su2double c_p      = FluidModel->GetCp();
+  const su2double c_v      = FluidModel->GetCv();
+  const su2double nu_wall  = mu_wall / rho_wall;
+
+  /* Initial guess of the friction velocity. */ 
+  su2double u_tau = 1.0;
   
-  /* Sutherland Law parameters
-   Todo: Read values below from the config file.
-  */
-  su2double C_1 = 1.716e-5;
-  su2double S = 110.4;
-  su2double T_ref = 273.15;
-  su2double R = 287.058;
-  su2double Pr = 0.7;
-  su2double gamma = 1.4;
-  su2double c_p = (gamma*R)/(gamma-1);
-  su2double c_v = R/(gamma-1);
-  
-  su2double fval, fprime, newton_step, u_tau = 1.0, u_tau0 = 1.0;
-  su2double k = 0.41; // von Karman constant -> k = 0.41; or 0.38;
-  su2double C = 5.25; // Constant to match the Reichardt BL profile -> // C = 4.1;  or 5.25
-  su2double TWall,y_plus;
-  
-  if (Temperature_Prescribed)
-    TWall = Wall_Temperature;
-  else
-    TWall = tExchange;
-  
-  su2double rho_wall = pExchange/(R * TWall);
-  su2double mu_wall = C_1 * pow(TWall/T_ref, 1.5) * ((T_ref + S)/ (TWall+ S));
-  su2double nu_wall = mu_wall / rho_wall;
-  
-  /* Set parameters for control
-   */
+  /* Set parameters for control of the Newton iteration. */
   bool converged = false;
   unsigned short iter = 0, max_iter = 50;
-  su2double tol=1e-3;
+  const su2double tol=1e-3;
   
   while (converged == false){
     
     iter += 1;
     if (iter == max_iter) converged = true;
     
-    u_tau0 = u_tau;
-    y_plus = u_tau0*h_wm/nu_wall;
+    const su2double u_tau0 = u_tau;
+    const su2double y_plus = u_tau0*h_wm/nu_wall;
     
     /* Reichardt boundary layer analytical law
        fprime is the differentiation of the Reichardt law with repect to u_tau.
      */
-    fval = velExchange/u_tau0 - ((C - log(k)/k)*(1.0 - exp(-y_plus/11.0) - (y_plus/11.0)*exp(-0.33*y_plus))) - log(k*y_plus + 1.0)/k;
-    fprime = -velExchange/pow(u_tau0,2.0) + (- C + log(k)/k)*(-(1.0/11.0)*h_wm*exp(-0.33*y_plus)/nu_wall + (1.0/11.0)*h_wm*exp(-(1.0/11.0)*y_plus)/nu_wall + (1.0/33.0)*u_tau0*pow(h_wm,2.0)*exp(-0.33*y_plus)/pow(nu_wall, 2.0)) - 1.0*h_wm/(nu_wall*(k*y_plus + 1.0));
+    const su2double fval = velExchange/u_tau0 - ((C - log(karman)/karman)*(1.0 - exp(-y_plus/11.0)
+                         - (y_plus/11.0)*exp(-0.33*y_plus))) - log(karman*y_plus + 1.0)/karman;
+    const su2double fprime = -velExchange/pow(u_tau0,2.0)
+                           + (- C + log(karman)/karman)*(-(1.0/11.0)*h_wm*exp(-0.33*y_plus)/nu_wall
+                           +                              (1.0/11.0)*h_wm*exp(-(1.0/11.0)*y_plus)/nu_wall
+                           +                              (1.0/33.0)*u_tau0*pow(h_wm,2.0)*exp(-0.33*y_plus)/pow(nu_wall, 2.0))
+                           - 1.0*h_wm/(nu_wall*(karman*y_plus + 1.0));
   
     /* Newton method
      */
-    newton_step = fval/fprime;
+    const su2double newton_step = fval/fprime;
     u_tau = u_tau0 - newton_step;
     
     /* Define a norm
      */
     if (abs(1.0 - u_tau/u_tau0) < tol) converged = true;
-    
   }
   
   tauWall = rho_wall * pow(u_tau,2.0);
@@ -403,12 +425,11 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
   if (Temperature_Prescribed){
     /* The Kader's law will be used to approximate the variations of the temperature inside the boundary layer.
      */
-    su2double lhs, rhs_1, rhs_2, Gamma;
-    y_plus = u_tau*h_wm/nu_wall;
-    lhs = - ((tExchange - TWall) * rho_wall * c_p * u_tau);
-    Gamma = - (0.01 * (Pr * pow(y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr,3.0)));
-    rhs_1 = Pr * y_plus * exp(Gamma);
-    rhs_2 = (2.12*log(1.0+y_plus) + pow((3.85*pow(Pr,(1.0/3.0)) - 1.3),2.0) + 2.12*log(Pr)) * exp(1./Gamma);
+    const su2double y_plus = u_tau*h_wm/nu_wall;
+    const su2double lhs = - ((tExchange - TWall) * rho_wall * c_p * u_tau);
+    const su2double Gamma = - (0.01 * (Pr_lam * pow(y_plus,4.0))/(1.0 + 5.0*y_plus*pow(Pr_lam,3.0)));
+    const su2double rhs_1 = Pr_lam * y_plus * exp(Gamma);
+    const su2double rhs_2 = (2.12*log(1.0+y_plus) + pow((3.85*pow(Pr_lam,(1.0/3.0)) - 1.3),2.0) + 2.12*log(Pr_lam)) * exp(1./Gamma);
     qWall = lhs/(rhs_1 + rhs_2);
   }
   else{
@@ -416,5 +437,5 @@ void CWallModelLogLaw::WallShearStressAndHeatFlux(const su2double tExchange,
   }
 
   ViscosityWall = mu_wall;
-  kOverCvWall = c_p / c_v * (mu_wall/Pr);
+  kOverCvWall   = FluidModel->GetThermalConductivity()/c_v;
 }

@@ -6299,14 +6299,14 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
 
-              boundaries[iMarker].wallModel = new CWallModel1DEQ;
+              boundaries[iMarker].wallModel = new CWallModel1DEQ(config, Marker_Tag);
               break;
             }
             case LOGARITHMIC_WALL_MODEL: {
               if(rank == MASTER_NODE)
                 cout << "Marker " << Marker_Tag << " uses the Reichardt and Kader analytical laws for the Wall Model." << endl;
               
-              boundaries[iMarker].wallModel = new CWallModelLogLaw;
+              boundaries[iMarker].wallModel = new CWallModelLogLaw(config, Marker_Tag);
               break;
             }
             default: {
@@ -6314,14 +6314,9 @@ void CMeshFEM_DG::WallFunctionPreprocessing(CConfig *config) {
             }
           }
 
-          /* Retrieve the integer and floating point information for this
-             boundary marker. The exchange location is the first element of
-             the floating point array. */
-          const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
-          const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
-
-          /* Initialize the wall model. */
-          boundaries[iMarker].wallModel->Initialize(intInfo, doubleInfo);
+          /* Retrieve the double information for this wall model. The height
+             of the exchange location is the first element of this array. */
+          const su2double *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
 
           /* Easier storage of the surface elements and loop over them. */
           vector<CSurfaceElementFEM> &surfElem = boundaries[iMarker].surfElem;
