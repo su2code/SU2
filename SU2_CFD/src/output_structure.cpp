@@ -4147,6 +4147,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Check for compressible/incompressible flow problems. ---*/
 
     compressible = (config[iZone]->GetKind_Regime() == COMPRESSIBLE);
+    
+    /*--- First, prepare the offsets needed throughout below. ---*/    
+    
+    PrepareOffsets(config[iZone], geometry[iZone][iInst][MESH_0]);
 
 //    /*--- Write out CSV files in parallel for flow and adjoint. ---*/
     
