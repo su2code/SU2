@@ -343,7 +343,8 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     ModVel    = config->GetIncInlet_BC();
     BPressure = config->GetIncPressureOut_BC();
-    Temperature = config->GetIncTemperature_BC();
+//    Temperature = config->GetIncTemperature_BC();
+    Temperature = config->GetTemperature_FreeStreamND();
 
     /*--- Register the variables for AD. ---*/
 
@@ -357,7 +358,31 @@ void CDiscAdjSolver::RegisterVariables(CGeometry *geometry, CConfig *config, boo
 
     config->SetIncInlet_BC(ModVel);
     config->SetIncPressureOut_BC(BPressure);
-    config->SetIncTemperature_BC(Temperature);
+//    config->SetIncTemperature_BC(Temperature);
+//    config->SetTemperature_FreeStreamND(Temperature);
+    direct_solver->SetTemperature_Inf(Temperature);
+
+  }
+
+  /*--- Register incompressible radiation values as input ---*/
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      ((KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+        (!config->GetBoolTurbomachinery())))) {
+
+    /*--- Access the nondimensional freestream temperature. ---*/
+
+    TemperatureRad = config->GetTemperature_FreeStreamND();
+
+    /*--- Register the variables for AD. ---*/
+
+    if (!reset) {
+      AD::RegisterInput(TemperatureRad);
+    }
+
+    /*--- Set the temperature at infinity in the direct solver class. ---*/
+
+    direct_solver->SetTemperature_Inf(TemperatureRad);
 
   }
 
@@ -592,6 +617,24 @@ void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *conf
     Total_Sens_BPress = Local_Sens_BPress;
     Total_Sens_Temp   = Local_Sens_Temp;
 #endif
+
+  }
+
+  if ((config->GetKind_Regime() == INCOMPRESSIBLE) &&
+      (KindDirect_Solver == RUNTIME_RADIATION_SYS &&
+       (!config->GetBoolTurbomachinery()))) {
+
+    su2double Local_Sens_Temp_Rad;
+    Local_Sens_Temp_Rad   = SU2_TYPE::GetDerivative(TemperatureRad);
+
+#ifdef HAVE_MPI
+    SU2_MPI::Allreduce(&Local_Sens_Temp_Rad, &Total_Sens_Temp_Rad, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+#else
+    Total_Sens_Temp_Rad   = Local_Sens_Temp_Rad;
+#endif
+
+    /*--- Store it in the Total_Sens_Temp container so it's accessible without the need of a new method ---*/
+    Total_Sens_Temp = Total_Sens_Temp_Rad;
 
   }
 
