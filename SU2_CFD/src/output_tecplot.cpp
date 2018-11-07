@@ -121,7 +121,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
     Tecplot_File << "VARIABLES = ";
     nVar_Total = config->fields.size() - 1;
     for (unsigned short iField = 1; iField < config->fields.size(); iField++) {
-      Tecplot_File << config->fields[iField];
+      Tecplot_File << config->fields[iField] << " ";
     }
     Tecplot_File << endl;
     
@@ -164,7 +164,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
         Tecplot_File << ",\"Pressure\",\"Temperature\",\"C<sub>p</sub>\",\"Mach\"";
       }
       
-      if ((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      if (((Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS))) {
         if (nDim == 2) Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"h\", \"y<sup>+</sup>\"";
         else Tecplot_File << ", \"<greek>m</greek>\", \"C<sub>f</sub>_x\", \"C<sub>f</sub>_y\", \"C<sub>f</sub>_z\", \"h\", \"y<sup>+</sup>\"";
       }
@@ -174,7 +174,7 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       }
       
       if (config->GetWrt_SharpEdges()) {
-        if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+        if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)))  {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
         }
       }
