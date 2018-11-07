@@ -15656,7 +15656,9 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         wallModel->WallShearStressAndHeatFlux(Temperature, velTan, LaminarViscosity, Pressure,
                                               Wall_HeatFlux, HeatFlux_Prescribed,
                                               Wall_Temperature, Temperature_Prescribed,
-                                              tauWall, qWall, ViscosityWall, kOverCvWall);
+                                              FluidModel, tauWall, qWall, ViscosityWall,
+                                              kOverCvWall);
+
         /* Determine the position where the viscous fluxes, viscosity and
            thermal conductivity must be stored. */
         su2double *normalFlux = viscFluxes + NPad*ii + llNVar;
