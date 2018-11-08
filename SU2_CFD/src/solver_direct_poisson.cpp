@@ -778,8 +778,6 @@ unsigned short iDim;
 		}
 
 		/*--- Compute residual, and Jacobians ---*/
-		//cout<<endl<<geometry->node[iPoint]->GetCoord(0)<<"\t "<<geometry->node[iPoint]->GetCoord(1)<<endl;
-		//cout<<geometry->node[jPoint]->GetCoord(0)<<"\t "<<geometry->node[jPoint]->GetCoord(1)<<endl;
 		numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
 
 		/*--- Add and subtract residual, and update Jacobians ---*/
@@ -799,23 +797,13 @@ unsigned short iDim;
 void CPoissonSolverFVM::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                         unsigned short iMesh){
 							
-  unsigned long iEdge, iPoint, jPoint;
-  unsigned short iDim;
-
-  /*--- Compute gradients so we can use it to find the velocity corrections ---*/
+ /*--- Compute gradients so we can use it to find the velocity corrections ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) SetSolution_Gradient_GG(geometry, config);
 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) SetSolution_Gradient_LS(geometry, config);							
   
-  //for (iPoint = 0; iPoint < nPoint; iPoint++) {
-	//for (iDim = 0; iDim < nDim; iDim++)
-	  //cout<<geometry->node[iPoint]->GetCoord(iDim)<<"\t"<<node[iPoint]->GetGradient(0,iDim)<<"\t";
-	
-	//cout<<endl;
-  //}
-
-							
+  	
 }
 
 void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CNumerics *second_numerics, CConfig *config, unsigned short iMesh) {
@@ -1081,7 +1069,6 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
         AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
-        //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<Res<<"\t"<<solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux()<<endl;
       }
     }
   }
@@ -1092,12 +1079,6 @@ void CPoissonSolverFVM::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   /*--- Compute the root mean square residual ---*/
 
   SetResidual_RMS(geometry, config);
-  
-  
-  //for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-	  ////cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t"<<node[iPoint]->GetSolution(0)<<endl;
-  //}
-  //cout<<endl;
 
 }
 
@@ -1238,8 +1219,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 	}
     
     
-    //cout<<"Poisson Coeff from SetTimestep"<<endl;
-    //cout<<Poisson_Coeff<<", "<<iPoint<<", "<<jPoint<<endl;
     Lambda = Poisson_Coeff*Area*Area;
     
     if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
@@ -1270,8 +1249,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 
    /*--- Each element uses their own speed, steady state simulation ---*/
    
-   //cout<<"Timesteps."<<endl;
-
+ 
    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     Vol = geometry->node[iPoint]->GetVolume();
@@ -1288,7 +1266,6 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 			Local_Delta_Time = config->GetMax_DeltaTime();
 		Local_Delta_Time = 1.0e-3*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
-			
 	}
 		else {
 			node[iPoint]->SetDelta_Time(0.0);
@@ -1424,12 +1401,9 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-           //cout<<Sol_i_Grad[iVar][iDim]<<"\t"<<Mom_Coeff_i[iDim]<<"\t";
         }
-        //cout<<Residual[iVar]<<endl;
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
@@ -1455,7 +1429,7 @@ su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
 unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
-//cout<<"Inlet"<<endl;
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -1466,7 +1440,6 @@ su2double *Normal = new su2double[nDim];
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       /*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = node[iPoint]->GetSolution(0);
 		
@@ -1481,12 +1454,9 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        //cout<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-           //cout<<Sol_i_Grad[iVar][iDim]<<"\t";
         }
-        //cout<<Residual[iVar]<<endl;
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
@@ -1512,7 +1482,6 @@ unsigned long iVertex, iPoint, jPoint;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 
-//cout<<"Outlet"<<endl;
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
     
@@ -1523,7 +1492,6 @@ su2double *Normal = new su2double[nDim];
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      //for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
 
       /*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = node[iPoint]->GetSolution(0);
@@ -1539,12 +1507,9 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        //cout<<geometry->node[iPoint]->GetCoord(0)<<"\t"<<geometry->node[iPoint]->GetCoord(1)<<"\t";
         for (iDim = 0; iDim < nDim; iDim++) {
-           Residual[iVar] -= Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-           //cout<<Sol_i_Grad[iVar][iDim]<<"\t"<<Mom_Coeff_i[iDim]<<"\t";
+           Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
         }
-        //cout<<Residual[iVar]<<endl;
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/

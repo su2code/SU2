@@ -2156,6 +2156,70 @@ void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
 
 }
 
+/*----------- Start Visc PB flux ---------*/
+/*-----------------------------------------------------------------------------*/
+//void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
+                                          //su2double **val_gradprimvar,
+                                          //su2double *val_normal,
+                                          //su2double val_laminar_viscosity) {
+
+  //unsigned short iVar, iDim, jDim;
+  //su2double total_viscosity, div_vel, Density;
+
+  //Density = val_primvar[nDim+1];
+
+  //total_viscosity = (val_laminar_viscosity);
+
+  ///*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
+  
+  //div_vel = 0.0;
+  //for (iDim = 0 ; iDim < nDim; iDim++)
+    //div_vel += val_gradprimvar[iDim+1][iDim];
+
+  //for (iDim = 0 ; iDim < nDim; iDim++)
+    //for (jDim = 0 ; jDim < nDim; jDim++)
+      //tau[iDim][jDim] = (total_viscosity*(val_gradprimvar[jDim+1][iDim] +
+                                          //val_gradprimvar[iDim+1][jDim] )
+                         //-TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+                         //-TWO3*Density*val_turb_ke*delta[iDim][jDim]);
+
+  ///*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+
+  //if (nDim == 2) {
+    //Flux_Tensor[0][0] = tau[0][0];
+    //Flux_Tensor[1][0] = tau[0][1];
+    
+    //Flux_Tensor[0][1] = tau[1][0];
+    //Flux_Tensor[1][1] = tau[1][1];
+
+  //} else {
+
+    //Flux_Tensor[0][0] = tau[0][0];
+    //Flux_Tensor[1][0] = tau[0][1];
+    //Flux_Tensor[2][0] = tau[0][2];
+
+    //Flux_Tensor[0][1] = tau[1][0];
+    //Flux_Tensor[1][1] = tau[1][1];
+    //Flux_Tensor[2][1] = tau[1][2];
+
+    //Flux_Tensor[0][2] = tau[2][0];
+    //Flux_Tensor[1][2] = tau[2][1];
+    //Flux_Tensor[2][2] = tau[2][2];
+
+  //}
+
+  //for (iVar = 0; iVar < nVar; iVar++) {
+    //Proj_Flux_Tensor[iVar] = 0.0;
+    //for (iDim = 0; iDim < nDim; iDim++)
+      //Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  //}
+
+//}
+/*----------- End Visc PB flux ---------*/
+/*-----------------------------------------------------------------------------*/
+
+
+
 void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_laminar_viscosity,
     su2double val_eddy_viscosity, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
     su2double *val_Proj_Visc_Flux, su2double **val_Proj_Jac_Tensor_i, su2double **val_Proj_Jac_Tensor_j) {

@@ -205,12 +205,6 @@ CAvgGradCorrected_Poisson::~CAvgGradCorrected_Poisson(void) {
 
 void CAvgGradCorrected_Poisson::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, su2double **Jacobian_j, CConfig *config) {
 
-  /*AD::StartPreacc();
-  AD::SetPreaccIn(Coord_i, nDim); AD::SetPreaccIn(Coord_j, nDim);
-  AD::SetPreaccIn(Normal, nDim);
-  AD::SetPreaccIn(Temp_i); AD::SetPreaccIn(Temp_j);
-  AD::SetPreaccIn(ConsVar_Grad_i[0],nDim); AD::SetPreaccIn(ConsVar_Grad_j[0],nDim);
-  AD::SetPreaccIn(Poisson_Coeff_i); AD::SetPreaccIn(Poisson_Coeff_j);*/
 
   Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
 
@@ -321,7 +315,7 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
 
   su2double Coeff_Mean;
 
-  Poisson_Coeff_Mean = 1.0;//0.5*(Poisson_Coeff_i + Poisson_Coeff_j);
+  Poisson_Coeff_Mean = 1.0;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
 
@@ -344,13 +338,11 @@ void CAvgGrad_Poisson::ComputeResidual(su2double *val_residual, su2double **Jaco
       Coeff_Mean = 0.5*(Mom_Coeff_i[iDim] + Mom_Coeff_j[iDim]) ;
       
       Proj_Mean_GradPoissonVar_Normal[iVar] += Mean_GradPoissonVar[iVar][iDim]*Normal[iDim]*Coeff_Mean;
-      //cout<<Mean_GradPoissonVar[iVar][iDim]<<"\t";
     }
     Proj_Mean_GradPoissonVar_Corrected[iVar] = Proj_Mean_GradPoissonVar_Normal[iVar];
   }
 
   val_residual[0] = Proj_Mean_GradPoissonVar_Corrected[0];
-  //cout<<val_residual[0]<<endl;
   
   if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
      Poisson_Coeff_Mean = 0.0;
