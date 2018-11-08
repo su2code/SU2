@@ -938,7 +938,10 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
   /*--- Restart the solution from file information ---*/
 
   filename = config->GetSolution_AdjFileName();
-  restart_filename = config->GetObjFunc_Extension(filename);
+  restart_filename = config->GetObjFunc_Extension(filename); // Timestep extension not taken care of here e.g. *_00014.*
+    
+    //if (dual_time || time_stepping)
+    //restart_filename = config->GetUnsteady_FileName(restart_filename, val_iter);
 
   /*--- Read and store the restart metadata. ---*/
 
