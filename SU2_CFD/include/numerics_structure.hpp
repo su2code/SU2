@@ -4290,7 +4290,7 @@ private:
   su2double dr, dg, dfw;
   bool incompressible;
   bool rotating_frame;
-  bool transition;
+  bool transition_BC;
   su2double gamma_BC;
   su2double intermittency;
   su2double Production, Destruction, CrossProduction;

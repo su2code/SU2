@@ -299,7 +299,7 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
   
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   rotating_frame = config->GetRotating_Frame();
-  transition = (config->GetKind_Trans_Model() == BC);
+  transition_BC  = (config->GetKind_Trans_Model() == BC);
   
   /*--- Spalart-Allmaras closure constants ---*/
   
@@ -350,7 +350,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
   
   gamma_BC = 0.0;
   vmag = 0.0;
-  tu   = config->GetTurbulenceIntensity_FreeStream();
+  tu   = 100.0*config->GetTurbulenceIntensity_FreeStream();  // Turbulence intensity in percent.
   rey  = config->GetReynolds();
 
   if (nDim==2) {
@@ -390,7 +390,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
 //    Original SA model
 //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
     
-    if (transition) {
+    if (transition_BC) {
 
 //    BC model constants    
       chi_1 = 0.002;
@@ -446,7 +446,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
     
-    if (transition) {
+    if (transition_BC) {
         val_Jacobian_i[0][0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     }
     else {
