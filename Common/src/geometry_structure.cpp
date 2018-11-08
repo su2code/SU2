@@ -18276,8 +18276,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   string filename = config->GetSolution_AdjFileName();
   bool compressible = (config->GetKind_Regime() == COMPRESSIBLE);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
-  bool sst = config->GetKind_Turb_Model() == SST;
-  bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
+  bool sst = (config->GetKind_Turb_Model() == SST)  || (config->GetKind_Turb_Model() == SST_SUST);
+  bool sa  = (config->GetKind_Turb_Model() == SA)   || (config->GetKind_Turb_Model() == SA_NEG)  ||
+             (config->GetKind_Turb_Model() == SA_E) || (config->GetKind_Turb_Model() == SA_COMP) ||
+             (config->GetKind_Turb_Model() == SA_E_COMP) ;
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;

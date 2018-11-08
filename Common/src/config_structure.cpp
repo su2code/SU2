@@ -4709,12 +4709,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
         cout << "Turbulence model: ";
         switch (Kind_Turb_Model) {
-          case SA:     cout << "Spalart Allmaras" << endl; break;
-          case SA_NEG: cout << "Negative Spalart Allmaras" << endl; break;
-          case SST:    cout << "Menter's SST"     << endl; break;
-          case SA_E:   cout << "Edwards Spalart Allmaras" << endl; break;
+          case SA:        cout << "Spalart Allmaras" << endl; break;
+          case SA_NEG:    cout << "Negative Spalart Allmaras" << endl; break;
+          case SA_E:      cout << "Edwards Spalart Allmaras" << endl; break;
           case SA_COMP:   cout << "Compressibility Correction Spalart Allmaras" << endl; break;
-          case SA_E_COMP:   cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case SA_E_COMP: cout << "Compressibility Correction Edwards Spalart Allmaras" << endl; break;
+          case SST:       cout << "Menter's SST" << endl; break;
+          case SST_SUST:  cout << "Menter's SST with sustaining terms" << endl; break;
         }
         if (QCR) cout << "Using Quadratic Constitutive Relation, 2000 version (QCR2000)" << endl;
         cout << "Hybrid RANS/LES: ";

@@ -1741,7 +1741,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   bool grid_movement = config->GetGrid_Movement();
   bool turbulent     = ((config->GetKind_Solver() == RANS) ||
                         (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool tkeNeeded     = ((turbulent) && (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded     = ((turbulent) && ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   bool energy        = config->GetEnergy_Equation();
   bool boussinesq    = (config->GetKind_DensityModel() == BOUSSINESQ);
 
@@ -5267,9 +5267,8 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
   su2double Density = 0.0, Pressure = 0.0, *Normal = NULL, Area, *NormalArea, turb_ke;
   
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
-                     (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
-                    (config->GetKind_Turb_Model() == SST));
+  bool tkeNeeded = (((config->GetKind_Solver() == RANS ) || (config->GetKind_Solver() == DISC_ADJ_RANS)) &&
+                    ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST)));
   
   Normal     = new su2double[nDim];
   NormalArea = new su2double[nDim];
@@ -5452,7 +5451,7 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5630,7 +5629,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -5780,7 +5779,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
         
         /*--- Turbulent kinetic energy ---*/
         
-        if (config->GetKind_Turb_Model() == SST)
+        if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
         
@@ -6261,7 +6260,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
         if (turb_model == SA || turb_model == SA_NEG) {
           index++;
-        } else if (turb_model == SST) {
+        } else if (turb_model == SST || turb_model == SST_SUST) {
           index+=2;
         }
 
@@ -7149,7 +7148,7 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
   unsigned short turb_model = config->GetKind_Turb_Model();
   bool physical = true;
   
-  bool tkeNeeded = (turb_model == SST);
+  bool tkeNeeded = ((turb_model == SST) || (turb_model == SST_SUST));
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     
@@ -7431,7 +7430,7 @@ void CIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_contai
     
     /*--- Turbulent kinetic energy ---*/
     
-    if (config->GetKind_Turb_Model() == SST)
+    if ((config->GetKind_Turb_Model() == SST) || (config->GetKind_Turb_Model() == SST_SUST))
       numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                      solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
     

@@ -76,7 +76,7 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
       nVarTurbModel = 1;
       break;
-    case SST:
+    case SST: case SST_SUST:
       nVarTurbModel = 2;
       break;
   }

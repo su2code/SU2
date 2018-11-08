@@ -301,7 +301,7 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
       if (nDim == 2) skipVars += 6;
       if (nDim == 3) skipVars += 8;
     }
-    else if (config->GetKind_Turb_Model() == SST ) {
+    else if (config->GetKind_Turb_Model() == SST || config->GetKind_Turb_Model() == SST_SUST) {
       if (nDim == 2) skipVars += 7;
       if (nDim == 3) skipVars += 9;
     }
