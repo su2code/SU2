@@ -413,7 +413,7 @@ def configure(argument_dict,
     # Boostrap to generate Makefile.in
     bootstrap_command = './bootstrap'
     # Set the base command for running configure
-    configure_base = '../configure --disable-tecio' 
+    configure_base = '../configure'
 
     # Add the arguments to the configure command
     for arg in argument_dict:
