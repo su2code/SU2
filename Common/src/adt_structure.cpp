@@ -1206,8 +1206,8 @@ bool CADTElemClass::CoorInQuadrilateral(const unsigned long elemID,
 
     /* Convert the parametric coordinates to the ones used by the
        quadrilatral i0-i1-i2-i3. They serve as initial guess below. */
-    parCoor[0] = 1.0 - parCoor[0];
-    parCoor[1] = 1.0 - parCoor[1];
+    parCoor[0] = -parCoor[0];
+    parCoor[1] = -parCoor[1];
   }
 
   /* If the coordinate is in neither triangle, return false. */
