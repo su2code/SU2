@@ -1078,6 +1078,13 @@ void CFEM_DG_Integration::SingleGrid_Iteration(CGeometry ****geometry,
   /*--- Convergence strategy ---*/
 
   //Convergence_Monitoring(geometry[iZone][iInst][FinestMesh], config[iZone], Iteration, monitor, FinestMesh);
+  
+  /*--- Calculate Statistical Proprieties ---*/
+  
+  if(config[iZone]->GetCompute_Average()){
+    solver_container[iZone][iInst][iMesh][SolContainer_Position]->Compute_Average(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh],
+                                                                                  config[iZone],iMesh);
+  }
 }
 
 void CFEM_DG_Integration::Space_Integration(CGeometry *geometry,

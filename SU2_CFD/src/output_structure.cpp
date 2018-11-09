@@ -20538,6 +20538,8 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
   unsigned long iPoint, jPoint, FirstIndex = NONE, SecondIndex = NONE;
   unsigned long nVar_First = 0, nVar_Second = 0, nVar_Consv_Par = 0;
 
+  su2double avg_iter = (config->GetExtIter() - config->GetUnst_RestartIter()) + 1;
+
   stringstream varname;
 
   /*--- Use a switch statement to decide how many solver containers we have
@@ -20602,13 +20604,37 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
     /*--- New variables get registered here before the end of the loop. ---*/
     
-    if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
-      nVar_Par += 1;
-      Variable_Names.push_back("Laminar_Viscosity");
-    }
-    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-      nVar_Par += 1;
-      Variable_Names.push_back("Eddy_Viscosity");
+//    if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
+//      nVar_Par += 1;
+//      Variable_Names.push_back("Laminar_Viscosity");
+//    }
+//    if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+//      nVar_Par += 1;
+//      Variable_Names.push_back("Eddy_Viscosity");
+//    }
+    
+    /*--- Add the average of conservative variables ---*/
+    
+    if (config->GetCompute_Average()){
+      nVar_Par += nVar_Consv_Par;
+      
+      Variable_Names.push_back("DensityMean");
+      Variable_Names.push_back("UMean");
+      Variable_Names.push_back("VMean");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("WMean}");
+      Variable_Names.push_back("EnergyMean");
+      
+      nVar_Par += 3;
+      Variable_Names.push_back("UUPrimeMean");
+      Variable_Names.push_back("VVPrimeMean");
+      Variable_Names.push_back("UVPrimeMean");
+      
+      if (geometry->GetnDim() == 3){
+        nVar_Par += 3;
+        Variable_Names.push_back("WWPrimeMean");
+        Variable_Names.push_back("UWPrimeMean");
+        Variable_Names.push_back("VWPrimeMean");
+      }
     }
   }
 
@@ -20655,7 +20681,11 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
 
     const unsigned long offset = nVar_First*volElem[l].offsetDOFsSolLocal;
     su2double *solDOFs         = solver[FirstIndex]->GetVecSolDOFs() + offset;
-
+    su2double *solDOFsAve      = solver[FirstIndex]->GetVecSolDOFsAve() + offset;
+    
+    const unsigned long offset_Prime = 6*volElem[l].offsetDOFsSolLocal;
+    su2double *solDOFsPrime      = solver[FirstIndex]->GetVecSolDOFsPrime() + offset_Prime;
+    
     for(unsigned short j=0; j<volElem[l].nDOFsSol; ++j) {
 
       /*--- Restart the column index with each new point. ---*/
@@ -20702,14 +20732,61 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       /*--- New variables can be loaded to the Local_Data structure here,
        assuming they were registered above correctly. ---*/
 
-      if (Kind_Solver == FEM_NAVIER_STOKES){
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
-      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
-        // todo: Export Eddy instead of Laminar viscosity
-        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
-      }
+//      if (Kind_Solver == FEM_NAVIER_STOKES){
+//        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+//      }
+//      if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+//        // todo: Export Eddy instead of Laminar viscosity
+//        Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
+//      }
 
+      /*--- Add the average solution variables ---*/
+      
+      if (config->GetCompute_Average()){
+        
+        /*--- Get the average of the conservative variables for this particular DOF. ---*/
+        
+        const su2double *U_mean = solDOFsAve + j*nVar_First;
+        const su2double *U_prime = solDOFsPrime + j*6;
+        
+        /* Load the average conservative variables. */
+        
+        for(jVar=0; jVar < nVar_First; ++jVar) {
+          Local_Data[jPoint][iVar] = U_mean[jVar]/avg_iter;
+          iVar++;
+        }
+        
+        /* Compute prime average of the velocity. */
+        
+        /* u'u' = umean * umean - uumean */
+        Local_Data[jPoint][iVar] = (U_mean[1]/avg_iter) * (U_mean[1]/avg_iter) - (U_prime[0]/avg_iter);
+        iVar++;
+        
+        /* v'v' = vmean * vmean - vvmean */
+        Local_Data[jPoint][iVar] = (U_mean[2]/avg_iter) * (U_mean[2]/avg_iter) - (U_prime[1]/avg_iter);
+        iVar++;
+
+        /* u'v' = umean * vmean - uvmean */
+        Local_Data[jPoint][iVar] = (U_mean[1]/avg_iter) * (U_mean[2]/avg_iter) - (U_prime[2]/avg_iter);
+        iVar++;
+
+        if (geometry->GetnDim() == 3){
+          
+          /* w'w' = wmean * wmean - wwmean */
+          Local_Data[jPoint][iVar] = (U_mean[3]/avg_iter) * (U_mean[3]/avg_iter) - (U_prime[3]/avg_iter);
+          iVar++;
+          
+          /* u'w' = umean * wmean - uwmean */
+          Local_Data[jPoint][iVar] = (U_mean[1]/avg_iter) * (U_mean[3]/avg_iter) - (U_prime[4]/avg_iter);
+          iVar++;
+
+          /* w'w' = vmean * wmean - wwmean */
+          Local_Data[jPoint][iVar] = (U_mean[2]/avg_iter) * (U_mean[3]/avg_iter) - (U_prime[5]/avg_iter);
+          iVar++;
+        }
+
+      }
+      
       /*--- Increment the point counter. ---*/
 
       jPoint++;

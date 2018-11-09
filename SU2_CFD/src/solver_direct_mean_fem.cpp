@@ -378,6 +378,11 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       VecSolDOFsNew.resize(nVar*nDOFsLocOwned);
   }
 
+  /*--- Allocate the memory to store the average solution. ---*/
+  if(config->GetCompute_Average()){
+    VecSolDOFsAve.resize(nVar*nDOFsLocOwned);
+    VecSolDOFsPrime.resize(6*nDOFsLocOwned);
+  }
   /*--- Determine the global number of DOFs. ---*/
 #ifdef HAVE_MPI
   SU2_MPI::Allreduce(&nDOFsLocOwned, &nDOFsGlobal, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -9589,6 +9594,49 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   if (Restart_Data != NULL) delete [] Restart_Data;
   Restart_Vars = NULL; Restart_Data = NULL;
 
+}
+
+void CFEM_DG_EulerSolver::Compute_Average(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh){
+  
+  /*--- Basic average computation ----*/
+  
+  for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+    const su2double *solDOF = VecSolDOFs.data() + i*nVar;
+    su2double *solDOFAve = VecSolDOFsAve.data() + i*nVar;
+    su2double *solDOFPrime = VecSolDOFsPrime.data() + i*6;
+  
+    /*--- Compute average over time ----*/
+  
+    solDOFAve[0] += solDOF[0];
+    for(unsigned short j=0; j<nDim; ++j)
+      solDOFAve[j+1] += solDOF[j+1]/solDOF[0];
+    solDOFAve[nVar-1] += solDOF[nVar-1];
+    
+    //    for(unsigned short j=0; j<nVar; ++j) {
+    //      solDOFAve[j] += solDOF[j];
+    //    }
+
+    /*--- Compute prime-squared average over time ---*/
+    
+    /*--- u*u, v*v, u*v, w*w, u*w, v*w ---*/
+    solDOFPrime[0] += (solDOF[1]/solDOF[0]) * (solDOF[1]/solDOF[0]);
+    solDOFPrime[1] += (solDOF[2]/solDOF[0]) * (solDOF[2]/solDOF[0]);
+    solDOFPrime[2] += (solDOF[1]/solDOF[0]) * (solDOF[2]/solDOF[0]);
+
+    if (nDim == 3){
+      
+      solDOFPrime[3] += (solDOF[3]/solDOF[0]) * (solDOF[3]/solDOF[0]);
+      solDOFPrime[4] += (solDOF[1]/solDOF[0]) * (solDOF[3]/solDOF[0]);
+      solDOFPrime[5] += (solDOF[2]/solDOF[0]) * (solDOF[3]/solDOF[0]);
+    }
+    else{
+    /*--- It must be zero otherwise---*/
+      
+      solDOFPrime[3] = 0.0;
+      solDOFPrime[4] = 0.0;
+      solDOFPrime[5] = 0.0;
+    }
+  }
 }
 
 CFEM_DG_NSSolver::CFEM_DG_NSSolver(void) : CFEM_DG_EulerSolver() {
