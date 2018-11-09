@@ -5648,6 +5648,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             //            if (!fluid_structure) {
               if (incompressible && !weakly_coupled_heat) {
               if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
+              else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Vely]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
