@@ -4842,19 +4842,25 @@ private:
   
   su2double CDkw_i, CDkw_j;
   su2double gammaEff_i, gammaEff_j;
+
+  su2double kAmb, omegaAmb;
   
   bool incompressible;
+  bool sustaining_terms;
   
 public:
   
   /*!
    * \brief Constructor of the class.
-   * \param[in] val_nDim  - Number of dimensions of the problem.
-   * \param[in] val_nVar  - Number of variables of the problem.
-   * \param[in] constants - Constants used in the SST turbulence model.
-   * \param[in] config    - Definition of the particular problem.
+   * \param[in] val_nDim      - Number of dimensions of the problem.
+   * \param[in] val_nVar      - Number of variables of the problem.
+   * \param[in] constants     - Constants used in the SST turbulence model.
+   * \param[in] val_kine_Inf  - Value of the free-stream turbulent kinetic energy.
+   * \param[in] val_omega_Inf - Value of the free-stream turbulent dissipation rate.
+   * \param[in] config        - Definition of the particular problem.
    */
-  CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants, CConfig *config);
+  CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double* constants,
+                           su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config);
   
   /*!
    * \brief Destructor of the class.

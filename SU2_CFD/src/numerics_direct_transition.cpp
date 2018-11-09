@@ -229,7 +229,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
         value for the minimum is 0.00027, see
         see https://turbmodels.larc.nasa.gov/langtrymenter_4eqn.html. ---*/
   const su2double turbIntensity_min = 0.00027;
-  const su2double turbIntensity_max = 2.0;
+  const su2double turbIntensity_max = 1.0;
 
   /*--- Maximum number of iterations in the Newton algorithm for Re_theta_eq. ---*/
   const unsigned short maxIt = 25;
@@ -275,10 +275,10 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   /*--- Compute the turbulence intensity. For Spalart-Allmaras type turbulence
         models the turbulence intensity of the free-stream is taken. For numerical
         robustness, the turbulence intensity is clipped within practical limits. ---*/
-  // su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
-  // if(dist < 1.e-10) turbIntensity = 0.0;
-  // if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
-  su2double turbIntensity = config->GetTurbulenceIntensity_FreeStream();
+  su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
+  if(dist < 1.e-10) turbIntensity = 0.0;
+  if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
+  //su2double turbIntensity = config->GetTurbulenceIntensity_FreeStream();
 
   turbIntensity = min(max(turbIntensity, turbIntensity_min), turbIntensity_max);
 

@@ -848,7 +848,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Density used in solids */
   addDoubleOption("SOLID_DENSITY", Density_Solid, 2710.0);
   /* DESCRIPTION:  Free stream turbulence intensitity, sqrt(2 k_inf/3)/U_inf */
-  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.05);
+  addDoubleOption("FREESTREAM_TURBULENCEINTENSITY", TurbulenceIntensity_FreeStream, 0.0005);
   /* DESCRIPTION:  */
   addDoubleOption("FREESTREAM_NU_FACTOR", NuFactor_FreeStream, 3.0);
   /* DESCRIPTION:  */

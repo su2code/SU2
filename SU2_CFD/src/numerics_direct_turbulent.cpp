@@ -1150,9 +1150,11 @@ void CAvgGrad_TurbSST::FinishResidualCalc(su2double *val_residual, su2double **J
 }
 
 CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsigned short val_nVar, su2double *constants,
-                                                   CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+                                                   su2double val_kine_Inf, su2double val_omega_Inf, CConfig *config)
+  : CNumerics(val_nDim, val_nVar, config) {
   
-  incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  incompressible   = (config->GetKind_Regime()     == INCOMPRESSIBLE);
+  sustaining_terms = (config->GetKind_Turb_Model() == SST_SUST);
   
   /*--- Closure constants ---*/
   beta_star     = constants[6];
@@ -1163,6 +1165,10 @@ CSourcePieceWise_TurbSST::CSourcePieceWise_TurbSST(unsigned short val_nDim, unsi
   alfa_1        = constants[8];
   alfa_2        = constants[9];
   a1            = constants[7];
+
+  /*--- Set the ambient values of k and omega to the free stream values. ---*/
+  kAmb     = val_kine_Inf;
+  omegaAmb = val_omega_Inf;
 }
 
 CSourcePieceWise_TurbSST::~CSourcePieceWise_TurbSST(void) { }
@@ -1222,14 +1228,31 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     
     pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
     pk = min(pk,20.0*beta_star*Density_i*TurbVar_i[1]*TurbVar_i[0]);
-    pk = max(pk,0.0);
+    pk = gammaEff_i*max(pk,0.0);
     
     zeta = max(TurbVar_i[1], StrainMag_i*F2_i/a1);
     pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
-    pw = max(pw,0.0);
-    
-    val_residual[0] += gammaEff_i*pk*Volume;
-    val_residual[1] += alfa_blended*Density_i*pw*Volume;
+    pw = alfa_blended*Density_i*max(pw,0.0);
+
+    /*--- Sustaining terms, if desired. Note that if the production terms are
+          larger equal than the sustaining terms, the original formulation is
+          obtained again. This is in contrast to the version in literature
+          where the sustaining terms are simply added. This latter approach could
+          lead to problems for very big values of the free-stream turbulence
+          intensity. ---*/
+
+    if ( sustaining_terms ) {
+      const su2double sust_k = gammaEffDestr*beta_star*Density_i*kAmb*omegaAmb;
+      const su2double sust_w = beta_blended*Density_i*omegaAmb*omegaAmb;
+
+      pk = max(pk, sust_k);
+      pw = max(pw, sust_w);
+    }
+ 
+    /*--- Add the production terms to the residuals. ---*/
+
+    val_residual[0] += pk*Volume;
+    val_residual[1] += pw*Volume;
     
     /*--- Dissipation. Only the destruction term of the kinetic energy
           equation is multiplied by gammaEffDestr. ---*/
@@ -1240,7 +1263,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     /*--- Cross diffusion ---*/
     
     val_residual[1] += (1.0 - F1_i)*CDkw_i*Volume;
-    
+
     /*--- Implicit part ---*/
     
     val_Jacobian_i[0][0] = -gammaEffDestr*beta_star*TurbVar_i[1]*Volume;
