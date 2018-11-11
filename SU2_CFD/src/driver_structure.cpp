@@ -4614,15 +4614,15 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
 
   /*--- Read the target pressure ---*/
 
-  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES) 
-     output->SetCp_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter);
- 
+  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+
   /*--- Read the target heat flux ---*/
- 
-  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES) 
-     output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][MESH_0][FLOW_SOL],
-         geometry_container[ZONE_0][MESH_0], config_container[ZONE_0], ExtIter); 
+
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Print residuals in the first iteration ---*/
 
