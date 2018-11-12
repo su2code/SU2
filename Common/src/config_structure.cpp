@@ -897,6 +897,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("TRANSPIRATION_FILENAME", Transpiration_FileName, string("trans.dat"));
   /* DESCRIPTION:  add transpiration to objective */
   addBoolOption("TRANSPIRATION_OBJECTIVE", Transpiration_Objective, false);
+  /* DESCRIPTION:  compute buffet sensor */
+  addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
+  /* DESCRIPTION:  compute buffet sensor */
+  addDoubleOption("BUFFET_K", Buffet_k, 10.0);
+  /* DESCRIPTION:  compute buffet sensor */
+  addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
   /* DESCRIPTION: Periodic boundary marker(s) for use with SU2_MSH
    Format: ( periodic marker, donor marker, rotation_center_x, rotation_center_y,
    rotation_center_z, rotation_angle_x-axis, rotation_angle_y-axis,
@@ -4958,6 +4964,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case MAXIMUM_HEATFLUX:           cout << "Maximum heat flux objective function." << endl; break;
         case FIGURE_OF_MERIT:            cout << "Rotor Figure of Merit objective function." << endl; break;
         case BLOWING_COEFFICIENT:        cout << "AFC jet blowing objective function." << endl; break;
+        case BUFFET_SENSOR:               cout << "Buffet sensor objective function." << endl; break;
         case SURFACE_TOTAL_PRESSURE:         cout << "Average total pressure objective function." << endl; break;
         case SURFACE_STATIC_PRESSURE:        cout << "Average static pressure objective function." << endl; break;
         case SURFACE_MASSFLOW:             cout << "Mass flow rate objective function." << endl; break;
@@ -6795,6 +6802,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
         case BLOWING_COEFFICIENT:         AdjExt = "_cmu";      break;
+        case BUFFET_SENSOR:               AdjExt = "_buffet";   break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
         case SURFACE_STATIC_PRESSURE:     AdjExt = "_pe";       break;
         case SURFACE_MASSFLOW:            AdjExt = "_mfr";      break;

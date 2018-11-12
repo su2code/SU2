@@ -738,6 +738,12 @@ inline string CConfig::GetTranspTag(unsigned short val_dv) { return TranspTag[va
 
 inline bool CConfig::GetTranspiration_Objective(void) { return Transpiration_Objective; }
 
+inline bool CConfig::GetBuffet_Monitoring(void) { return Buffet_Monitoring; }
+
+inline su2double CConfig::GetBuffet_k(void) { return Buffet_k; }
+
+inline su2double CConfig::GetBuffet_lambda(void) { return Buffet_lambda; }
+
 inline unsigned short CConfig::GetConvCriteria(void) { return ConvCriteria; }
 
 inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
