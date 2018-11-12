@@ -1196,8 +1196,8 @@ void COutput::SetParaview_MeshASCII(CConfig *config, CGeometry *geometry, unsign
   
   
   if (Kind_Solver == HEAT_EQUATION_FVM) {
-    if (surf_sol) fileroot = config->GetSurfHeat_FileName().c_str();
-    else fileroot = config->GetHeat_FileName().c_str();
+    if (surf_sol) filename = config->GetSurfHeat_FileName().c_str();
+    else filename = config->GetHeat_FileName().c_str();
   }
   
   strcpy (cstr, filename.c_str());
