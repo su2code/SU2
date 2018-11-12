@@ -347,4 +347,16 @@ bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime
   return write_output;
 }
 
+bool CDiscAdjFlowOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
+        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  
+}
+
+bool CDiscAdjFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+      
+}
 

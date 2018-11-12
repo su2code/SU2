@@ -1347,6 +1347,10 @@ public:
   
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
 };
 
 /*! \class CDiscAdjFlowOutput
@@ -1406,6 +1410,10 @@ public:
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
   
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
 
 };
 
