@@ -811,6 +811,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   unsigned long kk = leaves[0].centralNodeID;
   const su2double *coorBBMin = BBoxCoor.data() + nDimADT*kk;
   const su2double *coorBBMax = coorBBMin + nDim;
+  unsigned long jj;
 
   dist = 0.0;
   for(unsigned short k=0; k<nDim; ++k) {
@@ -939,8 +940,6 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     if(frontLeaves.size() == 0) break;
   }
 
-  AD_END_PASSIVE
-
   /*----------------------------------------------------------------------------*/
   /*--- Step 3: Loop over the possible target bounding boxes and check if    ---*/
   /*---         the corresponding element minimizes the distance to the      ---*/
@@ -968,6 +967,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     su2double dist2Elem;
     Dist2ToElement(ii, coor, dist2Elem);
     if(dist2Elem < dist) {
+      jj       = ii;
       dist     = dist2Elem;
       markerID = localMarkers[ii];
       elemID   = localElemIDs[ii];
@@ -975,8 +975,11 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
     }
   }
 
+  AD_END_PASSIVE
+
   /* At the moment the square of the distance is stored in dist. Compute
      the correct value. */
+  Dist2ToElement(jj, coor, dist);
   dist = sqrt(dist);
 }
 
@@ -1203,8 +1206,8 @@ bool CADTElemClass::CoorInQuadrilateral(const unsigned long elemID,
 
     /* Convert the parametric coordinates to the ones used by the
        quadrilatral i0-i1-i2-i3. They serve as initial guess below. */
-    parCoor[0] = 1.0 - parCoor[0];
-    parCoor[1] = 1.0 - parCoor[1];
+    parCoor[0] = -parCoor[0];
+    parCoor[1] = -parCoor[1];
   }
 
   /* If the coordinate is in neither triangle, return false. */
