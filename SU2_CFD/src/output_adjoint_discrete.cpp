@@ -77,49 +77,80 @@ CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
 
 void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
 
-  // Iteration numbers
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
+  /// DESCRIPTION: The internal iteration index.
+  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// DESCRIPTION: The external iteration index.
+  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// END_GROUP
   
-  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// DESCRIPTION: Root-mean square residual of the adjoint density.
+  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Y", "rms[A_RhoV]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint momentum z-component.
   AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint energy.
+  AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the adjoint nu tilde.
+    AddHistoryOutput("RMS_ADJ_NU_TILDE", "rms[A_nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);      
     break;  
   case SST:
-    AddHistoryOutput("RMS_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the adjoint kinetic energy.
+    AddHistoryOutput("RMS_ADJ_KINETIC_ENERGY", "rms[A_k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+    /// DESCRIPTION: Root-mean square residual of the adjoint dissipation.
+    AddHistoryOutput("RMS_ADJ_DISSIPATION",    "rms[A_w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);   
     break;
   default: break;
   }
+  /// END_GROUP
   
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// DESCRIPTION: Maximum residual of the adjoint density.
   AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint momentum z-component
+  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint energy.
+  AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
+    AddHistoryOutput("MAX_ADJ_NU_TILDE", "max[A_nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);      
     break;  
   case SST:
-  AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Maximum residual of the adjoint kinetic energy.
+    AddHistoryOutput("MAX_ADJ_KINETIC_ENERGY", "max[A_k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);   
+    /// DESCRIPTION: Maximum residual of the adjoint dissipation.
+    AddHistoryOutput("MAX_ADJ_DISSIPATION",    "max[A_w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
     break;
   default: break;
   }
+  /// END_GROUP
   
-  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES");
-  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES");
+  /// BEGIN_GROUP: SENSITIVITIES, DESCRIPTION: Sensitivities of different geometrical or boundary values.   
+  /// DESCRIPTION: Sum of the geometrical sensitivities on all markers set in MARKER_MONITORING.
+  AddHistoryOutput("SENS_GEO",   "Sens_Geo",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  /// DESCRIPTION: Sensitivity of the objective function with respect to the angle of attack (only for compressible solver).
+  AddHistoryOutput("SENS_AOA",   "Sens_AoA",   FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  /// DESCRIPTION: Sensitivity of the objective function with respect to the Mach number (only of compressible solver).
+  AddHistoryOutput("SENS_MACH",  "Sens_Mach",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field pressure.
+  AddHistoryOutput("SENS_PRESS", "Sens_Press", FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  /// DESCRIPTION: Sensitivity of the objective function with respect to the far-field temperature.
+  AddHistoryOutput("SENS_TEMP",  "Sens_Temp",  FORMAT_SCIENTIFIC, "SENSITIVITIES", TYPE_COEFFICIENT); 
+  /// END_GROUP
   
-  AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
+  /// DESCRIPTION: Currently used wall-clock time.
+  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
   
 }
 
@@ -178,64 +209,93 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
 
 void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   
-  
-  // Grid coordinates
-  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  /// BEGIN_GROUP: COORDINATES, DESCRIPTION: Coordinates of the mesh nodes.
+  /// DESCRIPTION: x coordinates of the mesh nodes.
+  AddVolumeOutput("COORD-X", "x", "COORDINATES"); 
+  /// DESCRIPTION: y coordinates of the mesh nodes.
   AddVolumeOutput("COORD-Y", "y", "COORDINATES");
   if (nDim == 3)
+    /// DESCRIPTION: z coordinates of the mesh nodes.
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+  /// END_GROUP
   
-  // Conservative
-  AddVolumeOutput("ADJOINT_DENSITY",    "Adjoint_Density",    "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE");
+  /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
+  /// DESCRIPTION: Adjoint density.
+  AddVolumeOutput("ADJ_DENSITY",    "Adjoint_Density",    "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint momentum x-component.
+  AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint momentum y-component.
+  AddVolumeOutput("ADJ_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE"); 
   if (nDim == 3)
-    AddVolumeOutput("ADJOINT_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_ENERGY", "Adjoint_Energy", "CONSERVATIVE");
-  
+    /// DESCRIPTION: Adjoint momentum z-component.
+    AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint energy.
+  AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "CONSERVATIVE");           
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddVolumeOutput("ADJOINT_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE");
+    /// DESCRIPTION: Adjoint nu tilde.
+    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE"); 
     break;  
   case SST:
-    AddVolumeOutput("ADJOINT_TKE", "Adjoint_TKE", "CONSERVATIVE");
-    AddVolumeOutput("ADJOINT_NU_TILDE", "Adjoint_Omega", "CONSERVATIVE");
+    /// DESCRIPTION: Adjoint kinetic energy.
+    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "CONSERVATIVE"); 
+    /// DESCRIPTION: Adjoint dissipation.
+    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "CONSERVATIVE");  
     break;
   default: break;
   }
+  /// END_GROUP
   
+  /// BEGIN_GROUP: GRID_VELOCITY, DESCRIPTION: The grid velocity in case of a moving grid.  
   if (config->GetGrid_Movement()){
-    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY");
-    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY");
+    /// DESCRIPTION: Grid velocity x-component.
+    AddVolumeOutput("GRID_VELOCITY-X", "Grid_Velocity_x", "GRID_VELOCITY"); 
+    /// DESCRIPTION: Grid velocity y-component.
+    AddVolumeOutput("GRID_VELOCITY-Y", "Grid_Velocity_y", "GRID_VELOCITY"); 
     if (nDim == 3)    
-      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY");
+      /// DESCRIPTION: Grid velocity z-component.
+      AddVolumeOutput("GRID_VELOCITY-Z", "Grid_Velocity_z", "GRID_VELOCITY"); 
   }
+  /// END_GROUP
   
-  // Residuals
-  AddVolumeOutput("RESIDUAL_ADJOINT_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-Y", "Residual_Adjoint_Momentum_y", "RESIDUAL");
+  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the conservative variables. 
+  /// DESCRIPTION: Residual of the adjoint density.
+  AddVolumeOutput("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");  
+  /// DESCRIPTION: Residual of the adjoint momentum x-component.
+  AddVolumeOutput("RES_ADJ_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL");  
+  /// DESCRIPTION: Residual of the adjoint momentum y-component.
+  AddVolumeOutput("RES_ADJ_MOMENTUM-Y", "Residual_Adjoint_Momentum_y", "RESIDUAL");  
   if (nDim == 3)
-    AddVolumeOutput("RESIDUAL_ADJOINT_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_ADJOINT_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL");
-  
+    /// DESCRIPTION: Residual of the adjoint momentum z-component.
+    AddVolumeOutput("RES_ADJ_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL"); 
+  /// DESCRIPTION: Residual of the adjoint energy. 
+  AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL");            
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddVolumeOutput("RESIDUAL_ADJOINT_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL");
+    /// DESCRIPTION: Residual of the nu tilde. 
+    AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Nu_Tilde", "RESIDUAL"); 
     break;  
   case SST:
-    AddVolumeOutput("RESIDUAL_ADJOINT_TKE", "Residual_Adjoint_TKE", "RESIDUAL");
-    AddVolumeOutput("RESIDUAL_ADJOINT_NU_TILDE", "Residual_Adjoint_Omega", "RESIDUAL");
+    /// DESCRIPTION: Residual of the adjoint kinetic energy. 
+    AddVolumeOutput("RES_ADJ_TKE", "Residual_Adjoint_TKE", "RESIDUAL");    
+    /// DESCRIPTION: Residual of the adjoint dissipation.
+    AddVolumeOutput("RES_ADJ_NU_TILDE", "Residual_Adjoint_Omega", "RESIDUAL");    
     break;
   default: break;
   }
+  /// END_GROUP
   
-  // Sensitivity
-  AddVolumeOutput("SENSITIVITY_X", "Sensitivity_x", "SENSITIVITY");
+  /// BEGIN_GROUP: SENSITIVITY, DESCRIPTION: Geometrical sensitivities of the current objective function.
+  /// DESCRIPTION: Sensitivity x-component.
+  AddVolumeOutput("SENSITIVITY_X", "Sensitivity_x", "SENSITIVITY"); 
+  /// DESCRIPTION: Sensitivity y-component.
   AddVolumeOutput("SENSITIVITY_Y", "Sensitivity_y", "SENSITIVITY");
   if (nDim == 3)
-    AddVolumeOutput("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY");  
-  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY");
+    /// DESCRIPTION: Sensitivity z-component.
+    AddVolumeOutput("SENSITIVITY_Z", "Sensitivity_z", "SENSITIVITY");   
+  /// DESCRIPTION: Sensitivity in normal direction.
+  AddVolumeOutput("SENSITIVITY", "Surface_Sensitivity", "SENSITIVITY"); 
+  /// END_GROUP
  
 }
 
