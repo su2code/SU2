@@ -7692,7 +7692,7 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
    fixed length of 33 for the string length to match with CGNS. This is 
    needed for when we read the strings later. ---*/
 
-  for (iVar = 0; iVar < nVar_Par; iVar++) {
+  for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
     strncpy(str_buf, Variable_Names[iVar].c_str(), CGNS_STRING_SIZE);
     fwrite(str_buf, CGNS_STRING_SIZE, sizeof(char), fhw);
     file_size += (su2double)CGNS_STRING_SIZE*sizeof(char);
@@ -7700,8 +7700,8 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
 
   /*--- Call to write the entire restart file data in binary in one shot. ---*/
 
-  fwrite(buf, nVar_Par*nParallel_Poin, sizeof(passivedouble), fhw);
-  file_size += (su2double)nVar_Par*nParallel_Poin*sizeof(passivedouble);
+  fwrite(buf, GlobalField_Counter*nParallel_Poin, sizeof(passivedouble), fhw);
+  file_size += (su2double)GlobalField_Counter*nParallel_Poin*sizeof(passivedouble);
 
   /*--- Write the external iteration. ---*/
 
@@ -8039,8 +8039,8 @@ void COutput::WriteCSV_Slice(CConfig *config, CGeometry *geometry,
 #else
   for (iVertex = 0; iVertex < Buffer_Recv_nVertex[0]; iVertex++) {
     Buffer_Recv_GlobalIndex[iVertex] = Buffer_Send_GlobalIndex[iVertex];
-    for (iVar = 0; iVar < nVar_Par; iVar++) {
-      Buffer_Recv_Data[iVertex*nVar_Par+iVar] = Buffer_Send_Data[iVertex*nVar_Par+iVar];
+    for (iVar = 0; iVar < GlobalField_Counter; iVar++) {
+      Buffer_Recv_Data[iVertex*GlobalField_Counter+iVar] = Buffer_Send_Data[iVertex*GlobalField_Counter+iVar];
     }
   }
 #endif

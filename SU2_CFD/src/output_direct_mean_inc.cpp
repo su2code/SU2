@@ -156,16 +156,16 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   }
   
   // Aerodynamic coefficients
-  AddHistoryOutput("DRAG",       "CD(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("LIFT",       "CL(Total)",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("SIDEFORCE",  "CSF(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-X",   "CMx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-Y",   "CMy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-Z",   "CMz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-X",    "CFx(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-Y",    "CFy(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-Z",    "CFz(Total)",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("EFFICIENCY", "CEff(Total)", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("DRAG",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("LIFT",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
 
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
