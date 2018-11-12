@@ -2021,7 +2021,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     cout <<"-- Input conditions:"<< endl;
     
-    TablePrinter NonDimTable(&std::cout);
+    PrintingToolbox::CTablePrinter NonDimTable(&std::cout);
     stringstream Unit;  
     
     NonDimTable.AddColumn("Name", 18);

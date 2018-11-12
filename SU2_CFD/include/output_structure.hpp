@@ -283,7 +283,7 @@ protected:
 
   ofstream HistFile;
   
-  TablePrinter* ConvergenceTable;
+  PrintingToolbox::CTablePrinter* ConvergenceTable;
   
   std::map<string, su2double> Init_Residuals;
   

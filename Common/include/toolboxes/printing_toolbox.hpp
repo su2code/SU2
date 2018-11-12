@@ -5,13 +5,12 @@
 #include <sstream>
 #include <cmath>
 
+namespace PrintingToolbox { 
 
-
-
-class TablePrinter{
+class CTablePrinter{
 public:
-  TablePrinter(std::ostream * output, const std::string & separator = "|");
-  ~TablePrinter();
+  CTablePrinter(std::ostream * output, const std::string & separator = "|");
+  ~CTablePrinter();
   class endl{};
   int get_num_columns() const;
   int get_table_width() const;
@@ -23,7 +22,7 @@ public:
   void PrintHeader();
   void PrintFooter();
 
-  TablePrinter& operator<<(endl input){
+  CTablePrinter& operator<<(endl input){
     while (j_ != 0){
       *this << "";
     }
@@ -34,7 +33,7 @@ public:
 //  TablePrinter& operator<<(float input);
 //  TablePrinter& operator<<(double input);
 
-  template<typename T> TablePrinter& operator<<(T input){
+  template<typename T> CTablePrinter& operator<<(T input){
     if (j_ == 0)
       *out_stream_ << "|";
 
@@ -121,3 +120,5 @@ private:
   int table_width_;
   bool flush_left_;
 };
+
+}

@@ -3846,7 +3846,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     
     cout <<"-- Input conditions:"<< endl;
     
-    TablePrinter NonDimTable(&std::cout);
+    PrintingToolbox::CTablePrinter NonDimTable(&std::cout);
     stringstream Unit;    
     
     NonDimTable.AddColumn("Name", 18);
