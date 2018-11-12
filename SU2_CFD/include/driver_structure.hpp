@@ -87,7 +87,8 @@ protected:
                 **transfer_types;               /*!< \brief Type of coupling between the distinct (physical) zones.*/
   bool StopCalc,                                /*!< \brief Stop computation flag.*/
        mixingplane,                             /*!< \brief mixing-plane simulation flag.*/
-       fsi;                                     /*!< \brief FSI simulation flag.*/
+       fsi,                                     /*!< \brief FSI simulation flag.*/
+       fem_solver;                              /*!< \brief FEM fluid solver simulation flag. */
   CIteration ***iteration_container;             /*!< \brief Container vector with all the iteration methods. */
   COutput *output;                              /*!< \brief Pointer to the COutput class. */
   CIntegration ****integration_container;        /*!< \brief Container vector with all the integration methods. */
@@ -141,7 +142,12 @@ public:
    * \brief Construction of the edge-based data structure and the multigrid structure.
    */
   void Geometrical_Preprocessing();
-
+  
+  /*!
+   * \brief Do the geometrical preprocessing for the DG FEM solver.
+   */
+  void Geometrical_Preprocessing_DGFEM();
+  
   /*!
    * \brief Definition of the physics iteration class or within a single zone.
    * \param[in] iteration_container - Pointer to the iteration container to be instantiated.
@@ -1191,7 +1197,7 @@ public:
  * \class CDiscAdjFSIDriver
  * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CDiscAdjFSIDriver : public CDriver {
 
