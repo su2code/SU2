@@ -312,3 +312,17 @@ void CAdjFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
   
 }
 
+bool CAdjFlowOutput::SetInit_Residuals(CConfig *config){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
+        (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
+  
+}
+
+bool CAdjFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+  
+  return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
+      
+}
+
+
