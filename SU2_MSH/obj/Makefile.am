@@ -53,27 +53,7 @@ ___bin_SU2_MSH_LDADD = ../../Common/lib/libSU2.a
 ___bin_SU2_MSH_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_MSH_LDADD += @su2_externals_LIBS@
 
-# if BUILD_HDF5
-___bin_SU2_MSH_CXXFLAGS += @HDF5_CXX@
-___bin_SU2_MSH_LDADD += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-___bin_SU2_MSH_CXXFLAGS += @SZIP_CXX@
-___bin_SU2_MSH_LDADD += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-___bin_SU2_MSH_CXXFLAGS += @ZLIB_CXX@
-___bin_SU2_MSH_LDADD += @ZLIB_LD@
-# endif
-
 # if BUILD_MUTATIONPP
 ___bin_SU2_MSH_CXXFLAGS += @MUTATIONPP_CXX@
 ___bin_SU2_MSH_LDADD += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-___bin_SU2_MSH_CXXFLAGS += @JSONCPP_CXX@
-___bin_SU2_MSH_LDADD += @JSONCPP_LD@
 # endif

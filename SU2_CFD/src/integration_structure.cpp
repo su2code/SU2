@@ -77,6 +77,9 @@ void CIntegration::Space_Integration(CGeometry *geometry,
     case SPACE_UPWIND:
       solver_container[MainSolver]->Upwind_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh);
       break;
+    case FINITE_ELEMENT:
+      solver_container[MainSolver]->Convective_Residual(geometry, solver_container, numerics[CONV_TERM], config, iMesh, iRKStep);
+      break;
   }
   
   /*--- Compute viscous residuals ---*/
@@ -474,7 +477,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
         Cauchy_Value = 0.0;
         Cauchy_Counter = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Serie[iCounter] = 0.0;
+          Cauchy_Serie[iCounter] = 0.0;
       }
       
       Old_Func = New_Func;
@@ -490,7 +493,7 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
       if (Iteration  >= config->GetCauchy_Elems()) {
         Cauchy_Value = 0;
         for (iCounter = 0; iCounter < config->GetCauchy_Elems(); iCounter++)
-        Cauchy_Value += Cauchy_Serie[iCounter];
+          Cauchy_Value += Cauchy_Serie[iCounter];
       }
       
       if (Cauchy_Value >= config->GetCauchy_Eps()) { Convergence = false; Convergence_FullMG = false; }
@@ -602,7 +605,7 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     string Marker_Tag, Monitoring_Tag;
     int nProcessor = size;
 
-    /*--- Only if mater node allocate memory ---*/
+    /*--- Only if master node allocate memory ---*/
     
     if (rank == MASTER_NODE) {
       plunge_all = new su2double[nProcessor];

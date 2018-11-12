@@ -410,6 +410,8 @@ def configure(argument_dict,
               made_adolc,
               made_codi):
 
+    # Boostrap to generate Makefile.in
+    bootstrap_command = './bootstrap'
     # Set the base command for running configure
     configure_base = '../configure'
 
@@ -426,6 +428,11 @@ def configure(argument_dict,
         configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
+   
+    print(  '\nPreparing build environment\n' \
+            '=====================================================================')
+
+    run_command(bootstrap_command, 'bootstrap.log', 'bootstrap.err', conf_environ)
 
     # Create the commands for the different configurations and run configure
     for key in modes:
