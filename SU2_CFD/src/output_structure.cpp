@@ -44,7 +44,7 @@ COutput::COutput(CConfig *config) {
   
   field_width = 12;
   
-  ConvergenceTable = new TablePrinter(&std::cout);
+  ConvergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
 
   unsigned short iDim, iZone, iSpan, iMarker;
   

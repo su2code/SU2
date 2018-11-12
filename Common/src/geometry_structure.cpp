@@ -10284,7 +10284,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         
         bool duplicate = false;
         iMarker=0;
-        TablePrinter BoundaryTable(&std::cout);
+        PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
         BoundaryTable.AddColumn("Index", 6);
         BoundaryTable.AddColumn("Marker", 14);
         BoundaryTable.AddColumn("Elements", 14);
@@ -20797,7 +20797,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
   }
   else {
     if (rank == MASTER_NODE) {
-      TablePrinter MGTable(&std::cout);
+      PrintingToolbox::CTablePrinter MGTable(&std::cout);
       MGTable.AddColumn("MG Level", 10);
       MGTable.AddColumn("CVs", 10);
       MGTable.AddColumn("Aggl. Rate", 10);

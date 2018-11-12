@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-TablePrinter::TablePrinter(std::ostream * output, const std::string & separator){
+PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream * output, const std::string & separator){
   out_stream_ = output;
   i_ = 0;
   j_ = 0;
@@ -12,27 +12,27 @@ TablePrinter::TablePrinter(std::ostream * output, const std::string & separator)
   flush_left_ = false;
 }
 
-TablePrinter::~TablePrinter(){
+PrintingToolbox::CTablePrinter::~CTablePrinter(){
 
 }
 
-int TablePrinter::get_num_columns() const {
+int PrintingToolbox::CTablePrinter::get_num_columns() const {
   return column_headers_.size();
 }
 
-int TablePrinter::get_table_width() const {
+int PrintingToolbox::CTablePrinter::get_table_width() const {
   return table_width_;
 }
 
-void TablePrinter::set_separator(const std::string &separator){
+void PrintingToolbox::CTablePrinter::set_separator(const std::string &separator){
   separator_ = separator;
 }
 
-void TablePrinter::set_flush_left(){
+void PrintingToolbox::CTablePrinter::set_flush_left(){
   flush_left_ = true;
 }
 
-void TablePrinter::set_flush_right(){
+void PrintingToolbox::CTablePrinter::set_flush_right(){
   flush_left_ = false;
 }
 
@@ -41,7 +41,7 @@ void TablePrinter::set_flush_right(){
  ** \param header_name Name to be print for the header
  ** \param column_width the width of the column (has to be >=5)
  ** */
-void TablePrinter::AddColumn(const std::string & header_name, int column_width){
+void PrintingToolbox::CTablePrinter::AddColumn(const std::string & header_name, int column_width){
   if (column_width < 4){
     throw std::invalid_argument("Column size has to be >= 4");
   }
@@ -51,7 +51,7 @@ void TablePrinter::AddColumn(const std::string & header_name, int column_width){
   table_width_ += column_width + separator_.size(); // for the separator  
 }
 
-void TablePrinter::PrintHorizontalLine() {
+void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
   *out_stream_ << "+"; // the left bar
 
   for (int i=0; i<table_width_-1; ++i)
@@ -61,7 +61,7 @@ void TablePrinter::PrintHorizontalLine() {
   *out_stream_ << "\n";
 }
 
-void TablePrinter::PrintHeader(){
+void PrintingToolbox::CTablePrinter::PrintHeader(){
   PrintHorizontalLine();
   *out_stream_ << "|";
 
@@ -82,7 +82,7 @@ void TablePrinter::PrintHeader(){
   PrintHorizontalLine();
 }
 
-void TablePrinter::PrintFooter(){
+void PrintingToolbox::CTablePrinter::PrintFooter(){
   PrintHorizontalLine();
 }
 

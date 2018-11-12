@@ -5704,7 +5704,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels!= 0){
-        TablePrinter MGTable(&std::cout);
+        PrintingToolbox::CTablePrinter MGTable(&std::cout);
         
         MGTable.AddColumn("MG Level",         10);
         MGTable.AddColumn("Presmooth",     10);
