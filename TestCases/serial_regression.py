@@ -891,7 +891,7 @@ def main():
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
-    airfoilRBF.cfg_file  = "settings.cfg"
+    airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 50
     airfoilRBF.test_vals = [-8.000964, -2.600088, 0.276433, 0.000824] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
