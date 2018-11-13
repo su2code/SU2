@@ -683,7 +683,23 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
       VecSolDOFs[ii] = ConsVarFreeStream[j];
     }
   }
-
+  
+  /*--- If we want to compute averages, start the average and prime average
+   vectors with zero. This is overruled when a restart takes place with the
+   restart average option ---*/
+  if (config->GetCompute_Average()){
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+      for(unsigned short j=0; j<nVar; ++j, ++ii) {
+        VecSolDOFsAve[ii] = 0.0;
+      }
+    }
+    
+    for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
+      for(unsigned short j=0; j<6; ++j, ++ii) {
+        VecSolDOFsPrime[ii] = 0.0;
+      }
+    }
+  }
   /* Check if the exact Jacobian of the spatial discretization must be
      determined. If so, the color of each DOF must be determined, which
      is converted to the DOFs for each color. */
@@ -9491,6 +9507,12 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   unsigned short rbuf_NotMatching = 0;
   unsigned long nDOF_Read = 0;
 
+  bool compute_average = (config->GetCompute_Average() && config->GetRestart_Average());
+  bool isAverageRestartFile = false;
+  string averageField = "DensityMean";
+  unsigned short averageIndex = 0;
+  unsigned short primeIndex = 0, primeVars = 3;
+  
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
@@ -9503,6 +9525,19 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
+  /*--- Check if the restart file contains average data ---*/
+  
+  if (compute_average){
+    if(std::find(config->fields.begin(), config->fields.end(), averageField) != config->fields.end()) {
+      isAverageRestartFile = true;
+      averageIndex = std::find(config->fields.begin(), config->fields.end(), averageField) - config->fields.begin();
+      primeIndex = averageIndex + nVar;
+      
+      /*--- The number of variables of the prime average is 3 for 2D and 6 for 3D ---*/
+      if (geometry[MESH_0]->GetnDim() == 3) primeVars = 6;
+    }
+  }
+  
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
@@ -9522,6 +9557,23 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
       for (iVar = 0; iVar < nVar; iVar++) {
         VecSolDOFs[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
       }
+      
+      /*--- If compute average is true and it is an averaged restart file,
+       load the data from restart file. Note that the number o variables is of
+       the vector average solution is equal to the vector solution.---*/
+      
+      if ( compute_average && isAverageRestartFile ){
+        index = counter*Restart_Vars[1] + averageIndex - 1;
+        for (iVar = 0; iVar < nVar; iVar++) {
+          VecSolDOFsAve[nVar*iPoint_Local+iVar] = Restart_Data[index+iVar];
+        }
+
+        index = counter*Restart_Vars[1] + primeIndex - 1;
+        for (iVar = 0; iVar < primeVars; iVar++) {
+          VecSolDOFsPrime[primeVars*iPoint_Local+iVar] = Restart_Data[index+iVar];
+        }
+      }
+
       /*--- Update the local counter nDOF_Read. ---*/
       ++nDOF_Read;
 

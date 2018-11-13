@@ -2224,6 +2224,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Compute Average for unsteady simulations */
   addBoolOption("COMPUTE_AVERAGE", Compute_Average, false);
   
+  /* DESCRIPTION: Restart from a previous averaged solution for unsteady simulations */
+  addBoolOption("RESTART_AVERAGE", Restart_Average, false);
+  
   /* DESCRIPTION: Multipoint design Mach number*/
   addPythonOption("MULTIPOINT_MACH_NUMBER");
   

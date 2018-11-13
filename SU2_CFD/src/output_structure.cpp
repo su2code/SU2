@@ -20621,7 +20621,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       Variable_Names.push_back("DensityMean");
       Variable_Names.push_back("UMean");
       Variable_Names.push_back("VMean");
-      if (geometry->GetnDim() == 3) Variable_Names.push_back("WMean}");
+      if (geometry->GetnDim() == 3) Variable_Names.push_back("WMean");
       Variable_Names.push_back("EnergyMean");
       
       nVar_Par += 3;
