@@ -688,12 +688,13 @@ CFEM_DG_EulerSolver::CFEM_DG_EulerSolver(CGeometry *geometry, CConfig *config, u
    vectors with zero. This is overruled when a restart takes place with the
    restart average option ---*/
   if (config->GetCompute_Average()){
+    ii = 0;
     for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
       for(unsigned short j=0; j<nVar; ++j, ++ii) {
         VecSolDOFsAve[ii] = 0.0;
       }
     }
-    
+    ii = 0;
     for(unsigned long i=0; i<nDOFsLocOwned; ++i) {
       for(unsigned short j=0; j<6; ++j, ++ii) {
         VecSolDOFsPrime[ii] = 0.0;
