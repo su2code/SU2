@@ -2345,15 +2345,13 @@ public:
   virtual su2double GetDual_Time_Derivative(unsigned short iVar);
   
   virtual su2double GetDual_Time_Derivative_n(unsigned short iVar);
-  
-  /*!
-   * \brief Virtual member. 
-   */
+
+  virtual void SetTauWall(su2double val_tau_wall);
+
+  virtual su2double GetTauWall();
+
   virtual void SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* Vorticity, su2double LaminarViscosity);
- 
-  /*!
-   * \brief Virtual member. 
-   */
+
   virtual su2double GetVortex_Tilting();
   
   virtual void SetDynamic_Derivative(unsigned short iVar, su2double der);
@@ -2536,56 +2534,11 @@ public:
 };
 
 /*!
- * \class CHeatVariable
- * \brief Main class for defining the variables of the Heat equation solver.
- * \ingroup Potential_Flow_Equation
- * \author F. Palacios
- */
-class CHeatVariable : public CVariable {
-protected:
-  su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   */
-  CHeatVariable(void);
-  
-  /*!
-   * \overload
-   * \param[in] val_Heat - Values of the Heat solution (initialization value).
-   * \param[in] val_nDim - Number of dimensions of the problem.
-   * \param[in] val_nvar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CHeatVariable(su2double *val_Heat, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CHeatVariable(void);
-  
-  /*!
-   * \brief Set the direct solution for the adjoint solver.
-   * \param[in] val_solution_direct - Value of the direct solution.
-   */
-  void SetSolution_Direct(su2double *val_solution_direct);
-  
-  /*!
-   * \brief Get the direct solution for the adjoint solver.
-   * \return Pointer to the direct solution vector.
-   */
-  su2double *GetSolution_Direct(void);
-  
-};
-
-/*!
  * \class CFEAVariable
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -3104,7 +3057,6 @@ public:
  * \class CFEABoundVariable
  * \brief Main class for defining the variables on the FEA boundaries for FSI applications.
  * \author R. Sanchez.
- * \version 3.2.3 "eagle"
  */
 class CFEABoundVariable : public CVariable {
 protected:
@@ -3886,6 +3838,7 @@ private:
   su2double Viscosity_Inf;   /*!< \brief Viscosity of the fluid at the infinity. */
   su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
   su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  su2double Tau_Wall;        /*!< \brief Magnitude of the wall shear stress from a wall function. */
   su2double DES_LengthScale; /*!< \brief DES Length Scale. */
   su2double inv_TimeScale;   /*!< \brief Inverse of the reference time scale. */
   su2double Roe_Dissipation; /*!< \brief Roe low dissipation coefficient. */
@@ -4037,6 +3990,17 @@ public:
    * \brief Set all the secondary variables (partial derivatives) for compressible flows
    */
   void SetSecondaryVar(CFluidModel *FluidModel);
+
+  /*! 
+   * \brief Set the value of the wall shear stress computed by a wall function.
+   */
+  void SetTauWall(su2double val_tau_wall);
+  
+  /*!
+   * \brief Get the value of the wall shear stress computed by a wall function.
+   * \return Value of the wall shear stress computed by a wall function.
+   */
+  su2double GetTauWall(void);
   
   /*!
    * \brief Get the DES length scale
@@ -4055,22 +4019,22 @@ public:
    * \param[in] val_const_DES - The DES constant (C_DES)
    */
   void SetRoe_Dissipation_NTS(su2double val_delta, su2double val_const_DES);
-    
+
   /*!
    * \brief Set the new solution for Roe Dissipation.
    */
   void SetRoe_Dissipation_FD(su2double wall_distance);
-    
+  
   /*!
- * \brief Get the Roe Dissipation Coefficient.
- * \return Value of the Roe Dissipation.
- */
+   * \brief Get the Roe Dissipation Coefficient.
+   * \return Value of the Roe Dissipation.
+   */
   su2double GetRoe_Dissipation(void);
   
   /*!
- * \brief Set the Roe Dissipation Coefficient.
- * \param[in] val_dissipation - Value of the Roe dissipation factor.
- */
+   * \brief Set the Roe Dissipation Coefficient.
+   * \param[in] val_dissipation - Value of the Roe dissipation factor.
+   */
   void SetRoe_Dissipation(su2double val_dissipation);
   
 };
@@ -4892,7 +4856,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
