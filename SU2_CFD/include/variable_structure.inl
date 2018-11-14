@@ -1315,6 +1315,26 @@ inline void CVariable::RegisterSolution(bool input) {
       AD::RegisterOutput(Solution[iVar]);}
 }
 
+inline void CVariable::RegisterSolution2(bool input) {
+  if (input) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterInput2(Solution[iVar]);
+  }
+  else { for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::RegisterOutput(Solution[iVar]);}
+}
+
+inline void CVariable::Set_AdjIndices(bool input) {
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    if (input) {
+      AD::Set_AdjIndex(Input_AdjIndices[iVar], Solution[iVar]);
+    }
+    else {
+      AD::Set_AdjIndex(Output_AdjIndices[iVar], Solution[iVar]);
+    }
+  }
+}
+
 inline void CVariable::RegisterSolution_time_n() {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     AD::RegisterInput(Solution_time_n[iVar]);
@@ -1330,10 +1350,20 @@ inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
         SU2_TYPE::SetDerivative(Solution[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
 }
 
+inline void CVariable::SetAdjointSolution2(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      AD::SetDerivative(Output_AdjIndices[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+}
 
 inline void CVariable::GetAdjointSolution(su2double *adj_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++) {
         adj_sol[iVar] = SU2_TYPE::GetDerivative(Solution[iVar]);
+    }
+}
+
+inline void CVariable::GetAdjointSolution2(su2double *adj_sol) {
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      adj_sol[iVar] = AD::GetDerivative(Input_AdjIndices[iVar]);
     }
 }
 
