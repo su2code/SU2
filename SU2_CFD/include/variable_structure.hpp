@@ -92,6 +92,9 @@ protected:
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
   
+  int* Input_AdjIndices;
+  int* Output_AdjIndices;
+  
 public:
   
   /*!
@@ -2277,6 +2280,17 @@ public:
    * \param[in] input - input or output variables.
    */
   void RegisterSolution(bool input);
+
+  /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution2(bool input);
+
+  /*!
+   * \brief Saving the adjoint vector position with respect to the solution variables.
+   */
+  virtual void Set_AdjIndices(bool input);
   
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2293,12 +2307,24 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void SetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Set the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution2(su2double *adj_sol);
   
   /*!
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution2(su2double *adj_sol);
   
   /*!
    * \brief Set the adjoint values of the solution at time n.
