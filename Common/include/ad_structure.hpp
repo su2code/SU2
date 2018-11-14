@@ -59,16 +59,35 @@ namespace AD{
   void StopRecording();
 
   /*!
-   * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+   * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational graph.
    * \param[in] data - The variable to be registered as input.
    */
   void RegisterInput(su2double &data);
+
+  /*!
+   * \brief Registers the variable as an input. I.e. as a leaf of the computational graph.
+   * \param[in] data - The variable to be registered as input.
+   */
+  void RegisterInput2(su2double &data);
 
   /*!
    * \brief Registers the variable as an output. I.e. as the root of the computational graph.
    * \param[in] data - The variable to be registered as output.
    */
   void RegisterOutput(su2double &data);
+
+  /*!
+   * \brief Sets the adjoint value at position to val
+   * \param[in] position - Position of the adjoint variable.
+   * \param[in] val - adjoint value to be set.
+   */
+  void SetDerivative(int index, const double val);
+
+  /*!
+   * \brief Sets the adjoint value at position to val
+   * \param[in] position - position of the adjoint variable where the adjoint value will be extracted.
+   */
+  double GetDerivative(int index);
 
   /*!
    * \brief Clears the currently stored adjoints but keeps the computational graph.
@@ -78,7 +97,12 @@ namespace AD{
   /*!
    * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
    */
-  void ComputeAdjoint();
+  void ComputeAdjoint();  
+  
+  /*!
+   * \brief Computes the adjoints, i.e. the derivatives of the output with respect to the input variables.
+   */
+  void ComputeAdjoint(unsigned short entry, unsigned short exit);
 
   /*!
    * \brief Reset the tape structure to be ready for a new recording.
@@ -149,6 +173,17 @@ namespace AD{
    */
   void EndPreacc();
 
+  /*!
+   * \brief Evaluates and saves gradient data from a variable.
+   * \param[in] data - variable the gradient data will be obtained from.
+   * \param[in] position - where obtained gradient data will be saved.
+   */
+  void Set_AdjIndex(int &index, su2double &data);
+
+  /*!
+   * \brief Pushes back the current tape position to the tape position's vector.
+   */
+  void Push_TapePosition();
 }
 
 /*--- Macro to begin and end sections with a passive tape ---*/
