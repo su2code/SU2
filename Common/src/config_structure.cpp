@@ -476,6 +476,8 @@ void CConfig::SetPointersNull(void) {
   Surface_NormalVelocity   = NULL;   Surface_TotalTemperature = NULL;  Surface_TotalPressure    = NULL;   Surface_PressureDrop    = NULL;
   Surface_DC60             = NULL;    Surface_IDC = NULL;
 
+  Outlet_MassFlow      = NULL;       Outlet_Density      = NULL;      Outlet_Area     = NULL;
+
   Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
   Surface_MomentumDistortion = NULL;
 
@@ -516,7 +518,8 @@ void CConfig::SetPointersNull(void) {
   Int_Coeffs                = NULL;
 
   Kind_Inc_Inlet = NULL;
-
+  Kind_Inc_Outlet = NULL;
+  
   Kind_ObjFunc   = NULL;
 
   Weight_ObjFunc = NULL;
@@ -985,6 +988,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief INLET_TYPE  \n DESCRIPTION: Inlet boundary type \n OPTIONS: see \link Inlet_Map \endlink \n DEFAULT: TOTAL_CONDITIONS \ingroup Config*/
   addEnumOption("INLET_TYPE", Kind_Inlet, Inlet_Map, TOTAL_CONDITIONS);
+  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
+  addEnumListOption("INC_INLET_TYPE", nInc_Inlet, Kind_Inc_Inlet, Inlet_Map);
   addBoolOption("SPECIFIED_INLET_PROFILE", Inlet_From_File, false);
   /*!\brief INLET_FILENAME \n DESCRIPTION: Input file for a specified inlet profile (w/ extension) \n DEFAULT: inlet.dat \ingroup Config*/
   addStringOption("INLET_FILENAME", Inlet_Filename, string("inlet.dat"));
@@ -1067,6 +1072,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief MARKER_OUTLET  \n DESCRIPTION: Outlet boundary marker(s)\n
    Format: ( outlet marker, back pressure (static), ... ) \ingroup Config*/
   addStringDoubleListOption("MARKER_OUTLET", nMarker_Outlet, Marker_Outlet, Outlet_Pressure);
+  /*!\brief INC_INLET_TYPE \n DESCRIPTION: List of inlet types for incompressible flows. List length must match number of inlet markers. Options: VELOCITY_INLET, PRESSURE_INLET. \ingroup Config*/
+  addEnumListOption("INC_OUTLET_TYPE", nInc_Outlet, Kind_Inc_Outlet, Outlet_Map);
   /*!\brief MARKER_ISOTHERMAL DESCRIPTION: Isothermal wall boundary marker(s)\n
    * Format: ( isothermal marker, wall temperature (static), ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_ISOTHERMAL", nMarker_Isothermal, Marker_Isothermal, Isothermal_Temperature);
@@ -3993,18 +4000,30 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Incompressible non-dim. scheme invalid.\n Must use INITIAL_VALUES, REFERENCE_VALUES, or DIMENSIONAL.", CURRENT_FUNCTION);
     }
   }
-
-  /*--- If Kind_Inc_Inlet has not been specified, take a default --*/
-
-  if (Kind_Inc_Inlet == NULL) {
-    if (nMarker_Inlet != 0) {
-      Kind_Inc_Inlet = new unsigned short[nMarker_Inlet];
-      for (unsigned short iInlet = 0; iInlet < nMarker_Inlet; iInlet++) {
-        Kind_Inc_Inlet[iInlet] = VELOCITY_INLET;
+  
+  /*--- Check that the incompressible inlets are correctly specified. ---*/
+  
+  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Inlet != 0)) {
+    if (nMarker_Inlet != nInc_Inlet) {
+      SU2_MPI::Error("Inlet types for incompressible problem improperly specified.\n Use INC_INLET_TYPE= VELOCITY_INLET or PRESSURE_INLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_INLET_TYPE= VELOCITY_INLET VELOCITY_INLET PRESSURE_INLET", CURRENT_FUNCTION);
+    }
+    for (unsigned short iInlet = 0; iInlet < nInc_Inlet; iInlet++){
+      if ((Kind_Inc_Inlet[iInlet] != VELOCITY_INLET) && (Kind_Inc_Inlet[iInlet] != PRESSURE_INLET)) {
+        SU2_MPI::Error("Undefined incompressible inlet type. VELOCITY_INLET or PRESSURE_INLET possible.", CURRENT_FUNCTION);
       }
-    } else {
-      Kind_Inc_Inlet = new unsigned short[1];
-      Kind_Inc_Inlet[0] = VELOCITY_INLET;
+    }
+  }
+  
+  /*--- Check that the incompressible inlets are correctly specified. ---*/
+  
+  if ((Kind_Regime == INCOMPRESSIBLE) && (nMarker_Outlet != 0)) {
+    if (nMarker_Outlet != nInc_Outlet) {
+      SU2_MPI::Error("Outlet types for incompressible problem improperly specified.\n Use INC_OUTLET_TYPE= PRESSURE_OUTLET or MASS_FLOW_OUTLET.\n Must list a type for each inlet marker, including duplicates, e.g.,\n INC_OUTLET_TYPE= PRESSURE_OUTLET PRESSURE_OUTLET MASS_FLOW_OUTLET", CURRENT_FUNCTION);
+    }
+    for (unsigned short iInlet = 0; iInlet < nInc_Outlet; iInlet++){
+      if ((Kind_Inc_Outlet[iInlet] != PRESSURE_OUTLET) && (Kind_Inc_Outlet[iInlet] != MASS_FLOW_OUTLET)) {
+        SU2_MPI::Error("Undefined incompressible outlet type. PRESSURE_OUTLET or MASS_FLOW_OUTLET possible.", CURRENT_FUNCTION);
+      }
     }
   }
 
@@ -4293,6 +4312,15 @@ void CConfig::SetMarkers(unsigned short val_software) {
     iMarker_CfgFile++;
   }
 
+  Outlet_MassFlow = new su2double[nMarker_Outlet];
+  Outlet_Density  = new su2double[nMarker_Outlet];
+  Outlet_Area     = new su2double[nMarker_Outlet];
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+    Outlet_MassFlow[iMarker_Outlet] = 0.0;
+    Outlet_Density[iMarker_Outlet]  = 0.0;
+    Outlet_Area[iMarker_Outlet]     = 0.0;
+  }
+  
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEARFIELD_BOUNDARY;
@@ -6682,6 +6710,7 @@ CConfig::~CConfig(void) {
   if (Marker_All_SendRecv != NULL)    delete[] Marker_All_SendRecv;
 
   if (Kind_Inc_Inlet != NULL)      delete[] Kind_Inc_Inlet;
+  if (Kind_Inc_Outlet != NULL)      delete[] Kind_Inc_Outlet;
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
@@ -7471,6 +7500,27 @@ su2double CConfig::GetActDisk_Omega(string val_marker, unsigned short val_value)
   return ActDisk_Omega[iMarker_ActDisk][val_value];;
 }
 
+su2double CConfig::GetOutlet_MassFlow(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
+  return Outlet_MassFlow[iMarker_Outlet];
+}
+
+su2double CConfig::GetOutlet_Density(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
+  return Outlet_Density[iMarker_Outlet];
+}
+
+su2double CConfig::GetOutlet_Area(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
+  return Outlet_Area[iMarker_Outlet];
+}
+
 unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {
   unsigned short iMarker_ActDisk, kMarker_All;
   
@@ -7568,6 +7618,13 @@ unsigned short CConfig::GetKind_Inc_Inlet(string val_marker) {
   for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++)
     if (Marker_Inlet[iMarker_Inlet] == val_marker) break;
   return Kind_Inc_Inlet[iMarker_Inlet];
+}
+
+unsigned short CConfig::GetKind_Inc_Outlet(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
+    if (Marker_Outlet[iMarker_Outlet] == val_marker) break;
+  return Kind_Inc_Outlet[iMarker_Outlet];
 }
 
 su2double CConfig::GetInlet_Ttotal(string val_marker) {
