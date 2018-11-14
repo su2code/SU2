@@ -183,11 +183,10 @@ class Config(ordered_bunch):
         param_dv['PARAM'] = def_dv['PARAM']
         param_dv['FFDTAG'] = def_dv['FFDTAG']
         param_dv['SIZE']   = def_dv['SIZE']
-
-        self.update({ 'DV_MARKER'        : def_dv['MARKER'][0] ,
-                      'DV_VALUE_OLD'     : dv_old              ,
-                      'DV_VALUE_NEW'     : dv_new              })
         
+        self.update({ 'DV_VALUE_OLD'     : dv_old              ,
+                      'DV_VALUE_NEW'     : dv_new              })
+
     def __eq__(self,konfig):
         return super(Config,self).__eq__(konfig)
     def __ne__(self,konfig):
@@ -488,7 +487,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())
                 #split by ; 
-                this_def={}
+                this_def=OrderedDict()
                 this_value = this_value.split(";")
                 
                 for  this_obj in this_value:       

@@ -1719,7 +1719,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
                   su2double *val_normal,
                   su2double val_laminar_viscosity,
                   su2double val_eddy_viscosity,
-                  bool val_qcr) {
+                  su2double val_tau_wall, bool val_qcr) {
 
   unsigned short iVar, iDim, jDim;
   su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
@@ -1732,25 +1732,74 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   div_vel = 0.0;
   for (iDim = 0 ; iDim < nDim; iDim++)
     div_vel += val_gradprimvar[iDim+1][iDim];
+  
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
       - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
                                                  - TWO3*Density*val_turb_ke*delta[iDim][jDim];
-  if (val_qcr){
-    su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+  
+  /*--- If we are using wall functions, modify the shear stress, tau wall is provided ---*/
+  
+  if (val_tau_wall > 0.0) {
+    
+    su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
+    
+    Area = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Area += val_normal[iDim]*val_normal[iDim];
+    Area = sqrt(Area);
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      UnitNormal[iDim] = val_normal[iDim]/Area;
+    
+    /*--- First, compute wall shear stress as the magnitude of the wall-tangential
+     component of the shear stress tensor---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      TauElem[iDim] = 0.0;
+      for (jDim = 0; jDim < nDim; jDim++)
+        TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
+    }
+    
+    TauNormal = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      TauNormal += TauElem[iDim] * UnitNormal[iDim];
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+    
+    WallShearStress = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+    WallShearStress = sqrt(WallShearStress);
+    
+    /*--- Scale the stress tensor by the ratio of the wall shear stress
+     to the computed representation of the shear stress ---*/
+    
+    for (iDim = 0 ; iDim < nDim; iDim++)
+      for (jDim = 0 ; jDim < nDim; jDim++)
+        tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
+    
+  }
+  
+  /*--- Apply the QCR correction ---*/
+  
+  if (val_qcr) {
+    
+    su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
     unsigned short kDim;
-
+    
     /*--- Denominator Antisymmetric normalized rotation tensor ---*/
-
+    
     den_aux = 0.0;
     for (iDim = 0 ; iDim < nDim; iDim++)
       for (jDim = 0 ; jDim < nDim; jDim++)
         den_aux += val_gradprimvar[iDim+1][jDim] * val_gradprimvar[iDim+1][jDim];
     den_aux = sqrt(max(den_aux,1E-10));
-
+    
     /*--- Adding the QCR contribution ---*/
-        
+    
     for (iDim = 0 ; iDim < nDim; iDim++){
       for (jDim = 0 ; jDim < nDim; jDim++){
         for (kDim = 0 ; kDim < nDim; kDim++){
@@ -1763,6 +1812,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   }
 
   /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;
     Flux_Tensor[1][0] = tau[0][0];
@@ -1794,11 +1844,13 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
     Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
         heat_flux_factor*val_gradprimvar[0][2];
   }
+  
   for (iVar = 0; iVar < nVar; iVar++) {
     Proj_Flux_Tensor[iVar] = 0.0;
     for (iDim = 0; iDim < nDim; iDim++)
       Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
   }
+  
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
@@ -2694,18 +2746,28 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   }
 }
 
-void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
-                                      const su2double Dissipation_i, const su2double Dissipation_j,
-                                      const su2double Sensor_i, const su2double Sensor_j,
-                                      su2double& Dissipation_ij, CConfig *config){
-  unsigned short iDim;
+void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
+                                   const su2double Dissipation_j,
+                                   const su2double Sensor_i,
+                                   const su2double Sensor_j,
+                                   su2double& Dissipation_ij,
+                                   CConfig *config) {
+
+  /*--- Check for valid input ---*/
+
+  assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
+  assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
+  assert((Sensor_i >= 0) && (Sensor_i <= 1));
+  assert((Sensor_j >= 0) && (Sensor_j <= 1));
+
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+
+  /*--- A minimum level of upwinding is used to enhance stability ---*/
+
+  const su2double Min_Dissipation = 0.05;
   
-  su2double Ducros_ij, Delta, Aaux, phi1, phi2;
-  static const su2double ch1 = 3.0, ch2 = 1.0, phi_max = 1.0;
-  static const su2double Const_DES = 5.0;
-  
-  su2double phi_hybrid_i, phi_hybrid_j;
+  const su2double Mean_Dissipation = 0.5*(Dissipation_i + Dissipation_j);
+  const su2double Mean_Sensor = 0.5*(Sensor_i + Sensor_j);
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
 
@@ -2714,6 +2776,8 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
     if (roe_low_diss == FD_DUCROS){
       
       /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
+
+      su2double Ducros_ij;
       
       if (0.5*(Sensor_i + Sensor_j) > 0.65)
         Ducros_ij = 1.0;
@@ -2722,30 +2786,26 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
       
       Dissipation_ij = max(Ducros_ij, Dissipation_ij);
     }
-  }
-  else if (roe_low_diss == NTS || roe_low_diss == NTS_DUCROS){
 
-    Delta = 0.0;
-    for (iDim=0;iDim<nDim;++iDim)
-        Delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
-    Delta=sqrt(Delta);
+  } else if (roe_low_diss == NTS) {
+    
+    Dissipation_ij = max(Min_Dissipation, Mean_Dissipation);
 
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_i)) - 0.5, 0.0);
-    phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
-    
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_j)) - 0.5, 0.0);
-    phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
-    
-    if (roe_low_diss == NTS){
-      Dissipation_ij = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
-    } else if (roe_low_diss == NTS_DUCROS){
-      
-      phi1 = 0.5*(Sensor_i+Sensor_j);
-      phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
-      
-      Dissipation_ij = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
-      
-    }
+  } else if (roe_low_diss == NTS_DUCROS) {
+
+    /*--- See Xiao et al. INT J HEAT FLUID FL 51 (2015) pag. 141
+     * https://doi.org/10.1016/j.ijheatfluidflow.2014.10.007 ---*/
+
+    const su2double phi1 = Mean_Sensor;
+    const su2double phi2 = Mean_Dissipation;
+
+    Dissipation_ij = max(Min_Dissipation, phi1 + phi2 - (phi1*phi2));
+
+  } else {
+
+    SU2_MPI::Error("Unrecognized upwind/central blending scheme!",
+                   CURRENT_FUNCTION);
+
   }
 
 }
