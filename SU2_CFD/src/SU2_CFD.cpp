@@ -37,6 +37,14 @@
 
 #include "../include/SU2_CFD.hpp"
 
+/* LIBXSMM include files, if supported. */
+#ifdef HAVE_LIBXSMM
+#include "libxsmm.h"
+#endif
+
+/* Include file, needed for the runtime NaN catching. */
+//#include <fenv.h>
+
 using namespace std;
 
 int main(int argc, char *argv[]) {
@@ -56,6 +64,14 @@ int main(int argc, char *argv[]) {
 #else
   SU2_Comm MPICommunicator(0);
 #endif
+
+  /*--- Uncomment the following line if runtime NaN catching is desired. ---*/
+  // feenableexcept(FE_INVALID | FE_OVERFLOW);
+
+  /*--- Initialize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_init();
+#endif
   
   /*--- Create a pointer to the main SU2 Driver ---*/
   
@@ -69,8 +85,8 @@ int main(int argc, char *argv[]) {
 
   /*--- Read the name and format of the input mesh file to get from the mesh
    file the number of zones and dimensions from the numerical grid (required
-   for variables allocation)  ---*/
-
+   for variables allocation). ---*/
+  
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
 
@@ -86,10 +102,7 @@ int main(int argc, char *argv[]) {
    and perform all the preprocessing. ---*/
 
   if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
-        config->GetKind_Solver() == DISC_ADJ_FEM ||
-        config->GetKind_Solver() == POISSON_EQUATION ||
-        config->GetKind_Solver() == WAVE_EQUATION ||
-        config->GetKind_Solver() == HEAT_EQUATION) ) {
+        config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
     
@@ -156,7 +169,7 @@ int main(int argc, char *argv[]) {
     }
     
   }
-
+  
   delete config;
   config = NULL;
 
@@ -170,9 +183,13 @@ int main(int argc, char *argv[]) {
 
   if (driver != NULL) delete driver;
   driver = NULL;
+  
+  /*---Finalize libxsmm, if supported. ---*/
+#ifdef HAVE_LIBXSMM
+  libxsmm_finalize();
+#endif
 
   /*--- Finalize MPI parallelization ---*/
-
 #ifdef HAVE_MPI
   SU2_MPI::Buffer_detach(&buffptr, &buffsize);
   free(buffptr);
