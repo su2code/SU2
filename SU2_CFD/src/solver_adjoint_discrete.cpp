@@ -496,7 +496,12 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+    if(config->GetBoolZoneSpecific()) {
+      direct_solver->node[iPoint]->GetAdjointSolution2(Solution);          
+    }
+    else {
+      direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+    }
 
     /*--- Store the adjoint solution ---*/
 
@@ -769,9 +774,13 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
-    direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+    if(config->GetBoolZoneSpecific()) {
+      direct_solver->node[iPoint]->SetAdjointSolution2(Solution); 
+    }
+    else {
+      direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+    }
   }
-
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
