@@ -77,15 +77,15 @@ namespace AD{
   void RegisterOutput(su2double &data);
 
   /*!
-   * \brief Sets the adjoint value at position to val
-   * \param[in] position - Position of the adjoint variable.
+   * \brief Sets the adjoint value at index to val
+   * \param[in] index - Position in the adjoint vector.
    * \param[in] val - adjoint value to be set.
    */
   void SetDerivative(int index, const double val);
 
   /*!
-   * \brief Sets the adjoint value at position to val
-   * \param[in] position - position of the adjoint variable where the adjoint value will be extracted.
+   * \brief Extracts the adjoint value at index
+   * \param[in] index - position in the adjoint vector where the adjoint value will be extracted.
    */
   double GetDerivative(int index);
 
@@ -175,8 +175,8 @@ namespace AD{
 
   /*!
    * \brief Evaluates and saves gradient data from a variable.
-   * \param[in] data - variable the gradient data will be obtained from.
-   * \param[in] position - where obtained gradient data will be saved.
+   * \param[in] data - where the information will be extracted from.
+   * \param[in] index - where obtained gradient data will be stored.
    */
   void Set_AdjIndex(int &index, su2double &data);
 
