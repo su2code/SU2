@@ -105,6 +105,12 @@ inline void CConfig::SetActDisk_Mach(unsigned short val_imarker, su2double val_a
 
 inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDisk_Force[val_imarker] = val_actdisk_force; }
 
+inline void CConfig::SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow) { Outlet_MassFlow[val_imarker] = val_massflow; }
+
+inline void CConfig::SetOutlet_Density(unsigned short val_imarker, su2double val_density) { Outlet_Density[val_imarker] = val_density; }
+
+inline void CConfig::SetOutlet_Area(unsigned short val_imarker, su2double val_area) { Outlet_Area[val_imarker] = val_area; }
+
 inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
@@ -1295,6 +1301,8 @@ inline string CConfig::GetMarker_ActDiskInlet_TagBound(unsigned short val_marker
 
 inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker) { return Marker_ActDiskOutlet[val_marker]; }
 
+inline string CConfig::GetMarker_Outlet_TagBound(unsigned short val_marker) { return Marker_Outlet[val_marker]; }
+
 inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
 inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
@@ -1407,6 +1415,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnMarker_Outlet(void) { return nMarker_Outlet; }
 
 inline unsigned short CConfig::GetnMarker_Periodic(void) { return nMarker_PerBound; }
 
