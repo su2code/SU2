@@ -1446,6 +1446,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
+    
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1954,6 +1961,13 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   virtual su2double GetSurface_CMz_Visc(unsigned short val_marker);
+    
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the buffet metric on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_Buffet_Metric(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -2332,7 +2346,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CD(void);
-  
+    
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
@@ -2715,6 +2729,12 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CFz_Mnt(void);
+    
+  /*!
+   * \brief A virtual member.
+   * \return Value of the buffet metric.
+   */
+  virtual su2double GetTotal_Buffet_Metric(void);
   
   /*!
    * \brief A virtual member.
@@ -8297,14 +8317,18 @@ private:
   *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_Buffet_Metric,  /*!< \brief Integrated separation sensor for each monitoring surface. */
   *CEff_Visc,      /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
+  *Buffet_Metric,    /*!< \brief Integrated separation sensor for each boundary. */
   *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
   *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *HF_Visc,    /*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   ***HeatConjugateVar,   /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  ***CSkinFriction;  /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  ***CSkinFriction,  /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  **Buffet_Sensor;   /*!< \brief Separation sensor for each boundary and vertex. */
+  su2double Total_Buffet_Metric;  /*!< \brief Integrated separation sensor for all the boundaries. */
   su2double *ForceViscous,  /*!< \brief Viscous force for each boundary. */
   *MomentViscous;      /*!< \brief Inviscid moment for each boundary. */
   su2double AllBound_CD_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
@@ -8415,6 +8439,13 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz_Visc(unsigned short val_marker);
+    
+  /*!
+   * \brief Provide the buffet metric.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the buffet metric on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_Buffet_Metric(unsigned short val_marker);
   
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -8493,6 +8524,12 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CFz_Visc(void);
+    
+  /*!
+   * \brief Get the buffet metric.
+   * \return Value of the buffet metric.
+   */
+  su2double GetTotal_Buffet_Metric(void);
   
   /*!
    * \brief Compute the viscosity at the infinity.
@@ -8595,6 +8632,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config);
+    
+  /*!
+   * \brief Compute the buffet sensor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the total heat flux.

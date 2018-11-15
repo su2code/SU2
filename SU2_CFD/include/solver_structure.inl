@@ -206,6 +206,8 @@ inline su2double CSolver::GetSurface_CMy_Visc(unsigned short val_marker) { retur
 
 inline su2double CSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_Buffet_Metric(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetSurface_CL_Mnt(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CD_Mnt(unsigned short val_marker) { return 0; }
@@ -313,6 +315,8 @@ inline su2double CSolver::GetAllBound_CMx_Visc() { return 0; }
 inline su2double CSolver::GetAllBound_CMy_Visc() { return 0; }
 
 inline su2double CSolver::GetAllBound_CMz_Visc() { return 0; }
+
+inline su2double CSolver::GetTotal_Buffet_Metric() { return 0; }
 
 inline su2double CSolver::GetAllBound_CoPx_Visc() { return 0; }
 
@@ -861,6 +865,8 @@ inline void CSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) { }
 inline void CSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
+
+inline void CSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
@@ -1698,6 +1704,8 @@ inline su2double CNSSolver::GetAllBound_CFy_Visc() { return AllBound_CFy_Visc; }
 
 inline su2double CNSSolver::GetAllBound_CFz_Visc() { return AllBound_CFz_Visc; }
 
+inline su2double CNSSolver::GetTotal_Buffet_Metric() { return Total_Buffet_Metric; }
+
 inline su2double CNSSolver::GetSurface_CL_Visc(unsigned short val_marker) { return Surface_CL_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetSurface_CD_Visc(unsigned short val_marker) { return Surface_CD_Visc[val_marker]; }
@@ -1717,6 +1725,8 @@ inline su2double CNSSolver::GetSurface_CMx_Visc(unsigned short val_marker) { ret
 inline su2double CNSSolver::GetSurface_CMy_Visc(unsigned short val_marker) { return Surface_CMy_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
+
+inline su2double CNSSolver::GetSurface_Buffet_Metric(unsigned short val_marker) { return Surface_Buffet_Metric[val_marker]; }
 
 inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
