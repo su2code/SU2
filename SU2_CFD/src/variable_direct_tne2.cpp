@@ -270,10 +270,10 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
 
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
+    denom += val_massfrac[iSpecies] * (Ru/(Ms[iSpecies]/1000)) * T;
 
-	for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-    denom += val_massfrac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
+    for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+    denom += val_massfrac[nSpecies-1] * (Ru/(Ms[nSpecies-1]/1000)) * Tve;
 
 	rho = val_pressure / denom;
 
