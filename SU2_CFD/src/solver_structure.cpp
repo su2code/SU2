@@ -212,7 +212,6 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
 
   #ifndef HAVE_MPI
-
   for (iVar = 0; iVar < nVar; iVar++) {
     if (GetRes_RMS(iVar) != GetRes_RMS(iVar)) {
         SU2_MPI::Error("SU2 has diverged. (NaN detected)", CURRENT_FUNCTION);

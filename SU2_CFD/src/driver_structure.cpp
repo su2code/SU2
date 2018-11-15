@@ -279,16 +279,16 @@ CDriver::CDriver(char* confFile,
             if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
             break;
           case TNE2_EULER: case DISC_ADJ_TNE2_EULER:
-            if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Euler equations." << endl;
-            if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Euler equations." << endl;
+            if (Kind_Regime == COMPRESSIBLE) cout << "Compressible TNE2 Euler equations." << endl;
+            if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible TNE2 Euler equations." << endl;
             break;
           case NAVIER_STOKES: case DISC_ADJ_NAVIER_STOKES:
             if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
             if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
             break;
           case TNE2_NAVIER_STOKES: case DISC_ADJ_TNE2_NAVIER_STOKES:
-            if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar Navier-Stokes' equations." << endl;
-            if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar Navier-Stokes' equations." << endl;
+            if (Kind_Regime == COMPRESSIBLE) cout << "Compressible Laminar TNE2 Navier-Stokes' equations." << endl;
+            if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible Laminar TNE2 Navier-Stokes' equations." << endl;
             break;
           case RANS: case DISC_ADJ_RANS:
             if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
