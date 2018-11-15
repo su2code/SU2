@@ -44,6 +44,7 @@ CVariable::CVariable(void) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -66,6 +67,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -102,6 +104,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
