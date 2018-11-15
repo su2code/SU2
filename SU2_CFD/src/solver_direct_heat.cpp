@@ -297,18 +297,8 @@ void CHeatSolverFVM::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
   if (flow) {
 
-    if (config->GetKind_Turb_Model() == SA || config->GetKind_Turb_Model() == SA_NEG) {
-      if (nDim == 2) skipVars += 6;
-      if (nDim == 3) skipVars += 8;
-    }
-    else if (config->GetKind_Turb_Model() == SST ) {
-      if (nDim == 2) skipVars += 7;
-      if (nDim == 3) skipVars += 9;
-    }
-    else {
-      if (nDim == 2) skipVars += 5;
-      if (nDim == 3) skipVars += 7;
-    }
+    if (nDim == 2) skipVars += 5;
+    if (nDim == 3) skipVars += 7;
   }
   else if (heat_equation) {
 
@@ -632,6 +622,10 @@ void CHeatSolverFVM::Upwind_Residual(CGeometry *geometry, CSolver **solver_conta
         /*--- Primitive variables w/o reconstruction ---*/
         V_i = solver_container[FLOW_SOL]->node[iPoint]->GetPrimitive();
         V_j = solver_container[FLOW_SOL]->node[jPoint]->GetPrimitive();
+
+        Temp_i_Grad = node[iPoint]->GetGradient();
+        Temp_j_Grad = node[jPoint]->GetGradient();
+        numerics->SetConsVarGradient(Temp_i_Grad, Temp_j_Grad);
 
         Temp_i = node[iPoint]->GetSolution(0);
         Temp_j = node[jPoint]->GetSolution(0);
