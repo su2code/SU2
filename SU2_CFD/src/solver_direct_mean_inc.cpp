@@ -5804,39 +5804,41 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
            is used for the BC. ---*/
           
           if ((Vn < 0.0)) {
-            
+
             /*--- The prescribed pressure at the outlet becomes a total
              pressure value. ---*/
-            
+
             /*--- Update the velocity magnitude using the total pressure. ---*/
-            
+
             Vel_Mag = sqrt((P_Outlet - P_domain)/(0.5*node[iPoint]->GetDensity()));
-            
+
             /*--- Use the local boundary normal (negative),
              instead of the prescribed flow direction in the config. ---*/
-            
+
             for (iDim = 0; iDim < nDim; iDim++)
               UnitFlowDir[iDim] = -Normal[iDim]/Area;
-            
+
             /*--- Compute the delta change in velocity in each direction. ---*/
-            
+
             for (iDim = 0; iDim < nDim; iDim++)
               dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
-            
+
             /*--- Update the velocity in the primitive variable vector.
              Note we use damping here to improve stability/convergence. ---*/
-            
+
             for (iDim = 0; iDim < nDim; iDim++)
               V_outlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
-            
+
             /*--- Neumann condition for the pressure ---*/
-            
+
             V_outlet[0] = P_domain;
-            
-          } else {
+
+          } else
+          
+          {
             
             /*--- The pressure is prescribed at the outlet. ---*/
-            
+
             V_outlet[0] = P_Outlet;
             
             /*--- Neumann condition for the velocity. ---*/
@@ -6443,7 +6445,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
       if (iMesh == MESH_0) {
         config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
         config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
-        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area[iMarker_Outlet]);
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
       }
     }
     
@@ -6483,6 +6485,8 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
       if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
         cout << "-------------------------------------------------------------------------" << endl << endl;
       }
+      
+      cout.unsetf(ios_base::floatfield);
       
     }
     
