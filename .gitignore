@@ -53,6 +53,7 @@ externals/autotools/bin
 externals/autotools/include
 externals/autotools/share
 externals/autotools/lib
+externals/tecio/boost
 
 #logs and errors
 *.log
