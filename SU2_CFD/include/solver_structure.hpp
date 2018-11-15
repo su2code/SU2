@@ -504,6 +504,13 @@ public:
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
   
   /*!
+   * \brief Set the value of the RMS residual respective solution.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetResidual_Solution(CGeometry *geometry, CConfig *config);
+
+  /*!
    * \brief Set Value of the residual if there is a grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -537,6 +544,31 @@ public:
    */
   void SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config);
   
+  /*!
+   * \brief Set the solution vector to iterated (summed-up) solution.
+   * \param[in] geometry - The geometrical definition of the problem.
+   * \param[in] config - The particular config.
+   */
+  void SetSolution_Iter(CGeometry *geometry);
+
+  /*!
+   * \brief Set the solution vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void SetSolution_Zero(CGeometry *geometry);
+
+  /*!
+   * \brief Add the current solution vector to Solution_Iter.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Add_IterSolution(CGeometry *geometry);
+
+  /*!
+   * \brief Set the Solution_Iter vector to zero.
+   * \param[in] geometry - The geometrical definition of the problem.
+   */
+  void Set_IterSolution_Zero(CGeometry *geometry);
+
   /*!
    * \brief Compute the Green-Gauss gradient of the solution.
    * \param[in] geometry - Geometrical definition of the problem.
