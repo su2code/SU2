@@ -205,7 +205,7 @@ def get_headerMap(nZones = 1):
                  "AoA"             : "AOA"                     ,
                  "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
-                 "Buffet_Sensor"   : "BUFFET"                  ,
+                 "Buffet_Metric"   : "BUFFET"                  ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
