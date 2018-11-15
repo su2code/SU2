@@ -4322,6 +4322,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool equiv_area = config->GetEquivArea();
+  bool buffet = (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR);
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
@@ -4387,6 +4388,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
+  char buffet_coeff[]= ",\"Buffet_Metric\"";
   char engine_coeff[]= ",\"NetThrust\",\"Power\",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
@@ -4417,10 +4419,11 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
+    if(buffet) monitoring_coeff += ",\"Buffet_Metric_"    + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
-
+    
   if (turbo){
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
 
@@ -4489,6 +4492,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS : case FEM_LES:
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
+      if (buffet) ConvHist_file[0] << buffet_coeff;
       if (turbo) ConvHist_file[0] << turbo_coeff;
       if (thermal && !turbo) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
@@ -4688,7 +4692,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     
-    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
+    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000], buffet_coeff[1000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000],
     begin_fem[1000], fem_coeff[1000], heat_resid[1000], combo_obj[1000],
@@ -4721,6 +4725,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
+    bool buffet = (config[val_iZone]->GetBuffet_Monitoring() || config[val_iZone]->GetKind_ObjFunc() == BUFFET_SENSOR);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -4762,7 +4767,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_CT = 0.0, Total_CQ = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_NetThrust = 0.0, Total_Power = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
-    Total_AoA = 0.0;
+    Total_AoA = 0.0, Total_Buffet_Metric = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0, Surface_Uniformity = 0.0, Surface_SecondaryStrength = 0.0,Surface_MomentumDistortion = 0.0, Surface_SecondOverUniform = 0.0, Surface_PressureDrop = 0.0;
 
     su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0, Total_IncLoad = 0.0;
@@ -4796,17 +4801,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
-    *aeroelastic_pitch  = NULL,
-    *Surface_CL         = NULL,
-    *Surface_CD         = NULL,
-    *Surface_CSF        = NULL,
-    *Surface_CEff       = NULL,
-    *Surface_CFx        = NULL,
-    *Surface_CFy        = NULL,
-    *Surface_CFz        = NULL,
-    *Surface_CMx        = NULL,
-    *Surface_CMy        = NULL,
-    *Surface_CMz        = NULL;
+    *aeroelastic_pitch     = NULL,
+    *Surface_CL            = NULL,
+    *Surface_CD            = NULL,
+    *Surface_CSF           = NULL,
+    *Surface_CEff          = NULL,
+    *Surface_CFx           = NULL,
+    *Surface_CFy           = NULL,
+    *Surface_CFz           = NULL,
+    *Surface_CMx           = NULL,
+    *Surface_CMy           = NULL,
+    *Surface_CMz           = NULL,
+    *Surface_Buffet_Metric = NULL;
     
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
@@ -4865,6 +4871,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+      
+    if(buffet) Surface_Buffet_Metric = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Write information from nodes ---*/
     
@@ -4901,6 +4909,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             Total_MaxHeat      = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
             Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
           }
+        }
+            
+        if(buffet){
+          Total_Buffet_Metric = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Buffet_Metric();
         }
 
         if (direct_diff != NO_DERIVATIVE) {
@@ -4977,6 +4989,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
             Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
             Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+              
+            if(buffet) Surface_Buffet_Metric[iMarker_Monitoring] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_Buffet_Metric(iMarker_Monitoring);
           }
         }
         
@@ -5226,6 +5240,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
+            if (buffet) SPRINTF (buffet_coeff, ", %14.8e",  Total_Buffet_Metric);
             if (thermal || heat) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Total_Temperature);
             if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_NetThrust, Total_Power, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
@@ -5296,6 +5311,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", Surface_CMz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
+                  
+                if(buffet){
+                  SPRINTF(surface_coeff, ", %12.10f", Surface_Buffet_Metric[iMarker_Monitoring]);
+                  strcat(monitoring_coeff, surface_coeff);
+                }
               }
             }
 
@@ -5899,6 +5919,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
+              if (buffet) ConvHist_file[0] << buffet_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
               if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
               if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
@@ -5993,6 +6014,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             if (!turbo) {
               ConvHist_file[0] << begin << direct_coeff;
+              if (buffet) ConvHist_file[0] << buffet_coeff;
               if (thermal) ConvHist_file[0] << heat_coeff;
               if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
               if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
