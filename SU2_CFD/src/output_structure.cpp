@@ -12782,7 +12782,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
           Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
-          Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
+          if (config->GetBuffet_Monitoring()) Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
         }
       }
     }
@@ -12942,7 +12942,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = Aux_Frict_z[iPoint];
             iVar++;
           }
-          Local_Data[jPoint][iVar] = Aux_Buffet[iPoint]; iVar++;
+          if (config->GetBuffet_Monitoring()) {
+            Local_Data[jPoint][iVar] = Aux_Buffet[iPoint]; 
+            iVar++;
+          }
           Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
           
         }
