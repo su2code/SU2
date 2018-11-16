@@ -81,28 +81,20 @@ inline void COutput::PrintScreenHeaderString(stringstream& stream, string header
   stream << std::right << std::setw(field_width) << header; 
 }
 
-inline void COutput::AddHistoryValue(su2double val) { 
-  HistoryValues.push_back(val);
-}
-
-inline void COutput::AddHistoryHeaderString(string header) {
-  HistoryHeader.push_back(header); 
-}
-
 inline void COutput::PrintHistorySep(stringstream& stream){
   stream << HistorySep;
 }
 
-inline void COutput::AddHistoryOutput(string name, string field_name, unsigned short format, string groupname ){
-  HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname);
+inline void COutput::AddHistoryOutput(string name, string field_name, unsigned short format, string groupname , unsigned short field_type){
+  HistoryOutput_Map[name] = HistoryOutputField(field_name, format, groupname, field_type);
   HistoryOutput_List.push_back(name);
 }
 
-inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names){
+inline void COutput::AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names, unsigned short field_type){
   if (marker_names.size() != 0){
     HistoryOutputPerSurface_List.push_back(name);
     for (unsigned short i = 0; i < marker_names.size(); i++){
-      HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname));
+      HistoryOutputPerSurface_Map[name].push_back(HistoryOutputField(field_name+"("+marker_names[i]+")", format, groupname, field_type));
     }
   }
 }
@@ -142,3 +134,7 @@ inline void COutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 inline void COutput::SetVolumeOutputFields(CConfig *config) {}
 
 inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex) {}
+
+inline bool COutput::SetInit_Residuals(CConfig *config) {return false;}
+
+inline bool COutput::SetUpdate_Averages(CConfig *config, bool dualtime) {return false;}

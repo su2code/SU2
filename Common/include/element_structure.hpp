@@ -456,6 +456,18 @@ public:
 	 */
 	virtual void ComputeGrad_Pressure(void);
 
+    /*!
+	 * \brief Register the current and reference coordinates of the element as pre-accumulation inputs
+	 * the latter are needed for compatibility with shape derivatives, there is no problem registering
+	 * because inactive variables are ignored.
+	 */
+	void SetPreaccIn_Coords(void);
+	
+	/*!
+	 * \brief Register the stress residual as a pre-accumulation output. When computing the element
+	 * stiffness matrix this is the only term that sees its way into the RHS of the system.
+	 */
+	void SetPreaccOut_Kt_a(void);
 
 };
 
@@ -805,7 +817,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CPRISM6 : public CElement {

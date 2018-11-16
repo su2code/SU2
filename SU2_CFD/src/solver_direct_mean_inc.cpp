@@ -36,7 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
-#include "../../Common/include/tools.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -232,7 +232,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -1719,7 +1719,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
-void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -2022,7 +2022,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
     cout <<"-- Input conditions:"<< endl;
     
-    TablePrinter NonDimTable(&std::cout);
+    PrintingToolbox::CTablePrinter NonDimTable(&std::cout);
     stringstream Unit;  
     
     NonDimTable.AddColumn("Name", 18);
@@ -4981,56 +4981,65 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
-
-        /*--- The following are not per-surface, and as a result will be
-          double-counted iff multiple surfaces are specified as well as multi-objective ---*/
-
-      case INVERSE_DESIGN_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-        break;
-      case INVERSE_DESIGN_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-        break;
-      case THRUST_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CT;
-        break;
-      case TORQUE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-        break;
-      case FIGURE_OF_MERIT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-        break;
-      case SURFACE_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-        break;
-      case SURFACE_STATIC_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-        break;
-      case SURFACE_MASSFLOW:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-        break;
-      case SURFACE_UNIFORMITY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-        break;
-      case SURFACE_SECONDARY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-        break;
-      case SURFACE_MOM_DISTORTION:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-        break;
-      case SURFACE_SECOND_OVER_UNIFORM:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-        break;
-      case SURFACE_PRESSURE_DROP:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
-        break;
-      case CUSTOM_OBJFUNC:
-        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-        break;
       default:
         break;
 
     }
+  }
+  
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+  
+  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+  
+  switch(Kind_ObjFunc) {
+    case INVERSE_DESIGN_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+      break;
+    case FIGURE_OF_MERIT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+      break;
+    case SURFACE_TOTAL_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+      break;
+    case SURFACE_STATIC_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+      break;
+    case SURFACE_MASSFLOW:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+      break;
+    case SURFACE_UNIFORMITY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+      break;
+    case SURFACE_PRESSURE_DROP:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+      break;
+    default:
+      break;
   }
   
 }
@@ -6119,7 +6128,19 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
-
+  
+  /*--- Adjust the number of solution variables in the restart. We always
+   carry a space in nVar for the energy equation in the solver, but we only
+   write it to the restart if it is active. Therefore, we must reduce nVar
+   here if energy is inactive so that the restart is read correctly. ---*/
+  
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  
+  unsigned short nVar_Restart = nVar;
+  if ((!energy) && (!weakly_coupled_heat)) nVar_Restart--;
+  Solution[nVar-1] = GetTemperature_Inf();
+  
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -6154,7 +6175,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      for (iVar = 0; iVar < nVar_Restart; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
@@ -6184,7 +6205,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar_Restart;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -6299,6 +6320,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     geometry[MESH_0]->SetCoord_CG();
     geometry[MESH_0]->SetControlVolume(config, UPDATE);
     geometry[MESH_0]->SetBoundControlVolume(config, UPDATE);
+    geometry[MESH_0]->SetMaxLength(config);
     
     /*--- Update the multigrid structure after setting up the finest grid,
      including computing the grid velocities on the coarser levels. ---*/
@@ -6308,6 +6330,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
       geometry[iMesh]->SetControlVolume(config, geometry[iMeshFine], UPDATE);
       geometry[iMesh]->SetBoundControlVolume(config, geometry[iMeshFine],UPDATE);
       geometry[iMesh]->SetCoord(geometry[iMeshFine]);
+      geometry[iMesh]->SetMaxLength(config);
     }
   }
   
@@ -6464,7 +6487,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -7817,8 +7840,6 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
     Surface_CMx[iMarker_Monitoring]        += Surface_CMx_Visc[iMarker_Monitoring];
     Surface_CMy[iMarker_Monitoring]        += Surface_CMy_Visc[iMarker_Monitoring];
     Surface_CMz[iMarker_Monitoring]        += Surface_CMz_Visc[iMarker_Monitoring];
-    Surface_HF_Visc[iMarker_Monitoring]    += Surface_CMy_Visc[iMarker_Monitoring];
-    Surface_MaxHF_Visc[iMarker_Monitoring] += Surface_CMz_Visc[iMarker_Monitoring];
   }
 
 }

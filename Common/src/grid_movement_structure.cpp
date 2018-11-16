@@ -109,6 +109,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
 	geometry->SetCoord_CG();
 	geometry->SetControlVolume(config, UPDATE);
 	geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
   
 }
 
@@ -471,7 +472,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   /*--- Build the ADT of the boundary nodes. ---*/
   
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
+                              PointIDs.data(), true);
   
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -9282,6 +9284,7 @@ void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
 
 }
 

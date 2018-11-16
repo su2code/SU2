@@ -54,9 +54,12 @@
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
+#include "../../Common/include/fem_geometry_structure.hpp"
+#include "../../Common/include/fem_standard_element.hpp"
 #include "../../Common/include/config_structure.hpp"
 
-#include "../../Common/include/tools.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+#include "../../Common/include/toolboxes/signal_processing_toolbox.hpp"
 
 using namespace std;
 
@@ -120,6 +123,17 @@ protected:
   int *Conn_Hexa_Par;
   int *Conn_Pris_Par;
   int *Conn_Pyra_Par;
+
+  unsigned long nGlobalPoint_Sort;
+  unsigned long nLocalPoint_Sort;
+  unsigned long nPoint_Restart;
+  int *Local_Halo_Sort;
+
+  unsigned long *beg_node;
+  unsigned long *end_node;
+
+  unsigned long *nPoint_Lin;
+  unsigned long *nPoint_Cum;
   
   su2double **Local_Data;
   su2double **Local_Data_Copy;      // Local data copy for cte. lift mode
@@ -214,11 +228,13 @@ protected:
     FORMAT_SCIENTIFIC       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
   };
   
-  string HistorySep;                  /*!< \brief Character which separates values in the history file */
+  enum HistoryFieldType {           
+    TYPE_RESIDUAL,         /*!< \brief Integer format. Example: 34 */
+    TYPE_COEFFICIENT,           /*!< \brief Format with fixed precision for floating point values. Example: 344.54  */
+    TYPE_DEFAULT       /*!< \brief Scientific format for floating point values. Example: 3.4454E02 */  
+  };
   
-  vector<string>    HistoryHeader;    /*!< \brief Vector containing the names of the fields printed to the history file. */
-  vector<su2double> HistoryValues;    /*!< \brief Vector containing the values of the fields printed to the history file. */
- 
+  string HistorySep;                  /*!< \brief Character which separates values in the history file */
   
   /** \brief Structure to store information for a history output field.
    * 
@@ -230,9 +246,10 @@ protected:
     su2double           Value;        /*!< \brief The value of the field. */
     unsigned short      ScreenFormat; /*!< \brief The format that is used to print this value to screen. */
     string              OutputGroup;  /*!< \brief The group this field belongs to. */
+    unsigned short      FieldType;
     HistoryOutputField() {}           /*!< \brief Default constructor. */
-    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup):
-      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup){}
+    HistoryOutputField(string fieldname, unsigned short screenformat, string historyoutputgroup, unsigned short fieldtype):
+      FieldName(fieldname), Value(0.0), ScreenFormat(screenformat), OutputGroup(historyoutputgroup), FieldType(fieldtype){}
   };
   
   /** \brief Structure to store information for a volume output field.
@@ -256,15 +273,23 @@ protected:
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
   
-  std::vector<string> HistoryFields;
-  unsigned short nHistoryOutput;
-  std::vector<string> ScreenFields;
-  unsigned short nScreenOutput;
+  std::vector<string> RequestedHistoryFields;
+  unsigned short nRequestedHistoryFields;
+  std::vector<string> RequestedScreenFields;
+  unsigned short nRequestedScreenFields;
+  std::vector<string> RequestedVolumeFields;
+  unsigned short nRequestedVolumeFields;
   char char_histfile[200];
 
   ofstream HistFile;
   
-  TablePrinter* ConvergenceTable;
+  PrintingToolbox::CTablePrinter* ConvergenceTable;
+  
+  std::map<string, su2double> Init_Residuals;
+  
+  map<string, Signal_Processing::RunningAverage> RunningAverages;
+  
+  
   
 public:
 
@@ -279,6 +304,18 @@ public:
   virtual ~COutput(void);
 
   /*!
+   * \brief Writes and organizes the all the output files, except the history one, for serial computations with the FEM solver.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetResult_Files_FEM(CSolver ****solver_container, CGeometry ***geometry, CConfig **config,
+                       unsigned long iExtIter, unsigned short val_nZone);
+  
+  /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -289,7 +326,19 @@ public:
    */
   void SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, CConfig **config,
                                unsigned long iExtIter, unsigned short val_nZone);
-  
+
+  /*!
+   * \brief Writes and organizes the all the output files, except the history one, for DG-FEM simulations (SU2_SOL).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetBaselineResult_Files_FEM(CSolver ***solver, CGeometry ***geometry, CConfig **config,
+                                   unsigned long iExtIter, unsigned short val_nZone);
+
   /*!
    * \brief Writes and organizes the all the output files, except the history one, for serial computations.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -314,12 +363,27 @@ public:
   void MergeConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
   
   /*!
+   * \brief Merge the FEM geometry into a data structure used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  
+  /*!
    * \brief Merge the node coordinates from all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void MergeCoordinates(CConfig *config, CGeometry *geometry);
 
+  /*!
+   * \brief Merge the node coordinates from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void MergeCoordinates_FEM(CConfig *config, CGeometry *geometry);
+  
   /*!
    * \brief Merge the connectivity for a single element type from all processors.
    * \param[in] config - Definition of the particular problem.
@@ -329,12 +393,28 @@ public:
   void MergeVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void MergeVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
    * \brief Merge the connectivity for a single element type from all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void MergeSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  
+  /*!
+   * \brief Merge the connectivity for a single element type from all processors for the FEM solver.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
   
   /*!
    * \brief Merge the solution into a data structure used for output file writing.
@@ -346,6 +426,15 @@ public:
   void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
+   * \brief Merge the FEM solution into a data structure used for output file writing.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeSolution_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+  
+  /*!
    * \brief Merge the solution into a data structure used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -353,7 +442,16 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void MergeBaselineSolution(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
-  
+
+  /*!
+   * \brief Merge the solution into a data structure used for output file writing (DG-FEM).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void MergeBaselineSolution_FEM(CConfig *config, CGeometry *geometry, CSolver *solver, unsigned short val_iZone);
+
   /*!
    * \brief Write a native SU2 restart file.
    * \param[in] config - Definition of the particular problem.
@@ -693,8 +791,24 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone);
-  
+                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone, unsigned short *nInst);
+
+  /*!
+   * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for DG-FEM flow problems.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solution - Flow, adjoint or linearized solution.
+   * \param[in] val_nZone - iZone index.
+   */
+  void LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
+
+  /*!
+   * \brief Prepare the number of points and offsets for linear partitioning that are needed for output.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void PrepareOffsets(CConfig *config, CGeometry *geometry);
+
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
@@ -702,7 +816,15 @@ public:
    * \param[in] val_nZone - iZone index.
    */
   void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
-  
+
+  /*!
+   * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_nZone - iZone index.
+   */
+  void SortConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
@@ -710,7 +832,15 @@ public:
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
+
+  /*!
+   * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors (DG-FEM solver).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
   /*!
    * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
@@ -718,21 +848,43 @@ public:
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
+
+  /*!
+   * \brief Sort the connectivity for a single surface element type into a linear partitioning across all processors (DG-FEM solver).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Elem_Type - VTK index of the element type being merged.
+   */
+  void SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+
   /*!
    * \brief Sort the output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData(CConfig *config, CGeometry *geometry);
-  
+
+  /*!
+   * \brief Sort the output data for each grid node into a linear partitioning across all processors (DG-FEM solver).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData_FEM(CConfig *config, CGeometry *geometry);
+
   /*!
    * \brief Sort the surface output data for each grid node into a linear partitioning across all processors.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void SortOutputData_Surface(CConfig *config, CGeometry *geometry);
-  
+
+  /*!
+   * \brief Sort the surface output data for each grid node into a linear partitioning across all processors (DG-FEM solver).
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void SortOutputData_Surface_FEM(CConfig *config, CGeometry *geometry);
+
   /*!
    * \brief Deallocate temporary memory needed for merging and writing connectivity in parallel.
    * \param[in] config - Definition of the particular problem.
@@ -848,17 +1000,13 @@ public:
   
   void PrintScreenHeaderString(stringstream &stream, string header);
   
-  void AddHistoryValue(su2double val);
-
-  void AddHistoryHeaderString(string header);
-  
   void PrintHistorySep(stringstream& stream);
   
-  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname );
+  void AddHistoryOutput(string name, string field_name, unsigned short format, string groupname, unsigned short field_type = TYPE_DEFAULT );
   
   void SetHistoryOutputValue(string name, su2double value);
   
-  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names);
+  void AddHistoryOutputPerSurface(string name, string field_name, unsigned short format, string groupname, vector<string> marker_names, unsigned short field_type = TYPE_DEFAULT);
   
   void SetHistoryOutputPerSurfaceValue(string name, su2double value, unsigned short iMarker);
   
@@ -876,6 +1024,14 @@ public:
       
   virtual void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   virtual void SetVolumeOutputFields(CConfig *config);
+  
+  void Postprocess_HistoryData(CConfig *config, bool dualtime);
+
+  virtual bool SetInit_Residuals(CConfig *config);
+  
+  virtual bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
+  void Postprocess_HistoryFields(CConfig *config);
 };
 
 /*! \class CFlowOutput
@@ -940,6 +1096,12 @@ public:
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
   
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+  
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
 };
 
 /*! \class CFlowOutput
@@ -950,16 +1112,13 @@ public:
 class CIncFlowOutput : public COutput {
 private:
 
-  char char_histfile[200];
-
-  unsigned short nDim;
   unsigned short turb_model;
   bool heat, weakly_coupled_heat;
   
   bool grid_movement;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
- 
+
 public:
 
   /*!
@@ -1007,6 +1166,13 @@ public:
   void SetVolumeOutputFields(CConfig *config);
   
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
 };
 
 /*! \class CFEAOutput
@@ -1181,6 +1347,10 @@ public:
   
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
   
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
 };
 
 /*! \class CDiscAdjFlowOutput
@@ -1240,6 +1410,10 @@ public:
   void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
   
   void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
 
 };
 

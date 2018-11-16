@@ -68,7 +68,7 @@ def main():
     discadj_cylinder3D.cfg_dir   = "disc_adj_euler/cylinder3D"
     discadj_cylinder3D.cfg_file  = "inv_cylinder3D.cfg"
     discadj_cylinder3D.test_iter = 5
-    discadj_cylinder3D.test_vals = [-3.719293, -4.038113, 0.000000, 0.000000] #last 4 columns
+    discadj_cylinder3D.test_vals = [-3.719306, -4.038129, 0.000000, 0.000000] #last 4 columns
     discadj_cylinder3D.su2_exec  = "parallel_computation.py -f"
     discadj_cylinder3D.timeout   = 1600
     discadj_cylinder3D.tol       = 0.00001
@@ -106,10 +106,10 @@ def main():
 
     # Adjoint Incompressible Inviscid NACA0012
     discadj_incomp_NACA0012           = TestCase('discadj_incomp_NACA0012')
-    discadj_incomp_NACA0012.cfg_dir   = "cont_adj_incomp_euler/naca0012"
+    discadj_incomp_NACA0012.cfg_dir   = "disc_adj_incomp_euler/naca0012"
     discadj_incomp_NACA0012.cfg_file  = "incomp_NACA0012_disc.cfg"
     discadj_incomp_NACA0012.test_iter = 20
-    discadj_incomp_NACA0012.test_vals = [-3.390496, -2.570037, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_NACA0012.test_vals = [-3.595580, -2.549720, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_NACA0012.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_NACA0012.timeout   = 1600
     discadj_incomp_NACA0012.tol       = 0.00001
@@ -119,12 +119,12 @@ def main():
     ### Disc. adj. incompressible N-S ###
     #####################################
 
-    # Adjoint Incompressible Viscous Cylinder
+    # Adjoint Incompressible Viscous Cylinder (Heated)
     discadj_incomp_cylinder           = TestCase('discadj_incomp_cylinder')
-    discadj_incomp_cylinder.cfg_dir   = "cont_adj_incomp_navierstokes/cylinder"
-    discadj_incomp_cylinder.cfg_file  = "lam_incomp_cylinder_disc.cfg"
+    discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
+    discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-2.801904, -2.205107, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-0.023099, 0.076994, 0.000000, 0.000000] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -134,16 +134,27 @@ def main():
     ### Disc. adj. incompressible RANS ###
     ######################################
 
-    # Adjoint Incompressible Turbulent NACA 0012
-    discadj_incomp_turb_NACA0012           = TestCase('discadj_incomp_turb_NACA0012')
-    discadj_incomp_turb_NACA0012.cfg_dir   = "incomp_rans/naca0012"
-    discadj_incomp_turb_NACA0012.cfg_file  = "naca0012_disc.cfg"
-    discadj_incomp_turb_NACA0012.test_iter = 10
-    discadj_incomp_turb_NACA0012.test_vals = [-3.846610, -1.009853, 0.000000, 0.000000] #last 4 columns
-    discadj_incomp_turb_NACA0012.su2_exec  = "parallel_computation.py -f"
-    discadj_incomp_turb_NACA0012.timeout   = 1600
-    discadj_incomp_turb_NACA0012.tol       = 0.00001
-    test_list.append(discadj_incomp_turb_NACA0012)
+    # Adjoint Incompressible Turbulent NACA 0012 SA
+    discadj_incomp_turb_NACA0012_sa           = TestCase('discadj_incomp_turb_NACA0012_sa')
+    discadj_incomp_turb_NACA0012_sa.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_sa.cfg_file  = "turb_naca0012_sa.cfg"
+    discadj_incomp_turb_NACA0012_sa.test_iter = 10
+    discadj_incomp_turb_NACA0012_sa.test_vals = [-3.846036, -1.031071, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sa.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_turb_NACA0012_sa.timeout   = 1600
+    discadj_incomp_turb_NACA0012_sa.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012_sa)
+
+    # Adjoint Incompressible Turbulent NACA 0012 SST
+    discadj_incomp_turb_NACA0012_sst           = TestCase('discadj_incomp_turb_NACA0012_sst')
+    discadj_incomp_turb_NACA0012_sst.cfg_dir   = "disc_adj_incomp_rans/naca0012"
+    discadj_incomp_turb_NACA0012_sst.cfg_file  = "turb_naca0012_sst.cfg"
+    discadj_incomp_turb_NACA0012_sst.test_iter = 10
+    discadj_incomp_turb_NACA0012_sst.test_vals = [-3.845805, -2.416675, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_turb_NACA0012_sst.su2_exec  = "parallel_computation.py -f"
+    discadj_incomp_turb_NACA0012_sst.timeout   = 1600
+    discadj_incomp_turb_NACA0012_sst.tol       = 0.00001
+    test_list.append(discadj_incomp_turb_NACA0012_sst)
 
     #######################################################
     ### Unsteady Disc. adj. compressible RANS           ###
@@ -196,12 +207,12 @@ def main():
     ### Structural Adjoint          ###
     ###################################
    
-    # Turbulent Cylinder
+    # Structural model
     discadj_fea           = TestCase('discadj_fea')
     discadj_fea.cfg_dir   = "disc_adj_fea"
     discadj_fea.cfg_file  = "configAD_fem.cfg" 
     discadj_fea.test_iter = 9
-    discadj_fea.test_vals = [-4.872191, -5.131614, -3.6413e-04, -8.7087e+00] #last 4 columns
+    discadj_fea.test_vals = [-4.751576, -4.692029, -0.000364, -8.708700] #last 4 columns
     discadj_fea.su2_exec  = "parallel_computation.py -f"
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
