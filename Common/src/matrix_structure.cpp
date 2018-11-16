@@ -76,7 +76,7 @@ CSysMatrix::CSysMatrix(void) {
   FzVector        = NULL;
   max_nElem       = 0;
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   MatrixMatrixProductJitter 		= NULL;
   MatrixVectorProductJitterBetaOne 	= NULL;
   MatrixVectorProductJitterBetaZero 	= NULL;
@@ -132,7 +132,7 @@ CSysMatrix::~CSysMatrix(void) {
   if (LyVector != NULL)   delete [] LyVector;
   if (FzVector != NULL)   delete [] FzVector;
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   if ( MatrixMatrixProductJitter != NULL ) 		mkl_jit_destroy( MatrixMatrixProductJitter );
   if ( MatrixVectorProductJitterBetaZero != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
   if ( MatrixVectorProductJitterBetaOne != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
@@ -228,7 +228,7 @@ void CSysMatrix::Initialize(unsigned long nPoint, unsigned long nPointDomain,
 
   /*--- Generate MKL Kernels ---*/
   
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   /*--- Create MKL JIT kernels if not using adjoint solvers ---*/
   if (!config->GetContinuous_Adjoint() && !config->GetDiscrete_Adjoint())
   {
@@ -564,7 +564,7 @@ void CSysMatrix::SubtractBlock_ILUMatrix(unsigned long block_i, unsigned long bl
 
 void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2double *product) {
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   // NOTE: matrix/vector swapped due to column major kernel -- manual "CBLAS" setup.
   if (useMKL) 
   {
@@ -586,7 +586,7 @@ void CSysMatrix::MatrixVectorProduct(su2double *matrix, su2double *vector, su2do
 
 void CSysMatrix::MatrixMatrixProduct(su2double *matrix_a, su2double *matrix_b, su2double *product) {
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   if (useMKL)
   {
     MatrixMatrixProductKernel( MatrixMatrixProductJitter, matrix_a, matrix_b, product );
@@ -849,7 +849,7 @@ void CSysMatrix::Gauss_Elimination_ILUMatrix(unsigned long block_i, su2double* r
   }
   else {
 
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   if (useMKL) {
       // With MKL_DIRECT_CALL enabled, this is significantly faster than native code on Intel Architectures.
       lapack_int * ipiv = new lapack_int [ nVar ];
@@ -1217,7 +1217,7 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
     for (index = row_ptr[row_i]; index < row_ptr[row_i+1]; index++) {
       vec_begin = col_ind[index]*nVar; // offset to beginning of block col_ind[index]
       mat_begin = (index*nVar*nVar); // offset to beginning of matrix block[row_i][col_ind[indx]]
-#ifdef HAVE_MKL
+#if defined(HAVE_MKL) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
       if (useMKL) 
       {
         MatrixVectorProductKernelBetaOne( MatrixVectorProductJitterBetaOne, (double *)&vec[ vec_begin ], (double *)&matrix[ mat_begin ], (double *)&prod[ prod_begin ] );
