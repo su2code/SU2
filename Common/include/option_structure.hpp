@@ -217,6 +217,7 @@ enum ENUM_SOLVER {
   DISC_ADJ_EULER = 35,
   DISC_ADJ_RANS = 36,
   DISC_ADJ_NAVIER_STOKES = 37,
+  DISC_ADJ_HEAT = 38,
   DISC_ADJ_FEM_EULER = 65,
   DISC_ADJ_FEM_RANS = 66,
   DISC_ADJ_FEM_NS = 67,
@@ -244,6 +245,7 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_EULER", DISC_ADJ_EULER)
 ("DISC_ADJ_RANS", DISC_ADJ_RANS)
 ("DISC_ADJ_NAVIERSTOKES", DISC_ADJ_EULER)
+("DISC_ADJ_HEAT_EQUATION_FVM", DISC_ADJ_HEAT)
 ("DISC_ADJ_FEM_EULER", DISC_ADJ_FEM_EULER)
 ("DISC_ADJ_FEM_RANS", DISC_ADJ_FEM_RANS)
 ("DISC_ADJ_FEM_NS", DISC_ADJ_FEM_NS)
@@ -443,6 +445,7 @@ enum RUNTIME_TYPE {
   RUNTIME_FEA_SYS = 20,		/*!< \brief One-physics case, the code is solving the FEA equation. */
   RUNTIME_ADJFEA_SYS = 30,		/*!< \brief One-physics case, the code is solving the adjoint FEA equation. */
   RUNTIME_HEAT_SYS = 21,		/*!< \brief One-physics case, the code is solving the heat equation. */
+  RUNTIME_ADJHEAT_SYS = 31, /*!< \brief One-physics case, the code is solving the adjoint heat equation. */
   RUNTIME_TRANS_SYS = 22,			/*!< \brief One-physics case, the code is solving the turbulence model. */
 };
 
@@ -454,6 +457,7 @@ const int ADJTURB_SOL = 3;	/*!< \brief Position of the continuous adjoint turbul
 
 const int TRANS_SOL = 4;	/*!< \brief Position of the transition model solution in the solver container array. */
 const int HEAT_SOL = 5;		/*!< \brief Position of the heat equation in the solution solver array. */
+const int ADJHEAT_SOL = 6;  /*!< \brief Position of the adjoint heat equation in the solution solver array. */
 
 const int FEA_SOL = 0;			/*!< \brief Position of the FEA equation in the solution solver array. */
 const int ADJFEA_SOL = 1;		/*!< \brief Position of the FEA adjoint equation in the solution solver array. */
