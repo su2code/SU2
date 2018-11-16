@@ -5107,6 +5107,7 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
       break;
     case CUSTOM_OBJFUNC:
+      Total_Custom_ObjFunc = pow((config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) - 0.046),2.0);
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     default:
@@ -7525,6 +7526,10 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
   }
   
+  /*--- Custom objective ---*/
+  
+  Total_Custom_ObjFunc = pow((config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) - 0.046),2.0);
+  //cout << " mDot ratio: " << config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) << " Obj: " << Total_Custom_ObjFunc << endl;
 }
 
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {

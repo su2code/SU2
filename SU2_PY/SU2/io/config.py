@@ -699,6 +699,16 @@ def read_config(filename):
       Temperature_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
 
+    if 'MULTIPOINT_OUTLET_MASSFLOW' not in data_dict:
+      Outlet_Massflow_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      Outlet_Massflow_List = "("
+      for i in range(multipoints):
+        if i != 0: InletVelocity_List +=  ", "
+        Outlet_Massflow_List +=  str(Outlet_Massflow_Value)
+      Outlet_Massflow_List += ")"
+      data_dict['MULTIPOINT_OUTLET_MASSFLOW'] = Outlet_Massflow_List
+      
+
     #
     # Default values for optimization parameters (needed for some eval functions
     # that can be called outside of an opt. context.
