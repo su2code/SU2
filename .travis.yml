@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - ole.burghardt@scicomp.uni-kl.de
   
 branches:
     only:
-        - feature_reformat_config
+        - feature_discadj_multiphysics
 
 python:
     - 2.7
