@@ -16647,6 +16647,8 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
   /*--- Loop over the Euler and Navier-Stokes markers ---*/
     
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      
+    Buffet_Metric[iMarker] = 0.0;
         
     Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
