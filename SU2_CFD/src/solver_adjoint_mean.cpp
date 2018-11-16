@@ -1817,7 +1817,7 @@ void CAdjEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
           /*--- Recv the data by probing for the current sender, jDomain,
            first and then receiving the values from it. ---*/
           
-          MPI_Probe(jDomain, rank, MPI_COMM_WORLD, &status);
+          SU2_MPI::Probe(jDomain, rank, MPI_COMM_WORLD, &status);
           SU2_MPI::Recv(&nPointTotal_r[jDomain], 1, MPI_UNSIGNED_LONG, jDomain, rank, MPI_COMM_WORLD, &status);
           
 #endif
