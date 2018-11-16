@@ -1655,6 +1655,27 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
+  /*--- Set the known displacements, note that some points of the moving surfaces
+   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
+  
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -1667,7 +1688,7 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
       
       iPoint  = geometry->vertex[iMarker][0]->GetNode();
       Coord_0 = geometry->node[iPoint]->GetCoord();
-
+      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->node[iPoint]->GetCoord();
@@ -1691,27 +1712,6 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         LinSysRes[total_index] = 0.0;
         LinSysSol[total_index] = 0.0;
         StiffMatrix.DeleteValsRowi(total_index);
-      }
-    }
-  }
-
-  /*--- Set the known displacements, note that some points of the moving surfaces
-   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
-        }
       }
     }
   }
