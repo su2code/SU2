@@ -562,6 +562,8 @@ inline su2double CSolver::GetHeatFlux(unsigned short val_marker, unsigned long v
 
 inline su2double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
+inline su2double CSolver::GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+
 inline su2double CSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline su2double CSolver::GetStrainMag_Max(void) { return 0; }
@@ -1735,6 +1737,8 @@ inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long
 inline su2double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
 
 inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
+
+inline su2double CNSSolver::GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) { return Buffet_Sensor[val_marker][val_vertex]; }
 
 inline su2double CNSSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
 
