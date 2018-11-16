@@ -817,7 +817,7 @@ public:
  * \class CPRISM6
  * \brief Prism element with 6 Gauss Points
  * \author R. Sanchez, F. Palacios, A. Bueno, T. Economon, S. Padron.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 
 class CPRISM6 : public CElement {
