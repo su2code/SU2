@@ -1125,6 +1125,88 @@ void CTurboIteration::Postprocess( COutput *output,
 
 }
 
+CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
+CFEMFluidIteration::~CFEMFluidIteration(void) { }
+
+void CFEMFluidIteration::Preprocess(COutput *output,
+                                    CIntegration ***integration_container,
+                                    CGeometry ***geometry_container,
+                                    CSolver ****solver_container,
+                                    CNumerics *****numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement **grid_movement,
+                                    CFreeFormDefBox*** FFDBox,
+                                    unsigned short val_iZone) {
+  
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  const bool restart = (config_container[ZONE_0]->GetRestart() ||
+                        config_container[ZONE_0]->GetRestart_Flow());
+  
+  /*--- Set the initial condition if this is not a restart. ---*/
+  if (ExtIter == 0 && !restart)
+    solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone],
+                                                                       solver_container[val_iZone],
+                                                                       config_container[val_iZone],
+                                                                       ExtIter);
+  
+}
+
+void CFEMFluidIteration::Iterate(COutput *output,
+                                 CIntegration ****integration_container,
+                                 CGeometry ****geometry_container,
+                                 CSolver *****solver_container,
+                                 CNumerics ******numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement ***grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone,
+                                 unsigned short val_iInst) {
+  
+  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
+  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
+  
+  /*--- Update global parameters ---*/
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_EULER || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)
+    config_container[val_iZone]->SetGlobalParam(FEM_EULER, RUNTIME_FLOW_SYS, ExtIter);
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)
+    config_container[val_iZone]->SetGlobalParam(FEM_NAVIER_STOKES, RUNTIME_FLOW_SYS, ExtIter);
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_RANS || config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS)
+    config_container[val_iZone]->SetGlobalParam(FEM_RANS, RUNTIME_FLOW_SYS, ExtIter);
+  
+  if (config_container[val_iZone]->GetKind_Solver() == FEM_LES)
+    config_container[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS, ExtIter);
+  
+  /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
+  
+  integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+                                                                              solver_container,
+                                                                              numerics_container,
+                                                                              config_container,
+                                                                              RUNTIME_FLOW_SYS,
+                                                                              IntIter, val_iZone,
+                                                                              val_iInst);
+}
+
+void CFEMFluidIteration::Update(COutput *output,
+                                CIntegration ***integration_container,
+                                CGeometry ***geometry_container,
+                                CSolver ****solver_container,
+                                CNumerics *****numerics_container,
+                                CConfig **config_container,
+                                CSurfaceMovement **surface_movement,
+                                CVolumetricMovement **grid_movement,
+                                CFreeFormDefBox*** FFDBox,
+                                unsigned short val_iZone)      { }
+void CFEMFluidIteration::Monitor()     { }
+void CFEMFluidIteration::Output()      { }
+void CFEMFluidIteration::Postprocess() { }
+
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 
 CHeatIteration::~CHeatIteration(void) { }
@@ -2897,6 +2979,12 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   unsigned short iVar;
   unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
+  
+  /*--- Some numerics are only instanciated under these conditions ---*/
+  bool element_based = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased(),
+       de_effects    = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        config_container[iZone]->GetDE_Effects();
 
   for (iVar = 0; iVar < iMPROP; iVar++){
 
@@ -2914,7 +3002,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       /*--- Add dependencies for element-based simulations. ---*/
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
           /*--- Neo Hookean Compressible ---*/
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
@@ -2946,7 +3034,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   }
 
-  if (config_container[iZone]->GetDE_Effects()){
+  if (de_effects){
 
       unsigned short nEField = solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetnEField();
 
@@ -2979,14 +3067,14 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
                                                                            solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
 
-          if (config_container[iZone]->GetDE_Effects()){
+          if (de_effects){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
           }
 
       }
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
         for (unsigned short iDV = 0; iDV < nDV; iDV++){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
