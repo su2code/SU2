@@ -12683,8 +12683,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         Variable_Names.push_back("Y_Plus");
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
-        Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
         Variable_Names.push_back("y<sup>+</sup>");
+        Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
       }
     }
     
