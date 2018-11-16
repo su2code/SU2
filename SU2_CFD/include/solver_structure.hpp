@@ -3005,6 +3005,14 @@ public:
    * \return Value of the pressure coefficient.
    */
   virtual void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the buffet sensor.
+   */
+  virtual su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief A virtual member.
@@ -8718,6 +8726,15 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat);
+
+
+  /*!
+   * \brief Get the value of the buffet sensor
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the buffet sensor.
+   */
+  su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief Get the y plus.
