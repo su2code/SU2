@@ -12511,7 +12511,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gamma = config->GetGamma();
   su2double RefVel2;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
+  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
   
   bool transition           = (config->GetKind_Trans_Model() == BC);
@@ -12691,7 +12691,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
+        if (config->GetBuffet_Monitoring()){
+          Variable_Names.push_back("Buffet_Sensor");
+          nVar_Par += 1;
+        }
         nVar_Par += 1;
+
         Variable_Names.push_back("h");
       }
     }
@@ -12753,6 +12758,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     Aux_Frict_z = new su2double[geometry->GetnPoint()];
     Aux_Heat    = new su2double[geometry->GetnPoint()];
     Aux_yPlus   = new su2double[geometry->GetnPoint()];
+    Aux_Buffet  = new su2double[geometry->GetnPoint()];
     
     /*--- First, loop through the mesh in order to find and store the
      value of the viscous coefficients at any surface nodes. They
@@ -12765,6 +12771,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Aux_Frict_z[iPoint] = 0.0;
       Aux_Heat[iPoint]    = 0.0;
       Aux_yPlus[iPoint]   = 0.0;
+      Aux_Buffet[iPoint]  = 0.0;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -12775,6 +12782,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
           Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
+          Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
         }
       }
     }
@@ -12934,6 +12942,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = Aux_Frict_z[iPoint];
             iVar++;
           }
+          Local_Data[jPoint][iVar] = Aux_Buffet[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
           
         }
@@ -12987,6 +12996,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     delete [] Aux_Frict_z;
     delete [] Aux_Heat;
     delete [] Aux_yPlus;
+    delete [] Aux_Buffet;
   }
   
   delete [] Local_Halo;
