@@ -62,8 +62,8 @@ config.NUMBER_PART = options.partitions
 state.find_files(config)
 
 # run su2
-multipoint_drag = SU2.eval.func('MULTIPOINT_DRAG',config,state)
-grad_multipoint_drag= SU2.eval.grad('MULTIPOINT_DRAG','CONTINUOUS_ADJOINT',config,state)
+multipoint_drag = SU2.eval.func('MULTIPOINT_CUSTOM_OBJFUNC',config,state)
+grad_multipoint_drag= SU2.eval.grad('MULTIPOINT_CUSTOM_OBJFUNC','DISCRETE_ADJOINT',config,state)
 
 print('MULTIPOINT_DRAG     =', multipoint_drag)
 print('GRADIENT MULTIPOINT_DRAG =', grad_multipoint_drag)
