@@ -703,7 +703,7 @@ def read_config(filename):
       Outlet_Massflow_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
       Outlet_Massflow_List = "("
       for i in range(multipoints):
-        if i != 0: InletVelocity_List +=  ", "
+        if i != 0: Outlet_Massflow_List +=  ", "
         Outlet_Massflow_List +=  str(Outlet_Massflow_Value)
       Outlet_Massflow_List += ")"
       data_dict['MULTIPOINT_OUTLET_MASSFLOW'] = Outlet_Massflow_List
