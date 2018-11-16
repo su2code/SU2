@@ -16626,7 +16626,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
   unsigned long iVertex, iPoint;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
   su2double *Vel_FS = config->GetVelocity_FreeStream();
-  su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area;
+  su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
   su2double k   = config->GetBuffet_k(),
              lam = config->GetBuffet_lambda();
   string Marker_Tag, Monitoring_Tag;
@@ -16686,7 +16686,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
           for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
           Area = sqrt(Area);
             
-          Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area;
+          Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
         
         }
           
@@ -16709,10 +16709,6 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     }
       
   }
-    
-  /*--- Normalize total buffet metric by reference area ---*/
-    
-  Total_Buffet_Metric /= config->GetRefArea();
     
 #ifdef HAVE_MPI
     
