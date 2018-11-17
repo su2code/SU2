@@ -2054,6 +2054,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
 
+  /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
+  *  Options: NO, YES \ingroup Config */
+  addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
 
   /*!\par KIND_INTERPOLATION \n
    * DESCRIPTION: Type of interpolation to use for multi-zone problems. \n OPTIONS: see \link Interpolator_Map \endlink

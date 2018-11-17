@@ -136,6 +136,16 @@ CDriver::CDriver(char* confFile,
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
 
+    /*--- Determine whether or not the FEM solver is used, which decides the
+     type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+    fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)         ||
+                  (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                  (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)          ||
+                  (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)           ||
+                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
   if( fem_solver ) {
     switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
       case DG: {
@@ -795,6 +805,16 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
   for (iZone = 0; iZone < nZone; iZone++) {
 
+    /*--- Determine whether or not the FEM solver is used, which decides the
+     type of geometry classes that are instantiated. ---*/
+    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)         ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_LES)           ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
     /*--- Read the number of instances for each zone ---*/
 
     nInst[iZone] = config_container[iZone]->GetnTimeInstances();
@@ -810,38 +830,63 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
       CGeometry *geometry_aux = NULL;
 
+      /*--- For the FEM solver with time-accurate local time-stepping, use
+       a dummy solver class to retrieve the initial flow state. ---*/
+
+      CSolver *solver_aux = NULL;
+      if (fem_solver) solver_aux = new CFEM_DG_EulerSolver(config_container[iZone], nDim, MESH_0);
+
       /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
 
       geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
 
       /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
 
-      geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
 
       /*--- Allocate the memory of the current domain, and divide the grid
      between the ranks. ---*/
 
       geometry_container[iZone][iInst] = NULL;
-
       geometry_container[iZone][iInst] = new CGeometry *[config_container[iZone]->GetnMGLevels()+1];
-      if (val_periodic) {
-        geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-      } else {
-        geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
+
+
+      if( fem_solver ) {
+        switch( config_container[iZone]->GetKind_FEM_Flow() ) {
+          case DG: {
+            geometry_container[iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+            break;
+          }
+
+          default: {
+            SU2_MPI::Error("Unknown FEM flow solver.", CURRENT_FUNCTION);
+            break;
+          }
+        }
+      }
+      else {
+
+        /*--- Until we finish the new periodic BC implementation, use the old
+         partitioning routines for cases with periodic BCs. The old routines 
+         will be entirely removed eventually in favor of the new methods. ---*/
+
+        if (val_periodic) {
+          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+        } else {
+          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
+        }
       }
 
-      /*--- Deallocate the memory of geometry_aux ---*/
+      /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
 
       delete geometry_aux;
-
-      /*--- Set the transfer information between processors ---*/
+      if (solver_aux != NULL) delete solver_aux;
 
       /*--- Add the Send/Receive boundaries ---*/
-
       geometry_container[iZone][iInst][MESH_0]->SetSendReceive(config_container[iZone]);
 
       /*--- Add the Send/Receive boundaries ---*/
-
       geometry_container[iZone][iInst][MESH_0]->SetBoundaries(config_container[iZone]);
 
     }
@@ -3749,12 +3794,11 @@ void CDriver::StartSolver(){
 
      /*--- Perform a dynamic mesh update if required. ---*/
 
-    if (!fem_solver) {
-      DynamicMeshUpdate(ExtIter);
-    }
-    
+      if (!fem_solver) {
+        DynamicMeshUpdate(ExtIter);
+      }
 
-    /*--- Run a single iteration of the problem (fluid, elasticity, wave, heat, ...). ---*/
+    /*--- Run a single iteration of the problem (fluid, elasticity, heat, ...). ---*/
 
     Run();
 
