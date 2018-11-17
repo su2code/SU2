@@ -791,7 +791,7 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone, unsigned short *nInst);
+                                unsigned long iExtIter, unsigned short iZone, unsigned short val_nZone);
 
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for DG-FEM flow problems.

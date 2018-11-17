@@ -8909,12 +8909,6 @@ public:
   */
   string GetVolumeOutput_Field(unsigned short iField);
 
-  /*!
-   * \brief Get Compute Average.
-   * \return YES if start computing averages
-   */
-  bool GetCompute_Average(void);
-
 };
 
 #include "config_structure.inl"

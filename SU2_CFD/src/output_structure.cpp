@@ -2374,8 +2374,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
           /*--- Adjust jPoint to index of next proc's data in the buffers. ---*/
           
           jPoint = (iProcessor + 1) * nBuffer_Scalar;
-<<<<<<< HEAD
-=======
         }
       }
     }
