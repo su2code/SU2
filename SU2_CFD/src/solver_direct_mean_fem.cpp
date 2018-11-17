@@ -3438,7 +3438,7 @@ void CFEM_DG_EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Collect the number of non-physical points for this iteration. ---*/
-    if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
       unsigned long MyErrorCounter = ErrorCounter;
       SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
@@ -3957,7 +3957,7 @@ void CFEM_DG_EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_con
           do this for steady calculations if the high verbosity is set, but we
           always perform the reduction for unsteady calculations where the CFL
           limit is used to set the global time step. ---*/
-    if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
+    if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
@@ -7099,7 +7099,7 @@ void CFEM_DG_EulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) 
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
                        MPI_SUM, MPI_COMM_WORLD);
   }
@@ -7208,7 +7208,7 @@ void CFEM_DG_EulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **so
 
 #ifdef HAVE_MPI
   /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
@@ -7317,7 +7317,7 @@ void CFEM_DG_EulerSolver::ClassicalRK4_Iteration(CGeometry *geometry, CSolver **
 
 #ifdef HAVE_MPI
   /* Parallel mode. Disable the reduce for the residual to avoid overhead if requested. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 
     /*--- The local L2 norms must be added to obtain the
           global value. Also check for divergence. ---*/
@@ -9573,7 +9573,7 @@ void CFEM_DG_EulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, C
   }
 
   /*--- Warning message about non-physical points ---*/
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
 #ifdef HAVE_MPI
     unsigned long nBadDOFsLoc = nBadDOFs;
     SU2_MPI::Reduce(&nBadDOFsLoc, &nBadDOFs, 1, MPI_UNSIGNED_LONG, MPI_SUM, MASTER_NODE, MPI_COMM_WORLD);
@@ -10274,7 +10274,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   }
 
   /* Sum up all the data from all ranks. The result will be available on all ranks. */
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(locBuf.data(), globBuf.data(), nCommSize, MPI_DOUBLE,
                        MPI_SUM, MPI_COMM_WORLD);
   }
@@ -10301,7 +10301,7 @@ void CFEM_DG_NSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
   /* Determine the maximum heat flux over all ranks. */
   su2double localMax = AllBound_MaxHeatFlux_Visc;
-  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+  if (config->GetComm_Level() == COMM_FULL) {
     SU2_MPI::Allreduce(&localMax, &AllBound_MaxHeatFlux_Visc, 1, MPI_DOUBLE,
                        MPI_MAX, MPI_COMM_WORLD);
   }
@@ -10726,7 +10726,7 @@ void CFEM_DG_NSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contai
      do this for steady calculations if the high verbosity is set, but we
      always perform the reduction for unsteady calculations where the CFL
      limit is used to set the global time step. ---*/
-    if ((config->GetConsole_Output_Verb() == VERB_HIGH) || time_stepping) {
+    if ((config->GetComm_Level() == COMM_FULL) || time_stepping) {
 #ifdef HAVE_MPI
       su2double rbuf_time = Min_Delta_Time;
       SU2_MPI::Allreduce(&rbuf_time, &Min_Delta_Time, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
