@@ -34,7 +34,7 @@
 #include <cstring>
 
 /* MKL or BLAS, if supported. */
-#if defined (HAVE_MKL) || defined(HAVE_BLAS)
+#if (defined (HAVE_MKL) || defined(HAVE_BLAS)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
 /* Function prototypes for the BLAS routines used. */
 extern "C" void dgemm_(char*, char*, const int*, const int*, const int*,
@@ -49,7 +49,7 @@ extern "C" void dgemv_(char*, const int*, const int*, const passivedouble*,
 
 /* Constructor. Initialize the const member variables, if needed. */
 CBlasStructure::CBlasStructure(void)
-#if !defined(HAVE_LIBXSMM) && !defined(HAVE_BLAS) && !defined(HAVE_MKL)
+#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
   : mc (256), kc (128), nc (128) 
 #endif
 {}
@@ -68,6 +68,14 @@ void CBlasStructure::gemm(const int M,        const int N,        const int K,
   if( config ) config->GEMM_Tick(&timeGemm);
 #endif
 
+#if (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE)) || !(defined(HAVE_LIBXSMM) || defined(HAVE_MKL) || defined(HAVE_BLAS))
+  /* Native implementation of the matrix product. This optimized implementation
+     assumes that the matrices are in column major order. This can be
+     accomplished by swapping N and M and A and B. This implementation is based
+     on https://github.com/flame/how-to-optimize-gemm. */
+  gemm_imp(N, M, K, B, A, C);
+
+#else
 #ifdef HAVE_LIBXSMM
 
   /* The gemm function of libxsmm is used to carry out the multiplication.
@@ -79,7 +87,7 @@ void CBlasStructure::gemm(const int M,        const int N,        const int K,
 
   libxsmm_dgemm(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
-#elif defined (HAVE_MKL) || defined(HAVE_BLAS)
+#else // MKL and BLAS
 
   /* The standard blas routine dgemm is used for the multiplication.
      Call dgemm without transposing the matrices. In that case dgemm expects
@@ -90,14 +98,7 @@ void CBlasStructure::gemm(const int M,        const int N,        const int K,
 
   dgemm_(&trans, &trans, &N, &M, &K, &alpha, B, &N, A, &K, &beta, C, &N);
 
-#else
-
-  /* Native implementation of the matrix product. This optimized implementation
-     assumes that the matrices are in column major order. This can be
-     accomplished by swapping N and M and A and B. This implementation is based
-     on https://github.com/flame/how-to-optimize-gemm. */
-  gemm_imp(N, M, K, B, A, C);
-  
+#endif
 #endif
 
   /* Store the profiling information, if needed. */
@@ -110,7 +111,7 @@ void CBlasStructure::gemm(const int M,        const int N,        const int K,
 void CBlasStructure::gemv(const int M,        const int N,   const su2double *A,
                           const su2double *x, su2double *y) {
 
-#if defined (HAVE_BLAS) || defined(HAVE_MKL)
+#if (defined (HAVE_BLAS) || defined(HAVE_MKL)) && !(defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
   /* The standard blas routine dgemv is used for the multiplication.
      Note that dgemv expects the matrices in column major order, while
@@ -139,7 +140,7 @@ void CBlasStructure::gemv(const int M,        const int N,   const su2double *A,
 #endif
 }
 
-#if !defined(HAVE_LIBXSMM) && !defined(HAVE_BLAS) && !defined(HAVE_MKL)
+#if !(defined(HAVE_LIBXSMM) || defined(HAVE_BLAS) || defined(HAVE_MKL)) || (defined(CODI_REVERSE_TYPE) || defined(CODI_FORWARD_TYPE))
 
 /* Macros for accessing submatrices of a matmul using the leading dimension. */
 #define A(i, j) a[(j)*lda + (i)]

@@ -1385,7 +1385,6 @@ void CHeatIteration::Solve(COutput *output,
 
 }
 
-
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
 CFEAIteration::~CFEAIteration(void) { }
 void CFEAIteration::Preprocess() { }
