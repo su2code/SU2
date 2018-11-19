@@ -93,8 +93,8 @@ protected:
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
   
-  int* Input_AdjIndices;
-  int* Output_AdjIndices;
+  int *Input_AdjIndices,          /*!< \brief Indices of Solution variables in the adjoint vector. */
+  *Output_AdjIndices;             /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
   
 public:
   
