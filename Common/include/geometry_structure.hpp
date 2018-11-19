@@ -385,8 +385,8 @@ public:
   unsigned long *Local_Point_P2PRecv; /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
   su2double *bufD_P2PRecv;            /*!< \brief Data structure for su2double point-to-point receive. */
   su2double *bufD_P2PSend;            /*!< \brief Data structure for su2double point-to-point send. */
-  unsigned long *bufL_P2PRecv;        /*!< \brief Data structure for unsigned long point-to-point receive. */
-  unsigned long *bufL_P2PSend;        /*!< \brief Data structure for unsigned long point-to-point send. */
+  unsigned short *bufS_P2PRecv;        /*!< \brief Data structure for unsigned long point-to-point receive. */
+  unsigned short *bufS_P2PSend;        /*!< \brief Data structure for unsigned long point-to-point send. */
   SU2_MPI::Request *req_P2PSend;      /*!< \brief Data structure for point-to-point send requests. */
   SU2_MPI::Request *req_P2PRecv;      /*!< \brief Data structure for point-to-point recv requests. */
 

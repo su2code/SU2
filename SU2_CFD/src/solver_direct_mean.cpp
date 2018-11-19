@@ -4218,7 +4218,7 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   
   InitiateComms(geometry, config, MAX_EIGENVALUE);
   CompleteComms(geometry, config, MAX_EIGENVALUE);
-
+  
 }
 
 void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) {

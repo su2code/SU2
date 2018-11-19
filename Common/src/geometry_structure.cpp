@@ -117,8 +117,8 @@ CGeometry::CGeometry(void) {
   bufD_P2PSend = NULL;
   bufD_P2PRecv = NULL;
   
-  bufL_P2PSend = NULL;
-  bufL_P2PRecv = NULL;
+  bufS_P2PSend = NULL;
+  bufS_P2PRecv = NULL;
   
   req_P2PSend = NULL;
   req_P2PRecv = NULL;
@@ -224,8 +224,8 @@ CGeometry::~CGeometry(void) {
   if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
   if (bufD_P2PSend != NULL) delete [] bufD_P2PSend;
   
-  if (bufL_P2PRecv != NULL) delete [] bufL_P2PRecv;
-  if (bufL_P2PSend != NULL) delete [] bufL_P2PSend;
+  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
+  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
   
   if (req_P2PSend != NULL) delete [] req_P2PSend;
   if (req_P2PRecv != NULL) delete [] req_P2PRecv;
@@ -2013,11 +2013,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    sending. ---*/
   
   bufD_P2PSend = NULL;
-  
-  bufL_P2PSend = NULL;
-  bufL_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
-  for (iSend = 0; iSend < nPoint_P2PSend[nP2PSend]; iSend++)
-    bufL_P2PSend[iSend] = 0;
+  bufS_P2PSend = NULL;
   
   Local_Point_P2PSend = NULL;
   Local_Point_P2PSend = new unsigned long[nPoint_P2PSend[nP2PSend]];
@@ -2030,11 +2026,7 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
    directly copy our own data later. ---*/
   
   bufD_P2PRecv = NULL;
-  
-  bufL_P2PRecv = NULL;
-  bufL_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
-  for (iRecv = 0; iRecv < nPoint_P2PRecv[nP2PRecv]; iRecv++)
-    bufL_P2PRecv[iRecv] = 0.0;
+  bufS_P2PRecv = NULL;
   
   Local_Point_P2PRecv = NULL;
   Local_Point_P2PRecv = new unsigned long[nPoint_P2PRecv[nP2PRecv]];
@@ -2117,6 +2109,18 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
     bufD_P2PRecv[iRecv] = 0.0;
   
+  if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
+
+  bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
+  for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
+    bufS_P2PSend[iSend] = 0;
+
+  if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
+
+  bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
+  for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
+    bufS_P2PRecv[iRecv] = 0;
+  
 }
 
 void CGeometry::InitiateP2PComms(CGeometry *geometry,
@@ -2158,9 +2162,9 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
                        count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
                        &(req_P2PRecv[iMessage]));
         break;
-      case COMM_TYPE_UNSIGNED_LONG:
-        SU2_MPI::Irecv(&(static_cast<unsigned long*>(bufL_P2PRecv)[offset]),
-                       count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_P2PRecv)[offset]),
+                       count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
                        &(req_P2PRecv[iMessage]));
         break;
       default:
@@ -2174,7 +2178,7 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
     iMessage++;
     
   }
-  
+
   /*--- Launch the non-blocking sends next. ---*/
   
   iMessage = 0;
@@ -2206,9 +2210,9 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
                        count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
                        &(req_P2PSend[iMessage]));
         break;
-      case COMM_TYPE_UNSIGNED_LONG:
-        SU2_MPI::Isend(&(static_cast<unsigned long*>(bufL_P2PSend)[offset]),
-                       count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_P2PSend)[offset]),
+                       count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
                        &(req_P2PSend[iMessage]));
         break;
       default:
@@ -2278,7 +2282,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
       break;
     case NEIGHBORS:
       COUNT_PER_POINT  = 1;
-      MPI_TYPE         = COMM_TYPE_UNSIGNED_LONG;
+      MPI_TYPE         = COMM_TYPE_UNSIGNED_SHORT;
       break;
     default:
       SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2301,7 +2305,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   
   su2double *bufDSend = geometry->bufD_P2PSend;
   
-  unsigned long *bufLSend = geometry->bufL_P2PSend;
+  unsigned short *bufLSend = geometry->bufS_P2PSend;
   
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -2338,7 +2342,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
           bufDSend[offset] = node[iPoint]->GetMaxLength();
           break;
         case NEIGHBORS:
-          bufLSend[offset] = node[iPoint]->GetnPoint();
+          bufLSend[offset] = geometry->node[iPoint]->GetnPoint();
           break;
         default:
           SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
@@ -2350,7 +2354,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   }
   
   /*--- Launch the point-to-point MPI communications. ---*/
-  
+
   geometry->InitiateP2PComms(geometry, config, MPI_TYPE);
   
 }
@@ -2374,7 +2378,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   
   su2double *bufDRecv = geometry->bufD_P2PRecv;
   
-  unsigned long *bufLRecv = geometry->bufL_P2PRecv;
+  unsigned short *bufLRecv = geometry->bufS_P2PRecv;
   
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
@@ -2411,7 +2415,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
           node[iPoint]->SetMaxLength(bufDRecv[offset]);
           break;
         case NEIGHBORS:
-          node[iPoint]->SetnNeighbor(bufLRecv[offset]);
+          geometry->node[iPoint]->SetnNeighbor(bufLRecv[offset]);
           break;
         default:
           SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
