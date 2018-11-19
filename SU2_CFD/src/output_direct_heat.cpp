@@ -41,6 +41,25 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
 
   nDim = geometry->GetnDim();
 
+
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+  
+  if (nRequestedHistoryFields == 0){
+    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("RMS_RES");
+    nRequestedHistoryFields = RequestedHistoryFields.size();
+  }
+  if (nRequestedScreenFields == 0){
+    RequestedScreenFields.push_back("EXT_ITER");    
+    RequestedScreenFields.push_back("RMS_TEMPERATURE");
+    nRequestedScreenFields = RequestedScreenFields.size();
+  }
+  if (nRequestedVolumeFields == 0){
+    RequestedVolumeFields.push_back("COORDINATES");
+    RequestedVolumeFields.push_back("CONSERVATIVE");
+    RequestedVolumeFields.push_back("PRIMITIVE");
+    nRequestedVolumeFields = RequestedVolumeFields.size();
+  }
 }
 
 CHeatOutput::~CHeatOutput(void) {
@@ -52,18 +71,36 @@ CHeatOutput::~CHeatOutput(void) {
 }
 
 
-inline bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) {
+bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+ if (!write_dualtime){
   return true;
+ }
+ else {
+   return false;
+ }
 }
 
-inline bool CHeatOutput::WriteScreen_Header(CConfig *config) { 
-
-//  return (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
-  return true;
+bool CHeatOutput::WriteScreen_Header(CConfig *config) {  
+  bool write_header = false;
+  if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0);
+  } else {
+    write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
+  }
+  return write_header;
 }
 
-inline bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
-  return true;
+bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+  bool write_output = false;
+  
+  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
+      && write_dualtime ){
+    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
+  }
+  else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
+    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+  } 
+  return write_output;
 }
 
 void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
@@ -76,8 +113,9 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   
   SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
-  SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
-  SetHistoryOutputValue("HEAT", log10(heat_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("AVG_TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
+  SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
+  SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
   
   SetHistoryOutputValue("PHYS_TIME", timeused);
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
@@ -93,12 +131,12 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
-  AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT");
-  AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT");
-  AddHistoryOutput("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT");
+  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  AddHistoryOutput("HEATFLUX_MAX", "MaxHF",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  AddHistoryOutput("AVG_TEMPERATURE", "AvgTemp", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
   
-  AddHistoryOutput("HEAT", "Res[T]", FORMAT_FIXED, "RESIDUALS");
-  
+  AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("MAX_TEMPERATURE", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
 }
 
 
