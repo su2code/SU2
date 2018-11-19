@@ -56,6 +56,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
   Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
   GridVel = NULL;  GridVel_Grad = NULL;
+  Input_AdjIndices = NULL;  Output_AdjIndices = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
