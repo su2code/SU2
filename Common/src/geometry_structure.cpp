@@ -1351,10 +1351,19 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
+
+  bool input    = true;
+  bool taping2  = config->GetBoolZoneSpecific();
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+    if(taping2) {
+      AD::RegisterInput2(node[iPoint]->GetCoord()[iDim]);
+      node[iPoint]->Set_AdjIndices(input);
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
@@ -1363,9 +1372,18 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned short iDim;
   unsigned long iPoint;
 
+  bool input    = false;
+  bool taping2  = config->GetBoolZoneSpecific();
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
+    if(taping2) {
       AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      node[iPoint]->Set_AdjIndices(input);
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }

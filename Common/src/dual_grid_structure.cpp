@@ -72,6 +72,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   Coord = new su2double[nDim];
 
+  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+    Input_AdjIndices = new int[nDim];
+    Output_AdjIndices = new int[nDim];
+  }
+
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV   = 0;
   Agglomerate = false;
@@ -340,8 +345,9 @@ CPoint::~CPoint() {
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  
-}
+  if (Input_AdjIndices  != NULL) delete[] Input_AdjIndices;
+  if (Output_AdjIndices != NULL) delete[] Output_AdjIndices;
+ }
 
 void CPoint::SetPoint(unsigned long val_point) {
 
@@ -379,6 +385,29 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
   }
   Boundary = true;
 
+}
+
+void CPoint::Set_AdjIndices(bool input) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    if(input) {
+      AD::Set_AdjIndex(Input_AdjIndices[iDim], Coord[iDim]);
+    }
+    else {
+      AD::Set_AdjIndex(Output_AdjIndices[iDim], Coord[iDim]);
+    }
+  }
+}
+
+void CPoint::SetAdjointSolution(su2double *adj_sol) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    AD::SetDerivative(Output_AdjIndices[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
+  }
+}
+
+void CPoint::GetAdjointSolution(su2double *adj_sol) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    adj_sol[iDim] = AD::GetDerivative(Input_AdjIndices[iDim]);
+  }
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
