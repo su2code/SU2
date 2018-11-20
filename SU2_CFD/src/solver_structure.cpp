@@ -415,7 +415,9 @@ void CSolver::InitiateComms(CGeometry *geometry,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, iSend, nSend, offset;
+  unsigned long iPoint, offset, buf_offset;
+  
+  int iMessage, iSend, nSend;
   
   /*--- Set the size of the data packet and type depending on quantity. ---*/
   
@@ -492,112 +494,127 @@ void CSolver::InitiateComms(CGeometry *geometry,
   
   /*--- Set some local pointers to make access simpler. ---*/
   
-  nSend = geometry->nPoint_P2PSend[geometry->nP2PSend];
-  
   su2double *bufDSend = geometry->bufD_P2PSend;
   
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
   
-  if (nSend > 0) {
+  if (geometry->nP2PSend > 0) {
     
-    for (iSend = 0; iSend < nSend; iSend++) {
+    /*--- Post all non-blocking recvs first before sends. ---*/
+    
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE);
+    
+    for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
       
-      /*--- Get the local index for this communicated data. ---*/
+      /*--- Compute our location in the send buffer. ---*/
       
-      iPoint = geometry->Local_Point_P2PSend[iSend];
+      offset = geometry->nPoint_P2PSend[iMessage];
       
-      /*--- Compute the offset in the recv buffer for this point. ---*/
+      /*--- Total count can include multiple pieces of data per element. ---*/
       
-      offset = iSend*geometry->countPerPoint;
+      nSend = (geometry->nPoint_P2PSend[iMessage+1] -
+               geometry->nPoint_P2PSend[iMessage]);
       
-      switch (commType) {
-        case SOLUTION:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution(iVar);
-          break;
-        case SOLUTION_OLD:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution_Old(iVar);
-          break;
-        case SOLUTION_EDDY:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution(iVar);
-          bufDSend[offset+nVar]   = node[iPoint]->GetmuT();
-          break;
-        case UNDIVIDED_LAPLACIAN:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetUndivided_Laplacian(iVar);
-        case SOLUTION_LIMITER:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetLimiter(iVar);
-          break;
-        case MAX_EIGENVALUE:
-          bufDSend[offset] = node[iPoint]->GetLambda();
-          break;
-        case SENSOR:
-          bufDSend[offset] = node[iPoint]->GetSensor();
-          break;
-        case SOLUTION_GRADIENT:
-          for (iVar = 0; iVar < nVar; iVar++)
+      for (iSend = 0; iSend < nSend; iSend++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iSend)*geometry->countPerPoint;
+        
+        switch (commType) {
+          case SOLUTION:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            break;
+          case SOLUTION_OLD:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_Old(iVar);
+            break;
+          case SOLUTION_EDDY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            bufDSend[buf_offset+nVar]   = node[iPoint]->GetmuT();
+            break;
+          case UNDIVIDED_LAPLACIAN:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetUndivided_Laplacian(iVar);
+          case SOLUTION_LIMITER:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter(iVar);
+            break;
+          case MAX_EIGENVALUE:
+            bufDSend[buf_offset] = node[iPoint]->GetLambda();
+            break;
+          case SENSOR:
+            bufDSend[buf_offset] = node[iPoint]->GetSensor();
+            break;
+          case SOLUTION_GRADIENT:
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
+            break;
+          case PRIMITIVE_GRADIENT:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+            break;
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
+            break;
+          case AUXVAR_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
-          break;
-        case PRIMITIVE_GRADIENT:
-          for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[offset+iVar*nDim+iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
-          break;
-        case PRIMITIVE_LIMITER:
-          for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
-          break;
-        case AUXVAR_GRADIENT:
-          for (iDim = 0; iDim < nDim; iDim++)
-            bufDSend[offset+iDim] = node[iPoint]->GetAuxVarGradient(iDim);
-          break;
-        case SOLUTION_FEA:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution(iVar);
-            if (config->GetDynamic_Analysis() == DYNAMIC) {
-              bufDSend[offset+nVar+iVar] = node[iPoint]->GetSolution_Vel(iVar);
-              bufDSend[offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
+              bufDSend[buf_offset+iDim] = node[iPoint]->GetAuxVarGradient(iDim);
+            break;
+          case SOLUTION_FEA:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+              if (config->GetDynamic_Analysis() == DYNAMIC) {
+                bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel(iVar);
+                bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
+              }
             }
-          }
-          break;
-        case SOLUTION_FEA_OLD:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution_time_n(iVar);
-            bufDSend[offset+nVar+iVar] = node[iPoint]->GetSolution_Vel_time_n(iVar);
-            bufDSend[offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel_time_n(iVar);
-          }
-          break;
-        case SOLUTION_DISPONLY:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution(iVar);
-          break;
-        case SOLUTION_PRED:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution_Pred(iVar);
-          break;
-        case SOLUTION_PRED_OLD:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            bufDSend[offset+iVar] = node[iPoint]->GetSolution_Old(iVar);
-            bufDSend[offset+nVar+iVar] = node[iPoint]->GetSolution_Pred(iVar);
-            bufDSend[offset+nVar*2+iVar] = node[iPoint]->GetSolution_Pred_Old(iVar);
-          }
-          break;
-        default:
-          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                         CURRENT_FUNCTION);
-          break;
+            break;
+          case SOLUTION_FEA_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar]        = node[iPoint]->GetSolution_time_n(iVar);
+              bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel_time_n(iVar);
+              bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel_time_n(iVar);
+            }
+            break;
+          case SOLUTION_DISPONLY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            break;
+          case SOLUTION_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_Pred(iVar);
+            break;
+          case SOLUTION_PRED_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar]        = node[iPoint]->GetSolution_Old(iVar);
+              bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Pred(iVar);
+              bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Pred_Old(iVar);
+            }
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
       }
+      
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+      
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage);
+      
     }
   }
-  
-  /*--- Launch the point-to-point MPI communications. ---*/
-  
-  geometry->InitiateP2PComms(geometry, config, MPI_TYPE);
   
 }
 
@@ -608,117 +625,148 @@ void CSolver::CompleteComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short iDim, iVar;
-  unsigned long iPoint, iRecv, nRecv, offset;
+  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
-  /*--- Verify that all non-blocking point-to-point comms have finished. ---*/
-  
-  geometry->CompleteP2PComms(geometry, config);
+  int ind, source, iMessage;
+  SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
-  
-  nRecv = geometry->nPoint_P2PRecv[geometry->nP2PRecv];
   
   su2double *bufDRecv = geometry->bufD_P2PRecv;
   
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
   
-  if (nRecv > 0) {
+  if (geometry->nP2PRecv > 0) {
     
-    for (iRecv = 0; iRecv < nRecv; iRecv++) {
+    for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
       
-      /*--- Get the local index for this communicated data. ---*/
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
       
-      iPoint = geometry->Local_Point_P2PRecv[iRecv];
+      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
+                       &ind, &status);
       
-      /*--- Compute the offset in the recv buffer for this point. ---*/
+      /*--- Once we have recv'd a message, get the source rank. ---*/
       
-      offset = iRecv*geometry->countPerPoint;
+      source = status.MPI_SOURCE;
       
-      /*--- Store the data correctly depending on the quantity. ---*/
+      /*--- We know the offsets based on the source rank. ---*/
       
-      switch (commType) {
-        case SOLUTION:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution(iVar, bufDRecv[offset+iVar]);
-          break;
-        case SOLUTION_OLD:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution_Old(iVar, bufDRecv[offset+iVar]);
-          break;
-        case SOLUTION_EDDY:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution(iVar, bufDRecv[offset+iVar]);
-          node[iPoint]->SetmuT(bufDRecv[offset+nVar]);
-          break;
-        case UNDIVIDED_LAPLACIAN:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetUndivided_Laplacian(iVar, bufDRecv[offset+iVar]);
-        case SOLUTION_LIMITER:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetLimiter(iVar, bufDRecv[offset+iVar]);
-          break;
-        case MAX_EIGENVALUE:
-          node[iPoint]->SetLambda(bufDRecv[offset]);
-          break;
-        case SENSOR:
-          node[iPoint]->SetSensor(bufDRecv[offset]);
-          break;
-        case SOLUTION_GRADIENT:
-          for (iVar = 0; iVar < nVar; iVar++)
+      int jRecv = 0;
+      for (jRecv = 0; jRecv < geometry->nP2PRecv; jRecv++)
+        if (geometry->Neighbors_P2PRecv[jRecv] == (int)source) { break;}
+      
+      /*--- Get the point offset for the start of this message. ---*/
+      
+      offset = geometry->nPoint_P2PRecv[jRecv];
+      
+      /*--- Get the number of packets to be received in this message. ---*/
+      
+      nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
+               geometry->nPoint_P2PRecv[jRecv]);
+      
+      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iRecv)*geometry->countPerPoint;
+        
+        /*--- Store the data correctly depending on the quantity. ---*/
+        
+        switch (commType) {
+          case SOLUTION:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_OLD:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution_Old(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_EDDY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            node[iPoint]->SetmuT(bufDRecv[offset+nVar]);
+            break;
+          case UNDIVIDED_LAPLACIAN:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetUndivided_Laplacian(iVar, bufDRecv[buf_offset+iVar]);
+          case SOLUTION_LIMITER:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetLimiter(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case MAX_EIGENVALUE:
+            node[iPoint]->SetLambda(bufDRecv[buf_offset]);
+            break;
+          case SENSOR:
+            node[iPoint]->SetSensor(bufDRecv[buf_offset]);
+            break;
+          case SOLUTION_GRADIENT:
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case PRIMITIVE_GRADIENT:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                node[iPoint]->SetGradient_Primitive(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              node[iPoint]->SetLimiter_Primitive(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case AUXVAR_GRADIENT:
             for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetGradient(iVar, iDim, bufDRecv[offset+iVar*nDim+iDim]);
-          break;
-        case PRIMITIVE_GRADIENT:
-          for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            for (iDim = 0; iDim < nDim; iDim++)
-              node[iPoint]->SetGradient_Primitive(iVar, iDim, bufDRecv[offset+iVar*nDim+iDim]);
-          break;
-        case PRIMITIVE_LIMITER:
-          for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-            node[iPoint]->SetLimiter_Primitive(iVar, bufDRecv[offset+iVar]);
-          break;
-        case AUXVAR_GRADIENT:
-          for (iDim = 0; iDim < nDim; iDim++)
-            node[iPoint]->SetAuxVarGradient(iDim, bufDRecv[offset+iDim]);
-          break;
-        case SOLUTION_FEA:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->SetSolution(iVar, bufDRecv[offset+iVar]);
-            if (config->GetDynamic_Analysis() == DYNAMIC) {
-              node[iPoint]->SetSolution_Vel(iVar, bufDRecv[offset+nVar+iVar]);
-              node[iPoint]->SetSolution_Accel(iVar, bufDRecv[offset+nVar*2+iVar]);
+              node[iPoint]->SetAuxVarGradient(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case SOLUTION_FEA:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+              if (config->GetDynamic_Analysis() == DYNAMIC) {
+                node[iPoint]->SetSolution_Vel(iVar, bufDRecv[buf_offset+nVar+iVar]);
+                node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+              }
             }
-          }
-        case SOLUTION_FEA_OLD:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->SetSolution_time_n(iVar, bufDRecv[offset+iVar]);
-            node[iPoint]->SetSolution_Vel_time_n(iVar, bufDRecv[offset+nVar+iVar]);
-            node[iPoint]->SetSolution_Accel_time_n(iVar, bufDRecv[offset+nVar*2+iVar]);
-          }
-          break;
-        case SOLUTION_DISPONLY:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution(iVar, bufDRecv[offset+iVar]);
-          break;
-        case SOLUTION_PRED:
-          for (iVar = 0; iVar < nVar; iVar++)
-            node[iPoint]->SetSolution_Pred(iVar, bufDRecv[offset+iVar]);
-          break;
-        case SOLUTION_PRED_OLD:
-          for (iVar = 0; iVar < nVar; iVar++) {
-            node[iPoint]->SetSolution_Old(iVar, bufDRecv[offset+iVar]);
-            node[iPoint]->SetSolution_Pred(iVar, bufDRecv[offset+nVar+iVar]);
-            node[iPoint]->SetSolution_Pred_Old(iVar, bufDRecv[offset+nVar*2+iVar]);
-          }
-          break;
-        default:
-          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                         CURRENT_FUNCTION);
-          break;
+          case SOLUTION_FEA_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->SetSolution_Vel_time_n(iVar, bufDRecv[buf_offset+nVar+iVar]);
+              node[iPoint]->SetSolution_Accel_time_n(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+            }
+            break;
+          case SOLUTION_DISPONLY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution_Pred(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_PRED_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution_Old(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->SetSolution_Pred(iVar, bufDRecv[buf_offset+nVar+iVar]);
+              node[iPoint]->SetSolution_Pred_Old(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+            }
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
       }
-      
     }
+    
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+    
+    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, &status);
+    
   }
   
 }

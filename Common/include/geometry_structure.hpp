@@ -429,6 +429,23 @@ public:
   void CompleteP2PComms(CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Routine to launch non-blocking recvs only for all point-to-point communications with neighboring partitions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to launch non-blocking sends only for one point-to-point communication at a time with neighboring partitions.
+   * \param[in] geometry  - Geometrical definition of the problem.
+   * \param[in] config    - Definition of the particular problem.
+   * \param[in] commType  - Enumerated type for the quantity to be communicated.
+   * \param[in] val_iSend - Index of the send in the order they are stored.
+   */
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iSend);
+  
+  /*!
    * \brief Routine to load a specified quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs amongst all processors.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.

@@ -986,7 +986,9 @@ void CSysMatrix::InitiateComms(CSysVector & x,
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
   
-  unsigned long iPoint, iSend, nSend, offset;
+  unsigned long iPoint, offset, buf_offset;
+  
+  int iMessage, iSend, nSend;
   
   /*--- Set the size of the data packet and type depending on quantity. ---*/
   
@@ -1013,42 +1015,57 @@ void CSysMatrix::InitiateComms(CSysVector & x,
   
   /*--- Set some local pointers to make access simpler. ---*/
   
-  nSend = geometry->nPoint_P2PSend[geometry->nP2PSend];
-  
   su2double *bufDSend = geometry->bufD_P2PSend;
   
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
   
-  if (nSend > 0) {
+  if (geometry->nP2PSend > 0) {
     
-    for (iSend = 0; iSend < nSend; iSend++) {
+    /*--- Post all non-blocking recvs first before sends. ---*/
+    
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE);
+    
+    for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
       
-      /*--- Get the local index for this communicated data. ---*/
+      /*--- Compute our location in the send buffer. ---*/
       
-      iPoint = geometry->Local_Point_P2PSend[iSend];
+      offset = geometry->nPoint_P2PSend[iMessage];
       
-      /*--- Compute the offset in the recv buffer for this point. ---*/
+      /*--- Total count can include multiple pieces of data per element. ---*/
       
-      offset = iSend*geometry->countPerPoint;
+      nSend = (geometry->nPoint_P2PSend[iMessage+1] -
+               geometry->nPoint_P2PSend[iMessage]);
       
-      switch (commType) {
-        case SOLUTION_MATRIX:
-        case SOLUTION_MATRIXTRANS:
-          for (iVar = 0; iVar < nVar; iVar++)
-            bufDSend[offset+iVar] = x[iPoint*nVar+iVar];
-          break;
-        default:
-          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                         CURRENT_FUNCTION);
-          break;
+      for (iSend = 0; iSend < nSend; iSend++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iSend)*geometry->countPerPoint;
+        
+        switch (commType) {
+          case SOLUTION_MATRIX:
+          case SOLUTION_MATRIXTRANS:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = x[iPoint*nVar+iVar];
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
       }
+      
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+      
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage);
+      
     }
   }
-  
-  /*--- Launch the point-to-point MPI communications. ---*/
-  
-  geometry->InitiateP2PComms(geometry, config, MPI_TYPE);
   
 }
 
@@ -1060,50 +1077,82 @@ void CSysMatrix::CompleteComms(CSysVector & x,
   /*--- Local variables ---*/
   
   unsigned short iVar;
-  unsigned long iPoint, iRecv, nRecv, offset;
+  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
-  /*--- Verify that all non-blocking point-to-point comms have finished. ---*/
-  
-  geometry->CompleteP2PComms(geometry, config);
+  int ind, source, iMessage;
+  SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
-  
-  nRecv = geometry->nPoint_P2PRecv[geometry->nP2PRecv];
   
   su2double *bufDRecv = geometry->bufD_P2PRecv;
   
   /*--- Store the data that was communicated into the appropriate
    location within the local class data structures. ---*/
   
-  if (nRecv > 0) {
+  if (geometry->nP2PRecv > 0) {
     
-    for (iRecv = 0; iRecv < nRecv; iRecv++) {
+    for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
       
-      /*--- Get the local index for this communicated data. ---*/
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
       
-      iPoint = geometry->Local_Point_P2PRecv[iRecv];
+      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
+                       &ind, &status);
       
-      /*--- Compute the offset in the recv buffer for this point. ---*/
+      /*--- Once we have recv'd a message, get the source rank. ---*/
       
-      offset = iRecv*geometry->countPerPoint;
+      source = status.MPI_SOURCE;
       
-      /*--- Store the data correctly depending on the quantity. ---*/
+      /*--- We know the offsets based on the source rank. ---*/
       
-      switch (commType) {
-        case SOLUTION_MATRIX:
-          for (iVar = 0; iVar < nVar; iVar++)
-            x[iPoint*nVar+iVar] = bufDRecv[offset+iVar];
-          break;
-        case SOLUTION_MATRIXTRANS:
-          for (iVar = 0; iVar < nVar; iVar++)
-            x[iPoint*nVar+iVar] += bufDRecv[offset+iVar];
-          break;
-        default:
-          SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
-                         CURRENT_FUNCTION);
-          break;
+      int jRecv = 0;
+      for (jRecv = 0; jRecv < geometry->nP2PRecv; jRecv++)
+        if (geometry->Neighbors_P2PRecv[jRecv] == (int)source) { break;}
+      
+      /*--- Get the point offset for the start of this message. ---*/
+      
+      offset = geometry->nPoint_P2PRecv[jRecv];
+      
+      /*--- Get the number of packets to be received in this message. ---*/
+      
+      nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
+               geometry->nPoint_P2PRecv[jRecv]);
+      
+      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iRecv)*geometry->countPerPoint;
+        
+        /*--- Store the data correctly depending on the quantity. ---*/
+        
+        switch (commType) {
+          case SOLUTION_MATRIX:
+            for (iVar = 0; iVar < nVar; iVar++)
+              x[iPoint*nVar+iVar] = bufDRecv[buf_offset+iVar];
+            break;
+          case SOLUTION_MATRIXTRANS:
+            for (iVar = 0; iVar < nVar; iVar++)
+              x[iPoint*nVar+iVar] += bufDRecv[buf_offset+iVar];
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
       }
     }
+    
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+    
+    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, &status);
+    
   }
   
 }
