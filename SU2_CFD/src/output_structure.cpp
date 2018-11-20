@@ -4771,6 +4771,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
     su2double *residual_poisson      = NULL;
+    su2double  residual_mass;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -5011,6 +5012,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         /*--- Flow Residuals ---*/
         for (iVar = 0; iVar < nVar_Flow; iVar++)
           residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
+          
+        /*--- Mass flux residual (for pressure-based problem) ---*/
+        if (pressure_based)
+           residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
         
         /*--- Turbulent residual ---*/
         
@@ -5361,7 +5366,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
               if (incompressible && (!pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible && (pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), dummy);
+              if (incompressible && (pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_mass), log10 (residual_flow[0]), dummy);
             }
             else {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), log10 (residual_flow[4]) );
@@ -5648,7 +5653,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             //            if (!fluid_structure) {
               if (incompressible && !weakly_coupled_heat) {
               if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
-              else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Vely]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
+              else if (pressure_based) {cout << "   Res[Mass]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
@@ -13098,7 +13103,7 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   Variable_Names.push_back("Velocity_x");
   Variable_Names.push_back("Velocity_y");
   if (geometry->GetnDim() == 3) Variable_Names.push_back("Velocity_z");
-  Variable_Names.push_back("Temperature");
+  if (!pressure_based) Variable_Names.push_back("Temperature");
 
   if (SecondIndex != NONE) {
     if (config->GetKind_Turb_Model() == SST) {
