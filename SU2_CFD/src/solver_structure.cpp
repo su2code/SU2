@@ -244,14 +244,14 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   Local_nPointDomain = geometry->GetnPointDomain();
   
   if (config->GetComm_Level() == COMM_FULL) {
-    
-    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     Global_nPointDomain = geometry->GetGlobal_nPointDomain();
     
   } else {
     
     /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
-    
+  
     for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
     Global_nPointDomain = geometry->GetnPointDomain();
     
@@ -771,14 +771,14 @@ void CSolver::CompleteComms(CGeometry *geometry,
   
 }
 
-void CSolver::SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config) {
+void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
   unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
   unsigned long iVertex, iEdge;
   su2double ProjGridVel, *Normal;
   
   /*--- Loop interior edges ---*/
-  
+   
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     const unsigned long iPoint = geometry->edge[iEdge]->GetNode(0);
@@ -817,30 +817,30 @@ void CSolver::SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config) {
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-        const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Solution at each edge point ---*/
-        
-        su2double *Solution = node[Point]->GetSolution();
-        
-        /*--- Grid Velocity at each edge point ---*/
-        
-        su2double *GridVel = geometry->node[Point]->GetGridVel();
-        
-        /*--- Summed normal components ---*/
-        
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        
-        ProjGridVel = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++)
-          ProjGridVel -= GridVel[iDim]*Normal[iDim];
-        
-        for (iVar = 0; iVar < nVar; iVar++)
-          Residual[iVar] = ProjGridVel*Solution[iVar];
-        
-        LinSysRes.AddBlock(Point, Residual);
-      }
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      const unsigned long Point = geometry->vertex[iMarker][iVertex]->GetNode();
+      
+      /*--- Solution at each edge point ---*/
+      
+      su2double *Solution = node[Point]->GetSolution();
+      
+      /*--- Grid Velocity at each edge point ---*/
+      
+      su2double *GridVel = geometry->node[Point]->GetGridVel();
+      
+      /*--- Summed normal components ---*/
+      
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      
+      ProjGridVel = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        ProjGridVel -= GridVel[iDim]*Normal[iDim];
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        Residual[iVar] = ProjGridVel*Solution[iVar];
+      
+      LinSysRes.AddBlock(Point, Residual);
+    }
   }
   
 }
@@ -2425,7 +2425,7 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
   }
 
   /*--- It's necessary to communicate this information ---*/
-  
+
   geometry->InitiateComms(geometry, config, COORDINATES_OLD);
   geometry->CompleteComms(geometry, config, COORDINATES_OLD);
   
@@ -3720,7 +3720,7 @@ CBaselineSolver::CBaselineSolver(CGeometry *geometry, CConfig *config, unsigned 
     node[iPoint] = new CBaselineVariable(Solution, nVar, config);
 
   }
-  
+
 }
 
 void CBaselineSolver::SetOutputVariables(CGeometry *geometry, CConfig *config) {
@@ -4121,7 +4121,7 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
     geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
     geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
-    
+
   }
   
   delete [] Coord;

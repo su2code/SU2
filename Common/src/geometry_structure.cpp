@@ -1422,7 +1422,7 @@ void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) 
   geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
   geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
 
-  if (config->GetGrid_Movement()){    
+  if (config->GetGrid_Movement()){
     geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
     geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
@@ -2129,19 +2129,19 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
     bufD_P2PSend[iSend] = 0.0;
   
   if (bufD_P2PRecv != NULL) delete [] bufD_P2PRecv;
-
+  
   bufD_P2PRecv = new su2double[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
     bufD_P2PRecv[iRecv] = 0.0;
   
   if (bufS_P2PSend != NULL) delete [] bufS_P2PSend;
-
+  
   bufS_P2PSend = new unsigned short[countPerPoint*nPoint_P2PSend[nP2PSend]];
   for (iSend = 0; iSend < countPerPoint*nPoint_P2PSend[nP2PSend]; iSend++)
     bufS_P2PSend[iSend] = 0;
-
+  
   if (bufS_P2PRecv != NULL) delete [] bufS_P2PRecv;
-
+  
   bufS_P2PRecv = new unsigned short[countPerPoint*nPoint_P2PRecv[nP2PRecv]];
   for (iRecv = 0; iRecv < countPerPoint*nPoint_P2PRecv[nP2PRecv]; iRecv++)
     bufS_P2PRecv[iRecv] = 0;
@@ -2173,14 +2173,14 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
     /*--- Total count can include multiple pieces of data per element. ---*/
     
     count = countPerPoint*nPointP2P;
-
+    
     /*--- Get the rank from which we receive the message. ---*/
-
+    
     source = Neighbors_P2PRecv[iRecv];
     tag    = source + 1;
     
     /*--- Post non-blocking recv for this proc. ---*/
-
+    
     switch (commType) {
       case COMM_TYPE_DOUBLE:
         SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_P2PRecv)[offset]),
@@ -2203,7 +2203,7 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
     iMessage++;
     
   }
-
+  
   /*--- Launch the non-blocking sends next. ---*/
   
   iMessage = 0;
@@ -2223,10 +2223,10 @@ void CGeometry::InitiateP2PComms(CGeometry *geometry,
     count = countPerPoint*nPointP2P;
     
     /*--- Get the rank to which we send the message. ---*/
-
+    
     dest = Neighbors_P2PSend[iSend];
     tag  = rank + 1;
-
+    
     /*--- Post non-blocking send for this proc. ---*/
     
     switch (commType) {
@@ -2261,7 +2261,7 @@ void CGeometry::CompleteP2PComms(CGeometry *geometry,
   
   int ind, iSend, iRecv;
   SU2_MPI::Status status;
-
+  
   /*--- Wait for the non-blocking sends to complete. ---*/
   
   for (iSend = 0; iSend < nP2PSend; iSend++)
@@ -2275,8 +2275,8 @@ void CGeometry::CompleteP2PComms(CGeometry *geometry,
 }
 
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
-                                 CConfig *config,
-                                 unsigned short commType) {
+                             CConfig *config,
+                             unsigned short commType) {
   
   /*--- Local variables ---*/
   
@@ -2699,21 +2699,49 @@ CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, 
   string val_mesh_filename  = config->GetMesh_FileName();
   unsigned short val_format = config->GetMesh_FileFormat();
 
+  /*--- Determine whether or not a FEM discretization is used ---*/
+
+  const bool fem_solver = ((config->GetKind_Solver() == FEM_EULER)          ||
+                           (config->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                           (config->GetKind_Solver() == FEM_RANS)           ||
+                           (config->GetKind_Solver() == FEM_LES)            ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                           (config->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
   /*--- Initialize counters for local/global points & elements ---*/
   
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Read Grid File Information -----------------------" << endl;
-  
-  switch (val_format) {
-    case SU2:
-      Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      break;
-    case CGNS:
-      Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
-      break;
+
+  if( fem_solver ) {
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      case CGNS:
+        Read_CGNS_Format_Parallel_FEM(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified for the FEM solver!", CURRENT_FUNCTION);
+        break;
+    }
+  }
+  else {
+
+    switch (val_format) {
+      case SU2:
+        Read_SU2_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      case CGNS:
+        Read_CGNS_Format_Parallel(config, val_mesh_filename, val_iZone, val_nZone);
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized mesh format specified!", CURRENT_FUNCTION);
+        break;
+    }
   }
 
   /*--- After reading the mesh, assert that the dimension is equal to 2 or 3. ---*/
@@ -6381,12 +6409,12 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
-                   colorRecv, nPoint_Recv, colorRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
-  
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(idSend, nPoint_Send, idSendReq,
-                   idRecv, nPoint_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6645,12 +6673,12 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-  
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6953,16 +6981,16 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
-                   colorRecv, nPoint_Recv, colorRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
-  
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(idSend, nPoint_Send, idSendReq,
-                   idRecv, nPoint_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
-  
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(coordSend, nPoint_Send, coordSendReq,
-                   coordRecv, nPoint_Recv, coordRecvReq,
-                   nDim, COMM_TYPE_DOUBLE);
+                coordRecv, nPoint_Recv, coordRecvReq,
+                nDim, COMM_TYPE_DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -7298,16 +7326,16 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-  
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
-                   markerRecv, nElem_Recv, markerRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
-  
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -7652,16 +7680,16 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
-  
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
-                   markerRecv, nElem_Recv, markerRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
-  
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
+
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -8605,13 +8633,13 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 }
 
 void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
-                                         int *nElemSend,
-                                         SU2_MPI::Request *sendReq,
-                                         void *bufRecv,
-                                         int *nElemRecv,
-                                         SU2_MPI::Request *recvReq,
-                                         unsigned short countPerElem,
-                                         unsigned short commType) {
+                                      int *nElemSend,
+                                      SU2_MPI::Request *sendReq,
+                                      void *bufRecv,
+                                      int *nElemRecv,
+                                      SU2_MPI::Request *recvReq,
+                                      unsigned short countPerElem,
+                                      unsigned short commType) {
 
   /*--- Local variables ---*/
 
@@ -8770,9 +8798,9 @@ void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
 }
 
 void CPhysicalGeometry::CompleteCommsAll(int nSends,
-                                         SU2_MPI::Request *sendReq,
-                                         int nRecvs,
-                                         SU2_MPI::Request *recvReq) {
+                                      SU2_MPI::Request *sendReq,
+                                      int nRecvs,
+                                      SU2_MPI::Request *recvReq) {
 
   /*--- Local variables ---*/
 
@@ -15795,7 +15823,7 @@ void CPhysicalGeometry::SetMaxLength(CGeometry* geometry, CConfig* config) {
 
     node[iPoint]->SetMaxLength(max_delta);
   }
-  
+
   geometry->InitiateComms(geometry, config, MAX_LENGTH);
   geometry->CompleteComms(geometry, config, MAX_LENGTH);
   
