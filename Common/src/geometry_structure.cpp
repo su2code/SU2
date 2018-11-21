@@ -12589,7 +12589,8 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     /* Check for a viscous wall. */
     if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
-      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) ||
+      (config->GetMarker_All_KindBC(iMarker) == TRANSPIRATION)) {
 
       /* Loop over the surface elements of this marker. */
       for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
