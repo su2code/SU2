@@ -498,7 +498,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())
                 #split by ; 
-                this_def={}
+                this_def=OrderedDict()
                 this_value = this_value.split(";")
                 
                 for  this_obj in this_value:       
