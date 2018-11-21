@@ -4423,7 +4423,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
-    
+
   if (turbo){
     for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_TurboPerformance(); iMarker_Monitoring++) {
 
@@ -12695,7 +12695,6 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           nVar_Par += 1;
         }
         nVar_Par += 1;
-
         Variable_Names.push_back("h");
       }
     }

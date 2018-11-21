@@ -1147,7 +1147,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION:  compute buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
-    
+
   /*!\par CONFIG_CATEGORY: Time-marching \ingroup Config*/
   /*--- Options related to time-marching ---*/
 

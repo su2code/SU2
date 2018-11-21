@@ -68,7 +68,7 @@ CEulerSolver::CEulerSolver(void) : CSolver() {
   Surface_CL = NULL; Surface_CD = NULL; Surface_CSF = NULL; Surface_CEff = NULL;
   Surface_CFx = NULL; Surface_CFy = NULL; Surface_CFz = NULL;
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
-    
+
   /*--- Rotorcraft simulation array initialization ---*/
   
   CMerit_Inv = NULL;  CT_Inv = NULL;  CQ_Inv = NULL;
@@ -15357,7 +15357,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CoPx_Visc         = new su2double[nMarker];
   CoPy_Visc         = new su2double[nMarker];
   CoPz_Visc         = new su2double[nMarker];
-    
+
   Surface_CL_Inv      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CD_Inv      = new su2double[config->GetnMarker_Monitoring()];
   Surface_CSF_Inv     = new su2double[config->GetnMarker_Monitoring()];
