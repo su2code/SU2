@@ -994,6 +994,9 @@ void CSysMatrix::InitiateComms(CSysVector & x,
   
   switch (commType) {
     case SOLUTION_MATRIX:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case SOLUTION_MATRIXTRANS:
       COUNT_PER_POINT  = nVar;
       MPI_TYPE         = COMM_TYPE_DOUBLE;

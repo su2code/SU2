@@ -2405,6 +2405,9 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   
   switch (commType) {
     case COORDINATES:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
     case GRID_VELOCITY:
       COUNT_PER_POINT  = nDim;
       MPI_TYPE         = COMM_TYPE_DOUBLE;
@@ -2444,6 +2447,8 @@ void CGeometry::InitiateComms(CGeometry *geometry,
   su2double *bufDSend      = geometry->bufD_P2PSend;
   unsigned short *bufSSend = geometry->bufS_P2PSend;
   
+  su2double *vector = NULL;
+
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
   
@@ -2475,18 +2480,25 @@ void CGeometry::InitiateComms(CGeometry *geometry,
         
         switch (commType) {
           case COORDINATES:
+            vector = node[iPoint]->GetCoord();
             for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = node[iPoint]->GetCoord()[iDim];
+              bufDSend[buf_offset+iDim] = vector[iDim];
             break;
           case GRID_VELOCITY:
+            vector = node[iPoint]->GetGridVel();
             for (iDim = 0; iDim < nDim; iDim++)
-              bufDSend[buf_offset+iDim] = node[iPoint]->GetGridVel()[iDim];
+              bufDSend[buf_offset+iDim] = vector[iDim];
             break;
           case COORDINATES_OLD:
+            vector = node[iPoint]->GetCoord_n();
             for (iDim = 0; iDim < nDim; iDim++) {
-              bufDSend[buf_offset+iDim] = node[iPoint]->GetCoord_n()[iDim];
-              if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-                bufDSend[buf_offset+nDim+iDim] = node[iPoint]->GetCoord_n1()[iDim];
+              bufDSend[buf_offset+iDim] = vector[iDim];
+            }
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) {
+              vector = node[iPoint]->GetCoord_n1();
+              for (iDim = 0; iDim < nDim; iDim++) {
+                bufDSend[buf_offset+nDim+iDim] = vector[iDim];
+              }
             }
             break;
           case MAX_LENGTH:
@@ -2588,7 +2600,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
             node[iPoint]->SetMaxLength(bufDRecv[buf_offset]);
             break;
           case NEIGHBORS:
-            geometry->node[iPoint]->SetnNeighbor(bufSRecv[buf_offset]);
+            node[iPoint]->SetnNeighbor(bufSRecv[buf_offset]);
             break;
           default:
             SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
