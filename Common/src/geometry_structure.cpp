@@ -1904,46 +1904,6 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   
 }
 
-CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
-  
-  size = SU2_MPI::GetSize();
-  rank = SU2_MPI::GetRank();  
-
-  Local_to_Global_Point  = NULL;
-  Local_to_Global_Marker = NULL;
-  Global_to_Local_Marker = NULL;
-
-  starting_node = NULL;
-  ending_node   = NULL;
-  npoint_procs  = NULL;
-  nPoint_Linear = NULL;
-
-  /*--- Arrays for defining the turbomachinery structure ---*/
-
-  nSpanWiseSections       = NULL;
-  nSpanSectionsByMarker   = NULL;
-  SpanWiseValue           = NULL;
-  nVertexSpan             = NULL;
-  nTotVertexSpan          = NULL;
-  turbovertex             = NULL;
-  AverageTurboNormal      = NULL;
-  AverageNormal           = NULL;
-  AverageGridVel          = NULL;
-  AverageTangGridVel      = NULL;
-  SpanArea                = NULL;
-  TurboRadius             = NULL;
-  MaxAngularCoord         = NULL;
-  MinAngularCoord         = NULL;
-  MinRelAngularCoord      = NULL;
-
-  TangGridVelIn           = NULL;
-  SpanAreaIn              = NULL;
-  TurboRadiusIn           = NULL;
-  TangGridVelOut          = NULL;
-  SpanAreaOut             = NULL;
-  TurboRadiusOut          = NULL;
-
-}
 
 void CGeometry::PreprocessP2PComms(CGeometry *geometry,
                                    CConfig *config) {
@@ -2646,6 +2606,48 @@ void CGeometry::CompleteComms(CGeometry *geometry,
     
   }
   
+}
+
+
+CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
+  
+  size = SU2_MPI::GetSize();
+  rank = SU2_MPI::GetRank();  
+
+  Local_to_Global_Point  = NULL;
+  Local_to_Global_Marker = NULL;
+  Global_to_Local_Marker = NULL;
+
+  starting_node = NULL;
+  ending_node   = NULL;
+  npoint_procs  = NULL;
+  nPoint_Linear = NULL;
+
+  /*--- Arrays for defining the turbomachinery structure ---*/
+
+  nSpanWiseSections       = NULL;
+  nSpanSectionsByMarker   = NULL;
+  SpanWiseValue           = NULL;
+  nVertexSpan             = NULL;
+  nTotVertexSpan          = NULL;
+  turbovertex             = NULL;
+  AverageTurboNormal      = NULL;
+  AverageNormal           = NULL;
+  AverageGridVel          = NULL;
+  AverageTangGridVel      = NULL;
+  SpanArea                = NULL;
+  TurboRadius             = NULL;
+  MaxAngularCoord         = NULL;
+  MinAngularCoord         = NULL;
+  MinRelAngularCoord      = NULL;
+
+  TangGridVelIn           = NULL;
+  SpanAreaIn              = NULL;
+  TurboRadiusIn           = NULL;
+  TangGridVelOut          = NULL;
+  SpanAreaOut             = NULL;
+  TurboRadiusOut          = NULL;
+
 }
 
 CPhysicalGeometry::CPhysicalGeometry(CConfig *config, unsigned short val_iZone, unsigned short val_nZone) : CGeometry() {
