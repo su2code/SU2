@@ -2006,6 +2006,18 @@ void CGeometry::PreprocessP2PComms(CGeometry *geometry,
     }
   }
   
+  /*--- Create a reverse mapping of the message to the rank so that we
+   can quickly access the correct data in the buffers when receiving
+   messages dynamically. ---*/
+  
+  P2PSend2Neighbor.clear();
+  for (iSend = 0; iSend < nP2PSend; iSend++)
+    P2PSend2Neighbor[Neighbors_P2PSend[iSend]] = iSend;
+  
+  P2PRecv2Neighbor.clear();
+  for (iRecv = 0; iRecv < nP2PRecv; iRecv++)
+    P2PRecv2Neighbor[Neighbors_P2PRecv[iRecv]] = iRecv;
+  
   delete [] nPoint_Send_All;
   delete [] nPoint_Recv_All;
   
@@ -2507,7 +2519,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
   unsigned short iDim;
   unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
-  int ind, source, iMessage;
+  int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
@@ -2535,9 +2547,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
       
       /*--- We know the offsets based on the source rank. ---*/
       
-      int jRecv = 0;
-      for (jRecv = 0; jRecv < nP2PRecv; jRecv++)
-        if (Neighbors_P2PRecv[jRecv] == (int)source) { break;}
+      jRecv = P2PRecv2Neighbor[source];
       
       /*--- Get the point offset for the start of this message. ---*/
       

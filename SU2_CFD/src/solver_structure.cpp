@@ -543,6 +543,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = node[iPoint]->GetUndivided_Laplacian(iVar);
+            break;
           case SOLUTION_LIMITER:
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter(iVar);
@@ -627,7 +628,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
   unsigned short iDim, iVar;
   unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
-  int ind, source, iMessage;
+  int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
@@ -653,9 +654,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
       
       /*--- We know the offsets based on the source rank. ---*/
       
-      int jRecv = 0;
-      for (jRecv = 0; jRecv < geometry->nP2PRecv; jRecv++)
-        if (geometry->Neighbors_P2PRecv[jRecv] == (int)source) { break;}
+      jRecv = geometry->P2PRecv2Neighbor[source];
       
       /*--- Get the point offset for the start of this message. ---*/
       
@@ -695,6 +694,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
           case UNDIVIDED_LAPLACIAN:
             for (iVar = 0; iVar < nVar; iVar++)
               node[iPoint]->SetUndivided_Laplacian(iVar, bufDRecv[buf_offset+iVar]);
+            break;
           case SOLUTION_LIMITER:
             for (iVar = 0; iVar < nVar; iVar++)
               node[iPoint]->SetLimiter(iVar, bufDRecv[buf_offset+iVar]);

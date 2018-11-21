@@ -1079,7 +1079,7 @@ void CSysMatrix::CompleteComms(CSysVector & x,
   unsigned short iVar;
   unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
-  int ind, source, iMessage;
+  int ind, source, iMessage, jRecv;
   SU2_MPI::Status status;
   
   /*--- Set some local pointers to make access simpler. ---*/
@@ -1105,9 +1105,7 @@ void CSysMatrix::CompleteComms(CSysVector & x,
       
       /*--- We know the offsets based on the source rank. ---*/
       
-      int jRecv = 0;
-      for (jRecv = 0; jRecv < geometry->nP2PRecv; jRecv++)
-        if (geometry->Neighbors_P2PRecv[jRecv] == (int)source) { break;}
+      jRecv = geometry->P2PRecv2Neighbor[source];
       
       /*--- Get the point offset for the start of this message. ---*/
       
@@ -1255,7 +1253,6 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
   }
 
   /*--- MPI Parallelization ---*/
-  //SendReceive_SolutionTransposed(prod, geometry, config);
 
   InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);

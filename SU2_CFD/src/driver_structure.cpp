@@ -1059,7 +1059,8 @@ void CDriver::Geometrical_Preprocessing() {
         if ((rank == MASTER_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Finding max control volume width." << endl;
         geometry_container[iZone][iInst][iMGlevel]->SetMaxLength(geometry_container[iZone][iInst][iMGlevel], config_container[iZone]);
         
-        /*--- Communicate the number of neighbors. ---*/
+        /*--- Communicate the number of neighbors. This is needed for
+         some centered schemes and for multigrid in parallel. ---*/
         
         if ((rank == MASTER_NODE) && (size > SINGLE_NODE) && (!fea) && (iMGlevel == MESH_0)) cout << "Communicating number of neighbors." << endl;
         geometry_container[iZone][iInst][iMGlevel]->InitiateComms(geometry_container[iZone][iInst][iMGlevel], config_container[iZone], NEIGHBORS);
