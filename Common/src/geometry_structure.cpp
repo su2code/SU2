@@ -6409,12 +6409,12 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
-                   colorRecv, nPoint_Recv, colorRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(idSend, nPoint_Send, idSendReq,
-                   idRecv, nPoint_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6673,12 +6673,12 @@ void CPhysicalGeometry::DistributeVolumeConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -6981,16 +6981,16 @@ void CPhysicalGeometry::DistributePoints(CConfig *config, CGeometry *geometry) {
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(colorSend, nPoint_Send, colorSendReq,
-                   colorRecv, nPoint_Recv, colorRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                colorRecv, nPoint_Recv, colorRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(idSend, nPoint_Send, idSendReq,
-                   idRecv, nPoint_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nPoint_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(coordSend, nPoint_Send, coordSendReq,
-                   coordRecv, nPoint_Recv, coordRecvReq,
-                   nDim, COMM_TYPE_DOUBLE);
+                coordRecv, nPoint_Recv, coordRecvReq,
+                nDim, COMM_TYPE_DOUBLE);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -7326,16 +7326,16 @@ void CPhysicalGeometry::PartitionSurfaceConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
-                   markerRecv, nElem_Recv, markerRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -7680,16 +7680,16 @@ void CPhysicalGeometry::DistributeSurfaceConnectivity(CConfig *config,
   /*--- Launch the non-blocking sends and receives. ---*/
 
   InitiateCommsAll(connSend, nElem_Send, connSendReq,
-                   connRecv, nElem_Recv, connRecvReq,
-                   NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
+                connRecv, nElem_Recv, connRecvReq,
+                NODES_PER_ELEMENT, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(markerSend, nElem_Send, markerSendReq,
-                   markerRecv, nElem_Recv, markerRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                markerRecv, nElem_Recv, markerRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   InitiateCommsAll(idSend, nElem_Send, idSendReq,
-                   idRecv, nElem_Recv, idRecvReq,
-                   1, COMM_TYPE_UNSIGNED_LONG);
+                idRecv, nElem_Recv, idRecvReq,
+                1, COMM_TYPE_UNSIGNED_LONG);
 
   /*--- Copy my own rank's data into the recv buffer directly. ---*/
 
@@ -8633,13 +8633,13 @@ void CPhysicalGeometry::LoadSurfaceElements(CConfig *config, CGeometry *geometry
 }
 
 void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
-                                         int *nElemSend,
-                                         SU2_MPI::Request *sendReq,
-                                         void *bufRecv,
-                                         int *nElemRecv,
-                                         SU2_MPI::Request *recvReq,
-                                         unsigned short countPerElem,
-                                         unsigned short commType) {
+                                      int *nElemSend,
+                                      SU2_MPI::Request *sendReq,
+                                      void *bufRecv,
+                                      int *nElemRecv,
+                                      SU2_MPI::Request *recvReq,
+                                      unsigned short countPerElem,
+                                      unsigned short commType) {
 
   /*--- Local variables ---*/
 
@@ -8798,9 +8798,9 @@ void CPhysicalGeometry::InitiateCommsAll(void *bufSend,
 }
 
 void CPhysicalGeometry::CompleteCommsAll(int nSends,
-                                         SU2_MPI::Request *sendReq,
-                                         int nRecvs,
-                                         SU2_MPI::Request *recvReq) {
+                                      SU2_MPI::Request *sendReq,
+                                      int nRecvs,
+                                      SU2_MPI::Request *recvReq) {
 
   /*--- Local variables ---*/
 
