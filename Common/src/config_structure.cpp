@@ -2666,7 +2666,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   else { FSI_Problem = false; }
 
-  if(Kind_Solver == HEAT_EQUATION_FVM) {
+  if((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
     Linear_Solver_Error = Linear_Solver_Error_Heat;
   }
