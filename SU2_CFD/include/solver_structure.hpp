@@ -2346,7 +2346,7 @@ public:
    * \return Value of the drag coefficient (inviscid + viscous contribution).
    */
   virtual su2double GetTotal_CD(void);
-    
+  
   /*!
    * \brief A virtual member.
    * \return Value of the drag coefficient (inviscid + viscous contribution).
