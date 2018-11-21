@@ -4871,7 +4871,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
-      
     if(buffet) Surface_Buffet_Metric = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Write information from nodes ---*/
@@ -12691,7 +12690,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
-        if (config->GetBuffet_Monitoring()){
+        if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
           Variable_Names.push_back("Buffet_Sensor");
           nVar_Par += 1;
         }
@@ -12782,7 +12781,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
           Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
-          if (config->GetBuffet_Monitoring()) Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
+          if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR) Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
         }
       }
     }
@@ -12934,7 +12933,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
           
-          /*--- Load data for the skin friction, heat flux, and y-plus. ---*/
+          /*--- Load data for the skin friction, heat flux, buffet, and y-plus. ---*/
           
           Local_Data[jPoint][iVar] = Aux_Frict_x[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = Aux_Frict_y[iPoint]; iVar++;
@@ -12942,7 +12941,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             Local_Data[jPoint][iVar] = Aux_Frict_z[iPoint];
             iVar++;
           }
-          if (config->GetBuffet_Monitoring()) {
+          if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR) {
             Local_Data[jPoint][iVar] = Aux_Buffet[iPoint]; 
             iVar++;
           }

@@ -2725,6 +2725,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((Kind_Regime == INCOMPRESSIBLE) && (Unsteady_Simulation == HARMONIC_BALANCE)){
     SU2_MPI::Error("Harmonic Balance not yet implemented for the incompressible solver.", CURRENT_FUNCTION);
   }
+
+  if ((Kind_Regime == EULER) && (Buffet_Monitoring == true)){
+    SU2_MPI::Error("Buffet monitoring incompatible with Euler Solver", CURRENT_FUNCTION);
+  }
   
   /*--- Check for Fluid model consistency ---*/
 
