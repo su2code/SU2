@@ -1936,7 +1936,7 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver_container, CG
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
+  bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
 
   /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
@@ -1966,7 +1966,7 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
+  bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
 
   if (kind_recording == FLOW_CONS_VARS || kind_recording == COMBINED){
     
@@ -2020,7 +2020,7 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
 
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
+  bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
       (kind_recording == GEOMETRY_CROSS_TERM) || (kind_recording == ALL_VARIABLES)){
 
@@ -2050,7 +2050,7 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver_container, CGeom
   
   unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
-  bool heat = config_container[val_iZone]->GetWeakly_Coupled_Heat();
+  bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
 
   if ((Kind_Solver == DISC_ADJ_NAVIER_STOKES) || (Kind_Solver == DISC_ADJ_RANS) || (Kind_Solver == DISC_ADJ_EULER)) {
   
