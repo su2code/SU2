@@ -3173,6 +3173,12 @@ void CDriver::Iteration_Preprocessing() {
         cout << ": discrete adjoint FEM structural iteration." << endl;
       iteration_container[iZone][iInst] = new CDiscAdjFEAIteration(config_container[iZone]);
       break;
+
+    case DISC_ADJ_HEAT:
+      if (rank == MASTER_NODE)
+        cout << ": discrete adjoint heat iteration." << endl;
+      iteration_container[iZone][iInst] = new CDiscAdjHeatIteration(config_container[iZone]);
+      break;
     }
 
   }
