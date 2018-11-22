@@ -88,7 +88,7 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   VonMises_Stress = 0.0;
   
   dynamic_analysis = (config->GetDynamic_Analysis() == DYNAMIC);
-  fsi_analysis = config->GetFSI_Simulation();
+  fsi_analysis = (config->GetFSI_Simulation() || config->GetpyFSI());
   
   if (nDim == 2) Stress = new su2double [3];
   else if (nDim == 3) Stress = new su2double [6];

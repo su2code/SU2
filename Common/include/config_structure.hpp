@@ -977,6 +977,7 @@ private:
   su2double RefGeom_Penalty,        /*!< \brief Penalty weight value for the reference geometry objective function. */
   RefNode_Penalty,            /*!< \brief Penalty weight value for the reference node objective function. */
   DV_Penalty;                 /*!< \brief Penalty weight to add a constraint to the total amount of stiffness. */
+  bool pyFSI;             /*!< \brief Initialize FSI structures, as loads will come from a python wrapper. */
   bool addCrossTerm;          /*!< \brief Evaluates the need to add the cross term when setting the adjoint output. */
   unsigned long Nonphys_Points, /*!< \brief Current number of non-physical points in the solution. */
   Nonphys_Reconstr;      /*!< \brief Current number of non-physical reconstructions for 2nd-order upwinding. */
@@ -8537,6 +8538,12 @@ public:
    * \return 	Order of predictor
    */
   unsigned short GetPredictorOrder(void);
+
+  /*!
+   * \brief Get whether loads will come from a python wrapper.
+   * \return  Bool: determines if loads will come from a python wrapper.
+   */
+  bool GetpyFSI(void);
 
   /*!
    * \brief Get boolean for using Persson's shock capturing method in Euler flow DG-FEM
