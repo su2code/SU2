@@ -1140,11 +1140,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Evaluate a problem with engines */
   addBoolOption("ENGINE", Engine, false);
     
-  /* DESCRIPTION:  compute buffet sensor */
+  /* DESCRIPTION:  Compute buffet sensor */
   addBoolOption("BUFFET_MONITORING", Buffet_Monitoring, false);
-  /* DESCRIPTION:  compute buffet sensor */
+  /* DESCRIPTION:  Sharpness coefficient for the buffet sensor */
   addDoubleOption("BUFFET_K", Buffet_k, 10.0);
-  /* DESCRIPTION:  compute buffet sensor */
+  /* DESCRIPTION:  Offset parameter for the buffet sensor */
   addDoubleOption("BUFFET_LAMBDA", Buffet_lambda, 0.0);
 
 
