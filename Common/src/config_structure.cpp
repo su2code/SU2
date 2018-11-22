@@ -1990,6 +1990,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Transfer method used for multiphysics problems */
   addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
 
+  /* DESCRIPTION: Initialize FSI structures, as loads will come from a python wrapper */
+  addBoolOption("PY_FSI", pyFSI, false);
+
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/

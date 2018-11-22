@@ -101,7 +101,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);              // Dynamic simulations.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-  bool fsi = config->GetFSI_Simulation();                        // FSI simulation
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                        // FSI simulation
   bool gen_alpha = (config->GetKind_TimeIntScheme_FEA() == GENERALIZED_ALPHA);  // Generalized alpha method requires residual at previous time step.
   
   bool de_effects = config->GetDE_Effects();                      // Test whether we consider dielectric elastomers
@@ -3275,7 +3275,7 @@ su2double CFEASolver::Compute_LoadCoefficient(su2double CurrentTime, su2double R
   su2double TransferTime = 1.0;
 
   bool restart = config->GetRestart(); // Restart analysis
-  bool fsi = config->GetFSI_Simulation();  // FSI simulation.
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());  // FSI simulation.
   bool stat_fsi = (config->GetDynamic_Analysis() == STATIC);
 
   /*--- This offset introduces the ramp load in dynamic cases starting from the restart point. ---*/
@@ -3355,7 +3355,7 @@ void CFEASolver::ImplicitNewmark_Iteration(CGeometry *geometry, CSolver **solver
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                        // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
@@ -3667,7 +3667,7 @@ void CFEASolver::GeneralizedAlpha_Iteration(CGeometry *geometry, CSolver **solve
   bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   bool newton_raphson = (config->GetKind_SpaceIteScheme_FEA() == NEWTON_RAPHSON);    // Newton-Raphson method
-  bool fsi = config->GetFSI_Simulation();                        // FSI simulation.
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());                      // FSI simulation.
   
   bool body_forces = config->GetDeadLoad();                      // Body forces (dead loads).
   
@@ -3917,7 +3917,7 @@ void CFEASolver::GeneralizedAlpha_UpdateSolution(CGeometry *geometry, CSolver **
 void CFEASolver::GeneralizedAlpha_UpdateLoads(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned long iPoint;
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());
   
   /*--- Set the load conditions of the time step n+1 as the load conditions for time step n ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
@@ -4215,7 +4215,7 @@ void CFEASolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double weight_OF = 1.0;
@@ -4350,7 +4350,7 @@ void CFEASolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_contain
 
   su2double reference_geometry = 0.0, current_solution = 0.0;
 
-  bool fsi = config->GetFSI_Simulation();
+  bool fsi = (config->GetFSI_Simulation() || config->GetpyFSI());
 
   su2double objective_function = 0.0, objective_function_reduce = 0.0;
   su2double distance_sq = 0.0 ;
@@ -4625,7 +4625,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
   unsigned short nZone = geometry[MESH_0]->GetnZone();
 
   bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC);
-  bool fluid_structure = config->GetFSI_Simulation();
+  bool fluid_structure = (config->GetFSI_Simulation() || config->GetpyFSI());
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
 
   if (dynamic) nSolVar = 3 * nVar;
