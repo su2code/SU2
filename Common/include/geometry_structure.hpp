@@ -147,6 +147,9 @@ public:
   unsigned short periodicIndex;          /*!< \brief Periodic indicator of the face. A value of 0 means no
                                                      periodic face. A value larger than 0 gives the index of
                                                      the periodic boundary + 1. */
+  unsigned short periodicIndexDonor;     /*!< \brief Periodic indicator of the donor face. A value of 0 means no
+                                                     periodic donor face. A value larger than 0 gives the index of
+                                                     the periodic donor boundary + 1. */
   short faceIndicator;                   /*!< \brief The corresponding boundary marker if this face is on a
                                                      boundary. For an internal face the value is -1,
                                                      while an invalidated face has the value -2. */
