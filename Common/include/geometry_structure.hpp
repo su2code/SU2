@@ -371,6 +371,26 @@ public:
 #endif
 #endif
   
+  /*--- Data structures for point-to-point MPI communications. ---*/
+  
+  int countPerPoint;                  /*!< \brief Maximum number of pieces of data sent per vertex in point-to-point comms. */
+  int nP2PSend;                       /*!< \brief Number of sends during point-to-point comms. */
+  int nP2PRecv;                       /*!< \brief Number of receives during point-to-point comms. */
+  int *nPoint_P2PSend;                /*!< \brief Data structure holding number of vertices for each send in point-to-point comms. */
+  int *nPoint_P2PRecv;                /*!< \brief Data structure holding number of vertices for each recv in point-to-point comms. */
+  int *Neighbors_P2PSend;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point send comms. */
+  int *Neighbors_P2PRecv;             /*!< \brief Data structure holding the ranks of the neighbors for point-to-point recv comms. */
+  map<int, int> P2PSend2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point send comms. */
+  map<int, int> P2PRecv2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for point-to-point recv comms. */
+  unsigned long *Local_Point_P2PSend; /*!< \brief Data structure holding the local index of all vertices to be sent in point-to-point comms. */
+  unsigned long *Local_Point_P2PRecv; /*!< \brief Data structure holding the local index of all vertices to be received in point-to-point comms. */
+  su2double *bufD_P2PRecv;            /*!< \brief Data structure for su2double point-to-point receive. */
+  su2double *bufD_P2PSend;            /*!< \brief Data structure for su2double point-to-point send. */
+  unsigned short *bufS_P2PRecv;       /*!< \brief Data structure for unsigned long point-to-point receive. */
+  unsigned short *bufS_P2PSend;       /*!< \brief Data structure for unsigned long point-to-point send. */
+  SU2_MPI::Request *req_P2PSend;      /*!< \brief Data structure for point-to-point send requests. */
+  SU2_MPI::Request *req_P2PRecv;      /*!< \brief Data structure for point-to-point recv requests. */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -381,6 +401,67 @@ public:
 	 */
 	virtual ~CGeometry(void);
 
+  /*!
+   * \brief Routine to set up persistent data structures for point-to-point MPI communications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessP2PComms(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Routine to allocate buffers for point-to-point MPI communications. Also called to dynamically reallocate if not enough memory is found for comms during runtime.
+   * \param[in] val_countPerPoint - Maximum count of the data type per vertex in point-to-point comms, e.g., nPrimvarGrad*nDim.
+   */
+  void AllocateP2PComms(unsigned short val_countPerPoint);
+  
+  /*!
+   * \brief Routine to launch non-blocking sends and recvs only for point-to-point communications with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiateP2PComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by InitiateP2PComms(). Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   */
+  void CompleteP2PComms(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Routine to launch non-blocking recvs only for all point-to-point communication with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry     - Geometrical definition of the problem.
+   * \param[in] config       - Definition of the particular problem.
+   * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] val_iMessage - Index of the message in the order they are stored.
+   */
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  
+  /*!
+   * \brief Routine to load a geometric quantity into the data structures for MPI point-to-point communication and to launch non-blocking sends and recvs for all point-to-point communication with neighboring partitions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiateComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking communications launched by InitiateComms() and unpacking of the data into the geometry class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void CompleteComms(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
 	/*! 
 	 * \brief Get number of coordinates.
 	 * \return Number of coordinates.
@@ -1731,14 +1812,14 @@ public:
    * \param[in] sendReq - Array of MPI recv requests.
    * \param[in] countPerElem - Pieces of data per element communicated.
    */
-  void InitiateComms(void *bufSend,
-                     int *nElemSend,
-                     SU2_MPI::Request *sendReq,
-                     void *bufRecv,
-                     int *nElemRecv,
-                     SU2_MPI::Request *recvReq,
-                     unsigned short countPerElem,
-                     unsigned short commType);
+  void InitiateCommsAll(void *bufSend,
+                        int *nElemSend,
+                        SU2_MPI::Request *sendReq,
+                        void *bufRecv,
+                        int *nElemRecv,
+                        SU2_MPI::Request *recvReq,
+                        unsigned short countPerElem,
+                        unsigned short commType);
 
   /*!
    * \brief Routine to complete the set of non-blocking communications launched with InitiateComms() with MPI_Waitany().
@@ -1747,10 +1828,10 @@ public:
    * \param[in] nRecvs - Number of receives to be completed.
    * \param[in] sendReq - Array of MPI recv requests.
    */
-  void CompleteComms(int nSends,
-                     SU2_MPI::Request *sendReq,
-                     int nRecvs,
-                     SU2_MPI::Request *recvReq);
+  void CompleteCommsAll(int nSends,
+                        SU2_MPI::Request *sendReq,
+                        int nRecvs,
+                        SU2_MPI::Request *recvReq);
 
   /*!
 	 * \brief Set the send receive boundaries of the grid.
