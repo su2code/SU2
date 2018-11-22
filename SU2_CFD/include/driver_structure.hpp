@@ -682,25 +682,28 @@ public:
   void SetLoads(unsigned short iMarker, unsigned short iVertex, unsigned short iGlobalIndex, su2double LoadX, su2double LoadY, su2double LoadZ);
 
   /*!
-   * \brief Return the displacement in direction X.
+   * \brief Return the displacements from the FEA solver.
    * \param[in] iMarker - Marker identifier.
    * \param[in] iVertex - Vertex identifier.
+   * \return Vector of displacements.
    */
   vector<su2double> GetDisplacements(unsigned short iMarker, unsigned short iVertex);
 
-//  /*!
-//   * \brief Return the displacement in direction X.
-//   * \param[in] iMarker - Marker identifier.
-//   * \param[in] iVertex - Vertex identifier.
-//   */
-//  su2double GetDisplacementY(unsigned short iMarker, unsigned short iVertex);
+  /*!
+   * \brief Return the velocities from the FEA Solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vector of velocities.
+   */
+  vector<su2double> GetVelocity(unsigned short iMarker, unsigned short iVertex);
 
-//  /*!
-//   * \brief Return the displacement in direction X.
-//   * \param[in] iMarker - Marker identifier.
-//   * \param[in] iVertex - Vertex identifier.
-//   */
-//  su2double GetDisplacementZ(unsigned short iMarker, unsigned short iVertex);
+  /*!
+   * \brief Return the velocities from the FEA Solver.
+   * \param[in] iMarker - Marker identifier.
+   * \param[in] iVertex - Vertex identifier.
+   * \return Vector of velocities at time n.
+   */
+  vector<su2double> GetVelocity_n(unsigned short iMarker, unsigned short iVertex);
 
   /*!
    * \brief A virtual member to run a Block Gauss-Seidel iteration in multizone problems.
