@@ -1809,7 +1809,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 
   if (disc_adj) integration_container[val_iInst][ADJFLOW_SOL] = new CIntegration(config);
   if (disc_adj_fem) integration_container[val_iInst][ADJFEA_SOL] = new CIntegration(config);
-  if (disc_adj_heat) integration_container[ADJHEAT_SOL] = new CIntegration(config);
+  if (disc_adj_heat) integration_container[val_iInst][ADJHEAT_SOL] = new CIntegration(config);
 
 }
 
@@ -3340,8 +3340,9 @@ void CDriver::Interface_Preprocessing() {
           structural_donor = true;
           break;
 
-        case HEAT_EQUATION_FVM : case DISC_ADJ_HEAT
+        case HEAT_EQUATION_FVM : case DISC_ADJ_HEAT:
           heat_donor = true;
+          break;
       }
 
       /*--- Begin the creation of the communication pattern among zones ---*/
