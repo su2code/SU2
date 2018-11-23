@@ -150,30 +150,50 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
       Cvector[iVar] = new su2double [nDim];
   }
 
-  /*--- Initialize the values for the model constants ---*/
-  constants = new su2double[11];
+  /*--- Allocate the memory for the model constants. The actual
+        number depends on the cross flow model used. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
+    case NO_CROSS_FLOW_MODEL:        constants = new su2double[8];  break;
+    case LANGTRY_GENERAL_CROSS_FLOW: constants = new su2double[9];  break;
+    case GRABE_WING_ONLY_CROSS_FLOW: constants = new su2double[10]; break;
+    case GRABE_GENERAL_CROSS_FLOW:   constants = new su2double[11]; break;
+  }
+
+  /*--- Set the model constants for the baseline model. ---*/
   constants[0] =  2.0;    // ca1
   constants[1] =  0.06;   // ca2
-  constants[2]  =  1.0;    // ce1
-  constants[3]  = 50.0;    // ce2
-  constants[4]  =  0.03;   // cthetat
-  constants[5]  =  2.0;    // s1
-  constants[6]  =  1.0;    // sigmaf
-  constants[7]  =  2.0;    // sigmathetat
-  constants[8]  =  5.0;    // Flength_CF
-  constants[9]  =  0.7;    // C_Fonset1_CF
-  constants[10] =  0.6944; // CHe_max
+  constants[2] =  1.0;    // ce1
+  constants[3] = 50.0;    // ce2
+  constants[4] =  0.03;   // cthetat
+  constants[5] =  2.0;    // s1
+  constants[6] =  1.0;    // sigmaf
+  constants[7] =  2.0;    // sigmathetat
 
-  /*--- If the cross flow instability term must not be added, set the
-        value of Flength_CF, constants[8], to zero. ---*/
-  if (!config->GetLM_Cross_Flow_Instability()) constants[8] = 0.0;
+  /*--- The additional constants for the different cross
+        flow models. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
+    case LANGTRY_GENERAL_CROSS_FLOW:
+      constants[8] = 0.6;    // ccrossflow
+      break;
+      
+    case GRABE_WING_ONLY_CROSS_FLOW:
+      constants[8] = 5.0;    // Flength_CF
+      constants[9] = 0.75;   // C_Fonset1_CF
+      break;
+
+    case GRABE_GENERAL_CROSS_FLOW:
+      constants[8]  = 5.0;    // Flength_CF
+      constants[9]  = 0.75;   // C_Fonset1_CF
+      constants[10] = 0.6944; // CHe_max
+      break;
+  }
 
   /*--- Initialize lower and upper limits---*/
   lowerlimit = new su2double[nVar];
   upperlimit = new su2double[nVar];
 
   lowerlimit[0] = 0.0;
-  upperlimit[0] = 2.0;
+  upperlimit[0] = 1.0;
 
   lowerlimit[1] = 20.0;
   upperlimit[1] = 1.0e5;

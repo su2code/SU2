@@ -234,7 +234,8 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   /*--- Maximum number of iterations in the Newton algorithm for Re_theta_eq. ---*/
   const unsigned short maxIt = 25;
 
-  /*--- Get the infinity state, which is needed for the cross flow instability. ---*/
+  /*--- Get the infinity state, which is needed for some of the
+        cross flow instability models. ---*/
   const su2double Density_Inf   = config->GetDensity_FreeStreamND();
   const su2double Pressure_Inf  = config->GetPressure_FreeStreamND();
   const su2double *Velocity_Inf = config->GetVelocity_FreeStreamND();
@@ -278,12 +279,11 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   su2double turbIntensity         = sqrt(2.0*kine/(3.0*vel2));
   if(dist < 1.e-10) turbIntensity = 0.0;
   if( SA_turb ) turbIntensity     = config->GetTurbulenceIntensity_FreeStream();
-  //su2double turbIntensity = config->GetTurbulenceIntensity_FreeStream();
 
   turbIntensity = min(max(turbIntensity, turbIntensity_min), turbIntensity_max);
 
-  /*--- Compute the value of dUds, which is the gradient of the total velocity
-        in streamwise direction. ---*/
+  /*--- Compute the value of dUds, which is the acceleration of the
+        total velocity along streamwise direction. ---*/
   su2double dUds = 0.0;
   for(unsigned short iDim=0; iDim<nDim; ++iDim) {
     for(unsigned short jDim=0; jDim<nDim; ++jDim)

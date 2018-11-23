@@ -689,8 +689,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("KIND_TURB_MODEL", Kind_Turb_Model, Turb_Model_Map, NO_TURB_MODEL);
   /*!\brief KIND_TRANS_MODEL \n DESCRIPTION: Specify transition model OPTIONS: see \link Trans_Model_Map \endlink \n DEFAULT: NO_TRANS_MODEL \ingroup Config*/
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
-  /* DESCRIPTION: Include the cross flow instability term in the LM transition model (NO, YES) */
-  addBoolOption("LM_CROSS_FLOW_INSTABILITY", LM_Cross_Flow_Instability, false);
+  /*!\brief KIND_LM_CROSSFLOWMODEL \n DESCRIPTION: Specify cross flow model for LM transition model OPTIONS: see \link LM_CrossFlow_Model_Map \endlink \n DEFAULT: NO_CROSS_FLOW_MODEL \ingroup Config*/
+  addEnumOption("KIND_LM_CROSSFLOWMODEL", Kind_LM_CrossFlowModel, LM_CrossFlow_Model_Map, NO_CROSS_FLOW_MODEL);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);

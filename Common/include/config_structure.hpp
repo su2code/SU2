@@ -531,7 +531,7 @@ private:
   Kind_DV_FEA;				/*!< \brief Kind of Design Variable for FEA problems.*/
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model;                      /*!< \brief Transition model definition. */
-  bool           LM_Cross_Flow_Instability;             /*!< \brief Enable or disable the cross flow instability term in the LM transition model. */
+  unsigned short Kind_LM_CrossFlowModel;                /*!< \brief Crossflow instability model for the LM transition model. */
   unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow, 
                  Kind_Inlet, *Kind_Inc_Inlet,
@@ -4042,11 +4042,11 @@ public:
   unsigned short GetKind_Trans_Model(void);
 
   /*!
-   * \brief Get whether or not the cross flow instability term of the
-            LM transition model must be included.
-   * \return Whether or not the cross flow term must be included.
+   * \brief Get the kind of the cross flow model for the LM
+            transition model.
+   * \return Kind of the LM cross flow model.
    */
-  bool GetLM_Cross_Flow_Instability(void);
+  unsigned short GetKind_LM_CrossFlowModel(void);
 
   /*!
    * \brief Get the kind of the subgrid scale model.

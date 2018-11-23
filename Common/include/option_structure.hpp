@@ -822,8 +822,23 @@ enum ENUM_TRANS_MODEL {
 };
 static const map<string, ENUM_TRANS_MODEL> Trans_Model_Map = CCreateMap<string, ENUM_TRANS_MODEL>
 ("NONE", NO_TRANS_MODEL)
-("LM", LM)
-("BC", BC); //BAS-CAKMAKCIOGLU
+("LM", LM)  // LANGTRY-MENTER
+("BC", BC); // BAS-CAKMAKCIOGLU
+
+/*!
+ * \brief types of crossflow instability models of the LM transition model.
+ */
+enum ENUM_LM_CROSS_FLOW_MODEL {
+  NO_CROSS_FLOW_MODEL        = 0,
+  LANGTRY_GENERAL_CROSS_FLOW = 1,
+  GRABE_WING_ONLY_CROSS_FLOW = 2,
+  GRABE_GENERAL_CROSS_FLOW   = 3
+};
+static const map<string, ENUM_LM_CROSS_FLOW_MODEL> LM_CrossFlow_Model_Map = CCreateMap<string, ENUM_LM_CROSS_FLOW_MODEL>
+("NONE",                       NO_CROSS_FLOW_MODEL)
+("LANGTRY_GENERAL_CROSS_FLOW", LANGTRY_GENERAL_CROSS_FLOW)
+("GRABE_WING_ONLY_CROSS_FLOW", GRABE_WING_ONLY_CROSS_FLOW)
+("GRABE_GENERAL_CROSS_FLOW",   GRABE_GENERAL_CROSS_FLOW);
 
 /*!
  * \brief types of subgrid scale models

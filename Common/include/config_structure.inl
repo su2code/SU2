@@ -1588,7 +1588,7 @@ inline unsigned short CConfig::GetKind_Turb_Model(void) { return Kind_Turb_Model
 
 inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Model; }
 
-inline bool CConfig::GetLM_Cross_Flow_Instability(void) { return LM_Cross_Flow_Instability; }
+inline unsigned short CConfig::GetKind_LM_CrossFlowModel(void) { return Kind_LM_CrossFlowModel; }
 
 inline unsigned short CConfig::GetKind_SGS_Model(void) { return Kind_SGS_Model; }
 
