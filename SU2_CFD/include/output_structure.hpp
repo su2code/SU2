@@ -781,7 +781,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Number of Zones.
    */
-  void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+  void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
    * \brief Compute .
