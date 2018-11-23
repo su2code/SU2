@@ -16,11 +16,11 @@ notifications:
   
 branches:
     only:
-        - feature_reformat_config
+        - feature_cleanup_driver
 
 python:
     - 2.7
-    - 3.6
+#    - 3.6
 
 env:
     global:
