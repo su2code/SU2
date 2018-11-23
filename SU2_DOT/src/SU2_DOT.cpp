@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, true);
 
     /*--- Set the MPI communicator ---*/
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
@@ -145,6 +145,7 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
