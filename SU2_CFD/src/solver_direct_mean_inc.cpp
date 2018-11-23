@@ -6121,7 +6121,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
 }
 
-void CIncEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CIncEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
