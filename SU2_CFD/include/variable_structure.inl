@@ -1638,3 +1638,59 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
+
+inline su2double CMeshVariable::GetRef_Coord(unsigned short iDim) { return Ref_Coord[iDim]; }
+
+inline void CMeshVariable::SetRef_Coord(unsigned short iDim, su2double val_coord) { Ref_Coord[iDim] = val_coord;}
+
+inline su2double CMeshVariable::GetCurr_Coord(unsigned short iDim) { return Curr_Coord[iDim]; }
+
+inline void CMeshVariable::SetCurr_Coord(unsigned short iDim, su2double val_disp) { Curr_Coord[iDim] = val_disp;}
+
+inline void CMeshVariable::SetCurr_Coord(void) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Curr_Coord[iDim] = Ref_Coord[iDim] + Displacement[iDim];
+}
+
+inline su2double CMeshVariable::GetDisplacement(unsigned short iDim) { return Displacement[iDim]; }
+
+inline void CMeshVariable::SetDisplacement(unsigned short iDim, su2double val_disp) { Displacement[iDim] = val_disp;}
+
+inline su2double CMeshVariable::GetDisplacement_Old(unsigned short iDim) { return Displacement_Old[iDim]; }
+
+inline void CMeshVariable::SetDisplacement_Old(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_Old[iDim] = Displacement[iDim];
+}
+
+inline su2double CMeshVariable::GetDisplacement_n(unsigned short iDim) { return Displacement_n[iDim]; }
+
+inline void CMeshVariable::SetDisplacement_n(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_n[iDim] = Displacement[iDim];
+}
+
+inline su2double CMeshVariable::GetDisplacement_n1(unsigned short iDim) { return Displacement_n1[iDim]; }
+
+inline void CMeshVariable::SetDisplacement_n1(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Displacement_n1[iDim] = Displacement_n[iDim];
+}
+
+inline su2double CMeshVariable::GetVelocity(unsigned short iDim) { return Velocity[iDim]; }
+
+inline void CMeshVariable::SetVelocity(unsigned short iDim, su2double val_vel) { Velocity[iDim] = val_vel;}
+
+inline su2double CMeshVariable::GetVelocity_n(unsigned short iDim) { return Velocity_n[iDim]; }
+
+inline void CMeshVariable::SetVelocity_n(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Velocity_n[iDim] = Velocity[iDim];
+}
+
+inline su2double CMeshVariable::GetVelocity_n1(unsigned short iDim) { return Velocity_n1[iDim]; }
+
+inline void CMeshVariable::SetVelocity_n1(void){
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Velocity_n1[iDim] = Velocity_n[iDim];
+}

@@ -145,6 +145,7 @@ libSU2Core_sources = \
   ../src/variable_direct_transition.cpp \
   ../src/variable_direct_turbulent.cpp \
   ../src/variable_direct_elasticity.cpp \
+  ../src/variable_direct_mesh.cpp \
   ../src/variable_structure.cpp \
   ../src/variable_template.cpp
 

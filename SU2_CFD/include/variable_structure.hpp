@@ -5099,5 +5099,170 @@ public:
 
 };
 
+/*!
+ * \class CMeshVariable
+ * \brief Main class for defining the variables of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.1.0 "Falcon"
+ */
+class CMeshVariable {
+protected:
+
+  unsigned short nDim;
+
+  bool time_domain;             /*!< \brief Bool which determines if the problem is dynamic. */
+  bool multizone;               /*!< \brief Bool which determines if the problem is multizone. */
+
+  su2double *Ref_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
+  su2double *Curr_Coord;          /*!< \brief Store the current coordinates of the mesh. */
+
+  su2double *Displacement;        /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
+  su2double *Displacement_Old;    /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
+  su2double *Displacement_n;      /*!< \brief Displacement of the mesh at time n respect to the original coordinates. */
+  su2double *Displacement_n1;     /*!< \brief Displacement of the mesh at time n-1 respect to the original coordinates. */
+
+  su2double *Velocity;            /*!< \brief Velocity of the mesh at time n+1 respect to the original coordinates. */
+  su2double *Velocity_n;          /*!< \brief Velocity of the mesh at time n respect to the original coordinates. */
+  su2double *Velocity_n1;         /*!< \brief Velocity of the mesh at time n-1 respect to the original coordinates. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshVariable(void);
+
+  /*!
+   * \brief Get the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Ref_Coord[nDim]
+   * \return Value of the original coordinate iDim.
+   */
+  su2double GetRef_Coord(unsigned short iDim);
+
+  /*!
+   * \brief Set the value of the undeformed coordinates.
+   * \param[in] iDim - Index of Ref_Coord[nDim]
+   * \param[in] val_coord - Value of Ref_Coord[nDim]
+   */
+  void SetRef_Coord(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief Get the value of the current coordinates.
+   * \param[in] iDim - Index of Curr_Coord[nDim]
+   * \return Value of the current coordinate iDim.
+   */
+  su2double GetCurr_Coord(unsigned short iDim);
+
+  /*!
+   * \brief Set the value of the current coordinates.
+   * \param[in] iDim - Index of Curr_Coord[nDim]
+   * \param[in] val_coord - Value of Curr_Coord[nDim]
+   */
+  void SetCurr_Coord(unsigned short iDim, su2double val_coord);
+
+  /*!
+   * \brief Set the value of the current coordinates as RefCoord+Disp.
+   */
+  void SetCurr_Coord(void);
+
+  /*!
+   * \brief Get the value of the displacement at time n+1.
+   * \param[in] iDim - Index of Displacement[nDim]
+   * \return Value of the displacement at time n+1 and position iDim.
+   */
+  su2double GetDisplacement(unsigned short iDim);
+
+  /*!
+   * \brief Set the value of the displacement.
+   * \param[in] iDim - Index of Displacement[nDim]
+   * \param[in] val_coord - Value of Displacement[nDim]
+   */
+  void SetDisplacement(unsigned short iDim, su2double val_disp);
+
+  /*!
+   * \brief Get the value of the displacement at the previous sub-iteration (assuming multizone)
+   * \param[in] iDim - Index of Displacement_Old[nDim]
+   * \return Value of the displacement at the previous sub-iteration and position iDim.
+   */
+  su2double GetDisplacement_Old(unsigned short iDim);
+
+  /*!
+   * \brief Move Displacement into Displacement_Old.
+   */
+  void SetDisplacement_Old(void);
+
+  /*!
+   * \brief Get the value of the displacement at time n.
+   * \param[in] iDim - Index of Displacement_n[nDim]
+   * \return Value of the displacement at time n and position iDim.
+   */
+  su2double GetDisplacement_n(unsigned short iDim);
+
+  /*!
+   * \brief Move Displacement into Displacement_n.
+   */
+  void SetDisplacement_n(void);
+
+  /*!
+   * \brief Get the value of the displacement at time n-1.
+   * \param[in] iDim - Index of Coordinates[nDim]
+   * \return Value of the displacement at time n-1 and position iDim.
+   */
+  su2double GetDisplacement_n1(unsigned short iDim);
+
+  /*!
+   * \brief Move Displacement_n into Displacement_n1.
+   */
+  void SetDisplacement_n1(void);
+
+  /*!
+   * \brief Get the value of the mesh velocity at time n.
+   * \param[in] iDim - Index of Velocity[nDim]
+   * \return Value of the mesh velocity at time n+1 and position iDim.
+   */
+  su2double GetVelocity(unsigned short iDim);
+
+  /*!
+   * \brief Set the value of the velocity.
+   * \param[in] iDim - Index of Velocity[nDim]
+   * \param[in] val_vel - Value of Velocity[nDim]
+   */
+  void SetVelocity(unsigned short iDim, su2double val_vel);
+
+  /*!
+   * \brief Get the value of the mesh velocity at time n.
+   * \param[in] iDim - Index of Velocity_n[nDim]
+   * \return Value of the mesh velocity at time n and position iDim.
+   */
+  su2double GetVelocity_n(unsigned short iDim);
+
+  /*!
+   * \brief Move Velocity into Velocity_n.
+   */
+  void SetVelocity_n(void);
+
+  /*!
+   * \brief Get the value of the mesh velocity at time n-1.
+   * \param[in] iDim - Index of Velocity_n1[nDim]
+   * \return Value of the mesh velocity at time n-1 and position iDim.
+   */
+  su2double GetVelocity_n1(unsigned short iDim);
+
+  /*!
+   * \brief Move Velocity_n into Velocity_n1.
+   */
+  void SetVelocity_n1(void);
+
+};
+
 
 #include "variable_structure.inl"
