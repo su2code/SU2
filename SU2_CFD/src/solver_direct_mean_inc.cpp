@@ -5387,7 +5387,8 @@ void CIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_contain
 
       /*--- Dirichlet condition for temperature at far-field (if energy is active). ---*/
 
-      V_infty[nDim+1] = GetTemperature_Inf();
+      //V_infty[nDim+1] = GetTemperature_Inf();
+      V_infty[nDim+1] = node[iPoint]->GetTemperature();
 
       /*--- Store the density.  ---*/
 
