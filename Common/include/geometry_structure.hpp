@@ -415,21 +415,6 @@ public:
   void AllocateP2PComms(unsigned short val_countPerPoint);
   
   /*!
-   * \brief Routine to launch non-blocking sends and recvs only for point-to-point communications with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   * \param[in] commType - Enumerated type for the quantity to be communicated.
-   */
-  void InitiateP2PComms(CGeometry *geometry, CConfig *config, unsigned short commType);
-  
-  /*!
-   * \brief Routine to complete the set of non-blocking communications launched by InitiateP2PComms(). Note that this routine is called by any class that has loaded data into the generic communication buffers.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config   - Definition of the particular problem.
-   */
-  void CompleteP2PComms(CGeometry *geometry, CConfig *config);
-  
-  /*!
    * \brief Routine to launch non-blocking recvs only for all point-to-point communication with neighboring partitions. Note that this routine is called by any class that has loaded data into the generic communication buffers.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
