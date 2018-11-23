@@ -1929,6 +1929,19 @@ enum MPI_QUANTITIES {
   SOLUTION_FEA_OLD     = 26   /*!< \brief FEA solution old communication. */
 };
 
+/*!
+ * \brief MPI communication level
+ */
+enum COMM_LEVEL {
+  COMM_NONE    = 0,   /*!< \brief Disable all MPI comms. Purely for testing, as results are incorrect. */
+  COMM_MINIMAL = 1,   /*!< \brief Perform only the minimal set of MPI communications for correctness. Disables many console and output comms. */
+  COMM_FULL    = 2    /*!< \brief Perform all MPI communications. */
+};
+static const map<string, COMM_LEVEL> Comm_Map = CCreateMap<string, COMM_LEVEL>
+("NONE", COMM_NONE)
+("MINIMAL", COMM_MINIMAL)
+("FULL", COMM_FULL);
+
 /* END_CONFIG_ENUMS */
 
 class COptionBase {
