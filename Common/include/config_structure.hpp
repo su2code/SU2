@@ -511,8 +511,7 @@ private:
   Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -4238,14 +4237,6 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_SpaceIteScheme_FEA(void);
-  
-  /*!
-   * \brief Get the kind of transfer method we want to use for multiphysics problems
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of transfer method for multiphysics problems
-   */
-  unsigned short GetKind_TransferMethod(void);
   
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
