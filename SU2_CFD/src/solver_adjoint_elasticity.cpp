@@ -1052,7 +1052,7 @@ void CDiscAdjFEASolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *con
 
 }
 
-void CDiscAdjFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CDiscAdjFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;

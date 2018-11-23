@@ -400,7 +400,7 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
         nVarSol = solver_container[iZone][INST_0][MESH_0][iSol]->GetnVar();
 
         /*--- Compute the block residual on each solver ---*/
-        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_BGS(geometry_container[iZone][INST_0][MESH_0],
+        solver_container[iZone][INST_0][MESH_0][iSol]->ComputeResidual_Multizone(geometry_container[iZone][INST_0][MESH_0],
             config_container[iZone]);
 
         /*--- Loop over all the variables in the solver ---*/

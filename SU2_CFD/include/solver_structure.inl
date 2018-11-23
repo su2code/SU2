@@ -925,7 +925,7 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
-inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
