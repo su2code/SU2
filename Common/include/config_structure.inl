@@ -1992,6 +1992,8 @@ inline su2double CConfig::GetMax_Time(void) { return Max_Time; }
 
 inline bool CConfig::GetMultizone_Mesh(void) { return Multizone_Mesh; }
 
+inline bool CConfig::GetMultizone_Residual(void) { return Multizone_Residual; }
+
 inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
 
 inline bool CConfig::GetSpecial_Output(void) { return SpecialOutput; }
