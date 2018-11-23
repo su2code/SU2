@@ -5849,12 +5849,12 @@ bool CFSIDriver::BGSConvergence(unsigned long IntIter, unsigned short ZONE_FLOW,
 
   /*--- Flow ---*/
 
-  solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->ComputeResidual_BGS(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+  solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->ComputeResidual_Multizone(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                                         config_container[ZONE_FLOW]);
 
   /*--- Structure ---*/
 
-  solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->ComputeResidual_BGS(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
+  solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->ComputeResidual_Multizone(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
                                                                          config_container[ZONE_STRUCT]);
 
 
@@ -7482,12 +7482,12 @@ bool CDiscAdjFSIDriver::BGSConvergence(unsigned long IntIter,
 
   /*--- Flow ---*/
 
-  solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ComputeResidual_BGS(geometry_container[ZONE_FLOW][INST_0][MESH_0],
+  solver_container[ZONE_FLOW][INST_0][MESH_0][ADJFLOW_SOL]->ComputeResidual_Multizone(geometry_container[ZONE_FLOW][INST_0][MESH_0],
                                                                         config_container[ZONE_FLOW]);
 
   /*--- Structure ---*/
 
-  solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->ComputeResidual_BGS(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
+  solver_container[ZONE_STRUCT][INST_0][MESH_0][ADJFEA_SOL]->ComputeResidual_Multizone(geometry_container[ZONE_STRUCT][INST_0][MESH_0],
                                                                          config_container[ZONE_STRUCT]);
 
 

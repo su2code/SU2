@@ -1039,7 +1039,7 @@ void CDiscAdjSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 }
 
-void CDiscAdjSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CDiscAdjSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;

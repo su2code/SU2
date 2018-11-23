@@ -205,7 +205,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -6464,7 +6464,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -8133,7 +8133,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -11540,7 +11540,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 };
 
 /*! \class CFEASolver
@@ -12214,7 +12214,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -12725,7 +12725,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -13023,7 +13023,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
