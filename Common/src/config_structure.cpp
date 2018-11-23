@@ -1626,7 +1626,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-
+  /*!\brief COMM_LEVEL
+   *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
+  addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
