@@ -1510,6 +1510,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
   /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
   addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
+  /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
+  addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -2702,6 +2704,8 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     // Discrete adjoint linear solver
     Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
     Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
+
+    Multizone_Residual = true;
   }
   else { FSI_Problem = false; }
 
@@ -8931,6 +8935,8 @@ void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
 
   /*--- If the problem has FSI properties ---*/
   if (fluid_zone && structural_zone) FSI_Problem = true;
+
+  Multizone_Residual = true;
 
 }
 
