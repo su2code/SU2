@@ -17,6 +17,8 @@ config.sub
 configure
 depcomp
 missing
+install-sh
+aclocal.m4
 
 # Compiled Dynamic libraries
 *.so
@@ -51,6 +53,7 @@ externals/autotools/bin
 externals/autotools/include
 externals/autotools/share
 externals/autotools/lib
+externals/tecio/boost
 
 #logs and errors
 *.log
