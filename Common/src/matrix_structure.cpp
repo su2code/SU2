@@ -1399,7 +1399,10 @@ void CSysMatrix::MatrixVectorProduct(const CSysVector & vec, CSysVector & prod, 
   }
   
   /*--- MPI Parallelization ---*/
-  SendReceive_Solution(prod, geometry, config);
+  //SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1430,8 +1433,11 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
   }
 
   /*--- MPI Parallelization ---*/
-  SendReceive_SolutionTransposed(prod, geometry, config);
+  //SendReceive_SolutionTransposed(prod, geometry, config);
 
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  
 }
 
 void CSysMatrix::GetMultBlockBlock(su2double *c, su2double *a, su2double *b) {
@@ -1631,7 +1637,10 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  //SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1698,7 +1707,10 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    //SendReceive_Solution(x, geometry, config);
+    
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -1868,7 +1880,10 @@ void CSysMatrix::ComputeILUPreconditioner(const CSysVector & vec, CSysVector & p
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  //SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -1989,7 +2004,10 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    //SendReceive_Solution(x, geometry, config);
+    
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -2032,7 +2050,10 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  //SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
   /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
   
@@ -2050,7 +2071,10 @@ void CSysMatrix::ComputeLU_SGSPreconditioner(const CSysVector & vec, CSysVector 
   
   /*--- MPI Parallelization ---*/
   
-  SendReceive_Solution(prod, geometry, config);
+  //SendReceive_Solution(prod, geometry, config);
+  
+  InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+  CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
   
 }
 
@@ -2118,7 +2142,10 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(xStar, geometry, config);
+    //SendReceive_Solution(xStar, geometry, config);
+    
+    InitiateComms(xStar, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(xStar, geometry, config, SOLUTION_MATRIX);
     
     /*--- Second part of the symmetric iteration: (D+U).x_(1) = D.x* ---*/
     
@@ -2142,7 +2169,10 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(x, geometry, config);
+    //SendReceive_Solution(x, geometry, config);
+    
+    InitiateComms(x, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(x, geometry, config, SOLUTION_MATRIX);
     
     /*--- Update the residual (r^k+1 = b - A*x^k+1) with the new solution ---*/
     
@@ -2386,7 +2416,10 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(prod, geometry, config);
+    //SendReceive_Solution(prod, geometry, config);
+    
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     
     /*--- Solve linelet using a Thomas' algorithm ---*/
     
@@ -2456,7 +2489,10 @@ void CSysMatrix::ComputeLineletPreconditioner(const CSysVector & vec, CSysVector
     
     /*--- MPI Parallelization ---*/
     
-    SendReceive_Solution(prod, geometry, config);
+    //SendReceive_Solution(prod, geometry, config);
+    
+    InitiateComms(prod, geometry, config, SOLUTION_MATRIX);
+    CompleteComms(prod, geometry, config, SOLUTION_MATRIX);
     
   }
   else {

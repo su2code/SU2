@@ -196,8 +196,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      so that all nodes have the same solution and r.h.s. entries
      across all partitions. ---*/
 
-    StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-    StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    //StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+    //StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+    
+    StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+    
+    StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+    StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
 
     /*--- Definition of the preconditioner matrix vector multiplication, and linear solver ---*/
 
@@ -9550,9 +9556,15 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
    so that all nodes have the same solution and r.h.s. entries
    across all partitions. ---*/
 
-  StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
-  StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+  //StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
+  //StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
 
+  StiffMatrix.InitiateComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysSol, geometry, config, SOLUTION_MATRIX);
+  
+  StiffMatrix.InitiateComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  StiffMatrix.CompleteComms(LinSysRes, geometry, config, SOLUTION_MATRIX);
+  
   /*--- Solve the linear system using a Krylov subspace method ---*/
 
   if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||

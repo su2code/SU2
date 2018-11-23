@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
@@ -178,7 +178,8 @@ int main(int argc, char *argv[]) {
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
-
+      if (!fem_solver) geometry_container[iZone][iInst]->PreprocessP2PComms(geometry_container[iZone][iInst], config_container[iZone]);
+      
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
