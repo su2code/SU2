@@ -130,7 +130,7 @@ CDriver::CDriver(char* confFile,
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
 
-    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, true);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/

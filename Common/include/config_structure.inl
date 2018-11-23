@@ -1951,3 +1951,6 @@ inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline unsigned short CConfig::GetComm_Level(void) { return Comm_Level; }
+
