@@ -429,7 +429,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
    }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (config->GetMultizone_Residual()){
 
     FSI_Residual      = 0.0;
     RelaxCoeff        = 1.0;
@@ -4573,7 +4573,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
 }
 
-void CFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;

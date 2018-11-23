@@ -13432,7 +13432,7 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -15576,7 +15576,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi || multizone){
+  if (config->GetMultizone_Residual()){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
