@@ -135,7 +135,6 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
@@ -175,6 +174,9 @@ int main(int argc, char *argv[]) {
 	cout << "Set control volume structure." << endl;
 	geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE); geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
+  /*--- Create the point-to-point MPI communication structures. ---*/
+  
+  geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
 	
 	if ((config_container[ZONE_0]->GetKind_Adaptation() != NONE) && (config_container[ZONE_0]->GetKind_Adaptation() != PERIODIC)) {
 		

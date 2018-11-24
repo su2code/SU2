@@ -140,7 +140,6 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
@@ -193,6 +192,10 @@ int main(int argc, char *argv[]) {
       geometry_container[iZone]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
       
     }
+    
+    /*--- Create the point-to-point MPI communication structures. ---*/
+    
+    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
   }
   

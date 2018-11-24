@@ -145,7 +145,6 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
@@ -200,6 +199,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
   geometry_container[iZone]->SetGlobal_to_Local_Point();
  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+    
+  geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
+    
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
