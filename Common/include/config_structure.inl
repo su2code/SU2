@@ -736,6 +736,12 @@ inline void CConfig::SubtractFinestMesh(void) { FinestMesh = FinestMesh-1; }
 
 inline unsigned short CConfig::GetDesign_Variable(unsigned short val_dv) { return Design_Variable[val_dv]; }
 
+inline bool CConfig::GetBuffet_Monitoring(void) { return Buffet_Monitoring; }
+
+inline su2double CConfig::GetBuffet_k(void) { return Buffet_k; }
+
+inline su2double CConfig::GetBuffet_lambda(void) { return Buffet_lambda; }
+
 inline unsigned short CConfig::GetConvCriteria(void) { return ConvCriteria; }
 
 inline unsigned short CConfig::GetMGCycle(void) { return MGCycle; }
