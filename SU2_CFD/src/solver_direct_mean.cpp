@@ -16675,7 +16675,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
           
         /*--- Compute Heaviside function ---*/
           
-        Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(-2.*k*(SkinFrictionDot + lam)));
+        Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(2.*k*(SkinFrictionDot + lam)));
           
         /*--- Integrate buffet sensor ---*/
           
