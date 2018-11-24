@@ -154,7 +154,6 @@ int main(int argc, char *argv[]) {
     /*--- Add the Send/Receive boundaries ---*/
     
     geometry_container[iZone]->SetSendReceive(config_container[iZone]);
-    geometry_container[iZone]->PreprocessP2PComms(geometry_container[iZone], config_container[iZone]);
     
     /*--- Add the Send/Receive boundaries ---*/
     
@@ -239,6 +238,9 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Setting reference area and span." << endl;
   geometry_container[ZONE_0]->SetPositive_ZArea(config_container[ZONE_0]);
+  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+  geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
   
   /*--- Create plane structure ---*/
   
