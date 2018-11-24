@@ -535,6 +535,7 @@ void CSolver::CompleteComms(CGeometry *geometry,
                 node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
               }
             }
+            break;
           case SOLUTION_FEA_OLD:
             for (iVar = 0; iVar < nVar; iVar++) {
               node[iPoint]->SetSolution_time_n(iVar, bufDRecv[buf_offset+iVar]);
@@ -1006,8 +1007,11 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_AuxVar_Gradient(geometry, config);
+  //Set_MPI_AuxVar_Gradient(geometry, config);
   
+  InitiateComms(geometry, config, AUXVAR_GRADIENT);
+  CompleteComms(geometry, config, AUXVAR_GRADIENT);
+
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -1131,7 +1135,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_AuxVar_Gradient(geometry, config);
+  //Set_MPI_AuxVar_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, AUXVAR_GRADIENT);
+  CompleteComms(geometry, config, AUXVAR_GRADIENT);
   
 }
 
@@ -1193,7 +1200,10 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
       }
   
   /*--- Gradient MPI ---*/
-  Set_MPI_Solution_Gradient(geometry, config);
+  //Set_MPI_Solution_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_GRADIENT);
+  CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
 }
 
@@ -1347,7 +1357,10 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_Solution_Gradient(geometry, config);
+  //Set_MPI_Solution_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_GRADIENT);
+  CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
 }
 
@@ -1978,8 +1991,11 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Limiter MPI ---*/
   
-  Set_MPI_Solution_Limiter(geometry, config);
+  //Set_MPI_Solution_Limiter(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION_LIMITER);
+  CompleteComms(geometry, config, SOLUTION_LIMITER);
+
 }
 
 void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian) {
@@ -2549,7 +2565,10 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- It's necessary to communicate this information ---*/
 
-  geometry->Set_MPI_OldCoord(config);
+  //geometry->Set_MPI_OldCoord(config);
+  
+  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
+  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
   
   delete [] Coord;
 
@@ -4422,16 +4441,26 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry[iInst], config);
+  //Set_MPI_Solution(geometry[iInst], config);
   
+  InitiateComms(geometry[iInst], config, SOLUTION);
+  CompleteComms(geometry[iInst], config, SOLUTION);
+
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
   if (grid_movement && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
-    geometry[iInst]->Set_MPI_Coord(config);
-    geometry[iInst]->Set_MPI_GridVel(config);
+    //geometry[iInst]->Set_MPI_Coord(config);
+    
+    geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
+    
+    //geometry[iInst]->Set_MPI_GridVel(config);
+    
+    geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
 
   }
   
