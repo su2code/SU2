@@ -2007,9 +2007,16 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
 void CGeometry::UpdateGeometry(CGeometry **geometry_container, CConfig *config) {
   
   unsigned short iMesh;
-  geometry_container[MESH_0]->Set_MPI_Coord(config);
+  //geometry_container[MESH_0]->Set_MPI_Coord(config);
+  
+  geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, COORDINATES);
+  geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, COORDINATES);
+
   if (config->GetGrid_Movement()){
-    geometry_container[MESH_0]->Set_MPI_GridVel(config);
+    //geometry_container[MESH_0]->Set_MPI_GridVel(config);
+    
+    geometry_container[MESH_0]->InitiateComms(geometry_container[MESH_0], config, GRID_VELOCITY);
+    geometry_container[MESH_0]->CompleteComms(geometry_container[MESH_0], config, GRID_VELOCITY);
   }
   
   geometry_container[MESH_0]->SetCoord_CG();
@@ -15706,7 +15713,11 @@ void CPhysicalGeometry::SetMaxLength(CConfig* config) {
     node[iPoint]->SetMaxLength(max_delta);
   }
 
-  Set_MPI_MaxLength(config);
+  //Set_MPI_MaxLength(config);
+  
+  InitiateComms(this, config, MAX_LENGTH);
+  CompleteComms(this, config, MAX_LENGTH);
+
 }
 
 void CPhysicalGeometry::MatchInterface(CConfig *config) {

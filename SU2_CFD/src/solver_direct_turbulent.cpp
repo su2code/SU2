@@ -793,7 +793,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
   
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
   
   /*--- Compute the root mean square residual ---*/
   
@@ -1192,9 +1195,12 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   /*--- MPI solution and compute the eddy viscosity ---*/
 
 //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart.
-  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-  solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  //solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  //solver[MESH_0][TURB_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
 
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_EDDY);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_EDDY);
+  
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
@@ -1214,7 +1220,11 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       }
       solver[iMesh][TURB_SOL]->node[iPoint]->SetSolution(Solution);
     }
-    solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    //solver[iMesh][TURB_SOL]->Set_MPI_Solution(geometry[iMesh], config);
+    
+    solver[iMesh][TURB_SOL]->InitiateComms(geometry[iMesh], config, SOLUTION_EDDY);
+    solver[iMesh][TURB_SOL]->CompleteComms(geometry[iMesh], config, SOLUTION_EDDY);
+    
     solver[iMesh][FLOW_SOL]->Preprocessing(geometry[iMesh], solver[iMesh], config, iMesh, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
     solver[iMesh][TURB_SOL]->Postprocessing(geometry[iMesh], solver[iMesh], config, iMesh);
   }
@@ -1389,9 +1399,12 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   /*--- MPI solution ---*/
 
 //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
 
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+      
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
   unsigned long iMarker;
@@ -3705,9 +3718,12 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- MPI solution ---*/
 
 //TODO fix order of comunication the periodic should be first otherwise you have wrong values on the halo cell after restart
-  Set_MPI_Solution(geometry, config);
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
 
+  InitiateComms(geometry, config, SOLUTION_EDDY);
+  CompleteComms(geometry, config, SOLUTION_EDDY);
+      
   /*--- Initializate quantities for SlidingMesh Interface ---*/
 
   unsigned long iMarker;

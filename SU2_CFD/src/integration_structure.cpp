@@ -441,7 +441,10 @@ void CIntegration::Time_Integration_FEM(CGeometry *geometry, CSolver **solver_co
     }
 
     /*--- Perform the MPI communication of the solution ---*/
-    solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+    //solver_container[MainSolver]->Set_MPI_Solution(geometry, config);
+
+    solver_container[MainSolver]->InitiateComms(geometry, config, SOLUTION_FEA);
+    solver_container[MainSolver]->CompleteComms(geometry, config, SOLUTION_FEA);
 
 }
 
