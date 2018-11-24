@@ -1201,6 +1201,9 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_EDDY);
   solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_EDDY);
   
+  solver[MESH_0][TURB_SOL]->InitiateComms(geometry[MESH_0], config, SOLUTION_EDDY);
+  solver[MESH_0][TURB_SOL]->CompleteComms(geometry[MESH_0], config, SOLUTION_EDDY);
+  
   solver[MESH_0][FLOW_SOL]->Preprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
   solver[MESH_0][TURB_SOL]->Postprocessing(geometry[MESH_0], solver[MESH_0], config, MESH_0);
 
