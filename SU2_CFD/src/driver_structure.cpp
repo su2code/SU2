@@ -3801,10 +3801,6 @@ void CDriver::PreprocessExtIter(unsigned long ExtIter) {
     }
   }
 
-#ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-#endif
-
 }
 
 bool CDriver::Monitor(unsigned long ExtIter) {

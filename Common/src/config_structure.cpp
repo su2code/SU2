@@ -4025,6 +4025,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Delay the output until exit for minimal communication mode. ---*/
+  
+  if (Comm_Level != COMM_FULL) {
+    Wrt_Sol_Freq          = nExtIter+1;
+    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    
+    /*--- Write only the restart. ---*/
+    
+    Wrt_Slice   = false;
+    Wrt_Vol_Sol = false;
+    Wrt_Srf_Sol = false;
+    Wrt_Csv_Sol = false;
+  }
+  
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {

@@ -265,7 +265,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
           Tot_Iter = 0; MaxIter = RestartIter;
 
-          system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false);
+          system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, 1, &Residual_Init, false, config);
 
           if ((rank == MASTER_NODE) && Screen_Output) {
             cout << "\n# FGMRES (with restart) residual history" << endl;
@@ -280,7 +280,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
             if (IterLinSol + RestartIter > Smoothing_Iter)
               MaxIter = Smoothing_Iter - IterLinSol;
 
-            IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false);
+            IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, MaxIter, &Residual, false, config);
             Tot_Iter += IterLinSol;
 
             if ((rank == MASTER_NODE) && Screen_Output) { cout << "     " << Tot_Iter << "     " << Residual/Residual_Init << endl; }
@@ -300,7 +300,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case FGMRES:
 
-          Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
@@ -308,14 +308,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
         case BCGSTAB:
 
-          Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
 
         case CONJUGATE_GRADIENT:
 
-          Tot_Iter = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output);
+          Tot_Iter = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, NumError, Smoothing_Iter, &Residual, Screen_Output, config);
 
           break;
 
@@ -3365,7 +3365,6 @@ void CSurfaceMovement::SetParametricCoord(CGeometry *geometry, CConfig *config, 
   }
 
 #ifdef HAVE_MPI
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
   SU2_MPI::Allreduce(&my_MaxDiff, &MaxDiff, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
   MaxDiff = my_MaxDiff;
@@ -9611,20 +9610,20 @@ void CElasticityMovement::Solve_System(CGeometry *geometry, CConfig *config){
 
     switch (config->GetKind_Deform_Linear_Solver()) {
     case BCGSTAB:
-      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      IterLinSol = system->BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output, config);
       break;
     case FGMRES:
-      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      IterLinSol = system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output, config);
       break;
     case CONJUGATE_GRADIENT:
-      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+      IterLinSol = system->CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output, config);
       break;
     case RESTARTED_FGMRES:
       IterLinSol = 0;
       while (IterLinSol < config->GetLinear_Solver_Iter()) {
         if (IterLinSol + config->GetLinear_Solver_Restart_Frequency() > config->GetLinear_Solver_Iter())
           MaxIter = config->GetLinear_Solver_Iter() - IterLinSol;
-        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output);
+        IterLinSol += system->FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &System_Residual, Screen_Output, config);
         if (LinSysRes.norm() < SolverTol) break;
         SolverTol = SolverTol*(1.0/LinSysRes.norm());
       }
