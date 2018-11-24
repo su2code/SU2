@@ -109,13 +109,13 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
   switch(config->GetKind_DiscAdj_Linear_Solver()) {
     case FGMRES:
-      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
+      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false, config);
       break;
     case BCGSTAB:
-      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
+      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false, config);
       break;
     case CONJUGATE_GRADIENT:
-      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
+      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false, config);
       break;
   }
 
@@ -200,13 +200,13 @@ void CSysSolve_b::Solve_g(AD::Tape* tape, AD::CheckpointHandler* data){
 
   switch(config->GetKind_Deform_Linear_Solver()){
     case FGMRES:
-      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false);
+      solver->FGMRES_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol , MaxIter, &Residual, false, config);
       break;
     case BCGSTAB:
-      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false);
+      solver->BCGSTAB_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter, &Residual, false, config);
       break;
     case CONJUGATE_GRADIENT:
-      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter,  &Residual, false);
+      solver->CG_LinSolver(LinSysRes_b, LinSysSol_b, *mat_vec, *precond, SolverTol, MaxIter,  &Residual, false, config);
       break;
   }
 

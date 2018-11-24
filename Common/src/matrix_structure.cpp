@@ -1647,6 +1647,8 @@ void CSysMatrix::ComputeJacobiPreconditioner(const CSysVector & vec, CSysVector 
 unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, CMatrixVectorProduct & mat_vec, su2double tol, unsigned long m, su2double *residual, bool monitoring, CGeometry *geometry, CConfig *config) {
   
   unsigned long iPoint, iVar, jVar;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1668,25 +1670,31 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "Jacobi Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::Jacobi_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "Jacobi Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -1718,17 +1726,23 @@ unsigned long CSysMatrix::Jacobi_Smoother(const CSysVector & b, CSysVector & x, 
     mat_vec(x, A_x);
     r -= A_x;
     
-    /*--- Check if solution has converged, else output the relative
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# Jacobi smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
@@ -1893,6 +1907,8 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   su2double *Block_ij, omega = 1.0;
   long iPoint, jPoint;
   unsigned short iVar;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -1914,25 +1930,31 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "ILU Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::ILU_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "ILU Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -2015,17 +2037,23 @@ unsigned long CSysMatrix::ILU_Smoother(const CSysVector & b, CSysVector & x, CMa
     mat_vec(x, A_x);
     r -= A_x;
     
-    /*--- Check if solution has converged, else output the relative 
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# ILU smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }
@@ -2082,6 +2110,8 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   unsigned long iPoint, iVar;
   su2double omega = 1.0;
+  su2double norm_r = 0.0, norm0 = 0.0;
+  int i = 0;
   
   /*---  Check the number of iterations requested ---*/
   
@@ -2104,25 +2134,31 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
   
   mat_vec(x, A_x);
   r -= A_x;
-  su2double norm_r = r.norm();
-  su2double norm0  = b.norm();
-  if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
-    if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
-    return 0;
-  }
   
-  /*--- Set the norm to the initial initial residual value ---*/
+  /*--- Only compute the residuals in full communication mode. ---*/
   
-  norm0 = norm_r;
-  
-  /*--- Output header information including initial residual ---*/
-  
-  int i = 0;
-  if ((monitoring) && (rank == MASTER_NODE)) {
-    cout << "\n# " << "LU_SGS Smoother" << " residual history" << endl;
-    cout << "# Residual tolerance target = " << tol << endl;
-    cout << "# Initial residual norm     = " << norm_r << endl;
-    cout << "     " << i << "     " << norm_r/norm0 << endl;
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    norm_r = r.norm();
+    norm0  = b.norm();
+    if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
+      if (rank == MASTER_NODE) cout << "CSysMatrix::LU_SGS_Smoother(): system solved by initial guess." << endl;
+      return 0;
+    }
+    
+    /*--- Set the norm to the initial initial residual value ---*/
+    
+    norm0 = norm_r;
+    
+    /*--- Output header information including initial residual ---*/
+    
+    if ((monitoring) && (rank == MASTER_NODE)) {
+      cout << "\n# " << "LU_SGS Smoother" << " residual history" << endl;
+      cout << "# Residual tolerance target = " << tol << endl;
+      cout << "# Initial residual norm     = " << norm_r << endl;
+      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    }
+    
   }
   
   /*---  Loop over all smoothing iterations ---*/
@@ -2181,17 +2217,23 @@ unsigned long CSysMatrix::LU_SGS_Smoother(const CSysVector & b, CSysVector & x, 
     r -= A_x;
     xStar = x;
     
-    /*--- Check if solution has converged, else output the relative
-     residual if necessary. ---*/
+    /*--- Only compute the residuals in full communication mode. ---*/
     
-    norm_r = r.norm();
-    if (norm_r < tol*norm0) break;
-    if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
-      cout << "     " << i << "     " << norm_r/norm0 << endl;
+    if (config->GetComm_Level() == COMM_FULL) {
+      
+      /*--- Check if solution has converged, else output the relative
+       residual if necessary. ---*/
+      
+      norm_r = r.norm();
+      if (norm_r < tol*norm0) break;
+      if (((monitoring) && (rank == MASTER_NODE)) && ((i+1) % 5 == 0))
+        cout << "     " << i << "     " << norm_r/norm0 << endl;
+      
+    }
     
   }
   
-  if ((monitoring) && (rank == MASTER_NODE)) {
+  if ((monitoring) && (rank == MASTER_NODE) && (config->GetComm_Level() == COMM_FULL)) {
     cout << "# LU_SGS smoother final (true) residual:" << endl;
     cout << "# Iteration = " << i << ": |res|/|res0| = "  << norm_r/norm0 << ".\n" << endl;
   }

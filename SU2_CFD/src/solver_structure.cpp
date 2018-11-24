@@ -607,9 +607,19 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
   Local_nPointDomain = geometry->GetnPointDomain();
   
-  
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Global_nPointDomain = geometry->GetGlobal_nPointDomain();
+    
+  } else {
+    
+    /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
+    
+    for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
+    Global_nPointDomain = geometry->GetnPointDomain();
+    
+  }
   
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -626,40 +636,45 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   delete [] rbuf_residual;
   
   /*--- Set the Maximum residual in all the processors ---*/
-  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
-  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
   
-  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
-  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    sbuf_residual[iVar] = GetRes_Max(iVar);
-    sbuf_point[iVar] = GetPoint_Max(iVar);
-    Coord = GetPoint_Max_Coord(iVar);
-    for (iDim = 0; iDim < nDim; iDim++)
-      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
-  }
-  
-  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+    sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+    sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+    
+    rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+    rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+    rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      sbuf_residual[iVar] = GetRes_Max(iVar);
+      sbuf_point[iVar] = GetPoint_Max(iVar);
+      Coord = GetPoint_Max_Coord(iVar);
+      for (iDim = 0; iDim < nDim; iDim++)
+        sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
+    
+    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+      }
+    }
+    
+    delete [] sbuf_residual;
+    delete [] rbuf_residual;
+    
+    delete [] sbuf_point;
+    delete [] rbuf_point;
+    
+    delete [] sbuf_coord;
+    delete [] rbuf_coord;
+    
   }
-  
-  delete [] sbuf_residual;
-  delete [] rbuf_residual;
-  
-  delete [] sbuf_point;
-  delete [] rbuf_point;
-  
-  delete [] sbuf_coord;
-  delete [] rbuf_coord;
   
 #endif
   
@@ -1760,15 +1775,17 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
     }
     
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-    for (iVar = 0; iVar < nVar; iVar++) {
-      GlobalMinSolution[iVar] = LocalMinSolution[iVar];
-      GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
-    }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        GlobalMinSolution[iVar] = LocalMinSolution[iVar];
+        GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
+      }
 #endif
+    }
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
