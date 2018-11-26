@@ -61,6 +61,7 @@ noinst_LIBRARIES+= libSU2Core.a
 endif
 
 libSU2Core_sources = \
+  ../include/data_manufactured_solutions.hpp \
   ../include/definition_structure.hpp \
   ../include/fluid_model.hpp \
   ../include/fluid_model.inl \
@@ -72,15 +73,20 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
+  ../include/sgs_model.hpp \
+  ../include/sgs_model.inl \
   ../include/solver_structure.hpp \
   ../include/solver_structure.inl \
   ../include/SU2_CFD.hpp \
+  ../include/task_definition.hpp \
+  ../include/task_definition.inl \
   ../include/transport_model.hpp \
   ../include/transport_model.inl \
   ../include/variable_structure.hpp \
   ../include/variable_structure.inl \
   ../include/transfer_structure.hpp \
   ../include/transfer_structure.inl \
+  ../src/data_manufactured_solutions.cpp \
   ../src/definition_structure.cpp \
   ../src/fluid_model.cpp \
   ../src/fluid_model_pig.cpp \
@@ -117,6 +123,7 @@ libSU2Core_sources = \
   ../src/solver_adjoint_elasticity.cpp \
   ../src/solver_direct_heat.cpp \
   ../src/solver_direct_mean.cpp \
+  ../src/solver_direct_mean_fem.cpp \
   ../src/solver_direct_mean_inc.cpp \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
@@ -152,31 +159,12 @@ su2_cfd_ldadd =
 # always link to built dependencies from ./externals
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
+su2_cfd_ldadd += @su2_externals_LIBPTHREAD@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
 su2_cfd_cxx_flags += @MUTATIONPP_CXX@
 su2_cfd_ldadd += @MUTATIONPP_LD@
-# endif
-
-# if BUILD_JSONCPP
-su2_cfd_cxx_flags += @JSONCPP_CXX@
-su2_cfd_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_HDF5
-su2_cfd_cxx_flags += @HDF5_CXX@
-su2_cfd_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-su2_cfd_cxx_flags += @SZIP_CXX@
-su2_cfd_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-su2_cfd_cxx_flags += @ZLIB_CXX@
-su2_cfd_ldadd += @ZLIB_LD@
 # endif
 
 if BUILD_NORMAL
