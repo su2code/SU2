@@ -18534,10 +18534,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
         /*--- We need to store this point's data, so jump to the correct
          offset in the buffer of data from the restart file and load it. ---*/
-
+        skipVar = nFields*2/3; //CVC: Temporary correction : New index to get sensitivity from both compressible flow and structural adjoint solution files
         index = counter*nFields + skipVar;
         for (iDim = 0; iDim < nDim; iDim++) Sensitivity[iPoint_Local*nDim+iDim] = Restart_Data[index+iDim];
-
+        
         /*--- Increment the overall counter for how many points have been loaded. ---*/
         counter++;
       }

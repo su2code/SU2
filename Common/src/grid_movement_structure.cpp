@@ -440,9 +440,11 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   nVertex_SolidWall = 0;
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX )  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CLAMPED_BOUNDARY ) ||
+        (config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY )) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -458,9 +460,11 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   ii = 0; jj = 0;
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
-         config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+    if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
+        (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX )  ||
+        (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+        (config->GetMarker_All_KindBC(iMarker) == CLAMPED_BOUNDARY ) ||
+        (config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY )) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1799,7 +1803,9 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config->GetMarker_All_KindBC(iMarker) == CLAMPED_BOUNDARY ) ||
+         (config->GetMarker_All_KindBC(iMarker) == LOAD_BOUNDARY )) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {

@@ -84,7 +84,7 @@ def adjoint( config ):
         konfig['MATH_PROBLEM']  = 'CONTINUOUS_ADJOINT'
 
     konfig['CONV_FILENAME'] = konfig['CONV_FILENAME'] + '_adjoint'
-    
+    konfig['RAMP_LOADING'] = 'NO' #CVC: Temp to allow ramp only in direct sim from single config python scripts
     # Run Solution
     SU2_CFD(konfig)
     
