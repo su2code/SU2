@@ -1732,7 +1732,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of L2Roe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CUpwL2Roe_Flow : public CNumerics {
 private:
@@ -1778,7 +1778,7 @@ public:
  * \brief Class for solving an approximate Riemann solver of LMRoe for the flow equations.
  * \ingroup ConvDiscr
  * \author E. Molina, A. Bueno, F. Palacios
- * \version 4.1.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CUpwLMRoe_Flow : public CNumerics {
 private:
@@ -2162,7 +2162,7 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CUpwHLLC_Flow : public CNumerics {
 private:
@@ -2213,7 +2213,7 @@ public:
  * \brief Class for solving an approximate Riemann HLLC.
  * \ingroup ConvDiscr
  * \author G. Gori, Politecnico di Milano
- * \version 4.0.2 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CUpwGeneralHLLC_Flow : public CNumerics {
 private:
@@ -3914,7 +3914,7 @@ public:
  * \brief Generic class for computing the tangent matrix and the residual for structural problems
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEAElasticity : public CNumerics {
 
@@ -4000,6 +4000,9 @@ public:
   virtual void SetElectric_Properties(CElement *element_container, CConfig *config);
 
   virtual void Set_ElectricField(unsigned short i_DV, su2double val_EField);
+  
+protected:
+  void Compute_Lame_Parameters(void);
 
 };
 
@@ -4008,7 +4011,7 @@ public:
  * \brief Class for computing the stiffness matrix of a linear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEALinearElasticity : public CFEAElasticity {
 
@@ -4042,7 +4045,7 @@ public:
  * \brief Class for computing the stiffness matrix of a nonlinear, elastic problem.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEANonlinearElasticity : public CFEAElasticity {
 
@@ -4144,7 +4147,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, compressible.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_NeoHookean_Comp : public CFEANonlinearElasticity {
 
@@ -4177,7 +4180,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a neo-Hookean material model, incompressible.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_NeoHookean_Incomp : public CFEANonlinearElasticity {
 
@@ -4210,7 +4213,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a nearly-incompressible ideal DE.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_IdealDE : public CFEANonlinearElasticity {
 
@@ -4244,7 +4247,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a Knowles stored-energy function, nearly incompressible.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_Knowles_NearInc : public CFEANonlinearElasticity {
 
@@ -4280,7 +4283,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEM_DielectricElastomer : public CFEANonlinearElasticity {
 
@@ -4439,7 +4442,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 4.1.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CSourcePieceWise_TurbSA_E : public CNumerics {
 private:
@@ -4536,7 +4539,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras CC modification turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CSourcePieceWise_TurbSA_COMP : public CNumerics {
 private:
@@ -4633,7 +4636,7 @@ public:
  * \brief Class for integrating the source terms of the Spalart-Allmaras Edwards modification with CC turbulence model equation.
  * \ingroup SourceDiscr
  * \author E.Molina, A. Bueno.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CSourcePieceWise_TurbSA_E_COMP : public CNumerics {
 private:
@@ -5024,7 +5027,7 @@ public:
  * \brief Class for the source term integration of a body force in the incompressible solver.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  */
 class CSourceIncBodyForce : public CNumerics {
   su2double *Body_Force_Vector;
@@ -5057,7 +5060,7 @@ public:
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr
  * \author T. Economon
- * \version 5.0.0 "Raven"
+ * \version 6.1.0 "Falcon"
  */
 class CSourceBoussinesq : public CNumerics {
   su2double *Gravity_Vector;
