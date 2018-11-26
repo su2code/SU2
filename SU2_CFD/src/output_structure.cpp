@@ -11487,7 +11487,8 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
       if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
         
         nVertex = geometry[iZone]->GetnVertex(iMarker);
 
