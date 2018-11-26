@@ -375,7 +375,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -3480,7 +3480,7 @@ void CEulerSolver::Set_MPI_Interface(CGeometry *geometry, CConfig *config) {
   
 }
 
-void CEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0, Mach2Vel_FreeStream = 0.0, ModVel_FreeStream = 0.0,
   Energy_FreeStream = 0.0, ModVel_FreeStreamND = 0.0, Velocity_Reynolds = 0.0,
@@ -8858,62 +8858,70 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
-        
-        /*--- The following are not per-surface, and as a result will be
-         double-counted iff multiple surfaces are specified as well as multi-objective ---*/
-        
-      case EQUIVALENT_AREA:
-        Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
-        break;
-      case NEARFIELD_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
-        break;
-      case INVERSE_DESIGN_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-        break;
-      case INVERSE_DESIGN_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-        break;
-      case THRUST_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CT;
-        break;
-      case TORQUE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-        break;
-      case FIGURE_OF_MERIT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-        break;
-      case SURFACE_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-        break;
-      case SURFACE_STATIC_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-        break;
-      case SURFACE_MASSFLOW:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-        break;
-      case SURFACE_MACH:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
-        break;
-      case SURFACE_UNIFORMITY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-        break;
-      case SURFACE_SECONDARY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-        break;
-      case SURFACE_MOM_DISTORTION:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-        break;
-      case SURFACE_SECOND_OVER_UNIFORM:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-        break;
-      case CUSTOM_OBJFUNC:
-        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-        break;
       default:
         break;
-
     }
+  }
+  
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+  
+  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+  
+  switch(Kind_ObjFunc) {
+    case EQUIVALENT_AREA:
+      Total_ComboObj+=Weight_ObjFunc*Total_CEquivArea;
+      break;
+    case NEARFIELD_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CNearFieldOF;
+      break;
+    case INVERSE_DESIGN_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+      break;
+    case FIGURE_OF_MERIT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+      break;
+    case SURFACE_TOTAL_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+      break;
+    case SURFACE_STATIC_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+      break;
+    case SURFACE_MASSFLOW:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+      break;
+    case SURFACE_MACH:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Mach(0);
+      break;
+    case SURFACE_UNIFORMITY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+      break;
+    default:
+      break;
   }
   
 }
@@ -14836,13 +14844,15 @@ CNSSolver::CNSSolver(void) : CEulerSolver() {
   CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
 
   ForceViscous = NULL; MomentViscous = NULL; CSkinFriction = NULL;
-  
+    
+  Buffet_Sensor = NULL; Buffet_Metric = NULL;
+ 
   /*--- Surface based array initialization ---*/
   
   Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
-  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+  Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;    Surface_Buffet_Metric = NULL;
   
   /*--- Rotorcraft simulation array initialization ---*/
   
@@ -14921,11 +14931,15 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   CFx_Visc = NULL;   CFy_Visc = NULL;   CFz_Visc = NULL;
   CMx_Visc = NULL;   CMy_Visc = NULL;   CMz_Visc = NULL;
   CoPx_Visc = NULL;   CoPy_Visc = NULL;   CoPz_Visc = NULL;
+    
+  Buffet_Sensor = NULL; Buffet_Metric = NULL;
 
   Surface_CL_Visc = NULL; Surface_CD_Visc = NULL; Surface_CSF_Visc = NULL; Surface_CEff_Visc = NULL;
   Surface_CFx_Visc = NULL;   Surface_CFy_Visc = NULL;   Surface_CFz_Visc = NULL;
   Surface_CMx_Visc = NULL;   Surface_CMy_Visc = NULL;   Surface_CMz_Visc = NULL;
   Surface_HF_Visc = NULL; Surface_MaxHF_Visc = NULL;
+    
+  Surface_Buffet_Metric = NULL;
   
   CMerit_Visc = NULL;      CT_Visc = NULL;      CQ_Visc = NULL;
   MaxHF_Visc = NULL; ForceViscous = NULL; MomentViscous = NULL;
@@ -15006,7 +15020,7 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -15282,6 +15296,17 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
       }
     }
   }
+    
+  /*--- Buffet sensor in all the markers ---*/
+    
+  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+        
+    Buffet_Sensor          = new su2double*[nMarker];
+    for(iMarker = 0; iMarker < nMarker; iMarker++) {
+      Buffet_Sensor[iMarker] = new su2double[geometry->nVertex[iMarker]];
+    }
+        
+  }
   
   /*--- Non dimensional coefficients ---*/
   
@@ -15378,6 +15403,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   Surface_CMz_Visc        = new su2double[config->GetnMarker_Monitoring()];
   Surface_HF_Visc         = new su2double[config->GetnMarker_Monitoring()];
   Surface_MaxHF_Visc      = new su2double[config->GetnMarker_Monitoring()];
+    
+  if(config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+      
+      Buffet_Metric          = new su2double[nMarker];
+      Surface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
+      
+  }
+
   
   /*--- Rotational coefficients ---*/
   
@@ -15612,6 +15645,7 @@ CNSSolver::~CNSSolver(void) {
   if (CoPz_Visc != NULL)        delete [] CoPz_Visc;
   if (CEff_Visc != NULL)        delete [] CEff_Visc;
   if (CMerit_Visc != NULL)      delete [] CMerit_Visc;
+  if (Buffet_Metric != NULL)    delete [] Buffet_Metric;
   if (CT_Visc != NULL)          delete [] CT_Visc;
   if (CQ_Visc != NULL)          delete [] CQ_Visc;
   if (HF_Visc != NULL)          delete [] HF_Visc;
@@ -15631,6 +15665,7 @@ CNSSolver::~CNSSolver(void) {
   if (Surface_CMz_Visc != NULL)     delete [] Surface_CMz_Visc;
   if (Surface_HF_Visc != NULL)      delete [] Surface_HF_Visc;
   if (Surface_MaxHF_Visc != NULL)   delete [] Surface_MaxHF_Visc;
+  if (Surface_Buffet_Metric != NULL) delete [] Surface_Buffet_Metric;
   
   if (CSkinFriction != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -15650,6 +15685,13 @@ CNSSolver::~CNSSolver(void) {
       delete [] HeatConjugateVar[iMarker];
     }
     delete [] HeatConjugateVar;
+  }
+    
+  if (Buffet_Sensor != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+      delete [] Buffet_Sensor[iMarker];
+    }
+    delete [] Buffet_Sensor;
   }
   
 }
@@ -16577,6 +16619,153 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
 }
 
+void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
+    
+  unsigned long iVertex, iPoint;
+  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
+  su2double *Vel_FS = config->GetVelocity_FreeStream();
+  su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
+  su2double k   = config->GetBuffet_k(),
+             lam = config->GetBuffet_lambda();
+  string Marker_Tag, Monitoring_Tag;
+    
+  for (iDim = 0; iDim < nDim; iDim++){
+    VelMag_FS += Vel_FS[iDim]*Vel_FS[iDim];
+  }
+  VelMag_FS = sqrt(VelMag_FS);
+    
+  /*-- Variables initialization ---*/
+
+  Total_Buffet_Metric = 0.0;
+    
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+    Surface_Buffet_Metric[iMarker_Monitoring] = 0.0;
+  }
+    
+  /*--- Loop over the Euler and Navier-Stokes markers ---*/
+    
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      
+    Buffet_Metric[iMarker] = 0.0;
+        
+    Boundary   = config->GetMarker_All_KindBC(iMarker);
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+        
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+            
+      /*--- Loop over the vertices to compute the buffet sensor ---*/
+            
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+                
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+        /*--- Perform dot product of skin friction with freestream velocity ---*/
+
+        SkinFrictionMag = 0.0;
+        SkinFrictionDot = 0.0;
+        for(iDim = 0; iDim < nDim; iDim++){
+          SkinFrictionMag += CSkinFriction[iMarker][iDim][iVertex]*CSkinFriction[iMarker][iDim][iVertex];
+          SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
+        }
+        SkinFrictionMag = sqrt(SkinFrictionMag);
+          
+        /*--- Normalize the dot product ---*/
+          
+        SkinFrictionDot /= SkinFrictionMag*VelMag_FS;
+          
+        /*--- Compute Heaviside function ---*/
+          
+        Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(2.*k*(SkinFrictionDot + lam)));
+          
+        /*--- Integrate buffet sensor ---*/
+          
+        if(Monitoring == YES){
+            
+          Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+          Area = 0.0;
+          for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+          Area = sqrt(Area);
+            
+          Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
+        
+        }
+          
+      }
+        
+      if(Monitoring == YES){
+        
+        Total_Buffet_Metric += Buffet_Metric[iMarker];
+        
+        /*--- Per surface buffet metric ---*/
+        
+        for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+          Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+          Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+          if (Marker_Tag == Monitoring_Tag) Surface_Buffet_Metric[iMarker_Monitoring] = Buffet_Metric[iMarker];
+        }
+            
+      }
+            
+    }
+      
+  }
+    
+#ifdef HAVE_MPI
+    
+  /*--- Add buffet metric information using all the nodes ---*/
+    
+  su2double MyTotal_Buffet_Metric = Total_Buffet_Metric;
+  Total_Buffet_Metric = 0.0;
+    
+  SU2_MPI::Allreduce(&MyTotal_Buffet_Metric, &Total_Buffet_Metric, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+  /*--- Add the buffet metric on the surfaces using all the nodes ---*/
+
+  su2double *MySurface_Buffet_Metric = new su2double[config->GetnMarker_Monitoring()];
+    
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+      
+    MySurface_Buffet_Metric[iMarker_Monitoring] = Surface_Buffet_Metric[iMarker_Monitoring];
+    Surface_Buffet_Metric[iMarker_Monitoring] = 0.0;
+      
+  }
+    
+  SU2_MPI::Allreduce(MySurface_Buffet_Metric, Surface_Buffet_Metric, config->GetnMarker_Monitoring(), MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  
+  delete [] MySurface_Buffet_Metric;
+    
+#endif
+        
+}
+
+void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
+    
+    unsigned short iMarker_Monitoring, Kind_ObjFunc;
+    su2double Weight_ObjFunc;
+        
+    /*--- Evaluate objective functions common to Euler and NS solvers ---*/
+
+    CEulerSolver::Evaluate_ObjFunc(config);
+
+    /*--- Evaluate objective functions specific to NS solver ---*/
+    
+    for (iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++) {
+        
+        Weight_ObjFunc = config->GetWeight_ObjFunc(iMarker_Monitoring);
+        Kind_ObjFunc = config->GetKind_ObjFunc(iMarker_Monitoring);
+        
+        switch(Kind_ObjFunc) {
+            case BUFFET_SENSOR:
+                Total_ComboObj +=Weight_ObjFunc*Surface_Buffet_Metric[iMarker_Monitoring];
+                break;
+            default:
+                break;
+        }
+    }
+    
+}
+
+
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim, jDim, iVar, jVar;
@@ -17455,11 +17644,11 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
   unsigned short iDim, jDim, iMarker;
   unsigned long iVertex, iPoint, Point_Normal, counter;
   
-  su2double Wall_HeatFlux, Area, div_vel, UnitNormal[3], *Normal;
+  su2double Area, div_vel, UnitNormal[3], *Normal;
   su2double **grad_primvar, tau[3][3];
   
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double T_Normal, P_Normal, M_Normal;
+  su2double T_Normal, P_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall = 0.0, Tau_Wall_Old = 0.0;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -17499,7 +17688,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
       
       /*--- Get the specified wall heat flux from config ---*/
       
-      Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+      // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
       
       /*--- Loop over all of the vertices on this boundary marker ---*/
       
@@ -17563,7 +17752,7 @@ void CNSSolver::SetTauWall_WF(CGeometry *geometry, CSolver **solver_container, C
           
           /*--- Compute mach number ---*/
           
-          M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+          // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
           
           /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
           

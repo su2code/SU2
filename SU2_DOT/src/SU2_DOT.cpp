@@ -40,12 +40,13 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
   
-  unsigned short iZone, nZone = SINGLE_ZONE;
+  unsigned short iZone, nZone = SINGLE_ZONE, iInst;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   
   char config_file_name[MAX_STRING_SIZE], *cstr = NULL;
   ofstream Gradient_file;
-  bool periodic = false;
+  bool fem_solver = false;
+  bool periodic   = false;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -64,13 +65,13 @@ int main(int argc, char *argv[]) {
   size = SU2_MPI::GetSize();
   
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
-  
-  CConfig **config_container          = NULL;
-  CGeometry ***geometry_container     = NULL;
-  CSurfaceMovement **surface_movement = NULL;
-  CVolumetricMovement **grid_movement = NULL;
-  COutput *output                     = NULL;
-  unsigned short *nInst               = NULL;
+
+  CConfig **config_container            = NULL;
+  CGeometry ***geometry_container       = NULL;
+  CSurfaceMovement **surface_movement   = NULL;
+  CVolumetricMovement **grid_movement   = NULL;
+  COutput *output                       = NULL;
+  unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
@@ -89,18 +90,18 @@ int main(int argc, char *argv[]) {
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
 
   /*--- Definition of the containers per zones ---*/
-  
-  config_container = new CConfig*[nZone];
-  geometry_container = new CGeometry**[nZone];
-  surface_movement   = new CSurfaceMovement*[nZone];
-  grid_movement      = new CVolumetricMovement*[nZone];
-  nInst = new unsigned short[nZone];
-  
+
+  config_container    = new CConfig*[nZone];
+  geometry_container  = new CGeometry**[nZone];
+  surface_movement    = new CSurfaceMovement*[nZone];
+  grid_movement       = new CVolumetricMovement*[nZone];
+  nInst               = new unsigned short[nZone];
+
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
     geometry_container[iZone]     = NULL;
-    grid_movement [iZone]     = NULL;
-    surface_movement[iZone]   = NULL;
+    grid_movement [iZone]         = NULL;
+    surface_movement[iZone]       = NULL;
     nInst[iZone]                  = 1;
   }
   
@@ -119,41 +120,98 @@ int main(int argc, char *argv[]) {
 
     /*--- Set the MPI communicator ---*/
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
-        
-    /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
-    
-    CGeometry *geometry_aux = NULL;
-    
-    /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-    
-    geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
-    
-    /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-    
-    geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
-    
-    /*--- Until we finish the new periodic BC implementation, use the old
-     partitioning routines for cases with periodic BCs. The old routines 
-     will be entirely removed eventually in favor of the new methods. ---*/
 
-    if (periodic) {
-      geometry_container[iZone][INST_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
-    } else {
-      geometry_container[iZone][INST_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+    /*--- Determine whether or not the FEM solver is used, which decides the
+     type of geometry classes that are instantiated. ---*/
+    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)          ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)           ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_LES)            ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+    /*--- Read the number of instances for each zone ---*/
+
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
+
+    geometry_container[iZone] = new CGeometry*[nInst[iZone]];
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+
+      CGeometry *geometry_aux = NULL;
+
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+
+      /*--- Until we finish the new periodic BC implementation, use the old
+       partitioning routines for cases with periodic BCs. The old routines
+       will be entirely removed eventually in favor of the new methods. ---*/
+
+      if( fem_solver ) {
+        switch( config_container[iZone]->GetKind_FEM_Flow() ) {
+          case DG: {
+            geometry_container[iZone][iInst] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+            break;
+          }
+        }
+      }
+      else {
+        if (periodic) {
+          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+        } else {
+          geometry_container[iZone][iInst] = new CPhysicalGeometry(geometry_aux, config_container[iZone], periodic);
+        }
+      }
+
+      /*--- Deallocate the memory of geometry_aux ---*/
+
+      delete geometry_aux;
+
+      /*--- Add the Send/Receive boundaries ---*/
+
+      geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
+
+      /*--- Add the Send/Receive boundaries ---*/
+
+      geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
+
+      /*--- Create the vertex structure (required for MPI) ---*/
+
+      if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
+      geometry_container[iZone][iInst]->SetVertex(config_container[iZone]);
+
+      /*--- Store the global to local mapping after preprocessing. ---*/
+
+      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+      geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
+
+      /* Test for a fem solver, because some more work must be done. */
+
+      if (fem_solver) {
+
+        /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+         define all virtual functions in the base class CGeometry. ---*/
+        CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone][iInst]);
+
+        /*--- Determine the standard elements for the volume elements. ---*/
+        if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+        DGMesh->CreateStandardVolumeElements(config_container[iZone]);
+
+        /*--- Create the face information needed to compute the contour integral
+         for the elements in the Discontinuous Galerkin formulation. ---*/
+        if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+        DGMesh->CreateFaces(config_container[iZone]);
+      }
     }
-    
-    /*--- Deallocate the memory of geometry_aux ---*/
-    
-    delete geometry_aux;
-    
-    /*--- Add the Send/Receive boundaries ---*/
-    
-    geometry_container[iZone][INST_0]->SetSendReceive(config_container[iZone]);
-    
-    /*--- Add the Send/Receive boundaries ---*/
-    
-    geometry_container[iZone][INST_0]->SetBoundaries(config_container[iZone]);
-    
   }
   
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
@@ -170,7 +228,7 @@ int main(int argc, char *argv[]) {
     cout << endl <<"----------------------- Preprocessing computations ----------------------" << endl;
   
   /*--- Compute elements surrounding points, points surrounding points ---*/
-  
+
   if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
     geometry_container[iZone][INST_0]->SetPoint_Connectivity();
   
@@ -297,6 +355,11 @@ int main(int argc, char *argv[]) {
   if (geometry_container != NULL) {
     for (iZone = 0; iZone < nZone; iZone++) {
       if (geometry_container[iZone] != NULL) {
+        for (iInst = 0; iInst < nInst[iZone]; iInst++){
+          if (geometry_container[iZone][iInst] != NULL) {
+            delete geometry_container[iZone][iInst];
+          }
+        }
         delete geometry_container[iZone];
       }
     }
