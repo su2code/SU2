@@ -286,23 +286,16 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
 
     case ELASTICITY:
 
-      if (ExtIter != 0) {
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
+        cout << endl << "Deforming the grid for static Fluid-Structure Interaction applications." << endl;
 
-        if (rank == MASTER_NODE)
-          cout << " Deforming the grid using the Linear Elasticity solution." << endl;
+      /*--- Deform the volume grid around the new boundary locations ---*/
 
-        /*--- Update the coordinates of the grid using the linear elasticity solution. ---*/
-        for (iPoint = 0; iPoint < geometry_container[val_iZone][val_iInst][MESH_0]->GetnPoint(); iPoint++) {
+      if ((rank == MASTER_NODE) && (!discrete_adjoint))
+        cout << "Deforming the volume grid." << endl;
 
-          su2double *U_time_nM1 = solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n1();
-          su2double *U_time_n   = solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->node[iPoint]->GetSolution_time_n();
-
-          for (iDim = 0; iDim < geometry_container[val_iZone][val_iInst][MESH_0]->GetnDim(); iDim++)
-            geometry_container[val_iZone][val_iInst][MESH_0]->node[iPoint]->AddCoord(iDim, U_time_n[iDim] - U_time_nM1[iDim]);
-
-        }
-
-      }
+      solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
+                                                                           config_container[val_iZone], true);
 
       break;
 

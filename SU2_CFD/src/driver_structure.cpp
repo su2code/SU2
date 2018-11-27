@@ -1393,8 +1393,7 @@ void CDriver::MeshSolver_Preprocessing(CSolver ****solver_container, CGeometry *
 
   /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
   /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
-  bool dynamic_mesh = ((config->GetGrid_Movement() && config->GetKind_GridMovement() == ELASTICITY)
-                      || (config->GetKind_GridMovement() == FLUID_STRUCTURE_STATIC));
+  bool dynamic_mesh = (config->GetKind_GridMovement() == ELASTICITY);
 
   if (dynamic_mesh)
     solver_container[val_iInst][MESH_0][MESH_SOL] = new CMeshSolver(geometry[val_iInst][MESH_0], config);

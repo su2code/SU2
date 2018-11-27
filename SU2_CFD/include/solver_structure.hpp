@@ -4320,6 +4320,14 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
+   */
+  virtual void DeformMesh(CGeometry **geometry, CConfig *config, bool referenceCoord);
+
 };
 
 /*!
@@ -15606,6 +15614,212 @@ private:
                                                   su2double &Viscosity,
                                                   su2double &kOverCv,
                                                   su2double *normalFlux);
+};
+
+/*!
+ * \class CMeshSolver
+ * \brief Class for moving the volumetric numerical grid using the linear elasticity solver.
+ * \author R.Sanchez, based on CVolumetricMovement developments of F. Palacios, A. Bueno, T. Economon, S. Padron
+ * \version 6.1.0 "Falcon"
+ */
+class CMeshSolver : public CSolver {
+protected:
+
+  unsigned short nDim;    /*!< \brief Number of dimensions. */
+  unsigned short nVar;    /*!< \brief Number of variables. */
+
+  unsigned long nPoint;   /*!< \brief Number of points. */
+  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
+
+  unsigned long nElem;
+
+  unsigned long nIterMesh;   /*!< \brief Number of iterations in the mesh update. +*/
+  su2double valResidual;
+
+  su2double *Coordinate;       /*!< \brief Auxiliary nDim vector. */
+
+  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
+            *Solution;         /*!< \brief Auxiliary nDim vector. */
+
+  su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
+  su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
+
+  su2double MinVolume_Ref,     /*!< \brief Minimum volume in  to make zeros and impose boundary conditions. */
+            MinVolume_Curr;
+
+  su2double MaxVolume_Ref,
+            MaxVolume_Curr;
+
+  su2double MinDistance;
+  su2double MaxDistance;
+
+  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector LinSysSol;
+  CSysVector LinSysRes;
+
+  su2double E;                  /*!< \brief Young's modulus of elasticity. */
+  su2double Nu;                 /*!< \brief Poisson's ratio. */
+
+  su2double Mu;                 /*!< \brief Lame's coeficient. */
+  su2double Lambda;             /*!< \brief Lame's coeficient. */
+
+  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
+
+  su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
+            **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
+  su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
+  su2double **D_Mat;            /*!< \brief Constitutive matrix - Auxiliary. */
+  su2double **GradNi_Ref_Mat;   /*!< \brief Gradients of Ni - Auxiliary. */
+
+public:
+
+  CMeshVariable** node;          /*!< \brief Vector which defines the variables for each problem. */
+  CMeshElement* element;         /*!< \brief Vector which stores element information for each problem. */
+
+  CElement** element_container;  /*!< \brief Container which stores the element information. */
+
+  /*!
+   * \brief Constructor of the class.
+   */
+  CMeshSolver(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshSolver(void);
+
+  /*!
+   * \brief Compute the min and max volume of the elements in the domain.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
+   * \return Value of the length of the smallest edge of the grid.
+   */
+  void SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool referenceCoord);
+
+  /*!
+   * \brief Compute the min and max volume of the elements in the domain.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
+   */
+  void SetWallDistance(CGeometry *geometry, CConfig *config, bool referenceCoord);
+
+  /*!
+   * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
+   */
+  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool referenceCoord);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   * \param[in] iElem - Element index.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
+   */
+  void Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config, bool referenceCoord);
+
+  /*!
+   * \brief Grid deformation using the linear elasticity equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] UpdateGeo - Update geometry.
+   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
+   */
+  void DeformMesh(CGeometry **geometry, CConfig *config, bool referenceCoord);
+
+  /*!
+   * \brief Update the value of the coordinates after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateGridCoord(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the dual grid after the grid movement (edges and control volumes).
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Update the coarse multigrid levels after the grid movement.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void UpdateMultiGrid(CGeometry **geometry, CConfig *config);
+
+  /*!
+   * \brief Check the boundary vertex that are going to be moved.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetBoundaryDisplacements(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Set the boundary displacements to 0.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] val_marker -
+   */
+  void SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+  /*!
+   * \brief Set the boundary displacements to the imposed external value.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solve_System_Mesh(CGeometry *geometry, CConfig *config);
+
+//  /*!
+//   * \brief Store the number of iterations when moving the mesh.
+//   * \param[in] val_nIterMesh - Number of iterations.
+//   */
+//  void Set_nIterMesh(unsigned long val_nIterMesh);
+
+//  /*!
+//   * \brief Retrieve the number of iterations when moving the mesh.
+//   * \param[out] Number of iterations.
+//   */
+//  unsigned long Get_nIterMesh(void);
+
+  /*!
+   * \brief Compute the stiffness of the element and the parameters Lambda and Mu
+   */
+  void Compute_Element_Contribution(CElement *element, CConfig *config);
+
+  /*!
+   * \brief Compute the constitutive matrix in an element for mesh deformation problems
+   * \param[in] element_container - Element structure for the particular element integrated.
+   */
+  void Compute_Constitutive_Matrix(void);
+
+//  /*!
+//   * \brief Set the boundary displacements in the mesh side of the problem
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+
+//  /*!
+//   * \brief Set the boundary displacements in the mesh side of the problem
+//   * \param[in] geometry - Geometrical definition of the problem.
+//   * \param[in] config - Definition of the particular problem.
+//   */
+//  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
+
+
+
 };
 
 #include "solver_structure.inl"

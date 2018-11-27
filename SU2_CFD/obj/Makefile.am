@@ -130,6 +130,7 @@ libSU2Core_sources = \
   ../src/solver_direct_transition.cpp \
   ../src/solver_direct_turbulent.cpp \
   ../src/solver_direct_elasticity.cpp \
+  ../src/solver_direct_mesh.cpp \
   ../src/solver_structure.cpp \
   ../src/solver_template.cpp \
   ../src/transfer_physics.cpp \
