@@ -98,6 +98,8 @@ inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_con
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
+inline void CSolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
 inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
 
 inline void CSolver::SetFSI_Residual(su2double val_FSI_residual) { }
@@ -427,6 +429,8 @@ inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 
 inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
+
+inline su2double CSolver::GetTotal_OFVolFrac() { return 0; }
 
 inline bool CSolver::IsElementBased(void){ return false; }
 
@@ -2321,6 +2325,8 @@ inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return 
 inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 
 inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
+
+inline su2double CFEASolver::GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
 
 inline bool CFEASolver::IsElementBased(void){ return element_based; }
 
