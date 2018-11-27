@@ -1830,14 +1830,16 @@ static const map<string, ENUM_CONVERGE_CRIT> Converge_Crit_Map = CCreateMap<stri
  * \brief types of element stiffnesses imposed for FEA mesh deformation
  */
 enum ENUM_DEFORM_STIFFNESS {
-  CONSTANT_STIFFNESS = 0,               /*!< \brief Impose a constant stiffness for each element (steel). */
-  INVERSE_VOLUME = 1,			/*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
-  SOLID_WALL_DISTANCE = 2			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  CONSTANT_STIFFNESS = 0,       /*!< \brief Impose a constant stiffness for each element (steel). */
+  INVERSE_VOLUME = 1,			      /*!< \brief Impose a stiffness for each element that is inversely proportional to cell volume. */
+  SOLID_WALL_DISTANCE = 2,			/*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface. */
+  VOLUME_DISTANCE = 3	          /*!< \brief Impose a stiffness for each element that is proportional to the distance from the solid surface and the cell volume. */
 };
 static const map<string, ENUM_DEFORM_STIFFNESS> Deform_Stiffness_Map = CCreateMap<string, ENUM_DEFORM_STIFFNESS>
 ("CONSTANT_STIFFNESS", CONSTANT_STIFFNESS)
 ("INVERSE_VOLUME", INVERSE_VOLUME)
-("WALL_DISTANCE", SOLID_WALL_DISTANCE);
+("WALL_DISTANCE", SOLID_WALL_DISTANCE)
+("VOLUME_AND_DISTANCE", VOLUME_DISTANCE);
 
 /*!
  * \brief The direct differentation variables.

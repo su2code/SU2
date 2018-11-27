@@ -1371,6 +1371,9 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     }
   }
 
+  /*--- Preprocess the mesh solver for dynamic meshes. ---*/
+  /*--- This needs to be done before solver restart so the old coordinates are stored. ---*/
+  MeshSolver_Preprocessing(solver_container, geometry, config, val_iInst);
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -1382,6 +1385,20 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   /*--- Set up any necessary inlet profiles ---*/
 
   Inlet_Preprocessing(solver_container[val_iInst], geometry[val_iInst], config);
+
+}
+
+void CDriver::MeshSolver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry,
+                                       CConfig *config, unsigned short val_iInst) {
+
+  /*--- We need to update the GridMovement boolean so it also accounts for steady-state FSI ---*/
+  /*--- This requires changes in the fluid solver (GridVel does not need to be initialized) ---*/
+  bool dynamic_mesh = ((config->GetGrid_Movement() && config->GetKind_GridMovement() == ELASTICITY)
+                      || (config->GetKind_GridMovement() == FLUID_STRUCTURE_STATIC));
+
+  if (dynamic_mesh)
+    solver_container[val_iInst][MESH_0][MESH_SOL] = new CMeshSolver(geometry[val_iInst][MESH_0], config);
+
 
 }
 

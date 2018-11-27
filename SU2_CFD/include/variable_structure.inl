@@ -1641,9 +1641,13 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { r
 
 inline su2double CMeshVariable::GetRef_Coord(unsigned short iDim) { return Ref_Coord[iDim]; }
 
+inline su2double *CMeshVariable::GetRef_Coord(void) { return Ref_Coord; }
+
 inline void CMeshVariable::SetRef_Coord(unsigned short iDim, su2double val_coord) { Ref_Coord[iDim] = val_coord;}
 
 inline su2double CMeshVariable::GetCurr_Coord(unsigned short iDim) { return Curr_Coord[iDim]; }
+
+inline su2double *CMeshVariable::GetCurr_Coord(void) { return Curr_Coord; }
 
 inline void CMeshVariable::SetCurr_Coord(unsigned short iDim, su2double val_disp) { Curr_Coord[iDim] = val_disp;}
 
@@ -1694,3 +1698,35 @@ inline void CMeshVariable::SetVelocity_n1(void){
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Velocity_n1[iDim] = Velocity_n[iDim];
 }
+
+inline su2double CMeshVariable::GetRef_WallDistance(void) { return Ref_WallDistance; }
+
+inline void CMeshVariable::SetRef_WallDistance(su2double val_dist) { Ref_WallDistance = val_dist; }
+
+inline su2double CMeshVariable::GetCurr_WallDistance(void) { return Curr_WallDistance; }
+
+inline void CMeshVariable::SetCurr_WallDistance(su2double val_dist) { Curr_WallDistance = val_dist; }
+
+inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
+
+inline void CMeshElement::SetRef_Volume(su2double val_volume) { Ref_Volume = val_volume; }
+
+inline su2double CMeshElement::GetCurr_Volume(void) { return Curr_Volume; }
+
+inline void CMeshElement::SetCurr_Volume(su2double val_volume) { Curr_Volume = val_volume; }
+
+inline su2double CMeshElement::GetRef_Distance(void) { return Ref_Distance; }
+
+inline void CMeshElement::SetRef_Distance(su2double val_volume) { Ref_Distance = val_volume; }
+
+inline su2double CMeshElement::GetCurr_Distance(void) { return Curr_Distance; }
+
+inline void CMeshElement::SetCurr_Distance(su2double val_volume) { Curr_Distance = val_volume; }
+
+inline su2double CMeshElement::GetRef_Stiffness(void) { return Ref_Stiffness; }
+
+inline void CMeshElement::SetRef_Stiffness(su2double val_stiffness) { Ref_Stiffness = val_stiffness; }
+
+inline su2double CMeshElement::GetCurr_Stiffness(void) { return Curr_Stiffness; }
+
+inline void CMeshElement::SetCurr_Stiffness(su2double val_stiffness) { Curr_Stiffness = val_stiffness; }
