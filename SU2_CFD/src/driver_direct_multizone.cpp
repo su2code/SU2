@@ -117,11 +117,11 @@ CMultizoneDriver::CMultizoneDriver(char* confFile,
       case RIGID_MOTION: case DEFORMING:
       case EXTERNAL: case EXTERNAL_ROTATION:
       case AEROELASTIC: case AEROELASTIC_RIGID_MOTION:
-      case ELASTICITY:
         prefixed_motion[iZone] = true; break;
       case FLUID_STRUCTURE: case FLUID_STRUCTURE_STATIC:
       case STEADY_TRANSLATION: case MOVING_WALL: case ROTATING_FRAME:
       case NO_MOVEMENT: case GUST: default:
+      case ELASTICITY:
         prefixed_motion[iZone] = false; break;
     }
   }
@@ -506,7 +506,7 @@ void CMultizoneDriver::Update() {
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Set the Convergence_FSI boolean to false for the next time step ---*/
-    for (unsigned short iSol = 0; iSol < MAX_SOLS; iSol++){
+    for (unsigned short iSol = 0; iSol < MAX_SOLS-1; iSol++){
       if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL)
         integration_container[iZone][INST_0][iSol]->SetConvergence_FSI(false);
     }
