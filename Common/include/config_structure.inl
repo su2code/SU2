@@ -1957,3 +1957,24 @@ inline bool CConfig::GetCompute_Average(void) {return Compute_Average;}
 inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
+
+inline bool CConfig::GetTopology_Optimization(void) const { return topology_optimization; }
+
+inline string CConfig::GetTopology_Optim_FileName(void) const { return top_optim_output_file; }
+
+inline su2double CConfig::GetSIMP_Exponent(void) const { return simp_exponent; }
+
+inline su2double CConfig::GetSIMP_MinStiffness(void) const { return simp_minimum_stiffness; }
+  
+inline unsigned short CConfig::GetTopology_Optim_Num_Kernels(void) const { return top_optim_nKernel; }
+  
+inline void CConfig::GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+                                              su2double &param, su2double &radius) const {
+  type = top_optim_kernels[iKernel];
+  param = top_optim_kernel_params[iKernel];
+  radius = top_optim_filter_radius[iKernel];
+}
+
+inline void CConfig::GetTopology_Optim_Projection(unsigned short &type, su2double &param) const {
+  type = top_optim_proj_type;  param = top_optim_proj_param;
+}
