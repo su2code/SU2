@@ -245,8 +245,10 @@ def obj_f(dvs,config,state=None):
         else:
             func += obj_p(config,state,this_obj,def_objs) * scale
 
-    if config['TRANSPIRATION_OBJECTIVE'] == 'YES':
-        func += state['FUNCTIONS']['JET_MOMENTUM'] * def_objs['DRAG']['SCALE'] * global_factor
+    # If TRANSPIRATION_OBJECTIVE == YES, we add it to drag, so scale by DRAG.SCALE
+    if 'TRANSPIRATION_OBJECTIVE' in config:
+        if config['TRANSPIRATION_OBJECTIVE'] == 'YES':
+            func += state['FUNCTIONS']['JET_MOMENTUM'] * def_objs['DRAG']['SCALE'] * global_factor
         
     vals_out.append(func)
 
