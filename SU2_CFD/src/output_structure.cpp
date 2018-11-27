@@ -4789,7 +4789,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     *residual_turbulent    = NULL,
     *residual_transition   = NULL;
     su2double *residual_adjflow      = NULL,
-    *residual_adjturbulent = NULL;
+    *residual_adjturbulent = NULL,
+    *residual_adjheat = NULL;
     su2double *residual_fea          = NULL;
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
@@ -4811,7 +4812,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Heat = 0,
-    nVar_AdjFlow = 0, nVar_AdjTurb = 0,
+    nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_AdjHeat = 0,
     nVar_FEM = 0;
     
     /*--- Direct problem variables ---*/
@@ -4841,6 +4842,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SST:    nVar_AdjTurb = 2; break;
       }
     }
+    if (weakly_coupled_heat) nVar_AdjHeat = 1;
     
     /*--- Allocate memory for the residual ---*/
     residual_flow       = new su2double[nVar_Flow];
@@ -4851,6 +4853,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
+    residual_adjheat      = new su2double[nVar_AdjHeat];
     
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5089,6 +5092,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             if (!frozen_visc) {
               for (iVar = 0; iVar < nVar_AdjTurb; iVar++)
                 residual_adjturbulent[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJTURB_SOL]->GetRes_RMS(iVar);
+            }
+          }
+
+          if (weakly_coupled_heat) {
+            for (iVar = 0; iVar < nVar_Heat; iVar++) {
+              residual_adjheat[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][ADJHEAT_SOL]->GetRes_RMS(iVar);
             }
           }
           
@@ -5829,6 +5838,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout << "   Res[Psi_Velx]";}}
                 else cout << "     Res[Psi_E]";
               }
+              if (weakly_coupled_heat) {
+                cout << "     Res[Psi_E]";
+              }
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
@@ -6234,6 +6246,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                   else {cout.width(15); cout << log10(residual_adjflow[1]);}
                 }
               }
+            if (weakly_coupled_heat) {
+              cout.width(17); cout << log10(residual_adjheat[0]);
+            }
               if (disc_adj) {
                 if (!turbo){
                   if (compressible) {
