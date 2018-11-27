@@ -451,7 +451,7 @@ bool CIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CIteration::Output(COutput *output,
     CGeometry ****geometry_container,
     CSolver *****solver_container,
@@ -461,7 +461,6 @@ void CIteration::Output(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)      {
 
-  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
 
   /*--- Determine whether a solution needs to be written
@@ -1312,8 +1311,7 @@ bool CHeatIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     {
-}
+    unsigned short val_iInst)     { return false; }
 void CHeatIteration::Postprocess(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
@@ -1789,7 +1787,7 @@ bool CFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ****integration_container,
                                           CGeometry ****geometry_container,
@@ -2045,7 +2043,7 @@ bool CAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CAdjFluidIteration::Postprocess(COutput *output,
                                      CIntegration ****integration_container,
                                      CGeometry ****geometry_container,
@@ -2488,7 +2486,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,
@@ -3162,7 +3160,7 @@ bool CDiscAdjFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ****integration_container,
     CGeometry ****geometry_container,

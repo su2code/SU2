@@ -516,7 +516,6 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
-  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
 
   /*--- Determine whether a solution needs to be written
