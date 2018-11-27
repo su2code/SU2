@@ -5114,6 +5114,9 @@ protected:
   bool time_domain;             /*!< \brief Bool which determines if the problem is dynamic. */
   bool multizone;               /*!< \brief Bool which determines if the problem is multizone. */
 
+  su2double Ref_WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
+  su2double Curr_WallDistance;  /*!< \brief Store the wall distance in current coordinates. */
+
   su2double *Ref_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
   su2double *Curr_Coord;          /*!< \brief Store the current coordinates of the mesh. */
 
@@ -5149,6 +5152,12 @@ public:
   su2double GetRef_Coord(unsigned short iDim);
 
   /*!
+   * \brief Get the undeformed coordinates.
+   * \return Pointer to the reference coordinates.
+   */
+  su2double *GetRef_Coord();
+
+  /*!
    * \brief Set the value of the undeformed coordinates.
    * \param[in] iDim - Index of Ref_Coord[nDim]
    * \param[in] val_coord - Value of Ref_Coord[nDim]
@@ -5161,6 +5170,12 @@ public:
    * \return Value of the current coordinate iDim.
    */
   su2double GetCurr_Coord(unsigned short iDim);
+
+  /*!
+   * \brief Get the current coordinates.
+   * \return Pointer to the current coordinates.
+   */
+  su2double *GetCurr_Coord();
 
   /*!
    * \brief Set the value of the current coordinates.
@@ -5261,6 +5276,139 @@ public:
    * \brief Move Velocity_n into Velocity_n1.
    */
   void SetVelocity_n1(void);
+
+  /*!
+   * \brief Get the value of the wall distance in reference coordinates.
+   * \param[in] iDim - Index of Ref_Coord[nDim]
+   * \return Value of the wall distance in reference coordinates.
+   */
+  su2double GetRef_WallDistance(void);
+
+  /*!
+   * \brief Set the value of the wall distance in reference coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  void SetRef_WallDistance(su2double val_dist);
+
+  /*!
+   * \brief Get the value of the wall distance in current coordinates.
+   * \return Value of the wall distance in current coordinates.
+   */
+  su2double GetCurr_WallDistance(void);
+
+  /*!
+   * \brief Set the value of the wall distance in current coordinates.
+   * \param[in] val_dist - Value of wall distance.
+   */
+  void SetCurr_WallDistance(su2double val_dist);
+
+};
+
+/*!
+ * \class CMeshElementVariable
+ * \brief Main class for defining the elements of the mesh movement.
+ * \ingroup Mesh deformation variables.
+ * \author R. Sanchez.
+ * \version 6.1.0 "Falcon"
+ */
+class CMeshElement {
+protected:
+
+  su2double Ref_Volume;           /*!< \brief Store the reference coordinates of the mesh. */
+  su2double Curr_Volume;          /*!< \brief Store the current coordinates of the mesh. */
+
+  su2double Ref_Distance;         /*!< \brief Store the reference coordinates of the mesh. */
+  su2double Curr_Distance;        /*!< \brief Store the current coordinates of the mesh. */
+
+  su2double Ref_Stiffness;        /*!< \brief Store the reference coordinates of the mesh. */
+  su2double Curr_Stiffness;       /*!< \brief Store the current coordinates of the mesh. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_coor - Values of the coordinates (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CMeshElement(void);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CMeshElement(void);
+
+  /*!
+   * \brief Get the value of the element volume with undeformed coordinates.
+   * \return Value of the element volume with reference coordinates.
+   */
+  su2double GetRef_Volume(void);
+
+  /*!
+   * \brief Set the value of the element volume with undeformed coordinates.
+   * \param[in] val_volume - Value of the reference volume.
+   */
+  void SetRef_Volume(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element volume with deformed coordinates.
+   * \return Value of the element volume with deformed coordinates.
+   */
+  su2double GetCurr_Volume(void);
+
+  /*!
+   * \brief Set the value of the element distance to the nearest wall with deformed coordinates.
+   * \param[in] val_volume - Value of the element distance to the nearest wall.
+   */
+  void SetCurr_Volume(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element distance to the nearest wall with undeformed coordinates.
+   * \return Value of the element distance to the nearest wall with reference coordinates.
+   */
+  su2double GetRef_Distance(void);
+
+  /*!
+   * \brief Set the value of the element distance to the nearest wall with undeformed coordinates.
+   * \param[in] val_volume - Value of the element distance to the nearest wall.
+   */
+  void SetRef_Distance(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element distance to the nearest wall with deformed coordinates.
+   * \return Value of the element distance to the nearest wall with deformed coordinates.
+   */
+  su2double GetCurr_Distance(void);
+
+  /*!
+   * \brief Set the value of the element distance to the nearest wall with deformed coordinates.
+   * \param[in] val_volume - Value of the element distance to the nearest wall.
+   */
+  void SetCurr_Distance(su2double val_volume);
+
+  /*!
+   * \brief Get the value of the element stiffness with undeformed coordinates.
+   * \return Value of the element stiffness wall with reference coordinates.
+   */
+  su2double GetRef_Stiffness(void);
+
+  /*!
+   * \brief Set the value of the element stiffness with undeformed coordinates.
+   * \param[in] val_stiffness - Value of the element stiffness to the nearest wall.
+   */
+  void SetRef_Stiffness(su2double val_stiffness);
+
+  /*!
+   * \brief Get the value of the element stiffness with deformed coordinates.
+   * \return Value of the element stiffness with deformed coordinates.
+   */
+  su2double GetCurr_Stiffness(void);
+
+  /*!
+   * \brief Set the value of the element stiffness with deformed coordinates.
+   * \param[in] val_stiffness - Value of the element stiffness.
+   */
+  void SetCurr_Stiffness(su2double val_stiffness);
 
 };
 
