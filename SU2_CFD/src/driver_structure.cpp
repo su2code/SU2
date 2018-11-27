@@ -6053,6 +6053,7 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     break;
   case REFERENCE_GEOMETRY:
   case REFERENCE_NODE:
+  case VOLUME_FRACTION:
     Kind_Objective_Function = FEM_OBJECTIVE_FUNCTION;
     break;
   default:
@@ -6579,6 +6580,10 @@ void CDiscAdjFSIDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
         case REFERENCE_NODE:
           kind_OFunction = "(Reference Node): ";
           val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
+          break;
+        case VOLUME_FRACTION:
+          kind_OFunction = "(Volume Fraction): ";
+          val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
           break;
         default:
           val_OFunction = 0.0;  // If the objective function is computed in a different physical problem
