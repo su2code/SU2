@@ -4700,6 +4700,7 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 void CDiscAdjFluidDriver::SetObjFunction(){
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool heat         = (config_container[ZONE_0]->GetWeakly_Coupled_Heat());
 
   ObjFunc = 0.0;
 
@@ -4736,6 +4737,14 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   for (iZone = 0; iZone < nZone; iZone++){
     solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
     ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
+      }
+    }
   }
 
   if (rank == MASTER_NODE){
