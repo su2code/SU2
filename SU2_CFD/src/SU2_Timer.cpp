@@ -44,7 +44,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
-#include "../include/numerics_structure.hpp"
+#include "../include/numerics_direct_mean.hpp"
 
 /**
  * Write a cfg file to be used in initializing the CConfig object.
