@@ -1358,7 +1358,7 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(taping2) {
-      AD::RegisterInput2(node[iPoint]->GetCoord()[iDim]);
+      AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
       node[iPoint]->Set_AdjIndices(input);
     }
     else {
