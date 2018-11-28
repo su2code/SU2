@@ -624,6 +624,8 @@ void CDiscAdjFEASolver::RegisterVariables(CGeometry *geometry, CConfig *config, 
           for (iVar = 0; iVar < nDV; iVar++) AD::RegisterInput(DV_Val[iVar]);
         }
 
+        if (config->GetTopology_Optimization())
+          direct_solver->RegisterVariables(geometry,config);
     }
 
   }
@@ -672,6 +674,9 @@ void CDiscAdjFEASolver::RegisterObj_Func(CConfig *config){
       break;
   case REFERENCE_NODE:
       ObjFunc_Value = direct_solver->GetTotal_OFRefNode();
+      break;
+  case VOLUME_FRACTION:
+      ObjFunc_Value = direct_solver->GetTotal_OFVolFrac();
       break;
   default:
       ObjFunc_Value = 0.0;  // If the objective function is computed in a different physical problem
@@ -907,7 +912,8 @@ void CDiscAdjFEASolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *c
 
     }
 
-
+    if (config->GetTopology_Optimization())
+      direct_solver->ExtractAdjoint_Variables(geometry,config);
   }
 
 

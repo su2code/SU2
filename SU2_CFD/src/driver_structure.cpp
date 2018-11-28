@@ -1551,8 +1551,6 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
 
-  bool mz_time_domain  = driver_config->GetTime_Domain();
-
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -6068,6 +6066,7 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
     break;
   case REFERENCE_GEOMETRY:
   case REFERENCE_NODE:
+  case VOLUME_FRACTION:
     Kind_Objective_Function = FEM_OBJECTIVE_FUNCTION;
     break;
   default:
@@ -6601,6 +6600,10 @@ void CDiscAdjFSIDriver::PrintDirect_Residuals(unsigned short ZONE_FLOW,
         case REFERENCE_NODE:
           kind_OFunction = "(Reference Node): ";
           val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFRefNode();
+          break;
+        case VOLUME_FRACTION:
+          kind_OFunction = "(Volume Fraction): ";
+          val_OFunction = solver_container[ZONE_STRUCT][INST_0][MESH_0][FEA_SOL]->GetTotal_OFVolFrac();
           break;
         default:
           val_OFunction = 0.0;  // If the objective function is computed in a different physical problem

@@ -444,7 +444,7 @@ bool CIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CIteration::Output(COutput *output,
     CGeometry ****geometry_container,
     CSolver *****solver_container,
@@ -454,7 +454,6 @@ void CIteration::Output(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)      {
 
-  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
 
   /*--- Determine whether a solution needs to be written
@@ -1305,8 +1304,7 @@ bool CHeatIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     {
-}
+    unsigned short val_iInst)     { return false; }
 void CHeatIteration::Postprocess(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
@@ -1661,8 +1659,11 @@ void CFEAIteration::Iterate(COutput *output,
         solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Stiffness_Penalty(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0],
           numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
       }
-       solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-       break;
+      solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFRefNode(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+      break;
+    case VOLUME_FRACTION:
+      solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_OFVolFrac(geometry_container[val_iZone][val_iInst][MESH_0],solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+      break;
   }
 
 }
@@ -1779,7 +1780,7 @@ bool CFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ****integration_container,
                                           CGeometry ****geometry_container,
@@ -2035,7 +2036,7 @@ bool CAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CAdjFluidIteration::Postprocess(COutput *output,
                                      CIntegration ****integration_container,
                                      CGeometry ****geometry_container,
@@ -2478,7 +2479,7 @@ bool CDiscAdjFluidIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CDiscAdjFluidIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,
@@ -2775,6 +2776,9 @@ void CDiscAdjFEAIteration::Iterate(COutput *output,
       break;
     case REFERENCE_NODE:
       myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFRefNode() << "\t";
+      break;
+    case VOLUME_FRACTION:
+      myfile_res << scientific << solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->GetTotal_OFVolFrac() << "\t";
       break;
     }
 
@@ -3149,7 +3153,7 @@ bool CDiscAdjFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { }
+    unsigned short val_iInst)     { return false; }
 void CDiscAdjFEAIteration::Postprocess(COutput *output,
     CIntegration ****integration_container,
     CGeometry ****geometry_container,

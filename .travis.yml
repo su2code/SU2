@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_reformat_config
+        - develop
 
 python:
     - 2.7
@@ -82,7 +82,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b feature_reformat_config https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
