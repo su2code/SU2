@@ -6255,9 +6255,9 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
          appear in the restart file before the grid velocities. ---*/
 
         if (turb_model == SA || turb_model == SA_NEG) {
-          index++;
+          skipVars++;
         } else if (turb_model == SST) {
-          index+=2;
+          skipVars+=2;
         }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
