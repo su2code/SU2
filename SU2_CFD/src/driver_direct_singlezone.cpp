@@ -110,8 +110,6 @@ void CSinglezoneDriver::StartSolver() {
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
-  bool unsteady = driver_config->GetTime_Domain();
-
   /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
   config_container[ZONE_0]->SetExtIter(TimeIter);
@@ -152,10 +150,6 @@ void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
 
 void CSinglezoneDriver::Run() {
 
-  bool UpdateMesh = false;
-  unsigned long ExtIter = 0;
-  bool Convergence = false;
-
   unsigned long OuterIter = 0;
   config_container[ZONE_0]->SetOuterIter(OuterIter);
 
@@ -179,9 +173,6 @@ void CSinglezoneDriver::Corrector() {
 
 void CSinglezoneDriver::Update() {
 
-  unsigned short jZone;
-  bool UpdateMesh;
-
   iteration_container[ZONE_0][INST_0]->Update(output, integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
@@ -190,7 +181,6 @@ void CSinglezoneDriver::Update() {
 
 void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
-  unsigned long nExtIter = config_container[ZONE_0]->GetnExtIter();
   bool output_files = false;
 
   /*--- Determine whether a solution needs to be written
@@ -288,13 +278,10 @@ void CSinglezoneDriver::Output(unsigned long TimeIter) {
 
 void CSinglezoneDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
-  bool harmonic_balance;
-
-   harmonic_balance = (config_container[iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
-    /*--- Dynamic mesh update ---*/
-    if (config_container[ZONE_0]->GetGrid_Movement()) {
-      iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
-    }
+  /*--- Dynamic mesh update ---*/
+  if (config_container[ZONE_0]->GetGrid_Movement()) {
+    iteration_container[ZONE_0][INST_0]->SetGrid_Movement(geometry_container, surface_movement, grid_movement, FFDBox, solver_container, config_container, ZONE_0, INST_0, 0, ExtIter );
+  }
 
 }
 
