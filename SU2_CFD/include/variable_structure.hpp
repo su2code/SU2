@@ -5238,14 +5238,10 @@ public:
 class CMeshElement {
 protected:
 
-  su2double Ref_Volume;           /*!< \brief Store the reference coordinates of the mesh. */
-  su2double Curr_Volume;          /*!< \brief Store the current coordinates of the mesh. */
+  su2double Ref_Volume;       /*!< \brief Store the reference coordinates of the mesh. */
+  su2double Curr_Volume;      /*!< \brief Store the current coordinates of the mesh. */
 
-  su2double Ref_Distance;         /*!< \brief Store the reference coordinates of the mesh. */
-  su2double Curr_Distance;        /*!< \brief Store the current coordinates of the mesh. */
-
-  su2double Ref_Stiffness;        /*!< \brief Store the reference coordinates of the mesh. */
-  su2double Curr_Stiffness;       /*!< \brief Store the current coordinates of the mesh. */
+  su2double WallDistance;     /*!< \brief Store the distance of the center of the element to the wall. */
 
 public:
 
@@ -5290,49 +5286,13 @@ public:
    * \brief Get the value of the element distance to the nearest wall with undeformed coordinates.
    * \return Value of the element distance to the nearest wall with reference coordinates.
    */
-  su2double GetRef_Distance(void);
+  su2double GetWallDistance(void);
 
   /*!
    * \brief Set the value of the element distance to the nearest wall with undeformed coordinates.
    * \param[in] val_volume - Value of the element distance to the nearest wall.
    */
-  void SetRef_Distance(su2double val_volume);
-
-  /*!
-   * \brief Get the value of the element distance to the nearest wall with deformed coordinates.
-   * \return Value of the element distance to the nearest wall with deformed coordinates.
-   */
-  su2double GetCurr_Distance(void);
-
-  /*!
-   * \brief Set the value of the element distance to the nearest wall with deformed coordinates.
-   * \param[in] val_volume - Value of the element distance to the nearest wall.
-   */
-  void SetCurr_Distance(su2double val_volume);
-
-  /*!
-   * \brief Get the value of the element stiffness with undeformed coordinates.
-   * \return Value of the element stiffness wall with reference coordinates.
-   */
-  su2double GetRef_Stiffness(void);
-
-  /*!
-   * \brief Set the value of the element stiffness with undeformed coordinates.
-   * \param[in] val_stiffness - Value of the element stiffness to the nearest wall.
-   */
-  void SetRef_Stiffness(su2double val_stiffness);
-
-  /*!
-   * \brief Get the value of the element stiffness with deformed coordinates.
-   * \return Value of the element stiffness with deformed coordinates.
-   */
-  su2double GetCurr_Stiffness(void);
-
-  /*!
-   * \brief Set the value of the element stiffness with deformed coordinates.
-   * \param[in] val_stiffness - Value of the element stiffness.
-   */
-  void SetCurr_Stiffness(su2double val_stiffness);
+  void SetWallDistance(su2double val_volume);
 
 };
 
