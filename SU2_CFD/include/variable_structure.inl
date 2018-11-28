@@ -1649,11 +1649,6 @@ inline su2double CMeshVariable::GetDisplacement(unsigned short iDim) { return Di
 
 inline void CMeshVariable::SetDisplacement(unsigned short iDim, su2double val_disp) { Displacement[iDim] = val_disp;}
 
-inline void CMeshVariable::ComputeDisplacement(void) {
-    for (unsigned short iDim = 0; iDim < nDim; iDim++)
-      Displacement[iDim] = Curr_Coord[iDim] - Mesh_Coord[iDim];
-}
-
 inline su2double CMeshVariable::GetDisplacement_Old(unsigned short iDim) { return Displacement_Old[iDim]; }
 
 inline void CMeshVariable::SetDisplacement_Old(void){
@@ -1668,12 +1663,16 @@ inline void CMeshVariable::SetDisplacement_n(void){
     Displacement_n[iDim] = Displacement[iDim];
 }
 
+inline void CMeshVariable::SetDisplacement_n(unsigned short iDim, su2double val_disp) { Displacement_n[iDim] = val_disp;}
+
 inline su2double CMeshVariable::GetDisplacement_n1(unsigned short iDim) { return Displacement_n1[iDim]; }
 
 inline void CMeshVariable::SetDisplacement_n1(void){
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Displacement_n1[iDim] = Displacement_n[iDim];
 }
+
+inline void CMeshVariable::SetDisplacement_n1(unsigned short iDim, su2double val_disp) { Displacement_n1[iDim] = val_disp;}
 
 inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
 

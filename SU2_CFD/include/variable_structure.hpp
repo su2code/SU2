@@ -5111,9 +5111,6 @@ protected:
 
   unsigned short nDim;
 
-  bool time_domain;             /*!< \brief Bool which determines if the problem is dynamic. */
-  bool multizone;               /*!< \brief Bool which determines if the problem is multizone. */
-
   su2double WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
 
   su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
@@ -5173,11 +5170,6 @@ public:
   void SetDisplacement(unsigned short iDim, su2double val_disp);
 
   /*!
-   * \brief Compute the value of the displacement.
-   */
-  void ComputeDisplacement(void);
-
-  /*!
    * \brief Get the value of the displacement at the previous sub-iteration (assuming multizone)
    * \param[in] iDim - Index of Displacement_Old[nDim]
    * \return Value of the displacement at the previous sub-iteration and position iDim.
@@ -5202,6 +5194,14 @@ public:
   void SetDisplacement_n(void);
 
   /*!
+   * \brief Set the value of the displacement at time n.
+   * \param[in] iDim - Index of Displacement_n[nDim]
+   * \param[in] val_coord - Value of Displacement_n[nDim]
+   */
+  void SetDisplacement_n(unsigned short iDim, su2double val_disp);
+
+
+  /*!
    * \brief Get the value of the displacement at time n-1.
    * \param[in] iDim - Index of Coordinates[nDim]
    * \return Value of the displacement at time n-1 and position iDim.
@@ -5212,6 +5212,13 @@ public:
    * \brief Move Displacement_n into Displacement_n1.
    */
   void SetDisplacement_n1(void);
+
+  /*!
+   * \brief Set the value of the displacement at time n-1.
+   * \param[in] iDim - Index of Displacement_n1[nDim]
+   * \param[in] val_coord - Value of Displacement_n1[nDim]
+   */
+  void SetDisplacement_n1(unsigned short iDim, su2double val_disp);
 
   /*!
    * \brief Get the value of the wall distance in reference coordinates.

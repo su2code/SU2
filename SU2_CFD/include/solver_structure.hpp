@@ -602,7 +602,7 @@ public:
    * \brief Load the geometries at the previous time states n and nM1.
    * \param[in] geometry - Geometrical definition of the problem.
    */
-  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+  virtual void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief A virtual member.
@@ -15825,6 +15825,12 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
+
+  /*!
+   * \brief Load the geometries at the previous time states n and nM1.
+   * \param[in] geometry - Geometrical definition of the problem.
+   */
+  void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
 
 
 };
