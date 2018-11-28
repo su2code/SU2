@@ -295,7 +295,7 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
         cout << "Deforming the volume grid." << endl;
 
       solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->DeformMesh(geometry_container[val_iZone][val_iInst],
-                                                                           config_container[val_iZone], true);
+                                                                           config_container[val_iZone]);
 
       break;
 
