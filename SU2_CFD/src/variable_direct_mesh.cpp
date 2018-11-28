@@ -51,8 +51,8 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
   Displacement_n1 = NULL;
 
   /*--- Booleans that determine the kind of problems ---*/
-  time_domain = config->GetTime_Domain();
-  multizone = config->GetMultizone_Problem();
+  bool time_domain = config->GetTime_Domain();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Store the dimensionality of the problem ---*/
   nDim = val_nDim;
