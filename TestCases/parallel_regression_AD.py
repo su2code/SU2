@@ -217,7 +217,22 @@ def main():
     discadj_fea.timeout   = 1600
     discadj_fea.tol       = 0.00001
     test_list.append(discadj_fea) 
-    
+
+    ###################################
+    ### Disc. adj. heat             ###
+    ###################################
+
+    # Discrete adjoint for heated cylinder
+    discadj_heat           = TestCase('discadj_heat')
+    discadj_heat.cfg_dir   = "disc_adj_heat"
+    discadj_heat.cfg_file  = "disc_adj_heat.cfg"
+    discadj_heat.test_iter = 10
+    discadj_heat.test_vals = [3.162960, 0.923834, -223.148728, -3562.233908] #last 4 columns
+    discadj_heat.su2_exec  = "SU2_CFD_AD"
+    discadj_heat.timeout   = 1600
+    discadj_heat.tol       = 0.00001
+    test_list.append(discadj_heat)
+
     ###################################
     ### Coupled FSI Adjoint         ###
     ###################################
