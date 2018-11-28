@@ -424,6 +424,9 @@ void CDiscAdjSolver::RegisterObj_Func(CConfig *config) {
     case EQUIVALENT_AREA:
       ObjFunc_Value = direct_solver->GetTotal_CEquivArea();
       break;
+    case BUFFET_SENSOR:
+      ObjFunc_Value = direct_solver->GetTotal_Buffet_Metric();
+      break;
     }
 
     /*--- Template for new objective functions where TemplateObjFunction()
