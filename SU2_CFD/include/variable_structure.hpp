@@ -2301,7 +2301,7 @@ public:
    * \brief Register the variables in the solution array as input/output variable.
    * \param[in] input - input or output variables.
    */
-  void RegisterSolution2(bool input);
+  void RegisterSolution_intIndexBased(bool input);
 
   /*!
    * \brief Saving the adjoint vector position with respect to the solution variables.
@@ -2328,7 +2328,7 @@ public:
    * \brief Set the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  void SetAdjointSolution2(su2double *adj_sol);
+  void SetAdjointSolution_intIndexBased(su2double *adj_sol);
   
   /*!
    * \brief Get the adjoint values of the solution.
@@ -2340,7 +2340,7 @@ public:
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
-  void GetAdjointSolution2(su2double *adj_sol);
+  void GetAdjointSolution_intIndexBased(su2double *adj_sol);
   
   /*!
    * \brief Set the adjoint values of the solution at time n.

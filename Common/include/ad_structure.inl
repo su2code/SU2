@@ -73,7 +73,7 @@ namespace AD{
   inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
                                              inputValues.push_back(data.getGradientData());}
 
-  inline void RegisterInput2(su2double &data) {AD::globalTape.registerInput(data);}
+  inline void RegisterInput_intIndexBased(su2double &data) {AD::globalTape.registerInput(data);}
 
   inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
 
@@ -192,7 +192,7 @@ namespace AD{
 
   inline void RegisterInput(su2double &data) {}
 
-  inline void RegisterInput2(su2double &data) {}
+  inline void RegisterInput_intIndexBased(su2double &data) {}
 
   inline void RegisterOutput(su2double& data) {}
 

@@ -258,7 +258,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(config->GetBoolZoneSpecific()) {
-      direct_solver->node[iPoint]->RegisterSolution2(input);
+      direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
       direct_solver->node[iPoint]->Set_AdjIndices(input);
     }
     else {
@@ -384,7 +384,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(config->GetBoolZoneSpecific()) {
-      direct_solver->node[iPoint]->RegisterSolution2(input);
+      direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
       direct_solver->node[iPoint]->Set_AdjIndices(input);
     }
     else {
@@ -500,7 +500,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
     /*--- Extract the adjoint solution ---*/
 
     if(config->GetBoolZoneSpecific()) {
-      direct_solver->node[iPoint]->GetAdjointSolution2(Solution);          
+      direct_solver->node[iPoint]->GetAdjointSolution_intIndexBased(Solution);
     }
     else {
       direct_solver->node[iPoint]->GetAdjointSolution(Solution);
@@ -778,7 +778,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
       }
     }
     if(config->GetBoolZoneSpecific()) {
-      direct_solver->node[iPoint]->SetAdjointSolution2(Solution); 
+      direct_solver->node[iPoint]->SetAdjointSolution_intIndexBased(Solution);
     }
     else {
       direct_solver->node[iPoint]->SetAdjointSolution(Solution);
