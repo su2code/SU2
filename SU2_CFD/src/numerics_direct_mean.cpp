@@ -4421,8 +4421,15 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   else Mean_TauWall = -1.0;
 
   /*--- Get projected flux tensor ---*/
-  
+
   bool QCR = config->GetQCR();
+  GetTau(Mean_PrimVar,
+         Mean_GradPrimVar,
+         Mean_turb_ke, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (QCR)
+    AddQCR(Mean_GradPrimVar);
+  if (Mean_TauWall > 0)
+    AddTauWall(Normal, Mean_TauWall);
 
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall, QCR);
 
