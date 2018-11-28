@@ -880,7 +880,7 @@ def main():
     # FSI, 2d
     fsi2d           = TestCase('fsi2d')
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-    fsi2d.cfg_file  = "configFSI_2D.cfg"
+    fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
     fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
     fsi2d.su2_exec  = "SU2_CFD"
@@ -891,7 +891,7 @@ def main():
     # FSI, 2D airfoil with RBF interpolation
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
-    airfoilRBF.cfg_file  = "settings.cfg"
+    airfoilRBF.cfg_file  = "config.cfg"
     airfoilRBF.test_iter = 50
     airfoilRBF.test_vals = [-8.000964, -2.600088, 0.276433, 0.000824] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
@@ -906,7 +906,7 @@ def main():
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
-    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
+    cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
     cht_incompressible.test_vals = [0.000000, 0.000000, -7.685301, -12947.783696] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
