@@ -1339,7 +1339,7 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
       index = counter*Restart_Vars[1];
       for (iDim = 0; iDim < nDim; iDim++){
         curr_coord = Restart_Data[index+iDim];
-        node[iPoint_Local]->SetCurr_Coord(iDim, curr_coord);
+        //node[iPoint_Local]->SetCurr_Coord(iDim, curr_coord);
       }
       iPoint_Global_Local++;
       /*--- We compute the displacements as the

@@ -43,7 +43,6 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 
   /*--- Initialize pointers to NULL ---*/
   Mesh_Coord    = NULL;
-  Curr_Coord   = NULL;
   Displacement = NULL;
 
   Displacement_Old = NULL;
@@ -60,11 +59,9 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 
   /*--- Initalize the variables that will always be there in a problem with moving mesh ---*/
   Mesh_Coord    = new su2double [nDim];
-  Curr_Coord   = new su2double [nDim];
   Displacement = new su2double [nDim];
   for (iDim = 0; iDim < nDim; iDim++){
     Mesh_Coord[iDim]    = val_coor[iDim];
-    Curr_Coord[iDim]   = val_coor[iDim];
     Displacement[iDim] = 0.0;
   }
 
@@ -92,7 +89,6 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
 CMeshVariable::~CMeshVariable(void) {
 
   if (Mesh_Coord    != NULL) delete [] Mesh_Coord;
-  if (Curr_Coord   != NULL) delete [] Curr_Coord;
   if (Displacement != NULL) delete [] Displacement;
 
   if (Displacement_Old != NULL) delete [] Displacement_Old;

@@ -5117,7 +5117,6 @@ protected:
   su2double WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
 
   su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
-  su2double *Curr_Coord;          /*!< \brief Store the current coordinates of the mesh. */
 
   su2double *Displacement;        /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
   su2double *Displacement_Old;    /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
@@ -5158,31 +5157,6 @@ public:
    * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
   void SetMesh_Coord(unsigned short iDim, su2double val_coord);
-
-  /*!
-   * \brief Get the value of the current coordinates.
-   * \param[in] iDim - Index of Curr_Coord[nDim]
-   * \return Value of the current coordinate iDim.
-   */
-  su2double GetCurr_Coord(unsigned short iDim);
-
-  /*!
-   * \brief Get the current coordinates.
-   * \return Pointer to the current coordinates.
-   */
-  su2double *GetCurr_Coord();
-
-  /*!
-   * \brief Set the value of the current coordinates.
-   * \param[in] iDim - Index of Curr_Coord[nDim]
-   * \param[in] val_coord - Value of Curr_Coord[nDim]
-   */
-  void SetCurr_Coord(unsigned short iDim, su2double val_coord);
-
-  /*!
-   * \brief Set the value of the current coordinates as RefCoord+Disp.
-   */
-  void SetCurr_Coord(void);
 
   /*!
    * \brief Get the value of the displacement at time n+1.
