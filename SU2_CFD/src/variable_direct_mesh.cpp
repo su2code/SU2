@@ -104,11 +104,7 @@ CMeshElement::CMeshElement(void){
   Ref_Volume = 1.0;           /*!< \brief Store the reference volume of the element. */
   Curr_Volume = 1.0;          /*!< \brief Store the current volume of the element. */
 
-  Ref_Distance = 0.0;         /*!< \brief Store the reference distance to the nearest wall of the element. */
-  Curr_Distance = 0.0;        /*!< \brief Store the current distance to the nearest wall of the element. */
-
-  Ref_Stiffness = 1.0;        /*!< \brief Store the reference stiffness of the element. */
-  Curr_Stiffness = 1.0;       /*!< \brief Store the current stiffness of the element. */
+  WallDistance = 0.0;         /*!< \brief Store the reference distance to the nearest wall of the element. */
 
 }
 

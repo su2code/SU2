@@ -464,7 +464,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
     }
     ElemDist = ElemDist/(su2double)nNodes;
 
-    element[iElem].SetRef_Distance(ElemDist);
+    element[iElem].SetWallDistance(ElemDist);
 
   }
 
@@ -545,7 +545,7 @@ void CMeshSolver::Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry
   su2double ElemVolume, ElemDistance;
 
   ElemVolume = element[iElem].GetRef_Volume();
-  ElemDistance = element[iElem].GetRef_Distance();
+  ElemDistance = element[iElem].GetWallDistance();
 
   switch (config->GetDeform_Stiffness_Type()) {
     case INVERSE_VOLUME:

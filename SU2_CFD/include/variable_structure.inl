@@ -1687,18 +1687,6 @@ inline su2double CMeshElement::GetCurr_Volume(void) { return Curr_Volume; }
 
 inline void CMeshElement::SetCurr_Volume(su2double val_volume) { Curr_Volume = val_volume; }
 
-inline su2double CMeshElement::GetRef_Distance(void) { return Ref_Distance; }
+inline su2double CMeshElement::GetWallDistance(void) { return WallDistance; }
 
-inline void CMeshElement::SetRef_Distance(su2double val_volume) { Ref_Distance = val_volume; }
-
-inline su2double CMeshElement::GetCurr_Distance(void) { return Curr_Distance; }
-
-inline void CMeshElement::SetCurr_Distance(su2double val_volume) { Curr_Distance = val_volume; }
-
-inline su2double CMeshElement::GetRef_Stiffness(void) { return Ref_Stiffness; }
-
-inline void CMeshElement::SetRef_Stiffness(su2double val_stiffness) { Ref_Stiffness = val_stiffness; }
-
-inline su2double CMeshElement::GetCurr_Stiffness(void) { return Curr_Stiffness; }
-
-inline void CMeshElement::SetCurr_Stiffness(su2double val_stiffness) { Curr_Stiffness = val_stiffness; }
+inline void CMeshElement::SetWallDistance(su2double val_volume) { WallDistance = val_volume; }
