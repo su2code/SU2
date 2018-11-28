@@ -44,6 +44,7 @@ bin_PROGRAMS =
 
 if BUILD_NORMAL
 bin_PROGRAMS += ../bin/SU2_CFD
+bin_PROGRAMS += ../bin/SU2_Timer
 endif
 
 if BUILD_DIRECTDIFF
@@ -151,6 +152,9 @@ libSU2Core_sources = \
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
+  
+su2_timer_sources = \
+   ../src/SU2_Timer.cpp
 
 libSU2Core_cxx_flags = -fPIC
 libSU2Core_libadd = 
@@ -162,6 +166,15 @@ su2_cfd_ldadd =
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
 su2_cfd_ldadd += @su2_externals_LIBPTHREAD@
+libSU2Core_cxx_flags += @su2_externals_INCLUDES@
+
+su2_timer_cxx_flags =
+su2_timer_ldadd =
+
+# always link to built dependencies from ./externals
+su2_timer_cxx_flags += @su2_externals_INCLUDES@
+su2_timer_ldadd += @su2_externals_LIBS@
+su2_timer_ldadd += @su2_externals_LIBPTHREAD@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
@@ -176,6 +189,9 @@ libSU2Core_a_LIBADD = $(libSU2Core_libadd)
 ___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
+___bin_SU2_Timer_SOURCES = $(su2_timer_sources)
+___bin_SU2_Timer_CXXFLAGS = ${su2_timer_cxx_flags}
+___bin_SU2_Timer_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_timer_ldadd}
 endif
 
 if BUILD_DIRECTDIFF
