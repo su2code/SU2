@@ -51,10 +51,6 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
   Displacement_n  = NULL;
   Displacement_n1 = NULL;
 
-  Velocity    = NULL;
-  Velocity_n  = NULL;
-  Velocity_n1 = NULL;
-
   /*--- Booleans that determine the kind of problems ---*/
   time_domain = config->GetTime_Domain();
   multizone = config->GetMultizone_Problem();
@@ -85,17 +81,9 @@ CMeshVariable::CMeshVariable(su2double *val_coor, unsigned short val_nDim, CConf
     Displacement_n    = new su2double [nDim];
     Displacement_n1   = new su2double [nDim];
 
-    Velocity    = new su2double [nDim];
-    Velocity_n  = new su2double [nDim];
-    Velocity_n1 = new su2double [nDim];
-
     for (iDim = 0; iDim < nDim; iDim++){
       Displacement_n[iDim]    = 0.0;
       Displacement_n1[iDim]   = 0.0;
-
-      Velocity[iDim]    = 0.0;
-      Velocity_n[iDim]  = 0.0;
-      Velocity_n1[iDim] = 0.0;
     }
   }
 
@@ -111,10 +99,6 @@ CMeshVariable::~CMeshVariable(void) {
 
   if (Displacement_n  != NULL) delete [] Displacement_n;
   if (Displacement_n1 != NULL) delete [] Displacement_n1;
-
-  if (Velocity    != NULL) delete [] Velocity;
-  if (Velocity_n  != NULL) delete [] Velocity_n;
-  if (Velocity_n1 != NULL) delete [] Velocity_n1;
 
 }
 

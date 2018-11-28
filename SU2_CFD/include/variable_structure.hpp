@@ -5124,10 +5124,6 @@ protected:
   su2double *Displacement_n;      /*!< \brief Displacement of the mesh at time n respect to the original coordinates. */
   su2double *Displacement_n1;     /*!< \brief Displacement of the mesh at time n-1 respect to the original coordinates. */
 
-  su2double *Velocity;            /*!< \brief Velocity of the mesh at time n+1 respect to the original coordinates. */
-  su2double *Velocity_n;          /*!< \brief Velocity of the mesh at time n respect to the original coordinates. */
-  su2double *Velocity_n1;         /*!< \brief Velocity of the mesh at time n-1 respect to the original coordinates. */
-
 public:
 
   /*!
@@ -5242,44 +5238,6 @@ public:
    * \brief Move Displacement_n into Displacement_n1.
    */
   void SetDisplacement_n1(void);
-
-  /*!
-   * \brief Get the value of the mesh velocity at time n.
-   * \param[in] iDim - Index of Velocity[nDim]
-   * \return Value of the mesh velocity at time n+1 and position iDim.
-   */
-  su2double GetVelocity(unsigned short iDim);
-
-  /*!
-   * \brief Set the value of the velocity.
-   * \param[in] iDim - Index of Velocity[nDim]
-   * \param[in] val_vel - Value of Velocity[nDim]
-   */
-  void SetVelocity(unsigned short iDim, su2double val_vel);
-
-  /*!
-   * \brief Get the value of the mesh velocity at time n.
-   * \param[in] iDim - Index of Velocity_n[nDim]
-   * \return Value of the mesh velocity at time n and position iDim.
-   */
-  su2double GetVelocity_n(unsigned short iDim);
-
-  /*!
-   * \brief Move Velocity into Velocity_n.
-   */
-  void SetVelocity_n(void);
-
-  /*!
-   * \brief Get the value of the mesh velocity at time n-1.
-   * \param[in] iDim - Index of Velocity_n1[nDim]
-   * \return Value of the mesh velocity at time n-1 and position iDim.
-   */
-  su2double GetVelocity_n1(unsigned short iDim);
-
-  /*!
-   * \brief Move Velocity_n into Velocity_n1.
-   */
-  void SetVelocity_n1(void);
 
   /*!
    * \brief Get the value of the wall distance in reference coordinates.
