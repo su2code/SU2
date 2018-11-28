@@ -205,7 +205,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -3449,7 +3449,7 @@ public:
   virtual void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                          CConfig *fea_config,
                                          CSolver ***fea_solution,
-                                         unsigned long iFSIIter);
+                                         unsigned long iOuterIter);
   
   
   /*!
@@ -6506,7 +6506,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -8175,7 +8175,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -11662,6 +11662,12 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 };
 
 /*! \class CFEASolver
@@ -12219,7 +12225,7 @@ public:
   void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                  CConfig *fea_config,
                                  CSolver ***fea_solution,
-                                 unsigned long iFSIIter);
+                                 unsigned long iOuterIter);
   
   /*!
    * \brief Aitken's relaxation of the solution.
@@ -12350,7 +12356,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -12882,7 +12888,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -13180,7 +13186,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
