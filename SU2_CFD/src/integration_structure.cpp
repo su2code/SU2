@@ -730,7 +730,7 @@ void CIntegration::SetFEM_StructuralSolver(CGeometry *geometry, CSolver **solver
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
   
   su2double Reference_UTOL, Reference_RTOL, Reference_ETOL;
   su2double Residual_UTOL, Residual_RTOL, Residual_ETOL;
@@ -790,7 +790,7 @@ void CIntegration::Convergence_Monitoring_FEM(CGeometry *geometry, CConfig *conf
   
 }
 
-void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *config, CSolver *solver, unsigned long iOuterIter) {
 
   su2double val_I, Max_Val_I;
 
@@ -843,7 +843,7 @@ void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *
 }
 
 
-void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iFSIIter) {
+void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter) {
   
   su2double FEA_check[2] = {0.0, 0.0};
   su2double magResidualFSI = 0.0, logResidualFSI_initial = 0.0, logResidualFSI = 0.0;
@@ -864,13 +864,13 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
   /*--- Only when there is movement it makes sense to check convergence (otherwise, it is always converged...) ---*/
   /*--- The same with the first iteration, if we are doing strongly coupled we need at least two. ---*/
   
-  if (iFSIIter == 0) {
+  if (iOuterIter == 0) {
     /*--- Set the convergence values to 0.0 --*/
     fea_solver->SetFSI_ConvValue(0,0.0);
     fea_solver->SetFSI_ConvValue(1,0.0);
     
   }
-  else if (iFSIIter > 0) {
+  else if (iOuterIter > 0) {
     
     // We loop only over the points that belong to the processor
     nPointDomain = fea_geometry->GetnPointDomain();
@@ -909,7 +909,7 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     /*--- Store the FSI residual ---*/
     fea_solver->SetFSI_Residual(deltaURes_recv);
 
-    if (iFSIIter == 1) {
+    if (iOuterIter == 1) {
       fea_solver->SetFSI_ConvValue(0,deltaURes_recv);
       logResidualFSI_initial = log10(deltaURes_recv);
       
@@ -983,19 +983,19 @@ void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *
     fea_solver->SetRelaxCoeff(WAitken);
 
     cout.precision(6);
-    if (iFSIIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
-    else if (iFSIIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
+    if (iOuterIter == 0) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" <<  endl;
+    else if (iOuterIter == 1) cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  <<  endl;
     else cout << endl <<"BGS_Iter" << "        ExtIter" << "     Relaxation" << "      Res[ATOL]"  << "      Res[OMAG]"<<  endl;
       
-    cout.width(8); cout << iFSIIter;
+    cout.width(8); cout << iOuterIter;
     cout.width(15); cout << iExtIter;
     cout.width(15); cout << WAitken;
     cout.width(15);
-    if (iFSIIter == 0) cout << " ";
-    else if (iFSIIter == 1) cout << logResidualFSI_initial;
+    if (iOuterIter == 0) cout << " ";
+    else if (iOuterIter == 1) cout << logResidualFSI_initial;
     else cout << logResidualFSI;
     cout.width(15);
-    if (iFSIIter < 2) cout << " ";
+    if (iOuterIter < 2) cout << " ";
     else cout << magResidualFSI;
     cout.setf(ios::fixed, ios::floatfield);
     cout << endl;
