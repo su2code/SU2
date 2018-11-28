@@ -5114,8 +5114,7 @@ protected:
   bool time_domain;             /*!< \brief Bool which determines if the problem is dynamic. */
   bool multizone;               /*!< \brief Bool which determines if the problem is multizone. */
 
-  su2double Ref_WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
-  su2double Curr_WallDistance;  /*!< \brief Store the wall distance in current coordinates. */
+  su2double WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
 
   su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
   su2double *Curr_Coord;          /*!< \brief Store the current coordinates of the mesh. */
@@ -5287,25 +5286,13 @@ public:
    * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
-  su2double GetRef_WallDistance(void);
+  su2double GetWallDistance(void);
 
   /*!
    * \brief Set the value of the wall distance in reference coordinates.
    * \param[in] val_dist - Value of wall distance.
    */
-  void SetRef_WallDistance(su2double val_dist);
-
-  /*!
-   * \brief Get the value of the wall distance in current coordinates.
-   * \return Value of the wall distance in current coordinates.
-   */
-  su2double GetCurr_WallDistance(void);
-
-  /*!
-   * \brief Set the value of the wall distance in current coordinates.
-   * \param[in] val_dist - Value of wall distance.
-   */
-  void SetCurr_WallDistance(su2double val_dist);
+  void SetWallDistance(su2double val_dist);
 
 };
 
