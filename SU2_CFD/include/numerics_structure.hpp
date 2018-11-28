@@ -3064,6 +3064,17 @@ public:
 	 */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
   
+  void GetTau(const su2double *val_primvar,
+              su2double **val_gradprimvar,
+              const su2double val_turb_ke,
+              const su2double val_laminar_viscosity,
+              const su2double val_eddy_viscosity);
+
+  void AddQCR(su2double **val_gradprimvar);
+
+  void AddTauWall(const su2double *val_normal,
+                  const su2double val_tau_wall);
+
 };
 
 /*!
@@ -3422,9 +3433,9 @@ private:
   TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
   Mean_TauWall;     /*!< \brief Mean wall shear stress (wall functions). */
   bool implicit;      /*!< \brief Implicit calculus. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -3432,12 +3443,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGradCorrected_Flow(void);
-  
+
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
    * \param[out] val_residual - Pointer to the total residual.
@@ -3447,7 +3458,7 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 
-  
+
   /*!
 	 * \brief Set the value of the wall shear stress at point i and j (wall functions).
 	 * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
@@ -3478,9 +3489,9 @@ private:
   Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
   dist_ij_2;           /*!< \brief Length of the edge and face. */
   bool implicit;      /*!< \brief Implicit calculus. */
-  
+
 public:
-  
+
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
@@ -3488,12 +3499,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
+
   /*!
    * \brief Destructor of the class.
    */
   ~CGeneralAvgGradCorrected_Flow(void);
-  
+
   /*!
    * \brief Compute the viscous flow residual using an average of gradients with correction.
    * \param[out] val_residual - Pointer to the total residual.
