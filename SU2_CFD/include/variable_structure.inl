@@ -1645,17 +1645,6 @@ inline su2double *CMeshVariable::GetMesh_Coord(void) { return Mesh_Coord; }
 
 inline void CMeshVariable::SetMesh_Coord(unsigned short iDim, su2double val_coord) { Mesh_Coord[iDim] = val_coord;}
 
-inline su2double CMeshVariable::GetCurr_Coord(unsigned short iDim) { return Curr_Coord[iDim]; }
-
-inline su2double *CMeshVariable::GetCurr_Coord(void) { return Curr_Coord; }
-
-inline void CMeshVariable::SetCurr_Coord(unsigned short iDim, su2double val_disp) { Curr_Coord[iDim] = val_disp;}
-
-inline void CMeshVariable::SetCurr_Coord(void) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Curr_Coord[iDim] = Mesh_Coord[iDim] + Displacement[iDim];
-}
-
 inline su2double CMeshVariable::GetDisplacement(unsigned short iDim) { return Displacement[iDim]; }
 
 inline void CMeshVariable::SetDisplacement(unsigned short iDim, su2double val_disp) { Displacement[iDim] = val_disp;}
