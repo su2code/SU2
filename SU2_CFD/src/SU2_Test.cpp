@@ -45,7 +45,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
-#include "../include/numerics_structure.hpp"
+#include "../include/numerics_direct_mean.hpp"
 
 void BOOST_CHECK_CLOSE_FRACTION(const su2double& u, const su2double& v,
                                 const su2double& tol) {

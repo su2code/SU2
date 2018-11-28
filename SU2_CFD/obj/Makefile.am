@@ -72,6 +72,7 @@ libSU2Core_sources = \
   ../include/driver_structure.hpp \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
+  ../include/numerics_direct_mean.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \

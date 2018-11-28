@@ -36,6 +36,7 @@
  */
 
 #include "../include/numerics_structure.hpp"
+#include "../include/numerics_direct_mean.hpp"
 #include <limits>
 
 CCentJST_Flow::CCentJST_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4462,6 +4463,96 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     
   }
   
+}
+
+void CAvgGrad_Flow::GetTau(const su2double *val_primvar,
+                           su2double **val_gradprimvar,
+                           const su2double val_turb_ke,
+                           const su2double val_laminar_viscosity,
+                           const su2double val_eddy_viscosity) {
+
+  unsigned short iDim, jDim;
+  const su2double Density = val_primvar[nDim+2];
+  const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+
+  su2double div_vel = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    div_vel += val_gradprimvar[iDim+1][iDim];
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      tau[iDim][jDim] = total_viscosity*( val_gradprimvar[jDim+1][iDim] + val_gradprimvar[iDim+1][jDim] )
+                        - TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+                        - TWO3*Density*val_turb_ke*delta[iDim][jDim];
+}
+
+void CAvgGrad_Flow::AddQCR(su2double **val_gradprimvar) {
+
+  su2double den_aux, c_cr1= 0.3, O_ik, O_jk;
+  unsigned short iDim, jDim, kDim;
+
+  /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+
+  den_aux = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      den_aux += val_gradprimvar[iDim+1][jDim] * val_gradprimvar[iDim+1][jDim];
+  den_aux = sqrt(max(den_aux,1E-10));
+
+  /*--- Adding the QCR contribution ---*/
+
+  for (iDim = 0 ; iDim < nDim; iDim++){
+    for (jDim = 0 ; jDim < nDim; jDim++){
+      for (kDim = 0 ; kDim < nDim; kDim++){
+        O_ik = (val_gradprimvar[iDim+1][kDim] - val_gradprimvar[kDim+1][iDim])/ den_aux;
+        O_jk = (val_gradprimvar[jDim+1][kDim] - val_gradprimvar[kDim+1][jDim])/ den_aux;
+        tau[iDim][jDim] -= c_cr1 * ((O_ik * tau[jDim][kDim]) + (O_jk * tau[iDim][kDim]));
+      }
+    }
+  }
+}
+
+void CAvgGrad_Flow::AddTauWall(const su2double *val_normal,
+                               const su2double val_tau_wall) {
+
+  unsigned short iVar, iDim, jDim;
+  su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
+
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += val_normal[iDim]*val_normal[iDim];
+  Area = sqrt(Area);
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = val_normal[iDim]/Area;
+
+  /*--- First, compute wall shear stress as the magnitude of the wall-tangential
+   component of the shear stress tensor---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    TauElem[iDim] = 0.0;
+    for (jDim = 0; jDim < nDim; jDim++)
+      TauElem[iDim] += tau[iDim][jDim]*UnitNormal[jDim];
+  }
+
+  TauNormal = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+
+  WallShearStress = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    WallShearStress += TauTangent[iDim]*TauTangent[iDim];
+  WallShearStress = sqrt(WallShearStress);
+
+  /*--- Scale the stress tensor by the ratio of the wall shear stress
+   to the computed representation of the shear stress ---*/
+
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
 }
 
 CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
