@@ -175,14 +175,11 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver() {
       }
     }
 
-
-    bool referenceCoordinates = true;
-
     /*--- Compute the element volumes using the reference coordinates ---*/
-    SetMinMaxVolume(geometry, config, referenceCoordinates);
+    SetMinMaxVolume(geometry, config, false);
 
     /*--- Compute the wall distance using the reference coordinates ---*/
-    SetWallDistance(geometry, config, referenceCoordinates);
+    SetWallDistance(geometry, config);
 
 }
 
@@ -239,7 +236,7 @@ CMeshSolver::~CMeshSolver(void) {
 
 }
 
-void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool referenceCoord) {
+void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated) {
 
   unsigned long iElem, ElemCounter = 0;
   unsigned short iNode, iDim, nNodes = 0;
@@ -278,9 +275,10 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool ref
 
       /*--- Compute the volume with the reference or with the current coordinates ---*/
       for (iDim = 0; iDim < nDim; iDim++) {
-        if (referenceCoord) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
-        else val_Coord = node[indexNode[iNode]]->GetCurr_Coord(iDim);
-        element_container[EL_KIND]->SetMesh_Coord(val_Coord, iNode, iDim);
+        if (updated) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim) 
+                               + node[indexNode[iNode]]->GetDisplacement(iDim);
+        else val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
     }
 
@@ -294,8 +292,8 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool ref
 
     MaxVolume = max(MaxVolume, ElemVolume);
     MinVolume = min(MinVolume, ElemVolume);
-    if (referenceCoord) element[iElem].SetRef_Volume(ElemVolume);
-    else element[iElem].SetCurr_Volume(ElemVolume);
+    if (updated) element[iElem].SetCurr_Volume(ElemVolume);
+    else element[iElem].SetRef_Volume(ElemVolume);
 
     if (!RightVol) ElemCounter++;
 
@@ -312,24 +310,24 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool ref
 
   /*--- Volume from  0 to 1 ---*/
   for (iElem = 0; iElem < geometry->GetnElem(); iElem++) {
-    if (referenceCoord){
-      ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
-      element[iElem].SetRef_Volume(ElemVolume);
-    }
-    else{
+    if (updated){
       ElemVolume = element[iElem].GetCurr_Volume()/MaxVolume;
       element[iElem].SetCurr_Volume(ElemVolume);
+    }
+    else{
+      ElemVolume = element[iElem].GetRef_Volume()/MaxVolume;
+      element[iElem].SetRef_Volume(ElemVolume);
     }
   }
 
   /*--- Store the maximum and minimum volume ---*/
-  if (referenceCoord){
-    MaxVolume_Ref = MaxVolume;
-    MinVolume_Ref = MinVolume;
-  }
-  else{
+  if (updated){
     MaxVolume_Curr = MaxVolume;
     MinVolume_Curr = MinVolume;
+  }
+  else{
+    MaxVolume_Ref = MaxVolume;
+    MinVolume_Ref = MinVolume;
   }
 
   if ((ElemCounter != 0) && (rank == MASTER_NODE))
@@ -338,7 +336,7 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool ref
 }
 
 
-void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config, bool referenceCoord) {
+void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
   unsigned long iElem, PointCorners[8];
@@ -381,8 +379,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config, bool ref
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
         for (iDim=0; iDim<nDim; ++iDim){
-          if (referenceCoord) Coord_bound[ii++] = node[iPoint]->GetMesh_Coord(iDim);
-          else Coord_bound[ii++] = node[iPoint]->GetCurr_Coord(iDim);
+          Coord_bound[ii++] = node[iPoint]->GetMesh_Coord(iDim);
         }
       }
     }
@@ -413,16 +410,9 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config, bool ref
 
     for(iPoint=0; iPoint< nPoint; ++iPoint) {
 
-      if (referenceCoord){
-        WallADT.DetermineNearestNode(node[iPoint]->GetMesh_Coord(), dist,
-                                     pointID, rankID);
-        node[iPoint]->SetRef_WallDistance(dist);
-      }
-      else{
-        WallADT.DetermineNearestNode(node[iPoint]->GetCurr_Coord(), dist,
-                                     pointID, rankID);
-        node[iPoint]->SetCurr_WallDistance(dist);
-      }
+      WallADT.DetermineNearestNode(node[iPoint]->GetMesh_Coord(), dist,
+                                   pointID, rankID);
+      node[iPoint]->SetRef_WallDistance(dist);
 
       MaxDistance = max(MaxDistance, dist);
 
@@ -447,14 +437,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config, bool ref
 
   /*--- Normalize distance from 0 to 1 ---*/
   for (iPoint=0; iPoint < nPoint; ++iPoint) {
-    if (referenceCoord){
-      nodeDist = node[iPoint]->GetRef_WallDistance()/MaxDistance;
-      node[iPoint]->SetRef_WallDistance(nodeDist);
-    }
-    else{
-      nodeDist = node[iPoint]->GetCurr_WallDistance()/MaxDistance;
-      node[iPoint]->SetCurr_WallDistance(nodeDist);
-    }
+    nodeDist = node[iPoint]->GetRef_WallDistance()/MaxDistance;
+    node[iPoint]->SetRef_WallDistance(nodeDist);
   }
 
   /*--- Compute the element distances ---*/
@@ -476,19 +460,17 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config, bool ref
 
     ElemDist = 0.0;
     for (iNodes = 0; iNodes < nNodes; iNodes++){
-      if (referenceCoord) ElemDist += node[PointCorners[iNodes]]->GetRef_WallDistance();
-      else ElemDist += node[PointCorners[iNodes]]->GetCurr_WallDistance();
+      ElemDist += node[PointCorners[iNodes]]->GetRef_WallDistance();
     }
     ElemDist = ElemDist/(su2double)nNodes;
 
-    if (referenceCoord) element[iElem].SetRef_Distance(ElemDist);
-    else element[iElem].SetCurr_Distance(ElemDist);
+    element[iElem].SetRef_Distance(ElemDist);
 
   }
 
 }
 
-void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool referenceCoord){
+void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config){
 
   unsigned long iElem;
   unsigned short iNode, iDim, jDim, nNodes = 0;
@@ -517,15 +499,14 @@ void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool 
       indexNode[iNode] = geometry->elem[iElem]->GetNode(iNode);
 
       for (iDim = 0; iDim < nDim; iDim++) {
-        if (referenceCoord) val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
-        else val_Coord = node[indexNode[iNode]]->GetCurr_Coord(iDim);
-        element_container[EL_KIND]->SetMesh_Coord(val_Coord, iNode, iDim);
+        val_Coord = node[indexNode[iNode]]->GetMesh_Coord(iDim);
+        element_container[EL_KIND]->SetRef_Coord(val_Coord, iNode, iDim);
       }
 
     }
 
     /*--- Compute the stiffness of the element ---*/
-    Set_Element_Stiffness(iElem, geometry, config, referenceCoord);
+    Set_Element_Stiffness(iElem, geometry, config);
 
     /*--- Compute the element contribution to the stiffness matrix ---*/
 
@@ -559,18 +540,12 @@ void CMeshSolver::SetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool 
 
 }
 
-void CMeshSolver::Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config, bool referenceCoord) {
+void CMeshSolver::Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config) {
 
   su2double ElemVolume, ElemDistance;
 
-  if (referenceCoord){
-    ElemVolume = element[iElem].GetRef_Volume();
-    ElemDistance = element[iElem].GetRef_Distance();
-  }
-  else{
-    ElemVolume = element[iElem].GetCurr_Volume();
-    ElemDistance = element[iElem].GetCurr_Distance();
-  }
+  ElemVolume = element[iElem].GetRef_Volume();
+  ElemDistance = element[iElem].GetRef_Distance();
 
   switch (config->GetDeform_Stiffness_Type()) {
     case INVERSE_VOLUME:
@@ -598,7 +573,7 @@ void CMeshSolver::Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry
 
 }
 
-void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config, bool referenceCoord){
+void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config){
 
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
@@ -625,7 +600,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config, bool referen
     }
 
     /*--- Compute the stiffness matrix. ---*/
-    SetStiffnessMatrix(geometry[MESH_0], config, true);
+    SetStiffnessMatrix(geometry[MESH_0], config);
 
     /*--- Impose boundary conditions (all of them are ESSENTIAL BC's - displacements). ---*/
     SetBoundaryDisplacements(geometry[MESH_0], config);
@@ -642,7 +617,7 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config, bool referen
 
     /*--- Check for failed deformation (negative volumes). ---*/
     /*--- In order to do this, we recompute the minimum and maximum area/volume for the mesh using the current coordinates. ---*/
-    SetMinMaxVolume(geometry[MESH_0], config, false);
+    SetMinMaxVolume(geometry[MESH_0], config, true);
 
     if ((rank == MASTER_NODE) && (!discrete_adjoint)) {
       cout << scientific << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << nIterMesh << ". ";
@@ -662,7 +637,7 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
   unsigned short iDim;
   unsigned long iPoint, total_index;
-  su2double val_disp;
+  su2double val_disp, val_coord;
 
   /*--- Update the grid coordinates using the solution of the linear system
      after grid deformation (LinSysSol contains the x, y, z displacements). ---*/
@@ -670,14 +645,14 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     for (iDim = 0; iDim < nDim; iDim++) {
       total_index = iPoint*nDim + iDim;
+      /*--- Retrieve the displacement from the solution of the linear system ---*/
       val_disp = LinSysSol[total_index];
+      /*--- Store the displacement of the mesh node ---*/
       node[iPoint]->SetDisplacement(iDim, val_disp);
-    }
-    /*--- Set the current coordinate as Mesh_Coord + Displacement ---*/
-    node[iPoint]->SetCurr_Coord();
-    /*--- Update the geometry container ---*/
-    for (iDim = 0; iDim < nDim; iDim++) {
-      geometry->node[iPoint]->SetCoord(iDim, node[iPoint]->GetCurr_Coord(iDim));
+      /*--- Compute the current coordinate as Mesh_Coord + Displacement ---*/
+      val_coord = node[iPoint]->GetMesh_Coord(iDim) + val_disp;
+      /*--- Update the geometry container ---*/
+      geometry->node[iPoint]->SetCoord(iDim, val_coord);
     }
   }
 

@@ -4326,7 +4326,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] referenceCoord - Determine if the mesh is deformed from the reference or from the current coordinates.
    */
-  virtual void DeformMesh(CGeometry **geometry, CConfig *config, bool referenceCoord);
+  virtual void DeformMesh(CGeometry **geometry, CConfig *config);
 
 };
 
@@ -15692,35 +15692,32 @@ public:
    * \brief Compute the min and max volume of the elements in the domain.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
+   * \param[in] updated - Boolean, computes the volumes with the updated coordinates.
    * \return Value of the length of the smallest edge of the grid.
    */
-  void SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool referenceCoord);
+  void SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool updated);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
    */
-  void SetWallDistance(CGeometry *geometry, CConfig *config, bool referenceCoord);
+  void SetWallDistance(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume for the stiffness matrix for grid deformation.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
    */
-  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config, bool referenceCoord);
+  void SetStiffnessMatrix(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the stiffness of the element and the parameters Lambda and Mu
    * \param[in] iElem - Element index.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
-   * \param[in] referenceCoord - Boolean, defines if we compute with the reference or the current coordinates.
    */
-  void Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config, bool referenceCoord);
+  void Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Grid deformation using the linear elasticity equations.
@@ -15729,7 +15726,7 @@ public:
    * \param[in] UpdateGeo - Update geometry.
    * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
    */
-  void DeformMesh(CGeometry **geometry, CConfig *config, bool referenceCoord);
+  void DeformMesh(CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Update the value of the coordinates after the grid movement.
