@@ -1686,24 +1686,6 @@ inline void CMeshVariable::SetDisplacement_n1(void){
     Displacement_n1[iDim] = Displacement_n[iDim];
 }
 
-inline su2double CMeshVariable::GetVelocity(unsigned short iDim) { return Velocity[iDim]; }
-
-inline void CMeshVariable::SetVelocity(unsigned short iDim, su2double val_vel) { Velocity[iDim] = val_vel;}
-
-inline su2double CMeshVariable::GetVelocity_n(unsigned short iDim) { return Velocity_n[iDim]; }
-
-inline void CMeshVariable::SetVelocity_n(void){
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity_n[iDim] = Velocity[iDim];
-}
-
-inline su2double CMeshVariable::GetVelocity_n1(unsigned short iDim) { return Velocity_n1[iDim]; }
-
-inline void CMeshVariable::SetVelocity_n1(void){
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Velocity_n1[iDim] = Velocity_n[iDim];
-}
-
 inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
 
 inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = val_dist; }
