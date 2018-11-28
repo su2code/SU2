@@ -5117,7 +5117,7 @@ protected:
   su2double Ref_WallDistance;   /*!< \brief Store the wall distance in reference coordinates. */
   su2double Curr_WallDistance;  /*!< \brief Store the wall distance in current coordinates. */
 
-  su2double *Ref_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
+  su2double *Mesh_Coord;           /*!< \brief Store the reference coordinates of the mesh. */
   su2double *Curr_Coord;          /*!< \brief Store the current coordinates of the mesh. */
 
   su2double *Displacement;        /*!< \brief Displacement of the mesh at time n+1 respect to the original coordinates. */
@@ -5146,23 +5146,23 @@ public:
 
   /*!
    * \brief Get the value of the undeformed coordinates.
-   * \param[in] iDim - Index of Ref_Coord[nDim]
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the original coordinate iDim.
    */
-  su2double GetRef_Coord(unsigned short iDim);
+  su2double GetMesh_Coord(unsigned short iDim);
 
   /*!
    * \brief Get the undeformed coordinates.
    * \return Pointer to the reference coordinates.
    */
-  su2double *GetRef_Coord();
+  su2double *GetMesh_Coord();
 
   /*!
    * \brief Set the value of the undeformed coordinates.
-   * \param[in] iDim - Index of Ref_Coord[nDim]
-   * \param[in] val_coord - Value of Ref_Coord[nDim]
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
+   * \param[in] val_coord - Value of Mesh_Coord[nDim]
    */
-  void SetRef_Coord(unsigned short iDim, su2double val_coord);
+  void SetMesh_Coord(unsigned short iDim, su2double val_coord);
 
   /*!
    * \brief Get the value of the current coordinates.
@@ -5202,6 +5202,11 @@ public:
    * \param[in] val_coord - Value of Displacement[nDim]
    */
   void SetDisplacement(unsigned short iDim, su2double val_disp);
+
+  /*!
+   * \brief Compute the value of the displacement.
+   */
+  void ComputeDisplacement(void);
 
   /*!
    * \brief Get the value of the displacement at the previous sub-iteration (assuming multizone)
@@ -5279,7 +5284,7 @@ public:
 
   /*!
    * \brief Get the value of the wall distance in reference coordinates.
-   * \param[in] iDim - Index of Ref_Coord[nDim]
+   * \param[in] iDim - Index of Mesh_Coord[nDim]
    * \return Value of the wall distance in reference coordinates.
    */
   su2double GetRef_WallDistance(void);
