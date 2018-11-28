@@ -1704,13 +1704,9 @@ inline void CMeshVariable::SetVelocity_n1(void){
     Velocity_n1[iDim] = Velocity_n[iDim];
 }
 
-inline su2double CMeshVariable::GetRef_WallDistance(void) { return Ref_WallDistance; }
+inline su2double CMeshVariable::GetWallDistance(void) { return WallDistance; }
 
-inline void CMeshVariable::SetRef_WallDistance(su2double val_dist) { Ref_WallDistance = val_dist; }
-
-inline su2double CMeshVariable::GetCurr_WallDistance(void) { return Curr_WallDistance; }
-
-inline void CMeshVariable::SetCurr_WallDistance(su2double val_dist) { Curr_WallDistance = val_dist; }
+inline void CMeshVariable::SetWallDistance(su2double val_dist) { WallDistance = val_dist; }
 
 inline su2double CMeshElement::GetRef_Volume(void) { return Ref_Volume; }
 

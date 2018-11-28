@@ -412,7 +412,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
       WallADT.DetermineNearestNode(node[iPoint]->GetMesh_Coord(), dist,
                                    pointID, rankID);
-      node[iPoint]->SetRef_WallDistance(dist);
+      node[iPoint]->SetWallDistance(dist);
 
       MaxDistance = max(MaxDistance, dist);
 
@@ -437,8 +437,8 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   /*--- Normalize distance from 0 to 1 ---*/
   for (iPoint=0; iPoint < nPoint; ++iPoint) {
-    nodeDist = node[iPoint]->GetRef_WallDistance()/MaxDistance;
-    node[iPoint]->SetRef_WallDistance(nodeDist);
+    nodeDist = node[iPoint]->GetWallDistance()/MaxDistance;
+    node[iPoint]->SetWallDistance(nodeDist);
   }
 
   /*--- Compute the element distances ---*/
@@ -460,7 +460,7 @@ void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
     ElemDist = 0.0;
     for (iNodes = 0; iNodes < nNodes; iNodes++){
-      ElemDist += node[PointCorners[iNodes]]->GetRef_WallDistance();
+      ElemDist += node[PointCorners[iNodes]]->GetWallDistance();
     }
     ElemDist = ElemDist/(su2double)nNodes;
 
