@@ -144,7 +144,10 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
+  su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
+  su2double Buffet_lambda; /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -1025,6 +1028,18 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  bool topology_optimization; /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
+  string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
+  su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
+  su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
+  unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
+                *top_optim_kernels, /*!< \brief The kernels to use. */
+                 top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
+                 top_optim_nRadius; /*!< \brief Number of radius values specified. */
+  su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
+            *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
+  su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -5834,6 +5849,24 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv);
+    
+  /*!
+   * \brief Provides the buffet monitoring information.
+   * \return Buffet monitoring information, if <code>TRUE</code> then the code will compute the buffet sensor.
+   */
+  bool GetBuffet_Monitoring(void);
+    
+  /*!
+   * \brief Get the buffet sensor sharpness coefficient.
+   * \return Sharpness coefficient for buffet sensor.
+   */
+  su2double GetBuffet_k(void);
+    
+  /*!
+   * \brief Get the buffet sensor offset parameter.
+   * \return Offset parameter for buffet sensor.
+   */
+  su2double GetBuffet_lambda(void);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
@@ -8696,6 +8729,47 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux(void);
+  
+  /*!
+   * \brief Get Compute Average.
+   * \return YES if start computing averages
+   */
+  bool GetCompute_Average(void);
+  
+  /*!
+   * \brief Get topology optimization.
+   */
+  bool GetTopology_Optimization(void) const;
+
+  /*!
+   * \brief Get name of output file for topology optimization derivatives.
+   */
+  string GetTopology_Optim_FileName(void) const;
+
+  /*!
+   * \brief Get exponent for density-based stiffness penalization.
+   */
+  su2double GetSIMP_Exponent(void) const;
+
+  /*!
+   * \brief Get lower bound for density-based stiffness penalization.
+   */
+  su2double GetSIMP_MinStiffness(void) const;
+  
+  /*!
+   * \brief Number of kernels to use in filtering the design density field.
+   */
+  unsigned short GetTopology_Optim_Num_Kernels(void) const;
+  
+  /*!
+   * \brief Get the i'th kernel to use, its parameter, and the radius.
+   */
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+                                su2double &param, su2double &radius) const;
+  /*!
+   * \brief Get the type and parameter for the projection function used in topology optimization
+   */
+  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const;
 
   /*!
    * \brief Retrieve the ofstream of the history file for the current zone.
@@ -8706,12 +8780,6 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
-  
-  /*!
-   * \brief Get Compute Average.
-   * \return YES if start computing averages
-   */
-  bool GetCompute_Average(void);
 
 };
 
