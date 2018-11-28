@@ -89,8 +89,10 @@ int main(int argc, char *argv[]) {
   
   CConfig *config = NULL;
   config = new CConfig(config_file_name, SU2_CFD);
-
-  nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  if (config->GetKind_Solver() == MULTIZONE)
+    nZone  = config->GetnConfigFiles();
+  else
+    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
@@ -100,8 +102,18 @@ int main(int argc, char *argv[]) {
   /*--- First, given the basic information about the number of zones and the
    solver types from the config, instantiate the appropriate driver for the problem
    and perform all the preprocessing. ---*/
+  if (config->GetSinglezone_Driver()) {
 
-  if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
+    /*--- Single zone problem: instantiate the single zone driver class. ---*/
+
+    if (nZone > 1 ) {
+      SU2_MPI::Error("The required solver doesn't support multizone simulations", CURRENT_FUNCTION);
+    }
+
+    driver = new CSinglezoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+  }
+  else if ( (config->GetKind_Solver() == FEM_ELASTICITY ||
         config->GetKind_Solver() == DISC_ADJ_FEM ) ) {
 
     /*--- Single zone problem: instantiate the single zone driver class. ---*/
@@ -111,6 +123,12 @@ int main(int argc, char *argv[]) {
     }
     
     driver = new CGeneralDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+  } else if (config->GetKind_Solver() == MULTIZONE) {
+
+    /*--- Multizone Driver. ---*/
+
+    driver = new CMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
