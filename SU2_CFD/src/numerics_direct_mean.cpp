@@ -4726,25 +4726,38 @@ void CAvgGrad_Flow::GetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
     sqvel += val_Mean_PrimVar[iDim+1]*val_Mean_PrimVar[iDim+1];
   }
 
-  su2double phi = 0.5*(Gamma-1.0)*sqvel;
-  su2double Density = val_Mean_PrimVar[nDim+2];
-  su2double Pressure = val_Mean_PrimVar[nDim+1];
-  su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
-  su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
-  su2double cpoR = Gamma/(Gamma-1.0); // cp over R
-  su2double phi_rho = -cpoR*heat_flux_factor*Pressure/(Density*Density);
-  su2double phi_p = cpoR*heat_flux_factor/(Density);
-  su2double rhoovisc = Density/(total_viscosity); // rho over viscosity
+  const su2double Density = val_Mean_PrimVar[nDim+2];
+  const su2double Pressure = val_Mean_PrimVar[nDim+1];
+  const su2double phi = Gamma_Minus_One/Density;
 
-  const su2double xi = total_viscosity/(Density*val_dist_ij);
+  /*--- R times partial derivatives of temp. ---*/
 
-  heat_flux_jac_i[0] = xi*(rhoovisc*(phi_rho+phi*phi_p));
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    heat_flux_jac_i[iDim+1] = -xi*(rhoovisc*phi_p*(Gamma-1)*val_Mean_PrimVar[iDim+1]);
+  const su2double R_dTdu0 = -Pressure/(Density*Density) + 0.5*sqvel*phi;
+  const su2double R_dTdu1 = -phi*val_Mean_PrimVar[1];
+  const su2double R_dTdu2 = -phi*val_Mean_PrimVar[2];
+
+  const su2double heat_flux_factor = val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb;
+  const su2double cpoR = Gamma/Gamma_Minus_One; // cp over R
+  const su2double conductivity_over_Rd = cpoR*heat_flux_factor/val_dist_ij;
+
+  heat_flux_jac_i[0] = conductivity_over_Rd * R_dTdu0;
+  heat_flux_jac_i[1] = conductivity_over_Rd * R_dTdu1;
+  heat_flux_jac_i[2] = conductivity_over_Rd * R_dTdu2;
+
+  if (nDim == 2) {
+
+    const su2double R_dTdu3 = phi;
+    heat_flux_jac_i[3] = conductivity_over_Rd * R_dTdu3;
+
+  } else {
+
+    const su2double R_dTdu3 = -phi*val_Mean_PrimVar[3];
+    const su2double R_dTdu4 = phi;
+    heat_flux_jac_i[3] = conductivity_over_Rd * R_dTdu3;
+    heat_flux_jac_i[4] = conductivity_over_Rd * R_dTdu4;
+
   }
-  heat_flux_jac_i[nDim+1] = xi*((Gamma-1)*rhoovisc*phi_p);
 }
-
 
 void CAvgGrad_Flow::GetViscousProjFlux(const su2double *val_primvar,
                                        const su2double *val_normal) {
