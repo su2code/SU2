@@ -4364,6 +4364,7 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, C
   for (iVar = 0; iVar < nDim+1; iVar++)
     Mean_GradPrimVar[iVar] = new su2double [nDim];
   
+  heat_flux_vector = new su2double[nDim];
 }
 
 CAvgGrad_Flow::~CAvgGrad_Flow(void) {
@@ -4374,6 +4375,10 @@ CAvgGrad_Flow::~CAvgGrad_Flow(void) {
   for (iVar = 0; iVar < nDim+1; iVar++)
     delete [] Mean_GradPrimVar[iVar];
   delete [] Mean_GradPrimVar;
+
+  if (heat_flux_vector != NULL) {
+    delete [] heat_flux_vector;
+  }
   
 }
 
@@ -4432,7 +4437,10 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   if (Mean_TauWall > 0)
     AddTauWall(Normal, Mean_TauWall);
 
-  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall, QCR);
+  GetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
+                    Mean_Eddy_Viscosity);
+
+  GetViscousProjFlux(Mean_PrimVar, Normal);
 
   /*--- Update viscous residual ---*/
   
@@ -4553,6 +4561,67 @@ void CAvgGrad_Flow::AddTauWall(const su2double *val_normal,
   for (iDim = 0 ; iDim < nDim; iDim++)
     for (jDim = 0 ; jDim < nDim; jDim++)
       tau[iDim][jDim] = tau[iDim][jDim]*(val_tau_wall/WallShearStress);
+}
+
+void CAvgGrad_Flow::GetHeatFluxVector(su2double **val_gradprimvar,
+                                      const su2double val_laminar_viscosity,
+                                      const su2double val_eddy_viscosity) {
+
+  const su2double Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
+  const su2double heat_flux_factor = Cp * (val_laminar_viscosity/Prandtl_Lam + val_eddy_viscosity/Prandtl_Turb);
+
+  /*--- Gradient of primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    heat_flux_vector[iDim] = heat_flux_factor*val_gradprimvar[0][iDim];
+  }
+}
+
+void CAvgGrad_Flow::GetViscousProjFlux(const su2double *val_primvar,
+                                       const su2double *val_normal) {
+
+  unsigned short iVar, iDim;
+
+  /*--- Primitive variables -> [Temp vel_x vel_y vel_z Pressure] ---*/
+
+  if (nDim == 2) {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2]+
+        heat_flux_vector[0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2]+
+        heat_flux_vector[1];
+  } else {
+    Flux_Tensor[0][0] = 0.0;
+    Flux_Tensor[1][0] = tau[0][0];
+    Flux_Tensor[2][0] = tau[0][1];
+    Flux_Tensor[3][0] = tau[0][2];
+    Flux_Tensor[4][0] = tau[0][0]*val_primvar[1] + tau[0][1]*val_primvar[2] + tau[0][2]*val_primvar[3] +
+        heat_flux_vector[0];
+    Flux_Tensor[0][1] = 0.0;
+    Flux_Tensor[1][1] = tau[1][0];
+    Flux_Tensor[2][1] = tau[1][1];
+    Flux_Tensor[3][1] = tau[1][2];
+    Flux_Tensor[4][1] = tau[1][0]*val_primvar[1] + tau[1][1]*val_primvar[2] + tau[1][2]*val_primvar[3] +
+        heat_flux_vector[1];
+    Flux_Tensor[0][2] = 0.0;
+    Flux_Tensor[1][2] = tau[2][0];
+    Flux_Tensor[2][2] = tau[2][1];
+    Flux_Tensor[3][2] = tau[2][2];
+    Flux_Tensor[4][2] = tau[2][0]*val_primvar[1] + tau[2][1]*val_primvar[2] + tau[2][2]*val_primvar[3] +
+        heat_flux_vector[2];
+  }
+  
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
+  
 }
 
 CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
