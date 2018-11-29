@@ -15742,11 +15742,8 @@ private:
 class CMeshSolver : public CSolver {
 protected:
 
-  unsigned short nDim;    /*!< \brief Number of dimensions. */
-  unsigned short nVar;    /*!< \brief Number of variables. */
-
-  unsigned long nPoint;   /*!< \brief Number of points. */
-  unsigned long nPointDomain;   /*!< \brief Number of points in the domain. */
+  bool time_domain;        /*!< \brief Number of dimensions. */
+  bool multizone;
 
   unsigned long nElem;
 
@@ -15754,9 +15751,6 @@ protected:
   su2double valResidual;
 
   su2double *Coordinate;       /*!< \brief Auxiliary nDim vector. */
-
-  su2double *Residual,         /*!< \brief Auxiliary nDim vector. */
-            *Solution;         /*!< \brief Auxiliary nDim vector. */
 
   su2double **matrixZeros;     /*!< \brief Submatrix to make zeros and impose boundary conditions. */
   su2double **matrixId;        /*!< \brief Diagonal submatrix to impose boundary conditions. */
@@ -15780,8 +15774,6 @@ protected:
   su2double Mu;                 /*!< \brief Lame's coeficient. */
   su2double Lambda;             /*!< \brief Lame's coeficient. */
 
-  su2double **Jacobian_ij;      /*!< \brief Submatrix to store the constitutive term for node ij. */
-
   su2double **Ba_Mat,           /*!< \brief Matrix B for node a - Auxiliary. */
             **Bb_Mat;           /*!< \brief Matrix B for node b - Auxiliary. */
   su2double **KAux_ab;          /*!< \brief Stiffness sub-term  - Auxiliary. */
@@ -15804,6 +15796,13 @@ public:
    * \brief Destructor of the class.
    */
   ~CMeshSolver(void);
+
+  /*!
+   * \brief Grid deformation using the linear elasticity equations.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void DeformMesh(CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume of the elements in the domain.
@@ -15837,15 +15836,6 @@ public:
   void Set_Element_Stiffness(unsigned long iElem, CGeometry *geometry, CConfig *config);
 
   /*!
-   * \brief Grid deformation using the linear elasticity equations.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] UpdateGeo - Update geometry.
-   * \param[in] Derivative - Compute the derivative (disabled by default). Does not actually deform the grid if enabled.
-   */
-  void DeformMesh(CGeometry **geometry, CConfig *config);
-
-  /*!
    * \brief Update the value of the coordinates after the grid movement.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -15858,6 +15848,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void UpdateDualGrid(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Compute the grid velocity form the displacements of the mesh.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeGridVelocity(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Update the coarse multigrid levels after the grid movement.

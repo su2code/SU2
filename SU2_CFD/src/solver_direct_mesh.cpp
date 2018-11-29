@@ -40,6 +40,11 @@
 
 CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
+    /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
+
+    bool time_domain = config->GetTime_Domain();
+    bool multizone = config->GetMultizone_Problem();
+
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
 
@@ -335,7 +340,6 @@ void CMeshSolver::SetMinMaxVolume(CGeometry *geometry, CConfig *config, bool upd
 
 }
 
-
 void CMeshSolver::SetWallDistance(CGeometry *geometry, CConfig *config) {
 
   unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
@@ -627,11 +631,13 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config){
 
   }
 
+  /*--- The Grid Velocity is only computed if the problem is time domain ---*/
+  if (time_domain) ComputeGridVelocity(geometry[MESH_0], config);
+
   /*--- Update the dual grid. ---*/
   UpdateMultiGrid(geometry, config);
 
 }
-
 
 void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
@@ -664,7 +670,6 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
 
 }
 
-
 void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 
   /*--- After moving all nodes, update the dual mesh. Recompute the edges and
@@ -677,20 +682,64 @@ void CMeshSolver::UpdateDualGrid(CGeometry *geometry, CConfig *config){
 
 }
 
+void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
+
+  /*--- Local variables ---*/
+
+  su2double *Disp_nP1 = NULL, *Disp_n = NULL, *Disp_nM1 = NULL;
+  su2double TimeStep, GridVel = 0.0;
+  unsigned long iPoint;
+  unsigned short iDim;
+
+  /*--- Compute the velocity of each node in the volume mesh ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+
+    /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
+
+    Disp_nM1 = node[iPoint]->GetDisplacement_n1();
+    Disp_n   = node[iPoint]->GetDisplacement_n();
+    Disp_nP1 = node[iPoint]->GetDisplacement();
+
+    /*--- Unsteady time step ---*/
+
+    TimeStep = config->GetDelta_UnstTimeND();
+
+    /*--- Compute mesh velocity with 1st or 2nd-order approximation ---*/
+
+    for (iDim = 0; iDim < nDim; iDim++) {
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        GridVel = ( Disp_nP1[iDim] - Disp_n[iDim] ) / TimeStep;
+      if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+        GridVel = ( 3.0*Disp_nP1[iDim] - 4.0*Disp_n[iDim]
+                    +  1.0*Disp_nM1[iDim] ) / (2.0*TimeStep);
+
+      /*--- Store grid velocity for this point ---*/
+
+      geometry->node[iPoint]->SetGridVel(iDim, GridVel);
+
+    }
+  }
+
+  /*--- The velocity is computed for nPointDomain, now we communicate it ---*/
+  geometry->Set_MPI_GridVel(config);
+
+}
 
 void CMeshSolver::UpdateMultiGrid(CGeometry **geometry, CConfig *config){
 
   unsigned short iMGfine, iMGlevel, nMGlevel = config->GetnMGLevels();
 
   /*--- Update the multigrid structure after moving the finest grid,
-   including computing the grid velocities on the coarser levels. ---*/
+   including computing the grid velocities on the coarser levels
+   when the problem is solved in unsteady conditions. ---*/
 
   for (iMGlevel = 1; iMGlevel <= nMGlevel; iMGlevel++) {
     iMGfine = iMGlevel-1;
     geometry[iMGlevel]->SetControlVolume(config, geometry[iMGfine], UPDATE);
     geometry[iMGlevel]->SetBoundControlVolume(config, geometry[iMGfine],UPDATE);
     geometry[iMGlevel]->SetCoord(geometry[iMGfine]);
-    if (config->GetGrid_Movement())
+    if (time_domain)
       geometry[iMGlevel]->SetRestricted_GridVelocity(geometry[iMGfine], config);
   }
 
@@ -734,7 +783,6 @@ void CMeshSolver::SetBoundaryDisplacements(CGeometry *geometry, CConfig *config)
   /*--- All others are pending. ---*/
 
 }
-
 
 void CMeshSolver::SetClamped_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
@@ -1037,7 +1085,6 @@ void CMeshSolver::Solve_System_Mesh(CGeometry *geometry, CConfig *config){
 
 }
 
-
 void CMeshSolver::Compute_Element_Contribution(CElement *element, CConfig *config){
 
   unsigned short iVar, jVar, kVar;
@@ -1304,7 +1351,11 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
 
       index = counter*Restart_Vars[1];
       for (iDim = 0; iDim < nDim; iDim++){
+        /*--- Update the coordinates of the mesh ---*/
         curr_coord = Restart_Data[index+iDim];
+        geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, curr_coord);
+        /*--- Store the displacements computed as the current coordinates
+         minus the coordinates of the reference mesh file ---*/
         displ = curr_coord - node[iPoint_Local]->GetMesh_Coord(iDim);
         node[iPoint_Local]->SetDisplacement(iDim, displ);
       }
@@ -1330,29 +1381,29 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
                      string("It could be empty lines at the end of the file."), CURRENT_FUNCTION);
   }
 
-  /*--- Communicate the loaded solution on the fine grid before we transfer
-   it down to the coarse levels. We alo call the preprocessing routine
-   on the fine level in order to have all necessary quantities updated,
-   especially if this is a turbulent simulation (eddy viscosity). ---*/
-
+  /*--- Communicate the loaded displacements. ---*/
   solver[MESH_0][MESH_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
-
-  /*--- Update the geometry ---*/
 
   /*--- Communicate the new coordinates and grid velocities at the halos ---*/
   geometry[MESH_0]->Set_MPI_Coord(config);
 
-  /*--- Recompute the edges and  dual mesh control volumes in the
+  /*--- Recompute the edges and dual mesh control volumes in the
    domain and on the boundaries. ---*/
   UpdateDualGrid(geometry[MESH_0], config);
 
-  /*--- Update the multigrid structure after setting up the finest grid,
-   including computing the grid velocities on the coarser levels. ---*/
-  UpdateMultiGrid(geometry, config);
-
-  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
-  if (dual_time || time_stepping)
+  /*--- For time-domain problems, we need to compute the grid velocities ---*/
+  if (time_domain){
+    /*--- Update the old geometry (coordinates n and n-1) ---*/
     Restart_OldGeometry(geometry[MESH_0], config);
+    /*--- Once Displacement_n and Displacement_n1 are filled,
+     we can compute the Grid Velocity ---*/
+    ComputeGridVelocity(geometry[MESH_0], config);
+  }
+
+  /*--- Update the multigrid structure after setting up the finest grid,
+   including computing the grid velocities on the coarser levels
+   when the problem is unsteady. ---*/
+  UpdateMultiGrid(geometry, config);
 
   /*--- Delete the class memory that is used to load the restart. ---*/
 

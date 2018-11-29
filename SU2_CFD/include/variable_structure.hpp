@@ -5163,6 +5163,12 @@ public:
   su2double GetDisplacement(unsigned short iDim);
 
   /*!
+   * \brief Get the pointer to the vector of displacements at time n+1.
+   * \return Vector of displacements at time n+1.
+   */
+  su2double *GetDisplacement();
+
+  /*!
    * \brief Set the value of the displacement.
    * \param[in] iDim - Index of Displacement[nDim]
    * \param[in] val_coord - Value of Displacement[nDim]
@@ -5189,6 +5195,12 @@ public:
   su2double GetDisplacement_n(unsigned short iDim);
 
   /*!
+   * \brief Get the pointer to the vector of displacements at time n.
+   * \return Vector of displacements at time n.
+   */
+  su2double *GetDisplacement_n();
+
+  /*!
    * \brief Move Displacement into Displacement_n.
    */
   void SetDisplacement_n(void);
@@ -5207,6 +5219,12 @@ public:
    * \return Value of the displacement at time n-1 and position iDim.
    */
   su2double GetDisplacement_n1(unsigned short iDim);
+
+  /*!
+   * \brief Get the pointer to the vector of displacements at time n-1.
+   * \return Vector of displacements at time n-1.
+   */
+  su2double *GetDisplacement_n1();
 
   /*!
    * \brief Move Displacement_n into Displacement_n1.
