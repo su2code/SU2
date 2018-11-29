@@ -58,6 +58,7 @@ private:
   Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
   bool implicit; /*!< \brief Implicit calculus. */
+  su2double* heat_flux_vector;
 
   void GetTau(const su2double *val_primvar,
               su2double **val_gradprimvar,
@@ -69,6 +70,13 @@ private:
 
   void AddTauWall(const su2double *val_normal,
                   const su2double val_tau_wall);
+
+  void GetHeatFluxVector(su2double **val_gradprimvar,
+                         const su2double val_laminar_viscosity,
+                         const su2double val_eddy_viscosity);
+
+  void GetViscousProjFlux(const su2double *val_primvar,
+                          const su2double *val_normal);
 
 public:
 
