@@ -95,6 +95,8 @@ libSU2Core_sources = \
   ../src/fluid_model_inc.cpp \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
+  ../src/driver_direct_multizone.cpp \
+  ../src/driver_direct_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \
   ../src/numerics_adjoint_mean.cpp \
