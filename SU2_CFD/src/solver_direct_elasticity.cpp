@@ -431,7 +431,7 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
    }
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (config->GetMultizone_Residual()){
 
     FSI_Residual      = 0.0;
     RelaxCoeff        = 1.0;
@@ -4088,7 +4088,7 @@ void CFEASolver::PredictStruct_Displacement(CGeometry **fea_geometry,
 }
 
 void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config,
-                                                      CSolver ***fea_solution, unsigned long iFSIIter) {
+                                                      CSolver ***fea_solution, unsigned long iOuterIter) {
   
   unsigned long iPoint, iDim;
   su2double rbuf_numAitk = 0, sbuf_numAitk = 0;
@@ -4121,10 +4121,10 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         SetWAitken_Dyn(1.0);
         
-        if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
-        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
+        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 ;
         else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << 1.0 << "," ;
       }
       
@@ -4135,17 +4135,17 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         SetWAitken_Dyn(fea_config->GetAitkenStatRelax());
         
-        if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+        if (iOuterIter == 0) historyFile_FSI << " " << endl ;
         historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
-        if (iFSIIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
+        historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
+        if (iOuterIter == 0) historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() ;
         else historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << fea_config->GetAitkenStatRelax() << "," ;
       }
       
     }
     else if (RelaxMethod_FSI == AITKEN_DYNAMIC) {
       
-      if (iFSIIter == 0) {
+      if (iOuterIter == 0) {
         
         WAitkDyn_tn1 = GetWAitken_Dyn_tn1();
         WAitkDyn_Max = fea_config->GetAitkenDynMaxInit();
@@ -4156,9 +4156,9 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         SetWAitken_Dyn(WAitkDyn);
         if (writeHistFSI && (rank == MASTER_NODE)) {
-          if (iFSIIter == 0) historyFile_FSI << " " << endl ;
+          if (iOuterIter == 0) historyFile_FSI << " " << endl ;
           historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
           historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn ;
         }
         
@@ -4210,7 +4210,7 @@ void CFEASolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fe
         
         if (writeHistFSI && (rank == MASTER_NODE)) {
           historyFile_FSI << setiosflags(ios::fixed) << setprecision(4) << CurrentTime << "," ;
-          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iFSIIter << "," ;
+          historyFile_FSI << setiosflags(ios::fixed) << setprecision(1) << iOuterIter << "," ;
           historyFile_FSI << setiosflags(ios::scientific) << setprecision(4) << WAitkDyn << "," ;
         }
         
@@ -4703,7 +4703,7 @@ void CFEASolver::Stiffness_Penalty(CGeometry *geometry, CSolver **solver, CNumer
 
 }
 
-void CFEASolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CFEASolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
