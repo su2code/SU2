@@ -869,7 +869,7 @@ def main():
     # FSI, 2d
     fsi2d           = TestCase('fsi2d')
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
-    fsi2d.cfg_file  = "configFSI_2D.cfg"
+    fsi2d.cfg_file  = "configFSI.cfg"
     fsi2d.test_iter = 4
     fsi2d.test_vals = [2.000000, 0.500000, -7.780230, -1.142095] #last 4 columns
     fsi2d.su2_exec  = "parallel_computation_fsi.py -f"
@@ -884,7 +884,7 @@ def main():
     # CHT incompressible
     cht_incompressible           = TestCase('cht_incompressible')
     cht_incompressible.cfg_dir   = "coupled_cht/incompressible"
-    cht_incompressible.cfg_file  = "coupled_cht_incompressible.cfg"
+    cht_incompressible.cfg_file  = "config.cfg"
     cht_incompressible.test_iter = 10
     cht_incompressible.test_vals = [0.000000, 0.000000, -7.792549, -10248.498468] #last 4 columns
     cht_incompressible.su2_exec  = "parallel_computation.py -f"
