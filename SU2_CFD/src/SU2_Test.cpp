@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
   const unsigned short iZone = 0;
   const unsigned short nZone = 1;
   CConfig* config = new CConfig("test.cfg", SU2_CFD, iZone, nZone, 2, VERB_NONE);
+  config->SetGas_ConstantND(287.058);
 
   const su2double distance = 1;
   const su2double area = 3;
@@ -233,6 +234,7 @@ int main(int argc, char *argv[]) {
   numerics->SetPrimitive(primvar_i, primvar_j);
   numerics->SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
   numerics->SetTurbKineticEnergy(tke, tke);
+  numerics->SetTauWall(0, 0);
   numerics->ComputeResidual(residual_i, Jacobian_i, Jacobian_j, config);
 
   su2double expected_residual[nVar] = {0, -18, 12, 0, 6};
@@ -275,7 +277,7 @@ int main(int argc, char *argv[]) {
   delete numerics;
 
   delete config;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+  for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
     delete[] primvar_grad_i[iVar];
     delete[] primvar_grad_j[iVar];
   }

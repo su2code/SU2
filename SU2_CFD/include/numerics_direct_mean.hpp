@@ -58,8 +58,18 @@ private:
   Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
   bool implicit; /*!< \brief Implicit calculus. */
-  su2double* heat_flux_vector;
+  su2double
+  *heat_flux_vector, /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
+  **tau_jacobian_i; /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
 
+  /*!
+   * \brief Calculate the viscous and turbulent stress tensor
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_turb_ke - Turbulent kinetic energy
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   */
   void GetTau(const su2double *val_primvar,
               su2double **val_gradprimvar,
               const su2double val_turb_ke,
@@ -70,13 +80,56 @@ private:
 
   void AddTauWall(const su2double *val_normal,
                   const su2double val_tau_wall);
+  /**
+   * \brief Calculate the jacobian of the viscous and turbulent stress tensor
+   *
+   * This Jacobian is projected onto the normal vector, so it is of dimension
+   * [nDim][nVar]
+   *
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   */
+  void GetTauJacobian(const su2double *val_Mean_PrimVar,
+                      const su2double val_laminar_viscosity,
+                      const su2double val_eddy_viscosity,
+                      const su2double val_dist_ij,
+                      const su2double *val_normal);
 
   void GetHeatFluxVector(su2double **val_gradprimvar,
                          const su2double val_laminar_viscosity,
                          const su2double val_eddy_viscosity);
 
+  /*!
+   * \brief Compute the projection of the viscous fluxes into a direction.
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   */
   void GetViscousProjFlux(const su2double *val_primvar,
                           const su2double *val_normal);
+
+  /*!
+   * \brief TSL-Approximation of Viscous NS Jacobians.
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_dS - Area of the face between two nodes.
+   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
+   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
+   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
+   */
+  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                          su2double val_laminar_viscosity,
+                          su2double val_eddy_viscosity,
+                          su2double val_dist_ij,
+                          su2double *val_normal, su2double val_dS,
+                          su2double *val_Proj_Visc_Flux,
+                          su2double **val_Proj_Jac_Tensor_i,
+                          su2double **val_Proj_Jac_Tensor_j);
 
 public:
 
