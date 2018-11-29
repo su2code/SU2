@@ -662,11 +662,14 @@ void CMeshSolver::UpdateGridCoord(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /* --- LinSysSol contains the non-transformed displacements in the periodic halo cells.
-   * Hence we still need a communication of the transformed coordinates, otherwise periodicity
-   * is not maintained. ---*/
-
+  /*--- LinSysSol contains the non-transformed displacements in the periodic halo cells.
+   Hence we still need a communication of the transformed coordinates, otherwise periodicity
+   is not maintained. ---*/
   geometry->Set_MPI_Coord(config);
+
+  /*--- In the same way, communicate the displacements in the solver to make sure the halo
+   nodes receive the correct value of the displacement. ---*/
+  Set_MPI_Displacement(geometry,config);
 
 }
 
@@ -691,8 +694,8 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
   unsigned long iPoint;
   unsigned short iDim;
 
-  /*--- Compute the velocity of each node in the volume mesh ---*/
-
+  /*--- Compute the velocity of each node in the domain of the current rank
+   (halo nodes are not computed as the grid velocity is later communicated) ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
     /*--- Coordinates of the current point at n+1, n, & n-1 time levels ---*/
@@ -721,7 +724,7 @@ void CMeshSolver::ComputeGridVelocity(CGeometry *geometry, CConfig *config){
     }
   }
 
-  /*--- The velocity is computed for nPointDomain, now we communicate it ---*/
+  /*--- The velocity was computed for nPointDomain, now we communicate it ---*/
   geometry->Set_MPI_GridVel(config);
 
 }
@@ -1585,3 +1588,135 @@ void CMeshSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CMeshSolver::Set_MPI_Displacement(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iDim, iMarker, iPeriodic_Index, MarkerS, MarkerR;
+  unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
+  su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta, phi, cosPhi, sinPhi, psi, cosPsi, sinPsi, *Buffer_Receive_Displ = NULL, *Buffer_Send_Displ = NULL, *Displ = NULL, *newDispl = NULL;
+  su2double *translation;
+  newDispl = new su2double[nDim];
+
+#ifdef HAVE_MPI
+  int send_to, receive_from;
+  SU2_MPI::Status status;
+#endif
+
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if ((config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) &&
+        (config->GetMarker_All_SendRecv(iMarker) > 0)) {
+
+      MarkerS = iMarker;  MarkerR = iMarker+1;
+
+#ifdef HAVE_MPI
+      send_to = config->GetMarker_All_SendRecv(MarkerS)-1;
+      receive_from = abs(config->GetMarker_All_SendRecv(MarkerR))-1;
+#endif
+
+      nVertexS = geometry->nVertex[MarkerS];  nVertexR = geometry->nVertex[MarkerR];
+      nBufferS_Vector = nVertexS*nDim;        nBufferR_Vector = nVertexR*nDim;
+
+      /*--- Allocate Receive and send buffers  ---*/
+
+      Buffer_Receive_Displ = new su2double [nBufferR_Vector];
+      Buffer_Send_Displ = new su2double[nBufferS_Vector];
+
+      /*--- Copy the coordinates that should be sent ---*/
+
+      for (iVertex = 0; iVertex < nVertexS; iVertex++) {
+        iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        Displ = node[iPoint]->GetDisplacement();
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Send_Displ[iDim*nVertexS+iVertex] = Displ[iDim];
+      }
+
+#ifdef HAVE_MPI
+      /*--- Send/Receive information using Sendrecv ---*/
+      SU2_MPI::Sendrecv(Buffer_Send_Displ, nBufferS_Vector, MPI_DOUBLE, send_to,0,
+                   Buffer_Receive_Displ, nBufferR_Vector, MPI_DOUBLE, receive_from,0, MPI_COMM_WORLD, &status);
+#else
+
+      /*--- Receive information without MPI ---*/
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        for (iDim = 0; iDim < nDim; iDim++)
+          Buffer_Receive_Displ[iDim*nVertexR+iVertex] = Buffer_Send_Displ[iDim*nVertexR+iVertex];
+      }
+
+#endif
+
+      /*--- Deallocate send buffer ---*/
+
+      delete [] Buffer_Send_Displ;
+
+      /*--- Do the coordinate transformation ---*/
+
+      for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+
+        /*--- Find point and its type of transformation ---*/
+
+        iPoint = geometry->vertex[MarkerR][iVertex]->GetNode();
+        iPeriodic_Index = geometry->vertex[MarkerR][iVertex]->GetRotation_Type();
+
+        /*--- Retrieve the supplied periodic information. ---*/
+
+        angles = config->GetPeriodicRotation(iPeriodic_Index);
+        translation = config->GetPeriodicTranslate(iPeriodic_Index);
+
+        /*--- Store angles separately for clarity. ---*/
+
+        theta    = angles[0];   phi    = angles[1];     psi    = angles[2];
+        cosTheta = cos(theta);  cosPhi = cos(phi);      cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);      sinPsi = sin(psi);
+
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis,
+         then z-axis. Note that this is the transpose of the matrix
+         used during the preprocessing stage. ---*/
+
+        rotMatrix[0][0] = cosPhi*cosPsi;    rotMatrix[1][0] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;     rotMatrix[2][0] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[0][1] = cosPhi*sinPsi;    rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;     rotMatrix[2][1] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[0][2] = -sinPhi;          rotMatrix[1][2] = sinTheta*cosPhi;                              rotMatrix[2][2] = cosTheta*cosPhi;
+
+        /*--- Copy coordinates before performing transformation. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          newDispl[iDim] = Buffer_Receive_Displ[iDim*nVertexR+iVertex];
+
+        /*--- Rotate the coordinates. ---*/
+
+        if (nDim == 2) {
+          newDispl[0] = (rotMatrix[0][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Displ[1*nVertexR+iVertex]) - translation[0];
+          newDispl[1] = (rotMatrix[1][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Displ[1*nVertexR+iVertex]) - translation[1];
+        }
+        else {
+          newDispl[0] = (rotMatrix[0][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
+                         rotMatrix[0][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
+                         rotMatrix[0][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
+          newDispl[1] = (rotMatrix[1][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
+                         rotMatrix[1][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
+                         rotMatrix[1][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
+          newDispl[2] = (rotMatrix[2][0]*Buffer_Receive_Displ[0*nVertexR+iVertex] +
+                         rotMatrix[2][1]*Buffer_Receive_Displ[1*nVertexR+iVertex] +
+                         rotMatrix[2][2]*Buffer_Receive_Displ[2*nVertexR+iVertex]);
+        }
+
+        /*--- Copy transformed coordinates back into buffer. ---*/
+
+        for (iDim = 0; iDim < nDim; iDim++)
+          node[iPoint]->SetDisplacement(iDim, newDispl[iDim]);
+
+      }
+
+      /*--- Deallocate receive buffer. ---*/
+
+      delete [] Buffer_Receive_Displ;
+
+    }
+
+  }
+
+  delete [] newDispl;
+
+}

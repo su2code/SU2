@@ -53,6 +53,8 @@ inline void CSolver::Set_MPI_Solution_Pred(CGeometry *geometry, CConfig *config)
 
 inline void CSolver::Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Set_MPI_Displacement(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Set_MPI_Solution_DispOnly(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Set_MPI_RefGeom(CGeometry *geometry, CConfig *config) { }

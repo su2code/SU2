@@ -239,6 +239,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Set_MPI_Solution_Pred_Old(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition for displacements in mesh deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Set_MPI_Displacement(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Impose the send-receive boundary condition for reference geometry (adjoint FEM).
@@ -15945,6 +15952,13 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    */
   void Restart_OldGeometry(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Impose the send-receive boundary condition for displacements in mesh deformation.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Set_MPI_Displacement(CGeometry *geometry, CConfig *config);
 
 
 };
