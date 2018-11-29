@@ -42,8 +42,8 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver() {
 
     /*--- Initialize some booleans that determine the kind of problem at hand. ---*/
 
-    bool time_domain = config->GetTime_Domain();
-    bool multizone = config->GetMultizone_Problem();
+    time_domain = config->GetTime_Domain();
+    multizone = config->GetMultizone_Problem();
 
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
@@ -879,7 +879,8 @@ void CMeshSolver::SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsig
     /*--- Get the displacement on the vertex ---*/
     VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
 
-    /*--- Add it to the current displacement ---*/
+    /*--- Add it to the current displacement (this will be replaced in the transfer routines
+     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
     for (iDim = 0; iDim < nDim; iDim++)
       VarCoord[iDim] = node[iNode]->GetDisplacement(iDim) + VarDisp[iDim];
 
@@ -1238,62 +1239,61 @@ void CMeshSolver::Compute_Constitutive_Matrix(void){
 
 }
 
-//void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
+void CMeshSolver::Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker){
 
-//  unsigned short iDim;
-//  unsigned long iNode, iVertex;
+  unsigned short iDim;
+  unsigned long iPoint, iVertex;
 
-//  su2double *VarCoord;
-//  su2double new_coord;
+  su2double *VarCoord = NULL, *VarDisp = NULL;
+  su2double new_coord;
 
-//  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
 
-//    /*--- Get node index ---*/
+    /*--- Get node index ---*/
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
 
-//    iNode = geometry->vertex[val_marker][iVertex]->GetNode();
+    /*--- Get the displacement on the vertex ---*/
+    VarDisp = geometry->vertex[val_marker][iVertex]->GetVarCoord();
 
-//    /*--- Get the displacement on the vertex ---*/
+    /*--- Add it to the current displacement (this will be replaced in the transfer routines
+     so that the displacements at the interface are directly transferred instead of incrementally) ---*/
+    for (iDim = 0; iDim < nDim; iDim++)
+      VarCoord[iDim] = node[iPoint]->GetDisplacement(iDim) + VarDisp[iDim];
 
-//    VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
+    if (geometry->node[iPoint]->GetDomain()) {
 
-//    if (geometry->node[iNode]->GetDomain()) {
+      /*--- Update the grid coordinates using the solution of the structural problem recorded in VarCoord. */
+      for (iDim = 0; iDim < nDim; iDim++) {
+        new_coord = node[iPoint]->GetMesh_Coord(iDim)+VarCoord[iDim];
+        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
+        geometry->node[iPoint]->SetCoord(iDim, new_coord);
+      }
+    }
 
-//      /*--- Update the grid coordinates using the solution of the structural problem
-//       *--- recorded in VarCoord. */
+  }
 
-//      for (iDim = 0; iDim < nDim; iDim++) {
-//        new_coord = geometry->node[iNode]->GetCoord(iDim)+VarCoord[iDim];
-//        if (fabs(new_coord) < EPS*EPS) new_coord = 0.0;
-//        geometry->node[iNode]->SetCoord(iDim, new_coord);
-//      }
-//    }
+}
 
-//  }
+void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
 
-//}
+  unsigned short iMarker;
 
-//void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
+  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
+   deforming meshes (MARKER_FSI_INTERFACE). ---*/
 
+  unsigned short Kind_SU2 = config->GetKind_SU2();
 
-//  unsigned short iMarker;
+  /*--- Set the dependencies on the FSI interfaces. ---*/
 
-//  /*--- Get the SU2 module. SU2_CFD will use this routine for dynamically
-//   deforming meshes (MARKER_FSI_INTERFACE). ---*/
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
+      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
+    }
+  }
 
-//  unsigned short Kind_SU2 = config->GetKind_SU2();
+  UpdateDualGrid(geometry[MESH_0], config);
 
-//  /*--- Set the dependencies on the FSI interfaces. ---*/
-
-//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-//    if ((config->GetMarker_All_ZoneInterface(iMarker) != 0) && (Kind_SU2 == SU2_CFD)) {
-//      Transfer_Boundary_Displacements(geometry[MESH_0], config, iMarker);
-//    }
-//  }
-
-//  UpdateDualGrid(geometry[MESH_0], config);
-
-//}
-
+}
 
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 

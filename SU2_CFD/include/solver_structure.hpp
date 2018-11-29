@@ -15899,18 +15899,6 @@ public:
    */
   void Solve_System_Mesh(CGeometry *geometry, CConfig *config);
 
-//  /*!
-//   * \brief Store the number of iterations when moving the mesh.
-//   * \param[in] val_nIterMesh - Number of iterations.
-//   */
-//  void Set_nIterMesh(unsigned long val_nIterMesh);
-
-//  /*!
-//   * \brief Retrieve the number of iterations when moving the mesh.
-//   * \param[out] Number of iterations.
-//   */
-//  unsigned long Get_nIterMesh(void);
-
   /*!
    * \brief Compute the stiffness of the element and the parameters Lambda and Mu
    */
@@ -15922,20 +15910,19 @@ public:
    */
   void Compute_Constitutive_Matrix(void);
 
-//  /*!
-//   * \brief Set the boundary displacements in the mesh side of the problem
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Transfer_Boundary_Displacements(CGeometry *geometry, CConfig *config, unsigned short val_marker);
 
-//  /*!
-//   * \brief Set the boundary displacements in the mesh side of the problem
-//   * \param[in] geometry - Geometrical definition of the problem.
-//   * \param[in] config - Definition of the particular problem.
-//   */
-//  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
-
+  /*!
+   * \brief Set the boundary displacements in the mesh side of the problem
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 
   /*!
    * \brief Load a solution from a restart file.
