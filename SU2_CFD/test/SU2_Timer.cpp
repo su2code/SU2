@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
    * SETUP
    * ---*/
 
-  CNumerics* numerics = new CAvgGrad_Flow(nDim, nVar, config);
+  CNumerics* numerics = new CAvgGrad_Flow(nDim, nVar, false, config);
 
   primvar_i[nDim+1] = 1.0; // pressure
   primvar_i[nDim+2] = 1.0; // density
