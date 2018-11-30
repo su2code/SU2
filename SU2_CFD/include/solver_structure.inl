@@ -88,7 +88,7 @@ inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int v
 
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
-inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
+inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iOuterIter) { }
 
 inline void CSolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
@@ -97,6 +97,8 @@ inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fe
 inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
 
@@ -427,6 +429,8 @@ inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 
 inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
+
+inline su2double CSolver::GetTotal_OFVolFrac() { return 0; }
 
 inline bool CSolver::IsElementBased(void){ return false; }
 
@@ -933,7 +937,7 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
-inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
@@ -2321,6 +2325,8 @@ inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return 
 inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 
 inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
+
+inline su2double CFEASolver::GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
 
 inline bool CFEASolver::IsElementBased(void){ return element_based; }
 
