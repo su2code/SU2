@@ -282,8 +282,8 @@ int main(int argc, char *argv[]) {
   CConfig* config = new CConfig("test.cfg", SU2_CFD, iZone, nZone, 2, VERB_NONE);
   config->SetGas_ConstantND(287.058);
 
-  CNumerics* ideal_numerics = new CAvgGrad_Flow(3, 5, config);
-  CNumerics* general_numerics = new CGeneralAvgGrad_Flow(3, 5, config);
+  CNumerics* ideal_numerics = new CAvgGrad_Flow(3, 5, false, config);
+  CNumerics* general_numerics = new CGeneralAvgGrad_Flow(3, 5, false, config);
 
   su2double ideal_residual_i[nVar] = {0, 0, 0, 0, 0};
   su2double general_residual_i[nVar] = {0, 0, 0, 0, 0};
