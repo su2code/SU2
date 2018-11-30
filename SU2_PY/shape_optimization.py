@@ -135,16 +135,26 @@ def shape_optimization( filename                           ,
     config.GRADIENT_METHOD = gradient
     
     its              = int ( config.OPT_ITERATIONS )                      # number of opt iterations
-    bound_upper      = float ( config.OPT_BOUND_UPPER )                   # variable bound to be scaled by the line search
-    bound_lower      = float ( config.OPT_BOUND_LOWER )                   # variable bound to be scaled by the line search
+    bound_upper      = map(float, config.OPT_BOUND_UPPER.split(','))      # variable bound to be scaled by the line search
+    bound_lower      = map(float, config.OPT_BOUND_LOWER.split(','))      # variable bound to be scaled by the line search
     relax_factor     = float ( config.OPT_RELAX_FACTOR )                  # line search scale
     gradient_factor  = float ( config.OPT_GRADIENT_FACTOR )               # objective function and gradient scale
     def_dv           = config.DEFINITION_DV                               # complete definition of the desing variable
     n_dv             = sum(def_dv['SIZE'])                                # number of design variables
     accu             = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
     x0          = [0.0]*n_dv # initial design
-    xb_low           = [float(bound_lower)/float(relax_factor)]*n_dv      # lower dv bound it includes the line search acceleration factor
-    xb_up            = [float(bound_upper)/float(relax_factor)]*n_dv      # upper dv bound it includes the line search acceleration fa
+    if len(bound_upper) == n_dv:
+        xb_up = [0] * len(bound_upper)
+        for i in range(0, len(bound_upper), 1):
+            xb_up[i] = bound_upper[i]/relax_factor  # upper dv bound it includes the line search acceleration factor
+    else:
+        xb_up            = [bound_upper[0]/relax_factor]*n_dv      # upper dv bound it includes the line search acceleration factor
+    if len(bound_lower) == n_dv:
+        xb_low = [0] * len(bound_lower)
+        for i in range(0, len(bound_lower), 1):
+            xb_low[i] = bound_lower[i]/relax_factor # lower dv bound it includes the line search acceleration factor
+    else:
+        xb_low           = [bound_lower[0]/relax_factor]*n_dv      # lower dv bound it includes the line search acceleration factor
     xb          = list(zip(xb_low, xb_up)) # design bounds
     
     # State
