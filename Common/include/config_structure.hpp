@@ -144,7 +144,10 @@ private:
   Sens_Remove_Sharp,			/*!< \brief Flag for removing or not the sharp edges from the sensitivity computation. */
   Hold_GridFixed,	/*!< \brief Flag hold fixed some part of the mesh during the deformation. */
   Axisymmetric, /*!< \brief Flag for axisymmetric calculations */
-  Integrated_HeatFlux; /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Integrated_HeatFlux, /*!< \brief Flag for heat flux BC whether it deals with integrated values.*/
+  Buffet_Monitoring;       /*!< \brief Flag for computing the buffet sensor.*/
+  su2double Buffet_k;     /*!< \brief Sharpness coefficient for buffet sensor.*/
+  su2double Buffet_lambda; /*!< \brief Offset parameter for buffet sensor.*/
   su2double Damp_Engine_Inflow;	/*!< \brief Damping factor for the engine inlet. */
   su2double Damp_Engine_Exhaust;	/*!< \brief Damping factor for the engine exhaust. */
   su2double Damp_Res_Restric,	/*!< \brief Damping factor for the residual restriction. */
@@ -395,7 +398,7 @@ private:
   unsigned long ExtIter;			/*!< \brief Current external iteration number. */
   unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
   unsigned long IntIter;			/*!< \brief Current internal iteration number. */
-  unsigned long FSIIter;			/*!< \brief Current Fluid Structure Interaction sub-iteration number. */
+  unsigned long OuterIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
@@ -450,6 +453,7 @@ private:
   su2double *NacelleLocation;   /*!< \brief Definition of the nacelle location. */
   unsigned short Kind_Solver,	/*!< \brief Kind of solver Euler, NS, Continuous adjoint, etc.  */
   *Kind_Solver_PerZone,  /*!< \brief Kind of solvers for each zone Euler, NS, Continuous adjoint, etc.  */
+  Kind_MZSolver,         /*!< \brief Kind of multizone solver.  */
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
@@ -524,7 +528,8 @@ private:
   MUSCL_AdjTurb; 	/*!< \brief MUSCL scheme for the adj turbulence equations.*/
   bool EulerPersson;        /*!< \brief Boolean to determine whether this is an Euler simulation with Persson shock capturing. */
   bool FSI_Problem,			/*!< \brief Boolean to determine whether the simulation is FSI or not. */
-  ZoneSpecific_Problem;   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
+  ZoneSpecific_Problem,   /*!< \brief Boolean to determine whether we wish to use zone-specific solvers. */
+  Multizone_Problem;      /*!< \brief Boolean to determine whether we are solving a multizone problem. */
   unsigned short nID_DV;  /*!< \brief ID for the region of FEM when computed using direct differentiation. */
   bool AD_Mode;         /*!< \brief Algorithmic Differentiation support. */
   bool AD_Preaccumulation;   /*!< \brief Enable or disable preaccumulation in the AD mode. */
@@ -657,6 +662,8 @@ private:
   *Marker_PyCustom,            /*!< \brief Markers that are customizable in Python. */
   *Marker_DV,            /*!< \brief Markers affected by the design variables. */
   *Marker_WallFunctions; /*!< \brief Markers for which wall functions must be applied. */
+  unsigned short  nConfig_Files;          /*!< \brief Number of config files for multiphysics problems. */
+  string *Config_Filenames;               /*!< \brief List of names for configuration files. */
   unsigned short  *Kind_WallFunctions;        /*!< \brief The kind of wall function to use for the corresponding markers. */
   unsigned short  **IntInfo_WallFunctions;    /*!< \brief Additional integer information for the wall function markers. */
   su2double       **DoubleInfo_WallFunctions; /*!< \brief Additional double information for the wall function markers. */
@@ -965,6 +972,8 @@ private:
   unsigned long IncLoad_Nincrements; /*!< \brief Number of increments. */
   su2double *IncLoad_Criteria;/*!< \brief Criteria for the application of incremental loading. */
   su2double Ramp_Time;			  /*!< \brief Time until the maximum load is applied. */
+  bool Predictor,             /*!< \brief Determines whether a predictor step is used. */
+  Relaxation;                 /*!< \brief Determines whether a relaxation step is used. */
   unsigned short Pred_Order;  /*!< \brief Order of the predictor for FSI applications. */
   unsigned short Kind_Interpolation; /*!\brief type of interpolation to use for FSI applications. */
   bool ConservativeInterpolation; /*!\brief Conservative approach for non matching mesh interpolation. */
@@ -1031,6 +1040,18 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
+  bool topology_optimization; /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
+  string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
+  su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
+  su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
+  unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
+                *top_optim_kernels, /*!< \brief The kernels to use. */
+                 top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
+                 top_optim_nRadius; /*!< \brief Number of radius values specified. */
+  su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
+            *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
+  su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
@@ -1046,6 +1067,19 @@ private:
   
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
+  bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
+  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
+  Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
+  Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
+  Restart_Iter;                 /*!< \brief Determines the restart iteration in the multizone problem */
+  su2double Time_Step;          /*!< \brief Determines the time step for the multizone problem */
+  su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
+  bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
+  bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
+  Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
+  bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -3052,7 +3086,7 @@ public:
    * \brief Set the current FSI iteration number.
    * \param[in] val_iter - Current FSI iteration number.
    */
-  void SetFSIIter(unsigned long val_iter);
+  void SetOuterIter(unsigned long val_iter);
   
   /*!
    * \brief Set the current internal iteration number.
@@ -3076,7 +3110,7 @@ public:
    * \brief Get the current FSI iteration number.
    * \return Current FSI iteration.
    */
-  unsigned long GetFSIIter(void);
+  unsigned long GetOuterIter(void);
   
   /*!
    * \brief Get the current internal iteration number.
@@ -3624,6 +3658,12 @@ public:
    */
   void SetKind_Solver(unsigned short val_solver);
   
+  /*!
+   * \brief Kind of Multizone Solver.
+   * \return Governing equation that we are solving.
+   */
+  unsigned short GetKind_MZSolver(void);
+
   
   /*!
    * \brief Governing equations of the flow (it can be different from the run time equation).
@@ -5530,6 +5570,12 @@ public:
   unsigned short GetKind_GridMovement(unsigned short val_iZone);
   
   /*!
+   * \brief Get the type of dynamic mesh motion. Each zone gets a config file.
+   * \return Type of dynamic mesh motion.
+   */
+  unsigned short GetKind_GridMovement();
+
+  /*!
    * \brief Set the type of dynamic mesh motion.
    * \param[in] val_iZone - Number for the current zone in the mesh (each zone has independent motion).
    * \param[in] motion_Type - Specify motion type.
@@ -5872,6 +5918,24 @@ public:
    * \return Design variable identification.
    */
   unsigned short GetDesign_Variable(unsigned short val_dv);
+    
+  /*!
+   * \brief Provides the buffet monitoring information.
+   * \return Buffet monitoring information, if <code>TRUE</code> then the code will compute the buffet sensor.
+   */
+  bool GetBuffet_Monitoring(void);
+    
+  /*!
+   * \brief Get the buffet sensor sharpness coefficient.
+   * \return Sharpness coefficient for buffet sensor.
+   */
+  su2double GetBuffet_k(void);
+    
+  /*!
+   * \brief Get the buffet sensor offset parameter.
+   * \return Offset parameter for buffet sensor.
+   */
+  su2double GetBuffet_lambda(void);
   
   /*!
    * \brief Obtain the kind of convergence criteria to establish the convergence of the CFD code.
@@ -5983,6 +6047,18 @@ public:
    */
   int GetMarker_ZoneInterface(string val_marker);
   
+  /*!
+   * \brief  Get the name of the marker <i>val_iMarker</i>.
+   * \return The name of the marker in the interface
+   */
+  string GetMarkerTag_ZoneInterface(unsigned short val_iMarker);
+
+  /*!
+   * \brief  Get the number of markers in the multizone interface.
+   * \return The number markers in the multizone interface
+   */
+  unsigned short GetnMarker_ZoneInterface(void);
+
   /*!
    * \brief Determines if problem is adjoint
    * \return true if Adjoint
@@ -8295,6 +8371,12 @@ public:
   su2double* GetFreeStreamTurboNormal(void);
 
   /*!
+   *
+   * \brief Set multizone properties.
+   */
+  void SetMultizone(CConfig *driver_config, CConfig **config_container);
+
+  /*!
    * \brief Get the verbosity level of the console output.
    * \return Verbosity level for the console output.
    */
@@ -8558,6 +8640,12 @@ public:
     */
    su2double GetTotalDV_Penalty(void);
   
+   /*!
+    * \brief Get whether a predictor is used for FSI applications.
+    * \return  Bool: determines if predictor is used or not
+    */
+   bool GetPredictor(void);
+
   /*!
    * \brief Get the order of the predictor for FSI applications.
    * \return 	Order of predictor
@@ -8577,11 +8665,35 @@ public:
   void SetEulerPersson(bool val_EulerPersson);
 
   /*!
+   * \brief Get whether a relaxation parameter is used for FSI applications.
+   * \return Bool: determines if relaxation parameter  is used or not
+   */
+  bool GetRelaxation(void);
+
+  /*!
    * \brief Check if the simulation we are running is a FSI simulation
    * \return Value of the physical time in an unsteady simulation.
    */
   bool GetFSI_Simulation(void);
   
+  /*!
+   * \brief Set that the simulation we are running is a FSI simulation
+   * \param[in] FSI_sim - boolean that determines is FSI_Problem is true/false.
+   */
+  void SetFSI_Simulation(bool FSI_sim);
+
+  /*!
+   * \brief Set that the simulation we are running is a multizone simulation
+   * \param[in] MZ_problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  void SetMultizone_Problem(bool MZ_problem);
+
+  /*!
+   * \brief Get whether the simulation we are running is a multizone simulation
+   * \return Multizone_Problem - boolean that determines is Multizone_Problem is true/false.
+   */
+  bool GetMultizone_Problem(void);
+
    /*!
     * \brief Get the ID for the FEA region that we want to compute the gradient for using direct differentiation
     * \return ID
@@ -8776,6 +8888,47 @@ public:
    * \return YES if the passed values is the integrated heat flux over the marker's surface.
    */
   bool GetIntegrated_HeatFlux(void);
+  
+  /*!
+   * \brief Get Compute Average.
+   * \return YES if start computing averages
+   */
+  bool GetCompute_Average(void);
+  
+  /*!
+   * \brief Get topology optimization.
+   */
+  bool GetTopology_Optimization(void) const;
+
+  /*!
+   * \brief Get name of output file for topology optimization derivatives.
+   */
+  string GetTopology_Optim_FileName(void) const;
+
+  /*!
+   * \brief Get exponent for density-based stiffness penalization.
+   */
+  su2double GetSIMP_Exponent(void) const;
+
+  /*!
+   * \brief Get lower bound for density-based stiffness penalization.
+   */
+  su2double GetSIMP_MinStiffness(void) const;
+  
+  /*!
+   * \brief Number of kernels to use in filtering the design density field.
+   */
+  unsigned short GetTopology_Optim_Num_Kernels(void) const;
+  
+  /*!
+   * \brief Get the i'th kernel to use, its parameter, and the radius.
+   */
+  void GetTopology_Optim_Kernel(const unsigned short iKernel, unsigned short &type,
+                                su2double &param, su2double &radius) const;
+  /*!
+   * \brief Get the type and parameter for the projection function used in topology optimization
+   */
+  void GetTopology_Optim_Projection(unsigned short &type, su2double &param) const;
 
   /*!
    * \brief Retrieve the ofstream of the history file for the current zone.
@@ -8786,13 +8939,96 @@ public:
    * \brief Set the ofstream of the history file for the current zone.
    */
   void SetHistFile(ofstream *HistFile);
-  
-  /*!
-   * \brief Get Compute Average.
-   * \return YES if start computing averages
-   */
-  bool GetCompute_Average(void);
 
+  /*!
+   * \brief Get the filenames of the individual config files
+   * \return File name of the config file for zone "index"
+   */
+  string GetConfigFilename(unsigned short index);
+
+  /*!
+   * \brief Get the number of config files
+   * \return Number of config filenames in CONFIG_LIST
+   */
+  unsigned short GetnConfigFiles(void);
+
+  /*!
+   * \brief Check if the multizone problem is solved for time domain.
+   * \return YES if time-domain is considered.
+   */
+  bool GetTime_Domain(void);
+
+  /*!
+   * \brief Get the number of inner iterations
+   * \return Number of inner iterations on each multizone block
+   */
+  unsigned long GetnInner_Iter(void);
+
+  /*!
+   * \brief Get the number of outer iterations
+   * \return Number of outer iterations for the multizone problem
+   */
+  unsigned long GetnOuter_Iter(void);
+
+  /*!
+   * \brief Get the number of time iterations
+   * \return Number of time steps run for the multizone problem
+   */
+  unsigned long GetnTime_Iter(void);
+
+  /*!
+   * \brief Get the number of pseudo-time iterations
+   * \return Number of pseudo-time steps run for the single-zone problem
+   */
+  unsigned long GetnIter(void);
+
+  /*!
+   * \brief Get the restart iteration
+   * \return Iteration for the restart of multizone problems
+   */
+  unsigned long GetRestart_Iter(void);
+
+  /*!
+   * \brief Get the time step for multizone problems
+   * \return Time step for multizone problems, it is set on all the zones
+   */
+  su2double GetTime_Step(void);
+
+  /*!
+   * \brief Get the maximum simulation time for time-domain problems
+   * \return Simulation time for multizone problems, it is set on all the zones
+   */
+  su2double GetMax_Time(void);
+
+  /*!
+   * \brief Check if the mesh read supports multiple zones.
+   * \return YES if multiple zones can be contained in the mesh file.
+   */
+  bool GetMultizone_Mesh(void);
+
+  /*!
+   * \brief Check if the mesh read supports multiple zones.
+   * \return YES if multiple zones can be contained in the mesh file.
+   */
+  bool GetMultizone_Residual(void);
+
+  /*!
+   * \brief Check if the (new) single-zone driver is to be used (temporary)
+   * \return YES if the (new) single-zone driver is to be used.
+   */
+  bool GetSinglezone_Driver(void);
+
+  /*!
+   * \brief Check if the special output is written
+   * \return YES if the special output is written.
+   */
+  bool GetSpecial_Output(void);
+
+  /*!
+   * \brief Check if the forces breakdown file is written
+   * \return YES if the forces breakdown file is written.
+   */
+  bool GetWrt_ForcesBreakdown(void);
 };
 
 #include "config_structure.inl"
