@@ -41,17 +41,3 @@ AM_CPPFLAGS += @su2_externals_INCLUDES@
 LDADD =  $(top_builddir)/SU2_CFD/obj/libSU2Core.a
 LDADD += $(top_builddir)/Common/lib/libSU2.a
 LDADD += @su2_externals_LIBS@
-
-# Programs to be built for testing
-check_PROGRAMS =
-check_PROGRAMS += viscous_residual
-check_PROGRAMS += viscous_general_vs_ideal
-
-# Test sources
-viscous_residual_SOURCES = viscous_residual_test.cpp
-viscous_general_vs_ideal_SOURCES = viscous_general_vs_ideal_test.cpp
-
-# Tests to be run
-TESTS =
-TESTS += viscous_residual
-TESTS += viscous_general_vs_ideal
