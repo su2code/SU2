@@ -746,18 +746,6 @@ public:
   void GetInviscidFlux(su2double val_density, su2double *val_velocity, su2double val_pressure, su2double val_enthalpy);
   
   /*!
-   * \brief Get the viscous fluxes.
-   * \param[in] val_primvar - Value of the primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_mach_inf - Value of the Mach number at the infinity.
-   */
-  void GetViscousFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                      su2double val_laminar_viscosity, su2double val_eddy_viscosity,
-                      su2double val_mach_inf);
-  
-  /*!
    * \brief Compute the projected inviscid flux vector.
    * \param[in] val_density - Pointer to the density.
    * \param[in] val_velocity - Pointer to the velocity.
@@ -783,43 +771,6 @@ public:
                                   su2double *val_pressure, su2double *val_betainc2,
                                   su2double *val_enthalpy,
                                   su2double *val_normal, su2double *val_Proj_Flux);
-  
-  /*!
-   * \brief Compute the projection of the viscous fluxes into a direction.
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_turb_ke - Turbulent kinetic energy
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_eddy_conductivity - Eddy Conductivity.
-   */
-  
-  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                          su2double val_turb_ke, su2double *val_normal,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double val_tau_wall,
-                          bool val_qcr);
-  /*!
-   * \brief Compute the projection of the viscous fluxes into a direction for general fluid model.
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_turb_ke - Turbulent kinetic energy
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_thermal_conductivity - Thermal Conductivity.
-   * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
-   */
-  
-  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                          su2double val_turb_ke, su2double *val_normal,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double val_thermal_conductivity,
-                          su2double val_heat_capacity_cp);
     
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
