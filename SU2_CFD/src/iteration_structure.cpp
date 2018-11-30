@@ -694,6 +694,12 @@ void CFluidIteration::Update(COutput *output,
       integration_container[val_iZone][val_iInst][FLOW_SOL]->SetDualTime_Solver(geometry_container[val_iZone][val_iInst][iMesh], solver_container[val_iZone][val_iInst][iMesh][FLOW_SOL], config_container[val_iZone], iMesh);
       integration_container[val_iZone][val_iInst][FLOW_SOL]->SetConvergence(false);
     }
+
+    /*--- Update dual time solver for the dynamic mesh solver ---*/
+    if (config_container[val_iZone]->GetGrid_Movement() &&
+        (config_container[val_iZone]->GetKind_GridMovement() == ELASTICITY)) {
+        solver_container[val_iZone][val_iInst][MESH_0][MESH_SOL]->SetDualTime_Mesh();
+    }
     
     /*--- Update dual time solver for the turbulence model ---*/
     

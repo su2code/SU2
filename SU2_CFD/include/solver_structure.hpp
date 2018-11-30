@@ -208,6 +208,11 @@ public:
   virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
+   * \brief Move the mesh in time
+   */
+  virtual void SetDualTime_Mesh(void);
+
+  /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
@@ -15925,6 +15930,17 @@ public:
   void Boundary_Dependencies(CGeometry **geometry, CConfig *config);
 
   /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Move the mesh in time.
+   */
+  void SetDualTime_Mesh(void);
+
+  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -15946,6 +15962,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Set_MPI_Displacement(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Store the old displacement before a new deformation is done.
+   */
+  void SetDisplacement_Old(void);
 
 
 };
