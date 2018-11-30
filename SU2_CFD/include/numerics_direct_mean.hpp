@@ -41,10 +41,22 @@
 
 class CAvgGrad_Base : public CNumerics {
  protected:
-  su2double dist_ij_2,          /*!< \brief Length of the edge and face, squared */
+  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
+  *PrimVar_i, *PrimVar_j,           /*!< \brief Primitives variables at point i and 1. */
+  **Mean_GradPrimVar,             /*!< \brief Mean value of the gradient. */
+  Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
+  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
+  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
+  dist_ij_2,          /*!< \brief Length of the edge and face, squared */
   *Proj_Mean_GradPrimVar_Edge,
   *Edge_Vector;                 /*!< \brief Vector form point i to point j. */
+  bool implicit; /*!< \brief Implicit calculus. */
   const bool correct_gradient;  /*!< \brief Apply a correction to the gradient term */
+  su2double *heat_flux_vector, /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
+  *heat_flux_jac_i, /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
+  **tau_jacobian_i; /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
 
  public:
 
@@ -52,16 +64,25 @@ class CAvgGrad_Base : public CNumerics {
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_nPrimVar - Number of primitive variables to use
    * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
   CAvgGrad_Base(unsigned short val_nDim, unsigned short val_nVar,
+                unsigned short val_nPrimVar,
                 bool val_correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
   ~CAvgGrad_Base();
+
+  /*!
+   * \brief Set the value of the wall shear stress at point i and j (wall functions).
+   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
+   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
+   */
+  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 };
 
 /*!
@@ -72,20 +93,6 @@ class CAvgGrad_Base : public CNumerics {
  */
 class CAvgGrad_Flow : public CAvgGrad_Base {
 private:
-  unsigned short iDim, iVar, jVar;     /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,           /*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,             /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
-  Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
-  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
-  TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
-  bool implicit; /*!< \brief Implicit calculus. */
-  su2double
-  *heat_flux_vector, /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
-  *heat_flux_jac_i, /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
-  **tau_jacobian_i; /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
 
   /*!
    * \brief Calculate the viscous and turbulent stress tensor
@@ -192,14 +199,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-
-
-  /*!
-   * \brief Set the value of the wall shear stress at point i and j (wall functions).
-   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
-   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
-   */
-  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
 };
 
 /*!
@@ -210,17 +209,9 @@ public:
  */
 class CGeneralAvgGrad_Flow : public CAvgGrad_Base {
 private:
-  unsigned short iDim, iVar, jVar;     /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
-  *Mean_SecVar,                   /*!< \brief Mean secondary variables. */
-  *PrimVar_i, *PrimVar_j,           /*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,             /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
-  Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
-  Mean_Thermal_Conductivity,             /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp,                               /*!< \brief Mean value of the Cp. */
-  Mean_turb_ke;        /*!< \brief Mean value of the turbulent kinetic energy. */
-  bool implicit; /*!< \brief Implicit calculus. */
+  su2double *Mean_SecVar,    /*!< \brief Mean secondary variables. */
+  Mean_Thermal_Conductivity, /*!< \brief Mean value of the thermal conductivity. */
+  Mean_Cp;                   /*!< \brief Mean value of the Cp. */
 
 public:
 
@@ -249,7 +240,7 @@ public:
 };
 
 // TODO: Move these to an inline file after refactoring at the end
-inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }

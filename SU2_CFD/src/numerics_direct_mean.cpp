@@ -4354,10 +4354,23 @@ void CUpwTurkel_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
 
 CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
                              unsigned short val_nVar,
+                             unsigned short val_nPrimVar,
                              bool val_correct_grad,
                              CConfig *config)
     : CNumerics(val_nDim, val_nVar, config),
       correct_gradient(val_correct_grad) {
+
+  unsigned short iVar, iDim;
+
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+
+  PrimVar_i = new su2double [val_nPrimVar];
+  PrimVar_j = new su2double [val_nPrimVar];
+  Mean_PrimVar = new su2double [val_nPrimVar];
+
+  Mean_GradPrimVar = new su2double* [nDim+1];
+  for (iVar = 0; iVar < nDim+1; iVar++)
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   Edge_Vector = new su2double[nDim];
 
@@ -4366,6 +4379,13 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
   } else {
     Proj_Mean_GradPrimVar_Edge = NULL;
   }
+
+  tau_jacobian_i = new su2double* [nDim];
+  for (iDim = 0; iDim < nDim; iDim++) {
+    tau_jacobian_i[iDim] = new su2double [nVar];
+  }
+  heat_flux_vector = new su2double[nDim];
+  heat_flux_jac_i = new su2double[nVar];
 
 }
 
@@ -4379,27 +4399,13 @@ CAvgGrad_Flow::CAvgGrad_Flow(unsigned short val_nDim,
                              unsigned short val_nVar,
                              bool val_correct_grad,
                              CConfig *config)
-    : CAvgGrad_Base(val_nDim, val_nVar, val_correct_grad, config) {
+    : CAvgGrad_Base(val_nDim, val_nVar, nDim+3, val_correct_grad, config) {
 
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-
-  PrimVar_i = new su2double [nDim+3];
-  PrimVar_j = new su2double [nDim+3];
-  Mean_PrimVar = new su2double [nDim+3];
-  
-  Mean_GradPrimVar = new su2double* [nDim+1];
-  for (iVar = 0; iVar < nDim+1; iVar++)
-    Mean_GradPrimVar[iVar] = new su2double [nDim];
-  
-  tau_jacobian_i = new su2double* [nDim];
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    tau_jacobian_i[iDim] = new su2double [nVar];
-  }
-  heat_flux_vector = new su2double[nDim];
-  heat_flux_jac_i = new su2double[nVar];
 }
 
 CAvgGrad_Flow::~CAvgGrad_Flow(void) {
+
+  unsigned short iVar;
 
   delete [] PrimVar_i;
   delete [] PrimVar_j;
@@ -4432,6 +4438,8 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+
+  unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
   
@@ -4554,7 +4562,8 @@ void CAvgGrad_Flow::GetViscousProjJacs(const su2double *val_Mean_PrimVar,
                                        const su2double *val_Proj_Visc_Flux,
                                        su2double **val_Proj_Jac_Tensor_i,
                                        su2double **val_Proj_Jac_Tensor_j) {
-  
+
+  unsigned short iVar, jVar;
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double factor = 0.5/Density;
 
@@ -4868,33 +4877,15 @@ CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim,
                                            unsigned short val_nVar,
                                            bool val_correct_grad,
                                            CConfig *config)
-    : CAvgGrad_Base(val_nDim, val_nVar, val_correct_grad, config) {
+    : CAvgGrad_Base(val_nDim, val_nVar, nDim+4, val_correct_grad, config) {
   
-  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  
-  /*--- Compressible flow, primitive variables nDim+3, (vx, vy, vz, P, rho, h) ---*/
-  PrimVar_i = new su2double [nDim+4];
-  PrimVar_j = new su2double [nDim+4];
-  Mean_PrimVar = new su2double [nDim+4];
   Mean_SecVar = new su2double [2];
   
-  /*--- Compressible flow, primitive gradient variables nDim+3, (T, vx, vy, vz) ---*/
-  Mean_GradPrimVar = new su2double* [nDim+1];
-  for (iVar = 0; iVar < nDim+1; iVar++)
-    Mean_GradPrimVar[iVar] = new su2double [nDim];
 }
 
 CGeneralAvgGrad_Flow::~CGeneralAvgGrad_Flow(void) {
   
-  delete [] PrimVar_i;
-  delete [] PrimVar_j;
-  delete [] Mean_PrimVar;
-  
   delete [] Mean_SecVar;
-
-  for (iVar = 0; iVar < nDim+1; iVar++)
-    delete [] Mean_GradPrimVar[iVar];
-  delete [] Mean_GradPrimVar;
   
 }
 
@@ -4908,6 +4899,8 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   AD::SetPreaccIn(PrimVar_Grad_j, nDim+1, nDim);
   AD::SetPreaccIn(turb_ke_i); AD::SetPreaccIn(turb_ke_j);
   AD::SetPreaccIn(Normal, nDim);
+
+  unsigned short iVar, jVar, iDim;
 
   /*--- Normalized normal vector ---*/
   
