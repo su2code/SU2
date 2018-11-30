@@ -39,13 +39,38 @@
 
 #include "numerics_structure.hpp"
 
+class CAvgGrad_Base : public CNumerics {
+ protected:
+  su2double dist_ij_2,          /*!< \brief Length of the edge and face, squared */
+  *Proj_Mean_GradPrimVar_Edge,
+  *Edge_Vector;                 /*!< \brief Vector form point i to point j. */
+  const bool correct_gradient;  /*!< \brief Apply a correction to the gradient term */
+
+ public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimension of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_correct_grad - Apply a correction to the gradient
+   * \param[in] config - Definition of the particular problem.
+   */
+  CAvgGrad_Base(unsigned short val_nDim, unsigned short val_nVar,
+                bool val_correct_grad, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CAvgGrad_Base();
+};
+
 /*!
  * \class CAvgGrad_Flow
  * \brief Class for computing viscous term using the average of gradients.
  * \ingroup ViscDiscr
  * \author A. Bueno, and F. Palacios
  */
-class CAvgGrad_Flow : public CNumerics {
+class CAvgGrad_Flow : public CAvgGrad_Base {
 private:
   unsigned short iDim, iVar, jVar;     /*!< \brief Iterators in dimension an variable. */
   su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
@@ -54,7 +79,6 @@ private:
   Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
   Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
   Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij,           /*!< \brief Length of the edge and face. */
   Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
   TauWall_i, TauWall_j;  /*!< \brief Wall shear stress at point i and j (wall functions). */
   bool implicit; /*!< \brief Implicit calculus. */
@@ -150,9 +174,10 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -183,8 +208,7 @@ public:
  * \ingroup ViscDiscr
  * \author M.Pini, S. Vitale
  */
-
-class CGeneralAvgGrad_Flow : public CNumerics {
+class CGeneralAvgGrad_Flow : public CAvgGrad_Base {
 private:
   unsigned short iDim, iVar, jVar;     /*!< \brief Iterators in dimension an variable. */
   su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
@@ -195,8 +219,7 @@ private:
   Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
   Mean_Thermal_Conductivity,             /*!< \brief Mean value of the thermal conductivity. */
   Mean_Cp,                               /*!< \brief Mean value of the Cp. */
-  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij;            /*!< \brief Length of the edge and face. */
+  Mean_turb_ke;        /*!< \brief Mean value of the turbulent kinetic energy. */
   bool implicit; /*!< \brief Implicit calculus. */
 
 public:
@@ -205,9 +228,10 @@ public:
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
-  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -224,115 +248,8 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
-/*!
- * \class CAvgGradCorrected_Flow
- * \brief Class for computing viscous term using the average of gradients with a correction.
- * \ingroup ViscDiscr
- * \author A. Bueno, and F. Palacios
- */
-class CAvgGradCorrected_Flow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;    /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,        /*!< \brief Primitives variables at point i and 1. */
-  *Edge_Vector,                  /*!< \brief Vector form point i to point j. */
-  **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
-  Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
-  Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2,           /*!< \brief Length of the edge and face. */
-  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
-  Mean_TauWall;     /*!< \brief Mean wall shear stress (wall functions). */
-  bool implicit;      /*!< \brief Implicit calculus. */
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrected_Flow(void);
-
-  /*!
-   * \brief Compute the viscous flow residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-
-
-  /*!
-   * \brief Set the value of the wall shear stress at point i and j (wall functions).
-   * \param[in] val_tauwall_i - Value of the wall shear stress at point i.
-   * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
-   */
-  void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
-};
-
-
-/*!
- * \class CGeneralAvgGradCorrected_Flow
- * \brief Class for computing viscous term using the average of gradients with a correction.
- * \ingroup ViscDiscr
- * \author M. Pini, S. Vitale
- */
-class CGeneralAvgGradCorrected_Flow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;    /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,          /*!< \brief Mean primitive variables. */
-  *Mean_SecVar,                  /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,            /*!< \brief Primitives variables at point i and 1. */
-  *Edge_Vector,                  /*!< \brief Vector form point i to point j. */
-  **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,      /*!< \brief Mean value of the laminar viscosity. */
-  Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
-  Mean_Thermal_Conductivity,   /*!< \brief Mean value of the thermal conductivity. */
-  Mean_Cp,                     /*!< \brief Mean value of the specific heat. */
-  Mean_turb_ke,         /*!< \brief Mean value of the turbulent kinetic energy. */
-  dist_ij_2;           /*!< \brief Length of the edge and face. */
-  bool implicit;      /*!< \brief Implicit calculus. */
-
-public:
-
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CGeneralAvgGradCorrected_Flow(void);
-
-  /*!
-   * \brief Compute the viscous flow residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-};
-
 // TODO: Move these to an inline file after refactoring at the end
 inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
-  TauWall_i = val_tauwall_i;
-  TauWall_j = val_tauwall_j;
-}
-
-inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
