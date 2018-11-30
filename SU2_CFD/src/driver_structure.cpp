@@ -1550,6 +1550,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   bool restart      = config->GetRestart();
   bool restart_flow = config->GetRestart_Flow();
   bool no_restart   = false;
+  bool grid_movement = (config->GetGrid_Movement() &&
+                       (config->GetKind_GridMovement() == ELASTICITY));
 
   /*--- Adjust iteration number for unsteady restarts. ---*/
 
@@ -1644,6 +1646,12 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
         if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
         solver_container[val_iInst][MESH_0][ADJFEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
+  }
+
+  if (restart && grid_movement){
+    /*--- Always restart with the last state ---*/
+    val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    solver_container[val_iInst][MESH_0][MESH_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
   }
 
   /*--- Exit if a restart was requested for a solver that is not available. ---*/

@@ -4821,7 +4821,7 @@ void CFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *c
           node[iPoint_Local]->SetSolution_Accel(iVar, Sol[iVar+2*nVar]);
           node[iPoint_Local]->SetSolution_Accel_time_n(iVar, Sol[iVar+2*nVar]);
         }
-        if (fluid_structure && !dynamic) {
+        if (fluid_structure) {
           node[iPoint_Local]->SetSolution_Pred(iVar, Sol[iVar]);
           node[iPoint_Local]->SetSolution_Pred_Old(iVar, Sol[iVar]);
         }

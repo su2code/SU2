@@ -180,6 +180,22 @@ CMeshSolver::CMeshSolver(CGeometry *geometry, CConfig *config) : CSolver() {
       }
     }
 
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (config->GetMultizone_Residual()){
+
+      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+      /*--- Define some structures for locating max residuals ---*/
+
+      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_Coord_BGS = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      }
+    }
+
     /*--- Compute the element volumes using the reference coordinates ---*/
     SetMinMaxVolume(geometry, config, false);
 
@@ -582,6 +598,8 @@ void CMeshSolver::DeformMesh(CGeometry **geometry, CConfig *config){
   unsigned long iNonlinear_Iter, Nonlinear_Iter = 0;
 
   bool discrete_adjoint = config->GetDiscrete_Adjoint();
+
+  if (multizone) SetDisplacement_Old();
 
   /*--- Retrieve number or internal iterations from config ---*/
 
@@ -1295,6 +1313,43 @@ void CMeshSolver::Boundary_Dependencies(CGeometry **geometry, CConfig *config){
 
 }
 
+void CMeshSolver::SetDualTime_Mesh(void){
+
+  unsigned long iPoint;
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    node[iPoint]->SetDisplacement_n1();
+    node[iPoint]->SetDisplacement_n();
+  }
+
+}
+
+void CMeshSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual;
+
+  /*--- Set Residuals to zero ---*/
+
+  for (iVar = 0; iVar < nVar; iVar++){
+      SetRes_BGS(iVar,0.0);
+      SetRes_Max_BGS(iVar,0.0,0);
+  }
+
+  /*--- Set the residuals ---*/
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
+      for (iVar = 0; iVar < nVar; iVar++){
+          residual = node[iPoint]->GetDisplacement(iVar) - node[iPoint]->GetDisplacement_Old(iVar);
+          AddRes_BGS(iVar,residual*residual);
+          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+      }
+  }
+
+  SetResidual_BGS(geometry, config);
+
+}
+
 void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
   /*--- Restart the solution from file information ---*/
@@ -1385,9 +1440,9 @@ void CMeshSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   }
 
   /*--- Communicate the loaded displacements. ---*/
-  solver[MESH_0][MESH_SOL]->Set_MPI_Solution(geometry[MESH_0], config);
+  solver[MESH_0][MESH_SOL]->Set_MPI_Displacement(geometry[MESH_0], config);
 
-  /*--- Communicate the new coordinates and grid velocities at the halos ---*/
+  /*--- Communicate the new coordinates at the halos ---*/
   geometry[MESH_0]->Set_MPI_Coord(config);
 
   /*--- Recompute the edges and dual mesh control volumes in the

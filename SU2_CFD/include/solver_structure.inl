@@ -2504,3 +2504,10 @@ inline unsigned short CDiscAdjFEASolver::GetnDVFEA(void) { return nDV; }
 inline su2double CDiscAdjFEASolver::GetVal_EField(unsigned short iVal) { return EField[iVal]; }
 
 inline su2double CDiscAdjFEASolver::GetVal_DVFEA(unsigned short iVal) { return DV_Val[iVal]; }
+
+inline void CMeshSolver::SetDisplacement_Old(void){
+  for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
+    node[iPoint]->SetDisplacement_Old();
+}
+
+inline void CSolver::SetDualTime_Mesh(void){ }
