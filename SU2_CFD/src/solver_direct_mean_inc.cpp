@@ -5107,7 +5107,6 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
       break;
     case CUSTOM_OBJFUNC:
-      Total_Custom_ObjFunc = pow((config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) - 0.046),2.0);
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     default:
@@ -5486,7 +5485,7 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   su2double *V_inlet, *V_domain;
   su2double UnitFlowDir[3] = {0.0,0.0,0.0};
   su2double dV[3] = {0.0,0.0,0.0};
-  su2double Damping = 0.1;
+  su2double Damping = config->GetInc_Inlet_Damping();
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -5728,11 +5727,9 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area;
-  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain, Vn, Vel_Mag;
+  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain, Vn;
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
-  su2double UnitFlowDir[3] = {0.0,0.0,0.0};
-  su2double dV[3] = {0.0,0.0,0.0};
-  su2double Damping = 0.1;
+  su2double Damping = config->GetInc_Outlet_Damping();
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -5775,13 +5772,6 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       
       V_domain = node[iPoint]->GetPrimitive();
       
-      /*--- Check for back flow through the outlet. ---*/
-      
-      Vn = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Vn += V_domain[iDim+1]*Normal[iDim]/Area;
-      }
-      
       /*--- Store the current static pressure for clarity. ---*/
       
       P_domain = node[iPoint]->GetPressure();
@@ -5799,55 +5789,14 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
           
           P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
           
-          /*--- If the local  velocity is directed upstream, we have a
-           back flow situation. The specified back pressure should be used
-           as a total pressure condition and the pressure from the domain
-           is used for the BC. ---*/
+          /*--- The pressure is prescribed at the outlet. ---*/
           
-          if ((Vn < 0.0)) {
-
-            /*--- The prescribed pressure at the outlet becomes a total
-             pressure value. ---*/
-
-            /*--- Update the velocity magnitude using the total pressure. ---*/
-
-            Vel_Mag = sqrt((P_Outlet - P_domain)/(0.5*node[iPoint]->GetDensity()));
-
-            /*--- Use the local boundary normal (negative),
-             instead of the prescribed flow direction in the config. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              UnitFlowDir[iDim] = -Normal[iDim]/Area;
-
-            /*--- Compute the delta change in velocity in each direction. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
-
-            /*--- Update the velocity in the primitive variable vector.
-             Note we use damping here to improve stability/convergence. ---*/
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              V_outlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
-
-            /*--- Neumann condition for the pressure ---*/
-
-            V_outlet[0] = P_domain;
-
-          } else
+          V_outlet[0] = P_Outlet;
           
-          {
-            
-            /*--- The pressure is prescribed at the outlet. ---*/
-
-            V_outlet[0] = P_Outlet;
-            
-            /*--- Neumann condition for the velocity. ---*/
-            
-            for (iDim = 0; iDim < nDim; iDim++) {
-              V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
-            }
-            
+          /*--- Neumann condition for the velocity. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
           }
           
           break;
@@ -6312,17 +6261,30 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   
-  bool axisymmetric               = config->GetAxisymmetric();
+  bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) && (config->GetExtIter()!= 0))
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
   
-  bool Evaluate_BC = true;
-  //((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)) || (config->GetExtIter() == 1) || (config->GetDiscrete_Adjoint()));
+  bool Evaluate_BC = false;
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) ) {
+      string Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+      if (config->GetKind_Inc_Outlet(Marker_Tag) == MASS_FLOW_OUTLET)
+        Evaluate_BC = true;
+    }
+  }
   
   nMarker_Outlet = config->GetnMarker_Outlet();
   
-  /*--- Evaluate the MPI for the actuator disk IO ---*/
+  /*--- If we have a massflow outlet BC, then we need to compute and
+   communicate the total massflow, density, and area through each outlet
+   boundary, so that it can be used in the iterative procedure to update
+   the back pressure until we converge to the desired mass flow. This
+   routine is called only once per iteration as a preprocessing and the
+   values for all outlets are store and retrieved later in the BC_Outlet
+   routines. ---*/
   
   if (Evaluate_BC) {
     
@@ -7526,10 +7488,6 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
     
   }
   
-  /*--- Custom objective ---*/
-  
-  Total_Custom_ObjFunc = pow((config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) - 0.046),2.0);
-  //cout << " mDot ratio: " << config->GetSurface_MassFlow(0)/config->GetSurface_MassFlow(1) << " Obj: " << Total_Custom_ObjFunc << endl;
 }
 
 unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {

@@ -834,7 +834,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("INC_NONDIM", Ref_Inc_NonDim, NonDim_Map, INITIAL_VALUES);
     /*!\brief INC_INLET_USENORMAL \n DESCRIPTION: Use the local boundary normal for the flow direction with the incompressible pressure inlet. \ingroup Config*/
   addBoolOption("INC_INLET_USENORMAL", Inc_Inlet_UseNormal, false);
-
+  /*!\brief INC_INLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow (0.1 by default). \ingroup Config*/
+  addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
+  /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
+  addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
+  
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);
   default_vel_inf[0] = 1.0; default_vel_inf[1] = 0.0; default_vel_inf[2] = 0.0;
@@ -2255,8 +2259,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
   
-  /* DESCRIPTION: Multipoint design freestream pressure */
-  addPythonOption("MULTIPOINT_OUTLET_MASSFLOW");
+  /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
+  addPythonOption("MULTIPOINT_OUTLET_VALUE");
   
   /* END_CONFIG_OPTIONS */
 
