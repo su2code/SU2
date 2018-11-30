@@ -424,7 +424,7 @@ def multipoint( config, state=None, step=1e-2 ):
     sideslip_list = config['MULTIPOINT_SIDESLIP_ANGLE'].replace("(", "").replace(")", "").split(',')
     target_cl_list = config['MULTIPOINT_TARGET_CL'].replace("(", "").replace(")", "").split(',')
     weight_list = config['MULTIPOINT_WEIGHT'].replace("(", "").replace(")", "").split(',')
-    outlet_massflow_list = config['MULTIPOINT_OUTLET_MASSFLOW'].replace("(", "").replace(")", "").split(',')
+    outlet_value_list = config['MULTIPOINT_OUTLET_VALUE'].replace("(", "").replace(")", "").split(',')
 
     func = []
     folder = []
@@ -473,7 +473,7 @@ def multipoint( config, state=None, step=1e-2 ):
     config.TARGET_CL = target_cl_list[0]
     orig_marker_outlet = config['MARKER_OUTLET']
     orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
-    new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_massflow_list[0] + ")"
+    new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[0] + ")"
     config.MARKER_OUTLET = new_marker_outlet
 
     func[0] = aerodynamics(config,state)
@@ -546,7 +546,7 @@ def multipoint( config, state=None, step=1e-2 ):
 
           orig_marker_outlet = config['MARKER_OUTLET']
           orig_marker_outlet = orig_marker_outlet.replace("(", "").replace(")", "").split(',')
-          new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_massflow_list[i+1] + ")"
+          new_marker_outlet = "(" + orig_marker_outlet[0] + "," + outlet_value_list[i+1] + ")"
           konfig.MARKER_OUTLET = new_marker_outlet
 
           ztate.FUNCTIONS.clear()

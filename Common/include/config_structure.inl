@@ -1169,6 +1169,10 @@ inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
 
+inline su2double CConfig::GetInc_Inlet_Damping(void) { return Inc_Inlet_Damping; }
+
+inline su2double CConfig::GetInc_Outlet_Damping(void) { return Inc_Outlet_Damping; }
+
 inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_Inflow; }
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
