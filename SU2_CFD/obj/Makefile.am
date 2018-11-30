@@ -44,8 +44,6 @@ bin_PROGRAMS =
 
 if BUILD_NORMAL
 bin_PROGRAMS += ../bin/SU2_CFD
-bin_PROGRAMS += ../bin/SU2_Timer
-bin_PROGRAMS += ../bin/SU2_Test
 endif
 
 if BUILD_DIRECTDIFF
@@ -72,7 +70,6 @@ libSU2Core_sources = \
   ../include/driver_structure.hpp \
   ../include/iteration_structure.hpp \
   ../include/numerics_structure.hpp \
-  ../include/numerics_direct_mean.hpp \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
@@ -154,12 +151,6 @@ libSU2Core_sources = \
 su2_cfd_sources = \
   ../include/SU2_CFD.hpp \
   ../src/SU2_CFD.cpp
-  
-su2_timer_sources = \
-   ../src/SU2_Timer.cpp
-   
-su2_test_sources = \
-   ../src/SU2_Test.cpp
 
 libSU2Core_cxx_flags = -fPIC
 libSU2Core_libadd = 
@@ -171,24 +162,6 @@ su2_cfd_ldadd =
 su2_cfd_cxx_flags += @su2_externals_INCLUDES@
 su2_cfd_ldadd += @su2_externals_LIBS@
 su2_cfd_ldadd += @su2_externals_LIBPTHREAD@
-libSU2Core_cxx_flags += @su2_externals_INCLUDES@
-
-su2_timer_cxx_flags =
-su2_timer_ldadd =
-
-# always link to built dependencies from ./externals
-su2_timer_cxx_flags += @su2_externals_INCLUDES@
-su2_timer_ldadd += @su2_externals_LIBS@
-su2_timer_ldadd += @su2_externals_LIBPTHREAD@
-libSU2Core_cxx_flags += @su2_externals_INCLUDES@
-
-su2_test_cxx_flags =
-su2_test_ldadd =
-
-# always link to built dependencies from ./externals
-su2_test_cxx_flags += @su2_externals_INCLUDES@
-su2_test_ldadd += @su2_externals_LIBS@
-su2_test_ldadd += @su2_externals_LIBPTHREAD@
 libSU2Core_cxx_flags += @su2_externals_INCLUDES@
 
 # if BUILD_MUTATIONPP
@@ -203,12 +176,6 @@ libSU2Core_a_LIBADD = $(libSU2Core_libadd)
 ___bin_SU2_CFD_SOURCES = $(su2_cfd_sources)
 ___bin_SU2_CFD_CXXFLAGS = ${su2_cfd_cxx_flags}
 ___bin_SU2_CFD_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_cfd_ldadd}
-___bin_SU2_Timer_SOURCES = $(su2_timer_sources)
-___bin_SU2_Timer_CXXFLAGS = ${su2_timer_cxx_flags}
-___bin_SU2_Timer_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_test_ldadd}
-___bin_SU2_Test_SOURCES = $(su2_test_sources)
-___bin_SU2_Test_CXXFLAGS = ${su2_test_cxx_flags}
-___bin_SU2_Test_LDADD = libSU2Core.a ../../Common/lib/libSU2.a ${su2_test_ldadd}
 endif
 
 if BUILD_DIRECTDIFF
