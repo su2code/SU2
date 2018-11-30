@@ -699,14 +699,14 @@ def read_config(filename):
       Temperature_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
 
-    if 'MULTIPOINT_OUTLET_MASSFLOW' not in data_dict:
-      Outlet_Massflow_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
-      Outlet_Massflow_List = "("
+    if 'MULTIPOINT_OUTLET_VALUE' not in data_dict:
+      Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      Outlet_Value_List = "("
       for i in range(multipoints):
-        if i != 0: Outlet_Massflow_List +=  ", "
-        Outlet_Massflow_List +=  str(Outlet_Massflow_Value)
-      Outlet_Massflow_List += ")"
-      data_dict['MULTIPOINT_OUTLET_MASSFLOW'] = Outlet_Massflow_List
+        if i != 0: Outlet_Value_List +=  ", "
+        Outlet_Value_List +=  str(Outlet_Value)
+      Outlet_Value_List += ")"
+      data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
       
 
     #
