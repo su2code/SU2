@@ -5727,7 +5727,7 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area;
-  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain, Vn;
+  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
   su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
   su2double Damping = config->GetInc_Outlet_Damping();
 
@@ -6267,16 +6267,15 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
   
-  bool Evaluate_BC = false;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) ) {
-      string Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
-      if (config->GetKind_Inc_Outlet(Marker_Tag) == MASS_FLOW_OUTLET)
-        Evaluate_BC = true;
-    }
-  }
+  /*--- Get the number of outlet markers and check for any mass flow BCs. ---*/
   
   nMarker_Outlet = config->GetnMarker_Outlet();
+  bool Evaluate_BC = false;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+    Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+      Evaluate_BC = true;
+  }
   
   /*--- If we have a massflow outlet BC, then we need to compute and
    communicate the total massflow, density, and area through each outlet
@@ -6368,7 +6367,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
     
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW)) {
-        for (iMarker_Outlet= 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
           Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
             Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
