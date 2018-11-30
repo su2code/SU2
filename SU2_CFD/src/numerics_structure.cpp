@@ -2160,8 +2160,8 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
     factor = 0.5/Density;
-    val_Proj_Jac_Tensor_i[3][0] += factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[3][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
     val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
@@ -2214,8 +2214,8 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
     
     factor = 0.5/Density;
-    val_Proj_Jac_Tensor_i[4][0] += factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[4][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[4][0] -= factor*proj_viscousflux_vel;
     val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
