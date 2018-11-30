@@ -386,6 +386,8 @@ void CConfig::SetPointersNull(void) {
   IntInfo_WallFunctions    = NULL;
   DoubleInfo_WallFunctions = NULL;
   
+  Config_Filenames = NULL;
+
   /*--- Marker Pointers ---*/
 
   Marker_Euler                = NULL;    Marker_FarField         = NULL;    Marker_Custom         = NULL;
@@ -603,12 +605,16 @@ void CConfig::SetPointersNull(void) {
 
   ConvHistFile                 = NULL;
 
+  top_optim_kernels       = NULL;
+  top_optim_kernel_params = NULL;
+  top_optim_filter_radius = NULL;
+
   /*--- Variable initialization ---*/
   
   ExtIter    = 0;
   IntIter    = 0;
   nIntCoeffs = 0;
-  FSIIter    = 0;
+  OuterIter  = 0;
   
   AoA_Offset = 0;
   AoS_Offset = 0;
@@ -683,6 +689,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("PHYSICAL_PROBLEM", Kind_Solver, Solver_Map, NO_SOLVER);
   /*!\brief PHYSICAL_PROBLEM_ZONEWISE \n DESCRIPTION: Physical governing equations for each zone \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
   addEnumListOption("PHYSICAL_PROBLEM_ZONEWISE", nZoneSpecified, Kind_Solver_PerZone, Solver_Map);
+  /*!\brief PHYSICAL_PROBLEM \n DESCRIPTION: Physical governing equations \n Options: see \link Solver_Map \endlink \n DEFAULT: NO_SOLVER \ingroup Config*/
+  addEnumOption("MULTIZONE_SOLVER", Kind_MZSolver, Multizone_Map, MZ_BLOCK_GAUSS_SEIDEL);
   /*!\brief MATH_PROBLEM  \n DESCRIPTION: Mathematical problem \n  Options: DIRECT, ADJOINT \ingroup Config*/
   addMathProblemOption("MATH_PROBLEM", ContinuousAdjoint, false, DiscreteAdjoint, false, Restart_Flow, false);
   /*!\brief KIND_TURB_MODEL \n DESCRIPTION: Specify turbulence model \n Options: see \link Turb_Model_Map \endlink \n DEFAULT: NO_TURB_MODEL \ingroup Config*/
@@ -1511,6 +1519,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("MESH_FILENAME", Mesh_FileName, string("mesh.su2"));
   /*!\brief MESH_OUT_FILENAME \n DESCRIPTION: Mesh output file name. Used when converting, scaling, or deforming a mesh. \n DEFAULT: mesh_out.su2 \ingroup Config*/
   addStringOption("MESH_OUT_FILENAME", Mesh_Out_FileName, string("mesh_out.su2"));
+  /* DESCRIPTION: Determine if the mesh file supports multizone. \n DEFAULT: true (temporarily) */
+  addBoolOption("MULTIZONE_MESH", Multizone_Mesh, true);
+  /* DESCRIPTION: Determine if we need to allocate memory to store the multizone residual. \n DEFAULT: true (temporarily) */
+  addBoolOption("MULTIZONE_RESIDUAL", Multizone_Residual, false);
 
   /*!\brief CONV_FILENAME \n DESCRIPTION: Output file convergence history (w/o extension) \n DEFAULT: history \ingroup Config*/
   addStringOption("CONV_FILENAME", Conv_FileName, string("history"));
@@ -1983,12 +1995,24 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Definition of the  UTOL RTOL ETOL*/
   addDoubleArrayOption("INCREMENTAL_CRITERIA", 3, IncLoad_Criteria, default_inc_crit);
 
+  /* DESCRIPTION: Use of predictor */
+  addBoolOption("PREDICTOR", Predictor, false);
   /* DESCRIPTION: Order of the predictor */
   addUnsignedShortOption("PREDICTOR_ORDER", Pred_Order, 0);
 
   /* DESCRIPTION: Transfer method used for multiphysics problems */
   addEnumOption("MULTIPHYSICS_TRANSFER_METHOD", Kind_TransferMethod, Transfer_Method_Map, BROADCAST_DATA);
 
+  /* DESCRIPTION: Topology optimization options */
+  addBoolOption("TOPOLOGY_OPTIMIZATION", topology_optimization, false);
+  addStringOption("TOPOL_OPTIM_OUTFILE", top_optim_output_file, string("element_derivatives.dat"));
+  addDoubleOption("TOPOL_OPTIM_SIMP_EXPONENT", simp_exponent, 1.0);
+  addDoubleOption("TOPOL_OPTIM_SIMP_MINSTIFF", simp_minimum_stiffness, 0.001);
+  addEnumListOption("TOPOL_OPTIM_FILTER_KERNEL", top_optim_nKernel, top_optim_kernels, Filter_Kernel_Map);
+  addDoubleListOption("TOPOL_OPTIM_FILTER_RADIUS", top_optim_nRadius, top_optim_filter_radius);
+  addDoubleListOption("TOPOL_OPTIM_KERNEL_PARAM", top_optim_nKernelParams, top_optim_kernel_params);
+  addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, NO_PROJECTION);
+  addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/
@@ -2022,7 +2046,36 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*  DESCRIPTION: Apply dead loads
   *  Options: NO, YES \ingroup Config */
-  addBoolOption("MATCHING_MESH", MatchingMesh, true);
+  addBoolOption("MATCHING_MESH", MatchingMesh, false);
+
+  /*!\par CONFIG_CATEGORY: Multizone definition \ingroup Config*/
+  /*--- Options related to multizone problems ---*/
+
+  /*!\brief MARKER_PLOTTING\n DESCRIPTION: Marker(s) of the surface in the surface flow solution file  \ingroup Config*/
+  addStringListOption("CONFIG_LIST", nConfig_Files, Config_Filenames);
+
+  /* DESCRIPTION: Determines if the multizone problem is solved for time-domain. */
+  addBoolOption("TIME_DOMAIN", Time_Domain, false);
+  /* DESCRIPTION: Number of outer iterations in the multizone problem. */
+  addUnsignedLongOption("OUTER_ITER", Outer_Iter, 1);
+  /* DESCRIPTION: Number of inner iterations in each multizone block. */
+  addUnsignedLongOption("INNER_ITER", Inner_Iter, 1);
+  /* DESCRIPTION: Number of time steps solved in the multizone problem. */
+  addUnsignedLongOption("TIME_ITER", Time_Iter, 1);
+  /* DESCRIPTION: Number of iterations in each single-zone block. */
+  addUnsignedLongOption("ITER", Iter, 1000);
+  /* DESCRIPTION: Restart iteration in the multizone problem. */
+  addUnsignedLongOption("RESTART_ITER", Restart_Iter, 1);
+  /* DESCRIPTION: Minimum error threshold for the linear solver for the implicit formulation */
+  addDoubleOption("TIME_STEP", Time_Step, 0.0);
+  /* DESCRIPTION: Total Physical Time for time-domain problems (s) */
+  addDoubleOption("MAX_TIME", Max_Time, 1.0);
+  /* DESCRIPTION: Determines if the single-zone driver is used. (TEMPORARY) */
+  addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
+  /* DESCRIPTION: Determines if the special output is written out */
+  addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
   
   /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
   *  Options: NO, YES \ingroup Config */
@@ -2057,8 +2110,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("AITKEN_DYN_MAX_INITIAL", AitkenDynMaxInit, 0.5);
   /* DESCRIPTION: Aitken's dynamic minimum relaxation factor for the first iteration */
   addDoubleOption("AITKEN_DYN_MIN_INITIAL", AitkenDynMinInit, 0.5);
-  /* DESCRIPTION: Type of gust */
+  /* DESCRIPTION: Kind of relaxation */
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
+  /* DESCRIPTION: Relaxation required */
+  addBoolOption("RELAXATION", Relaxation, false);
 
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
@@ -2670,8 +2725,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     // Discrete adjoint linear solver
     Kind_DiscAdj_Linear_Solver = Kind_DiscAdj_Linear_Solver_FSI_Struc;
     Kind_DiscAdj_Linear_Prec = Kind_DiscAdj_Linear_Prec_FSI_Struc;}
+
+    Multizone_Residual = true;
   }
   else { FSI_Problem = false; }
+
+  if (Kind_Solver == MULTIZONE) {
+    Multizone_Problem = true;
+  }
+  else{
+    Multizone_Problem = false;
+  }
+
 
   if(Kind_Solver == HEAT_EQUATION_FVM) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
@@ -2691,8 +2756,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   
   if (Kind_Solver == FEM_ELASTICITY) {
     nMGLevels = 0;
-    if (Dynamic_Analysis == STATIC)
-	nExtIter = 1;
+    if (Dynamic_Analysis == STATIC) nExtIter = 1;
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
@@ -2715,7 +2779,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   if (Kind_Solver == ZONE_SPECIFIC) {
-
     ZoneSpecific_Problem = true;
     Kind_Solver = Kind_Solver_PerZone[val_izone];
   }
@@ -2879,6 +2942,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
+  /*--- If only one Grid_Movement kind is specified, it is assumed it's the same for all zones. ---*/
+  /*--- TODO: Kind_Grid_Movement should not be an array but rather only one short. ---*/
+  /*--- The distinction comes as each zone has one config container. ---*/
+  if (nGridMovement != nZone){
+    for (unsigned short iZone = 0; iZone < nZone; iZone++ )
+      Kind_GridMovement[iZone] = Kind_GridMovement[ZONE_0];
+  }
+
   /*--- If we're solving a purely steady problem with no prescribed grid
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
@@ -4033,6 +4104,54 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
+  
+  /*--- Handle default options for topology optimization ---*/
+  
+  if (topology_optimization && top_optim_nKernel==0) {
+    top_optim_nKernel = 1;
+    top_optim_kernels = new unsigned short [1];
+    top_optim_kernels[0] = CONICAL_WEIGHT_FILTER;
+  }
+  
+  if (top_optim_nKernel != 0) {
+    /*--- Set default value of kernel parameters ---*/
+    if (top_optim_nKernelParams == 0) {
+      top_optim_nKernelParams = top_optim_nKernel;
+      top_optim_kernel_params = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_kernel_params[i] = 1.0;
+    }
+    /*--- Broadcast the only value provided ---*/
+    else if (top_optim_nKernelParams==1 && top_optim_nKernel>1) {
+      su2double tmp = top_optim_kernel_params[0];
+      delete [] top_optim_kernel_params;
+      top_optim_nKernelParams = top_optim_nKernel;
+      top_optim_kernel_params = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_kernel_params[i] = tmp;
+    }
+    /*--- Numbers do not match ---*/
+    else if (top_optim_nKernelParams != top_optim_nKernel) {
+      SU2_MPI::Error("Different number of topology filter kernels and respective parameters.", CURRENT_FUNCTION);
+    }
+
+    /*--- Set default value of filter radius ---*/
+    if (top_optim_nRadius == 0) {
+      top_optim_nRadius = top_optim_nKernel;
+      top_optim_filter_radius = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_filter_radius[i] = 1.0e-6;
+    }
+    /*--- Broadcast the only value provided ---*/
+    else if (top_optim_nRadius==1 && top_optim_nKernel>1) {
+      su2double tmp = top_optim_filter_radius[0];
+      delete [] top_optim_filter_radius;
+      top_optim_nRadius = top_optim_nKernel;
+      top_optim_filter_radius = new su2double [top_optim_nKernel];
+      for (unsigned short i=0; i<top_optim_nKernel; ++i) top_optim_filter_radius[i] = tmp;
+    }
+    /*--- Numbers do not match ---*/
+    else if (top_optim_nRadius != top_optim_nKernel) {
+      SU2_MPI::Error("Different number of topology filter kernels and respective radii.", CURRENT_FUNCTION);
+    }
+  }
 
 }
 
@@ -4702,6 +4821,16 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 	   cout << "Fluid-Structure Interaction." << endl;
 	}
 
+  if (nConfig_Files != 0) {
+    cout << "List of config files: ";
+    for (unsigned short iConfig = 0; iConfig < nConfig_Files; iConfig++) {
+      cout << Config_Filenames[iConfig];
+      if (iConfig < nConfig_Files-1) cout << ", ";
+      else cout <<".";
+    }
+    cout<< endl;
+  }
+
   if (DiscreteAdjoint) {
      cout <<"Discrete Adjoint equations using Algorithmic Differentiation " << endl;
      cout <<"based on the physical case: ";
@@ -5210,6 +5339,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         case CUSTOM_OBJFUNC:        		cout << "Custom objective function." << endl; break;
         case REFERENCE_GEOMETRY:        cout << "Target geometry objective function." << endl; break;
         case REFERENCE_NODE:            cout << "Target node displacement objective function." << endl; break;
+        case VOLUME_FRACTION:           cout << "Volume fraction objective function." << endl; break;
       }
 		}
 		else {
@@ -5759,7 +5889,13 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
     cout << endl <<"------------------------- Convergence Criteria --------------------------" << endl;
 
-    cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    if (SinglezoneDriver){
+      cout << "Maximum number of solver subiterations: " << Iter <<"."<< endl;
+      cout << "Maximum number of physical time-steps: " << Time_Iter <<"."<< endl;
+    }
+    else{
+      cout << "Maximum number of iterations: " << nExtIter <<"."<< endl;
+    }
 
     if (!fea){
 
@@ -6697,6 +6833,8 @@ CConfig::~CConfig(void) {
 
   if (Kind_WallFunctions != NULL) delete[] Kind_WallFunctions;
 
+  if (Config_Filenames != NULL) delete[] Config_Filenames;
+
   if (IntInfo_WallFunctions != NULL) {
     for (iMarker = 0; iMarker < nMarker_WallFunctions; ++iMarker) {
       if (IntInfo_WallFunctions[iMarker] != NULL)
@@ -6994,7 +7132,10 @@ CConfig::~CConfig(void) {
   if (nBlades != NULL) delete [] nBlades;
   if (FreeStreamTurboNormal != NULL) delete [] FreeStreamTurboNormal;
 
- 
+  if (top_optim_kernels != NULL) delete [] top_optim_kernels;
+  if (top_optim_kernel_params != NULL) delete [] top_optim_kernel_params;
+  if (top_optim_filter_radius != NULL) delete [] top_optim_filter_radius;
+
 }
 
 string CConfig::GetUnsteady_FileName(string val_filename, int val_iter) {
@@ -7134,6 +7275,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case ENTROPY_GENERATION:          AdjExt = "_entg";     break;
         case REFERENCE_GEOMETRY:          AdjExt = "_refgeom";  break;
         case REFERENCE_NODE:              AdjExt = "_refnode";  break;
+        case VOLUME_FRACTION:             AdjExt = "_volfrac";  break;
       }
     }
     else{
@@ -8792,3 +8934,89 @@ void CConfig::SetFreeStreamTurboNormal(su2double* turboNormal){
   FreeStreamTurboNormal[2] = 0.0;
 
 }
+
+void CConfig::SetMultizone(CConfig *driver_config, CConfig **config_container){
+
+  unsigned short iMarker_CfgFile, iMarker_ZoneInterface;
+
+  /*--- If the command MARKER_ZONE_INTERFACE is not in the config file, nMarker_ZoneInterface will be 0 ---*/
+  if (nMarker_ZoneInterface == 0){
+
+    /*--- Copy the marker interface from the driver configuration file ---*/
+
+    nMarker_ZoneInterface = driver_config->GetnMarker_ZoneInterface();
+    Marker_ZoneInterface = new string[nMarker_ZoneInterface];
+
+    /*--- Set the Markers at the interface from the main config file ---*/
+    for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
+      Marker_ZoneInterface[iMarker_ZoneInterface] = driver_config->GetMarkerTag_ZoneInterface(iMarker_ZoneInterface);
+    }
+
+    /*--- Identification of Multizone markers ---*/
+    if (rank == MASTER_NODE) cout << endl << "-------------------- Interface Boundary Information ---------------------" << endl;
+    if (rank == MASTER_NODE) cout << "The interface markers are: ";
+
+    unsigned short indexOutput = 0;
+    for (iMarker_CfgFile = 0; iMarker_CfgFile < nMarker_CfgFile; iMarker_CfgFile++) {
+      unsigned short indexMarker = 0;
+      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = NO;
+      for (iMarker_ZoneInterface = 0; iMarker_ZoneInterface < nMarker_ZoneInterface; iMarker_ZoneInterface++){
+        if (Marker_CfgFile_TagBound[iMarker_CfgFile] == Marker_ZoneInterface[iMarker_ZoneInterface]){
+          indexMarker = (int)(iMarker_ZoneInterface/2+1);
+          indexOutput++;
+          if (rank == MASTER_NODE) cout << Marker_CfgFile_TagBound[iMarker_CfgFile];
+        }
+      }
+      Marker_CfgFile_ZoneInterface[iMarker_CfgFile] = indexMarker;
+      if (rank == MASTER_NODE){
+        if (indexMarker > 0 && (indexOutput < (nMarker_ZoneInterface/2))) cout << ", ";
+        else if (indexMarker > 0 && (indexOutput == (nMarker_ZoneInterface/2))) cout << ".";
+      }
+    }
+    if (rank == MASTER_NODE) cout << endl;
+  }
+
+  /*--- Set the Multizone Boolean to true ---*/
+  Multizone_Problem = true;
+
+  /*--- Set the Restart iter for time dependent problems ---*/
+  if (driver_config->GetRestart()){
+    Unst_RestartIter = driver_config->GetRestart_Iter();
+    Dyn_RestartIter  = driver_config->GetRestart_Iter();
+  }
+
+  /*--- Fix the Time Step for all subdomains, for the case of time-dependent problems ---*/
+  if (driver_config->GetTime_Domain()){
+    Delta_UnstTime = driver_config->GetTime_Step();
+    Delta_DynTime  = driver_config->GetTime_Step();
+  }
+
+  /*------------------------------------------------------------*/
+  /*------ Determine the special properties of the problem -----*/
+  /*------------------------------------------------------------*/
+
+  bool structural_zone = false;
+  bool fluid_zone = false;
+
+  unsigned short iZone = 0;
+
+  /*--- If there is at least a fluid and a structural zone ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (config_container[iZone]->GetKind_Solver()) {
+    case EULER: case NAVIER_STOKES: case RANS:
+      fluid_zone = true;
+      break;
+    case FEM_ELASTICITY:
+      structural_zone = true;
+      Relaxation = true;
+      break;
+    }
+  }
+
+  /*--- If the problem has FSI properties ---*/
+  if (fluid_zone && structural_zone) FSI_Problem = true;
+
+  Multizone_Residual = true;
+
+}
+
