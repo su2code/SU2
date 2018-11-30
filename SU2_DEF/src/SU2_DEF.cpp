@@ -286,7 +286,7 @@ int main(int argc, char *argv[]) {
   bool NewFile = false;
   if (config_container[ZONE_0]->GetDesign_Variable(0) == NO_DEFORMATION) NewFile = true;
   
-  output->SetMesh_Files(geometry_container, config_container, SINGLE_ZONE, NewFile, true);
+  output->SetMesh_Files(geometry_container, config_container, nZone, NewFile, true);
   
   if ((config_container[ZONE_0]->GetDesign_Variable(0) != NO_DEFORMATION) &&
       (config_container[ZONE_0]->GetDesign_Variable(0) != SCALE_GRID)     &&
