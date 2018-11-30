@@ -583,6 +583,14 @@ def read_config(filename):
         
     #: for line
 
+    if 'OPT_CONSTRAINT' in data_dict: 
+        if 'BUFFET' in data_dict['OPT_CONSTRAINT']['EQUALITY'] or 'BUFFET' in data_dict['OPT_CONSTRAINT']['INEQUALITY']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
+    if 'OPT_OBJECTIVE' in data_dict:
+        if 'BUFFET' in data_dict['OPT_OBJECTIVE']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
     #hack - twl
     if 'DV_VALUE_NEW' not in data_dict:
         data_dict['DV_VALUE_NEW'] = [0]
