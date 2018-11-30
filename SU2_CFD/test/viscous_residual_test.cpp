@@ -35,7 +35,6 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <ctime>
 #include <iomanip>
 #include <iostream>
 #include <fstream>
@@ -47,6 +46,8 @@
 #include "../../Common/include/mpi_structure.hpp"
 #include "../include/numerics_direct_mean.hpp"
 
+unsigned short error_count = 0;
+
 void BOOST_CHECK_CLOSE_FRACTION(const su2double& u, const su2double& v,
                                 const su2double& tol) {
   if (u != 0 && v != 0) {
@@ -56,10 +57,12 @@ void BOOST_CHECK_CLOSE_FRACTION(const su2double& u, const su2double& v,
       std::cout << "error in test: [" << u << " != " << v << "]. ";
       std::cout << "Relative difference exceeds tolerance ";
       std::cout << "[" << rel_error_u << " > " << tol << "]\n";
+      error_count += 1;
     } else if (rel_error_v > tol) {
       std::cout << "error in test: [" << u << " != " << v << "]. ";
       std::cout << "Relative difference exceeds tolerance ";
       std::cout << "[" << rel_error_v << " > " << tol << "]\n";
+      error_count += 1;
     }
   } else {
     const su2double abs_error = std::abs(u - v);
@@ -67,6 +70,7 @@ void BOOST_CHECK_CLOSE_FRACTION(const su2double& u, const su2double& v,
       std::cout << "error in test: [" << u << " != " << v << "]. ";
       std::cout << "Absolute difference exceeds tolerance ";
       std::cout << "[" << abs_error << " > " << tol << "]\n";
+      error_count += 1;
     }
   }
 }
@@ -88,19 +92,6 @@ void WriteCfgFile() {
 
 int main(int argc, char *argv[]) {
 
-  int opt;
-  unsigned long iterations = 1E6;
-  for (int i = 1; i < argc; i++) {
-    if (not(strcmp(argv[i], "-i"))) {
-      iterations = atoi(argv[i+1]);
-      i++;
-    } else {
-      std::cout << "Unrecognized option: " << argv[i] << std::endl;
-      return EXIT_FAILURE;
-    }
-  }
-  std::cout << "Number of iterations: " << iterations << std::endl;
-
   /*--- MPI initialization, and buffer setting ---*/
 
 #ifdef HAVE_MPI
@@ -117,6 +108,7 @@ int main(int argc, char *argv[]) {
   const int rank = SU2_MPI::GetRank();
   const int size = SU2_MPI::GetSize();
 
+  error_count = 0;
 
   /*---
    * Test Variables
@@ -306,6 +298,9 @@ delete[] expected_jacobian_j;
   SU2_MPI::Finalize();
 #endif
 
-  return EXIT_SUCCESS;
+  if (error_count == 0)
+    return EXIT_SUCCESS;
+  else
+    return EXIT_FAILURE;
 
 }
