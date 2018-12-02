@@ -4,7 +4,7 @@
 dist: trusty
 sudo: required
 
-language: python
+language: c++
 
 compiler:
     - gcc
@@ -18,29 +18,49 @@ branches:
     only:
         - develop
 
-python:
-    - 2.7
-    - 3
-
 env:
     global:
         CXXFLAGS="-O3 -Wall -Wextra -Wno-unused-parameter -Wno-empty-body -Wno-format-security" 
     matrix:
-        # Serial build and test
+        # Serial build and test with Python 2.7
         - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER --disable-tecio"
           TEST_SCRIPT=serial_regression.py
+          PYTHON_VERS=2.7
 
-        # Parallel build and test
+        # Parallel build and test with Python 2.7
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER --disable-tecio"
           TEST_SCRIPT=parallel_regression.py
+          PYTHON_VERS=2.7
 
-        # Serial build and test for AD
+        # Serial build and test for AD with Python 2.7
         - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --disable-tecio"
           TEST_SCRIPT=serial_regression_AD.py
+          PYTHON_VERS=2.7
 
-        # Parallel build and test for AD:
+        # Parallel build and test for AD with Python 2.7
         - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --disable-tecio"
           TEST_SCRIPT=parallel_regression_AD.py
+          PYTHON_VERS=2.7
+
+        # Serial build and test with Python 3
+        - CONFIGURE_COMMAND="./preconfigure.py --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER --disable-tecio"
+          TEST_SCRIPT=serial_regression.py
+          PYTHON_VERS=3
+
+        # Parallel build and test with Python 3
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-PY_WRAPPER --disable-tecio"
+          TEST_SCRIPT=parallel_regression.py
+          PYTHON_VERS=3
+
+        # Serial build and test for AD with Python 3
+        - CONFIGURE_COMMAND="./preconfigure.py --with-cc=gcc --with-cxx=g++ --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --disable-tecio"
+          TEST_SCRIPT=serial_regression_AD.py
+          PYTHON_VERS=3
+
+        # Parallel build and test for AD with Python 3
+        - CONFIGURE_COMMAND="./preconfigure.py --enable-mpi --with-cc=mpicc --with-cxx=mpicxx --prefix=$TRAVIS_BUILD_DIR --enable-autodiff --enable-direct-diff --disable-tecio"
+          TEST_SCRIPT=parallel_regression_AD.py
+          PYTHON_VERS=3
 
 before_install:
     # Temporarily fixes Travis CI issue with paths for Python packages
@@ -58,7 +78,7 @@ before_install:
     - hash -r
     - conda config --set always_yes yes --set changeps1 no
     - conda update -q conda
-    - conda install -q python=$TRAVIS_PYTHON_VERSION numpy scipy mpi4py swig
+    - conda install -q python=$PYTHON_VERS numpy scipy mpi4py swig
 
     # to avoid interference with MPI
     - test -n $CC  && unset CC
