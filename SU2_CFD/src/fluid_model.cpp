@@ -89,18 +89,22 @@ void CFluidModel::SetThermalConductivityModel (CConfig *config) {
   
   switch (config->GetKind_ConductivityModel()) {
     case CONSTANT_CONDUCTIVITY:
-      ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
+      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+        ThermalConductivity = new CConstantConductivityRANS(config->GetKt_ConstantND(), config->GetPrandtl_Turb());
+      } else {
+        ThermalConductivity = new CConstantConductivity(config->GetKt_ConstantND());
+      }
       break;
     case CONSTANT_PRANDTL:
-      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
-        ThermalConductivity = new CConstantPrandtlRANS(config->GetPrandtl_Lam(),config->GetPrandtl_Turb());
+      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+        ThermalConductivity = new CConstantPrandtlRANS(config->GetPrandtl_Lam(), config->GetPrandtl_Turb());
       } else {
         ThermalConductivity = new CConstantPrandtl(config->GetPrandtl_Lam());
       }
       break;
     case POLYNOMIAL_CONDUCTIVITY:
-      if ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS)) {
-        ThermalConductivity = new CPolynomialConductivityRANS(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND(),config->GetPrandtl_Turb());
+      if (config->GetKind_ConductivityModel_Turb() == CONSTANT_PRANDTL_TURB) {
+        ThermalConductivity = new CPolynomialConductivityRANS(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND(), config->GetPrandtl_Turb());
       } else {
         ThermalConductivity = new CPolynomialConductivity(config->GetnPolyCoeffs(), config->GetKt_PolyCoeffND());
       }

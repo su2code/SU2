@@ -450,6 +450,7 @@ private:
   Kind_FluidModel,			/*!< \brief Kind of the Fluid Model: Ideal or Van der Walls, ... . */
   Kind_ViscosityModel,			/*!< \brief Kind of the Viscosity Model*/
   Kind_ConductivityModel,			/*!< \brief Kind of the Thermal Conductivity Model*/
+  Kind_ConductivityModel_Turb,      /*!< \brief Kind of the Turbulent Thermal Conductivity Model*/
   Kind_FreeStreamOption,			/*!< \brief Kind of free stream option to choose if initializing with density or temperature  */
   Kind_InitOption,			/*!< \brief Kind of Init option to choose if initializing with Reynolds number or with thermodynamic conditions   */
   Kind_GasModel,				/*!< \brief Kind of the Gas Model. */
@@ -3690,9 +3691,15 @@ public:
   
   /*!
    * \brief Get the value of the thermal conductivity model.
-   * \return Connectivity model.
+   * \return Conductivity model.
    */
   unsigned short GetKind_ConductivityModel(void);
+  
+  /*!
+   * \brief Get the value of the turbulent thermal conductivity model.
+   * \return Turbulent conductivity model.
+   */
+  unsigned short GetKind_ConductivityModel_Turb(void);
   
   /*!
    * \brief Get the value of the constant viscosity.

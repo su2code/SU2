@@ -806,6 +806,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   addEnumOption("CONDUCTIVITY_MODEL", Kind_ConductivityModel, ConductivityModel_Map, CONSTANT_PRANDTL);
 
+  /* DESCRIPTION: Definition of the turbulent thermal conductivity model (CONSTANT_PRANDTL_TURB (default), NONE). */
+  addEnumOption("TURBULENT_CONDUCTIVITY_MODEL", Kind_ConductivityModel_Turb, TurbConductivityModel_Map, CONSTANT_PRANDTL_TURB);
+
  /*--- Options related to Constant Thermal Conductivity Model ---*/
 
  /* DESCRIPTION: default value for AIR */
@@ -4096,6 +4099,15 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
 
+  /*--- Check the conductivity model. Deactivate the turbulent component
+   if we are not running RANS. ---*/
+  
+  if ((Kind_Solver != RANS) &&
+      (Kind_Solver != ADJ_RANS) &&
+      (Kind_Solver != DISC_ADJ_RANS)) {
+    Kind_ConductivityModel_Turb = NO_CONDUCTIVITY_TURB;
+  }
+    
 }
 
 void CConfig::SetMarkers(unsigned short val_software) {

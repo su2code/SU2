@@ -166,6 +166,27 @@ CConstantConductivity::CConstantConductivity(su2double kt_const) : CConductivity
 
 CConstantConductivity::~CConstantConductivity(void) { }
 
+CConstantConductivityRANS::CConstantConductivityRANS(void) : CConductivityModel() { }
+
+CConstantConductivityRANS::CConstantConductivityRANS(su2double kt_const, su2double pr_turb) : CConductivityModel() {
+  
+  /*--- Attributes initialization ---*/
+  
+  Kt_Lam    = kt_const;
+  dktdrho_T = 0.0;
+  dktdT_rho = 0.0;
+  
+  Prandtl_Turb = pr_turb;
+
+}
+
+void CConstantConductivityRANS::SetConductivity(su2double T, su2double rho, su2double mu_lam, su2double mu_turb, su2double cp) {
+  
+  Kt = Kt_Lam + cp*mu_turb/Prandtl_Turb;
+  
+}
+
+CConstantConductivityRANS::~CConstantConductivityRANS(void) { }
 
 CConstantPrandtl::CConstantPrandtl(void) : CConductivityModel() { }
 
