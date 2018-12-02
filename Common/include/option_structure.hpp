@@ -616,6 +616,18 @@ static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreate
 ("POLYNOMIAL_CONDUCTIVITY", POLYNOMIAL_CONDUCTIVITY);
 
 /*!
+ * \brief types of turbulent thermal conductivity model
+ */
+enum ENUM_CONDUCTIVITYMODEL_TURB {
+  NO_CONDUCTIVITY_TURB  = 0,  /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
+  CONSTANT_PRANDTL_TURB = 1   /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
+};
+
+static const map<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL_TURB>
+("NONE", NO_CONDUCTIVITY_TURB)
+("CONSTANT_PRANDTL_TURB", CONSTANT_PRANDTL_TURB);
+
+/*!
  * \brief types of unsteady mesh motion
  */
 enum ENUM_GRIDMOVEMENT {

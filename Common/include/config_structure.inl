@@ -863,6 +863,8 @@ inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_Viscos
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }
 
+inline unsigned short CConfig::GetKind_ConductivityModel_Turb(void) { return Kind_ConductivityModel_Turb; }
+
 inline su2double CConfig::GetMu_Constant(void) { return Mu_Constant; }
 
 inline su2double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
