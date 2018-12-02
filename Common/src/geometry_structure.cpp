@@ -37,6 +37,7 @@
 
 #include "../include/geometry_structure.hpp"
 #include "../include/adt_structure.hpp"
+#include "../include/element_structure.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -1853,6 +1854,353 @@ void CGeometry::ComputeSurf_Curvature(CConfig *config) {
   delete[] Buffer_Send_nVertex;
   delete[] Buffer_Receive_nVertex;
   
+}
+
+void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
+                                        const vector<pair<unsigned short,su2double> > &kernels,
+                                        const su2double *input_values,
+                                        su2double *output_values) const
+{
+  /*--- Apply a filter to "input_values". The filter is an averaging process over the neighbourhood
+  of each element, which is a circle in 2D and a sphere in 3D of radius "filter_radius".
+  The filter is characterized by its kernel, i.e. how the weights are computed. Multiple kernels
+  can be specified in which case they are applied sequentially (each one being applied to the
+  output values of the previous filter. ---*/
+  
+  unsigned long iElem, iElem_global;
+  
+  /*--- Initialize output values and check if we need to do any more work than that ---*/
+  for (iElem=0; iElem<nElem; ++iElem)
+    output_values[iElem] = input_values[iElem];
+
+  if ( kernels.empty() ) return;
+
+  /*--- FIRST: Gather the adjacency matrix, element centroids, volumes, and values on every
+  processor, this is required because the filter reaches far into adjacent partitions. ---*/
+  
+  /*--- Adjacency matrix ---*/
+  vector<unsigned long> neighbour_start;
+  long *neighbour_idx = NULL;
+  GetGlobalElementAdjacencyMatrix(neighbour_start,neighbour_idx);
+
+  /*--- Element centroids and volumes ---*/
+  su2double *cg_elem  = new su2double [Global_nElemDomain*nDim],
+            *vol_elem = new su2double [Global_nElemDomain];
+
+  /*--- Initialize ---*/
+  for(iElem=0; iElem<Global_nElemDomain; ++iElem) {
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      cg_elem[nDim*iElem+iDim] = 0.0;
+    vol_elem[iElem] = 0.0;
+  }
+  /*--- Populate ---*/
+  for(iElem=0; iElem<nElem; ++iElem) {
+    iElem_global = elem[iElem]->GetGlobalIndex();
+    for(unsigned short iDim=0; iDim<nDim; ++iDim) 
+      cg_elem[nDim*iElem_global+iDim] = elem[iElem]->GetCG(iDim);
+    vol_elem[iElem_global] = elem[iElem]->GetVolume();
+  }
+#ifdef HAVE_MPI
+  /*--- Share with all processors ---*/
+  {
+    su2double *buffer = NULL, *tmp = NULL;
+
+    buffer = new su2double [Global_nElemDomain*nDim];
+    SU2_MPI::Allreduce(cg_elem,buffer,Global_nElemDomain*nDim,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    tmp = cg_elem; cg_elem = buffer; delete [] tmp;
+
+    buffer = new su2double [Global_nElemDomain];
+    SU2_MPI::Allreduce(vol_elem,buffer,Global_nElemDomain,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    tmp = vol_elem; vol_elem = buffer; delete [] tmp;
+  }
+  
+  /*--- Account for the duplication introduced by the halo elements and the
+  reduction using MPI_SUM, which is required to maintain differentiabillity. ---*/
+  unsigned short *halo_detect = new unsigned short [Global_nElemDomain];
+
+  for(iElem=0; iElem<Global_nElemDomain; ++iElem) halo_detect[iElem] = 0;
+  for(iElem=0; iElem<nElem; ++iElem) halo_detect[elem[iElem]->GetGlobalIndex()] = 1;
+  {
+    unsigned short *buffer = new unsigned short [Global_nElemDomain], *tmp = NULL;
+    MPI_Allreduce(halo_detect,buffer,Global_nElemDomain,MPI_UNSIGNED_SHORT,MPI_SUM,MPI_COMM_WORLD);
+    tmp = halo_detect; halo_detect = buffer; delete [] tmp;
+  }
+  for(iElem=0; iElem<Global_nElemDomain; ++iElem) {
+    su2double numRepeat = halo_detect[iElem];
+    for(unsigned short iDim=0; iDim<nDim; ++iDim)
+      cg_elem[nDim*iElem+iDim] /= numRepeat;
+    vol_elem[iElem] /= numRepeat;
+  }
+#endif
+
+
+  /*--- SECOND: Each processor performs the average for its elements. For each
+  element we look for neighbours of neighbours of... until the distance to the
+  closest newly found one is greater than the filter radius.  ---*/
+
+  /*--- Inputs of a filter stage, like with CG and volumes, each processor needs to see everything ---*/
+  su2double *work_values = new su2double [Global_nElemDomain];
+  
+  for (unsigned long iKernel=0; iKernel<kernels.size(); ++iKernel)
+  {
+    unsigned short kernel_type = kernels[iKernel].first;
+    su2double kernel_param = kernels[iKernel].second;
+    su2double kernel_radius = filter_radius[iKernel];
+
+    /*--- Synchronize work values ---*/
+    /*--- Initialize ---*/
+    for(iElem=0; iElem<Global_nElemDomain; ++iElem) work_values[iElem] = 0.0;
+    /*--- Populate ---*/
+    for(iElem=0; iElem<nElem; ++iElem)
+      work_values[elem[iElem]->GetGlobalIndex()] = output_values[iElem];
+#ifdef HAVE_MPI
+    /*--- Share with all processors ---*/
+    {
+      su2double *buffer = new su2double [Global_nElemDomain], *tmp = NULL;
+      SU2_MPI::Allreduce(work_values,buffer,Global_nElemDomain,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+      tmp = work_values; work_values = buffer; delete [] tmp;
+    }
+    /*--- Account for duplication ---*/
+    for(iElem=0; iElem<Global_nElemDomain; ++iElem) {
+      su2double numRepeat = halo_detect[iElem];
+      work_values[iElem] /= numRepeat;
+    }
+#endif
+
+    /*--- Filter ---*/
+    for (iElem=0; iElem<nElem; ++iElem)
+    {
+      /*--- Center of the search ---*/
+      iElem_global = elem[iElem]->GetGlobalIndex();
+    
+      /*--- Find the neighbours of iElem ---*/
+      vector<long> neighbours;
+      GetRadialNeighbourhood(iElem_global, SU2_TYPE::GetValue(kernel_radius),
+                             neighbour_start, neighbour_idx, cg_elem, neighbours);
+    
+      /*--- Apply the kernel ---*/
+      su2double weight, numerator = 0.0, denominator = 0.0;
+    
+      switch ( kernel_type ) {
+        /*--- distance-based kernels (weighted averages) ---*/
+        case CONSTANT_WEIGHT_FILTER: case CONICAL_WEIGHT_FILTER: case GAUSSIAN_WEIGHT_FILTER:
+            
+          for (vector<long>::iterator it=neighbours.begin(); it!=neighbours.end(); ++it)
+          {
+            su2double distance = 0.0;
+            for (unsigned short iDim=0; iDim<nDim; ++iDim)
+              distance += pow(cg_elem[nDim*iElem_global+iDim]-cg_elem[nDim*(*it)+iDim],2.0);
+            distance = sqrt(distance);
+      
+            switch ( kernel_type ) {
+              case CONSTANT_WEIGHT_FILTER: weight = 1.0; break;
+              case CONICAL_WEIGHT_FILTER:  weight = kernel_radius-distance; break;
+              case GAUSSIAN_WEIGHT_FILTER: weight = exp(-0.5*pow(distance/kernel_param,2.0)); break;
+              default: break;
+            }
+            weight *= vol_elem[*it];
+            numerator   += weight*work_values[*it];
+            denominator += weight;
+          }
+          output_values[iElem] = numerator/denominator;
+          break;
+          
+        /*--- morphology kernels (image processing) ---*/
+        case DILATE_MORPH_FILTER: case ERODE_MORPH_FILTER:
+            
+          for (vector<long>::iterator it=neighbours.begin(); it!=neighbours.end(); ++it)
+          {
+            switch ( kernel_type ) {
+              case DILATE_MORPH_FILTER: numerator += exp(kernel_param*work_values[*it]); break;
+              case ERODE_MORPH_FILTER:  numerator += exp(kernel_param*(1.0-work_values[*it])); break;
+              default: break;
+            }
+            denominator += 1.0;
+          }
+          output_values[iElem] = log(numerator/denominator)/kernel_param;
+          if ( kernel_type==ERODE_MORPH_FILTER ) output_values[iElem] = 1.0-output_values[iElem];
+          break;
+          
+        default:
+          SU2_MPI::Error("Unknown type of filter kernel",CURRENT_FUNCTION);
+      }
+    }
+  }
+  
+  delete [] neighbour_idx;
+  delete [] cg_elem;
+  delete [] vol_elem;
+  delete [] work_values;
+#ifdef HAVE_MPI
+  delete [] halo_detect;
+#endif
+}
+
+void CGeometry::GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start,
+                                                long *&neighbour_idx) const
+{
+  unsigned long iElem, iElem_global;
+
+  /*--- Determine how much space we need for the adjacency matrix by counting the
+  neighbours of each element, i.e. its number of faces---*/
+  unsigned short *nFaces_elem = new unsigned short [Global_nElemDomain];
+
+  for(iElem=0; iElem<Global_nElemDomain; ++iElem) nFaces_elem[iElem] = 0;
+
+  for(iElem=0; iElem<nElem; ++iElem) {
+    iElem_global = elem[iElem]->GetGlobalIndex();
+    nFaces_elem[iElem_global] = elem[iElem]->GetnFaces();
+  }
+#ifdef HAVE_MPI
+  /*--- Share with all processors ---*/
+  {
+    unsigned short *buffer = new unsigned short [Global_nElemDomain], *tmp = NULL;
+    MPI_Allreduce(nFaces_elem,buffer,Global_nElemDomain,MPI_UNSIGNED_SHORT,MPI_MAX,MPI_COMM_WORLD);
+    /*--- swap pointers and delete old data to keep the same variable name after reduction ---*/
+    tmp = nFaces_elem; nFaces_elem = buffer; delete [] tmp;
+  }
+#endif
+
+  /*--- Vector with the addresses of the start of the neighbours of a given element.
+  This is generated by a cumulative sum of the neighbour count. ---*/
+  neighbour_start.resize(Global_nElemDomain+1);
+  
+  neighbour_start[0] = 0;
+  for(iElem=0; iElem<Global_nElemDomain; ++iElem) {
+    neighbour_start[iElem+1] = neighbour_start[iElem]+nFaces_elem[iElem];
+  }
+  delete [] nFaces_elem;
+
+  /*--- Allocate ---*/
+  unsigned long matrix_size = neighbour_start[Global_nElemDomain];
+  if ( neighbour_idx != NULL )
+    SU2_MPI::Error("neighbour_idx is expected to be NULL, stopping to avoid a potential memory leak",CURRENT_FUNCTION);
+  neighbour_idx = new long [matrix_size];
+  /*--- Initialize ---*/
+  for(iElem=0; iElem<matrix_size; ++iElem) neighbour_idx[iElem] = -1;
+  /*--- Populate ---*/
+  for(iElem=0; iElem<nElem; ++iElem)
+  {
+    iElem_global = elem[iElem]->GetGlobalIndex();
+    unsigned long start_pos = neighbour_start[iElem_global];
+    
+    for(unsigned short iFace=0; iFace<elem[iElem]->GetnFaces(); ++iFace)
+    {
+      long neighbour = elem[iElem]->GetNeighbor_Elements(iFace);
+      
+      if ( neighbour>=0 ) {
+        neighbour_idx[start_pos+iFace] = elem[neighbour]->GetGlobalIndex();
+      }
+    }
+  }
+#ifdef HAVE_MPI
+  /*--- Share with all processors ---*/
+  {
+    long *buffer = new long [matrix_size], *tmp = NULL;
+    MPI_Allreduce(neighbour_idx,buffer,matrix_size,MPI_LONG,MPI_MAX,MPI_COMM_WORLD);
+    tmp = neighbour_idx; neighbour_idx = buffer; delete [] tmp;
+  }
+#endif
+}
+
+void CGeometry::GetRadialNeighbourhood(const unsigned long iElem_global,
+                                       const passivedouble radius,
+                                       const vector<unsigned long> &neighbour_start,
+                                       const long *neighbour_idx,
+                                       const su2double *cg_elem,
+                                       vector<long> &neighbours) const
+{
+  /*--- Center of the search ---*/
+  neighbours.clear(); neighbours.push_back(iElem_global);
+
+  vector<passivedouble> X0(nDim);
+  for (unsigned short iDim=0; iDim<nDim; ++iDim)
+    X0[iDim] = SU2_TYPE::GetValue(cg_elem[nDim*iElem_global+iDim]);
+
+  /*--- A way to locate neighbours of a given degree (1st degree are direct neighbours).
+  "degree_start"[degree] is the position in "neighbours" where "degree" starts. ---*/
+  vector<unsigned long> degree_start(1,0);
+
+  /*--- Loop stops when "neighbours" stops changing size. ---*/
+  vector<long>::iterator cursor_it = neighbours.begin(), aux_it;
+  while (cursor_it != neighbours.end())
+  {
+    /*--- Add another degree. ---*/
+    long current_degree = degree_start.size();
+    degree_start.push_back(neighbours.size());
+
+    /*--- For each element of the last degree added, add its direct neighbours avoiding
+    duplicates, note the special value -1 at the start position of "candidates". ---*/
+    vector<long> candidates(1,-1);
+
+    for (; cursor_it!=neighbours.end(); ++cursor_it)
+    {
+      /*--- Locators to access this "row" of the adjacency matrix. ---*/
+      unsigned long row_begin = neighbour_start[ *cursor_it],
+                    row_end   = neighbour_start[(*cursor_it)+1];
+
+      for (unsigned long i=row_begin; i<row_end; ++i)
+        if (find(candidates.begin(), candidates.end(), neighbour_idx[i]) == candidates.end())
+          candidates.push_back(neighbour_idx[i]);
+    }
+
+    /*--- Avoid duplication of previouly added neighbours.
+    Only the last two degrees need checking. ---*/
+    vector<long> new_neighbours;
+    long degree_to_check = max<long>(0,current_degree-2);
+    vector<long>::iterator search_begin = neighbours.begin()+degree_start[degree_to_check];
+
+    for (aux_it=candidates.begin()+1; aux_it<candidates.end(); ++aux_it)
+      if (find(search_begin, neighbours.end(), *aux_it) == neighbours.end())
+        new_neighbours.push_back(*aux_it);
+
+    /*--- Add the new neighbours that are inside the radius. ---*/
+    for (aux_it=new_neighbours.begin(); aux_it!=new_neighbours.end(); ++aux_it)
+    {
+      /*--- passivedouble because we are still not going to calculate anything ---*/
+      passivedouble distance = 0.0;
+      for (unsigned short iDim=0; iDim<nDim; ++iDim)
+        distance += pow(X0[iDim]-SU2_TYPE::GetValue(cg_elem[nDim*(*aux_it)+iDim]),2.0);
+
+      if(sqrt(distance) < radius) neighbours.push_back(*aux_it);
+    }
+    /*--- need new iterator (to same position where it was) after change of capacity ---*/
+    cursor_it = neighbours.begin()+degree_start[current_degree];
+  }
+}
+
+void CGeometry::SetElemVolume(CConfig *config)
+{
+  /*--- Compute and store the volume of each "elem" ---*/
+  for (unsigned long iElem=0; iElem<nElem; ++iElem)
+  {
+    CElement *element = NULL;
+
+    /*--- Get the appropriate type of element ---*/
+    switch (elem[iElem]->GetVTK_Type()) {
+      case TRIANGLE:      element = new CTRIA1( nDim,config); break;
+      case QUADRILATERAL: element = new CQUAD4( nDim,config); break;
+      case TETRAHEDRON:   element = new CTETRA1(nDim,config); break;
+      case PYRAMID:       element = new CPYRAM5(nDim,config); break;
+      case PRISM:         element = new CPRISM6(nDim,config); break;
+      case HEXAHEDRON:    element = new CHEXA8( nDim,config); break;
+      default:
+        SU2_MPI::Error("Cannot compute the area/volume of a 1D element.",CURRENT_FUNCTION);
+    }
+    /*--- Set the nodal coordinates of the element ---*/
+    for (unsigned short iNode=0; iNode<elem[iElem]->GetnNodes(); ++iNode) {
+      unsigned long node_idx = elem[iElem]->GetNode(iNode);
+      for (unsigned short iDim=0; iDim<nDim; ++iDim) {
+        su2double coord = node[node_idx]->GetCoord(iDim);
+        element->SetRef_Coord(coord, iNode, iDim);
+      }
+    }
+    /*--- Compute ---*/
+    if(nDim==2) elem[iElem]->SetVolume(element->ComputeArea());
+    else        elem[iElem]->SetVolume(element->ComputeVolume());
+
+    delete element;
+  }
 }
 
 CPhysicalGeometry::CPhysicalGeometry() : CGeometry() {
@@ -8561,6 +8909,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   bool domain_flag = false;
   bool found_transform = false;
   bool harmonic_balance = config->GetUnsteady_Simulation() == HARMONIC_BALANCE;
+  bool multizone_file = config->GetMultizone_Mesh();
   bool actuator_disk  = (((config->GetnMarker_ActDiskInlet() != 0) ||
                           (config->GetnMarker_ActDiskOutlet() != 0)) &&
                          ((config->GetKind_SU2() == SU2_CFD) ||
@@ -9106,7 +9455,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file ---*/
   
-  if (val_nZone > 1 || harmonic_balance) {
+  if ((val_nZone > 1 && multizone_file) || harmonic_balance) {
     if (harmonic_balance) {
       if (rank == MASTER_NODE) cout << "Reading time instance " << config->GetiInst()+1 << "." << endl;
     } else {
@@ -9362,7 +9711,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
 
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && multizone_file) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -9907,7 +10256,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   
   /*--- If more than one, find the zone in the mesh file  ---*/
   
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && multizone_file) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -10249,7 +10598,7 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
   /*--- If more than one, find the zone in the mesh file ---*/
   
 
-  if (val_nZone > 1) {
+  if (val_nZone > 1 && multizone_file) {
     while (getline (mesh_file,text_line)) {
       /*--- Search for the current domain ---*/
       position = text_line.find ("IZONE=",0);
@@ -12561,58 +12910,113 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
 void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
-  unsigned long nVertex_SolidWall, ii, jj, iVertex, iPoint, pointID;
-  unsigned short iMarker, iDim;
-  su2double dist;
-  int rankID;
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
+  /*---         subelements of the local boundaries that must be taken     ---*/
+  /*---         into account in the wall distance computation.             ---*/
+  /*--------------------------------------------------------------------------*/
 
-  /*--- Compute the total number of nodes on no-slip boundaries ---*/
+  /* Initialize an array for the mesh points, which eventually contains the
+     mapping from the local nodes to the number used in the connectivity of the
+     local boundary faces. However, in a first pass it is an indicator whether
+     or not a mesh point is on a local wall boundary. */
+  vector<unsigned long> meshToSurface(nPoint, 0);
 
-  nVertex_SolidWall = 0;
-  for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      nVertex_SolidWall += GetnVertex(iMarker);
-    }
-  }
+  /* Define the vectors for the connectivity of the local linear subelements,
+     the element ID's, the element type and marker ID's. */
+  vector<unsigned long> surfaceConn;
+  vector<unsigned long> elemIDs;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned short> markerIDs;
 
-  /*--- Allocate the vectors to hold boundary node coordinates
-   and its local ID. ---*/
+  /* Loop over the boundary markers. */
 
-  vector<su2double>     Coord_bound(nDim*nVertex_SolidWall);
-  vector<unsigned long> PointIDs(nVertex_SolidWall);
+  for(unsigned short iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
 
-  /*--- Retrieve and store the coordinates of the no-slip boundary nodes
-   and their local point IDs. ---*/
 
-  ii = 0; jj = 0;
-  for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
-    if ( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
-      for (iVertex=0; iVertex<GetnVertex(iMarker); ++iVertex) {
-        iPoint = vertex[iMarker][iVertex]->GetNode();
-        PointIDs[jj++] = iPoint;
-        for (iDim=0; iDim<nDim; ++iDim)
-          Coord_bound[ii++] = node[iPoint]->GetCoord(iDim);
+    /* Check for a viscous wall. */
+    if( (config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ||
+      (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+      (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
+
+      /* Loop over the surface elements of this marker. */
+      for(unsigned long iElem=0; iElem < nElem_Bound[iMarker]; iElem++) {
+
+        /* Set the flag of the mesh points on this surface to true. */
+        for (unsigned short iNode = 0; iNode < bound[iMarker][iElem]->GetnNodes(); iNode++) {
+          unsigned long iPoint = bound[iMarker][iElem]->GetNode(iNode);
+          meshToSurface[iPoint] = 1;
+        }
+        /* Determine the necessary data from the corresponding standard face,
+          such as the number of linear subfaces, the number of DOFs per
+          linear subface and the corresponding local connectivity. */
+        const unsigned short VTK_Type      = bound[iMarker][iElem]->GetVTK_Type();
+        const unsigned short nDOFsPerElem  = bound[iMarker][iElem]->GetnNodes();
+
+          /* Loop over the nodes of element and store the required data. */
+
+        markerIDs.push_back(iMarker);
+        VTK_TypeElem.push_back(VTK_Type);
+        elemIDs.push_back(iElem);
+
+        for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++) 
+          surfaceConn.push_back(bound[iMarker][iElem]->GetNode(iNode));
       }
     }
   }
 
-  /*--- Build the ADT of the boundary nodes. ---*/
 
-  CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
-                              PointIDs.data(), true);
+  /*--- Create the coordinates of the local points on the viscous surfaces and
+        create the final version of the mapping from all volume points to the
+        points on the viscous surfaces. ---*/
+  vector<su2double> surfaceCoor;
+  unsigned long nVertex_SolidWall = 0;
 
-  /*--- Loop over all interior mesh nodes and compute the distances to each
-   of the no-slip boundary nodes. Store the minimum distance to the wall
-   for each interior mesh node. ---*/
+  for(unsigned long i=0; i<nPoint; ++i) {
+    if( meshToSurface[i] ) {
+      meshToSurface[i] = nVertex_SolidWall++;
+
+      for(unsigned short k=0; k<nDim; ++k)
+        surfaceCoor.push_back(node[i]->GetCoord(k));
+    }
+  }
+
+  /*--- Change the surface connectivity, such that it corresponds to
+        the entries in surfaceCoor rather than in meshPoints. ---*/
+  for(unsigned long i=0; i<surfaceConn.size(); ++i)
+    surfaceConn[i] = meshToSurface[surfaceConn[i]];
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
+  /*---         surface elements. A nearest point search does not give     ---*/
+  /*---         accurate results, especially not for the integration       ---*/
+  /*---         points of the elements close to a wall boundary.           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Build the ADT. */
+  CADTElemClass WallADT(nDim, surfaceCoor, surfaceConn, VTK_TypeElem,
+                           markerIDs, elemIDs, true);
+
+  /* Release the memory of the vectors used to build the ADT. To make sure
+     that all the memory is deleted, the swap function is used. */
+  vector<unsigned short>().swap(markerIDs);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(elemIDs);
+  vector<unsigned long>().swap(surfaceConn);
+  vector<su2double>().swap(surfaceCoor);
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
+  /*---         distance to a solid wall element                           ---*/
+  /*--------------------------------------------------------------------------*/
+
 
   if ( WallADT.IsEmpty() ) {
   
     /*--- No solid wall boundary nodes in the entire mesh.
      Set the wall distance to zero for all nodes. ---*/
     
-    for (iPoint=0; iPoint<GetnPoint(); ++iPoint)
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
       node[iPoint]->SetWall_Distance(0.0);
   }
   else {
@@ -12620,10 +13024,14 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     /*--- Solid wall boundary nodes are present. Compute the wall
      distance for all nodes. ---*/
     
-    for (iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+      unsigned short markerID;
+      unsigned long  elemID;
+      int            rankID;
+      su2double      dist;
       
-      WallADT.DetermineNearestNode(node[iPoint]->GetCoord(), dist,
-                                   pointID, rankID);
+      WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
+                                   elemID, rankID);
       node[iPoint]->SetWall_Distance(dist);
     }
   }

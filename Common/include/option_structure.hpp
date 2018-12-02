@@ -224,7 +224,8 @@ enum ENUM_SOLVER {
   FEM_EULER = 50,                       /*!< \brief Definition of the finite element Euler's solver. */
   FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 53                          /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  MULTIZONE = 99
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVER>
@@ -250,7 +251,20 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
 ("DISC_ADJ_FEM", DISC_ADJ_FEM)
 ("FLUID_STRUCTURE_INTERACTION", FLUID_STRUCTURE_INTERACTION)
 ("TEMPLATE_SOLVER", TEMPLATE_SOLVER)
-("ZONE_SPECIFIC", ZONE_SPECIFIC);
+("ZONE_SPECIFIC", ZONE_SPECIFIC)
+("MULTIZONE", MULTIZONE);
+
+/*!
+ * \brief different solver types for the multizone environment component
+ */
+enum ENUM_MULTIZONE {
+  MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
+  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
+};
+/* BEGIN_CONFIG_ENUMS */
+static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM_MULTIZONE>
+("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
+("BLOCK_JACOBI", MZ_BLOCK_JACOBI);
 
 /*!
  * \brief types of fluid solvers
@@ -1351,6 +1365,7 @@ enum ENUM_OBJECTIVE {
   THRUST_COEFFICIENT = 17,		  /*!< \brief Thrust objective function definition. */
   TORQUE_COEFFICIENT = 18,		  /*!< \brief Torque objective function definition. */
   FIGURE_OF_MERIT = 19,		      /*!< \brief Rotor Figure of Merit objective function definition. */
+  BUFFET_SENSOR = 20,             /*!< \brief Sensor for detecting separation. */
   SURFACE_TOTAL_PRESSURE = 28, 	    /*!< \brief Total Pressure objective function definition. */
   SURFACE_STATIC_PRESSURE = 29,      /*!< \brief Static Pressure objective function definition. */
   SURFACE_MASSFLOW = 30,           /*!< \brief Mass Flow Rate objective function definition. */
@@ -1374,7 +1389,8 @@ enum ENUM_OBJECTIVE {
   PRESSURE_RATIO = 49,
   ENTROPY_GENERATION = 50,
   REFERENCE_GEOMETRY=60,          /*!<\brief Norm of displacements with respect to target geometry. */
-  REFERENCE_NODE=61               /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
+  REFERENCE_NODE=61,              /*!<\brief Objective function defined as the difference of a particular node respect to a reference position. */
+  VOLUME_FRACTION=62              /*!<\brief Volume average physical density, for material-based topology optimization applications. */
 };
 
 static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM_OBJECTIVE>
@@ -1397,6 +1413,7 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("TOTAL_HEATFLUX", TOTAL_HEATFLUX)
 ("MAXIMUM_HEATFLUX", MAXIMUM_HEATFLUX)
 ("FIGURE_OF_MERIT", FIGURE_OF_MERIT)
+("BUFFET", BUFFET_SENSOR)
 ("SURFACE_TOTAL_PRESSURE", SURFACE_TOTAL_PRESSURE)
 ("SURFACE_STATIC_PRESSURE", SURFACE_STATIC_PRESSURE)
 ("SURFACE_MASSFLOW", SURFACE_MASSFLOW)
@@ -1420,7 +1437,8 @@ static const map<string, ENUM_OBJECTIVE> Objective_Map = CCreateMap<string, ENUM
 ("ENTROPY_GENERATION",  ENTROPY_GENERATION)
 ("KINETIC_ENERGY_LOSS", KINETIC_ENERGY_LOSS)
 ("REFERENCE_GEOMETRY", REFERENCE_GEOMETRY)
-("REFERENCE_NODE", REFERENCE_NODE);
+("REFERENCE_NODE", REFERENCE_NODE)
+("VOLUME_FRACTION", VOLUME_FRACTION);
 
 /*!
  * \brief types of residual criteria equations
@@ -1912,6 +1930,36 @@ enum ENUM_INPUT_REF {
 static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM_INPUT_REF>
 ("SU2", SU2_REF)
 ("CUSTOM", CUSTOM_REF);
+
+/*!
+ * \brief types of filter kernels, initially intended for structural topology optimization applications
+ */
+enum ENUM_FILTER_KERNEL {
+  CONSTANT_WEIGHT_FILTER = 0,      /*!< \brief Uniform weight. */
+  CONICAL_WEIGHT_FILTER  = 1,      /*!< \brief Linear decay with distance from center point [Bruns and Tortorelli, 2001]. */
+  GAUSSIAN_WEIGHT_FILTER = 2,      /*!< \brief Bell shape around center point [Bruns and Tortorelli, 2003]. */
+  DILATE_MORPH_FILTER    = 3,      /*!< \brief Continuous version of the dilate morphology operator [Sigmund 2007]. */
+  ERODE_MORPH_FILTER     = 4,      /*!< \brief Continuous version of the erode morphology operator [Sigmund 2007].*/
+};
+static const map<string, ENUM_FILTER_KERNEL> Filter_Kernel_Map = CCreateMap<string, ENUM_FILTER_KERNEL>
+("CONSTANT", CONSTANT_WEIGHT_FILTER)
+("CONICAL" , CONICAL_WEIGHT_FILTER)
+("GAUSSIAN", GAUSSIAN_WEIGHT_FILTER)
+("DILATE"  , DILATE_MORPH_FILTER)
+("ERODE"   , ERODE_MORPH_FILTER);
+
+/*!
+ * \brief types of projection function, initially intended for structural topology optimization applications
+ */
+enum ENUM_PROJECTION_FUNCTION {
+  NO_PROJECTION  = 0,      /*!< \brief No projection. */
+  HEAVISIDE_UP   = 1,      /*!< \brief Project values towards 1. */
+  HEAVISIDE_DOWN = 2,      /*!< \brief Project values towards 0. */
+};
+static const map<string, ENUM_PROJECTION_FUNCTION> Projection_Function_Map = CCreateMap<string, ENUM_PROJECTION_FUNCTION>
+("NO_PROJECTION" , NO_PROJECTION)
+("HEAVISIDE_UP"  , HEAVISIDE_UP)
+("HEAVISIDE_DOWN", HEAVISIDE_DOWN);
 
 /* END_CONFIG_ENUMS */
 
