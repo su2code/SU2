@@ -4322,6 +4322,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   bool rotating_frame = config->GetRotating_Frame();
   bool aeroelastic = config->GetAeroelastic_Simulation();
   bool equiv_area = config->GetEquivArea();
+  bool buffet = (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR);
   bool engine        = ((config->GetnMarker_EngineInflow() != 0) || (config->GetnMarker_EngineExhaust() != 0));
   bool actuator_disk = ((config->GetnMarker_ActDiskInlet() != 0) || (config->GetnMarker_ActDiskOutlet() != 0));
   bool turbulent = ((config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == ADJ_RANS) ||
@@ -4387,6 +4388,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
   char flow_coeff[]= ",\"CL\",\"CD\",\"CSF\",\"CMx\",\"CMy\",\"CMz\",\"CFx\",\"CFy\",\"CFz\",\"CL/CD\",\"AoA\",\"Custom_ObjFunc\"";
   char heat_coeff[]= ",\"HeatFlux_Total\",\"HeatFlux_Maximum\",\"Temperature_Total\"";
   char equivalent_area_coeff[]= ",\"CEquivArea\",\"CNearFieldOF\"";
+  char buffet_coeff[]= ",\"Buffet_Metric\"";
   char engine_coeff[]= ",\"NetThrust\",\"Power\",\"AeroCDrag\",\"SolidCDrag\",\"Radial_Distortion\",\"Circumferential_Distortion\"";
   char rotating_frame_coeff[]= ",\"CMerit\",\"CT\",\"CQ\"";
   char fem_coeff[]= ",\"VM_Stress\",\"Force_Coeff\"";
@@ -4417,6 +4419,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     monitoring_coeff += ",\"CMx_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMy_"    + Monitoring_Tag + "\"";
     monitoring_coeff += ",\"CMz_"    + Monitoring_Tag + "\"";
+    if(buffet) monitoring_coeff += ",\"Buffet_Metric_"    + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"plunge_" + Monitoring_Tag + "\"";
     aeroelastic_coeff += ",\"pitch_"  + Monitoring_Tag + "\"";
   }
@@ -4489,6 +4492,7 @@ void COutput::SetConvHistory_Header(ofstream *ConvHist_file, CConfig *config, un
     case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_RANS : case FEM_LES:
       ConvHist_file[0] << begin;
       if (!turbo) ConvHist_file[0] << flow_coeff;
+      if (buffet) ConvHist_file[0] << buffet_coeff;
       if (turbo) ConvHist_file[0] << turbo_coeff;
       if (thermal && !turbo) ConvHist_file[0] << heat_coeff;
       if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
@@ -4596,6 +4600,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     }
     
     if (fea || fluid_structure) output_files = false;
+    if (config[val_iZone]->GetMultizone_Problem()) output_files = false;
 
     /*--- We need to evaluate some of the objective functions to write the value on the history file ---*/
     
@@ -4688,7 +4693,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     /*--- WARNING: These buffers have hard-coded lengths. Note that you
      may have to adjust them to be larger if adding more entries. ---*/
     
-    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000],
+    char begin[1000], direct_coeff[1000], heat_coeff[1000], equivalent_area_coeff[1000], engine_coeff[1000], rotating_frame_coeff[1000], Cp_inverse_design[1000], Heat_inverse_design[1000], surface_coeff[1000], aeroelastic_coeff[1000], monitoring_coeff[10000], buffet_coeff[1000],
     adjoint_coeff[1000], flow_resid[1000], adj_flow_resid[1000], turb_resid[1000], trans_resid[1000],
     adj_turb_resid[1000],
     begin_fem[1000], fem_coeff[1000], heat_resid[1000], combo_obj[1000],
@@ -4721,6 +4726,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
+    bool buffet = (config[val_iZone]->GetBuffet_Monitoring() || config[val_iZone]->GetKind_ObjFunc() == BUFFET_SENSOR);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
                 (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM));
@@ -4762,7 +4768,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Total_CT = 0.0, Total_CQ = 0.0,
     Total_Heat = 0.0, Total_MaxHeat = 0.0, Total_Temperature = 0.0, Total_Custom_ObjFunc = 0.0,
     Total_ComboObj = 0.0, Total_NetThrust = 0.0, Total_Power = 0.0, Total_AeroCD = 0.0, Total_SolidCD = 0.0, Total_IDR = 0.0, Total_IDC = 0.0,
-    Total_AoA = 0.0;
+    Total_AoA = 0.0, Total_Buffet_Metric = 0.0;
     su2double Surface_MassFlow = 0.0, Surface_Mach = 0.0, Surface_Temperature = 0.0, Surface_Pressure = 0.0, Surface_Density = 0.0, Surface_Enthalpy = 0.0, Surface_NormalVelocity = 0.0, Surface_TotalTemperature = 0.0, Surface_TotalPressure = 0.0, Surface_Uniformity = 0.0, Surface_SecondaryStrength = 0.0,Surface_MomentumDistortion = 0.0, Surface_SecondOverUniform = 0.0, Surface_PressureDrop = 0.0;
 
     su2double Total_ForceCoeff = 0.0, Total_VMStress = 0.0, Total_IncLoad = 0.0;
@@ -4796,17 +4802,18 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
-    *aeroelastic_pitch  = NULL,
-    *Surface_CL         = NULL,
-    *Surface_CD         = NULL,
-    *Surface_CSF        = NULL,
-    *Surface_CEff       = NULL,
-    *Surface_CFx        = NULL,
-    *Surface_CFy        = NULL,
-    *Surface_CFz        = NULL,
-    *Surface_CMx        = NULL,
-    *Surface_CMy        = NULL,
-    *Surface_CMz        = NULL;
+    *aeroelastic_pitch     = NULL,
+    *Surface_CL            = NULL,
+    *Surface_CD            = NULL,
+    *Surface_CSF           = NULL,
+    *Surface_CEff          = NULL,
+    *Surface_CFx           = NULL,
+    *Surface_CFy           = NULL,
+    *Surface_CFz           = NULL,
+    *Surface_CMx           = NULL,
+    *Surface_CMy           = NULL,
+    *Surface_CMz           = NULL,
+    *Surface_Buffet_Metric = NULL;
     
     /*--- Initialize number of variables ---*/
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
@@ -4865,6 +4872,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     Surface_CMx        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMy        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     Surface_CMz        = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
+    if(buffet) Surface_Buffet_Metric = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     
     /*--- Write information from nodes ---*/
     
@@ -4901,6 +4909,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             Total_MaxHeat      = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_MaxHeatFlux();
             Total_Temperature  = solver_container[val_iZone][val_iInst][FinestMesh][HEAT_SOL]->GetTotal_AvgTemperature();
           }
+        }
+            
+        if(buffet){
+          Total_Buffet_Metric = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetTotal_Buffet_Metric();
         }
 
         if (direct_diff != NO_DERIVATIVE) {
@@ -4977,6 +4989,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             Surface_CMx[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMx(iMarker_Monitoring);
             Surface_CMy[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMy(iMarker_Monitoring);
             Surface_CMz[iMarker_Monitoring]        = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_CMz(iMarker_Monitoring);
+              
+            if(buffet) Surface_Buffet_Metric[iMarker_Monitoring] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetSurface_Buffet_Metric(iMarker_Monitoring);
           }
         }
         
@@ -5226,6 +5240,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             SPRINTF (direct_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e",
                      Total_CL, Total_CD, Total_CSF, Total_CMx, Total_CMy, Total_CMz, Total_CFx, Total_CFy,
                      Total_CFz, Total_CEff, Total_AoA, Total_Custom_ObjFunc);
+            if (buffet) SPRINTF (buffet_coeff, ", %14.8e",  Total_Buffet_Metric);
             if (thermal || heat) SPRINTF (heat_coeff, ", %14.8e, %14.8e, %14.8e",  Total_Heat, Total_MaxHeat, Total_Temperature);
             if (equiv_area) SPRINTF (equivalent_area_coeff, ", %14.8e, %14.8e", Total_CEquivArea, Total_CNearFieldOF);
             if (engine || actuator_disk) SPRINTF (engine_coeff, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", Total_NetThrust, Total_Power, Total_AeroCD, Total_SolidCD, Total_IDR, Total_IDC);
@@ -5296,6 +5311,11 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 strcat(monitoring_coeff, surface_coeff);
                 SPRINTF(surface_coeff, ", %12.10f", Surface_CMz[iMarker_Monitoring]);
                 strcat(monitoring_coeff, surface_coeff);
+                  
+                if(buffet){
+                  SPRINTF(surface_coeff, ", %12.10f", Surface_Buffet_Metric[iMarker_Monitoring]);
+                  strcat(monitoring_coeff, surface_coeff);
+                }
               }
             }
 
@@ -5898,32 +5918,33 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           
           if ((!DualTime_Iteration) && (output_files)) {
             if (!turbo) {
-              ConvHist_file[0] << begin << direct_coeff;
-              if (thermal) ConvHist_file[0] << heat_coeff;
-              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
+              if (buffet) config[val_iZone]->GetHistFile()[0] << buffet_coeff;
+              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
+              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
               if (inv_design) {
-                ConvHist_file[0] << Cp_inverse_design;
-                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
+                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
-              ConvHist_file[0] << flow_resid;
-              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
+              config[val_iZone]->GetHistFile()[0] << flow_resid;
+              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
             }
             else {
-              ConvHist_file[0] << begin << turbo_coeff << flow_resid;
+              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
             }
             
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << surface_outputs;
+            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
+            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
+            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) {
-              ConvHist_file[0] << d_direct_coeff;
-              if (output_surface) ConvHist_file[0] << d_surface_outputs;
+              config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
+              if (output_surface) config[val_iZone]->GetHistFile()[0] << d_surface_outputs;
             }
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
 
           /*--- Write screen output ---*/
@@ -5992,32 +6013,33 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           if ((!DualTime_Iteration) && (output_files)) {
 
             if (!turbo) {
-              ConvHist_file[0] << begin << direct_coeff;
-              if (thermal) ConvHist_file[0] << heat_coeff;
-              if (equiv_area) ConvHist_file[0] << equivalent_area_coeff;
-              if (engine || actuator_disk) ConvHist_file[0] << engine_coeff;
+              config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
+              if (buffet) config[val_iZone]->GetHistFile()[0] << buffet_coeff;
+              if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
+              if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
+              if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
               if (inv_design) {
-                ConvHist_file[0] << Cp_inverse_design;
-                if (thermal) ConvHist_file[0] << Heat_inverse_design;
+                config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
+                if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
               }
-              if (rotating_frame && !turbo) ConvHist_file[0] << rotating_frame_coeff;
-              ConvHist_file[0] << flow_resid << turb_resid;
-              if (weakly_coupled_heat) ConvHist_file[0] << heat_resid;
+              if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
+              config[val_iZone]->GetHistFile()[0] << flow_resid << turb_resid;
+              if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
             }
             else {
-              ConvHist_file[0] << begin << turbo_coeff << flow_resid << turb_resid;
+              config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid << turb_resid;
             }
             
-            if (aeroelastic) ConvHist_file[0] << aeroelastic_coeff;
-            if (output_per_surface) ConvHist_file[0] << monitoring_coeff;
-            if (output_surface) ConvHist_file[0] << surface_outputs;
+            if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
+            if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
+            if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
             if (direct_diff != NO_DERIVATIVE) {
-              ConvHist_file[0] << d_direct_coeff;
-              if (output_surface) ConvHist_file[0] << d_surface_outputs;
+              config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
+              if (output_surface) config[val_iZone]->GetHistFile()[0] << d_surface_outputs;
             }
-            if (output_comboObj) ConvHist_file[0] << combo_obj;
-            ConvHist_file[0] << end;
-            ConvHist_file[0].flush();
+            if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
+            config[val_iZone]->GetHistFile()[0] << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           
           /*--- Write screen output ---*/
@@ -6089,8 +6111,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case HEAT_EQUATION_FVM:
 
           if (!DualTime_Iteration) {
-            ConvHist_file[0] << begin << direct_coeff << heat_resid << end;
-            ConvHist_file[0].flush();
+            config[val_iZone]->GetHistFile()[0] << begin << direct_coeff << heat_resid << end;
+            config[val_iZone]->GetHistFile()[0].flush();
           }
           break;
 
@@ -11375,10 +11397,10 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
       unsigned long iExtIter = config[ZONE_STRUCT]->GetExtIter();
       unsigned long ExtIter_OffSet = config[ZONE_STRUCT]->GetExtIter_OffSet();
-      unsigned long iFSIIter = config[ZONE_STRUCT]->GetFSIIter();
+      unsigned long iOuterIter = config[ZONE_STRUCT]->GetOuterIter();
       su2double dummy = 0.0;
 
-      bool first_iter = ((iExtIter==0) && (iFSIIter == 0));
+      bool first_iter = ((iExtIter==0) && (iOuterIter == 0));
 
 
       bool compressible = (config[ZONE_FLOW]->GetKind_Regime() == COMPRESSIBLE);
@@ -11477,7 +11499,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       }
 
       /*--- Write the begining of the history file ---*/
-      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iFSIIter));
+      SPRINTF(begin, "%12d, %12d", SU2_TYPE::Int(iExtIter+ExtIter_OffSet), SU2_TYPE::Int(iOuterIter));
       /*--- Write the end of the history file ---*/
       SPRINTF (end, "\n");
 
@@ -11519,7 +11541,7 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
 
 }
 
-void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone) {
+void COutput::SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone) {
 
   unsigned short iMarker,iDim, nDim, iVar, nMarker, nVar;
   unsigned long iVertex, iPoint, nPoint, nVertex;
@@ -11527,13 +11549,15 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   unsigned short iZone;
 
-  CSolver **solver = new CSolver*[val_nZone];
+  CSolver ***solver = new CSolver**[val_nZone];
+  for (iZone = 0; iZone < val_nZone; iZone++) {
+    solver[iZone] = new CSolver*[1];
+  }
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
 
-
-    nPoint = geometry[iZone]->GetnPoint();
-    nDim   = geometry[iZone]->GetnDim();
+    nPoint = geometry[iZone][INST_0]->GetnPoint();
+    nDim   = geometry[iZone][INST_0]->GetnDim();
     nMarker = config[iZone]->GetnMarker_All();
     nVar = nDim + 1;
 
@@ -11553,14 +11577,14 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
     }
     fieldnames.push_back("\"Surface_Sensitivity\"");
 
-    solver[iZone] = new CBaselineSolver(geometry[iZone], config[iZone], nVar+nDim, fieldnames);
+    solver[iZone][INST_0] = new CBaselineSolver(geometry[iZone][INST_0], config[iZone], nVar+nDim, fieldnames);
 
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        solver[iZone]->node[iPoint]->SetSolution(iDim, geometry[iZone]->node[iPoint]->GetCoord(iDim));
+        solver[iZone][INST_0]->node[iPoint]->SetSolution(iDim, geometry[iZone][INST_0]->node[iPoint]->GetCoord(iDim));
       }
       for (iVar = 0; iVar < nDim; iVar++) {
-        solver[iZone]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone]->GetSensitivity(iPoint, iVar));
+        solver[iZone][INST_0]->node[iPoint]->SetSolution(iVar+nDim, geometry[iZone][INST_0]->GetSensitivity(iPoint, iVar));
       }
     }
 
@@ -11568,22 +11592,23 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
     for (iMarker = 0; iMarker < nMarker; iMarker++) {
 
-      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+      if((config[iZone]->GetMarker_All_KindBC(iMarker) == HEAT_FLUX )   ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == EULER_WALL )  ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )  ||
+         (config[iZone]->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE )) {
         
-        nVertex = geometry[iZone]->GetnVertex(iMarker);
+        nVertex = geometry[iZone][INST_0]->GetnVertex(iMarker);
 
         for (iVertex = 0; iVertex < nVertex; iVertex++) {
-          iPoint = geometry[iZone]->vertex[iMarker][iVertex]->GetNode();
-          Normal = geometry[iZone]->vertex[iMarker][iVertex]->GetNormal();
+          iPoint = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNode();
+          Normal = geometry[iZone][INST_0]->vertex[iMarker][iVertex]->GetNormal();
           Prod = 0.0;
           Area = 0.0;
           for (iDim = 0; iDim < nDim; iDim++) {
 
             /*--- Retrieve the gradient calculated with discrete adjoint method ---*/
 
-            SensDim = geometry[iZone]->GetSensitivity(iPoint, iDim);
+            SensDim = geometry[iZone][INST_0]->GetSensitivity(iPoint, iDim);
 
             /*--- Calculate scalar product for projection onto the normal vector ---*/
 
@@ -11598,7 +11623,7 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
           Sens = Prod/Area;
 
-          solver[iZone]->node[iPoint]->SetSolution(2*nDim, Sens);
+          solver[iZone][INST_0]->node[iPoint]->SetSolution(2*nDim, Sens);
 
         }
       }
@@ -11607,9 +11632,10 @@ void COutput::SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsig
 
   /*--- Merge the information and write the output files ---*/
 
-  SetBaselineResult_Files(&solver, &geometry, config, 0, val_nZone);
+  SetBaselineResult_Files(solver, geometry, config, 0, val_nZone);
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
+    delete solver[iZone][0];
     delete solver[iZone];
   }
   delete [] solver;
@@ -12207,15 +12233,36 @@ void COutput::SpecialOutput_HarmonicBalance(CSolver *****solver, CGeometry ****g
   delete [] averages;
 }
 
+void COutput::SetSpecial_Output(CSolver *****solver_container,
+                                       CGeometry ****geometry,
+                                       CConfig **config,
+                                       unsigned long iExtIter,
+                                       unsigned short val_nZone) {
+
+  bool special_output = false;
+  unsigned short iZone;
+
+  for (iZone = 0; iZone < val_nZone; iZone++){
+
+    special_output = config[iZone]->GetSpecial_Output();
+
+    /*--- Output a file with the forces breakdown. ---*/
+    if (config[iZone]->GetWrt_ForcesBreakdown())
+      SpecialOutput_ForcesBreakdown(solver_container, geometry, config, iZone, special_output);
+
+  }
+
+}
+
 void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
                                        CGeometry ****geometry,
                                        CConfig **config,
                                        unsigned long iExtIter,
-                                       unsigned short val_nZone,
-                                       unsigned short *nInst) {
+                                       unsigned short val_nZone) {
   
   unsigned short iZone, iVar, iInst;
   unsigned long iPoint;
+  unsigned short nInst = 1;
   bool compressible = true;
 
   for (iZone = 0; iZone < val_nZone; iZone++) {
@@ -12230,8 +12277,9 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
     /*--- Get the file output format ---*/
     
     unsigned short FileFormat = config[iZone]->GetOutput_FileFormat();
+    nInst = config[iZone]->GetnTimeInstances();
     
-    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+    for (iInst = 0; iInst < nInst; iInst++){
 
       bool cont_adj = config[iZone]->GetContinuous_Adjoint();
       bool disc_adj = config[iZone]->GetDiscrete_Adjoint();
@@ -12413,12 +12461,12 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
 
       /*--- Sort the surface data and renumber if for writing. ---*/
-
-      if (fem_solver)
-        SortOutputData_Surface_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
-      else
-        SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
-
+      if (Wrt_Srf){
+        if (fem_solver)
+          SortOutputData_Surface_FEM(config[iZone], geometry[iZone][iInst][MESH_0]);
+        else
+          SortOutputData_Surface(config[iZone], geometry[iZone][iInst][MESH_0]);
+      }
       /*--- Write Tecplot/ParaView ASCII files for the volume and/or surface solutions. ---*/
 
       if (Wrt_Vol) {
@@ -12431,7 +12479,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
 
           case FIELDVIEW:
@@ -12451,7 +12499,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file volume solution file instead." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
 
           case FIELDVIEW_BINARY:
@@ -12468,7 +12516,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII volume solution file." << endl;
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], false);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, false);
             break;
             
           case PARAVIEW_BINARY:
@@ -12496,7 +12544,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
 
           case TECPLOT_BINARY:
@@ -12507,7 +12555,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             if (rank == MASTER_NODE) cout << "  Run SU2_SOL to generate Tecplot binary." << endl;
             if (rank == MASTER_NODE) cout << "Writing Tecplot ASCII file surface solution file instead." << endl;
             WriteTecplotASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
 
           case PARAVIEW:
@@ -12516,7 +12564,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
             if (rank == MASTER_NODE) cout << "Writing Paraview ASCII surface solution file." << endl;
             WriteParaViewASCII_Parallel(config[iZone], geometry[iZone][iInst][MESH_0],
-                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst[iZone], true);
+                solver_container[iZone][iInst][MESH_0], iZone, val_nZone, iInst, nInst, true);
             break;
             
           case PARAVIEW_BINARY:
@@ -12538,11 +12586,11 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
         /*--- Clean up the connectivity data that was allocated for output. ---*/
 
         DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], false);
-        DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
+        if (Wrt_Srf) DeallocateConnectivity_Parallel(config[iZone], geometry[iZone][iInst][MESH_0], true);
 
         /*--- Clean up the surface data that was only needed for output. ---*/
 
-        DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
+        if (Wrt_Srf) DeallocateSurfaceData_Parallel(config[iZone], geometry[iZone][iInst][MESH_0]);
 
       }
 
@@ -12572,7 +12620,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gamma = config->GetGamma();
   su2double RefVel2;
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
-  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL;
+  su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
   
   bool transition           = (config->GetKind_Trans_Model() == BC);
@@ -12752,6 +12800,10 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         if (geometry->GetnDim() == 3) {
           nVar_Par += 1; Variable_Names.push_back("C<sub>f</sub>_z");
         }
+        if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR){
+          Variable_Names.push_back("Buffet_Sensor");
+          nVar_Par += 1;
+        }
         nVar_Par += 1;
         Variable_Names.push_back("h");
       }
@@ -12766,8 +12818,8 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         Variable_Names.push_back("Y_Plus");
         Variable_Names.push_back("Eddy_Viscosity");
       } else {
-        Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
         Variable_Names.push_back("y<sup>+</sup>");
+        Variable_Names.push_back("<greek>m</greek><sub>t</sub>");
       }
     }
     
@@ -12814,6 +12866,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     Aux_Frict_z = new su2double[geometry->GetnPoint()];
     Aux_Heat    = new su2double[geometry->GetnPoint()];
     Aux_yPlus   = new su2double[geometry->GetnPoint()];
+    Aux_Buffet  = new su2double[geometry->GetnPoint()];
     
     /*--- First, loop through the mesh in order to find and store the
      value of the viscous coefficients at any surface nodes. They
@@ -12826,6 +12879,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       Aux_Frict_z[iPoint] = 0.0;
       Aux_Heat[iPoint]    = 0.0;
       Aux_yPlus[iPoint]   = 0.0;
+      Aux_Buffet[iPoint]  = 0.0;
     }
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_Plotting(iMarker) == YES) {
@@ -12836,6 +12890,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2);
           Aux_Heat[iPoint] = solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex);
           Aux_yPlus[iPoint] = solver[FLOW_SOL]->GetYPlus(iMarker, iVertex);
+          if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR) Aux_Buffet[iPoint] = solver[FLOW_SOL]->GetBuffetSensor(iMarker, iVertex);
         }
       }
     }
@@ -12987,12 +13042,16 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetLaminarViscosity(); iVar++;
           
-          /*--- Load data for the skin friction, heat flux, and y-plus. ---*/
+          /*--- Load data for the skin friction, heat flux, buffet, and y-plus. ---*/
           
           Local_Data[jPoint][iVar] = Aux_Frict_x[iPoint]; iVar++;
           Local_Data[jPoint][iVar] = Aux_Frict_y[iPoint]; iVar++;
           if (geometry->GetnDim() == 3) {
             Local_Data[jPoint][iVar] = Aux_Frict_z[iPoint];
+            iVar++;
+          }
+          if (config->GetBuffet_Monitoring() || config->GetKind_ObjFunc() == BUFFET_SENSOR) {
+            Local_Data[jPoint][iVar] = Aux_Buffet[iPoint]; 
             iVar++;
           }
           Local_Data[jPoint][iVar] = Aux_Heat[iPoint]; iVar++;
@@ -13048,6 +13107,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     delete [] Aux_Frict_z;
     delete [] Aux_Heat;
     delete [] Aux_yPlus;
+    delete [] Aux_Buffet;
   }
   
   delete [] Local_Halo;
