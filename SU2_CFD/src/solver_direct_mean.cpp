@@ -3928,6 +3928,20 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
           break;
 
       }
+      
+      if (turbulent) {
+        switch (config->GetKind_ConductivityModel_Turb()) {
+          case CONSTANT_PRANDTL_TURB:
+            cout << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+            cout << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
+            break;
+          case NO_CONDUCTIVITY_TURB:
+            cout << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+            cout << "No turbulent component in effective thermal conductivity." << "\n";
+            break;
+        }
+      }
+      
     }
 
     
