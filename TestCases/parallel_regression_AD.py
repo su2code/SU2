@@ -83,7 +83,7 @@ def main():
     discadj_rans_naca0012_sa.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sa.cfg_file  = "turb_NACA0012_sa.cfg"
     discadj_rans_naca0012_sa.test_iter = 10
-    discadj_rans_naca0012_sa.test_vals = [-1.751966, 0.485741, 0.183154, -0.000018] #last 4 columns
+    discadj_rans_naca0012_sa.test_vals = [-1.751966, 0.485717, 0.183154, -0.000018] #last 4 columns
     discadj_rans_naca0012_sa.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sa.timeout   = 1600
     discadj_rans_naca0012_sa.tol       = 0.00001
@@ -94,7 +94,7 @@ def main():
     discadj_rans_naca0012_sst.cfg_dir   = "disc_adj_rans/naca0012"
     discadj_rans_naca0012_sst.cfg_file  = "turb_NACA0012_sst.cfg"
     discadj_rans_naca0012_sst.test_iter = 10
-    discadj_rans_naca0012_sst.test_vals = [-1.654042, -0.500642, 0.154704, -0.000022] #last 4 columns
+    discadj_rans_naca0012_sst.test_vals = [-1.654042, -0.500718, 0.154704, -0.000022] #last 4 columns
     discadj_rans_naca0012_sst.su2_exec  = "parallel_computation.py -f"
     discadj_rans_naca0012_sst.timeout   = 1600
     discadj_rans_naca0012_sst.tol       = 0.00001
@@ -197,7 +197,7 @@ def main():
     discadj_trans_stator.cfg_dir   = "disc_adj_turbomachinery/transonic_stator_2D"
     discadj_trans_stator.cfg_file  = "transonic_stator.cfg" 
     discadj_trans_stator.test_iter = 79
-    discadj_trans_stator.test_vals = [-2.001083, -2.115302, -0.450987, -15.778341] #last 4 columns
+    discadj_trans_stator.test_vals = [-2.001082, -2.115018, -0.450986, -15.778292] #last 4 columns
     discadj_trans_stator.su2_exec  = "parallel_computation.py -f"
     discadj_trans_stator.timeout   = 1600
     discadj_trans_stator.tol       = 0.00001
@@ -238,6 +238,22 @@ def main():
     ######################################
 
     pass_list = [ test.run_test() for test in test_list ]
+
+    ##################################################
+    ### Structural Adjoint - Topology Optimization ###
+    ##################################################
+
+    # test discrete_adjoint.py
+    discadj_topol_optim = TestCase('discadj_topol_optim')
+    discadj_topol_optim.cfg_dir = "fea_topology"
+    discadj_topol_optim.cfg_file  = "config.cfg"
+    discadj_topol_optim.test_iter = 0
+    discadj_topol_optim.su2_exec  = "parallel_computation.py"
+    discadj_topol_optim.timeout   = 1600
+    discadj_topol_optim.reference_file = "grad_ref_node.dat.ref"
+    discadj_topol_optim.test_file = "grad_ref_node.dat"
+    pass_list.append(discadj_topol_optim.run_filediff())
+    test_list.append(discadj_topol_optim)
 
     # Tests summary
     print('==================================================================')

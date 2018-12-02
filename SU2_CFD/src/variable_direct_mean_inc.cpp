@@ -68,6 +68,7 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
   bool fsi          = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -176,12 +177,13 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
     Grad_AuxVar = new su2double[nDim];
 
   Solution_BGS_k = NULL;
-  if (fsi){
+  if (fsi || multizone){
     Solution_BGS_k  = new su2double [nVar];
     Solution_BGS_k[0] = val_pressure;
     for (iDim = 0; iDim < nDim; iDim++) {
       Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
     }
+    Solution_BGS_k[nDim+1] = val_temperature;
   }
 
 }
@@ -194,6 +196,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
   bool viscous      = config->GetViscous();
   bool axisymmetric = config->GetAxisymmetric();
   bool fsi = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   /*--- Array initialization ---*/
   
@@ -295,7 +298,7 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
     Grad_AuxVar = new su2double[nDim];
   
   Solution_BGS_k = NULL;
-  if (fsi){
+  if (fsi || multizone){
       Solution_BGS_k  = new su2double [nVar];
       for (iVar = 0; iVar < nVar; iVar++) {
         Solution_BGS_k[iVar] = val_solution[iVar];
