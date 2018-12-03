@@ -642,7 +642,7 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   }
   
   /*--- Get projected flux tensor ---*/
-  GetTau(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+  GetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
   

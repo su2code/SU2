@@ -39,50 +39,83 @@
 
 #include "numerics_structure.hpp"
 
+/*!
+ * \class CAvgGrad_Base
+ * \brief A base class for computing viscous terms using an average of gradients.
+ * \details This is the base class for the numerics classes that compute the
+ * viscous fluxes for the flow solvers (i.e. compressible or incompressible
+ * Navier Stokes).  The actual numerics classes derive from this class.
+ * This class is used to share functions and variables that are common to all
+ * of the flow viscous numerics.  For example, the turbulent stress tensor
+ * is computed identically for all three derived classes.
+ * \ingroup ViscDiscr
+ * \author C. Pederson, A. Bueno, F. Palacios, T. Economon
+ */
 class CAvgGrad_Base : public CNumerics {
  protected:
-  const unsigned short nPrimVar;  /*!< \brief The size of the primitve variable array used in the numerics class. */
-  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j,           /*!< \brief Primitives variables at point i and 1. */
-  **Mean_GradPrimVar,             /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity,                /*!< \brief Mean value of the viscosity. */
-  Mean_Eddy_Viscosity,                   /*!< \brief Mean value of the eddy viscosity. */
-  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_TauWall,     /*!< \brief Mean wall shear stress (wall functions). */
-  TauWall_i, TauWall_j,  /*!< \brief Wall shear stress at point i and j (wall functions). */
-  dist_ij_2,          /*!< \brief Length of the edge and face, squared */
-  *Proj_Mean_GradPrimVar_Edge,
-  *Edge_Vector;                 /*!< \brief Vector form point i to point j. */
-  bool implicit; /*!< \brief Implicit calculus. */
-  const bool correct_gradient;  /*!< \brief Apply a correction to the gradient term */
+  const unsigned short nPrimVar;  /*!< \brief The size of the primitive variable array used in the numerics class. */
+  const bool correct_gradient; /*!< \brief Apply a correction to the gradient term */
+  bool implicit;               /*!< \brief Implicit calculus. */
   su2double *heat_flux_vector, /*!< \brief Flux of total energy due to molecular and turbulent diffusion */
-  *heat_flux_jac_i, /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
-  **tau_jacobian_i; /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
-
+  *heat_flux_jac_i,            /*!< \brief Jacobian of the molecular + turbulent heat flux vector, projected onto the normal vector. */
+  **tau_jacobian_i;            /*!< \brief Jacobian of the viscous + turbulent stress tensor, projected onto the normal vector. */
+  su2double *Mean_PrimVar,     /*!< \brief Mean primitive variables. */
+  *PrimVar_i, *PrimVar_j,      /*!< \brief Primitives variables at point i and 1. */
+  **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
+  Mean_Laminar_Viscosity,      /*!< \brief Mean value of the viscosity. */
+  Mean_Eddy_Viscosity,         /*!< \brief Mean value of the eddy viscosity. */
+  Mean_turb_ke,                /*!< \brief Mean value of the turbulent kinetic energy. */
+  Mean_TauWall,                /*!< \brief Mean wall shear stress (wall functions). */
+  TauWall_i, TauWall_j,        /*!< \brief Wall shear stress at point i and j (wall functions). */
+  dist_ij_2,                   /*!< \brief Length of the edge and face, squared */
+  *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
+  *Edge_Vector;                /*!< \brief Vector from point i to point j. */
 
   /*!
-   * \brief Calculate the viscous and turbulent stress tensor
+   * \brief Calculate the viscous + turbulent stress tensor
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_turb_ke - Turbulent kinetic energy
    * \param[in] val_laminar_viscosity - Laminar viscosity.
    * \param[in] val_eddy_viscosity - Eddy viscosity.
    */
-  void GetTau(const su2double *val_primvar,
-              su2double **val_gradprimvar,
-              const su2double val_turb_ke,
-              const su2double val_laminar_viscosity,
-              const su2double val_eddy_viscosity);
+  void GetStressTensor(const su2double *val_primvar,
+                       su2double **val_gradprimvar,
+                       const su2double val_turb_ke,
+                       const su2double val_laminar_viscosity,
+                       const su2double val_eddy_viscosity);
 
+  /*!
+   * \brief Add a correction using a Quadratic Constitutive Relation
+   *
+   * This function requires that the stress tensor already be
+   * computed using \ref GetStressTensor
+   *
+   * See: Spalart, P. R., "Strategies for Turbulence Modelling and
+   * Simulation," International Journal of Heat and Fluid Flow, Vol. 21,
+   * 2000, pp. 252-263
+   *
+   * \param[in] val_gradprimvar
+   */
   void AddQCR(su2double **val_gradprimvar);
 
+  /*!
+   * \brief Scale the stress tensor using a predefined wall stress.
+   *
+   * This function requires that the stress tensor already be
+   * computed using \ref GetStressTensor
+   *
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   * \param[in] val_tau_wall - The wall stress
+   */
   void AddTauWall(const su2double *val_normal,
                   const su2double val_tau_wall);
 
 
   /**
-   * \brief Calculate the jacobian of the viscous and turbulent stress tensor
+   * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
    *
+   * This function is intended only for the compressible flow solver.
    * This Jacobian is projected onto the normal vector, so it is of dimension
    * [nDim][nVar]
    *
@@ -100,8 +133,9 @@ class CAvgGrad_Base : public CNumerics {
 
 
   /**
-   * \brief Calculate the jacobian of the viscous and turbulent stress tensor
+   * \brief Calculate the Jacobian of the viscous and turbulent stress tensor
    *
+   * This function is intended only for the incompressible flow solver.
    * This Jacobian is projected onto the normal vector, so it is of dimension
    * [nDim][nVar]
    *
@@ -117,6 +151,10 @@ class CAvgGrad_Base : public CNumerics {
 
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
+   *
+   * The heat flux vector and the stress tensor must be calculated before
+   * calling this function.
+   *
    * \param[in] val_primvar - Primitive variables.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
@@ -125,6 +163,10 @@ class CAvgGrad_Base : public CNumerics {
 
   /*!
    * \brief TSL-Approximation of Viscous NS Jacobians.
+   *
+   * The Jacobians of the heat flux vector and the stress tensor must be
+   * calculated before calling this function.
+   *
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_dS - Area of the face between two nodes.
    * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
@@ -143,7 +185,7 @@ class CAvgGrad_Base : public CNumerics {
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimension of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] val_nPrimVar - Number of primitive variables to use
+   * \param[in] val_nPrimVar - Number of primitive variables to use.
    * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
@@ -173,6 +215,12 @@ class CAvgGrad_Base : public CNumerics {
 class CAvgGrad_Flow : public CAvgGrad_Base {
 private:
 
+  /*!
+   * \brief Compute the heat flux due to molecular and turbulent diffusivity
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   */
   void GetHeatFluxVector(su2double **val_gradprimvar,
                          const su2double val_laminar_viscosity,
                          const su2double val_eddy_viscosity);
@@ -303,12 +351,16 @@ public:
 class CAvgGradInc_Flow : public CAvgGrad_Base {
 private:
   su2double Mean_Thermal_Conductivity, /*!< \brief Mean value of the effective thermal conductivity. */
-  Mean_Mean_Cp, /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
-  proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  bool energy; /*!< \brief computation with the energy equation. */
+  Mean_Mean_Cp,   /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
+  proj_vector_ij; /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
+  bool energy;    /*!< \brief computation with the energy equation. */
 
   /*
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
+   *
+   * The viscous + turbulent stress tensor must be calculated before calling
+   * this function.
+   *
    * \param[in] val_gradprimvar - Gradient of the primitive variables.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
@@ -319,6 +371,10 @@ private:
 
   /*!
    * \brief Compute the projection of the viscous Jacobian matrices.
+   *
+   * The Jacobian of the stress tensor must be calculated before calling
+   * this function.
+   *
    * \param[in] val_dS - Area of the face between two nodes.
    * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
