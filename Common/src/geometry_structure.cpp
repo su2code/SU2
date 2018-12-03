@@ -19153,8 +19153,8 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   
   /*--- Build the ADT of all interior nodes. ---*/
   
-  su2_adtPointsOnlyClass VertexADT(nDim, nPointDomain,
-                                   Coords.data(), PointIDs.data());
+  CADTPointsOnlyClass VertexADT(nDim, nPointDomain,
+                                Coords.data(), PointIDs.data(), true);
   
   /*--- Loop over all interior mesh nodes owned by this rank and find the
    matching point with minimum distance. Once we have the match, store the

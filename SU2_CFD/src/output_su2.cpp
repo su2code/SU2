@@ -326,7 +326,8 @@ void COutput::WriteExternalSensitivity(CConfig *config,
   filename = config->GetDV_Sens_Filename();
   
   /*--- Open external sensitivity file. Note that we are overwriting the
-   volume sensitivity file that was the original input for projection. ---*/
+   volume sensitivity file that was the original input for projection,
+   if this is executed in EXTERNAL_SENSITIVITY mode. ---*/
   
   ofstream Sens_File;
   Sens_File.open(filename.c_str(), ios::out);
@@ -363,7 +364,7 @@ void COutput::WriteExternalSensitivity(CConfig *config,
   nSurf_Poin = 0;
   for (iPoint = 0; iPoint < nGlobal_Poin+1; iPoint++) {
     LocalIndex[iPoint] = 0;
-    if (SurfacePoint[iPoint]) { nSurf_Poin++; LocalIndex[iPoint] = nSurf_Poin; }
+    if (SurfacePoint[iPoint]) {nSurf_Poin++; LocalIndex[iPoint] = nSurf_Poin;}
   }
   
   /*--- Write surface x,y,z and surface dJ/dx, dJ/dy, dJ/dz data. ---*/
