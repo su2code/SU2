@@ -36,7 +36,6 @@
  */
 
 #include "../include/numerics_structure.hpp"
-#include "../include/numerics_direct_mean.hpp"
 #include <limits>
 
 CUpwFDSInc_Flow::CUpwFDSInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

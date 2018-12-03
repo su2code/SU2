@@ -44,7 +44,7 @@
 
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/mpi_structure.hpp"
-#include "../include/numerics_direct_mean.hpp"
+#include "../include/numerics_structure.hpp"
 
 unsigned short error_count = 0;
 

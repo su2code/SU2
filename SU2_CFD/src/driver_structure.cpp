@@ -36,7 +36,6 @@
  */
 
 #include "../include/driver_structure.hpp"
-#include "../include/numerics_direct_mean.hpp"
 #include "../include/definition_structure.hpp"
 
 #ifdef VTUNEPROF

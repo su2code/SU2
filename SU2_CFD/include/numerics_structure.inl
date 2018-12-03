@@ -576,3 +576,8 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
                   su2double **val_Jacobian_j, su2double *val_Jacobian_muj, su2double ***val_Jacobian_gradj, CConfig *config) { }
 
 inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
+
+inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+  TauWall_i = val_tauwall_i;
+  TauWall_j = val_tauwall_j;
+}
