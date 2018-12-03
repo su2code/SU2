@@ -267,22 +267,16 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE) cout << "Reading surface sensitivities at each node from file." << endl;
       geometry_container[iZone][INST_0]->SetBoundSensitivity(config_container[iZone]);
     } else {
-<<<<<<< HEAD
-      if (rank == MASTER_NODE) cout << "Reading volume sensitivities at each node from file." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
-      geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
-=======
-      
+
       if (rank == MASTER_NODE)
         cout << "Reading volume sensitivities at each node from file." << endl;
-      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone], config_container[iZone]);
+      grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
       if (config_container[ZONE_0]->GetDesign_Variable(0) == EXTERNAL_SENSITIVITY)
-        geometry_container[iZone]->ReadExternalSensitivity(config_container[iZone]);
+        geometry_container[iZone][INST_0]->ReadExternalSensitivity(config_container[iZone]);
       else
-        geometry_container[iZone]->SetSensitivity(config_container[iZone]);
->>>>>>> 0e5f9ca5e... Some clean up for external sensitivity input. Working in serial only so far.
+        geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
 
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- Mesh sensitivity computation ---------------------" << endl;

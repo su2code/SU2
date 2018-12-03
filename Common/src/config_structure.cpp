@@ -1637,6 +1637,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
+  /* DESCRIPTION: Write raw sensitivities (dJ/dx) on surfaces to ASCII file. \ingroup Config*/
+  addBoolOption("WRT_EXTERNAL_SENSITIVITY", Wrt_External_Sensitivity, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -1818,7 +1820,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
   addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
-  /* DESCRIPTION: Provide a file of sensitivities from an external adjoint. */
+  /* DESCRIPTION: Provide a file of sensitivities from an external adjoint as an ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each grid point. */
   addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("external_sens.dat"));
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
@@ -4153,6 +4155,13 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else if (top_optim_nRadius != top_optim_nKernel) {
       SU2_MPI::Error("Different number of topology filter kernels and respective radii.", CURRENT_FUNCTION);
     }
+  }
+  
+  /*--- If we are executing SU2_DOT in external sensitivity mode, then
+   force the external sensitivity file to be written. ---*/
+  
+  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == EXTERNAL_SENSITIVITY)) {
+    Wrt_External_Sensitivity = true;
   }
 
 }
@@ -8583,8 +8592,8 @@ void CConfig::SetProfilingCSV(void) {
 
   /*--- Allocate and initialize memory ---*/
 
-  double *l_min_red, *l_max_red, *l_tot_red, *l_avg_red;
-  int *n_calls_red;
+  double *l_min_red = NULL, *l_max_red = NULL, *l_tot_red = NULL, *l_avg_red = NULL;
+  int *n_calls_red = NULL;
   double* l_min = new double[map_size];
   double* l_max = new double[map_size];
   double* l_tot = new double[map_size];

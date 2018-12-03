@@ -1674,6 +1674,8 @@ inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = 
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
+inline bool CConfig::GetWrt_External_Sensitivity(void) { return Wrt_External_Sensitivity; }
+
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
 inline vector<vector<su2double> > CConfig::GetAeroelastic_np1(unsigned short iMarker) { return Aeroelastic_np1[iMarker]; }
