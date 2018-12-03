@@ -4468,7 +4468,7 @@ void CAvgGrad_Base::AddQCR(su2double **val_gradprimvar) {
 void CAvgGrad_Base::AddTauWall(const su2double *val_normal,
                                const su2double val_tau_wall) {
 
-  unsigned short iVar, iDim, jDim;
+  unsigned short iDim, jDim;
   su2double TauNormal, TauElem[3], TauTangent[3], WallShearStress, Area, UnitNormal[3];
 
   Area = 0.0;
