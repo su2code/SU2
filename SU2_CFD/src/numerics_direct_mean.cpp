@@ -4419,7 +4419,7 @@ CAvgGrad_Base::~CAvgGrad_Base() {
     delete [] Proj_Mean_GradPrimVar_Edge;
 }
 
-void CAvgGrad_Base::GetTau(const su2double *val_primvar,
+void CAvgGrad_Base::GetStressTensor(const su2double *val_primvar,
                            su2double **val_gradprimvar,
                            const su2double val_turb_ke,
                            const su2double val_laminar_viscosity,
@@ -4515,6 +4515,8 @@ void CAvgGrad_Base::GetTauJacobian(const su2double *val_Mean_PrimVar,
                                    const su2double val_eddy_viscosity,
                                    const su2double val_dist_ij,
                                    const su2double *val_normal) {
+
+  /*--- QCR and wall functions are **not** accounted for here ---*/
 
   const su2double Density = val_Mean_PrimVar[nDim+2];
   const su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
@@ -4784,7 +4786,7 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
 
   /*--- Get projected flux tensor ---*/
 
-  GetTau(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+  GetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
@@ -5041,7 +5043,7 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   
   /*--- Get projected flux tensor ---*/
   
-  GetTau(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+  GetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
   if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
