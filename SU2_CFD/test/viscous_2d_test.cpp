@@ -225,6 +225,7 @@ int main(int argc, char *argv[]) {
   numerics->SetPrimitive(primvar_i, primvar_j);
   numerics->SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
   numerics->SetTurbKineticEnergy(tke, tke);
+  numerics->SetTauWall(0, 0);
   numerics->ComputeResidual(residual_i, Jacobian_i, Jacobian_j, config);
 
   su2double expected_residual[nVar] = {0, -6, 12, 18};

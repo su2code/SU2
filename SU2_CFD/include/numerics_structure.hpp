@@ -771,25 +771,6 @@ public:
                                   su2double *val_pressure, su2double *val_betainc2,
                                   su2double *val_enthalpy,
                                   su2double *val_normal, su2double *val_Proj_Flux);
-    
-  /*
-   * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_turb_ke - Turbulent kinetic energy
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   * \param[in] val_thermal_conductivity - Thermal conductivity.
-   */
-  
-  void GetViscousIncProjFlux(su2double *val_primvar,
-                                 su2double **val_gradprimvar,
-                                 su2double *val_normal,
-                                 su2double val_laminar_viscosity,
-                                 su2double val_eddy_viscosity,
-                                 su2double val_turb_ke,
-                                 su2double val_thermal_conductivity);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -885,56 +866,6 @@ public:
                           su2double **val_Proj_Jac_tensor);
   
   /*!
-   * \brief TSL-Approximation of Viscous NS Jacobians.
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double val_dist_ij,
-                          su2double *val_normal, su2double val_dS,
-                          su2double *val_Proj_Visc_Flux,
-                          su2double **val_Proj_Jac_Tensor_i,
-                          su2double **val_Proj_Jac_Tensor_j);
-  
-  /*!
-   * \brief TSL-Approximation of Viscous NS Jacobians for arbitrary equations of state.
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
-   * \param[in] val_Mean_SecVar - Mean value of the secondary variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
-   * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[in] val_Proj_Visc_Flux - Pointer to the projected viscous flux.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousProjJacs(su2double *val_Mean_PrimVar,
-                          su2double **val_gradprimvar,
-                          su2double *val_Mean_SecVar,
-                          su2double val_laminar_viscosity,
-                          su2double val_eddy_viscosity,
-                          su2double val_thermal_conductivity,
-                          su2double val_heat_capacity_cp,
-                          su2double val_dist_ij,
-                          su2double *val_normal, su2double val_dS,
-                          su2double *val_Proj_Visc_Flux,
-                          su2double **val_Proj_Jac_Tensor_i,
-                          su2double **val_Proj_Jac_Tensor_j);
-  
-  /*!
    * \brief Mapping between primitives variables P and conservatives variables C.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
@@ -943,22 +874,6 @@ public:
   void GetPrimitive2Conservative (su2double *val_Mean_PrimVar,
                                   su2double *val_Mean_SecVar,
                                   su2double **val_Jac_PC);
-   
-  /*!
-   * \brief Compute the projection of the viscous Jacobian matrices.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousIncProjJacs(su2double val_laminar_viscosity,
-                                 su2double val_eddy_viscosity, su2double val_dist_ij,
-                                 su2double *val_normal, su2double val_dS,
-                                 su2double **val_Proj_Jac_Tensor_i,
-                                 su2double **val_Proj_Jac_Tensor_j);
   
   /*!
    * \overload
@@ -2964,52 +2879,6 @@ public:
                         CConfig *config);
 };
 
-
-
-/*!
- * \class CAvgGradInc_Flow
- * \brief Class for computing viscous term using an average of gradients.
- * \ingroup ViscDiscr
- * \author A. Bueno, F. Palacios, T. Economon
- */
-class CAvgGradInc_Flow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar,           /*!< \brief Mean primitive variables. */
-  *PrimVar_i, *PrimVar_j;           /*!< \brief Primitives variables at point i and j. */
-  su2double **Mean_GradPrimVar,          /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, /*!< \brief Mean value of the viscosity. */
-  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_Thermal_Conductivity, /*!< \brief Mean value of the effective thermal conductivity. */
-  dist_ij,              /*!< \brief Length of the edge and face. */
-  proj_vector_ij;                  /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  bool implicit;        /*!< \brief Implicit calculus. */
-  bool energy; /*!< \brief computation with the energy equation. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradInc_Flow(void);
-  /*!
-   * \brief Compute the viscous flow residual using an average of gradients.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-};
-
 /*!
  * \class CAvgGrad_Scalar
  * \brief Template class for computing viscous residual of scalar values
@@ -3253,54 +3122,6 @@ public:
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j,
                        su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
-};
-
-
-
-/*!
- * \class CAvgGradCorrectedInc_Flow
- * \brief Class for computing viscous term using an average of gradients with correction (incompressible).
- * \ingroup ViscDiscr
- * \author F. Palacios, T. Economon
- */
-class CAvgGradCorrectedInc_Flow : public CNumerics {
-private:
-  unsigned short iDim, iVar, jVar;  /*!< \brief Iterators in dimension an variable. */
-  su2double *Mean_PrimVar;           /*!< \brief Mean primitive variables. */
-  su2double *PrimVar_i, *PrimVar_j,      /*!< \brief Primitives variables at point i and 1. */
-  *Edge_Vector,                /*!< \brief Vector form point i to point j. */
-  **Mean_GradPrimVar, *Proj_Mean_GradPrimVar_Edge,  /*!< \brief Mean value of the gradient. */
-  Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,      /*!< \brief Mean value of the viscosity. */
-  Mean_turb_ke,        /*!< \brief Mean value of the turbulent kinetic energy. */
-  Mean_Thermal_Conductivity, Mean_Cp, /*!< \brief Mean value of the effective thermal conductivity and specific heat at constant pressure. */
-  dist_ij_2,          /*!< \brief Length of the edge and face. */
-  proj_vector_ij;     /*!< \brief (Edge_Vector DOT normal)/|Edge_Vector|^2 */
-  bool implicit;      /*!< \brief Implicit calculus. */
-  bool energy; /*!< \brief computation with the energy equation. */
-  
-public:
-  
-  /*!
-   * \brief Constructor of the class.
-   * \param[in] val_nDim - Number of dimension of the problem.
-   * \param[in] val_nVar - Number of variables of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  CAvgGradCorrectedInc_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
-  
-  /*!
-   * \brief Destructor of the class.
-   */
-  ~CAvgGradCorrectedInc_Flow(void);
-  
-  /*!
-   * \brief Compute the viscous flow residual using an average of gradients with correction.
-   * \param[out] val_residual - Pointer to the total residual.
-   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
-   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
-   * \param[in] config - Definition of the particular problem.
-   */
-  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
 /*!

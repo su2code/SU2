@@ -241,6 +241,7 @@ void TestRunner::Run(CNumerics* numerics, su2double* residual_i,
   numerics->SetPrimitive(primvar, primvar);
   numerics->SetPrimVarGradient(primvar_grad, primvar_grad);
   numerics->SetTurbKineticEnergy(turb_ke, turb_ke);
+  numerics->SetTauWall(0, 0);
 
   // Compute the residual and jacobians
 
