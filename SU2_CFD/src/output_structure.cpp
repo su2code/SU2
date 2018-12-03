@@ -8535,8 +8535,7 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
           
         }
         
-        if ((config[iZone]->GetKind_SU2() == SU2_DOT) &&
-            (config[iZone]->GetDesign_Variable(0) == EXTERNAL_SENSITIVITY)) {
+        if (config[iZone]->GetWrt_External_Sensitivity()) {
           WriteExternalSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
         }
         
