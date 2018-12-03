@@ -765,7 +765,7 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
     val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[1][0];
     val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
     val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
-    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][3];
+    val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
 
     val_Proj_Jac_Tensor_i[3][0] = 0.0;
     val_Proj_Jac_Tensor_i[3][1] = 0.0;
