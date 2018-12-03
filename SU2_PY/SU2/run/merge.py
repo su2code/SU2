@@ -125,7 +125,7 @@ def merge_solution( config ):
 def merge_multizone( config, begintime=0, endtime=None ):
 
     if not endtime:
-        endtime = config.EXT_ITER
+        endtime = config.TIME_ITER
     
     SU2_SOL_FSI( config )
     
