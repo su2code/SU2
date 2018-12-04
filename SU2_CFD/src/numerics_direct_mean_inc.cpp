@@ -674,7 +674,7 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
       for (iDim = 0; iDim < nDim; iDim++) {
         proj_vector_ij += (Coord_j[iDim]-Coord_i[iDim])*Normal[iDim];
       }
-      proj_vector_ij = proj_vector_ij/dist_ij;
+      proj_vector_ij = proj_vector_ij/dist_ij_2;
       val_Jacobian_i[nDim+1][nDim+1] = -Mean_Thermal_Conductivity*proj_vector_ij;
       val_Jacobian_j[nDim+1][nDim+1] =  Mean_Thermal_Conductivity*proj_vector_ij;
     }
