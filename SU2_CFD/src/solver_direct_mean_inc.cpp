@@ -5565,6 +5565,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
           for (iDim = 0; iDim < nDim; iDim++)
             V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
           
+          /*--- Dirichlet condition for temperature (if energy is active) ---*/
+          
+          V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+          
           break;
           
           /*--- Stagnation pressure has been specified at the inlet. ---*/
@@ -5603,6 +5607,10 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++)
               V_inlet[iDim+1] = V_domain[iDim+1];
             
+            /*--- Neumann condition for the temperature. ---*/
+            
+            V_inlet[nDim+1] = node[iPoint]->GetTemperature();
+            
           } else {
             
             /*--- Update the velocity magnitude using the total pressure. ---*/
@@ -5628,15 +5636,15 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
             for (iDim = 0; iDim < nDim; iDim++)
               V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
             
+            /*--- Dirichlet condition for temperature (if energy is active) ---*/
+            
+            V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+            
           }
           
           break;
           
       }
-
-      /*--- Dirichlet condition for temperature (if energy is active) ---*/
-      
-      V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
       /*--- Access density at the node. This is either constant by
         construction, or will be set fixed implicitly by the temperature
@@ -6283,7 +6291,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
    boundary, so that it can be used in the iterative procedure to update
    the back pressure until we converge to the desired mass flow. This
    routine is called only once per iteration as a preprocessing and the
-   values for all outlets are store and retrieved later in the BC_Outlet
+   values for all outlets are stored and retrieved later in the BC_Outlet
    routines. ---*/
   
   if (Evaluate_BC) {
