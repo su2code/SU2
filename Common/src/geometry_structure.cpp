@@ -19224,7 +19224,7 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
     /*--- We have not received all nodes in the input file. Throw an error. ---*/
     
     if ((iPoint_Ext < GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
-      sens_file.open(config->GetDV_Sens_Filename(), ios::out);
+      sens_file.open(config->GetDV_Sens_Filename().data(), ios::out);
       sens_file.close();
       SU2_MPI::Error("Not enough points in the input sensitivity file.",
                      CURRENT_FUNCTION);
