@@ -4364,6 +4364,8 @@ CAvgGrad_Base::CAvgGrad_Base(unsigned short val_nDim,
 
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
+  TauWall_i = 0; TauWall_j = 0;
+
   PrimVar_i = new su2double [nPrimVar];
   PrimVar_j = new su2double [nPrimVar];
   Mean_PrimVar = new su2double [nPrimVar];
@@ -4942,18 +4944,31 @@ void CGeneralAvgGrad_Flow::GetHeatFluxJacobian(const su2double *val_Mean_PrimVar
   su2double dTdrho_e= val_Mean_SecVar[0];
   su2double dTde_rho= val_Mean_SecVar[1];
 
-  su2double dTdu[nVar];
-  dTdu[0] = dTdrho_e + dTde_rho*(-(h-P/rho) + sqvel)*(1/rho);
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    dTdu[iDim+1] = dTde_rho*(-val_Mean_PrimVar[iDim+1])/rho;
-  }
-  dTdu[nDim+1] = dTde_rho/rho;
+  su2double dTdu0= dTdrho_e + dTde_rho*(-(h-P/rho) + sqvel)*(1/rho);
+  su2double dTdu1= dTde_rho*(-val_Mean_PrimVar[1])*(1/rho);
+  su2double dTdu2= dTde_rho*(-val_Mean_PrimVar[2])*(1/rho);
 
   su2double total_conductivity = val_thermal_conductivity + val_heat_capacity_cp*val_eddy_viscosity/Prandtl_Turb;
   su2double factor2 = total_conductivity/val_dist_ij;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    heat_flux_jac_i[iVar] = factor2*dTdu[iVar];
+
+  heat_flux_jac_i[0] = factor2*dTdu0;
+  heat_flux_jac_i[1] = factor2*dTdu1;
+  heat_flux_jac_i[2] = factor2*dTdu2;
+
+  if (nDim == 2) {
+
+    su2double dTdu3= dTde_rho*(1/rho);
+    heat_flux_jac_i[3] = factor2*dTdu3;
+
+  } else {
+
+    su2double dTdu3= dTde_rho*(-val_Mean_PrimVar[3])*(1/rho);
+    su2double dTdu4= dTde_rho*(1/rho);
+    heat_flux_jac_i[3] = factor2*dTdu3;
+    heat_flux_jac_i[4] = factor2*dTdu4;
+
   }
+
 }
 
 void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
@@ -5044,8 +5059,6 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   
   GetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
-  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   GetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
