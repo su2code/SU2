@@ -47,14 +47,20 @@ check_PROGRAMS =
 check_PROGRAMS += viscous_2d
 check_PROGRAMS += viscous_residual
 check_PROGRAMS += viscous_general_vs_ideal
+check_PROGRAMS += viscous_incomp
+check_PROGRAMS += viscous_general_2d
 
 # Test sources
 viscous_2d_SOURCES = viscous_2d_test.cpp
 viscous_residual_SOURCES = viscous_residual_test.cpp
 viscous_general_vs_ideal_SOURCES = viscous_general_vs_ideal_test.cpp
+viscous_incomp_SOURCES = viscous_incomp_test.cpp
+viscous_general_2d_SOURCES = viscous_general_2d_test.cpp
 
 # Tests to be run
 TESTS =
 TESTS += viscous_2d
 TESTS += viscous_residual
 TESTS += viscous_general_vs_ideal
+TESTS += viscous_incomp
+TESTS += viscous_general_2d

@@ -133,19 +133,19 @@ class TestRunner {
            su2double** Jacobian_i, su2double** Jacobian_j, CConfig* config);
 
   // Geometry definition
-  static const su2double distance = 1;
-  static const su2double area = 1;
+  static constexpr su2double distance = 1;
+  static constexpr su2double area = 1;
 
   // Gas properties
-  static const su2double density = 1.0;
-  static const su2double temperature = 300;
+  static constexpr su2double density = 1.0;
+  static constexpr su2double temperature = 300;
 
   // Extra variables to be defined
-  static const su2double velocity_squared = 1.0;
-  static const su2double turb_ke = 0.0;
-  static const su2double eddy_viscosity = 0.0;
-  static const su2double laminar_viscosity = 1.0;
-  static const su2double laminar_prandtl = 1.0;
+  static constexpr su2double velocity_squared = 1.0;
+  static constexpr su2double turb_ke = 0.0;
+  static constexpr su2double eddy_viscosity = 0.0;
+  static constexpr su2double laminar_viscosity = 1.0;
+  static constexpr su2double laminar_prandtl = 1.0;
 
   // Models
   CIdealGas ideal_gas;
@@ -264,13 +264,7 @@ int main(int argc, char *argv[]) {
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
   SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
-  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
-#else
-  SU2_Comm MPICommunicator(0);
 #endif
-
-  const int rank = SU2_MPI::GetRank();
-  const int size = SU2_MPI::GetSize();
 
   error_count = 0;
 
