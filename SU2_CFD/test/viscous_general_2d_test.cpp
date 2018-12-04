@@ -110,9 +110,10 @@ int main(int argc, char *argv[]) {
 
   WriteCfgFile();
 
-  const unsigned short nDim = 2;
-  const unsigned short nVar = 4;
-  const unsigned short nPrimVar = nVar+5;
+  const unsigned short nDim = 3;
+  const unsigned short nVar = nDim+2;
+  const unsigned short nPrimVar = nDim+9;
+  const unsigned short nSecVar = 4;
 
   const unsigned short iZone = 0;
   const unsigned short nZone = 1;
@@ -127,6 +128,8 @@ int main(int argc, char *argv[]) {
   su2double** primvar_grad_i, **primvar_grad_j;
   su2double primvar_i[nPrimVar];
   su2double primvar_j[nPrimVar];
+  su2double secvar_i[nSecVar];
+  su2double secvar_j[nSecVar];
   su2double** Jacobian_i, **Jacobian_j;
   su2double* residual_i;
   su2double** expected_jacobian_i, **expected_jacobian_j;
@@ -145,6 +148,9 @@ int main(int argc, char *argv[]) {
 
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
     primvar_i[iVar] = 0.0; primvar_j[iVar] = 0.0;
+  }
+  for (unsigned short iVar = 0; iVar < nSecVar; iVar++) {
+    secvar_i[iVar] = 0.0; secvar_j[iVar] = 0.0;
   }
 
   primvar_grad_i = new su2double*[nPrimVar];
@@ -183,12 +189,12 @@ int main(int argc, char *argv[]) {
    * SETUP
    * ---*/
 
-  CNumerics* numerics = new CAvgGrad_Flow(nDim, nVar, false, config);
+  CNumerics* numerics = new CGeneralAvgGrad_Flow(nDim, nVar, false, config);
 
   primvar_i[nDim+1] = 1.0; // pressure
-  primvar_i[nDim+2] = 1.0; // density
+  primvar_i[nDim+2] = 2.0; // density
   primvar_i[nDim+5] = 1.0; // laminar viscosity
-  primvar_i[nDim+6] = 1.0; // turbulent viscosity
+  primvar_i[nDim+6] = 5.0; // turbulent viscosity
   for (unsigned short iVar = 1; iVar < nDim+1; iVar++) {
     primvar_i[iVar] = iVar; // Velocities
   }
@@ -196,8 +202,15 @@ int main(int argc, char *argv[]) {
     primvar_j[iVar] = primvar_i[iVar];
   }
 
+  secvar_i[2] = 2.0;
+  secvar_j[3] = 5.0;
+  for (unsigned short iVar = 0; iVar < nSecVar; iVar++) {
+    secvar_j[iVar] = secvar_i[iVar];
+  }
+
   primvar_grad_i[1][0] =  1.0; // du/dx
   primvar_grad_i[2][1] =  2.0; // dv/dy
+  primvar_grad_i[3][2] =  3.0; // dw/dz
   primvar_grad_i[1][1] =  1.0; // du/dy
   primvar_grad_i[2][0] =  1.0; // dv/dx
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
@@ -214,33 +227,37 @@ int main(int argc, char *argv[]) {
 
   numerics->SetCoord(coord_i, coord_j);
   numerics->SetNormal(normal);
-  numerics->SetSecondary(NULL, NULL);
   numerics->SetPrimitive(primvar_i, primvar_j);
   numerics->SetPrimVarGradient(primvar_grad_i, primvar_grad_j);
+  numerics->SetSecondary(secvar_i, secvar_j);
   numerics->SetTurbKineticEnergy(tke, tke);
   numerics->SetTauWall(0, 0);
   numerics->ComputeResidual(residual_i, Jacobian_i, Jacobian_j, config);
 
-  su2double expected_residual[nVar] = {0, -6, 12, 18};
+  su2double expected_residual[nVar] = {0, -18, 12, 0, 6};
   expected_jacobian_i[1][0] = 8;
   expected_jacobian_i[1][1] = -8;
   expected_jacobian_i[2][0] = 12;
   expected_jacobian_i[2][2] = -6;
-  expected_jacobian_i[3][3] = -10.5;
+  expected_jacobian_i[3][0] = 18;
+  expected_jacobian_i[3][3] = -6;
+  expected_jacobian_i[4][4] = -10.5;
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
       expected_jacobian_j[iVar][jVar] = -expected_jacobian_i[iVar][jVar];
     }
   }
-  expected_jacobian_i[3][0] = 23;
-  expected_jacobian_i[3][1] = -0.5;
-  expected_jacobian_i[3][2] = 15;
+  expected_jacobian_i[4][0] = 35.75;
+  expected_jacobian_i[4][1] = -6.5;
+  expected_jacobian_i[4][2] = 15;
+  expected_jacobian_i[4][3] = 13.5;
 
-  expected_jacobian_j[3][0] = -41;
-  expected_jacobian_j[3][1] = -5.5;
-  expected_jacobian_j[3][2] = -3;
+  expected_jacobian_j[4][0] = -41.75;
+  expected_jacobian_j[4][1] = -11.5;
+  expected_jacobian_j[4][2] = -3;
+  expected_jacobian_j[4][3] = -13.5;
 
-  const su2double tolerance = 10*std::numeric_limits<su2double>::epsilon();
+  const su2double tolerance = 100*std::numeric_limits<su2double>::epsilon();
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     BOOST_CHECK_CLOSE_FRACTION(expected_residual[iVar], residual_i[iVar], tolerance);
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
@@ -277,7 +294,7 @@ int main(int argc, char *argv[]) {
     delete[] expected_jacobian_j[iVar];
   }
   delete[] expected_jacobian_i;
-  delete[] expected_jacobian_j;
+delete[] expected_jacobian_j;
 
   /*--- Finalize MPI parallelization ---*/
 #ifdef HAVE_MPI
