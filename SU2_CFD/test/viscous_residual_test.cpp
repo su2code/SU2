@@ -100,7 +100,13 @@ int main(int argc, char *argv[]) {
   char *buffptr;
   SU2_MPI::Init(&argc, &argv);
   SU2_MPI::Buffer_attach( malloc(BUFSIZE), BUFSIZE );
+  SU2_Comm MPICommunicator(MPI_COMM_WORLD);
+#else
+  SU2_Comm MPICommunicator(0);
 #endif
+
+  const int rank = SU2_MPI::GetRank();
+  const int size = SU2_MPI::GetSize();
 
   error_count = 0;
 
@@ -113,6 +119,7 @@ int main(int argc, char *argv[]) {
   const unsigned short nDim = 3;
   const unsigned short nVar = nDim+2;
   const unsigned short nPrimVar = nDim+9;
+  const unsigned short nSecVar = 4;
 
   const unsigned short iZone = 0;
   const unsigned short nZone = 1;
