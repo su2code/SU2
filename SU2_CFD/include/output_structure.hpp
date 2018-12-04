@@ -1115,7 +1115,7 @@ private:
   unsigned short turb_model;
   bool heat, weakly_coupled_heat;
   
-  bool grid_movement;
+  bool grid_movement, multizone;
   
   su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
 
@@ -1237,6 +1237,7 @@ public:
  */
 class CHeatOutput : public COutput {
 private:
+  bool multizone;
 
   char char_histfile[200];
 

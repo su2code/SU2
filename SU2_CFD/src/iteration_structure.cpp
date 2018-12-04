@@ -824,6 +824,8 @@ void CFluidIteration::Solve(COutput *output,
 
     for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
 
+      config_container[val_iZone]->SetInnerIter(Inner_Iter);
+
       /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
       if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);
       /*--- For unsteady flow simulations, we need to loop over IntIter for the number of time steps ---*/
@@ -1354,6 +1356,8 @@ void CHeatIteration::Solve(COutput *output,
   /*--- However, ExtIter is the number of FSI iterations, so nIntIter is used in this case ---*/
 
   for (Inner_Iter = 0; Inner_Iter < nInner_Iter; Inner_Iter++){
+		
+    config_container[val_iZone]->SetInnerIter(Inner_Iter);
 
     /*--- For steady-state flow simulations, we need to loop over ExtIter for the number of time steps ---*/
     if (steady) config_container[val_iZone]->SetExtIter(Inner_Iter);

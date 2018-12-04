@@ -50,6 +50,8 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   grid_movement = config->GetGrid_Movement(); 
   
+  multizone = config->GetMultizone_Problem();
+  
   su2double Gas_Constant, Mach2Vel, Mach_Motion;
   unsigned short iDim;
   su2double Gamma = config->GetGamma();
@@ -76,13 +78,14 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("EXT_ITER");
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_PRESSURE");
     RequestedScreenFields.push_back("RMS_VELOCITY-X");
     RequestedScreenFields.push_back("RMS_VELOCITY-Y");
@@ -111,8 +114,8 @@ CIncFlowOutput::~CIncFlowOutput(void) {
 void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
   
   // Residuals
   AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
@@ -225,7 +228,7 @@ bool CIncFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtim
 bool CIncFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -240,7 +243,7 @@ bool CIncFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
     write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
   return write_output;
 }
@@ -254,8 +257,9 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];  
   CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];
   
-  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());    
+  //SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetOuterIter());
   
   SetHistoryOutputValue("RMS_PRESSURE", log10(flow_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("RMS_VELOCITY-X", log10(flow_solver->GetRes_RMS(1)));
