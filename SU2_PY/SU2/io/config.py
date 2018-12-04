@@ -633,6 +633,8 @@ def read_config(filename):
         data_dict['FREESTREAM_PRESSURE'] = 101325.0
     if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
+    if 'MARKER_OUTLET' not in data_dict:
+        data_dict['MARKER_OUTLET'] = '( dummy, 0.0 )'
 
     #
     # Multipoints requires some particular default values
