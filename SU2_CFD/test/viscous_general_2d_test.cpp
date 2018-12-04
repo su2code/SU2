@@ -110,7 +110,7 @@ int main(int argc, char *argv[]) {
 
   WriteCfgFile();
 
-  const unsigned short nDim = 3;
+  const unsigned short nDim = 2;
   const unsigned short nVar = nDim+2;
   const unsigned short nPrimVar = nDim+9;
   const unsigned short nSecVar = 4;
@@ -196,7 +196,7 @@ int main(int argc, char *argv[]) {
   primvar_i[nDim+5] = 1.0; // laminar viscosity
   primvar_i[nDim+6] = 5.0; // turbulent viscosity
   for (unsigned short iVar = 1; iVar < nDim+1; iVar++) {
-    primvar_i[iVar] = iVar; // Velocities
+    primvar_i[iVar] = iVar*iVar; // Velocities
   }
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
     primvar_j[iVar] = primvar_i[iVar];
@@ -210,7 +210,6 @@ int main(int argc, char *argv[]) {
 
   primvar_grad_i[1][0] =  1.0; // du/dx
   primvar_grad_i[2][1] =  2.0; // dv/dy
-  primvar_grad_i[3][2] =  3.0; // dw/dz
   primvar_grad_i[1][1] =  1.0; // du/dy
   primvar_grad_i[2][0] =  1.0; // dv/dx
   for (unsigned short iVar = 0; iVar < nPrimVar; iVar++) {
@@ -234,36 +233,72 @@ int main(int argc, char *argv[]) {
   numerics->SetTauWall(0, 0);
   numerics->ComputeResidual(residual_i, Jacobian_i, Jacobian_j, config);
 
-  su2double expected_residual[nVar] = {0, -18, 12, 0, 6};
-  expected_jacobian_i[1][0] = 8;
-  expected_jacobian_i[1][1] = -8;
-  expected_jacobian_i[2][0] = 12;
-  expected_jacobian_i[2][2] = -6;
-  expected_jacobian_i[3][0] = 18;
-  expected_jacobian_i[3][3] = -6;
-  expected_jacobian_i[4][4] = -10.5;
-  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-    for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-      expected_jacobian_j[iVar][jVar] = -expected_jacobian_i[iVar][jVar];
-    }
-  }
-  expected_jacobian_i[4][0] = 35.75;
-  expected_jacobian_i[4][1] = -6.5;
-  expected_jacobian_i[4][2] = 15;
-  expected_jacobian_i[4][3] = 13.5;
+  su2double expected_residual[nVar];
+  expected_residual[0] = 0;
+  expected_residual[1] = -12;
+  expected_residual[2] = 36;
+  expected_residual[3] = 132;
+  expected_jacobian_i[0][0] = 0;
+  expected_jacobian_i[0][1] = 0;
+  expected_jacobian_i[0][2] = 0;
+  expected_jacobian_i[0][3] = 0;
+  expected_jacobian_i[1][0] = 12;
+  expected_jacobian_i[1][1] = -12;
+  expected_jacobian_i[1][2] = -0;
+  expected_jacobian_i[1][3] = 0;
+  expected_jacobian_i[2][0] = 36;
+  expected_jacobian_i[2][1] = -0;
+  expected_jacobian_i[2][2] = -9;
+  expected_jacobian_i[2][3] = 0;
+  expected_jacobian_i[3][0] = 123;
+  expected_jacobian_i[3][1] = -15;
+  expected_jacobian_i[3][2] = -27;
+  expected_jacobian_i[3][3] = -0;
+  expected_jacobian_j[0][0] = -0;
+  expected_jacobian_j[0][1] = -0;
+  expected_jacobian_j[0][2] = -0;
+  expected_jacobian_j[0][3] = -0;
+  expected_jacobian_j[1][0] = -12;
+  expected_jacobian_j[1][1] = 12;
+  expected_jacobian_j[1][2] = 0;
+  expected_jacobian_j[1][3] = -0;
+  expected_jacobian_j[2][0] = -36;
+  expected_jacobian_j[2][1] = 0;
+  expected_jacobian_j[2][2] = 9;
+  expected_jacobian_j[2][3] = -0;
+  expected_jacobian_j[3][0] = -189;
+  expected_jacobian_j[3][1] = 9;
+  expected_jacobian_j[3][2] = 45;
+  expected_jacobian_j[3][3] = 0;
 
-  expected_jacobian_j[4][0] = -41.75;
-  expected_jacobian_j[4][1] = -11.5;
-  expected_jacobian_j[4][2] = -3;
-  expected_jacobian_j[4][3] = -13.5;
-
-  const su2double tolerance = 100*std::numeric_limits<su2double>::epsilon();
+  const su2double tolerance = 10*std::numeric_limits<su2double>::epsilon();
   for (unsigned short iVar = 0; iVar < nVar; iVar++) {
     BOOST_CHECK_CLOSE_FRACTION(expected_residual[iVar], residual_i[iVar], tolerance);
     for (unsigned short jVar = 0; jVar < nVar; jVar++) {
       cout << "iVar: " << iVar << "\tjVar: " << jVar << "\n";
       BOOST_CHECK_CLOSE_FRACTION(expected_jacobian_i[iVar][jVar], Jacobian_i[iVar][jVar], tolerance);
       BOOST_CHECK_CLOSE_FRACTION(expected_jacobian_j[iVar][jVar], Jacobian_j[iVar][jVar], tolerance);
+    }
+  }
+
+  if (error_count > 0) {
+    cout << "\n\n";
+    cout << "If the calculated values are actually the correct values, then update the test with these calculated values:\n\n";
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      cout << "expected_residual[" << iVar << "] = ";
+      cout << residual_i[iVar] << ";\n";
+    }
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        cout << "expected_jacobian_i[" << iVar << "][" << jVar << "] = ";
+        cout << Jacobian_i[iVar][jVar] << ";\n";
+      }
+    }
+    for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+      for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+        cout << "expected_jacobian_j[" << iVar << "][" << jVar << "] = ";
+        cout << Jacobian_j[iVar][jVar] << ";\n";
+      }
     }
   }
 
@@ -294,7 +329,7 @@ int main(int argc, char *argv[]) {
     delete[] expected_jacobian_j[iVar];
   }
   delete[] expected_jacobian_i;
-delete[] expected_jacobian_j;
+  delete[] expected_jacobian_j;
 
   /*--- Finalize MPI parallelization ---*/
 #ifdef HAVE_MPI
