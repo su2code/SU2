@@ -51,7 +51,6 @@ endif
 
 if BUILD_CFD
 SUBDIRS +=SU2_CFD/obj
-SUBDIRS +=SU2_CFD/test
 endif
 
 if BUILD_DOT
