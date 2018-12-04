@@ -541,11 +541,14 @@ inline void CVariable::SetCross_Term_Derivative(unsigned short iVar, su2double d
 
 inline void CVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { }
 
-inline void CVariable::Set_BGSSolution_k(void) { }
+inline void CVariable::Set_BGSSolution_k(void) { 
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_BGS_k[iVar] = Solution[iVar];
+}
 
-inline su2double CVariable::Get_BGSSolution(unsigned short iDim) { return 0.0;}
+inline su2double CVariable::Get_BGSSolution(unsigned short iVar) { return 0.0;}
 
-inline su2double CVariable::Get_BGSSolution_k(unsigned short iDim) { return 0.0;}
+inline su2double CVariable::Get_BGSSolution_k(unsigned short iVar) { return Solution_BGS_k[iVar];}
 
 inline void CVariable::Set_BGSSolution_Geometry(void) { }
 
@@ -855,13 +858,6 @@ inline void CEulerVariable::SetWindGustDer( su2double* val_WindGustDer) {
 
 inline su2double* CEulerVariable::GetWindGustDer() { return WindGustDer;}
 
-inline su2double CEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
-
-inline void CEulerVariable::Set_BGSSolution_k(void) { 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_BGS_k[iVar] = Solution[iVar];
-}
-
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
 
 inline su2double CNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+5]; }
@@ -1030,13 +1026,6 @@ inline void CIncEulerVariable::SetSpecificHeatCv(su2double val_Cv) {
 inline su2double CIncEulerVariable::GetSpecificHeatCp(void) { return Primitive[nDim+7]; }
 
 inline su2double CIncEulerVariable::GetSpecificHeatCv(void) { return Primitive[nDim+8]; }
-
-inline su2double CIncEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
-
-inline void CIncEulerVariable::Set_BGSSolution_k(void) {
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_BGS_k[iVar] = Solution[iVar];
-}
 
 inline su2double CIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+5]; }
 
@@ -1252,13 +1241,6 @@ inline void CFEAVariable::RegisterSolution_Accel(bool input) {
 inline void CFEAVariable::RegisterSolution_Accel_time_n() {
 	  for (unsigned short iVar = 0; iVar < nVar; iVar++)
 	    AD::RegisterInput(Solution_Accel_time_n[iVar]);
-}
-
-inline su2double CFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
-
-inline void CFEAVariable::Set_BGSSolution_k(void) { 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_BGS_k[iVar] = Solution[iVar];
 }
 
 inline void CFEAVariable::SetPrestretch(unsigned short iVar, su2double val_prestretch) { Prestretch[iVar] = val_prestretch;}
@@ -1605,18 +1587,11 @@ inline su2double CDiscAdjFEAVariable::GetCross_Term_Derivative(unsigned short iV
 
 inline void CDiscAdjFEAVariable::SetCross_Term_Derivative(unsigned short iVar, su2double der) { Cross_Term_Derivative[iVar] = der; }
 
-inline void CDiscAdjVariable::Set_BGSSolution_k(void) { 
-  for (unsigned short iVar = 0; iVar < nVar; iVar++)
-    Solution_BGS_k[iVar] = Solution_BGS[iVar];
-}
-
 inline void CDiscAdjVariable::Set_BGSSolution(unsigned short iDim, su2double val_solution) { 
   Solution_BGS[iDim] = val_solution;
 }
 
 inline su2double CDiscAdjVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS[iDim];}
-
-inline su2double CDiscAdjVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
 inline void CDiscAdjVariable::Set_BGSSolution_Geometry(void) { 
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
@@ -1629,12 +1604,5 @@ inline void CDiscAdjFEAVariable::Set_BGSSolution(unsigned short iDim, su2double 
   Solution_BGS[iDim] = val_solution;
 }
 
-inline void CDiscAdjFEAVariable::Set_BGSSolution_k(void) { 
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Solution_BGS_k[iDim] = Solution_BGS[iDim];
-}
-
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { return Solution_BGS[iDim];}
-
-inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 

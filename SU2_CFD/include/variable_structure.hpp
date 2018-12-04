@@ -92,6 +92,10 @@ protected:
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
   
+  /*--- Old solution container for BGS iterations ---*/
+  
+  su2double* Solution_BGS_k;
+  
 public:
   
   /*!
@@ -2573,9 +2577,6 @@ protected:
   
   su2double *Prestretch;        /*!< \brief Prestretch geometry */
   
-  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
-  
-  
 public:
   
   /*!
@@ -3040,17 +3041,6 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution_Accel_time_n(su2double *adj_sol);
-  
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k(void);
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  su2double Get_BGSSolution_k(unsigned short iDim);
 
 };
 
@@ -3139,9 +3129,6 @@ protected:
 
   su2double *Solution_New;
 
-  /*--- Old solution container for BGS iterations ---*/
-  su2double* Solution_BGS_k;
-  
 public:
   
   /*!
@@ -3543,16 +3530,6 @@ public:
    */
   void SetWindGustDer(su2double* val_WindGust);
 
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k(void);
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  su2double Get_BGSSolution_k(unsigned short iDim);
 };
 
 /*!
@@ -3570,10 +3547,6 @@ protected:
   su2double *Primitive;  /*!< \brief Primitive variables (T, vx, vy, vz, P, rho, h, c) in compressible flows. */
   su2double **Gradient_Primitive;  /*!< \brief Gradient of the primitive variables (T, vx, vy, vz, P, rho). */
   su2double *Limiter_Primitive;    /*!< \brief Limiter of the primitive variables (T, vx, vy, vz, P, rho). */
-  
-  /*--- Old solution container for BGS iterations ---*/
-  
-  su2double* Solution_BGS_k;
   
   /*--- Old density for variable density turbulent flows (SST). ---*/
   
@@ -3811,17 +3784,6 @@ public:
    */
   su2double GetSpecificHeatCv(void);
   
-  /*!
-   * \brief Set the value of the solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k(void);
-
-  /*!
-   * \brief Get the value of the solution in the previous BGS subiteration.
-   * \param[out] val_solution - solution in the previous BGS subiteration.
-   */
-  su2double Get_BGSSolution_k(unsigned short iDim);
-
 };
 
 /*!
@@ -4683,7 +4645,6 @@ private:
   su2double* Geometry_Direct;
   
   su2double* Solution_BGS;
-  su2double* Solution_BGS_k;
   su2double* Solution_Geometry_BGS_k;
   
 public:
@@ -4811,24 +4772,13 @@ public:
    * \brief Set the value of the adjoint solution in the current BGS subiteration.
    */
   void Set_BGSSolution(unsigned short iDim, su2double val_solution);
-  
-  /*!
-   * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-   */
-  void Set_BGSSolution_k(void);
-  
+
   /*!
    * \brief Get the value of the adjoint solution in the previous BGS subiteration.
    * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
    */
   su2double Get_BGSSolution(unsigned short iDim);
   
-  /*!
-   * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-   * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-   */
-  su2double Get_BGSSolution_k(unsigned short iDim);
-
   /*!
    * \brief Set the value of the adjoint geometry solution in the previous BGS subiteration.
    */
@@ -4887,7 +4837,6 @@ private:
     su2double* Geometry_CrossTerm_Derivative;
 
     su2double* Solution_BGS;
-    su2double* Solution_BGS_k;
 
 public:
     /*!
@@ -5080,10 +5029,6 @@ public:
      */
     void Set_BGSSolution(unsigned short iDim, su2double val_solution);
 
-    /*!
-     * \brief Set the value of the adjoint solution in the previous BGS subiteration.
-     */
-    void Set_BGSSolution_k(void);
 
     /*!
      * \brief Get the value of the adjoint solution in the previous BGS subiteration.
@@ -5091,11 +5036,6 @@ public:
      */
     su2double Get_BGSSolution(unsigned short iDim);
 
-    /*!
-     * \brief Get the value of the adjoint solution in the previous BGS subiteration.
-     * \param[out] val_solution - adjoint solution in the previous BGS subiteration.
-     */
-    su2double Get_BGSSolution_k(unsigned short iDim);
 
 };
 

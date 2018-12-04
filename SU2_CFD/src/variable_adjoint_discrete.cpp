@@ -98,7 +98,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
   Solution_Geometry_Old = NULL;
   Cross_Term_Derivative = NULL;
   Solution_BGS            = NULL;
-  Solution_BGS_k          = NULL;
   Solution_Geometry_BGS_k = NULL;
   Geometry_CrossTerm_Derivative = NULL;
   Geometry_CrossTerm_Derivative_Flow = NULL;
@@ -110,7 +109,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     Geometry_CrossTerm_Derivative_Flow = new su2double[nDim];
     Cross_Term_Derivative   = new su2double[nVar];
     Solution_BGS            = new su2double[nVar];
-    Solution_BGS_k          = new su2double[nVar];
     Solution_Geometry_BGS_k = new su2double[nDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Geometry_Direct[iDim]       = 0.0;
@@ -123,7 +121,6 @@ CDiscAdjVariable::CDiscAdjVariable(su2double* val_solution, unsigned short val_n
     for (iVar = 0; iVar < nVar; iVar++) {
       Cross_Term_Derivative[iVar] = 0.0;
       Solution_BGS[iVar]          = 0.0;
-      Solution_BGS_k[iVar]        = 0.0;
     }
   }
 
