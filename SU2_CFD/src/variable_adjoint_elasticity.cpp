@@ -66,7 +66,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
   Geometry_CrossTerm_Derivative = NULL;
 
   Solution_BGS          = NULL;
-  Solution_BGS_k        = NULL;
 
 }
 

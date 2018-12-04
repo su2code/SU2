@@ -108,14 +108,15 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   
   CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];  
   
-  SetHistoryOutputValue("EXT_ITER",     config[val_iZone]->GetExtIter());
-  SetHistoryOutputValue("INT_ITER",     config[val_iZone]->GetIntIter());
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
   
   SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
   SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
   SetHistoryOutputValue("AVG_TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
   SetHistoryOutputValue("RMS_TEMPERATURE", log10(heat_solver->GetRes_RMS(0)));
   SetHistoryOutputValue("MAX_TEMPERATURE", log10(heat_solver->GetRes_Max(0)));
+  SetHistoryOutputValue("BGS_TEMPERATURE", log10(heat_solver->GetRes_BGS(0)));
   
   SetHistoryOutputValue("PHYS_TIME", timeused);
   SetHistoryOutputValue("LINSOL_ITER", heat_solver->GetIterLinSolver());
@@ -125,8 +126,8 @@ void CHeatOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
 
 void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
-  AddHistoryOutput("EXT_ITER", "Ext_Iter", FORMAT_INTEGER, "EXT_ITER");
-  AddHistoryOutput("INT_ITER", "Int_Iter", FORMAT_INTEGER, "INT_ITER");
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
   
   AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
@@ -137,6 +138,8 @@ void CHeatOutput::SetHistoryOutputFields(CConfig *config){
   
   AddHistoryOutput("RMS_TEMPERATURE", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   AddHistoryOutput("MAX_TEMPERATURE", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_TEMPERATURE", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  
 }
 
 

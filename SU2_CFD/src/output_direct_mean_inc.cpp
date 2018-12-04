@@ -149,9 +149,26 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
     break;
   }
   
+  // Residuals
+  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    AddHistoryOutput("BGS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    break;  
+  case SST:
+    AddHistoryOutput("BGS_KINETIC_ENERGY", "rms[k]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_DISSIPATION",    "rms[w]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+    break;
+  }
+  
   if (heat || weakly_coupled_heat){
     AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
     AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
     
     AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
     AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
@@ -291,12 +308,29 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
     break;
   }
   
+  SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
+  SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
+  SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
+  if (nDim == 3) SetHistoryOutputValue("BGS_VELOCITY-Z", log10(flow_solver->GetRes_BGS(3)));
+ 
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
+    break;  
+  case SST:
+    SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
+    break;
+  }
+  
   if (weakly_coupled_heat){
     SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
+    SetHistoryOutputValue("BGS_HEAT",         log10(heat_solver->GetRes_BGS(0)));
+    
     
   }
   if (heat){

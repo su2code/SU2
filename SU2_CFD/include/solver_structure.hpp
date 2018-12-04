@@ -6461,18 +6461,6 @@ public:
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
   /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -8129,18 +8117,6 @@ public:
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
   
-  /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
   /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -11536,11 +11512,6 @@ public:
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
 
-  /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*! \class CFEASolver
@@ -12211,18 +12182,6 @@ public:
   su2double Get_MassMatrix(unsigned long iPoint, unsigned long jPoint, unsigned short iVar, unsigned short jVar);
   
   /*!
-   * \brief Set the value of the max residual and BGS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
-
-  /*!
    * \brief Load a solution from a restart file.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver - Container vector with all of the solvers.
@@ -12721,17 +12680,8 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
   
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
   void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
   
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
 };
 
 /*!
@@ -13018,18 +12968,6 @@ public:
    * \return Pointer to the values of the design variables
    */
   su2double GetVal_DVFEA(unsigned short iVal);
-
-  /*!
-   * \brief Set the value of the max residual and RMS residual.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
-   * \param[in] val_iterlinsolver - Number of linear iterations.
-   */
-  void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Prepare the solver for a new recording.
@@ -13084,6 +13022,8 @@ public:
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
 
+  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  
 };
 
 /*!
