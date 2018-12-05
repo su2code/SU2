@@ -72,12 +72,13 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("EXT_ITER");
+    RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_DENSITY");
     RequestedScreenFields.push_back("RMS_MOMENTUM-X");
     RequestedScreenFields.push_back("RMS_MOMENTUM-Y");
@@ -113,9 +114,9 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The internal iteration index.
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER"); 
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
   /// DESCRIPTION: The external iteration index.
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "ITER"); 
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
   /// END_GROUP
   
   /// DESCRIPTION: Currently used wall-clock time.
@@ -541,8 +542,8 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
   
-  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());  
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
   SetHistoryOutputValue("PHYS_TIME", timeused);
   
   SetHistoryOutputValue("RMS_DENSITY", log10(flow_solver->GetRes_RMS(0)));
@@ -642,7 +643,7 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
 }
 
 bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime){
+ if (!write_dualtime && config->GetnInner_Iter() == config->GetInnerIter() - 1){
    return true;
  }
  else {
@@ -653,7 +654,7 @@ bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) 
 bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -668,7 +669,7 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
     write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
   return write_output;
 }

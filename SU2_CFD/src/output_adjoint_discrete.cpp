@@ -48,6 +48,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("EXT_ITER");
     RequestedHistoryFields.push_back("RMS_RES");
+    RequestedHistoryFields.push_back("SENSITIVITIES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
@@ -55,14 +56,15 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
     RequestedScreenFields.push_back("EXT_ITER");
     RequestedScreenFields.push_back("RMS_ADJ_DENSITY");
     RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
-    RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-Y");
+    RequestedScreenFields.push_back("SENS_GEO");
+    RequestedScreenFields.push_back("SENS_AOA");
     nRequestedScreenFields = RequestedScreenFields.size();
   }
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
     RequestedVolumeFields.push_back("CONSERVATIVE");    
-    RequestedVolumeFields.push_back("SENSITIVITES");
+    RequestedVolumeFields.push_back("SENSITIVITIES");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
 }
