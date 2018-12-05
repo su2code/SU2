@@ -634,7 +634,7 @@ def read_config(filename):
     if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
     if 'MARKER_OUTLET' not in data_dict:
-        data_dict['MARKER_OUTLET'] = '( dummy, 0.0 )'
+        data_dict['MARKER_OUTLET'] = '(NONE)'
 
     #
     # Multipoints requires some particular default values
@@ -710,7 +710,10 @@ def read_config(filename):
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
 
     if 'MULTIPOINT_OUTLET_VALUE' not in data_dict:
-      Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      if 'NONE' in data_dict['MARKER_OUTLET']:
+        Outlet_Value = 0.0
+      else:
+        Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
       Outlet_Value_List = "("
       for i in range(multipoints):
         if i != 0: Outlet_Value_List +=  ", "
