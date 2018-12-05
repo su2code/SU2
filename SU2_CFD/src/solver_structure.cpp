@@ -306,9 +306,9 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
-      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
-    }
+//    if (GetRes_BGS(iVar) != GetRes_BGS(iVar)) {
+//      SU2_MPI::Error("SU2 has diverged.", CURRENT_FUNCTION);
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(GetRes_BGS(iVar)/geometry->GetnPoint())));
 
@@ -337,11 +337,11 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
   for (iVar = 0; iVar < nVar; iVar++) {
 
-    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
+//    if (rbuf_residual[iVar] != rbuf_residual[iVar]) {
 
-      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
+//      SU2_MPI::Error("SU2 has diverged (NaN detected)", CURRENT_FUNCTION);
 
-    }
+//    }
 
     SetRes_BGS(iVar, max(EPS*EPS, sqrt(rbuf_residual[iVar]/Global_nPointDomain)));
 

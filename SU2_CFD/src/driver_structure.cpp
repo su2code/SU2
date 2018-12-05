@@ -3891,13 +3891,13 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   
   /*--- Update the convergence history file (serial and parallel computations). ---*/
   
-  if (!fsi) {
-    for (iZone = 0; iZone < nZone; iZone++) {
-      for (iInst = 0; iInst < nInst[iZone]; iInst++)
-        output[iZone]->SetConvHistory_Body(geometry_container, solver_container,
-            config_container, integration_container, false, UsedTime, iZone, iInst);
-    }
-  }
+//  if (!fsi) {
+//    for (iZone = 0; iZone < nZone; iZone++) {
+//      for (iInst = 0; iInst < nInst[iZone]; iInst++)
+//        output[iZone]->SetConvHistory_Body(geometry_container, solver_container,
+//            config_container, integration_container, false, UsedTime, iZone, iInst);
+//    }
+//  }
 
   /*--- Evaluate the new CFL number (adaptive). ---*/
   if (config_container[ZONE_0]->GetCFL_Adapt() == YES) {

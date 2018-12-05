@@ -419,33 +419,33 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- This still has to be generalised ---*/
-  if (fsi){
+//  if (fsi){
 
-    /*--- This should be possible to change dinamically in the config ---*/
-    if (rank == MASTER_NODE){
+//    /*--- This should be possible to change dinamically in the config ---*/
+//    if (rank == MASTER_NODE){
 
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << endl;
-      cout << "Convergence summary for BGS iteration ";
-      cout << OuterIter << endl;
-      cout << endl;
-      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-      cout.width(8); cout << OuterIter*1000;
-      cout.width(15); cout << residual[ZONE_0][0];
-      cout.width(15); cout << residual[ZONE_0][3];
-      cout.width(15); cout << residual[ZONE_1][0];
-      cout.width(15); cout << residual[ZONE_1][1];
-      cout << endl;
-    }
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
-        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
-        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
-      }
-    }
-  }
+//      cout << endl << "-------------------------------------------------------------------------" << endl;
+//      cout << endl;
+//      cout << "Convergence summary for BGS iteration ";
+//      cout << OuterIter << endl;
+//      cout << endl;
+//      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+//      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
+//      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+//      cout.width(8); cout << OuterIter*1000;
+//      cout.width(15); cout << residual[ZONE_0][0];
+//      cout.width(15); cout << residual[ZONE_0][3];
+//      cout.width(15); cout << residual[ZONE_1][0];
+//      cout.width(15); cout << residual[ZONE_1][1];
+//      cout << endl;
+//    }
+//    for (iZone = 0; iZone < nZone; iZone++){
+//      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
+//        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
+//        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
+//      }
+//    }
+//  }
 
   /*--- Update the residual for the all the zones ---*/
   for (iZone = 0; iZone < nZone; iZone++){
