@@ -45,6 +45,7 @@ COutput::COutput(CConfig *config) {
   field_width = 12;
   
   ConvergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);
+  MultiZoneHeaderTable = new PrintingToolbox::CTablePrinter(&std::cout);
 
   unsigned short iDim, iZone, iSpan, iMarker;
   
@@ -10931,13 +10932,14 @@ void COutput::SetHistoryFile_Output(CConfig *config) {
 }
 
 void COutput::SetScreen_Header(CConfig *config) {
+  if (config->GetMultizone_Problem()) 
+    MultiZoneHeaderTable->PrintHeader();
   ConvergenceTable->PrintHeader();
 }
 
 
 void COutput::SetScreen_Output(CConfig *config) {
   
-
   string RequestedField;
   
   for (unsigned short iReqField = 0; iReqField < nRequestedScreenFields; iReqField++){
@@ -11051,6 +11053,13 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
         ConvergenceTable->AddColumn(HistoryOutputPerSurface_Map[RequestedField][0].FieldName, field_width);
       }
     }
+    
+    if (config->GetMultizone_Problem()){
+      MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
+      MultiZoneHeaderTable->set_align(PrintingToolbox::CTablePrinter::CENTER);
+      MultiZoneHeaderTable->set_print_header_bottom_line(false);
+    }
+    
   }
   
 }

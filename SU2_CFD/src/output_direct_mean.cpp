@@ -90,7 +90,11 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
     RequestedVolumeFields.push_back("PRIMITIVE");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
-
+  
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
+  MultiZoneHeaderString = ss.str();
+  
 }
 
 CFlowOutput::~CFlowOutput(void) {

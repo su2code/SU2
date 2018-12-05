@@ -99,6 +99,10 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Incomp. Fluid)";
+  MultiZoneHeaderString = ss.str();
+  
 }
 
 CIncFlowOutput::~CIncFlowOutput(void) {

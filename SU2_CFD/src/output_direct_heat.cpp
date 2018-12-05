@@ -60,6 +60,10 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
     RequestedVolumeFields.push_back("PRIMITIVE");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
+  
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Solid Heat)";
+  MultiZoneHeaderString = ss.str();
 }
 
 CHeatOutput::~CHeatOutput(void) {

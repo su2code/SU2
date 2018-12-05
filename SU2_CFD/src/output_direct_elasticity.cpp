@@ -47,6 +47,10 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   if (nonlinear_analysis) nVar_FEM = 3;
   
   nDim = geometry->GetnDim();
+  
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Structure)";
+  MultiZoneHeaderString = ss.str();
 
 }
 
