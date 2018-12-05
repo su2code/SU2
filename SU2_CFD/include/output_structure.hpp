@@ -1230,6 +1230,9 @@ public:
    */
   bool WriteScreen_Output(CConfig *config, bool write_dualtime);
   
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
 
 };
 

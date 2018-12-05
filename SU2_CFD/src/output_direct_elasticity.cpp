@@ -65,8 +65,8 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");
-    RequestedVolumeFields.push_back("PRIMITIVE");
+    RequestedVolumeFields.push_back("DISPLACEMENT");
+    RequestedVolumeFields.push_back("STRESS");    
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
 
@@ -159,24 +159,25 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
     }
   }
   
-  SetHistoryOutputValue("BGS_UTOL", log10(fea_solver->GetRes_BGS(0)));
-  SetHistoryOutputValue("BGS_RTOL", log10(fea_solver->GetRes_BGS(1)));
-  if (nVar_FEM == 3){
-    SetHistoryOutputValue("BGS_ETOL", log10(fea_solver->GetRes_BGS(2)));    
+  if (config[val_iZone]->GetMultizone_Problem()){
+    SetHistoryOutputValue("BGS_UTOL", log10(fea_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_RTOL", log10(fea_solver->GetRes_BGS(1)));
+    if (nVar_FEM == 3){
+      SetHistoryOutputValue("BGS_ETOL", log10(fea_solver->GetRes_BGS(2)));    
+    }
+    SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
+    if (nVar_FEM == 3){
+      SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));    
+    }
   }
-  SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
-  SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
-  if (nVar_FEM == 3){
-    SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));    
-  }
-
   
   
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
   SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
   SetHistoryOutputValue("LOAD_RAMP", fea_solver->GetForceCoeff());
   
-}
+} 
 
 void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   
@@ -215,6 +216,74 @@ void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
+  
+}
+
+void CFEAOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+ 
+  CVariable* Node_Struc = solver[FEA_SOL]->node[iPoint]; 
+  CPoint*    Node_Geo  = geometry->node[iPoint];
+          
+  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
+  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
+  if (nDim == 3)
+    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
+  
+  SetVolumeOutputValue("DISPLACEMENT-X", iPoint, Node_Struc->GetSolution(0));
+  SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(1));
+  if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(2));
+  
+  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(0));
+  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(1));
+  if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(2));
+  
+  SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(0));
+  SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(1));
+  if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(2));
+  
+  SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM()[0]);
+  SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM()[1]);
+  SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM()[2]);
+  if (nDim == 3){
+    SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM()[3]);
+    SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM()[4]);
+    SetVolumeOutputValue("STRESS-YZ", iPoint, Node_Struc->GetStress_FEM()[5]);
+  }
+  SetVolumeOutputValue("VON_MISES_STRESS", iPoint, Node_Struc->GetVonMises_Stress());
+  
+}
+
+void CFEAOutput::SetVolumeOutputFields(CConfig *config){
+  
+  // Grid coordinates
+  AddVolumeOutput("COORD-X", "x", "COORDINATES");
+  AddVolumeOutput("COORD-Y", "y", "COORDINATES");
+  if (nDim == 3)
+    AddVolumeOutput("COORD-Z", "z", "COORDINATES");
+
+  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "DISPLACEMENT");
+  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "DISPLACEMENT");
+  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "DISPLACEMENT");
+  
+  AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
+  AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");
+  if (nDim == 3) AddVolumeOutput("VELOCITY-Z", "Velocity_z", "VELOCITY");
+  
+  AddVolumeOutput("ACCELERATION-X",    "Acceleration_x", "ACCELERATION");
+  AddVolumeOutput("ACCELERATION-Y",    "Acceleration_y", "ACCELERATION");
+  if (nDim == 3) AddVolumeOutput("ACCELERATION-Z", "Acceleration_z", "ACCELERATION");
+  
+  AddVolumeOutput("STRESS-XX",    "Sxx", "STRESS");
+  AddVolumeOutput("STRESS-YY",    "Syy", "STRESS");
+  AddVolumeOutput("STRESS-XY",    "Sxy", "STRESS");
+  
+  if (nDim == 3) {
+    AddVolumeOutput("STRESS-ZZ",    "Szz", "STRESS");
+    AddVolumeOutput("STRESS-XZ",    "Sxz", "STRESS");
+    AddVolumeOutput("STRESS-YZ",    "Syz", "STRESS");
+  }
+    
+  AddVolumeOutput("VON_MISES_STRESS", "Von_Mises_Stress", "STRESS");
   
 }
 
