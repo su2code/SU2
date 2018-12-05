@@ -759,7 +759,7 @@ bool CFluidIteration::Monitor(COutput *output,
 
   /*--- The logic is right now case dependent ----*/
   /*--- This needs to be generalized when the new output structure comes ---*/
-  output_history = (steady && !(multizone && (config_container[val_iZone]->GetnInner_Iter()==1)));
+  output_history = (steady);
 
   if (output_history) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
 

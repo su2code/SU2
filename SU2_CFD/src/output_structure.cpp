@@ -11016,10 +11016,10 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
     
-    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
-      RequestedHistoryFields.push_back("EXT_ITER");
-      nRequestedHistoryFields++;
-    }
+//    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
+//      RequestedHistoryFields.push_back("EXT_ITER");
+//      nRequestedHistoryFields++;
+//    }
     
     /*--- Set the History output fields using a virtual function call to the child implementation ---*/
     

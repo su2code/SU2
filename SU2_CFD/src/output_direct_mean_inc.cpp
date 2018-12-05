@@ -337,17 +337,17 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
     
     
   }
-  if (heat){
-    SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
-    SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
-    SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
-    if (nDim == 3) SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(4)));
-    else           SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(3)));
+//  if (heat){
+//    SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
+//    SetHistoryOutputValue("HEATFLUX_MAX", flow_solver->GetTotal_MaxHeatFlux());
+//    SetHistoryOutputValue("TEMPERATURE",  flow_solver->GetTotal_AvgTemperature());
+//    if (nDim == 3) SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(4)));
+//    else           SetHistoryOutputValue("RMS_HEAT",         log10(flow_solver->GetRes_RMS(3)));
     
-    if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
-    else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
+//    if (nDim == 3) SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(4)));
+//    else           SetHistoryOutputValue("MAX_HEAT",         log10(flow_solver->GetRes_Max(3)));
 
-  }
+//  }
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
   SetHistoryOutputValue("LIFT", flow_solver->GetTotal_CL());
   if (nDim == 3)
