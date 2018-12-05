@@ -2988,7 +2988,8 @@ class CAvgGrad_Base : public CNumerics {
   void GetIncTauJacobian(const su2double val_laminar_viscosity,
                          const su2double val_eddy_viscosity,
                          const su2double val_dist_ij,
-                         const su2double *val_normal);
+                         const su2double *val_normal,
+                         const su2double val_dS);
 
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
