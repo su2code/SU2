@@ -1470,6 +1470,8 @@ void CFEAIteration::Iterate(COutput *output,
       /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
       for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
+        
+        config_container[val_iZone]->SetInnerIter(IntIter);
 
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
@@ -1820,7 +1822,7 @@ void CFEAIteration::Solve(COutput *output,
       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
-  if (multizone) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+//  if (multizone) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
 
   /*--- Set the structural convergence to false (to make sure outer subiterations converge) ---*/
   integration_container[val_iZone][INST_0][FEA_SOL]->SetConvergence(false);
