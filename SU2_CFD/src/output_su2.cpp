@@ -242,8 +242,6 @@ void COutput::SetSU2_MeshASCII(CConfig *config, CGeometry *geometry, unsigned sh
     output_file << transl[0] << "\t" << transl[1] << "\t" << transl[2] << endl;
     
   }
-  
-  output_file.close();
 
 }
 
