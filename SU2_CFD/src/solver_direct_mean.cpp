@@ -3855,7 +3855,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     NonDimTable.AddColumn("Ref. value", 14);
     NonDimTable.AddColumn("Unit", 10);
     NonDimTable.AddColumn("Non-dim. value", 14);
-    NonDimTable.set_flush_right();
+    NonDimTable.set_align(PrintingToolbox::CTablePrinter::RIGHT);
+    
     NonDimTable.PrintHeader();
     
     if (viscous){
