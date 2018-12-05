@@ -5773,7 +5773,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         MGTable.AddColumn("Presmooth",     10);
         MGTable.AddColumn("PostSmooth",    10);
         MGTable.AddColumn("CorrectSmooth", 10);
-        MGTable.set_flush_right();
+        MGTable.set_align(PrintingToolbox::CTablePrinter::RIGHT);
         MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
           MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];

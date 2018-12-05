@@ -9,7 +9,9 @@ PrintingToolbox::CTablePrinter::CTablePrinter(std::ostream * output, const std::
   j_ = 0;
   separator_ = separator;
   table_width_ = 0;
-  flush_left_ = false;
+  print_header_bottom_line_ = true;
+  print_header_top_line_    = true;
+  align_ = RIGHT;
 }
 
 PrintingToolbox::CTablePrinter::~CTablePrinter(){
@@ -28,13 +30,18 @@ void PrintingToolbox::CTablePrinter::set_separator(const std::string &separator)
   separator_ = separator;
 }
 
-void PrintingToolbox::CTablePrinter::set_flush_left(){
-  flush_left_ = true;
+void PrintingToolbox::CTablePrinter::set_print_header_bottom_line(bool print){
+  print_header_bottom_line_ = print;
 }
 
-void PrintingToolbox::CTablePrinter::set_flush_right(){
-  flush_left_ = false;
+void PrintingToolbox::CTablePrinter::set_print_header_top_line(bool print){
+  print_header_top_line_ = print;
 }
+
+void PrintingToolbox::CTablePrinter::set_align(int align){
+  align_ = align;
+}
+
 
 /** \brief Add a column to our table
  ** 
@@ -62,24 +69,37 @@ void PrintingToolbox::CTablePrinter::PrintHorizontalLine() {
 }
 
 void PrintingToolbox::CTablePrinter::PrintHeader(){
-  PrintHorizontalLine();
+
+  
+  
+  if (print_header_top_line_) PrintHorizontalLine();
   *out_stream_ << "|";
-
+  int indent = 0;
   for (int i=0; i<get_num_columns(); ++i){
+    
+    std::stringstream ss;
+    
+    ss << column_headers_.at(i).substr(0, column_widths_.at(i));
+    
+    indent = 0;
 
-    if(flush_left_)
+    if(align_ == LEFT)
       *out_stream_ << std::left;
-    else
+    else if (align_ == RIGHT)
       *out_stream_ << std::right; 
+    else if (align_ == CENTER) {
+      *out_stream_ << std::right; 
+      indent = (column_widths_.at(i) - ss.str().size()) / 2;
+    }
 
-    *out_stream_ << std::setw(column_widths_.at(i)) << column_headers_.at(i).substr(0, column_widths_.at(i));
+    *out_stream_ << std::setw(column_widths_.at(i) - indent) << column_headers_.at(i).substr(0, column_widths_.at(i));
     if (i != get_num_columns()-1){
-      *out_stream_ << separator_;
+      *out_stream_ << std::setw(1+indent) << separator_;
     }
   }
 
-  *out_stream_ << "|\n";
-  PrintHorizontalLine();
+  *out_stream_ << std::setw(2+indent) << "|\n";
+  if (print_header_bottom_line_) PrintHorizontalLine();
 }
 
 void PrintingToolbox::CTablePrinter::PrintFooter(){

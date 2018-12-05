@@ -11,12 +11,20 @@ class CTablePrinter{
 public:
   CTablePrinter(std::ostream * output, const std::string & separator = "|");
   ~CTablePrinter();
+  
+  enum alignment {
+    CENTER,
+    LEFT,
+    RIGHT
+  };
+  
   class endl{};
   int get_num_columns() const;
   int get_table_width() const;
   void set_separator(const std::string & separator);
-  void set_flush_left();
-  void set_flush_right();
+  void set_align(int align_);
+  void set_print_header_bottom_line(bool print);
+  void set_print_header_top_line(bool print);
 
   void AddColumn(const std::string & header_name, int column_width);
   void PrintHeader();
@@ -34,24 +42,34 @@ public:
 //  TablePrinter& operator<<(double input);
 
   template<typename T> CTablePrinter& operator<<(T input){
+    std::stringstream ss;
+    
+    ss << input;
+    
+    int indent = 0;
+   
     if (j_ == 0)
       *out_stream_ << "|";
 
-    if(flush_left_)
+    if(align_ == LEFT)
       *out_stream_ << std::left;
-    else
+    else if (align_ == RIGHT)
       *out_stream_ << std::right; 
+    else if (align_ == CENTER) {
+      *out_stream_ << std::right;       
+      indent = (column_widths_.at(j_) - ss.str().size()) / 2;
+    }
 
     // Leave 3 extra space: One for negative sign, one for zero, one for decimal
-    *out_stream_ << std::setw(column_widths_.at(j_))
+    *out_stream_ << std::setw(column_widths_.at(j_) - indent)
                  << input;
 
     if (j_ == get_num_columns()-1){
-      *out_stream_ << "|\n";
+      *out_stream_ << std::setw(indent+2) << "|\n";
       i_ = i_ + 1;
       j_ = 0;
     } else {
-      *out_stream_ << separator_;
+      *out_stream_ << std::setw(indent+1) << separator_;
       j_ = j_ + 1;
     }
 
@@ -118,7 +136,8 @@ private:
   int j_; // index of current column
 
   int table_width_;
-  bool flush_left_;
+  int align_;
+  bool print_header_top_line_, print_header_bottom_line_;
 };
 
 }
