@@ -3425,7 +3425,7 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
   
 }
 
-void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
