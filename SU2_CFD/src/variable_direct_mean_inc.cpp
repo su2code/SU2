@@ -309,8 +309,6 @@ CIncEulerVariable::~CIncEulerVariable(void) {
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
-
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {

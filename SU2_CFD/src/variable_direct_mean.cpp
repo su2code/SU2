@@ -424,8 +424,6 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Solution_New != NULL) delete [] Solution_New;
   
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
-
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {

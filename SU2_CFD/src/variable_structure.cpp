@@ -146,6 +146,9 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   
   if (config->GetMultizone_Problem()) {
     Solution_BGS_k = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_BGS_k[iVar] = 0.0;
+    }
   }
   
 }

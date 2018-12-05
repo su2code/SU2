@@ -88,12 +88,6 @@ CHeatFVMVariable::CHeatFVMVariable(su2double val_Heat, unsigned short val_nDim, 
     Undivided_Laplacian = new su2double [nVar];
   }
 
-  Solution_BGS_k = NULL;
-  if (multizone){
-      Solution_BGS_k  = new su2double [1];
-      Solution_BGS_k[0] = val_Heat;
-  }
-
 }
 
 CHeatFVMVariable::~CHeatFVMVariable(void) {  }
