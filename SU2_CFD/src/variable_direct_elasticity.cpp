@@ -205,7 +205,5 @@ CFEAVariable::~CFEAVariable(void) {
 
   if (Prestretch            != NULL) delete [] Prestretch;
   
-  if (Solution_BGS_k        != NULL) delete [] Solution_BGS_k;
-
 
 }

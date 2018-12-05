@@ -245,7 +245,6 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Geometry_CrossTerm_Derivative    != NULL) delete [] Geometry_CrossTerm_Derivative;
 
   if (Solution_BGS             != NULL) delete [] Solution_BGS;
-  if (Solution_BGS_k           != NULL) delete [] Solution_BGS_k;
 
 }
 
