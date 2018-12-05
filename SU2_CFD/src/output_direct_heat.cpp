@@ -41,16 +41,18 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
 
   nDim = geometry->GetnDim();
 
+  multizone = config->GetMultizone_Problem();
 
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("EXT_ITER");    
+    RequestedScreenFields.push_back("OUTER_ITER");    
+    RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_TEMPERATURE");
     nRequestedScreenFields = RequestedScreenFields.size();
   }
@@ -87,7 +89,7 @@ bool CHeatOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) 
 bool CHeatOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0);
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -102,7 +104,7 @@ bool CHeatOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
     write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
   return write_output;
 }
