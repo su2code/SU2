@@ -607,25 +607,27 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   default: break;
   }
   
-  SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
-  SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));
-  SetHistoryOutputValue("BGS_MOMENTUM-Y", log10(flow_solver->GetRes_BGS(2)));
-  if (nDim == 2)
-    SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(3)));
-  else {
-    SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
-    SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
-  }
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
-    break;  
-  case SST:
-    SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
-    break;
-  default: break;
+  if (config[val_iZone]->GetMultizone_Problem()){    
+    SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));
+    SetHistoryOutputValue("BGS_MOMENTUM-Y", log10(flow_solver->GetRes_BGS(2)));
+    if (nDim == 2)
+      SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(3)));
+    else {
+      SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
+      SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
+    }
+    
+    switch(turb_model){
+    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+      SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
+      break;  
+    case SST:
+      SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
+      SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
+      break;
+    default: break;
+    }
   }
   
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
