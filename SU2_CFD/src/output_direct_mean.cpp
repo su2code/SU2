@@ -160,6 +160,25 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);  
   /// END_GROUP
   
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// DESCRIPTION: Root-mean square residual of the density.
+  AddHistoryOutput("BGS_DENSITY",    "bgs[Rho]",  FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the momentum x-component.
+  AddHistoryOutput("BGS_MOMENTUM-X", "bgs[RhoU]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the momentum y-component.
+  AddHistoryOutput("BGS_MOMENTUM-Y", "bgs[RhoV]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the momentum z-component.
+  AddHistoryOutput("BGS_MOMENTUM-Z", "bgs[RhoW]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the energy.
+  AddHistoryOutput("BGS_ENERGY",     "bgs[RhoE]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
+  AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
+  AddHistoryOutput("BGS_KINETIC_ENERGY", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
+  AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// END_GROUP
+  
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient 
   AddHistoryOutput("DRAG",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
@@ -584,6 +603,27 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   case SST:
     SetHistoryOutputValue("MAX_KINETIC_ENERGY", log10(turb_solver->GetRes_Max(0)));
     SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
+    break;
+  default: break;
+  }
+  
+  SetHistoryOutputValue("BGS_DENSITY", log10(flow_solver->GetRes_BGS(0)));
+  SetHistoryOutputValue("BGS_MOMENTUM-X", log10(flow_solver->GetRes_BGS(1)));
+  SetHistoryOutputValue("BGS_MOMENTUM-Y", log10(flow_solver->GetRes_BGS(2)));
+  if (nDim == 2)
+    SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(3)));
+  else {
+    SetHistoryOutputValue("BGS_MOMENTUM-Z", log10(flow_solver->GetRes_BGS(3)));
+    SetHistoryOutputValue("BGS_ENERGY", log10(flow_solver->GetRes_BGS(4)));
+  }
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
+    break;  
+  case SST:
+    SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
+    SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
     break;
   default: break;
   }
