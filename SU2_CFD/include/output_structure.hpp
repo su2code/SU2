@@ -284,6 +284,9 @@ protected:
   ofstream HistFile;
   
   PrintingToolbox::CTablePrinter* ConvergenceTable;
+  PrintingToolbox::CTablePrinter* MultiZoneHeaderTable;
+  
+  std::string MultiZoneHeaderString;
   
   std::map<string, su2double> Init_Residuals;
   
