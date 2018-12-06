@@ -1035,8 +1035,28 @@ private:
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
-==== BASE ====
-==== BASE ====
+  unsigned short Kind_Radiation;  /*!< \brief Kind of radiation model used. */
+  unsigned short Kind_P1_Init;      /*!< \brief Kind of initialization used in the P1 model. */
+  su2double Absorption_Coeff,     /*!< \brief Absorption coefficient of the medium (radiation). */
+  Scattering_Coeff,               /*!< \brief Scattering coefficient of the medium (radiation). */
+  Refractive_Index;               /*!< \brief Refractive index of the medium (radiation). */
+  unsigned short nMarker_Emissivity; /*!< \brief Number of markers for which the emissivity is defined. */
+  string *Marker_Emissivity;         /*!< \brief Wall markers with defined emissivity. */
+  su2double *Wall_Emissivity;        /*!< \brief Emissivity of the wall. */
+  bool Radiation;                /*!< \brief Determines if a radiation model is incorporated. */
+  su2double CFL_Rad;              /*!< \brief CFL Number for the radiation solver. */
+  bool topology_optimization; /*!< \brief If the structural solver should consider a variable density field to penalize element stiffness. */
+  string top_optim_output_file; /*!< \brief File to where the derivatives w.r.t. element densities will be written to. */
+  su2double simp_exponent; /*!< \brief Exponent for the density-based stiffness penalization of the SIMP method. */
+  su2double simp_minimum_stiffness; /*!< \brief Lower bound for the stiffness penalization of the SIMP method. */
+  unsigned short top_optim_nKernel, /*!< \brief Number of kernels specified. */
+                *top_optim_kernels, /*!< \brief The kernels to use. */
+                 top_optim_nKernelParams, /*!< \brief Number of kernel parameters specified. */
+                 top_optim_nRadius; /*!< \brief Number of radius values specified. */
+  su2double *top_optim_kernel_params, /*!< \brief The kernel parameters. */
+            *top_optim_filter_radius; /*!< \brief Radius of the filter(s) used on the design density for topology optimization. */
+  unsigned short top_optim_proj_type; /*!< \brief The projection function used in topology optimization. */
+  su2double top_optim_proj_param;  /*!< \brief The value of the parameter for the projection function. */
 
   unsigned short Riemann_Solver_FEM;         /*!< \brief Riemann solver chosen for the DG method. */
   su2double Quadrature_Factor_Straight;      /*!< \brief Factor applied during quadrature of elements with a constant Jacobian. */
