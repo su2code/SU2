@@ -13486,6 +13486,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
                      (config->GetFSI_Simulation()));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -13511,8 +13512,10 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Store the number of variables for the turbulence model
    (that could appear in the restart file before the grid velocities). ---*/
   unsigned short turbVars = 0;
-  if (turb_model == SA || turb_model == SA_NEG) turbVars=1;
-  else if (turb_model == SST) turbVars=2;
+  if (turbulent){
+    if (turb_model == SST) turbVars = 2;  
+    else turbVars = 1;
+  }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
