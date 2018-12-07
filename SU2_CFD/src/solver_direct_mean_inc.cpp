@@ -6175,6 +6175,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  
   string UnstExt, text_line;
   ifstream restart_file;
   
@@ -6199,8 +6201,10 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
   /*--- Store the number of variables for the turbulence model
    (that could appear in the restart file before the grid velocities). ---*/
   unsigned short turbVars = 0;
-  if (turb_model == SA || turb_model == SA_NEG) turbVars=1;
-  else if (turb_model == SST) turbVars=2;
+  if (turbulent){
+    if (turb_model == SST) turbVars = 2;
+    else turbVars = 1;
+  }
   
   /*--- Adjust the number of solution variables in the restart. We always
    carry a space in nVar for the energy equation in the solver, but we only
