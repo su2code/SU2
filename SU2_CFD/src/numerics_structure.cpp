@@ -2971,12 +2971,37 @@ void CNumerics::EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2dou
 }
 
 void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short n) {
+/* Author:
+
+ * Original FORTRAN77 version by Smith, Boyle, Dongarra, Garbow, Ikebe,
+ * Klema, Moler.
+ * C++ version by Aashwin Mishra and Jayant Mukhopadhaya.
+
+ * Reference:
+
+ * Martin, Reinsch, Wilkinson,
+ * TRED2,
+ * Numerische Mathematik,
+ * Volume 11, pages 181-195, 1968.
+
+ * James Wilkinson, Christian Reinsch,
+ * Handbook for Automatic Computation,
+ * Volume II, Linear Algebra, Part 2,
+ * Springer, 1971,
+ * ISBN: 0387054146,
+ * LC: QA251.W67.
+
+ * Brian Smith, James Boyle, Jack Dongarra, Burton Garbow,
+ * Yasuhiko Ikebe, Virginia Klema, Cleve Moler,
+ * Matrix Eigensystem Routines, EISPACK Guide,
+ * Lecture Notes in Computer Science, Volume 6,
+ * Springer Verlag, 1976,
+ * ISBN13: 978-3540075462,
+ * LC: QA193.M37
+
+*/
 
   unsigned short i,j,k;
-  /*  This is derived from the Algol procedures tred2 by        */
-  /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
-  /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
-  /*  Fortran subroutine in EISPACK.                            */
 
   for (j = 0; j < n; j++) {
     d[j] = V[n-1][j];
@@ -3088,13 +3113,37 @@ void CNumerics::tred2(su2double **V, su2double *d, su2double *e, unsigned short 
 }
 
 void CNumerics::tql2(su2double **V, su2double *d, su2double *e, unsigned short n) {
-  /* Symmetric tridiagonal QL algorithm */
 
-  /*  This is derived from the Algol procedures tql2 by        */
-  /*  Bowdler, Martin, Reinsch, and Wilkinson, Handbook for     */
-  /*  Auto. Comp., Vol.ii-Linear Algebra, and the corresponding */
-  /*  Fortran subroutine in EISPACK.                            */
+/* Author:
 
+ * Original FORTRAN77 version by Smith, Boyle, Dongarra, Garbow, Ikebe,
+ * Klema, Moler.
+ * C++ version by Aashwin Mishra and Jayant Mukhopadhaya.
+
+ * Reference:
+
+ * Bowdler, Martin, Reinsch, Wilkinson,
+ * TQL2,
+ * Numerische Mathematik,
+ * Volume 11, pages 293-306, 1968.
+
+ * James Wilkinson, Christian Reinsch,
+ * Handbook for Automatic Computation,
+ * Volume II, Linear Algebra, Part 2,
+ * Springer, 1971,
+ * ISBN: 0387054146,
+ * LC: QA251.W67.
+
+ * Brian Smith, James Boyle, Jack Dongarra, Burton Garbow,
+ * Yasuhiko Ikebe, Virginia Klema, Cleve Moler,
+ * Matrix Eigensystem Routines, EISPACK Guide,
+ * Lecture Notes in Computer Science, Volume 6,
+ * Springer Verlag, 1976,
+ * ISBN13: 978-3540075462,
+ * LC: QA193.M37
+
+*/
+  
   int i,j,k,l;
   for (i = 1; i < n; i++) {
     e[i-1] = e[i];
