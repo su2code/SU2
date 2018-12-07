@@ -179,7 +179,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
  
   // Conservative
-  SetVolumeOutputValue("TEMPEATURE", iPoint, Node_Heat->GetSolution(0));
+  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(0));
   
   // Residuals    
   SetVolumeOutputValue("RESIDUAL_TEMPERATURE", iPoint, solver[HEAT_SOL]->LinSysRes.GetBlock(iPoint, 0));
