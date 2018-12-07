@@ -52,10 +52,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -71,6 +72,11 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
   }
 
   Coord = new su2double[nDim];
+
+  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+    Input_AdjIndices = new int[nDim];
+    Output_AdjIndices = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV   = 0;
@@ -143,10 +149,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1  = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
 
@@ -164,6 +171,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Coord    = new su2double[nDim]; 
   Coord[0] = val_coord_0; 
   Coord[1] = val_coord_1;
+
+  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+    Input_AdjIndices = new int[nDim];
+    Output_AdjIndices = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV   = 0;
@@ -237,10 +249,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Point.clear(); nPoint = 0;
   Edge.clear();
 
-  Volume  = NULL;  Vertex       = NULL;
-  Coord   = NULL;  Coord_Old    = NULL;  Coord_Sum = NULL;
-  Coord_n = NULL;  Coord_n1     = NULL;  Coord_p1 = NULL;
-  GridVel = NULL;  GridVel_Grad = NULL;
+  Volume            = NULL;           Vertex              = NULL;
+  Coord             = NULL;           Coord_Old           = NULL;            Coord_Sum  = NULL;
+  Coord_n           = NULL;           Coord_n1            = NULL;            Coord_p1   = NULL;
+  GridVel           = NULL;           GridVel_Grad        = NULL;
+  Input_AdjIndices  = NULL;           Output_AdjIndices   = NULL;
 
   /*--- Volume (0 -> Vol_nP1, 1-> Vol_n, 2 -> Vol_nM1 ) and coordinates of the control volume ---*/
   if ( config->GetUnsteady_Simulation() == NO ) { 
@@ -258,6 +271,11 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord[0] = val_coord_0; 
   Coord[1] = val_coord_1; 
   Coord[2] = val_coord_2;
+
+  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+    Input_AdjIndices = new int[nDim];
+    Output_AdjIndices = new int[nDim];
+  }
 
   /*--- Indicator if the control volume has been agglomerated ---*/
   Parent_CV = 0;
@@ -340,8 +358,9 @@ CPoint::~CPoint() {
       delete [] GridVel_Grad[iDim];
     delete [] GridVel_Grad;
   }
-  
-}
+  if (Input_AdjIndices  != NULL) delete[] Input_AdjIndices;
+  if (Output_AdjIndices != NULL) delete[] Output_AdjIndices;
+ }
 
 void CPoint::SetPoint(unsigned long val_point) {
 
@@ -379,6 +398,29 @@ void CPoint::SetBoundary(unsigned short val_nmarker) {
   }
   Boundary = true;
 
+}
+
+void CPoint::Set_AdjIndices(bool input) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    if(input) {
+      AD::Set_AdjIndex(Input_AdjIndices[iDim], Coord[iDim]);
+    }
+    else {
+      AD::Set_AdjIndex(Output_AdjIndices[iDim], Coord[iDim]);
+    }
+  }
+}
+
+void CPoint::SetAdjointSolution(su2double *adj_sol) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    AD::SetDerivative(Output_AdjIndices[iDim], SU2_TYPE::GetValue(adj_sol[iDim]));
+  }
+}
+
+void CPoint::GetAdjointSolution(su2double *adj_sol) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    adj_sol[iDim] = AD::GetDerivative(Input_AdjIndices[iDim]);
+  }
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {

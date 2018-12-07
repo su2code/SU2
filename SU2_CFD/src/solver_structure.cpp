@@ -390,6 +390,33 @@ void CSolver::SetResidual_BGS(CGeometry *geometry, CConfig *config) {
 
 }
 
+void CSolver::SetResidual_Solution(CGeometry *geometry, CConfig *config) {
+
+  unsigned short iVar;
+  unsigned long iPoint;
+  su2double residual, *Solution_Old;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+      SetRes_RMS(iVar,0.0);
+      SetRes_Max(iVar,0.0,0);
+  }
+
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+
+    Solution      = node[iPoint]->GetSolution();
+    Solution_Old  = node[iPoint]->GetSolution_Old();
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      residual = Solution[iVar] - Solution_Old[iVar];
+
+      AddRes_RMS(iVar,residual*residual);
+      AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+    }
+  }
+
+  SetResidual_RMS(geometry, config);
+}
+
 void CSolver::SetGrid_Movement_Residual (CGeometry *geometry, CConfig *config) {
   
   unsigned short iDim, nDim = geometry->GetnDim(), iVar, nVar = GetnVar(), iMarker;
@@ -984,6 +1011,29 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   Set_MPI_Solution_Gradient(geometry, config);
   
+}
+void CSolver::SetSolution_Iter(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolution(node[iPoint]->Get_IterSolution());
+  }
+}
+
+void CSolver::SetSolution_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->SetSolutionZero();
+  }
+}
+
+void CSolver::Set_IterSolution_Zero(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Set_IterSolution_Zero();
+  }
+}
+
+void CSolver::Add_IterSolution(CGeometry *geometry) {
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
+    node[iPoint]->Add_IterSolution(node[iPoint]->GetSolution());
+  }
 }
 
 void CSolver::SetGridVel_Gradient(CGeometry *geometry, CConfig *config) {
