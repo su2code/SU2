@@ -2146,7 +2146,7 @@ void CHeatSolverFVM::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_
   }
 }
 
-void CHeatSolverFVM::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CHeatSolverFVM::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
