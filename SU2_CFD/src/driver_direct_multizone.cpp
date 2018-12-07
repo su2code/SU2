@@ -516,82 +516,86 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
-  bool output_files = false;
-
-  /*--- Determine whether a solution needs to be written
+  
+  for (iZone = 0; iZone < nZone; iZone++){
+    
+    bool output_files = false;
+    
+    /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
-
-  if (
-
-      /*--- General if statements to print output statements ---*/
-
-      (TimeIter+1 >= config_container[ZONE_0]->GetnTime_Iter()) || (StopCalc) ||
-
-      /*--- Unsteady problems ---*/
-
-      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((TimeIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                           ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      /*--- No inlet profile file found. Print template. ---*/
-
-      (config_container[ZONE_0]->GetWrt_InletFile())
-
-      ) {
-
-    output_files = true;
-
-  }
-
-  /*--- Determine whether a solution doesn't need to be written
+    
+    if (
+        
+        /*--- General if statements to print output statements ---*/
+        
+        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
+        
+        /*--- Unsteady problems ---*/
+        
+        (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+          (config_container[iZone]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+         ((TimeIter == 0) || (ExtIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                              ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+        
+        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+        
+        ((config_container[iZone]->GetDynamic_Analysis() == DYNAMIC) &&
+         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        /*--- No inlet profile file found. Print template. ---*/
+        
+        (config_container[iZone]->GetWrt_InletFile())
+        
+        ) {
+      
+      output_files = true;
+      
+    }
+    
+    /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
-
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-  }
-
-  /*--- write the solution ---*/
-
-  if (output_files) {
-
-    /*--- Time the output for performance benchmarking. ---*/
+    
+    if (config_container[iZone]->GetFixed_CL_Mode()) {
+      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
+    }
+    
+    /*--- write the solution ---*/
+    
+    if (output_files) {
+      
+      /*--- Time the output for performance benchmarking. ---*/
 #ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StopTime = MPI_Wtime();
+      StopTime = MPI_Wtime();
 #endif
-    UsedTimeCompute += StopTime-StartTime;
+      UsedTimeCompute += StopTime-StartTime;
 #ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StartTime = MPI_Wtime();
+      StartTime = MPI_Wtime();
 #endif
-
-    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-
-    /*--- Execute the routine for writing restart, volume solution,
+      
+      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+      
+      /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-
-    output[ZONE_0]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, ZONE_0, nZone);
-
-
-    /*--- Execute the routine for writing special output. ---*/
-   // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-
-
-    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-
+      
+      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, iZone, nZone);
+      
+      
+      /*--- Execute the routine for writing special output. ---*/
+      // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+      
+      
+      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+      
+    }
     /*--- Store output time and restart the timer for the compute phase. ---*/
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
