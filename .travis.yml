@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - aero_amit@hotmail.com         
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - AUSMPLUSUP
+        - develop
 
 python:
     - 2.7
