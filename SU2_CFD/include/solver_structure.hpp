@@ -205,7 +205,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  virtual void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  virtual void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -1446,6 +1446,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
+    
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1954,6 +1961,13 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   virtual su2double GetSurface_CMz_Visc(unsigned short val_marker);
+    
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the buffet metric on the surface <i>val_marker</i>.
+   */
+  virtual su2double GetSurface_Buffet_Metric(unsigned short val_marker);
   
   /*!
    * \brief A virtual member.
@@ -2266,6 +2280,12 @@ public:
    * \return Value of the objective function for a reference node.
    */
   virtual su2double GetTotal_OFRefNode(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Value of the objective function for the volume fraction.
+   */
+  virtual su2double GetTotal_OFVolFrac(void);
 
   /*!
    * \brief A virtual member.
@@ -2715,6 +2735,12 @@ public:
    * \return Value of the drag coefficient (inviscid contribution).
    */
   virtual su2double GetAllBound_CFz_Mnt(void);
+    
+  /*!
+   * \brief A virtual member.
+   * \return Value of the buffet metric.
+   */
+  virtual su2double GetTotal_Buffet_Metric(void);
   
   /*!
    * \brief A virtual member.
@@ -2985,6 +3011,14 @@ public:
    * \return Value of the pressure coefficient.
    */
   virtual void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat);
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the buffet sensor.
+   */
+  virtual su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief A virtual member.
@@ -3415,7 +3449,7 @@ public:
   virtual void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                          CConfig *fea_config,
                                          CSolver ***fea_solution,
-                                         unsigned long iFSIIter);
+                                         unsigned long iOuterIter);
   
   
   /*!
@@ -3513,6 +3547,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -6464,7 +6506,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -8133,7 +8175,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -8297,14 +8339,18 @@ private:
   *Surface_CMx_Visc,  /*!< \brief Moment x coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMy_Visc,  /*!< \brief Moment y coefficient (viscous contribution) for each monitoring surface. */
   *Surface_CMz_Visc,  /*!< \brief Moment z coefficient (viscous contribution) for each monitoring surface. */
+  *Surface_Buffet_Metric,  /*!< \brief Integrated separation sensor for each monitoring surface. */
   *CEff_Visc,      /*!< \brief Efficiency (Cl/Cd) (Viscous contribution) for each boundary. */
   *CMerit_Visc,      /*!< \brief Rotor Figure of Merit (Viscous contribution) for each boundary. */
+  *Buffet_Metric,    /*!< \brief Integrated separation sensor for each boundary. */
   *CT_Visc,    /*!< \brief Thrust coefficient (viscous contribution) for each boundary. */
   *CQ_Visc,    /*!< \brief Torque coefficient (viscous contribution) for each boundary. */
   *HF_Visc,    /*!< \brief Heat load (viscous contribution) for each boundary. */
   *MaxHF_Visc, /*!< \brief Maximum heat flux (viscous contribution) for each boundary. */
   ***HeatConjugateVar,   /*!< \brief Conjugate heat transfer variables for each boundary and vertex. */
-  ***CSkinFriction;  /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  ***CSkinFriction,  /*!< \brief Skin friction coefficient for each boundary and vertex. */
+  **Buffet_Sensor;   /*!< \brief Separation sensor for each boundary and vertex. */
+  su2double Total_Buffet_Metric;  /*!< \brief Integrated separation sensor for all the boundaries. */
   su2double *ForceViscous,  /*!< \brief Viscous force for each boundary. */
   *MomentViscous;      /*!< \brief Inviscid moment for each boundary. */
   su2double AllBound_CD_Visc, /*!< \brief Drag coefficient (viscous contribution) for all the boundaries. */
@@ -8415,6 +8461,13 @@ public:
    * \return Value of the z moment coefficient on the surface <i>val_marker</i>.
    */
   su2double GetSurface_CMz_Visc(unsigned short val_marker);
+    
+  /*!
+   * \brief Provide the buffet metric.
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \return Value of the buffet metric on the surface <i>val_marker</i>.
+   */
+  su2double GetSurface_Buffet_Metric(unsigned short val_marker);
   
   /*!
    * \brief Get the inviscid contribution to the lift coefficient.
@@ -8493,6 +8546,12 @@ public:
    * \return Value of the efficiency coefficient (inviscid contribution).
    */
   su2double GetAllBound_CFz_Visc(void);
+    
+  /*!
+   * \brief Get the buffet metric.
+   * \return Value of the buffet metric.
+   */
+  su2double GetTotal_Buffet_Metric(void);
   
   /*!
    * \brief Compute the viscosity at the infinity.
@@ -8536,6 +8595,12 @@ public:
    * \return - The number of non-physical points.
    */
   unsigned long SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output);
+    
+  /*!
+   * \brief Compute weighted-sum "combo" objective output
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Evaluate_ObjFunc(CConfig *config);
   
   /*!
    * \brief Impose a constant heat-flux condition at the wall.
@@ -8595,6 +8660,13 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Friction_Forces(CGeometry *geometry, CConfig *config);
+    
+  /*!
+   * \brief Compute the buffet sensor.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Buffet_Monitoring(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Get the total heat flux.
@@ -8674,6 +8746,15 @@ public:
    * \return Value of the pressure coefficient.
    */
   void SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat);
+
+
+  /*!
+   * \brief Get the value of the buffet sensor
+   * \param[in] val_marker - Surface marker where the coefficient is computed.
+   * \param[in] val_vertex - Vertex of the marker <i>val_marker</i> where the coefficient is evaluated.
+   * \return Value of the buffet sensor.
+   */
+  su2double GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex);
   
   /*!
    * \brief Get the y plus.
@@ -11535,6 +11616,12 @@ public:
    */
   void SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                             unsigned short iRKStep, unsigned short iMesh, unsigned short RunTime_EqSystem);
+
+  /*!
+   * \brief Set the value of the max residual and BGS residual.
+   * \param[in] val_iterlinsolver - Number of linear iterations.
+   */
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 };
 
 /*! \class CFEASolver
@@ -11602,6 +11689,7 @@ private:
 
   su2double Total_OFRefGeom;        /*!< \brief Total Objective Function: Reference Geometry. */
   su2double Total_OFRefNode;        /*!< \brief Total Objective Function: Reference Node. */
+  su2double Total_OFVolFrac;        /*!< \brief Total Objective Function: Volume fraction (topology optimization). */
 
   su2double Global_OFRefGeom;        /*!< \brief Global Objective Function (added over time steps): Reference Geometry. */
   su2double Global_OFRefNode;        /*!< \brief Global Objective Function (added over time steps): Reference Node. */
@@ -11997,10 +12085,16 @@ public:
   su2double GetTotal_OFRefGeom(void);
   
   /*!
-   * \brief Retrieve the value of the objective function for a reference geometry
-   * \param[out] OFRefGeom - value of the objective function.
+   * \brief Retrieve the value of the objective function for a reference node
+   * \param[out] OFRefNode - value of the objective function.
    */
   su2double GetTotal_OFRefNode(void);
+  
+  /*!
+   * \brief Retrieve the value of the volume fraction objective function
+   * \param[out] OFVolFrac - value of the objective function.
+   */
+  su2double GetTotal_OFVolFrac(void);
 
   /*!
    * \brief Determines whether there is an element-based file or not.
@@ -12085,7 +12179,7 @@ public:
   void ComputeAitken_Coefficient(CGeometry **fea_geometry,
                                  CConfig *fea_config,
                                  CSolver ***fea_solution,
-                                 unsigned long iFSIIter);
+                                 unsigned long iOuterIter);
   
   /*!
    * \brief Aitken's relaxation of the solution.
@@ -12122,6 +12216,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config);
+  
+  /*!
+   * \brief Compute the objective function for a volume fraction
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config);
 
   /*!
    * \brief Compute the penalty due to the stiffness increase
@@ -12208,7 +12310,7 @@ public:
    * \brief Set the value of the max residual and BGS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -12239,6 +12341,27 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   su2double Compute_LoadCoefficient(su2double CurrentTime, su2double RampTime, CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset = false);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Filter the density field for topology optimization applications
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
 };
 
@@ -12719,7 +12842,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
@@ -13017,7 +13140,7 @@ public:
    * \brief Set the value of the max residual and RMS residual.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
-  void ComputeResidual_BGS(CGeometry *geometry, CConfig *config);
+  void ComputeResidual_Multizone(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Store the BGS solution in the previous subiteration in the corresponding vector.
