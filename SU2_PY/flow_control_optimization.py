@@ -135,6 +135,13 @@ def flow_control_optimization( filename                           ,
     accu             = float ( config.OPT_ACCURACY ) * gradient_factor    # optimizer accuracy
     x0          = [0.0]*n_dv # initial design
 
+    if 'DV_VALUE' in config:
+        x0 = config.DV_VALUE
+        config.DV_VALUE_OLD = config.DV_VALUE
+        config.DV_VALUE_NEW = config.DV_VALUE
+
+        print(x0)
+
     # Bounds for design variables
     xb_low = [-1.0E10]*n_dv
     xb_up  = [1.0E10]*n_dv
