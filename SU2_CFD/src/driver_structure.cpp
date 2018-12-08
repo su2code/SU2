@@ -2149,8 +2149,8 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
 	    case AUSMPLUSUP:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-                numerics_container[iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
-                numerics_container[iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
+                numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
+                numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
               }
               break;
               
