@@ -2758,7 +2758,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 
-  if(Kind_Solver == HEAT_EQUATION_FVM) {
+  if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
     Linear_Solver_Error = Linear_Solver_Error_Heat;
   }
@@ -7287,6 +7287,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
+        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
         case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
