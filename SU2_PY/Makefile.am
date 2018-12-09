@@ -39,6 +39,7 @@
 
 bin_SCRIPTS = \
     continuous_adjoint.py \
+    compute_uncertainty.py \
     finite_differences.py \
     mesh_deformation.py \
     parallel_computation.py \
