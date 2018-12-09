@@ -1600,6 +1600,8 @@ inline unsigned short CConfig::GetKind_Trans_Model(void) { return Kind_Trans_Mod
 
 inline unsigned short CConfig::GetKind_LM_CrossFlowModel(void) { return Kind_LM_CrossFlowModel; }
 
+inline su2double CConfig::GetSurfaceRoughnessHeight(void) { return SurfaceRoughnessHeight; }
+
 inline unsigned short CConfig::GetKind_SGS_Model(void) { return Kind_SGS_Model; }
 
 inline bool CConfig::GetFrozen_Visc_Cont(void) { return Frozen_Visc_Cont; }

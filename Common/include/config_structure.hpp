@@ -537,6 +537,7 @@ private:
   unsigned short Kind_Turb_Model;			/*!< \brief Turbulent model definition. */
   unsigned short Kind_Trans_Model;                      /*!< \brief Transition model definition. */
   unsigned short Kind_LM_CrossFlowModel;                /*!< \brief Crossflow instability model for the LM transition model. */
+  su2double      SurfaceRoughnessHeight;                /*!< \brief Surface roughness height for the crossflow term in the LM model. */
   unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
   unsigned short Kind_ActDisk, Kind_Engine_Inflow, 
                  Kind_Inlet, *Kind_Inc_Inlet,
@@ -4087,6 +4088,12 @@ public:
    * \return Kind of the LM cross flow model.
    */
   unsigned short GetKind_LM_CrossFlowModel(void);
+
+  /*!
+   * \brief Get the value of the surface roughness height.
+   * \return Value of the surface roughness height.
+   */
+  su2double GetSurfaceRoughnessHeight(void);
 
   /*!
    * \brief Get the kind of the subgrid scale model.

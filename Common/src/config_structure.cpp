@@ -699,6 +699,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("KIND_TRANS_MODEL", Kind_Trans_Model, Trans_Model_Map, NO_TRANS_MODEL);
   /*!\brief KIND_LM_CROSSFLOWMODEL \n DESCRIPTION: Specify cross flow model for LM transition model OPTIONS: see \link LM_CrossFlow_Model_Map \endlink \n DEFAULT: NO_CROSS_FLOW_MODEL \ingroup Config*/
   addEnumOption("KIND_LM_CROSSFLOWMODEL", Kind_LM_CrossFlowModel, LM_CrossFlow_Model_Map, NO_CROSS_FLOW_MODEL);
+  /*!\brief SURFACE ROUGHNESS HEIGHT \n DESCRIPTION: Surface roughness height in m. (3.3e-6 (painted surface) ) \ingroup Config*/
+  addDoubleOption("SURFACE ROUGHNESS HEIGHT", SurfaceRoughnessHeight, 3.3e-6);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);

@@ -4761,6 +4761,8 @@ class CSourcePieceWise_TransLM : public CNumerics {
 private:
 
   su2double ca1, ca2, ce1, ce2, cthetat;        /*!< \brief Constants in the source term of the LM model. */
+  su2double C_crossflow;                        /*!< \brief Constants in the source term of the LM model
+                                                            related to cross flow instabilities. */
   su2double Flength_CF, C_Fonset1_CF, CHe_max;  /*!< \brief Constants in the source term of the LM model
                                                             related to cross flow instabilities. */
 

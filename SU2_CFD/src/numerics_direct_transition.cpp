@@ -1,7 +1,7 @@
 /*!
  * \file numerics_direct_transition.cpp
  * \brief This file contains all the convective term discretization.
- * \author A. Aranake
+ * \author A. Aranake, E. van der Weide
  * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -119,15 +119,35 @@ CSourcePieceWise_TransLM::CSourcePieceWise_TransLM(unsigned short val_nDim,
 
   incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
-  /*--- Store the closure constants of the LM model in a more readable way. ---*/
-  ca1          = constants[0];
-  ca2          = constants[1];
-  ce1          = constants[2];
-  ce2          = constants[3];
-  cthetat      = constants[4];
-  Flength_CF   = constants[8];
-  C_Fonset1_CF = constants[9];
-  CHe_max      = constants[10];
+  /*--- Initialize the constants for the cross flow instability models to 
+        avoid compiler warnings. ---*/
+  C_crossflow = Flength_CF = C_Fonset1_CF = CHe_max = 0.0;
+
+  /*--- Store the closure constants of the LM model in a more readable way.
+        First the constants of the base line model. ---*/
+  ca1     = constants[0];
+  ca2     = constants[1];
+  ce1     = constants[2];
+  ce2     = constants[3];
+  cthetat = constants[4];
+
+  /*--- The constants for the model of the cross flow instabilities. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
+    case LANGTRY_GENERAL_CROSS_FLOW:
+      C_crossflow = constants[8];
+      break;
+
+    case GRABE_WING_ONLY_CROSS_FLOW:
+      Flength_CF   = constants[8];
+      C_Fonset1_CF = constants[9];
+      break;
+
+    case GRABE_GENERAL_CROSS_FLOW:
+      Flength_CF   = constants[8];
+      C_Fonset1_CF = constants[9];
+      CHe_max      = constants[10];
+      break;
+  }
 }
 
 CSourcePieceWise_TransLM::~CSourcePieceWise_TransLM(void) { }
@@ -231,7 +251,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
   const su2double turbIntensity_min = 0.00027;
   const su2double turbIntensity_max = 1.0;
 
-  /*--- Maximum number of iterations in the Newton algorithm for Re_theta_eq. ---*/
+  /*--- Maximum number of iterations in the Newton algorithms. ---*/
   const unsigned short maxIt = 25;
 
   /*--- Get the infinity state, which is needed for some of the
@@ -260,6 +280,10 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
   const su2double intermittency = TransVar_i[0];
   const su2double Re_theta      = TransVar_i[1];
+
+  /*--- Compute the length scale squared of this cell, which is simply
+        the square of the nDim root of the volume. ---*/
+  const su2double lenScale2 = (nDim == 2) ? Volume : pow(Volume, 2.0/3.0);
 
   /*--- Compute the velocity magnitude, velocity magnitude squared
         of the free-stream and helicity. ---*/
@@ -363,7 +387,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
     /* Terminate if the Newton algorithm did not converge. */
     if(iter == maxIt)
-      SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
+      SU2_MPI::Error("Newton did not converge for Re_theta_eq", CURRENT_FUNCTION);
   }
   else {
 
@@ -426,7 +450,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
     /* Terminate if the Newton algorithm did not converge. */
     if(iter == maxIt)
-      SU2_MPI::Error("Newton did not converge", CURRENT_FUNCTION);
+      SU2_MPI::Error("Newton did not converge for Re_theta_eq", CURRENT_FUNCTION);
   }
 
   /*--- Compute the other Reynolds numbers that appear in the formulation. ---*/
@@ -469,86 +493,177 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
   const su2double Ftheta_t = min(max(val1,val3),1.0);
 
-  /*--- Compute the helicity Reynolds number. ---*/
-  const su2double Re_helicity = rho*dist*dist*helicity/(muLam*velMag);
+  /*--- Compute time scale for the source terms of the Re_theta equation.
+        Note that this time scale is limited to improve robustness for
+        high Reynolds number flows. ---*/
+  const su2double timeScale1 = 500.0*muLam/(rho*vel2);
+  const su2double timeScale2 = rho*lenScale2*(muLam + muTurb);
+  const su2double timeScale  = min(timeScale1, timeScale2);
 
-  /*--- Compute the velocity at the edge of the boundary layer. Here it is
-        assumed that the isentropic relation for total pressure is valid in
-        the outer flow and the pressure is constant through the boundary
-        layer. Note that this relation is not valid when motion is present. ---*/
-  const su2double pRatio = p/Pressure_Inf;
-  tmp  = 1.0 - pow(pRatio,(Gamma_Minus_One/Gamma));
-  tmp *= 2.0*Gamma*Pressure_Inf/(Gamma_Minus_One*Density_Inf);
-  tmp += velInf2;
+  /*-- Initialize the terms that appear in the production and destruction
+       terms of the intermittency and Re_theta equations. These terms may
+       be modified, depending on the model to account for the cross flow
+       instabilities. ---*/
+  su2double termPInter = Flength*sqrt(intermittency*Fonset);
+  su2double D_SCF      = 0.0;
+  su2double Jac_D_SCF  = 0.0;
 
-  su2double uEdge = sqrt(max(tmp,0.0));
-  uEdge = max(uEdge, 0.01*velMag);
+  /*--- Determine the model for the cross flow instabilities and modify
+        termPInter and termDscfReTheta accordingly. ---*/
+  switch( config->GetKind_LM_CrossFlowModel() ) {
 
-  /*--- Compute the dot product of the velocity and the pressure gradient.
-        Store this in duEdgeDs, because later on this value is transformed
-        to the gradient of uEdge in the direction of the streamline. ---*/
-  su2double duEdgeDs = 0.0;
-  for(unsigned short iDim=0; iDim<nDim; ++iDim)
-    duEdgeDs += vel[iDim]*PrimVar_Grad_i[nDim+1][iDim];
+    case LANGTRY_GENERAL_CROSS_FLOW: {
 
-  /*--- Multiply the dot product of velocity and pressure gradient with
-        the appropriate variables to obtain the gradient of the edge
-        velocity in the direction of the streamline. ---*/
-  tmp = pow(pRatio, 1.0/Gamma);
-  duEdgeDs *= -1.0/(tmp*Density_Inf*uEdge*velMag);
+      /*--- Cross flow model of Langtry.
+            First compute the non-dimensional cross flow strength
+            as well as the cross flow shift terms. ---*/
+      const su2double Hcf      = dist*fabs(helicity)/velMag;
+      const su2double muRatio  = muTurb/muLam;
+      const su2double dHcf     = 0.1066 - Hcf*(1.0 + min(muRatio, 0.4));
+      const su2double dHcfPlus = max( dHcf, 0.0);
+      const su2double dHcfMin  = max(-dHcf, 0.0);
+      const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfP - 75.0*tanh(80.0*dHcfMin);
 
-  /*--- Compute the length scale that represents the momentum thickness
-        where the helicity Reynolds number reaches its maximum value
-        in the boundary layer and the modified pressure gradient parameter
-        that is needed to compute the shape factor H12. ---*/
-  const su2double lenHelMax = 2.0*dist/(15.0*CHe_max);
-  const su2double lamPlus   = rho*lenHelMax*lenHelMax*duEdgeDs/muLam;
+      /*--- Determine the coefficients in the equation for theta_t
+            for the cross flow Reynolds number Re_SCF.  This equation
+            looks like a1*theta_t + a2*log(theta_t) + a3 = 0.  ---*/
+      const su2double hRoughness = config->GetSurfaceRoughnessHeight();
 
-  /*--- Compute the empirical correlation for the helicity Reynolds number
-        at transition onset. ---*/
-  const su2double lamPlus2 = lamPlus*lamPlus;
-  const su2double lamPlus3 = lamPlus*lamPlus2;
-  const su2double lamPlus4 = lamPlus*lamPlus3;
+      const su2double a1 = -rho*velMag/(0.82*muLam);
+      const su2double a2 =  35.088;
+      const su2double a3 = 319.51 - a2*log(hRoughness) + fHShift;
 
-  tmp = -8838.4*lamPlus4 + 1105.1*lamPlus3 - 67.962*lamPlus2 + 17.574*lamPlus + 2.0593;
-  const su2double H12 = 4.02923 - sqrt(max(tmp,0.0));
+      /*--- Newton algorithm to compute the value of theta_t. ---*/
+      su2double theta_t = 100.0*hRoughness;
 
-  tmp = -456.83*H12 + 1332.7;
-  const su2double Re_helicity_onset = max(tmp, 150.0);
+      unsigned short iter;
+      su2double deltaReTheta = 1.0;
+      for(iter=0; iter<maxIt; ++iter) {
 
-  /*--- Compute the value of Fonset_CF. ---*/
-  const su2double Fonset1_CF = Re_helicity/(C_Fonset1_CF*Re_helicity_onset);
+        /*--- Compute the value of the function and the derivative
+              for which the root must be computed. ---*/
+        const su2double  F = a1*theta_t + a2*log(theta_t) + a3;
+        const su2doubld dF = a1 + a2/theta_t;
 
-  tmp = Fonset1_CF*Fonset1_CF*Fonset1_CF*Fonset1_CF;
-  const su2double Fonset2_CF = min(max(Fonset1_CF,tmp), 2.0);
 
-  tmp = 1.0 - 0.125*RT*RT*RT;
-  const su2double Fonset3_CF = max(tmp, 0.0);
+      }
 
-  tmp = Fonset2_CF - Fonset3_CF;
-  const su2double Fonset_CF = max(tmp, 0.0);
+      /* Terminate if the Newton algorithm did not converge. */
+      if(iter == maxIt)
+        SU2_MPI::Error("Newton did not converge for theta", CURRENT_FUNCTION);
+
+
+      /*--- Determine whether Re_SCF is less than Re_theta. Only in that
+            case the cross flow term must be added. ---*/
+      if(Re_SCF < Re_theta) {
+
+        /*--- Compute the values of D_SCF and Jac_D_SCF, where the latter is
+              the derivative of D_SCF w.r.t. rho*Re_theta. ---*/
+        const su2double Ftheta_t2 = min(val1, 1.0);
+
+        Jac_D_SCF = cthetat*C_crossflow*Ftheta_t2/timeScale;
+        D_SCF     = Jac_D_SCF*rho*(Re_SCF - Re_theta);
+      }
+
+      break;
+    }
+
+    case GRABE_WING_ONLY_CROSS_FLOW: {
+
+      /*--- Cross flow model of Grabe, which is only valid for
+            wing geometries. ---*/
+
+      break;
+    }
+
+    case GRABE_GENERAL_CROSS_FLOW: {
+
+      /*--- General cross flow model of Grabe.
+            Compute the helicity Reynolds number. ---*/
+      const su2double Re_helicity = rho*dist*dist*helicity/(muLam*velMag);
+
+      /*--- Compute the velocity at the edge of the boundary layer. Here it is
+            assumed that the isentropic relation for total pressure is valid in
+            the outer flow and the pressure is constant through the boundary
+            layer. Note that this relation is not valid when motion is present. ---*/
+      const su2double pRatio = p/Pressure_Inf;
+      tmp  = 1.0 - pow(pRatio,(Gamma_Minus_One/Gamma));
+      tmp *= 2.0*Gamma*Pressure_Inf/(Gamma_Minus_One*Density_Inf);
+      tmp += velInf2;
+
+      su2double uEdge = sqrt(max(tmp,0.0));
+      uEdge = max(uEdge, 0.01*velMag);
+
+      /*--- Compute the dot product of the velocity and the pressure gradient.
+            Store this in duEdgeDs, because later on this value is transformed
+            to the gradient of uEdge in the direction of the streamline. ---*/
+      su2double duEdgeDs = 0.0;
+      for(unsigned short iDim=0; iDim<nDim; ++iDim)
+        duEdgeDs += vel[iDim]*PrimVar_Grad_i[nDim+1][iDim];
+
+      /*--- Multiply the dot product of velocity and pressure gradient with
+            the appropriate variables to obtain the gradient of the edge
+            velocity in the direction of the streamline. ---*/
+      tmp = pow(pRatio, 1.0/Gamma);
+      duEdgeDs *= -1.0/(tmp*Density_Inf*uEdge*velMag);
+
+      /*--- Compute the length scale that represents the momentum thickness
+            where the helicity Reynolds number reaches its maximum value
+            in the boundary layer and the modified pressure gradient parameter
+            that is needed to compute the shape factor H12. ---*/
+      const su2double lenHelMax = 2.0*dist/(15.0*CHe_max);
+      const su2double lamPlus   = rho*lenHelMax*lenHelMax*duEdgeDs/muLam;
+
+      /*--- Compute the empirical correlation for the helicity Reynolds number
+            at transition onset. ---*/
+      const su2double lamPlus2 = lamPlus*lamPlus;
+      const su2double lamPlus3 = lamPlus*lamPlus2;
+      const su2double lamPlus4 = lamPlus*lamPlus3;
+
+      tmp = -8838.4*lamPlus4 + 1105.1*lamPlus3 - 67.962*lamPlus2 + 17.574*lamPlus + 2.0593;
+      const su2double H12 = 4.02923 - sqrt(max(tmp,0.0));
+
+      tmp = -456.83*H12 + 1332.7;
+      const su2double Re_helicity_onset = max(tmp, 150.0);
+
+      /*--- Compute the value of Fonset_CF. ---*/
+      const su2double Fonset1_CF = Re_helicity/(C_Fonset1_CF*Re_helicity_onset);
+
+      tmp = Fonset1_CF*Fonset1_CF*Fonset1_CF*Fonset1_CF;
+      const su2double Fonset2_CF = min(max(Fonset1_CF,tmp), 2.0);
+
+      tmp = 1.0 - 0.125*RT*RT*RT;
+      const su2double Fonset3_CF = max(tmp, 0.0);
+
+      tmp = Fonset2_CF - Fonset3_CF;
+      const su2double Fonset_CF = max(tmp, 0.0);
+
+      /*--- Modify the value of termPInter to account for cross flow
+            instabilities. ---*/
+      termPInter += Flength_CF*sqrt(intermittency*Fonset_CF);
+
+      break;
+    }
+  }
 
   /*--- Compute the production and destruction term of the intermittency
-        equation. Note that Flength_CF is set to zero when the crossflow
-       	instability part is switched off. ---*/
-  const su2double termPInter     = Flength*sqrt(intermittency*Fonset)
-                                 + Flength_CF*sqrt(intermittency*Fonset_CF);
+        equation. ---*/
   const su2double Pintermittency = termPInter*ca1*rho*S*(1.0 - ce1*intermittency);
   const su2double Eintermittency = ca2*rho*Vort*Fturb
                                  * intermittency*(ce2*intermittency - 1.0);
 
   /*--- Compute the production/destruction term of the Re_theta equation. ---*/
-  const su2double PRe_theta = cthetat*rho*rho*vel2*(Re_theta_eq - Re_theta)
-                            * (1.0 - Ftheta_t)/(500.0*muLam);
+  const su2double PRe_theta = cthetat*rho*(Re_theta_eq - Re_theta)
+                            * (1.0 - Ftheta_t)/timeScale;
 
   /*--- Compute the source terms and the approximate Jacobians for
         both equations. ---*/
   val_residual[0] = Volume*(Pintermittency - Eintermittency);
-  val_residual[1] = Volume*PRe_theta;
+  val_residual[1] = Volume*(PRe_theta + D_SCF);
 
   val_Jacobian_i[0][0] = -Volume*(2.0*ca2*ce2*Vort*intermittency*Fturb
                        +          ca1*ce1*S*termPInter);
   val_Jacobian_i[0][1] =  0.0;
   val_Jacobian_i[1][0] =  0.0;
-  val_Jacobian_i[1][1] = -Volume*cthetat*rho*vel2/(500.0*muLam);
+  val_Jacobian_i[1][1] = -Volume*(cthetat/timeScale + Jac_D_SCF);
 }
