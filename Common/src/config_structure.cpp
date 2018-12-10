@@ -700,7 +700,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief KIND_LM_CROSSFLOWMODEL \n DESCRIPTION: Specify cross flow model for LM transition model OPTIONS: see \link LM_CrossFlow_Model_Map \endlink \n DEFAULT: NO_CROSS_FLOW_MODEL \ingroup Config*/
   addEnumOption("KIND_LM_CROSSFLOWMODEL", Kind_LM_CrossFlowModel, LM_CrossFlow_Model_Map, NO_CROSS_FLOW_MODEL);
   /*!\brief SURFACE ROUGHNESS HEIGHT \n DESCRIPTION: Surface roughness height in m. (3.3e-6 (painted surface) ) \ingroup Config*/
-  addDoubleOption("SURFACE ROUGHNESS HEIGHT", SurfaceRoughnessHeight, 3.3e-6);
+  addDoubleOption("SURFACE_ROUGHNESS_HEIGHT", SurfaceRoughnessHeight, 3.3e-6);
 
   /*!\brief KIND_SGS_MODEL \n DESCRIPTION: Specify subgrid scale model OPTIONS: see \link SGS_Model_Map \endlink \n DEFAULT: NO_SGS_MODEL \ingroup Config*/
   addEnumOption("KIND_SGS_MODEL", Kind_SGS_Model, SGS_Model_Map, NO_SGS_MODEL);
@@ -4904,6 +4904,22 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
           if (uq_permute) cout << "Permuting eigenvectors" << endl;  
         } 
+
+        cout << "Transition model: ";
+        switch (Kind_Trans_Model) {
+          case NO_TRANS_MODEL: cout << "No transition model. Fully turbulent flow" << endl; break;
+          case BC:             cout << "Bas-Cakmakcioglu algebraic model for Spalart Allmaras" << endl; break;
+          case LM:             cout << "Langtry-Menter two-equation model" << endl;
+            switch (Kind_LM_CrossFlowModel) {
+              case NO_CROSS_FLOW_MODEL:        cout << "No cross flow model" << endl; break;
+              case LANGTRY_GENERAL_CROSS_FLOW: cout << "Langtry general cross flow model" << endl;
+                                               cout << "Surface roughness height: "
+                                                    << SurfaceRoughnessHeight << " m." << endl; break;
+              case GRABE_WING_ONLY_CROSS_FLOW: cout << "Grabe wing only cross flow model" << endl; break;
+              case GRABE_GENERAL_CROSS_FLOW:   cout << "Grabe general cross flow model" << endl; break;
+            }
+            break;
+        }
         break;
       case FEM_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;

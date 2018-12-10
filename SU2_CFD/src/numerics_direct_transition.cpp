@@ -522,7 +522,8 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
       const su2double dHcf     = 0.1066 - Hcf*(1.0 + min(muRatio, 0.4));
       const su2double dHcfPlus = max( dHcf, 0.0);
       const su2double dHcfMin  = max(-dHcf, 0.0);
-      const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfP - 75.0*tanh(80.0*dHcfMin);
+      const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfPlus*dHcfPlus
+                               - 75.0*tanh(80.0*dHcfMin);
 
       /*--- Determine the coefficients in the equation for theta_t
             for the cross flow Reynolds number Re_SCF.  This equation
@@ -537,21 +538,33 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
       su2double theta_t = 100.0*hRoughness;
 
       unsigned short iter;
-      su2double deltaReTheta = 1.0;
+      su2double deltaRe_SCF_Old = 1.0, Re_SCF = -a1*theta_t;
       for(iter=0; iter<maxIt; ++iter) {
 
         /*--- Compute the value of the function and the derivative
               for which the root must be computed. ---*/
         const su2double  F = a1*theta_t + a2*log(theta_t) + a3;
-        const su2doubld dF = a1 + a2/theta_t;
+        const su2double dF = a1 + a2/theta_t;
 
+        /*--- Store the old value of the Reynolds number based
+              on theta_t and compute the new value of theta_t.
+              Make sure it is positive. Afterwared compute the
+              corresponding Reynolds number. ---*/
+        const su2double Re_SCF_Old = Re_SCF;
 
+        theta_t -= F/dF;
+        theta_t  = max(theta_t, 1.e-15);
+        Re_SCF   = -a1*theta_t;
+
+        /* Exit criterion, which takes finite precision into account. */
+        const su2double deltaRe_SCF = fabs(Re_SCF - Re_SCF_Old);
+        if((deltaRe_SCF <= 1.e-2) && (deltaRe_SCF >= deltaRe_SCF_Old)) break;
+        deltaRe_SCF_Old = deltaRe_SCF;
       }
 
       /* Terminate if the Newton algorithm did not converge. */
       if(iter == maxIt)
-        SU2_MPI::Error("Newton did not converge for theta", CURRENT_FUNCTION);
-
+        SU2_MPI::Error("Newton did not converge for Re_SCF", CURRENT_FUNCTION);
 
       /*--- Determine whether Re_SCF is less than Re_theta. Only in that
             case the cross flow term must be added. ---*/

@@ -1241,7 +1241,7 @@ void CSourcePieceWise_TurbSST::ComputeResidual(su2double *val_residual, su2doubl
     else {
       pk = Eddy_Viscosity_i*StrainMag_i*StrainMag_i
          - 2.0/3.0*Density_i*TurbVar_i[0]*diverg;
-      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg
+      pw = StrainMag_i*StrainMag_i - 2.0/3.0*zeta*diverg;
     }
 
     /*--- Limit the production terms and multiply it by the intermittency
