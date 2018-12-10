@@ -603,3 +603,5 @@ inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2doubl
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
+
+inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }

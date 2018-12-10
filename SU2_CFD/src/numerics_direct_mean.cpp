@@ -4420,6 +4420,13 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
   else Mean_TauWall = -1.0;
 
+  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+
+  if (using_uq){
+    SetReynoldsStressMatrix(Mean_turb_ke);
+    SetPerturbedRSM(Mean_turb_ke, config);
+  }
+
   /*--- Get projected flux tensor ---*/
   
   bool QCR = config->GetQCR();
@@ -4455,6 +4462,168 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
     
   }
   
+}
+
+void CAvgGrad_Flow::GetMeanRateOfStrainMatrix(su2double **S_ij)
+{
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3){
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = Mean_GradPrimVar[3][2];
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
+    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+  }
+  else {
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = 0.0;
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.0;
+    S_ij[1][2] = 0.0;
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+
+  }
+}
+
+void CAvgGrad_Flow::SetReynoldsStressMatrix(su2double turb_ke){
+  unsigned short jDim;
+  su2double **S_ij = new su2double* [3];
+  su2double muT = Mean_Eddy_Viscosity;
+  su2double divVel = 0;
+  su2double density;
+  su2double TWO3 = 2.0/3.0;
+  density = Mean_PrimVar[nDim+2];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    S_ij[iDim] = new su2double [3];
+  }
+
+
+  GetMeanRateOfStrainMatrix(S_ij);
+
+  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
+
+  for (iDim = 0; iDim < 3; iDim++){
+    divVel += S_ij[iDim][iDim];
+  }
+
+  for (iDim = 0; iDim < 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+    }
+  }
+
+  for (iDim = 0; iDim < 3; iDim++)
+    delete [] S_ij[iDim];
+  delete [] S_ij;
+}
+
+void CAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
+
+  unsigned short iDim,jDim;
+
+  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+    }
+  }
+
+  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
+
+  /* compute convex combination coefficients */
+  su2double c1c = Eig_Val[2] - Eig_Val[1];
+  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
+
+  /* define barycentric traingle corner points */
+  Corners[0][0] = 1.0;
+  Corners[0][1] = 0.0;
+  Corners[1][0] = 0.0;
+  Corners[1][1] = 0.0;
+  Corners[2][0] = 0.5;
+  Corners[2][1] = 0.866025;
+
+  /* define barycentric coordinates */
+  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+  if (Eig_Val_Comp == 1) {
+    /* 1C turbulence */
+    New_Coord[0] = Corners[0][0];
+    New_Coord[1] = Corners[0][1];
+  }
+  else if (Eig_Val_Comp== 2) {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+  else if (Eig_Val_Comp == 3) {
+    /* 3C turbulence */
+    New_Coord[0] = Corners[2][0];
+    New_Coord[1] = Corners[2][1];
+  }
+  else {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+
+  /* calculate perturbed barycentric coordinates */
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+  c3c = Barycentric_Coord[1] / Corners[2][1];
+  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+  c2c = 1 - c1c - c3c;
+
+  /* build new anisotropy eigenvalues */
+  Eig_Val[0] = (c3c - 1) / 3.0;
+  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+  Eig_Val[2] = c1c + Eig_Val[1];
+
+  /* permute eigenvectors if required */
+  if (uq_permute) {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
+      }
+    }
+  }
+
+  else {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
+      }
+    }
+  }
+
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
+
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+    }
+  }
+
 }
 
 CGeneralAvgGrad_Flow::CGeneralAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4544,6 +4713,13 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
       Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] + PrimVar_Grad_j[iVar][iDim]);
     }
   }
+
+  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+
+  if (using_uq){
+    SetReynoldsStressMatrix(Mean_turb_ke);
+    SetPerturbedRSM(Mean_turb_ke, config);
+  }
   
   /*--- Get projected flux tensor ---*/
   
@@ -4581,6 +4757,160 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
   
+}
+
+void CGeneralAvgGrad_Flow::GetMeanRateOfStrainMatrix(su2double **S_ij)
+{
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3){
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = Mean_GradPrimVar[3][2];
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
+    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+  }
+  else {
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = 0.0;
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.0;
+    S_ij[1][2] = 0.0;
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+
+  }
+}
+
+void CGeneralAvgGrad_Flow::SetReynoldsStressMatrix(su2double turb_ke){
+  unsigned short jDim;
+  su2double **S_ij = new su2double* [3];
+  su2double muT = Mean_Eddy_Viscosity;
+  su2double divVel = 0;
+  su2double density;
+  su2double TWO3 = 2.0/3.0;
+  density = Mean_PrimVar[nDim+2];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    S_ij[iDim] = new su2double [3];
+  }
+
+
+  GetMeanRateOfStrainMatrix(S_ij);
+
+  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
+
+  for (iDim = 0; iDim < 3; iDim++){
+    divVel += S_ij[iDim][iDim];
+  }
+
+  for (iDim = 0; iDim < 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+    }
+  }
+
+  for (iDim = 0; iDim < 3; iDim++)
+    delete [] S_ij[iDim];
+  delete [] S_ij;
+}
+
+void CGeneralAvgGrad_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
+
+  unsigned short iDim,jDim;
+
+  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+    }
+  }
+
+  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
+
+  /* compute convex combination coefficients */
+  su2double c1c = Eig_Val[2] - Eig_Val[1];
+  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
+
+  /* define barycentric coordinates */
+  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+  if (Eig_Val_Comp == 1) {
+    /* 1C turbulence */
+    New_Coord[0] = Corners[0][0];
+    New_Coord[1] = Corners[0][1];
+  }
+  else if (Eig_Val_Comp== 2) {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+  else if (Eig_Val_Comp == 3) {
+    /* 3C turbulence */
+    New_Coord[0] = Corners[2][0];
+    New_Coord[1] = Corners[2][1];
+  }
+  else {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+
+  /* calculate perturbed barycentric coordinates */
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+  c3c = Barycentric_Coord[1] / Corners[2][1];
+  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+  c2c = 1 - c1c - c3c;
+
+  /* build new anisotropy eigenvalues */
+  Eig_Val[0] = (c3c - 1) / 3.0;
+  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+  Eig_Val[2] = c1c + Eig_Val[1];
+
+  /* permute eigenvectors if required */
+  if (uq_permute) {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
+      }
+    }
+  }
+
+  else {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
+      }
+    }
+  }
+
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
+
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+    }
+  }
+
 }
 
 CAvgGradCorrected_Flow::CAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4684,7 +5014,14 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   /*--- Get projected flux tensor ---*/
 
   bool QCR = config->GetQCR();
-    
+
+  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+
+  if (using_uq){
+    SetReynoldsStressMatrix(Mean_turb_ke);
+    SetPerturbedRSM(Mean_turb_ke, config);
+  }
+
   GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke, Normal, Mean_Laminar_Viscosity, Mean_Eddy_Viscosity, Mean_TauWall, QCR);
   
   /*--- Save residual value ---*/
@@ -4714,6 +5051,167 @@ void CAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2double 
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
   
+}
+
+void CAvgGradCorrected_Flow::GetMeanRateOfStrainMatrix(su2double **S_ij)
+{
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3){
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = Mean_GradPrimVar[3][2];
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
+    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+  }
+  else {
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = 0.0;
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.0;
+    S_ij[1][2] = 0.0;
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+
+  }
+}
+
+void CAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
+  unsigned short jDim;
+  su2double **S_ij = new su2double* [3];
+  su2double muT = Mean_Eddy_Viscosity;
+  su2double divVel = 0;
+  su2double density;
+  su2double TWO3 = 2.0/3.0;
+  density = Mean_PrimVar[nDim+2];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    S_ij[iDim] = new su2double [3];
+  }
+
+
+  GetMeanRateOfStrainMatrix(S_ij);
+
+  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
+
+  for (iDim = 0; iDim < 3; iDim++){
+    divVel += S_ij[iDim][iDim];
+  }
+
+  for (iDim = 0; iDim < 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+    }
+  }
+
+  for (iDim = 0; iDim < 3; iDim++)
+    delete [] S_ij[iDim];
+  delete [] S_ij;
+}
+
+void CAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
+
+  unsigned short iDim,jDim;
+
+  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+   for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+    }
+  }
+
+  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val, 3);
+
+  /* compute convex combination coefficients */
+  su2double c1c = Eig_Val[2] - Eig_Val[1];
+  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
+
+  /* define barycentric traingle corner points */
+  Corners[0][0] = 1.0;
+  Corners[0][1] = 0.0;
+  Corners[1][0] = 0.0;
+  Corners[1][1] = 0.0;
+  Corners[2][0] = 0.5;
+  Corners[2][1] = 0.866025;
+
+  /* define barycentric coordinates */
+  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+  if (Eig_Val_Comp == 1) {
+    /* 1C turbulence */
+    New_Coord[0] = Corners[0][0];
+    New_Coord[1] = Corners[0][1];
+  }
+  else if (Eig_Val_Comp== 2) {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+  else if (Eig_Val_Comp == 3) {
+    /* 3C turbulence */
+    New_Coord[0] = Corners[2][0];
+    New_Coord[1] = Corners[2][1];
+  }
+  else {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+
+  /* calculate perturbed barycentric coordinates */
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+  c3c = Barycentric_Coord[1] / Corners[2][1];
+  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+  c2c = 1 - c1c - c3c;
+
+  /* build new anisotropy eigenvalues */
+  Eig_Val[0] = (c3c - 1) / 3.0;
+  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+  Eig_Val[2] = c1c + Eig_Val[1];
+
+  /* permute eigenvectors if required */
+  if (uq_permute) {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
+      }
+    }
+  }
+
+  else {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
+      }
+    }
+  }
+
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
+
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+    }
+  }
+
 }
 
 CGeneralAvgGradCorrected_Flow::CGeneralAvgGradCorrected_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
@@ -4822,6 +5320,13 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
       }
     }
   }
+
+  /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
+
+  if (using_uq){
+    SetReynoldsStressMatrix(Mean_turb_ke);
+    SetPerturbedRSM(Mean_turb_ke, config);
+  }
   
   /*--- Get projected flux tensor ---*/
   
@@ -4857,6 +5362,168 @@ void CGeneralAvgGradCorrected_Flow::ComputeResidual(su2double *val_residual, su2
   AD::SetPreaccOut(val_residual, nVar);
   AD::EndPreacc();
   
+}
+
+void CGeneralAvgGradCorrected_Flow::GetMeanRateOfStrainMatrix(su2double **S_ij)
+{
+  /* --- Calculate the rate of strain tensor, using mean velocity gradients --- */
+
+  if (nDim == 3){
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = Mean_GradPrimVar[3][2];
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.5 * (Mean_GradPrimVar[1][2] + Mean_GradPrimVar[3][0]);
+    S_ij[1][2] = 0.5 * (Mean_GradPrimVar[2][2] + Mean_GradPrimVar[3][1]);
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+  }
+  else {
+    S_ij[0][0] = Mean_GradPrimVar[1][0];
+    S_ij[1][1] = Mean_GradPrimVar[2][1];
+    S_ij[2][2] = 0.0;
+    S_ij[0][1] = 0.5 * (Mean_GradPrimVar[1][1] + Mean_GradPrimVar[2][0]);
+    S_ij[0][2] = 0.0;
+    S_ij[1][2] = 0.0;
+    S_ij[1][0] = S_ij[0][1];
+    S_ij[2][1] = S_ij[1][2];
+    S_ij[2][0] = S_ij[0][2];
+
+  }
+}
+
+void CGeneralAvgGradCorrected_Flow::SetReynoldsStressMatrix(su2double turb_ke){
+  unsigned short jDim;
+  su2double **S_ij = new su2double* [3];
+  su2double muT = Mean_Eddy_Viscosity;
+  su2double divVel = 0;
+  su2double density;
+  su2double TWO3 = 2.0/3.0;
+  density = Mean_PrimVar[nDim+2];
+
+  for (iDim = 0; iDim < 3; iDim++){
+    S_ij[iDim] = new su2double [3];
+  }
+
+
+  GetMeanRateOfStrainMatrix(S_ij);
+
+  /* --- Using rate of strain matrix, calculate Reynolds stress tensor --- */
+
+  for (iDim = 0; iDim < 3; iDim++){
+    divVel += S_ij[iDim][iDim];
+  }
+
+  for (iDim = 0; iDim < 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanReynoldsStress[iDim][jDim] = TWO3 * turb_ke * delta3[iDim][jDim]
+      - muT / density * (2 * S_ij[iDim][jDim] - TWO3 * divVel * delta3[iDim][jDim]);
+    }
+  }
+
+  for (iDim = 0; iDim < 3; iDim++)
+    delete [] S_ij[iDim];
+  delete [] S_ij;
+}
+
+void CGeneralAvgGradCorrected_Flow::SetPerturbedRSM(su2double turb_ke, CConfig *config){
+
+  unsigned short iDim,jDim;
+ 
+  /* --- Calculate anisotropic part of Reynolds Stress tensor --- */
+
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      A_ij[iDim][jDim] = .5 * MeanReynoldsStress[iDim][jDim] / turb_ke - delta3[iDim][jDim] / 3.0;
+      Eig_Vec[iDim][jDim] = A_ij[iDim][jDim];
+    }
+  }
+
+  /* --- Get ordered eigenvectors and eigenvalues of A_ij --- */
+
+  EigenDecomposition(A_ij, Eig_Vec, Eig_Val,3);
+
+  /* compute convex combination coefficients */
+  su2double c1c = Eig_Val[2] - Eig_Val[1];
+  su2double c2c = 2.0 * (Eig_Val[1] - Eig_Val[0]);
+  su2double c3c = 3.0 * Eig_Val[0] + 1.0;
+
+  /* define barycentric traingle corner points */
+  Corners[0][0] = 1.0;
+  Corners[0][1] = 0.0;
+  Corners[1][0] = 0.0;
+  Corners[1][1] = 0.0;
+  Corners[2][0] = 0.5;
+  Corners[2][1] = 0.866025;
+
+  /* define barycentric coordinates */
+  Barycentric_Coord[0] = Corners[0][0] * c1c + Corners[1][0] * c2c + Corners[2][0] * c3c;
+  Barycentric_Coord[1] = Corners[0][1] * c1c + Corners[1][1] * c2c + Corners[2][1] * c3c;
+
+  if (Eig_Val_Comp == 1) {
+    /* 1C turbulence */
+    New_Coord[0] = Corners[0][0];
+    New_Coord[1] = Corners[0][1];
+  }
+  else if (Eig_Val_Comp== 2) {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+  else if (Eig_Val_Comp == 3) {
+    /* 3C turbulence */
+    New_Coord[0] = Corners[2][0];
+    New_Coord[1] = Corners[2][1];
+  }
+  else {
+    /* 2C turbulence */
+    New_Coord[0] = Corners[1][0];
+    New_Coord[1] = Corners[1][1];
+  }
+
+  /* calculate perturbed barycentric coordinates */
+  Barycentric_Coord[0] = Barycentric_Coord[0] + (uq_delta_b) * (New_Coord[0] - Barycentric_Coord[0]);
+  Barycentric_Coord[1] = Barycentric_Coord[1] + (uq_delta_b) * (New_Coord[1] - Barycentric_Coord[1]);
+
+  /* rebuild c1c,c2c,c3c based on perturbed barycentric coordinates */
+  c3c = Barycentric_Coord[1] / Corners[2][1];
+  c1c = Barycentric_Coord[0] - Corners[2][0] * c3c;
+  c2c = 1 - c1c - c3c;
+
+  /* build new anisotropy eigenvalues */
+  Eig_Val[0] = (c3c - 1) / 3.0;
+  Eig_Val[1] = 0.5 *c2c + Eig_Val[0];
+  Eig_Val[2] = c1c + Eig_Val[1];
+
+  /* permute eigenvectors if required */
+  if (uq_permute) {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[2-iDim][jDim];
+      }
+    }
+  }
+
+  else {
+    for (iDim=0; iDim<3; iDim++) {
+      for (jDim=0; jDim<3; jDim++) {
+        New_Eig_Vec[iDim][jDim] = Eig_Vec[iDim][jDim];
+      }
+    }
+  }
+
+  EigenRecomposition(newA_ij, New_Eig_Vec, Eig_Val, 3);
+
+  /* compute perturbed Reynolds stress matrix; use under-relaxation factor (uq_urlx)*/
+  for (iDim = 0; iDim< 3; iDim++){
+    for (jDim = 0; jDim < 3; jDim++){
+      MeanPerturbedRSM[iDim][jDim] = 2.0 * turb_ke * (newA_ij[iDim][jDim] + 1.0/3.0 * delta3[iDim][jDim]);
+      MeanPerturbedRSM[iDim][jDim] = MeanReynoldsStress[iDim][jDim] +
+      uq_urlx*(MeanPerturbedRSM[iDim][jDim] - MeanReynoldsStress[iDim][jDim]);
+    }
+  }
+
 }
 
 CSourceGravity::CSourceGravity(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

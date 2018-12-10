@@ -2028,3 +2028,13 @@ inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
 inline bool CConfig::GetSpecial_Output(void) { return SpecialOutput; }
 
 inline bool CConfig::GetWrt_ForcesBreakdown(void) { return Wrt_ForcesBreakdown; }
+
+inline bool CConfig::GetUsing_UQ(void) { return using_uq; }
+
+inline su2double CConfig::GetUQ_Delta_B(void) { return uq_delta_b; }
+
+inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
+
+inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
+
+inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
