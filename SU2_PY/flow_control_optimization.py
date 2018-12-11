@@ -140,8 +140,6 @@ def flow_control_optimization( filename                           ,
         config.DV_VALUE_OLD = config.DV_VALUE
         config.DV_VALUE_NEW = config.DV_VALUE
 
-        print(x0)
-
     # Bounds for design variables
     xb_low = [-1.0E10]*n_dv
     xb_up  = [1.0E10]*n_dv

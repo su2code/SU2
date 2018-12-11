@@ -99,21 +99,34 @@ def deform ( config, dv_new=None, dv_old=None ):
     meshname_suffixed = su2io.add_suffix( mesh_name , suffix )
     konfig['MESH_OUT_FILENAME'] = meshname_suffixed
     
-    # Run Deformation
-    SU2_DEF(konfig)
+    if not 'TRANSP_DV' in config['DV_KIND']:
+        # Run Deformation
+        SU2_DEF(konfig)
     
-    # update super config
-    config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
-                    'DV_KIND'       : konfig['DV_KIND']           ,
-                    'DV_MARKER'     : konfig['DV_MARKER']         ,
-                    'DV_PARAM'      : konfig['DV_PARAM']          ,
-                    'DV_VALUE_OLD'  : konfig['DV_VALUE_NEW']      ,
-                    'DV_VALUE_NEW'  : konfig['DV_VALUE_NEW']      })
+        # update super config
+        config.update({ 'MESH_FILENAME' : konfig['MESH_OUT_FILENAME'] , 
+                        'DV_KIND'       : konfig['DV_KIND']           ,
+                        'DV_MARKER'     : konfig['DV_MARKER']         ,
+                        'DV_PARAM'      : konfig['DV_PARAM']          ,
+                        'DV_VALUE_OLD'  : konfig['DV_VALUE_NEW']      ,
+                        'DV_VALUE_NEW'  : konfig['DV_VALUE_NEW']      })
+
+    else:
+        # update super config
+        config.update({ 'MESH_FILENAME' : konfig['MESH_FILENAME']     , 
+                        'DV_KIND'       : konfig['DV_KIND']           ,
+                        'DV_MARKER'     : konfig['DV_MARKER']         ,
+                        'DV_PARAM'      : konfig['DV_PARAM']          ,
+                        'DV_VALUE_OLD'  : konfig['DV_VALUE_NEW']      ,
+                        'DV_VALUE_NEW'  : konfig['DV_VALUE_NEW']      })
     # not modified: config['MESH_OUT_FILENAME']
         
     # info out
     info = su2io.State()
-    info.FILES.MESH = meshname_suffixed
+    if not 'TRANSP_DV' in config['DV_KIND']:
+        info.FILES.MESH = meshname_suffixed
+    else:
+        info.FILES.MESH = mesh_name
     info.VARIABLES.DV_VALUE_NEW = konfig.DV_VALUE_NEW
     
     return info
