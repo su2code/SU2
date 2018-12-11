@@ -86,10 +86,6 @@ inline void CSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfi
 
 inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int val_iter) { }
 
-inline void CSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
-
-inline void CSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement, CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) { }
-
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
 inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
@@ -2131,10 +2127,6 @@ inline su2double CFEASolver::GetForceCoeff(void) { return ForceCoeff; }
 inline su2double CFEASolver::GetRelaxCoeff(void) { return RelaxCoeff; }
 
 inline su2double CFEASolver::GetFSI_Residual(void) { return FSI_Residual; }
-
-inline su2double CWaveSolver::GetTotal_CWave() { return Total_CWave; }
-
-inline su2double CHeatSolver::GetTotal_CHeat() { return Total_CHeat; }
 
 inline void CSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config) {}
 

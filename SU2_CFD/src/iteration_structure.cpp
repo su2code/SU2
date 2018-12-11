@@ -882,115 +882,6 @@ void CTurboIteration::Postprocess( COutput *output,
 
 }
 
-
-CWaveIteration::CWaveIteration(CConfig *config) : CIteration(config) { }
-
-CWaveIteration::~CWaveIteration(void) { }
-
-void CWaveIteration::Preprocess(COutput *output,
-                                CIntegration ****integration_container,
-                                CGeometry ****geometry_container,
-                                CSolver *****solver_container,
-                                CNumerics ******numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement ***grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone,
-                                unsigned short val_iInst) { }
-
-void CWaveIteration::Iterate(COutput *output,
-                             CIntegration ****integration_container,
-                             CGeometry ****geometry_container,
-                             CSolver *****solver_container,
-                             CNumerics ******numerics_container,
-                             CConfig **config_container,
-                             CSurfaceMovement **surface_movement,
-                             CVolumetricMovement ***grid_movement,
-                             CFreeFormDefBox*** FFDBox,
-                             unsigned short val_iZone,
-                             unsigned short val_iInst) {
-  
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- Set the value of the internal iteration ---*/
-  
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-  /*--- Wave equations ---*/
-  
-  config_container[val_iZone]->SetGlobalParam(WAVE_EQUATION, RUNTIME_WAVE_SYS, ExtIter);
-  integration_container[val_iZone][val_iInst][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                   config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone, val_iInst);
-  
-  /*--- Dual time stepping strategy ---*/
-  
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    for (IntIter = 1; IntIter < config_container[val_iZone]->GetUnst_nIntIter(); IntIter++) {
-      output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
-      config_container[val_iZone]->SetIntIter(IntIter);
-      integration_container[val_iZone][val_iInst][WAVE_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                       config_container, RUNTIME_WAVE_SYS, IntIter, val_iZone, val_iInst);
-      if (integration_container[val_iZone][val_iInst][WAVE_SOL]->GetConvergence()) break;
-    }
-    
-  }
-  
-}
-
-void CWaveIteration::Update(COutput *output,
-                            CIntegration ****integration_container,
-                            CGeometry ****geometry_container,
-                            CSolver *****solver_container,
-                            CNumerics ******numerics_container,
-                            CConfig **config_container,
-                            CSurfaceMovement **surface_movement,
-                            CVolumetricMovement ***grid_movement,
-                            CFreeFormDefBox*** FFDBox,
-                            unsigned short val_iZone,
-                            unsigned short val_iInst)      {
-  
-  unsigned short iMesh;
-  su2double Physical_dt, Physical_t;
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- Dual time stepping strategy ---*/
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) {
-    
-    /*--- Update dual time solver ---*/
-    for (iMesh = 0; iMesh <= config_container[val_iZone]->GetnMGLevels(); iMesh++) {
-      integration_container[val_iZone][val_iInst][WAVE_SOL]->SetDualTime_Solver(geometry_container[val_iZone][val_iInst][iMesh], solver_container[val_iZone][val_iInst][iMesh][WAVE_SOL], config_container[val_iZone], iMesh);
-      integration_container[val_iZone][val_iInst][WAVE_SOL]->SetConvergence(false);
-    }
-    
-    Physical_dt = config_container[val_iZone]->GetDelta_UnstTime(); Physical_t  = (ExtIter+1)*Physical_dt;
-    if (Physical_t >=  config_container[val_iZone]->GetTotal_UnstTime()) integration_container[val_iZone][val_iInst][WAVE_SOL]->SetConvergence(true);
-  }
-}
-
-void CWaveIteration::Monitor()     { }
-
-void CWaveIteration::Output()      { }
-
-void CWaveIteration::Postprocess(COutput *output,
-                                 CIntegration ****integration_container,
-                                 CGeometry ****geometry_container,
-                                 CSolver *****solver_container,
-                                 CNumerics ******numerics_container,
-                                 CConfig **config_container,
-                                 CSurfaceMovement **surface_movement,
-                                 CVolumetricMovement ***grid_movement,
-                                 CFreeFormDefBox*** FFDBox,
-                                 unsigned short val_iZone,
-                                 unsigned short val_iInst) { }
-
-
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 
 CHeatIteration::~CHeatIteration(void) { }
@@ -1032,15 +923,7 @@ void CHeatIteration::Iterate(COutput *output,
   
   /*--- Update global parameters ---*/
 
-  switch( config_container[val_iZone]->GetKind_Solver()) {
-
-    case HEAT_EQUATION:
-      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION, RUNTIME_HEAT_SYS, ExtIter);
-      break;
-    case HEAT_EQUATION_FVM:
-      config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS, ExtIter);
-      break;
-  }
+  config_container[val_iZone]->SetGlobalParam(HEAT_EQUATION_FVM, RUNTIME_HEAT_SYS, ExtIter);
 
   integration_container[val_iZone][val_iInst][HEAT_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                    config_container, RUNTIME_HEAT_SYS, IntIter, val_iZone, val_iInst);
@@ -1098,72 +981,6 @@ void CHeatIteration::Postprocess(COutput *output,
                                  CFreeFormDefBox*** FFDBox,
                                  unsigned short val_iZone,
                                  unsigned short val_iInst) { }
-
-
-CPoissonIteration::CPoissonIteration(CConfig *config) : CIteration(config) { }
-CPoissonIteration::~CPoissonIteration(void) { }
-void CPoissonIteration::Preprocess(COutput *output,
-                                   CIntegration ****integration_container,
-                                   CGeometry ****geometry_container,
-                                   CSolver *****solver_container,
-                                   CNumerics ******numerics_container,
-                                   CConfig **config_container,
-                                   CSurfaceMovement **surface_movement,
-                                   CVolumetricMovement ***grid_movement,
-                                   CFreeFormDefBox*** FFDBox,
-                                   unsigned short val_iZone,
-                                   unsigned short val_iInst) { }
-void CPoissonIteration::Iterate(COutput *output,
-                                CIntegration ****integration_container,
-                                CGeometry ****geometry_container,
-                                CSolver *****solver_container,
-                                CNumerics ******numerics_container,
-                                CConfig **config_container,
-                                CSurfaceMovement **surface_movement,
-                                CVolumetricMovement ***grid_movement,
-                                CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone,
-                                unsigned short val_iInst) {
-  
-  unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
-  unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
-  
-  /*--- Set the value of the internal iteration ---*/
-  IntIter = ExtIter;
-  if ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-      (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND)) IntIter = 0;
-  
-  /*--- Poisson equation ---*/
-  config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
-  integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
-                                                                      config_container, RUNTIME_POISSON_SYS, IntIter, val_iZone, val_iInst);
-  
-  
-}
-void CPoissonIteration::Update(COutput *output,
-                               CIntegration ****integration_container,
-                               CGeometry ****geometry_container,
-                               CSolver *****solver_container,
-                               CNumerics ******numerics_container,
-                               CConfig **config_container,
-                               CSurfaceMovement **surface_movement,
-                               CVolumetricMovement ***grid_movement,
-                               CFreeFormDefBox*** FFDBox,
-                               unsigned short val_iZone,
-                               unsigned short val_iInst)      { }
-void CPoissonIteration::Monitor()     { }
-void CPoissonIteration::Output()      { }
-void CPoissonIteration::Postprocess(COutput *output,
-                        CIntegration ****integration_container,
-                        CGeometry ****geometry_container,
-                        CSolver *****solver_container,
-                        CNumerics ******numerics_container,
-                        CConfig **config_container,
-                        CSurfaceMovement **surface_movement,
-                        CVolumetricMovement ***grid_movement,
-                        CFreeFormDefBox*** FFDBox,
-                        unsigned short val_iZone,
-                        unsigned short val_iInst) { }
 
 
 CFEAIteration::CFEAIteration(CConfig *config) : CIteration(config) { }
@@ -2654,6 +2471,12 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   unsigned short iVar;
   unsigned short iMPROP = config_container[iZone]->GetnElasticityMod();
+  
+  /*--- Some numerics are only instanciated under these conditions ---*/
+  bool element_based = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased(),
+       de_effects    = (config_container[iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS) &&
+                        config_container[iZone]->GetDE_Effects();
 
   for (iVar = 0; iVar < iMPROP; iVar++){
 
@@ -2671,7 +2494,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
       /*--- Add dependencies for element-based simulations. ---*/
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
           /*--- Neo Hookean Compressible ---*/
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->SetMaterial_Properties(iVar,
@@ -2703,7 +2526,7 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
 
   }
 
-  if (config_container[iZone]->GetDE_Effects()){
+  if (de_effects){
 
       unsigned short nEField = solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetnEField();
 
@@ -2736,14 +2559,14 @@ void CDiscAdjFEAIteration::SetDependencies(CSolver *****solver_container, CGeome
           numerics_container[iZone][iInst][MESH_0][FEA_SOL][FEA_TERM]->Set_DV_Val(iDV,
                                                                            solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
 
-          if (config_container[iZone]->GetDE_Effects()){
+          if (de_effects){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][DE_TERM]->Set_DV_Val(iDV,
                                                                             solver_container[iZone][iInst][MESH_0][ADJFEA_SOL]->GetVal_DVFEA(iDV));
           }
 
       }
 
-      if (solver_container[iZone][iInst][MESH_0][FEA_SOL]->IsElementBased()){
+      if (element_based){
 
         for (unsigned short iDV = 0; iDV < nDV; iDV++){
             numerics_container[iZone][iInst][MESH_0][FEA_SOL][MAT_NHCOMP]->Set_DV_Val(iDV,
