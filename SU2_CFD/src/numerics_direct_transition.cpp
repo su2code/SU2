@@ -497,7 +497,7 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
         Note that this time scale is limited to improve robustness for
         high Reynolds number flows. ---*/
   const su2double timeScale1 = 500.0*muLam/(rho*vel2);
-  const su2double timeScale2 = rho*lenScale2*(muLam + muTurb);
+  const su2double timeScale2 = rho*lenScale2/(muLam + muTurb);
   const su2double timeScale  = min(timeScale1, timeScale2);
 
   /*-- Initialize the terms that appear in the production and destruction
@@ -514,68 +514,72 @@ void CSourcePieceWise_TransLM::ComputeResidual(su2double *val_residual,
 
     case LANGTRY_GENERAL_CROSS_FLOW: {
 
-      /*--- Cross flow model of Langtry.
-            First compute the non-dimensional cross flow strength
-            as well as the cross flow shift terms. ---*/
-      const su2double Hcf      = dist*fabs(helicity)/velMag;
-      const su2double muRatio  = muTurb/muLam;
-      const su2double dHcf     = 0.1066 - Hcf*(1.0 + min(muRatio, 0.4));
-      const su2double dHcfPlus = max( dHcf, 0.0);
-      const su2double dHcfMin  = max(-dHcf, 0.0);
-      const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfPlus*dHcfPlus
+      /*--- Cross flow model of Langtry. Only add the term for
+            points away from the boundary. ---*/
+      if(dist > 1.e-10) { 
+
+        /*--- First compute the non-dimensional cross flow strength
+              as well as the cross flow shift terms. ---*/
+        const su2double Hcf      = dist*fabs(helicity)/velMag;
+        const su2double muRatio  = muTurb/muLam;
+        const su2double dHcf     = 0.1066 - Hcf*(1.0 + min(muRatio, 0.4));
+        const su2double dHcfPlus = max( dHcf, 0.0);
+        const su2double dHcfMin  = max(-dHcf, 0.0);
+        const su2double fHShift  = 6200.0*dHcfPlus + 50000.0*dHcfPlus*dHcfPlus
                                - 75.0*tanh(80.0*dHcfMin);
 
-      /*--- Determine the coefficients in the equation for theta_t
-            for the cross flow Reynolds number Re_SCF.  This equation
-            looks like a1*theta_t + a2*log(theta_t) + a3 = 0.  ---*/
-      const su2double hRoughness = config->GetSurfaceRoughnessHeight();
+        /*--- Determine the coefficients in the equation for theta_t
+              for the cross flow Reynolds number Re_SCF.  This equation
+              looks like a1*theta_t + a2*log(theta_t) + a3 = 0.  ---*/
+        const su2double hRoughness = config->GetSurfaceRoughnessHeight();
 
-      const su2double a1 = -rho*velMag/(0.82*muLam);
-      const su2double a2 =  35.088;
-      const su2double a3 = 319.51 - a2*log(hRoughness) + fHShift;
+        const su2double a1 = -rho*velMag/(0.82*muLam);
+        const su2double a2 =  35.088;
+        const su2double a3 = 319.51 - a2*log(hRoughness) + fHShift;
 
-      /*--- Newton algorithm to compute the value of theta_t. ---*/
-      su2double theta_t = 100.0*hRoughness;
+        /*--- Newton algorithm to compute the value of theta_t. ---*/
+        su2double theta_t = (3.0*a2 - a3)/a1;
 
-      unsigned short iter;
-      su2double deltaRe_SCF_Old = 1.0, Re_SCF = -a1*theta_t;
-      for(iter=0; iter<maxIt; ++iter) {
+        unsigned short iter;
+        su2double deltaRe_SCF_Old = 1.0, Re_SCF = -a1*theta_t;
+        for(iter=0; iter<maxIt; ++iter) {
 
-        /*--- Compute the value of the function and the derivative
-              for which the root must be computed. ---*/
-        const su2double  F = a1*theta_t + a2*log(theta_t) + a3;
-        const su2double dF = a1 + a2/theta_t;
+          /*--- Compute the value of the function and the derivative
+                for which the root must be computed. ---*/
+          const su2double  F = a1*theta_t + a2*log(theta_t) + a3;
+          const su2double dF = a1 + a2/theta_t;
 
-        /*--- Store the old value of the Reynolds number based
-              on theta_t and compute the new value of theta_t.
-              Make sure it is positive. Afterwared compute the
-              corresponding Reynolds number. ---*/
-        const su2double Re_SCF_Old = Re_SCF;
+          /*--- Store the old value of the Reynolds number based
+                on theta_t and compute the new value of theta_t.
+                Make sure it is positive. Afterwared compute the
+                corresponding Reynolds number. ---*/
+          const su2double Re_SCF_Old = Re_SCF;
 
-        theta_t -= F/dF;
-        theta_t  = max(theta_t, 1.e-15);
-        Re_SCF   = -a1*theta_t;
+          theta_t -= F/dF;
+          theta_t  = max(theta_t, 1.e-15);
+          Re_SCF   = -a1*theta_t;
 
-        /* Exit criterion, which takes finite precision into account. */
-        const su2double deltaRe_SCF = fabs(Re_SCF - Re_SCF_Old);
-        if((deltaRe_SCF <= 1.e-2) && (deltaRe_SCF >= deltaRe_SCF_Old)) break;
-        deltaRe_SCF_Old = deltaRe_SCF;
-      }
+          /* Exit criterion, which takes finite precision into account. */
+          const su2double deltaRe_SCF = fabs(Re_SCF - Re_SCF_Old);
+          if((deltaRe_SCF <= 1.e-2) && (deltaRe_SCF >= deltaRe_SCF_Old)) break;
+          deltaRe_SCF_Old = deltaRe_SCF;
+        }
 
-      /* Terminate if the Newton algorithm did not converge. */
-      if(iter == maxIt)
-        SU2_MPI::Error("Newton did not converge for Re_SCF", CURRENT_FUNCTION);
+        /* Terminate if the Newton algorithm did not converge. */
+        if(iter == maxIt)
+          SU2_MPI::Error("Newton did not converge for Re_SCF", CURRENT_FUNCTION);
 
-      /*--- Determine whether Re_SCF is less than Re_theta. Only in that
-            case the cross flow term must be added. ---*/
-      if(Re_SCF < Re_theta) {
+        /*--- Determine whether Re_SCF is less than Re_theta. Only in that
+              case the cross flow term must be added. ---*/
+        if(Re_SCF < Re_theta) {
 
-        /*--- Compute the values of D_SCF and Jac_D_SCF, where the latter is
-              the derivative of D_SCF w.r.t. rho*Re_theta. ---*/
-        const su2double Ftheta_t2 = min(val1, 1.0);
+          /*--- Compute the values of D_SCF and Jac_D_SCF, where the latter is
+                the derivative of D_SCF w.r.t. rho*Re_theta. ---*/
+          const su2double Ftheta_t2 = min(val1, 1.0);
 
-        Jac_D_SCF = cthetat*C_crossflow*Ftheta_t2/timeScale;
-        D_SCF     = Jac_D_SCF*rho*(Re_SCF - Re_theta);
+          Jac_D_SCF = cthetat*C_crossflow*Ftheta_t2/timeScale;
+          D_SCF     = Jac_D_SCF*rho*(Re_SCF - Re_theta);
+        }
       }
 
       break;
