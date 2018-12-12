@@ -735,6 +735,7 @@ enum ENUM_UPWIND {
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
   LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
   AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
+  AUSMPLUSUP2 = 17            /*!< \brief AUSM+ -up2 numerical method (All Speed) */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
@@ -742,6 +743,7 @@ static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIN
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
 ("AUSMPLUSUP", AUSMPLUSUP)
+("AUSMPLUSUP2", AUSMPLUSUP2)
 ("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
