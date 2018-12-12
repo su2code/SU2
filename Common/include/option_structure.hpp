@@ -733,13 +733,15 @@ enum ENUM_UPWIND {
   LMROE = 12,                 /*!< \brief Rieper's Low Mach ROE numerical method . */
   SLAU2 = 13,                 /*!< \brief Simple Low-Dissipation AUSM 2 numerical method. */
   FDS = 14,                   /*!< \brief Flux difference splitting upwind method (incompressible flows). */
-  LAX_FRIEDRICH = 15          /*!< \brief Lax-Friedrich numerical method. */
+  LAX_FRIEDRICH = 15,         /*!< \brief Lax-Friedrich numerical method. */
+  AUSMPLUSUP = 16,            /*!< \brief AUSM+ -up numerical method (All Speed) */
 };
 static const map<string, ENUM_UPWIND> Upwind_Map = CCreateMap<string, ENUM_UPWIND>
 ("NONE", NO_UPWIND)
 ("ROE", ROE)
 ("TURKEL_PREC", TURKEL)
 ("AUSM", AUSM)
+("AUSMPLUSUP", AUSMPLUSUP)
 ("SLAU", SLAU)
 ("HLLC", HLLC)
 ("SW", SW)
