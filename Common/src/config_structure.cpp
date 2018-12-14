@@ -2314,6 +2314,21 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Multipoint design freestream pressure */
   addPythonOption("MULTIPOINT_FREESTREAM_PRESSURE");
   
+  /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
+  addBoolOption("USING_UQ", using_uq, false);
+
+  /* DESCRIPTION: Parameter to perturb eigenvalues */
+  addDoubleOption("UQ_DELTA_B", uq_delta_b, 1.0);
+
+  /* DESCRIPTION: Parameter to determine kind of perturbation */
+  addUnsignedShortOption("UQ_COMPONENT", eig_val_comp, 1);
+
+  /* DESCRIPTION: Parameter to perturb eigenvalues */
+  addDoubleOption("UQ_URLX", uq_urlx, 0.1);
+
+  /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
+  addBoolOption("UQ_PERMUTE", uq_permute, false);
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -2368,6 +2383,11 @@ void CConfig::SetConfig_Parsing(char case_filename[MAX_STRING_SIZE]) {
           if (!option_name.compare("LIMITER_COEFF")) newString.append("LIMITER_COEFF is now VENKAT_LIMITER_COEFF.\n");
           if (!option_name.compare("SHARP_EDGES_COEFF")) newString.append("SHARP_EDGES_COEFF is now ADJ_SHARP_LIMITER_COEFF.\n");
           if (!option_name.compare("MOTION_FILENAME")) newString.append("MOTION_FILENAME is now DV_FILENAME.\n");
+          if (!option_name.compare("BETA_DELTA")) newString.append("BETA_DELTA is now UQ_DELTA_B.\n");
+          if (!option_name.compare("COMPONENTALITY")) newString.append("COMPONENTALITY is now UQ_COMPONENT.\n");
+          if (!option_name.compare("PERMUTE")) newString.append("PERMUTE is now UQ_PERMUTE.\n");
+          if (!option_name.compare("URLX")) newString.append("URLX is now UQ_URLX.\n");
+
           errorString.append(newString);
           err_count++;
         continue;
@@ -2742,7 +2762,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
 
-  if(Kind_Solver == HEAT_EQUATION_FVM) {
+  if ((Kind_Solver == HEAT_EQUATION_FVM) || (Kind_Solver == DISC_ADJ_HEAT)) {
     Linear_Solver_Iter = Linear_Solver_Iter_Heat;
     Linear_Solver_Error = Linear_Solver_Error_Heat;
   }
@@ -4011,6 +4031,18 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   	}
   }
 
+  /* --- Throw error if UQ used for any turbulence model other that SST --- */
+
+  if (Kind_Solver == RANS && Kind_Turb_Model != SST && using_uq){
+    SU2_MPI::Error("UQ capabilities only implemented for SST turbulence model", CURRENT_FUNCTION);
+  }
+
+  /* --- Throw error if invalid componentiality used --- */
+
+  if (using_uq && (eig_val_comp > 3 || eig_val_comp < 1)){
+    SU2_MPI::Error("Componentality should be either 1, 2, or 3!", CURRENT_FUNCTION);
+  }
+
   /*--- If there are not design variables defined in the file ---*/
 
   if (nDV == 0) {
@@ -4876,6 +4908,10 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           case SA_ZDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Vorticity-based SGS" << endl; break;
           case SA_EDDES:  cout << "Delayed Detached Eddy Simulation (DDES) with Shear-layer Adapted SGS" << endl; break;
         }
+        if (using_uq){
+          cout << "Perturbing Reynold's Stress Matrix towards "<< eig_val_comp << " component turbulence"<< endl;
+          if (uq_permute) cout << "Permuting eigenvectors" << endl;  
+        } 
         break;
       case FEM_LES:
         if (Kind_Regime == COMPRESSIBLE)   cout << "Compressible LES equations." << endl;
@@ -5399,6 +5435,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         if (Kind_Upwind_Flow == SLAU) cout << "Simple Low-Dissipation AUSM solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == SLAU2) cout << "Simple Low-Dissipation AUSM 2 solver for the flow inviscid terms."<< endl;
         if (Kind_Upwind_Flow == FDS)   cout << "Flux difference splitting (FDS) upwind scheme for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_Flow == AUSMPLUSUP)  cout << "AUSM+-up solver for the flow inviscid terms."<< endl;
           
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
@@ -7263,6 +7300,7 @@ string CConfig::GetObjFunc_Extension(string val_filename) {
         case TORQUE_COEFFICIENT:          AdjExt = "_cq";       break;
         case TOTAL_HEATFLUX:              AdjExt = "_totheat";  break;
         case MAXIMUM_HEATFLUX:            AdjExt = "_maxheat";  break;
+        case TOTAL_AVG_TEMPERATURE:       AdjExt = "_avtp";     break;
         case FIGURE_OF_MERIT:             AdjExt = "_merit";    break;
         case BUFFET_SENSOR:               AdjExt = "_buffet";    break;
         case SURFACE_TOTAL_PRESSURE:      AdjExt = "_pt";       break;
