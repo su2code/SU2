@@ -19104,6 +19104,21 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
 void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   
+  /*--- This routine makes SU2_DOT more interoperable with other
+   packages so that folks can customize their workflows. For example, one
+   may want to compute flow and adjoint with package A, deform the mesh
+   and project the sensitivities with SU2, and control the actual shape
+   parameterization with package C. This routine allows SU2_DOT to read
+   in an additional format for volume sensitivities that looks like:
+    
+    x0, y0, z0, dj/dx, dj/dy, dj/dz
+    x1, y1, z1, dj/dx, dj/dy, dj/dz
+    ...
+    xN, yN, zN, dj/dx, dj/dy, dj/dz
+    
+   with N being the number of grid points. This is a format already used
+   in other packages. Note that the nodes can be in any order in the file. ---*/
+  
   unsigned short iDim;
   unsigned long iPoint, pointID;
   unsigned long unmatched = 0, iPoint_Found = 0, iPoint_Ext = 0;
