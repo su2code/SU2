@@ -2159,6 +2159,11 @@ public:
    * \brief A virtual member.
    */
   virtual void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
   
   /*!
    * \brief A virtual member.
@@ -8680,6 +8685,12 @@ public:
    * \brief A virtual member.
    */
   void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
+  /*!
+   * \brief A virtual member. - add documentaiton
+   */
+  void GetPeriodic_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
   
 };
 
