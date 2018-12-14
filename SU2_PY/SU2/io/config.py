@@ -583,6 +583,14 @@ def read_config(filename):
         
     #: for line
 
+    if 'OPT_CONSTRAINT' in data_dict: 
+        if 'BUFFET' in data_dict['OPT_CONSTRAINT']['EQUALITY'] or 'BUFFET' in data_dict['OPT_CONSTRAINT']['INEQUALITY']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
+    if 'OPT_OBJECTIVE' in data_dict:
+        if 'BUFFET' in data_dict['OPT_OBJECTIVE']:
+            data_dict['BUFFET_MONITORING'] = "YES"
+
     #hack - twl
     if 'DV_VALUE_NEW' not in data_dict:
         data_dict['DV_VALUE_NEW'] = [0]
@@ -625,6 +633,8 @@ def read_config(filename):
         data_dict['FREESTREAM_PRESSURE'] = 101325.0
     if 'FREESTREAM_TEMPERATURE' not in data_dict:
         data_dict['FREESTREAM_TEMPERATURE'] = 288.15
+    if 'MARKER_OUTLET' not in data_dict:
+        data_dict['MARKER_OUTLET'] = '(NONE)'
 
     #
     # Multipoints requires some particular default values
@@ -698,6 +708,19 @@ def read_config(filename):
         Temperature_List +=  str(Temperature_Value)
       Temperature_List += ")"
       data_dict['MULTIPOINT_FREESTREAM_TEMPERATURE'] = Temperature_List
+
+    if 'MULTIPOINT_OUTLET_VALUE' not in data_dict:
+      if 'NONE' in data_dict['MARKER_OUTLET']:
+        Outlet_Value = 0.0
+      else:
+        Outlet_Value = data_dict['MARKER_OUTLET'].replace("(", "").replace(")", "").split(',')[1]
+      Outlet_Value_List = "("
+      for i in range(multipoints):
+        if i != 0: Outlet_Value_List +=  ", "
+        Outlet_Value_List +=  str(Outlet_Value)
+      Outlet_Value_List += ")"
+      data_dict['MULTIPOINT_OUTLET_VALUE'] = Outlet_Value_List
+      
 
     #
     # Default values for optimization parameters (needed for some eval functions

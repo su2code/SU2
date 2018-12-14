@@ -1132,6 +1132,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
       case EULER_WALL:
       case HEAT_FLUX:
       case ISOTHERMAL:
+      case CHT_WALL_INTERFACE:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
