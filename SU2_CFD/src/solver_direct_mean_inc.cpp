@@ -2367,6 +2367,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool outlet           = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -2410,6 +2411,10 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Update the beta value based on the maximum velocity. ---*/
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
+  
+  /*--- Compute properties needed for mass flow BCs. ---*/
+  
+  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
 
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -5477,10 +5482,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
-  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area;
+  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area, P_total, P_domain, Vn;
   su2double *V_inlet, *V_domain;
   su2double UnitFlowDir[3] = {0.0,0.0,0.0};
-  
+  su2double dV[3] = {0.0,0.0,0.0};
+  su2double Damping = config->GetInc_Inlet_Damping();
+
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool viscous       = config->GetViscous();
@@ -5537,34 +5544,107 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       V_domain = node[iPoint]->GetPrimitive();
 
+      /*--- Neumann condition for dynamic pressure ---*/
+      
+      V_inlet[0] = node[iPoint]->GetPressure();
+      
       /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
       switch (Kind_Inlet) {
-
-        /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
-
-        case VELOCITY_INLET:
-
-        /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
           
-        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
-
-        /*--- Store the velocity in the primitive variable vector. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
-
-        break;
-
+          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+          
+        case VELOCITY_INLET:
+          
+          /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
+          
+          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
+          
+          /*--- Store the velocity in the primitive variable vector. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
+          
+          /*--- Dirichlet condition for temperature (if energy is active) ---*/
+          
+          V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+          
+          break;
+          
+          /*--- Stagnation pressure has been specified at the inlet. ---*/
+          
+        case PRESSURE_INLET:
+          
+          /*--- Retrieve the specified total pressure for the inlet. ---*/
+          
+          P_total = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+          
+          /*--- Store the current static pressure for clarity. ---*/
+          
+          P_domain = node[iPoint]->GetPressure();
+          
+          /*--- Check for back flow through the inlet. ---*/
+          
+          Vn = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Vn += V_domain[iDim+1]*(-1.0*Normal[iDim]/Area);
+          }
+          
+          /*--- If the local static pressure is larger than the specified
+           total pressure or the velocity is directed upstream, we have a
+           back flow situation. The specified total pressure should be used
+           as a static pressure condition and the velocity from the domain
+           is used for the BC. ---*/
+          
+          if ((P_domain > P_total) || (Vn < 0.0)) {
+            
+            /*--- Back flow: use the prescribed P_total as static pressure. ---*/
+            
+            V_inlet[0] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+            
+            /*--- Neumann condition for velocity. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_inlet[iDim+1] = V_domain[iDim+1];
+            
+            /*--- Neumann condition for the temperature. ---*/
+            
+            V_inlet[nDim+1] = node[iPoint]->GetTemperature();
+            
+          } else {
+            
+            /*--- Update the velocity magnitude using the total pressure. ---*/
+            
+            Vel_Mag = sqrt((P_total - P_domain)/(0.5*node[iPoint]->GetDensity()));
+            
+            /*--- If requested, use the local boundary normal (negative),
+             instead of the prescribed flow direction in the config. ---*/
+            
+            if (config->GetInc_Inlet_UseNormal()) {
+              for (iDim = 0; iDim < nDim; iDim++)
+                UnitFlowDir[iDim] = -Normal[iDim]/Area;
+            }
+            
+            /*--- Compute the delta change in velocity in each direction. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
+            
+            /*--- Update the velocity in the primitive variable vector.
+             Note we use damping here to improve stability/convergence. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
+            
+            /*--- Dirichlet condition for temperature (if energy is active) ---*/
+            
+            V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+            
+          }
+          
+          break;
+          
       }
-      
-      /*--- Neumann condition for dynamic pressure ---*/
-
-      V_inlet[0] = node[iPoint]->GetPressure();
-
-      /*--- Dirichlet condition for temperature (if energy is active) ---*/
-      
-      V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
       /*--- Access density at the node. This is either constant by
         construction, or will be set fixed implicitly by the temperature
@@ -5656,14 +5736,18 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area;
-  su2double *V_outlet, *V_domain, P_Outlet;
-  
+  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
+  su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
+  su2double Damping = config->GetInc_Outlet_Damping();
+
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool viscous       = config->GetViscous();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
+  
+  unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -5696,21 +5780,77 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
-
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
-
-      P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
-
-      /*--- The pressure is prescribed at the outlet. ---*/
       
-      V_outlet[0] = P_Outlet;
-
-      /*--- Neumann condition for the velocity ---*/
+      /*--- Store the current static pressure for clarity. ---*/
       
-      for (iDim = 0; iDim < nDim; iDim++) {
-        V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+      P_domain = node[iPoint]->GetPressure();
+      
+      /*--- Compute a boundary value for the pressure depending on whether
+       we are prescribing a back pressure or a mass flow target. ---*/
+      
+      switch (Kind_Outlet) {
+          
+          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+          
+        case PRESSURE_OUTLET:
+          
+          /*--- Retrieve the specified back pressure for this outlet. ---*/
+          
+          P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+          
+          /*--- The pressure is prescribed at the outlet. ---*/
+          
+          V_outlet[0] = P_Outlet;
+          
+          /*--- Neumann condition for the velocity. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+          }
+          
+          break;
+          
+          /*--- A mass flow target has been specified for the outlet. ---*/
+          
+        case MASS_FLOW_OUTLET:
+          
+          /*--- Retrieve the specified target mass flow at the outlet. ---*/
+          
+          mDot_Target = config->GetOutlet_Pressure(Marker_Tag)/(config->GetDensity_Ref() * config->GetVelocity_Ref());
+
+          /*--- Retrieve the old mass flow, density, and area of the outlet,
+           which has been computed in a preprocessing step. These values
+           were stored in non-dim. form in the config container. ---*/
+          
+          mDot_Old    = config->GetOutlet_MassFlow(Marker_Tag);
+          Density_Avg = config->GetOutlet_Density(Marker_Tag);
+          Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+
+          /*--- Compute the pressure increment based on the difference
+           between the current and target mass flow. Note that increasing
+           pressure decreases flow speed. ---*/
+          
+          dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
+          
+          /*--- Update the new outlet pressure. Note that we use damping
+           here to improve stability/convergence. ---*/
+          
+          P_Outlet = P_domain + Damping*dP;
+
+          /*--- The pressure is prescribed at the outlet. ---*/
+          
+          V_outlet[0] = P_Outlet;
+          
+          /*--- Neumann condition for the velocity ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+          }
+          
+          break;
+          
       }
-
+      
       /*--- Neumann condition for the temperature. ---*/
 
       V_outlet[nDim+1] = node[iPoint]->GetTemperature();
@@ -6117,6 +6257,222 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
     }
+  }
+  
+}
+
+void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  su2double *V_outlet = NULL, Pressure, Temperature, Velocity[3], MassFlow,
+  Velocity2, Density, Area, Vel_Infty2, AxiFactor;
+  unsigned short iMarker_Outlet, nMarker_Outlet;
+  string Inlet_TagBound, Outlet_TagBound;
+  
+  bool axisymmetric = config->GetAxisymmetric();
+
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
+                      || (config->GetExtIter() == 1));
+  
+  /*--- Get the number of outlet markers and check for any mass flow BCs. ---*/
+  
+  nMarker_Outlet = config->GetnMarker_Outlet();
+  bool Evaluate_BC = false;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+    Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+      Evaluate_BC = true;
+  }
+  
+  /*--- If we have a massflow outlet BC, then we need to compute and
+   communicate the total massflow, density, and area through each outlet
+   boundary, so that it can be used in the iterative procedure to update
+   the back pressure until we converge to the desired mass flow. This
+   routine is called only once per iteration as a preprocessing and the
+   values for all outlets are stored and retrieved later in the BC_Outlet
+   routines. ---*/
+  
+  if (Evaluate_BC) {
+    
+    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+    
+    /*--- Comute MassFlow, average temp, press, etc. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      Outlet_MassFlow[iMarker] = 0.0;
+      Outlet_Density[iMarker]  = 0.0;
+      Outlet_Area[iMarker]     = 0.0;
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) ) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            V_outlet = node[iPoint]->GetPrimitive();
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+            
+            if (axisymmetric) {
+              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              else
+                AxiFactor = 1.0;
+            } else {
+              AxiFactor = 1.0;
+            }
+            
+            Temperature  = V_outlet[nDim+1];
+            Pressure     = V_outlet[0];
+            Density      = V_outlet[nDim+2];
+            
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+              Velocity[iDim] = V_outlet[iDim+1];
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            }
+            Area = sqrt (Area);
+            
+            Outlet_MassFlow[iMarker] += MassFlow;
+            Outlet_Density[iMarker]  += Density*Area;
+            Outlet_Area[iMarker]     += Area;
+            
+          }
+        }
+      }
+    }
+    
+    /*--- Copy to the appropriate structure ---*/
+    
+    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
+    
+    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
+      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
+      
+      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
+      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
+    }
+    
+    /*--- Copy the values to the local array for MPI ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW)) {
+        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+          Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
+            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
+            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
+          }
+        }
+      }
+    }
+    
+    /*--- All the ranks to compute the total value ---*/
+    
+#ifdef HAVE_MPI
+    
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+#else
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
+      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
+    }
+    
+#endif
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
+        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
+      }
+      else {
+        Outlet_Density_Total[iMarker_Outlet] = 0.0;
+      }
+      
+      if (iMesh == MESH_0) {
+        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+      }
+    }
+    
+    /*--- Screen output using the values already stored in the config container ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+      
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
+      }
+      
+      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+          
+          /*--- Geometry defintion ---*/
+          
+          cout <<"Outlet surface: " << Outlet_TagBound << "." << endl;
+          
+          if ((nDim ==3) || axisymmetric) {
+            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
+          }
+          if (nDim == 2) {
+            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
+          }
+          
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
+          
+        }
+      }
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
+        cout << "-------------------------------------------------------------------------" << endl << endl;
+      }
+      
+      cout.unsetf(ios_base::floatfield);
+      
+    }
+    
+    delete [] Outlet_MassFlow_Local;
+    delete [] Outlet_Density_Local;
+    delete [] Outlet_Area_Local;
+    
+    delete [] Outlet_MassFlow_Total;
+    delete [] Outlet_Density_Total;
+    delete [] Outlet_Area_Total;
+    
+    delete [] Outlet_MassFlow;
+    delete [] Outlet_Density;
+    delete [] Outlet_Area;
+    
   }
   
 }
@@ -7059,7 +7415,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool outlet               = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -7098,6 +7455,10 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
+  /*--- Compute properties needed for mass flow BCs. ---*/
+  
+  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
+  
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
   StrainMag_Max = 0.0; Omega_Max = 0.0;
