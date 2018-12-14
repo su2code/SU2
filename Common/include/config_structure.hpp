@@ -3301,6 +3301,14 @@ public:
   string GetMarker_Outlet_TagBound(unsigned short val_marker);
   
   /*!
+   * \brief Get the index of the periodic surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Periodic_TagBound(unsigned short val_marker);
+  
+  /*!
    * \brief Get the index of the surface defined in the geometry file.
    * \param[in] val_marker - Value of the marker in which we are interested.
    * \return Value of the index that is in the geometry file for the surface that

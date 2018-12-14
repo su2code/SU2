@@ -10860,7 +10860,8 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)) {
         for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-          Outlet_TagBound = config->GetMarker_PerBound(iMarker_Outlet);
+          Outlet_TagBound = config->GetMarker_Periodic_TagBound(iMarker_Outlet);
+          cout << Outlet_TagBound << endl;
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
             Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
             Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
@@ -10915,7 +10916,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       }
       
       for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-        Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+        Outlet_TagBound = config->GetMarker_Periodic_TagBound(iMarker_Outlet);
         if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
           
           /*--- Geometry defintion ---*/
@@ -10943,6 +10944,167 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       cout.unsetf(ios_base::floatfield);
       
     }
+    
+    
+    // BEGIN HEAT FLUX LOOP
+    
+    nMarker_Outlet = config->GetnMarker_HeatFlux();
+
+    
+    /*--- Comute MassFlow, average temp, press, etc. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      Outlet_MassFlow[iMarker] = 0.0;
+      Outlet_Density[iMarker]  = 0.0;
+      Outlet_Area[iMarker]     = 0.0;
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            V_outlet = node[iPoint]->GetPrimitive();
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+            
+            if (axisymmetric) {
+              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              else
+                AxiFactor = 1.0;
+            } else {
+              AxiFactor = 1.0;
+            }
+            
+            Temperature  = V_outlet[nDim+1];
+            Pressure     = V_outlet[0];
+            Density      = V_outlet[nDim+2];
+            
+            /*--- Identify the boundary by string name ---*/
+            
+            string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+            
+            /*--- Get the specified wall heat flux from config ---*/
+            
+            su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+            
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+              Velocity[iDim] = V_outlet[iDim+1];
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            }
+            Area = sqrt (Area);
+            
+            Outlet_MassFlow[iMarker] += MassFlow;
+            Outlet_Density[iMarker]  += Wall_HeatFlux*Area;
+            Outlet_Area[iMarker]     += Area;
+            
+          }
+        }
+      }
+    }
+    
+    /*--- Copy to the appropriate structure ---*/
+    
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
+      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
+      
+      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
+      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
+    }
+    
+    /*--- Copy the values to the local array for MPI ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)) {
+        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+          Outlet_TagBound = config->GetMarker_HeatFlux_TagBound(iMarker_Outlet);
+          cout << Outlet_TagBound << endl;
+          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
+            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
+            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
+          }
+        }
+      }
+    }
+    
+    /*--- All the ranks to compute the total value ---*/
+    
+#ifdef HAVE_MPI
+    
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+#else
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
+      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
+    }
+    
+#endif
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      
+      if (iMesh == MESH_0) {
+        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+      }
+    }
+    
+    /*--- Screen output using the values already stored in the config container ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+      
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
+      }
+      
+      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        Outlet_TagBound = config->GetMarker_HeatFlux_TagBound(iMarker_Outlet);
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+          
+          /*--- Geometry defintion ---*/
+          
+          cout <<"Heat flux surface: " << Outlet_TagBound << "." << endl;
+          
+          if ((nDim ==3) || axisymmetric) {
+            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
+          }
+          if (nDim == 2) {
+            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
+          }
+          
+          cout << setprecision(5) << scientific << "Q on surface: " <<  config->GetOutlet_Density(Outlet_TagBound)  << endl;          
+        }
+      }
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
+        cout << "-------------------------------------------------------------------------" << endl << endl;
+      }
+      
+      cout.unsetf(ios_base::floatfield);
+      
+    }
+    
     
     delete [] Outlet_MassFlow_Local;
     delete [] Outlet_Density_Local;

@@ -1317,6 +1317,8 @@ inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marke
 
 inline string CConfig::GetMarker_Outlet_TagBound(unsigned short val_marker) { return Marker_Outlet[val_marker]; }
 
+inline string CConfig::GetMarker_Periodic_TagBound(unsigned short val_marker) { return Marker_PerBound[val_marker]; }
+
 inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
 inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
