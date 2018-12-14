@@ -5056,6 +5056,39 @@ public:
 };
 
 /*!
+ * \class CSourceIncPeriodicBodyForce
+ * \brief Class for the source term integration of a body force in the incompressible solver. Used for periodic BC.
+ * \ingroup SourceDiscr
+ * \author T. Economon
+ * \version 6.1.0 "Falcon"
+ */
+class CSourceIncPeriodicBodyForce : public CNumerics {
+  su2double *Body_Force_Vector;
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceIncPeriodicBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceIncPeriodicBodyForce(void);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, CConfig *config);
+  
+};
+
+/*!
  * \class CSourceBoussinesq
  * \brief Class for the source term integration of the Boussinesq approximation for incompressible flow.
  * \ingroup SourceDiscr

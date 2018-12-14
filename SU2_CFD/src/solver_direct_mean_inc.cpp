@@ -3007,6 +3007,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool rotating_frame = config->GetRotating_Frame();
   bool axisymmetric   = config->GetAxisymmetric();
   bool body_force     = config->GetBody_Force();
+  bool periodic_bc_body_force = config->GetPeriodic_BC_Body_Force();
   bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous        = config->GetViscous();
 
@@ -3015,7 +3016,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
-  if (body_force) {
+  if (body_force || periodic_bc_body_force) {
 
     /*--- Loop over all points ---*/
 
@@ -3025,7 +3026,9 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetConservative(node[iPoint]->GetSolution(),
                                 node[iPoint]->GetSolution());
-
+                                
+      numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
+      
       /*--- Set incompressible density  ---*/
       
       numerics->SetDensity(node[iPoint]->GetDensity(),
@@ -5066,19 +5069,46 @@ void CIncEulerSolver::SetInletAtVertex(su2double *val_inlet,
   unsigned short P_position       = nDim+1;
   unsigned short FlowDir_position = nDim+2;
   
-  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
-  
+  /*--- Make directions be a unit vector and extract magnitude to its field ---*/
   su2double norm = 0.0;
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     norm += pow(val_inlet[FlowDir_position + iDim], 2);
   }
   norm = sqrt(norm);
+  if (abs(norm - 1.0) > 1e-6) {
+    cout << "Sanitized inlet such that flow direction is a unit vector." << endl;
+    cout << "Magnitude is copied to its respective column." << endl;
+    
+    val_inlet[P_position] = norm;
+    if (norm > 1e-10){
+      for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+        val_inlet[FlowDir_position + iDim] /= norm;
+      }
+    } else {
+      val_inlet[FlowDir_position + 0] = 1.0; // wall node is all zero, set first direction to 1 such that we have a unit vector
+    }
+    cout << val_inlet[P_position] << " ";
+    cout << val_inlet[FlowDir_position + 0] << " ";
+    cout << val_inlet[FlowDir_position + 1] << " " ;
+    
+  }
+  
+  /*--- Check that the norm of the flow unit vector is actually 1 ---*/
+  
+  norm = 0.0;
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    norm += pow(val_inlet[FlowDir_position + iDim], 2);
+  }
+  norm = sqrt(norm);
+  
+  cout << norm << " ";
+  cout << endl;
   
   /*--- The tolerance here needs to be loose.  When adding a very
    * small number (1e-10 or smaller) to a number close to 1.0, floating
    * point roundoff errors can occur. ---*/
   
-  if (abs(norm - 1.0) > 1e-6) {
+  if (abs(norm - 1.0) > 1e-5) {
     ostringstream error_msg;
     error_msg << "ERROR: Found these values in columns ";
     error_msg << FlowDir_position << " - ";

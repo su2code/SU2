@@ -15726,7 +15726,7 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
     unsigned long *Buffer_Send_nVertex = new unsigned long [1];
     unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
     
-    /*--- Compute the number of vertex that have interfase boundary condition
+    /*--- Compute the number of vertex that have interface boundary condition
      without including the ghost nodes ---*/
     
     nLocalVertex_Periodic = 0;
@@ -15978,6 +15978,128 @@ void CPhysicalGeometry::MatchPeriodic(CConfig *config, unsigned short val_period
     delete [] Buffer_Receive_Vertex;
     delete [] Buffer_Receive_Marker;
     
+  }
+  
+  
+  /*--- Compute reference Node for recovered pressure ---*/
+  if (config->GetPeriodic_BC_Body_Force() == YES) {
+    
+    /*--- Define and initialize helping variables ---*/
+    unsigned short iMarker, periodic_recv_Marker, PeriodicInletMarker_PerBound, iPeriodic, iDim;
+    unsigned long reference_node_id;
+    su2double PerBoundNodeCoord[nDim];
+    su2double norm2_Node = 0.0, norm2_min = 1e300;
+    for (iDim = 0; iDim < nDim; iDim++) PerBoundNodeCoord[iDim] = 1e300; // init to very high value such that real points can be filtered out later
+    unsigned short nPeriodic = config->GetnMarker_Periodic();
+    unsigned long nNodeOnPBC = 0, iNodeOnPBC;
+    unsigned long maxNodeOnPBC; // for MPI communication
+    unsigned long proc_min, node_min;
+    su2double* Buffer_Send_PBCNodeCoords;
+    su2double* Buffer_Recv_PBCNodeCoords;
+    unsigned long* Buffer_Recv_nNodeOnPBC; // vector holding all local nNodeOnPBC
+    Buffer_Recv_nNodeOnPBC = new unsigned long [size];
+    for (int iProc = 0; iProc < size; iProc++) Buffer_Recv_nNodeOnPBC[iProc] = 0;
+    
+    /*--- Find an arbitrary(find a metric to get a deterministic solution) node on the PerBound of the Periodic BC, but not on the donor side! ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker); // this is 1 or 2 if only 1 PBC is present, 2 is the donor
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker); // this is 1 or 2 if only 1 PBC is present, 2 is the donor, 0 if no PBC at all
+        if (iPeriodic == 1) { // We found a point on a receiver PBC, in
+          
+          periodic_recv_Marker = iMarker;
+          reference_node_id = vertex[iMarker][0]->GetNode(); // just get the first node in the marker
+          for (iDim = 0; iDim < nDim; iDim++) PerBoundNodeCoord[iDim] = node[reference_node_id]->GetCoord(iDim);
+          nNodeOnPBC = GetnVertex(iMarker);//Get the number of points on the marker here
+          
+        }
+      }
+    }
+        
+    /*--- Communicate reference node between multiple processes ---*/
+    
+    /*--- Find process with the largest possible nodeset and store array[size] with possible nodes on each rank ---*/
+    SU2_MPI::Allreduce(&nNodeOnPBC, &maxNodeOnPBC, 1, MPI_UNSIGNED_LONG,
+                MPI_MAX, MPI_COMM_WORLD);
+    cout << "maxNodeOnPBC: " << maxNodeOnPBC << " , rank: " << rank << endl;
+    
+    SU2_MPI::Allgather(&nNodeOnPBC, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nNodeOnPBC, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    if (rank == MASTER_NODE) {
+      for (int iProc = 0; iProc < size; iProc++) {
+        cout << "Buffer_Recv_nNodeOnPBC[iProc]: " << Buffer_Recv_nNodeOnPBC[iProc] << endl;
+      }
+    }
+    
+    /*--- Define send buffer ---*/
+    Buffer_Send_PBCNodeCoords = new su2double[maxNodeOnPBC*nDim];
+    /*--- Fill send buffer with coords ---*/
+    
+    /*--- Find an arbitrary(find a metric to get a deterministic solution) node on the PerBound of the Periodic BC, but not on the donor side! ---*/
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      iPeriodic = config->GetMarker_All_PerBound(iMarker); // this is 1 or 2 if only 1 PBC is present, 2 is the donor
+      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+        iPeriodic = config->GetMarker_All_PerBound(iMarker); // this is 1 or 2 if only 1 PBC is present, 2 is the donor, 0 if no PBC at all
+        if (iPeriodic == 1) { // We found a point on a receiver PBC, in
+        
+          periodic_recv_Marker = iMarker;
+          //reference_node_id = vertex[iMarker][0]->GetNode(); // just get the first node in the marker
+          for (iDim = 0; iDim < nDim; iDim++) PerBoundNodeCoord[iDim] = node[reference_node_id]->GetCoord(iDim);
+          nNodeOnPBC = GetnVertex(iMarker);//Get the number of points on the marker here
+        
+          for (iNodeOnPBC = 0; iNodeOnPBC < nNodeOnPBC; iNodeOnPBC++) {
+            for (iDim = 0; iDim<nDim; iDim++){
+              Buffer_Send_PBCNodeCoords[iNodeOnPBC*nDim+iDim] = node[vertex[periodic_recv_Marker][iNodeOnPBC]->GetNode()]->GetCoord(iDim);
+            }            
+          }
+          
+        }
+      }
+    }
+    
+    /*--- Allocate receive Buffer ---*/
+    Buffer_Recv_PBCNodeCoords = new su2double[maxNodeOnPBC*nDim*size];
+        
+    SU2_MPI::Allgather(Buffer_Send_PBCNodeCoords, nDim*maxNodeOnPBC, MPI_DOUBLE, Buffer_Recv_PBCNodeCoords,  nDim*maxNodeOnPBC, MPI_DOUBLE, MPI_COMM_WORLD);
+    
+    proc_min = 0; 
+    node_min = 0;
+    /*--- Every processor determines the reference node itself, as all possible nodes were communicated ---*/
+    for (int iProc = 0; iProc < size; iProc++) {
+      for (iNodeOnPBC = 0; iNodeOnPBC < Buffer_Recv_nNodeOnPBC[iProc]; iNodeOnPBC++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
+          norm2_Node += pow(Buffer_Recv_PBCNodeCoords[maxNodeOnPBC*nDim*iProc + nDim*iNodeOnPBC + iDim],2);
+          if (rank == MASTER_NODE) {
+            cout << "maxNodeOnPBC*iProc + nDim*iNodeOnPBC + iDim: " <<  maxNodeOnPBC*iProc + nDim*iNodeOnPBC + iDim << endl;
+            cout << "Buffer_Recv_PBCNodeCoords[maxNodeOnPBC*iProc + nDim*iNodeOnPBC + iDim]: " <<  Buffer_Recv_PBCNodeCoords[maxNodeOnPBC*nDim*iProc + nDim*iNodeOnPBC + iDim] << endl;
+          }
+        }
+        if (sqrt(norm2_Node) < norm2_min) { //Codi?
+          norm2_min = norm2_Node;
+          proc_min = iProc;
+          node_min = iNodeOnPBC;
+        }
+        norm2_Node = 0.0;
+      }
+    }
+    
+    /*--- Set coordinates of reference node ---*/
+    for (iDim = 0; iDim < nDim; iDim++) {
+      PerBoundNodeCoord[iDim] = Buffer_Recv_PBCNodeCoords[maxNodeOnPBC*nDim*proc_min + nDim*node_min + iDim];
+    }
+    
+    // tmp print the reference node
+    for (iDim = 0; iDim < nDim; iDim++) {
+      cout << "Reference Node: " << PerBoundNodeCoord[iDim] << " ";
+    }
+    cout << endl;
+    
+    /*--- Set the reference node, used in output_structure.cpp ---*/
+    config->SetPeriodicRefNode_BodyForce(PerBoundNodeCoord, nDim);
+    
+    /*--- Deallocate ---*/
+    delete[] Buffer_Send_PBCNodeCoords;
+    delete[] Buffer_Recv_PBCNodeCoords;
+    delete[] Buffer_Recv_nNodeOnPBC;
   }
   
 }

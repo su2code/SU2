@@ -521,6 +521,8 @@ void CConfig::SetPointersNull(void) {
   Kind_ObjFunc   = NULL;
 
   Weight_ObjFunc = NULL;
+  
+  PeriodicRefNode_BodyForce = NULL;
 
   /*--- Moving mesh pointers ---*/
 
@@ -707,6 +709,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
+  
   /* DESCRIPTION: Add the gravity force */
   addBoolOption("GRAVITY_FORCE", GravityForce, false);
   /* DESCRIPTION: Apply a body force as a source term (NO, YES) */
@@ -714,6 +717,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force[0] = 0.0; default_body_force[1] = 0.0; default_body_force[2] = 0.0;
   /* DESCRIPTION: Vector of body force values (BodyForce_X, BodyForce_Y, BodyForce_Z) */
   addDoubleArrayOption("BODY_FORCE_VECTOR", 3, Body_Force_Vector, default_body_force);
+  
+  /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions (NO, YES) */
+  addBoolOption("PERIODIC_BC_BODY_FORCE", Periodic_BC_Body_Force, false);
+  /* DESCRIPTION: Delta pressure on which basis body force will be computed  */
+  addDoubleOption("DELTA_P_BODY_FORCE", DeltaP_BodyForce, 0.0);
+  
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);
   /*!\brief BINARY_RESTART \n DESCRIPTION: Read / write binary SU2 native restart files. \n Options: YES, NO \ingroup Config */
@@ -4025,6 +4034,22 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       SU2_MPI::Error("Must list two markers for the pressure drop objective function.\n Expected format: MARKER_ANALYZE= (outlet_name, inlet_name).", CURRENT_FUNCTION);
     }
   }
+  
+  /*--- Check for Body Force driven case with Periodic Boundary conditions ---*/
+  
+  if ((Periodic_BC_Body_Force == YES) && !(Kind_Regime == INCOMPRESSIBLE)) {
+    SU2_MPI::Error("Body Force driven Periodic BC currently only implemented for incompressible flow.", CURRENT_FUNCTION);
+  }
+  cout << "nMarker_PerBound : " << nMarker_PerBound << endl;
+  if ((Periodic_BC_Body_Force == YES) && !(nMarker_PerBound == 2)) {
+    SU2_MPI::Error("Body Force driven Periodic BC currently only implemented for one Periodic Boundary pair.", CURRENT_FUNCTION);
+  }
+  
+  /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
+  if (Periodic_BC_Body_Force == YES) {
+    PeriodicRefNode_BodyForce = new su2double[val_nDim];
+  }
+
 
 }
 
@@ -6894,9 +6919,10 @@ CConfig::~CConfig(void) {
   }
   if (Rotation_Matrix   != NULL) delete [] Rotation_Matrix;
   
-  if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
-  if (PlaneTag != NULL)        delete[] PlaneTag;
-  if (CFL != NULL)             delete[] CFL;
+  if (MG_CorrecSmooth != NULL)           delete[] MG_CorrecSmooth;
+  if (PlaneTag != NULL)                  delete[] PlaneTag;
+  if (CFL != NULL)                       delete[] CFL;
+  if (PeriodicRefNode_BodyForce != NULL) delete[] PeriodicRefNode_BodyForce;
 
   /*--- String markers ---*/
   

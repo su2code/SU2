@@ -3436,7 +3436,30 @@ void CSolver::LoadInletProfile(CGeometry **geometry,
     /*--- Set the bit to write a template inlet profile file. ---*/
 
     config->SetWrt_InletFile(true);
+    
+    //// Here I need to force output because the nodes get overwritten below!S
+    //// This was in COutput::SetResult_Files_Parallel(CSolver *****solver_container,
+                                       ////CGeometry ****geometry,
+                                       ////CConfig **config,
+                                       ////unsigned long iExtIter,
+                                       ////unsigned short val_nZone,
+                                       ////unsigned short *nInst) {
+                                     //////CGeometry **geometry,
+                                     //////CSolver ***solver,
+                                     //////CConfig *config,
+                                     //////int val_iter,
+                                     //////unsigned short val_kind_solver,
+                                     //////unsigned short val_kind_marker) {
+    //if (config->GetWrt_InletFile()) {
+      //output->MergeInletCoordinates(config, geometry[MESH_0]);
 
+      //if (rank == MASTER_NODE) {
+        //Write_InletFile_Flow(config, geometry[MESH_0], solver[MESH_0]);
+        //DeallocateInletCoordinates(config, geometry[MESH_0]);
+      //}
+      //config->SetWrt_InletFile(false);
+    //}
+    //int i;cout << "Waiting!"<< endl; cin >> i; //wait here
     /*--- Set the mean flow inlets to uniform. ---*/
 
     for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {

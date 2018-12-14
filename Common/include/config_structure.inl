@@ -1582,7 +1582,17 @@ inline bool CConfig::GetGravityForce(void) { return GravityForce; }
 
 inline bool CConfig::GetBody_Force(void) { return Body_Force; }
 
+inline bool CConfig::GetPeriodic_BC_Body_Force(void) { return Periodic_BC_Body_Force; }
+
 inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector; }
+
+inline su2double CConfig::GetDeltaP_BodyForce(void) { return DeltaP_BodyForce; }
+
+inline su2double* CConfig::GetPeriodicRefNode_BodyForce(void) { return PeriodicRefNode_BodyForce; }
+
+inline void CConfig::SetPeriodicRefNode_BodyForce(su2double* RefNode, unsigned short nDim) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) PeriodicRefNode_BodyForce[iDim] = RefNode[iDim];
+}
 
 inline bool CConfig::GetSmoothNumGrid(void) { return SmoothNumGrid; }
 
@@ -1625,6 +1635,8 @@ inline void CConfig::SetPeriodicRotation(unsigned short val_index, su2double* ro
 inline su2double** CConfig::GetRotationMatrix(unsigned short val_index) { return Rotation_Matrix[val_index]; }
 
 inline su2double* CConfig::GetPeriodicTranslate(unsigned short val_index) { return Periodic_Translate[val_index]; }
+
+inline su2double* CConfig::GetPeriodicTranslation(unsigned short val_index) { return Periodic_Translation[val_index]; }
 
 inline void CConfig::SetPeriodicTranslate(unsigned short val_index, su2double* translate) {
   for (unsigned short i = 0; i < 3; i++) Periodic_Translate[val_index][i] = translate[i];

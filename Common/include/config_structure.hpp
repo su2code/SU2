@@ -1024,6 +1024,9 @@ private:
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
+  bool Periodic_BC_Body_Force; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
+  su2double DeltaP_BodyForce;  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  su2double *PeriodicRefNode_BodyForce; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -5789,6 +5792,30 @@ public:
   su2double* GetBody_Force_Vector(void);
 
   /*!
+   * \brief Get information about the body force.
+   * \return <code>TRUE</code> if it uses a body force; otherwise <code>FALSE</code>.
+   */
+  bool GetPeriodic_BC_Body_Force(void);
+
+  /*!
+   * \brief Get a pointer to the pressure delta from which body force vector is computed.
+   * \return Delta Pressure for body force computation.
+   */
+  su2double GetDeltaP_BodyForce(void);
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  su2double* GetPeriodicRefNode_BodyForce(void);
+
+  /*!
+   * \brief Get a pointer to the reference node coordinate vector.
+   * \return A pointer to the reference node coordinate vector.
+   */
+  void SetPeriodicRefNode_BodyForce(su2double* RefNode, unsigned short nDim);
+
+  /*!
    * \brief Get information about the rotational frame.
    * \return <code>TRUE</code> if there is a rotational frame; otherwise <code>FALSE</code>.
    */
@@ -6190,7 +6217,7 @@ public:
   su2double *GetPeriodicRotAngles(string val_marker);
   
   /*!
-   * \brief Translation vector for a rotational periodic boundary.
+   * \brief Translation vector for a translational periodic boundary.
    */
   su2double *GetPeriodicTranslation(string val_marker);
   
@@ -6372,6 +6399,13 @@ public:
    * \return The translation vector.
    */
   su2double* GetPeriodicTranslate(unsigned short val_index);
+  
+  /*!
+   * \brief Get the translation vector for a periodic transformation.
+   * \param[in] val_index - Index corresponding to the periodic transformation.
+   * \return The translation vector.
+   */
+  su2double* GetPeriodicTranslation(unsigned short val_index);
   
   /*!
    * \brief Get the total temperature at a nacelle boundary.

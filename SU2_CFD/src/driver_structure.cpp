@@ -2221,6 +2221,8 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       if (config->GetBody_Force() == YES)
         if (incompressible) numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncBodyForce(nDim, nVar_Flow, config);
         else numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBodyForce(nDim, nVar_Flow, config);
+      else if (config->GetPeriodic_BC_Body_Force() == YES)
+        if (incompressible) {if (rank == MASTER_NODE) cout << "Driver init of CSourceIncPeriodicBodyForce." << endl; numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceIncPeriodicBodyForce(nDim, nVar_Flow, config);}// Currently not implemented for compressible flow
       else if (incompressible && (config->GetKind_DensityModel() == BOUSSINESQ))
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceBoussinesq(nDim, nVar_Flow, config);
       else if (config->GetRotating_Frame() == YES)

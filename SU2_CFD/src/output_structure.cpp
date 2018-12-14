@@ -13292,6 +13292,15 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
       
     }
     
+    if (config->GetPeriodic_BC_Body_Force()) {
+      
+      nVar_Par += 1;
+      Variable_Names.push_back("Recovered_pressure");
+      
+      nVar_Par += 1;
+      Variable_Names.push_back("rank");
+    }
+    
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13586,8 +13595,44 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           Local_Data[jPoint][iVar] = sqrt(pow(p-solDOF[0],2.0)); iVar++;
           
         }
+        
+        /*--- Compute the recovered pressure levels if reduced pressure
+         * was computed for a delta p driven periodic BC case.
+         * p_rec = p_red - delta p * (t dot (r-x*))/norm(t)^2 where
+         * p_rec : recovered pressure (which we compute here)
+         * p_red : reduced pressure from the computation 
+         * delta p : prescribed pressure drop
+         * t : translation vector given in marker_periodic
+         * x* : point on "inlet" marker which is the furthest in negative t-direction
+         * r : position vector of any point in the domain ---*/
+        
+        if (config->GetPeriodic_BC_Body_Force() == YES) {
+          
+          /*--- Define and initialize helping variables ---*/
+          su2double norm2_translation_vector;
+          su2double dot_product;
+          su2double PerBoundNodeCoord[nDim];
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            PerBoundNodeCoord[iDim] = config->GetPeriodicRefNode_BodyForce()[iDim];
+          
+          /*--- First, set recovered to reduced pressure ---*/
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution(0);
+          
+          /*--- Compute correction based on relative distance (0,l) between periodic markers ---*/
+          dot_product = 0.0;
+          norm2_translation_vector = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dot_product += (geometry->node[iPoint]->GetCoord(iDim) - PerBoundNodeCoord[iDim]) * config->GetPeriodicTranslation(0)[iDim];
+            norm2_translation_vector += config->GetPeriodicTranslation(0)[iDim]*config->GetPeriodicTranslation(0)[iDim]; // what is best for CoDi pow?
+          }
+          
+          /*--- Second, substract correction from reduced pressure to get recoverd pressure ---*/
+          Local_Data[jPoint][iVar] -= (config->GetDeltaP_BodyForce())*dot_product/norm2_translation_vector; iVar++;
+          Local_Data[jPoint][iVar] = rank; iVar++;
+        } //body force bracket
 
-      }
+      } //low memory output bracket
 
       /*--- Increment the point counter, as there may have been halos we
        skipped over during the data loading. ---*/
@@ -13998,7 +14043,7 @@ void COutput::LoadLocalData_AdjFlow(CConfig *config, CGeometry *geometry, CSolve
         
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
-        
+
       }
 
       /*--- Increment the point counter, as there may have been halos we

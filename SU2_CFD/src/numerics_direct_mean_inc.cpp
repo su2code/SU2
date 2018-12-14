@@ -889,6 +889,90 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
 }
 
+CSourceIncPeriodicBodyForce::CSourceIncPeriodicBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
+
+  /*--- Store the pointer to the constant body force vector. ---*/
+  
+  su2double DeltaP_BodyForce = config->GetDeltaP_BodyForce();
+  //bool energy =  config->GetEnergy_Equation(); // to be changed
+  //if (energy) su2double Temperature_Source_Periodic = config->GetTemperature_Source_Periodic();
+  Body_Force_Vector = new su2double[nDim];
+  su2double norm2_PBtranslate = 0.0;
+  
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    if (config->GetPeriodicTranslation(0)[iDim] == 0) {
+      Body_Force_Vector[iDim] = 0.0;
+    } else {
+      Body_Force_Vector[iDim] = DeltaP_BodyForce/config->GetPeriodicTranslation(0)[iDim]; // wrong
+      for (iDim = 0; iDim < nDim; iDim++)
+        norm2_PBtranslate =+ pow(config->GetPeriodicTranslation(0)[iDim],2);
+      Body_Force_Vector[iDim] = DeltaP_BodyForce/norm2_PBtranslate*config->GetPeriodicTranslation(0)[iDim];
+    }
+  }
+  
+  cout << "Body force vector based on delta p: [ ";
+  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    cout << Body_Force_Vector[iDim] << "  ";
+  }
+  cout << " ]" << endl;
+}
+
+CSourceIncPeriodicBodyForce::~CSourceIncPeriodicBodyForce(void) {
+
+  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
+
+}
+
+void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+
+  unsigned short iDim;
+  su2double DensityInc_0 = 0.0;
+  su2double Force_Ref    = config->GetForce_Ref();
+  su2double Temperature_Ref    = config->GetTemperature_Ref();
+  bool energy =  config->GetEnergy_Equation();
+  bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
+  su2double C_p = V_i[nDim+7];
+  su2double Velocity[nDim];
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+      Velocity[iDim] = V_i[iDim+1];
+  
+  su2double Delta_T = 10.0;
+  su2double norm_translation = 0.0;
+  
+  /*--- Check for variable density. If we have a variable density
+   problem, we should subtract out the hydrostatic pressure component. ---*/
+
+  if (variable_density) DensityInc_0 = config->GetDensity_FreeStreamND();
+
+  /*--- Zero the continuity contribution ---*/
+
+  val_residual[0] = 0.0;
+
+  /*--- Momentum contribution. Note that this form assumes we have
+   subtracted the operating density * gravity, i.e., removed the
+   hydrostatic pressure component (important for pressure BCs). ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref; // check if pres_ref is the same as force ref
+
+  /*--- Zero the temperature contribution ---*/
+
+  for (iDim = 0; iDim < nDim; iDim++) {
+    norm_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+  }
+  norm_translation = sqrt(norm_translation);
+      
+
+  if (energy) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      val_residual[nDim+1] = Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim] * Volume * (DensityInc_i - DensityInc_0) * Delta_T * DensityInc_i * C_p / pow(norm_translation,2) / Temperature_Ref; // maybe make it class var
+    }
+  }
+  else val_residual[nDim+1] = 0.0;
+
+}
+
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
   /*--- Store the pointer to the constant body force vector. ---*/
