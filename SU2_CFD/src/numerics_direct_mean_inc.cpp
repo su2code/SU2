@@ -927,7 +927,7 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
 
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
-  su2double Force_Ref    = config->GetForce_Ref();
+  su2double Pressure_Ref    = config->GetPressure_Ref(); // check if pressure and force ref are the same
   su2double Temperature_Ref    = config->GetTemperature_Ref();
   bool energy =  config->GetEnergy_Equation();
   bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
@@ -943,7 +943,7 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
 
-  if (variable_density) DensityInc_0 = config->GetDensity_FreeStreamND();
+  //if (variable_density) DensityInc_0 = config->GetDensity_FreeStreamND(); <- think about that
 
   /*--- Zero the continuity contribution ---*/
 
@@ -954,7 +954,7 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
    hydrostatic pressure component (important for pressure BCs). ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * (DensityInc_i - DensityInc_0) * Body_Force_Vector[iDim] / Force_Ref; // check if pres_ref is the same as force ref
+    val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim] / Pressure_Ref; // check if pres_ref is the same as force ref
 
   /*--- Zero the temperature contribution ---*/
 
@@ -965,8 +965,11 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
       
 
   if (energy) {
+    
+    su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / config->GetPeriodic_MassFlow("outlet") / pow(norm_translation,2); // HARDCODED inlet !!!!
+    
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_residual[nDim+1] = Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim] * Volume * (DensityInc_i - DensityInc_0) * Delta_T * DensityInc_i * C_p / pow(norm_translation,2) / Temperature_Ref; // maybe make it class var
+      val_residual[nDim+1] = Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim] * Volume * Body_Force_T; // maybe make it class var
     }
   }
   else val_residual[nDim+1] = 0.0;

@@ -480,6 +480,7 @@ void CConfig::SetPointersNull(void) {
   Surface_DC60             = NULL;    Surface_IDC = NULL;
 
   Outlet_MassFlow      = NULL;       Outlet_Density      = NULL;      Outlet_Area     = NULL;
+  Periodic_MassFlow      = NULL;       Periodic_Heatflux      = NULL;
 
   Surface_Uniformity = NULL; Surface_SecondaryStrength = NULL; Surface_SecondOverUniform = NULL;
   Surface_MomentumDistortion = NULL;
@@ -4516,7 +4517,17 @@ void CConfig::SetMarkers(unsigned short val_software) {
     Outlet_Density[iMarker_Outlet]  = 0.0;
     Outlet_Area[iMarker_Outlet]     = 0.0;
   }
+
+  Periodic_MassFlow = new su2double[nMarker_PerBound];
+  Periodic_Heatflux  = new su2double[nMarker_HeatFlux];
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_PerBound; iMarker_Outlet++) {
+    Periodic_MassFlow[iMarker_Outlet] = 0.0;
+  }
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_HeatFlux; iMarker_Outlet++) {
+    Periodic_Heatflux[iMarker_Outlet] = 0.0;
+  }
   
+
   for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
     Marker_CfgFile_TagBound[iMarker_CfgFile] = Marker_NearFieldBound[iMarker_NearFieldBound];
     Marker_CfgFile_KindBC[iMarker_CfgFile] = NEARFIELD_BOUNDARY;
@@ -7042,6 +7053,12 @@ CConfig::~CConfig(void) {
   if (ActDisk_Area != NULL)    delete[]  ActDisk_Area;
   if (ActDisk_ReverseMassFlow != NULL)    delete[]  ActDisk_ReverseMassFlow;
   
+  if (Outlet_Area != NULL) delete[] Outlet_Area;
+  if (Outlet_Density != NULL) delete[] Outlet_Density;
+  if (Outlet_MassFlow != NULL) delete[] Outlet_MassFlow;
+  if (Periodic_MassFlow != NULL) delete[] Periodic_MassFlow;
+  if (Periodic_Heatflux != NULL) delete[] Periodic_Heatflux;
+  
   if (Surface_MassFlow != NULL)    delete[]  Surface_MassFlow;
   if (Surface_Mach != NULL)    delete[]  Surface_Mach;
   if (Surface_Temperature != NULL)    delete[]  Surface_Temperature;
@@ -7740,6 +7757,13 @@ su2double CConfig::GetOutlet_MassFlow(string val_marker) {
   return Outlet_MassFlow[iMarker_Outlet];
 }
 
+su2double CConfig::GetPeriodic_MassFlow(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_PerBound; iMarker_Outlet++)
+    if ((Marker_PerBound[iMarker_Outlet] == val_marker)) break;
+  return Periodic_MassFlow[iMarker_Outlet];
+}
+
 su2double CConfig::GetOutlet_Density(string val_marker) {
   unsigned short iMarker_Outlet;
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
@@ -7752,6 +7776,13 @@ su2double CConfig::GetOutlet_Area(string val_marker) {
   for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++)
     if ((Marker_Outlet[iMarker_Outlet] == val_marker)) break;
   return Outlet_Area[iMarker_Outlet];
+}
+
+su2double CConfig::GetPeriodic_Heatflux(string val_marker) {
+  unsigned short iMarker_Outlet;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_HeatFlux; iMarker_Outlet++)
+    if ((Marker_HeatFlux[iMarker_Outlet] == val_marker)) break;
+  return Periodic_Heatflux[iMarker_Outlet];
 }
 
 unsigned short CConfig::GetMarker_CfgFile_ActDiskOutlet(string val_marker) {

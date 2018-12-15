@@ -107,9 +107,17 @@ inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_
 
 inline void CConfig::SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow) { Outlet_MassFlow[val_imarker] = val_massflow; }
 
+inline void CConfig::SetPeriodic_MassFlow(unsigned short val_imarker, su2double val_massflow) { Periodic_MassFlow[val_imarker] = val_massflow; }
+
 inline void CConfig::SetOutlet_Density(unsigned short val_imarker, su2double val_density) { Outlet_Density[val_imarker] = val_density; }
 
 inline void CConfig::SetOutlet_Area(unsigned short val_imarker, su2double val_area) { Outlet_Area[val_imarker] = val_area; }
+
+inline void CConfig::SetPeriodic_Heatflux(unsigned short val_imarker, su2double val_heatflux) { Periodic_Heatflux[val_imarker] = val_heatflux; }
+
+inline void CConfig::SetPeriodic_HeatfluxIntegrated(su2double HeatfluxIntegrated) { Heatflux_Integrated = HeatfluxIntegrated; }
+
+inline su2double CConfig::GetPeriodic_HeatfluxIntegrated() { return Heatflux_Integrated; }
 
 inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
 

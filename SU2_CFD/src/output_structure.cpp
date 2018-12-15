@@ -13371,7 +13371,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     if (config->GetPeriodic_BC_Body_Force()) {
       
       nVar_Par += 1;
-      Variable_Names.push_back("Recovered_pressure");
+      Variable_Names.push_back("Recovered_Pressure");
+      if(energy) {
+        nVar_Par += 1;
+        Variable_Names.push_back("Recovered_Temperature");
+      }
       
       nVar_Par += 1;
       Variable_Names.push_back("rank");
@@ -13705,7 +13709,14 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           
           /*--- Second, substract correction from reduced pressure to get recoverd pressure ---*/
           Local_Data[jPoint][iVar] -= (config->GetDeltaP_BodyForce())*dot_product/norm2_translation_vector; iVar++;
+          
+          if (energy) {
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution(nDim+1);
+            Local_Data[jPoint][iVar] += config->GetPeriodic_HeatfluxIntegrated()/config->GetPeriodic_MassFlow("outlet")/solver[FirstIndex]->node[iPoint]->GetSpecificHeatCp()*dot_product/norm2_translation_vector; iVar++; // HARDCODED inlet !!!!!
+          }
+          
           Local_Data[jPoint][iVar] = rank; iVar++;
+          
         } //body force bracket
 
       } //low memory output bracket

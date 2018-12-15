@@ -10757,10 +10757,11 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
   Velocity2, Density, Area, Vel_Infty2, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
+  su2double Heatflux_Integrated = 0.0;
   
   bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0)
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
   
@@ -10829,7 +10830,6 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             Outlet_MassFlow[iMarker] += MassFlow;
             Outlet_Density[iMarker]  += Density*Area;
             Outlet_Area[iMarker]     += Area;
-            
           }
         }
       }
@@ -10896,11 +10896,9 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       else {
         Outlet_Density_Total[iMarker_Outlet] = 0.0;
       }
-      
+            
       if (iMesh == MESH_0) {
-        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
-        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
-        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+        config->SetPeriodic_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
       }
     }
     
@@ -10922,16 +10920,9 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           /*--- Geometry defintion ---*/
           
           cout <<"Outlet surface: " << Outlet_TagBound << "." << endl;
+
           
-          if ((nDim ==3) || axisymmetric) {
-            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
-          }
-          if (nDim == 2) {
-            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
-          }
-          
-          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
-          su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          su2double Outlet_mDot = fabs(config->GetPeriodic_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
           cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
           
         }
@@ -10990,7 +10981,21 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             
             /*--- Get the specified wall heat flux from config ---*/
             
-            su2double Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+            
+            /*--- OPTION 1 for Heatflux calculation ---*/
+            su2double Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+                        
+            /*--- OPTION 2 for Heatflux calculation ---*/
+            su2double GradTemperature = 0.0;
+            // turn off for no energy equation
+            for (iDim = 0; iDim < nDim; iDim++)
+              GradTemperature -= node[iPoint]->GetGradient_Primitive(nDim+1, iDim)*Vector[iDim]; // Vector is Area normal
+            
+            su2double thermal_conductivity       = node[iPoint]->GetThermalConductivity();
+            Wall_HeatFlux = -thermal_conductivity*GradTemperature;
+            
+            /*--- END OPTIONS ---*/
+            
             
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
             
@@ -11003,7 +11008,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             Area = sqrt (Area);
             
             Outlet_MassFlow[iMarker] += MassFlow;
-            Outlet_Density[iMarker]  += Wall_HeatFlux*Area;
+            Outlet_Density[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
             Outlet_Area[iMarker]     += Area;
             
           }
@@ -11034,6 +11039,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
             Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
             Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            cout << "Outlet_Density_Local: " << Outlet_Density_Local[iMarker_Outlet] << endl;
             Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
           }
         }
@@ -11061,11 +11067,17 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       
       if (iMesh == MESH_0) {
-        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
-        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
-        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+        config->SetPeriodic_Heatflux(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
+        Heatflux_Integrated += Outlet_Density_Total[iMarker_Outlet];
       }
     }
+    
+    
+    
+    if (iMesh == MESH_0) {
+      config->SetPeriodic_HeatfluxIntegrated(Heatflux_Integrated);
+    }
+    
     
     /*--- Screen output using the values already stored in the config container ---*/
     
@@ -11086,16 +11098,11 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           
           cout <<"Heat flux surface: " << Outlet_TagBound << "." << endl;
           
-          if ((nDim ==3) || axisymmetric) {
-            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
-          }
-          if (nDim == 2) {
-            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
-          }
-          
-          cout << setprecision(5) << scientific << "Q on surface: " <<  config->GetOutlet_Density(Outlet_TagBound)  << endl;          
+          cout << setprecision(5) << scientific << "Q on surface: " <<  config->GetPeriodic_Heatflux(Outlet_TagBound) * config->GetHeat_Flux_Ref()  << endl;
         }
       }
+      
+      cout << "Heatflux_Integrated: " << Heatflux_Integrated * config->GetHeat_Flux_Ref() << endl;
       
       if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
         cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -13081,6 +13088,31 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
         Compute the residual due to the prescribed heat flux. ---*/
 
         Res_Visc[nDim+1] = Wall_HeatFlux*Area;
+        
+        // streamwise periodic
+        if (config->GetPeriodic_BC_Body_Force()) {
+          
+          su2double Cp = node[iPoint]->GetSpecificHeatCp();
+          su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
+          su2double norm_translation = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            norm_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+          }
+          norm_translation = sqrt(norm_translation);
+          
+          su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * thermal_conductivity / config->GetPeriodic_MassFlow("outlet") / Cp / pow(norm_translation,2);
+          
+          su2double dot_product = 0.0; // t*n*A , n is unitnormal, Normal here is n*A
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
+          }
+          
+          Res_Visc[nDim+1] -= Body_Force_T*dot_product;
+          
+          cout << "dot_product: " << dot_product << endl;
+          cout << "Body_Force_T: " << Body_Force_T << endl;
+          cout << "Physical contribution: " << Res_Visc[nDim+1] << "  Periodic contribution: " << Body_Force_T*dot_product << endl; 
+        }
 
         /*--- Viscous contribution to the residual at the wall ---*/
 

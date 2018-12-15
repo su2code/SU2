@@ -359,6 +359,9 @@ private:
   su2double *Outlet_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
   su2double *Outlet_Density;    /*!< \brief Avg. density for outlet boundaries. */
   su2double *Outlet_Area;    /*!< \brief Area for outlet boundaries. */
+  su2double *Periodic_Heatflux;    /*!< \brief Area for outlet boundaries. */
+  su2double *Periodic_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
+  su2double Heatflux_Integrated;   /*!< \brief Heatflux integrated over all nonyero heatflux boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
@@ -3002,7 +3005,7 @@ public:
   unsigned short GetnMarker_Periodic(void);
 
   /*!
-   * \brief Get the total number of heat flux markers.
+   * \brief Get the total number of heat flux markers. (per partition or globally)
    * \return Total number of heat flux markers.
    */
   unsigned short GetnMarker_HeatFlux(void);
@@ -7439,6 +7442,20 @@ public:
    * \param[in] val_index - Index corresponding to the outlet boundary.
    * \return The outlet pressure.
    */
+  su2double GetPeriodic_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetPeriodic_MassFlow(unsigned short val_imarker, su2double val_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
   su2double GetOutlet_Density(string val_marker);
   
   /*!
@@ -7461,7 +7478,35 @@ public:
    * \return The outlet pressure.
    */
   void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
+
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetPeriodic_Heatflux(string val_marker);
   
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetPeriodic_Heatflux(unsigned short val_imarker, su2double val_heatflux);
+
+  /*!
+   * \brief 
+   * \param[in]
+   * \return
+   */
+  su2double GetPeriodic_HeatfluxIntegrated();
+
+  /*!
+   * \brief 
+   * \param[in]
+   * \return
+   */
+  void SetPeriodic_HeatfluxIntegrated(su2double IntegratedHeatflux);
+
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
    * \param[in] val_index - Index corresponding to the outlet boundary.
