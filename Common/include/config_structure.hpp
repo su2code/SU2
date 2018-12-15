@@ -355,6 +355,9 @@ private:
   su2double *ActDisk_MassFlow;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *ActDisk_Force;    /*!< \brief Specified fan face mach for nacelle boundaries. */
+  su2double *Outlet_MassFlow;    /*!< \brief Mass flow for outlet boundaries. */
+  su2double *Outlet_Density;    /*!< \brief Avg. density for outlet boundaries. */
+  su2double *Outlet_Area;    /*!< \brief Area for outlet boundaries. */
   su2double *Surface_MassFlow;    /*!< \brief Massflow at the boundaries. */
   su2double *Surface_Mach;    /*!< \brief Mach number at the boundaries. */
   su2double *Surface_Temperature;    /*!< \brief Temperature at the boundaries. */
@@ -539,10 +542,14 @@ private:
   unsigned short Kind_LM_CrossFlowModel;                /*!< \brief Crossflow instability model for the LM transition model. */
   su2double      SurfaceRoughnessHeight;                /*!< \brief Surface roughness height for the crossflow term in the LM model. */
   unsigned short Kind_SGS_Model;                        /*!< \brief LES SGS model definition. */
-  unsigned short Kind_ActDisk, Kind_Engine_Inflow, 
+  unsigned short Kind_ActDisk, Kind_Engine_Inflow,
                  Kind_Inlet, *Kind_Inc_Inlet,
-                 *Kind_Data_Riemann, *Kind_Data_Giles;  /*!< \brief Kind of inlet boundary treatment. */
+                 *Kind_Inc_Outlet, *Kind_Data_Riemann,
+                 *Kind_Data_Giles;                      /*!< \brief Kind of boundary treatment. */
   unsigned short nInc_Inlet;  /*!< \brief Number of inlet boundary treatment types listed. */
+  unsigned short nInc_Outlet;  /*!< \brief Number of outlet boundary treatment types listed. */
+  su2double Inc_Inlet_Damping;  /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
+  su2double Inc_Outlet_Damping; /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
@@ -2946,6 +2953,12 @@ public:
   unsigned short GetnMarker_ActDiskOutlet(void);
   
   /*!
+   * \brief Get the total number of boundary markers.
+   * \return Total number of boundary markers.
+   */
+  unsigned short GetnMarker_Outlet(void);
+  
+  /*!
    * \brief Get the total number of monitoring markers.
    * \return Total number of monitoring markers.
    */
@@ -3271,6 +3284,14 @@ public:
    *         has the marker <i>val_marker</i>.
    */
   string GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker);
+  
+  /*!
+   * \brief Get the index of the surface defined in the geometry file.
+   * \param[in] val_marker - Value of the marker in which we are interested.
+   * \return Value of the index that is in the geometry file for the surface that
+   *         has the marker <i>val_marker</i>.
+   */
+  string GetMarker_Outlet_TagBound(unsigned short val_marker);
   
   /*!
    * \brief Get the index of the surface defined in the geometry file.
@@ -4623,6 +4644,24 @@ public:
    */
   bool GetInc_Inlet_UseNormal(void);
 
+  /*!
+   * \brief Get the type of incompressible outlet from the list.
+   * \return Kind of the incompressible outlet.
+   */
+  unsigned short GetKind_Inc_Outlet(string val_marker);
+  
+  /*!
+   * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
+   * \return Damping factor applied to velocity updates at incompressible pressure inlets.
+   */
+  su2double GetInc_Inlet_Damping(void);
+  
+  /*!
+   * \brief Get the damping factor applied to pressure updates at incompressible mass flow outlet.
+   * \return Damping factor applied to pressure updates at incompressible mass flow outlet.
+   */
+  su2double GetInc_Outlet_Damping(void);
+  
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.
    * \return Kind of mixing process.
@@ -7320,6 +7359,48 @@ public:
    * \return The outlet pressure.
    */
   void SetActDisk_Force(unsigned short val_imarker, su2double val_actdisk_force);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_MassFlow(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Density(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Density(unsigned short val_imarker, su2double val_density);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  su2double GetOutlet_Area(string val_marker);
+  
+  /*!
+   * \brief Get the back pressure (static) at an outlet boundary.
+   * \param[in] val_index - Index corresponding to the outlet boundary.
+   * \return The outlet pressure.
+   */
+  void SetOutlet_Area(unsigned short val_imarker, su2double val_area);
   
   /*!
    * \brief Get the back pressure (static) at an outlet boundary.
