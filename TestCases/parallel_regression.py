@@ -301,6 +301,17 @@ def main():
     inc_euler_naca0012.tol       = 0.00001
     test_list.append(inc_euler_naca0012)
 
+    # C-D nozzle with pressure inlet and mass flow outlet
+    inc_nozzle           = TestCase('inc_nozzle')
+    inc_nozzle.cfg_dir   = "incomp_euler/nozzle"
+    inc_nozzle.cfg_file  = "inv_nozzle.cfg"
+    inc_nozzle.test_iter = 20
+    inc_nozzle.test_vals = [-5.852261, -4.818859, -0.000280, 0.124229] #last 4 columns
+    inc_nozzle.su2_exec  = "parallel_computation.py -f"
+    inc_nozzle.timeout   = 1600
+    inc_nozzle.tol       = 0.00001
+    test_list.append(inc_nozzle)
+
     #############################
     ### Incompressible N-S    ###
     #############################
