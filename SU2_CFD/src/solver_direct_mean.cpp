@@ -17198,8 +17198,13 @@ void CNSSolver::BC_Euler_Transpiration(CGeometry *geometry, CSolver **solver_con
 void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
 
   unsigned long iVertex, iPoint;
-  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
-  su2double *Vel_FS = config->GetVelocity_FreeStream();
+  unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim, jDim;
+  su2double *Vel_FS = config->GetVelocity_FreeStreamND();
+  su2double Density, Viscosity, div_vel;
+  su2double TauNormal, UnitNormal[3] = {0.0, 0.0, 0.0}, TauElem[3] = {0.0, 0.0, 0.0}, TauTangent[3] = {0.0, 0.0, 0.0},
+  Tau[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Force[3] = {0.0, 0.0, 0.0}, Cp, thermal_conductivity, MaxNorm = 8.0,
+  Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}}, Grad_Temp[3] = {0.0, 0.0, 0.0},
+  delta[3][3] = {{1.0, 0.0, 0.0},{0.0,1.0,0.0},{0.0,0.0,1.0}};
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
   su2double k   = config->GetBuffet_k(),
              lam = config->GetBuffet_lambda();
@@ -17233,39 +17238,120 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
 
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
 
+
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
 
-        /*--- Perform dot product of skin friction with freestream velocity ---*/
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
 
-        SkinFrictionMag = 0.0;
-        SkinFrictionDot = 0.0;
-        for(iDim = 0; iDim < nDim; iDim++){
-          SkinFrictionMag += CSkinFriction[iMarker][iDim][iVertex]*CSkinFriction[iMarker][iDim][iVertex];
-          SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
-        }
-        SkinFrictionMag = sqrt(SkinFrictionMag);
-
-        /*--- Normalize the dot product ---*/
-
-        SkinFrictionDot /= SkinFrictionMag*VelMag_FS;
-
-        /*--- Compute Heaviside function ---*/
-
-        Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(2.*k*(SkinFrictionDot + lam)));
-
-        /*--- Integrate buffet sensor ---*/
-
-        if(Monitoring == YES){
+        if (geometry->node[iPoint]->GetDomain()) {
 
           Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-          Area = 0.0;
-          for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
-          Area = sqrt(Area);
 
-          Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0 ; jDim < nDim; jDim++) {
+              Grad_Vel[iDim][jDim] = node[iPoint]->GetGradient_Primitive(iDim+1, jDim);
+            }
+          }
+
+          Viscosity = node[iPoint]->GetLaminarViscosity();
+          Density = node[iPoint]->GetDensity();
+
+          Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            UnitNormal[iDim] = Normal[iDim]/Area;
+          }
+
+          /*--- Evaluate Tau ---*/
+
+          div_vel = 0.0; for (iDim = 0; iDim < nDim; iDim++) div_vel += Grad_Vel[iDim][iDim];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            for (jDim = 0 ; jDim < nDim; jDim++) {
+              Tau[iDim][jDim] = Viscosity*(Grad_Vel[jDim][iDim] + Grad_Vel[iDim][jDim]) - TWO3*Viscosity*div_vel*delta[iDim][jDim];
+            }
+          }
+
+          /*--- If necessary evaluate the QCR contribution to Tau ---*/
+
+          if (config->GetQCR()){
+              su2double den_aux, c_cr1=0.3, O_ik, O_jk;
+              unsigned short kDim;
+
+              /*--- Denominator Antisymmetric normalized rotation tensor ---*/
+
+              den_aux = 0.0;
+              for (iDim = 0 ; iDim < nDim; iDim++)
+                  for (jDim = 0 ; jDim < nDim; jDim++)
+                      den_aux += Grad_Vel[iDim][jDim] * Grad_Vel[iDim][jDim];
+              den_aux = sqrt(max(den_aux,1E-10));
+
+              /*--- Adding the QCR contribution ---*/
+
+              for (iDim = 0 ; iDim < nDim; iDim++){
+                  for (jDim = 0 ; jDim < nDim; jDim++){
+                      for (kDim = 0 ; kDim < nDim; kDim++){
+                          O_ik = (Grad_Vel[iDim][kDim] - Grad_Vel[kDim][iDim])/ den_aux;
+                          O_jk = (Grad_Vel[jDim][kDim] - Grad_Vel[kDim][jDim])/ den_aux;
+                          Tau[iDim][jDim] -= c_cr1 * (O_ik * Tau[jDim][kDim] + O_jk * Tau[iDim][kDim]);
+                      }
+                  }
+              }
+
+          }
+
+          /*--- Project Tau in each surface element ---*/
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauElem[iDim] = 0.0;
+            for (jDim = 0; jDim < nDim; jDim++) {
+              TauElem[iDim] += Tau[iDim][jDim]*UnitNormal[jDim];
+            }
+          }
+
+          /*--- Compute wall shear stress (using the stress tensor). Compute wall skin friction coefficient, and heat flux on the wall ---*/
+
+          TauNormal = 0.0; for (iDim = 0; iDim < nDim; iDim++) TauNormal += TauElem[iDim] * UnitNormal[iDim];
+
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TauTangent[iDim] = TauElem[iDim] - TauNormal * UnitNormal[iDim];
+          }
+
+          /*--- Perform dot product of skin friction with freestream velocity ---*/
+
+          SkinFrictionMag = 0.0;
+          SkinFrictionDot = 0.0;
+          for(iDim = 0; iDim < nDim; iDim++){
+            // SkinFrictionMag += CSkinFriction[iMarker][iDim][iVertex]*CSkinFriction[iMarker][iDim][iVertex];
+            // SkinFrictionDot += CSkinFriction[iMarker][iDim][iVertex]*Vel_FS[iDim];
+            SkinFrictionMag += TauTangent[iDim]*TauTangent[iDim];
+            SkinFrictionDot += TauTangent[iDim]*Vel_FS[iDim];
+          }
+          SkinFrictionMag = sqrt(SkinFrictionMag);
+
+          /*--- Normalize the dot product ---*/
+
+          SkinFrictionDot /= SkinFrictionMag*VelMag_FS;
+
+          /*--- Compute Heaviside function ---*/
+
+          Buffet_Sensor[iMarker][iVertex] = 1./(1. + exp(2.*k*(SkinFrictionDot + lam)));
+
+          /*--- Integrate buffet sensor ---*/
+
+          if(Monitoring == YES){
+
+            // Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+            // Area = 0.0;
+            // for(iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim];
+            // Area = sqrt(Area);
+
+            Buffet_Metric[iMarker] += Buffet_Sensor[iMarker][iVertex]*Area/Sref;
+
+          }
 
         }
-
+        
       }
 
       if(Monitoring == YES){
