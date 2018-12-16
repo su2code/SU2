@@ -799,6 +799,8 @@ inline void CSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
+inline void CSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
