@@ -4187,8 +4187,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
   
   /*--- Allocate Memory for Reference Node for recovered pressure computation ---*/
+  // NEED TO PROPERLY INITIALIZE INTEGRATED VALUE USING BC FOR TEMPERATURE
   if (Periodic_BC_Body_Force == YES) {
     PeriodicRefNode_BodyForce = new su2double[val_nDim];
+    Heatflux_Integrated = 1e-10;
   }
 
   /*--- Handle default options for topology optimization ---*/

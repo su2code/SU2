@@ -251,6 +251,14 @@ inline su2double CVariable::GetDensity(void) {  return 0; }
 
 inline su2double CVariable::GetDensity_Old(void) {  return 0; }
 
+inline su2double CVariable::GetPressure_Recovered(void) {  return 0; }
+
+inline su2double CVariable::GetTemperature_Recovered(void) {  return 0; }
+
+inline void CVariable::SetPressure_Recovered(su2double val_pressure) { }
+
+inline void CVariable::SetTemperature_Recovered(su2double val_temperature) { }
+
 inline su2double CVariable::GetDensity(unsigned short val_iSpecies) {  return 0; }
 
 inline su2double CVariable::GetEnergy(void) { return 0; }
@@ -952,6 +960,14 @@ inline void CAdjNSVariable::SetVelSolutionDVector(void) { for (unsigned short iD
 inline su2double CIncEulerVariable::GetDensity(void) { return Primitive[nDim+2]; }
 
 inline su2double CIncEulerVariable::GetDensity_Old(void) { return Density_Old; }
+
+inline su2double CIncEulerVariable::GetPressure_Recovered(void) {  return Pressure_Recovered; }
+
+inline su2double CIncEulerVariable::GetTemperature_Recovered(void) {  return Temperature_Recovered; }
+
+inline void CIncEulerVariable::SetPressure_Recovered(su2double val_pressure) { Pressure_Recovered = val_pressure; }
+
+inline void CIncEulerVariable::SetTemperature_Recovered(su2double val_temperature) { Temperature_Recovered = val_temperature; }
 
 inline su2double CIncEulerVariable::GetBetaInc2(void) { return Primitive[nDim+3]; }
 

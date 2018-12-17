@@ -10813,7 +10813,8 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
               AxiFactor = 1.0;
             }
             
-            Temperature  = V_outlet[nDim+1];
+            Temperature  = node[iPoint]->GetTemperature_Recovered(); //V_outlet[nDim+1];
+            //cout << iPoint << "  " << Temperature << endl;
             Pressure     = V_outlet[0];
             Density      = V_outlet[nDim+2];
             
@@ -10828,7 +10829,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             Area = sqrt (Area);
             
             Outlet_MassFlow[iMarker] += MassFlow;
-            Outlet_Density[iMarker]  += Density*Area;
+            Outlet_Density[iMarker]  += Temperature*Area;
             Outlet_Area[iMarker]     += Area;
           }
         }
@@ -10902,6 +10903,15 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       }
     }
     
+    // Subtract the bulk temperature to set Q
+    // HARD CODED for 2 markers and the absolutr value should not be here!!! TDE
+    su2double dT = 0.0;
+      dT = fabs(Outlet_Density_Total[1] - Outlet_Density_Total[0]);
+    
+    if (iMesh == MESH_0) {
+      config->SetPeriodic_HeatfluxIntegrated(dT*config->GetPeriodic_MassFlow("outlet")*node[0]->GetSpecificHeatCp());
+    }
+    
     /*--- Screen output using the values already stored in the config container ---*/
     
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
@@ -10925,6 +10935,8 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           su2double Outlet_mDot = fabs(config->GetPeriodic_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
           cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
           
+          cout <<"Bulk temperature difference: " << dT * config->GetTemperature_Ref()<< " : Q : " << config->GetPeriodic_HeatfluxIntegrated() * config->GetHeat_Flux_Ref()<< endl;
+
         }
       }
       
@@ -10936,32 +10948,32 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       
     }
     
-    
+
     // BEGIN HEAT FLUX LOOP
-    
+
     nMarker_Outlet = config->GetnMarker_HeatFlux();
 
-    
+
     /*--- Comute MassFlow, average temp, press, etc. ---*/
-    
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      
+
       Outlet_MassFlow[iMarker] = 0.0;
       Outlet_Density[iMarker]  = 0.0;
       Outlet_Area[iMarker]     = 0.0;
-      
+
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ) {
-        
+
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
+
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
+
           if (geometry->node[iPoint]->GetDomain()) {
-            
+
             V_outlet = node[iPoint]->GetPrimitive();
-            
+
             geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
-            
+
             if (axisymmetric) {
               if (geometry->node[iPoint]->GetCoord(1) != 0.0)
                 AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
@@ -10970,35 +10982,35 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             } else {
               AxiFactor = 1.0;
             }
-            
+
             Temperature  = V_outlet[nDim+1];
             Pressure     = V_outlet[0];
             Density      = V_outlet[nDim+2];
-            
+
             /*--- Identify the boundary by string name ---*/
-            
+
             string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
-            
+
             /*--- Get the specified wall heat flux from config ---*/
-            
-            
+
+
             /*--- OPTION 1 for Heatflux calculation ---*/
             su2double Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-                        
+
             /*--- OPTION 2 for Heatflux calculation ---*/
             su2double GradTemperature = 0.0;
             // turn off for no energy equation
             for (iDim = 0; iDim < nDim; iDim++)
               GradTemperature -= node[iPoint]->GetGradient_Primitive(nDim+1, iDim)*Vector[iDim]; // Vector is Area normal
-            
+
             su2double thermal_conductivity       = node[iPoint]->GetThermalConductivity();
             Wall_HeatFlux = -thermal_conductivity*GradTemperature;
-            
+
             /*--- END OPTIONS ---*/
-            
-            
+
+
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
-            
+
             for (iDim = 0; iDim < nDim; iDim++) {
               Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
               Velocity[iDim] = V_outlet[iDim+1];
@@ -11006,31 +11018,31 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
               MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
             }
             Area = sqrt (Area);
-            
+
             Outlet_MassFlow[iMarker] += MassFlow;
             Outlet_Density[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
             Outlet_Area[iMarker]     += Area;
-            
+
           }
         }
       }
     }
-    
+
     /*--- Copy to the appropriate structure ---*/
-    
-    
+
+
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
       Outlet_Density_Local[iMarker_Outlet]  = 0.0;
       Outlet_Area_Local[iMarker_Outlet]     = 0.0;
-      
+
       Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
       Outlet_Density_Total[iMarker_Outlet]  = 0.0;
       Outlet_Area_Total[iMarker_Outlet]     = 0.0;
     }
-    
+
     /*--- Copy the values to the local array for MPI ---*/
-    
+
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)) {
         for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
@@ -11045,73 +11057,73 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
         }
       }
     }
-    
+
     /*--- All the ranks to compute the total value ---*/
-    
+
 #ifdef HAVE_MPI
-    
+
     SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-    
+
 #else
-    
+
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
       Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
       Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
     }
-    
+
 #endif
-    
+
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      
+
       if (iMesh == MESH_0) {
         config->SetPeriodic_Heatflux(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
         Heatflux_Integrated += Outlet_Density_Total[iMarker_Outlet];
       }
     }
-    
-    
-    
-    if (iMesh == MESH_0) {
-      config->SetPeriodic_HeatfluxIntegrated(Heatflux_Integrated);
-    }
-    
-    
+
+
+
+//    if (iMesh == MESH_0) {
+//      config->SetPeriodic_HeatfluxIntegrated(Heatflux_Integrated);
+//    }
+
+
     /*--- Screen output using the values already stored in the config container ---*/
-    
+
     if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
-      
+
       cout.precision(5);
       cout.setf(ios::fixed, ios::floatfield);
-      
+
       if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
         cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
       }
-      
+
       for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
         Outlet_TagBound = config->GetMarker_HeatFlux_TagBound(iMarker_Outlet);
         if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
-          
+
           /*--- Geometry defintion ---*/
-          
+
           cout <<"Heat flux surface: " << Outlet_TagBound << "." << endl;
-          
+
           cout << setprecision(5) << scientific << "Q on surface: " <<  config->GetPeriodic_Heatflux(Outlet_TagBound) * config->GetHeat_Flux_Ref()  << endl;
         }
       }
-      
+
       cout << "Heatflux_Integrated: " << Heatflux_Integrated * config->GetHeat_Flux_Ref() << endl;
-      
+
       if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
         cout << "-------------------------------------------------------------------------" << endl << endl;
       }
-      
+
       cout.unsetf(ios_base::floatfield);
-      
+
     }
-    
+
     
     delete [] Outlet_MassFlow_Local;
     delete [] Outlet_Density_Local;
@@ -12188,6 +12200,48 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*---  ---*/
   
+  if (config->GetPeriodic_BC_Body_Force() == YES) {
+    
+    /*--- Define and initialize helping variables ---*/
+    su2double norm2_translation_vector;
+    su2double dot_product;
+    su2double PerBoundNodeCoord[nDim];
+    su2double Pressure_Recovered, Temperature_Recovered;
+    
+    unsigned short iDim;
+    
+    for (iDim = 0; iDim < nDim; iDim++)
+      PerBoundNodeCoord[iDim] = config->GetPeriodicRefNode_BodyForce()[iDim];
+    
+    for (iPoint = 0; iPoint < nPoint; iPoint++) {
+      
+    /*--- Compute correction based on relative distance (0,l) between periodic markers ---*/
+    dot_product = 0.0;
+    norm2_translation_vector = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++) {
+      dot_product += (geometry->node[iPoint]->GetCoord(iDim) - PerBoundNodeCoord[iDim]) * config->GetPeriodicTranslation(0)[iDim];
+      norm2_translation_vector += config->GetPeriodicTranslation(0)[iDim]*config->GetPeriodicTranslation(0)[iDim]; // what is best for CoDi pow?
+    }
+    
+    /*--- Second, substract correction from reduced pressure to get recoverd pressure ---*/
+    Pressure_Recovered = node[iPoint]->GetSolution(0);
+    Pressure_Recovered -= (config->GetDeltaP_BodyForce())*dot_product/norm2_translation_vector;
+    
+      Temperature_Recovered=0.0;
+    if (config->GetEnergy_Equation()) {
+      Temperature_Recovered = node[iPoint]->GetSolution(nDim+1);
+      if (config->GetExtIter() > 0)  // TDE here we have to avoid a mdot = 0 (inf)
+      Temperature_Recovered += config->GetPeriodic_HeatfluxIntegrated()/config->GetPeriodic_MassFlow("outlet")/node[iPoint]->GetSpecificHeatCp()*dot_product/norm2_translation_vector;  // HARDCODED inlet !!!!!
+    }
+    
+      //cout << iPoint << "  " << Pressure_Recovered << "  " << Temperature_Recovered<< endl;
+      node[iPoint]->SetPressure_Recovered(Pressure_Recovered);
+      node[iPoint]->SetTemperature_Recovered(Temperature_Recovered);
+      
+    }
+    
+  }
+  
   if (config->GetPeriodic_BC_Body_Force()) GetPeriodic_Properties(geometry, config, iMesh, Output);
   
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
@@ -13109,9 +13163,9 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           
           Res_Visc[nDim+1] -= Body_Force_T*dot_product;
           
-          cout << "dot_product: " << dot_product << endl;
-          cout << "Body_Force_T: " << Body_Force_T << endl;
-          cout << "Physical contribution: " << Res_Visc[nDim+1] << "  Periodic contribution: " << Body_Force_T*dot_product << endl; 
+          //cout << "dot_product: " << dot_product << endl;
+          //cout << "Body_Force_T: " << Body_Force_T << endl;
+          //cout << "Physical contribution: " << Res_Visc[nDim+1] << "  Periodic contribution: " << Body_Force_T*dot_product << endl;
         }
 
         /*--- Viscous contribution to the residual at the wall ---*/

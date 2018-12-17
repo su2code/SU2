@@ -871,6 +871,30 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual su2double GetPressure_Recovered(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual su2double GetTemperature_Recovered(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual void SetPressure_Recovered(su2double val_pressure);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  virtual void SetTemperature_Recovered(su2double val_temperature);
+  
+  /*!
+   * \brief A virtual member.
    * \return Value of the flow density.
    */
   virtual su2double GetDensity(unsigned short val_iSpecies);
@@ -3578,6 +3602,9 @@ protected:
   /*--- Old density for variable density turbulent flows (SST). ---*/
   
   su2double Density_Old;
+  
+  su2double Pressure_Recovered;
+  su2double Temperature_Recovered;
 
 public:
   
@@ -3757,6 +3784,30 @@ public:
    * \return Old value of the density of the flow.
    */
   su2double GetDensity_Old(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  su2double GetPressure_Recovered(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  su2double GetTemperature_Recovered(void);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  void SetPressure_Recovered(su2double val_pressure);
+  
+  /*!
+   * \brief A virtual member.
+   * \return Old value of the flow density.
+   */
+  void SetTemperature_Recovered(su2double val_temperature);
   
   /*!
    * \brief Get the temperature of the flow.
