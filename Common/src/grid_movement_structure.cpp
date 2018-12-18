@@ -109,6 +109,7 @@ void CVolumetricMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config) {
 	geometry->SetCoord_CG();
 	geometry->SetControlVolume(config, UPDATE);
 	geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
   
 }
 
@@ -471,7 +472,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   
   /*--- Build the ADT of the boundary nodes. ---*/
   
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(),
+                              PointIDs.data(), true);
   
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall
@@ -2727,7 +2729,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if (config->GetOutput_FileFormat() == PARAVIEW) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
           }
@@ -2801,7 +2803,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
       /*--- Output original FFD FFDBox ---*/
       
        if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-        if (config->GetOutput_FileFormat() == PARAVIEW) {
+        if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
           cout << "Writing a Paraview file of the FFD boxes." << endl;
           for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
@@ -2970,7 +2972,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output the deformed FFD Boxes ---*/
         
         if ((rank == MASTER_NODE) && (config->GetKind_SU2() != SU2_DOT)) {
-          if (config->GetOutput_FileFormat() == PARAVIEW) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             for (iFFDBox = 0; iFFDBox < GetnFFDBox(); iFFDBox++) {
               FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, false);
@@ -3039,9 +3041,7 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
     }
     
   }
-  
-  /*--- 2D airfoil Hicks-Henne bump functions ---*/
-  
+    
   else if ((config->GetDesign_Variable(0) == ROTATION) ||
            (config->GetDesign_Variable(0) == TRANSLATION) ||
            (config->GetDesign_Variable(0) == SCALE) ||
@@ -4812,22 +4812,8 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
     /*--- Check that it is possible to move the control point ---*/
     
     jOrder = SU2_TYPE::Int(config->GetParamDV(iDV, 1));
-    for (iOrder = 0; iOrder < FFDBox->GetlOrder(); iOrder++) {
-      for (kOrder = 0; kOrder < FFDBox->GetnOrder(); kOrder++) {
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
-          if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
-          if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
-        }
-        
-        for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
-          if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) return false;
-        }
-        
-      }
+    for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_JPlane(); iPlane++) {
+      if (jOrder == FFDBox->Get_Fix_JPlane(iPlane)) return false;
     }
     
     /*--- Line plane intersection to find the origin of rotation ---*/
@@ -4907,6 +4893,20 @@ bool CSurfaceMovement::SetFFDTwist(CGeometry *geometry, CConfig *config, CFreeFo
           + l*(-b*u + a*v - v*x + u*y)*sinT;
           movement[2] = movement[2]/l2 - z;
           
+          /*--- Check that it is possible to move the control point ---*/
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_IPlane(); iPlane++) {
+            if (iOrder == FFDBox->Get_Fix_IPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+          
+          for (iPlane = 0 ; iPlane < FFDBox->Get_nFix_KPlane(); iPlane++) {
+            if (kOrder == FFDBox->Get_Fix_KPlane(iPlane)) {
+              movement[0] = 0.0; movement[1] = 0.0; movement[2] = 0.0;
+            }
+          }
+
           FFDBox->SetControlPoints(index, movement);
           
         }
@@ -9284,6 +9284,7 @@ void CElasticityMovement::UpdateDualGrid(CGeometry *geometry, CConfig *config){
   geometry->SetCoord_CG();
   geometry->SetControlVolume(config, UPDATE);
   geometry->SetBoundControlVolume(config, UPDATE);
+  geometry->SetMaxLength(config);
 
 }
 

@@ -50,7 +50,9 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
 }
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
-  
+
+  unsigned short iVar, iDim;
+
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -64,7 +66,8 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nVertex = new unsigned long[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
-  
+
+
 }
 
 CTurbSolver::~CTurbSolver(void) {
@@ -817,6 +820,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
   bool implicit      = (config->GetKind_TimeIntScheme_Turb() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -849,9 +854,20 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        if (incompressible){
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+        }
+        else{
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        }
         
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -925,7 +941,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node i for the SST model ---*/
       
       if (config->GetKind_Turb_Model() == SST) {
-        Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -941,7 +958,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
       /*--- Multiply by density at node j for the SST model ---*/
       
       if (config->GetKind_Turb_Model() == SST) {
-        Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
+        if (incompressible) Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetDensity(); // Temporary fix
+        else Density_n = solver_container[FLOW_SOL]->node[jPoint]->GetSolution_time_n()[0];
         for (iVar = 0; iVar < nVar; iVar++)
           Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
       } else {
@@ -981,7 +999,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         /*--- Multiply by density at node i for the SST model ---*/
         
         if (config->GetKind_Turb_Model() == SST) {
-          Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          if (incompressible) Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetDensity(); // Temporary fix
+          else Density_n = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
           for (iVar = 0; iVar < nVar; iVar++)
             Residual[iVar] = Density_n*U_time_n[iVar]*Residual_GCL;
         } else {
@@ -1020,9 +1039,20 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
         
         /*--- If this is the SST model, we need to multiply by the density
          in order to get the conservative variables ---*/
-        Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
-        Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
-        Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        if (incompressible){
+          /*--- This is temporary and only valid for constant-density problems:
+          density could also be temperature dependent, but as it is not a part
+          of the solution vector it's neither stored for previous time steps
+          nor updated with the solution at the end of each iteration. */
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetDensity();
+        }
+        else{
+          Density_nM1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n1()[0];
+          Density_n   = solver_container[FLOW_SOL]->node[iPoint]->GetSolution_time_n()[0];
+          Density_nP1 = solver_container[FLOW_SOL]->node[iPoint]->GetSolution()[0];
+        }
         
         for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
@@ -1109,6 +1139,18 @@ void CTurbSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *
   if (nDim == 2) skipVars += 6;
   if (nDim == 3) skipVars += 8;
 
+  /*--- Adjust the number of solution variables in the incompressible
+   restart. We always carry a space in nVar for the energy equation in the
+   mean flow solver, but we only write it to the restart if it is active.
+   Therefore, we must reduce skipVars here if energy is inactive so that
+   the turbulent variables are read correctly. ---*/
+  
+  bool incompressible       = (config->GetKind_Regime() == INCOMPRESSIBLE);
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  
+  if (incompressible && ((!energy) && (!weakly_coupled_heat))) skipVars--;
+  
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
@@ -1199,6 +1241,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
   unsigned short iVar, iDim, nLineLets;
   unsigned long iPoint;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
+
+  bool multizone = config->GetMultizone_Problem();
 
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
@@ -1299,6 +1343,21 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Cvector[iVar] = new su2double [nDim];
     }
     
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (multizone){
+      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+      /*--- Define some structures for locating max residuals ---*/
+
+      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_Coord_BGS = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      }
+    }
+
   }
   
   /*--- Initialize lower and upper limits---*/
@@ -2978,13 +3037,13 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   unsigned short iDim, jDim, iVar, iNode;
   unsigned long iVertex, iPoint, iPoint_Neighbor, counter;
   
-  su2double Wall_HeatFlux, func, func_prim;
+  su2double func, func_prim;
   su2double *Normal, Area;
   su2double div_vel, UnitNormal[3];
   su2double **grad_primvar, tau[3][3];
   su2double Vel[3], VelNormal, VelTang[3], VelTangMod, VelInfMod, WallDist[3], WallDistMod;
-  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til_4, nu_til, cv1_3;
-  su2double T_Normal, P_Normal, M_Normal, Density_Normal;
+  su2double Lam_Visc_Normal, Kin_Visc_Normal, dypw_dyp, Eddy_Visc, nu_til_old, nu_til, cv1_3;
+  su2double T_Normal, P_Normal, Density_Normal;
   su2double Density_Wall, T_Wall, P_Wall, Lam_Visc_Wall, Tau_Wall, Tau_Wall_Old;
   su2double *Coord, *Coord_Normal;
   su2double diff, Delta;
@@ -3019,7 +3078,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
   
   /*--- Get the specified wall heat flux from config ---*/
   
-  Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
+  // Wall_HeatFlux = config->GetWall_HeatFlux(Marker_Tag);
   
   /*--- Loop over all of the vertices on this boundary marker ---*/
   
@@ -3088,7 +3147,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Compute mach number ---*/
         
-        M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
+        // M_Normal = VelTangMod / sqrt(Gamma * Gas_Constant * T_Normal);
         
         /*--- Compute the wall temperature using the Crocco-Buseman equation ---*/
         
@@ -3207,7 +3266,7 @@ void CTurbSASolver::SetNuTilde_WF(CGeometry *geometry, CSolver **solver_containe
         
         /*--- Solve for the new value of nu_tilde given the eddy viscosity and using a Newton method ---*/
         
-        nu_til_old = 0.0; nu_til_4 = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
+        nu_til_old = 0.0; nu_til = 0.0; cv1_3 = 7.1*7.1*7.1;
         nu_til_old = node[iPoint]->GetSolution(0);
         counter = 0; diff = 1.0;
         
@@ -3256,7 +3315,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
       eddyViscosity = 0.0, kinematicViscosityTurb = 0.0, wallDistance = 0.0, lengthScale = 0.0;
   
   su2double maxDelta = 0.0, deltaAux = 0.0, distDES = 0.0, uijuij = 0.0, k2 = 0.0, r_d = 0.0, f_d = 0.0,
-      deltaDDES = 0.0, deltaAuxDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
+      deltaDDES = 0.0, omega = 0.0, ln_max = 0.0, ln[3] = {0.0, 0.0, 0.0},
       aux_ln = 0.0, f_kh = 0.0;
   
   su2double nu_hat, fw_star = 0.424, cv1_3 = pow(7.1, 3.0); k2 = pow(0.41, 2.0);
@@ -3308,19 +3367,8 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         Spalart
         1997
         ---*/
-        maxDelta=0.;      
-        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
-          jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          coord_j = geometry->node[jPoint]->GetCoord();
-          
-          deltaAux = 0.;
-          for (iDim = 0;iDim < nDim; iDim++){
-            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
-          }
-          
-          maxDelta = max(maxDelta,sqrt(deltaAux));
-        }
         
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
         distDES         = constDES * maxDelta;
         lengthScale = min(distDES,wallDistance);
                 
@@ -3332,18 +3380,7 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Theoretical and Computational Fluid Dynamics - 2006
          ---*/
             
-        maxDelta = 0.0;      
-        for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
-          jPoint  = geometry->node[iPoint]->GetPoint(iNeigh);
-          coord_j = geometry->node[jPoint]->GetCoord();
-        
-          deltaAux = 0.0;
-          for (iDim = 0; iDim < nDim; iDim++){
-            deltaAux += pow((coord_j[iDim]-coord_i[iDim]),2.);
-          }
-          
-          maxDelta = max(maxDelta,sqrt(deltaAux));
-        }
+        maxDelta = geometry->node[iPoint]->GetMaxLength();
         
         r_d = (kinematicViscosityTurb+kinematicViscosity)/(uijuij*k2*pow(wallDistance, 2.0));
         f_d = 1.0-tanh(pow(8.0*r_d,3.0));
@@ -3358,17 +3395,14 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
          Theoretical and Computational Fluid Dynamics - 2012
          ---*/
         
-        deltaDDES = 0.0;
         for (iNeigh = 0; iNeigh < nNeigh; iNeigh++){
             jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
             coord_j = geometry->node[jPoint]->GetCoord();
-            deltaAuxDDES = 0.0;
             for ( iDim = 0; iDim < nDim; iDim++){
               deltaAux       = abs(coord_j[iDim] - coord_i[iDim]);
               delta[iDim]     = max(delta[iDim], deltaAux);
-              deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
             }
-            deltaDDES = max(deltaDDES,sqrt(deltaAuxDDES));
+            deltaDDES = geometry->node[iPoint]->GetMaxLength();
         }
         
         omega = sqrt(vorticity[0]*vorticity[0] + 
@@ -3417,12 +3451,10 @@ void CTurbSASolver::SetDES_LengthScale(CSolver **solver, CGeometry *geometry, CC
         for (iNeigh = 0;iNeigh < nNeigh; iNeigh++){
           jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
           coord_j = geometry->node[jPoint]->GetCoord();
-          deltaAuxDDES = 0.0;
           for (iDim = 0; iDim < nDim; iDim++){
             delta[iDim] = fabs(coord_j[iDim] - coord_i[iDim]);            
-            deltaAuxDDES += pow((coord_j[iDim]-coord_i[iDim]),2.);
           }
-          deltaDDES=max(deltaDDES,sqrt(deltaAuxDDES));
+          deltaDDES = geometry->node[iPoint]->GetMaxLength();
           ln[0] = delta[1]*ratioOmega[2] - delta[2]*ratioOmega[1];
           ln[1] = delta[2]*ratioOmega[0] - delta[0]*ratioOmega[2];
           ln[2] = delta[0]*ratioOmega[1] - delta[1]*ratioOmega[0];
@@ -3466,6 +3498,7 @@ void CTurbSASolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
                                           unsigned long val_inlet_point,
                                           unsigned short val_kind_marker,
+                                          string val_marker,
                                           CGeometry *geometry,
                                           CConfig *config) {
 
@@ -3483,7 +3516,9 @@ su2double CTurbSASolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short position = nDim+2+nDim;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
@@ -3543,6 +3578,8 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   unsigned long iPoint;
   ifstream restart_file;
   string text_line;
+
+  bool multizone = config->GetMultizone_Problem();
   
   /*--- Array initialization ---*/
   
@@ -3624,6 +3661,22 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
     
     LinSysSol.Initialize(nPoint, nPointDomain, nVar, 0.0);
     LinSysRes.Initialize(nPoint, nPointDomain, nVar, 0.0);
+
+    /*--- Initialize the BGS residuals in multizone problems. ---*/
+    if (multizone){
+      Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_BGS[iVar]  = 0.0;
+      Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
+
+      /*--- Define some structures for locating max residuals ---*/
+
+      Point_Max_BGS       = new unsigned long[nVar];  for (iVar = 0; iVar < nVar; iVar++) Point_Max_BGS[iVar]  = 0;
+      Point_Max_Coord_BGS = new su2double*[nVar];
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Point_Max_Coord_BGS[iVar] = new su2double[nDim];
+        for (iDim = 0; iDim < nDim; iDim++) Point_Max_Coord_BGS[iVar][iDim] = 0.0;
+      }
+    }
+
   }
   
   /*--- Computation of gradients by least squares ---*/
@@ -4644,6 +4697,7 @@ void CTurbSSTSolver::SetInletAtVertex(su2double *val_inlet,
 su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
                                            unsigned long val_inlet_point,
                                            unsigned short val_kind_marker,
+                                           string val_marker,
                                            CGeometry *geometry,
                                            CConfig *config) {
 
@@ -4662,7 +4716,9 @@ su2double CTurbSSTSolver::GetInletAtVertex(su2double *val_inlet,
     unsigned short omega_position = nDim+2+nDim+1;
 
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) {
+      if ((config->GetMarker_All_KindBC(iMarker) == INLET_FLOW) &&
+          (config->GetMarker_All_TagBound(iMarker) == val_marker)) {
+        
         for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++){
 
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
