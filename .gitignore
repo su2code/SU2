@@ -2,6 +2,7 @@
 *.slo
 *.lo
 *.o
+*.optrpt
 
 # Autoconf/Automake
 *.Po
@@ -9,6 +10,15 @@
 *.log
 *.status
 autom4te.cache
+*.in
+compile
+config.guess
+config.sub
+configure
+depcomp
+missing
+install-sh
+aclocal.m4
 
 # Compiled Dynamic libraries
 *.so
@@ -33,6 +43,7 @@ SU2_PY/pySU2/*.py
 
 # Compiled Makefiles
 Makefile
+Makefile.in
 
 # Emacs temporary files
 *~
@@ -42,6 +53,7 @@ externals/autotools/bin
 externals/autotools/include
 externals/autotools/share
 externals/autotools/lib
+externals/tecio/boost
 
 #logs and errors
 *.log
@@ -63,3 +75,6 @@ bin/
 
 TestData
 *.stl
+
+Mercurial
+.hg*

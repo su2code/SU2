@@ -67,6 +67,8 @@ def main():
                       help="Enable mpi support", dest="mpi_enabled", default=False)
     parser.add_option("--enable-PY_WRAPPER", action="store_true",
                       help="Enable Python wrapper compilation", dest="py_wrapper_enabled", default=False)
+    parser.add_option("--disable-tecio", action="store_true",
+                      help="Disable Tecplot binary support", dest="tecio_disabled", default=False)
     parser.add_option("--disable-normal", action="store_true",
                       help="Disable normal mode support", dest="normal_mode", default=False)
     parser.add_option("-c" , "--check", action="store_true",
@@ -118,6 +120,7 @@ def main():
                   conf_environ,
                   options.mpi_enabled,
                   options.py_wrapper_enabled,
+                  options.tecio_disabled,
                   modes,
                   made_adolc,
                   made_codi)
@@ -402,10 +405,13 @@ def configure(argument_dict,
               conf_environ,
               mpi_support,
               py_wrapper,
+              tecio,
               modes,
               made_adolc,
               made_codi):
 
+    # Boostrap to generate Makefile.in
+    bootstrap_command = './bootstrap'
     # Set the base command for running configure
     configure_base = '../configure'
 
@@ -418,8 +424,15 @@ def configure(argument_dict,
         configure_base = configure_base + ' --enable-mpi'
     if py_wrapper:
         configure_base = configure_base + ' --enable-PY_WRAPPER'
+    if tecio:
+        configure_base = configure_base + ' --disable-tecio'
 
     build_dirs = ''
+   
+    print(  '\nPreparing build environment\n' \
+            '=====================================================================')
+
+    run_command(bootstrap_command, 'bootstrap.log', 'bootstrap.err', conf_environ)
 
     # Create the commands for the different configurations and run configure
     for key in modes:

@@ -10,6 +10,8 @@ For an overview of the technical details in SU2, please see the following AIAA J
 
 [![Build Status](https://travis-ci.org/su2code/SU2.svg?branch=develop)](https://travis-ci.org/su2code/SU2)
 
+Please note that this project is released with a Contributor Code of Conduct. By participating in this project you agree to abide by its terms.
+
 ----------------------------------------------------------
   SU2 INTRODUCTION 
 ----------------------------------------------------------
@@ -30,7 +32,7 @@ You will find more information and the latest news in:
   SU2 INSTALLATION
 ---------------------------------------------------
 
-To build SU2 from the source code, just open a terminal and run the './configure', 'make', and 'make install' commands in the root directory of the source distribution. You can provide an install location using the prefix option to configure. If there are issues with autotool version requirements, run the ./bootstrap script provided in the root directory in order to build local versions of the tools and reset the makefiles (before trying configure/make/make install again). Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
+To build SU2 from the source code, first open a terminal and execute the ./bootstrap script provided in the root directory of the source distribution in order to set the makefiles for your local system. Then, simply run the './configure', 'make', and 'make install' commands. You can provide an install location using the prefix option to configure. Please note that more detailed instructions on the configure and build processes can be found within the INSTALL file.
 
 ----------------------------------------------------------
   SU2 PATH SETUP 
