@@ -314,6 +314,10 @@ CSourcePieceWise_TurbSA::CSourcePieceWise_TurbSA(unsigned short val_nDim, unsign
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
   cw1 = cb1/k2+(1.0+cb2)/sigma;
+
+  /*--- Set the default value for the intermittency, which corresponds
+        to no transition modeling. ---*/
+  intermittency = 1.0;
   
 }
 
@@ -387,9 +391,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     Shat = max(Shat, 1.0e-10);
     inv_Shat = 1.0/Shat;
 
-//    Original SA model
-//    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
-    
+    /*--- Compute the intermittency value for the BC transition model. ---*/
     if (transition_BC) {
 
 //    BC model constants    
@@ -410,12 +412,15 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
       term_exponential = (term1 + term2);
       gamma_BC = 1.0 - exp(-term_exponential);
 
-      Production = gamma_BC*cb1*Shat*TurbVar_i[0]*Volume;
+      intermittency = gamma_BC;
     }
-    else {
-      Production = cb1*Shat*TurbVar_i[0]*Volume;
-    }
-    
+
+//  Original SA model
+//  Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
+
+    /*--- Compute the production term, multiplied by the intermittency. ---*/
+    Production = intermittency*cb1*Shat*TurbVar_i[0]*Volume;
+
     /*--- Destruction term ---*/
     
     r = min(TurbVar_i[0]*inv_Shat*inv_k2_d2,10.0);
@@ -446,12 +451,7 @@ void CSourcePieceWise_TurbSA::ComputeResidual(su2double *val_residual, su2double
     if ( Shat <= 1.0e-10 ) dShat = 0.0;
     else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
     
-    if (transition_BC) {
-        val_Jacobian_i[0][0] += gamma_BC*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
-    }
-    else {
-        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
-    }
+    val_Jacobian_i[0][0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
     
     /*--- Implicit part, destruction term ---*/
     
@@ -487,7 +487,10 @@ CSourcePieceWise_TurbSA_E::CSourcePieceWise_TurbSA_E(unsigned short val_nDim, un
     cb2   = 0.622;
     cb2_sigma = cb2/sigma;
     cw1 = cb1/k2+(1.0+cb2)/sigma;
-    
+
+    /*--- Set the default value for the intermittency, which corresponds
+          to no transition modeling. ---*/
+    intermittency = 1.0;
 }
 
 CSourcePieceWise_TurbSA_E::~CSourcePieceWise_TurbSA_E(void) { }
@@ -561,9 +564,9 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         Shat = max(Shat, 1.0e-10);
         inv_Shat = 1.0/Shat;
         
-        /*--- Production term ---*/;
+        /*--- Production term, multiplied by the intermittency. ---*/;
         
-        Production = cb1*Shat*TurbVar_i[0]*Volume;
+        Production = intermittency*cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
@@ -594,7 +597,7 @@ void CSourcePieceWise_TurbSA_E::ComputeResidual(su2double *val_residual, su2doub
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
-        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+        val_Jacobian_i[0][0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
         
         /*--- Implicit part, destruction term ---*/
         
@@ -631,6 +634,10 @@ CSourcePieceWise_TurbSA_COMP::CSourcePieceWise_TurbSA_COMP(unsigned short val_nD
     cb2_sigma = cb2/sigma;
     cw1 = cb1/k2+(1.0+cb2)/sigma;
     c5 = 3.5;
+
+    /*--- Set the default value for the intermittency, which corresponds
+          to no transition modeling. ---*/
+    intermittency = 1.0;
     
 }
 
@@ -688,9 +695,9 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         Shat = max(Shat, 1.0e-10);
         inv_Shat = 1.0/Shat;
         
-        /*--- Production term ---*/;
+        /*--- Production term, multiplied by the intermittency. ---*/;
         
-        Production = cb1*Shat*TurbVar_i[0]*Volume;
+        Production = intermittency*cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
@@ -729,7 +736,7 @@ void CSourcePieceWise_TurbSA_COMP::ComputeResidual(su2double *val_residual, su2d
         dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+        val_Jacobian_i[0][0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
         
         /*--- Implicit part, destruction term ---*/
         
@@ -768,6 +775,10 @@ CSourcePieceWise_TurbSA_E_COMP::CSourcePieceWise_TurbSA_E_COMP(unsigned short va
     cb2   = 0.622;
     cb2_sigma = cb2/sigma;
     cw1 = cb1/k2+(1.0+cb2)/sigma;
+
+    /*--- Set the default value for the intermittency, which corresponds
+          to no transition modeling. ---*/
+    intermittency = 1.0;
     
 }
 
@@ -840,9 +851,9 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         Shat = max(Shat, 1.0e-10);
         inv_Shat = 1.0/Shat;
         
-        /*--- Production term ---*/;
+        /*--- Production term, multiplied by the intermittency. ---*/;
         
-        Production = cb1*Shat*TurbVar_i[0]*Volume;
+        Production = intermittency*cb1*Shat*TurbVar_i[0]*Volume;
         
         /*--- Destruction term ---*/
         
@@ -884,7 +895,7 @@ void CSourcePieceWise_TurbSA_E_COMP::ComputeResidual(su2double *val_residual, su
         
         if ( Shat <= 1.0e-10 ) dShat = 0.0;
         else dShat = -S*pow(Ji,-2.0)/nu + S*dfv1;
-        val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+        val_Jacobian_i[0][0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
         
         /*--- Implicit part, destruction term ---*/
         
@@ -923,6 +934,10 @@ CSourcePieceWise_TurbSA_Neg::CSourcePieceWise_TurbSA_Neg(unsigned short val_nDim
   cb2   = 0.622;
   cb2_sigma = cb2/sigma;
   cw1 = cb1/k2+(1.0+cb2)/sigma;
+
+  /*--- Set the default value for the intermittency, which corresponds
+        to no transition modeling. ---*/
+  intermittency = 1.0;
   
 }
 
@@ -982,12 +997,12 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       Shat = max(Shat, 1.0e-10);
       inv_Shat = 1.0/Shat;
       
-      /*--- Production term ---*/;
+      /*--- Production term, multiplied by the intermittency. ---*/;
       
       //    Original SA model
       //    Production = cb1*(1.0-ft2)*Shat*TurbVar_i[0]*Volume;
       
-      Production = cb1*Shat*TurbVar_i[0]*Volume;
+      Production = intermittency*cb1*Shat*TurbVar_i[0]*Volume;
       
       /*--- Destruction term ---*/
       
@@ -1015,7 +1030,7 @@ void CSourcePieceWise_TurbSA_Neg::ComputeResidual(su2double *val_residual, su2do
       dfv2 = -(1/nu-Ji_2*dfv1)/pow(1.+Ji*fv1,2.);
       if ( Shat <= 1.0e-10 ) dShat = 0.0;
       else dShat = (fv2+TurbVar_i[0]*dfv2)*inv_k2_d2;
-      val_Jacobian_i[0][0] += cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
+      val_Jacobian_i[0][0] += intermittency*cb1*(TurbVar_i[0]*dShat+Shat)*Volume;
       
       /*--- Implicit part, destruction term ---*/
       

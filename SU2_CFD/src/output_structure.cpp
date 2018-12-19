@@ -12793,6 +12793,18 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       nVar_Par += 1;
       Variable_Names.push_back("Sharp_Edge_Dist");
     }
+
+    /*--- Add the effective intermittency for the LM transition model. ---*/
+
+    if (transition) {
+      nVar_Par += 1;
+      if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+          (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
+        Variable_Names.push_back("gamma_Eff");
+      } else {
+        Variable_Names.push_back("<greek>g</greek><sub>Eff</sub>");
+      }
+    }
     
     /*--- Add the intermittency for the BC trans. model. ---*/
     
@@ -12805,7 +12817,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         Variable_Names.push_back("<greek>g</greek><sub>BC</sub>");
       }
     }
-    
+
     if (config->GetKind_HybridRANSLES()!=NO_HYBRIDRANSLES){
       nVar_Par +=1;
       Variable_Names.push_back("DES_LengthScale");
@@ -13057,6 +13069,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         
         if (config->GetWrt_SharpEdges()) {
           Local_Data[jPoint][iVar] = geometry->node[iPoint]->GetSharpEdge_Distance(); iVar++;
+        }
+
+        /*--- Load data for the effective intermittency of the LM trans. model. ---*/
+
+        if (transition) {
+          Local_Data[jPoint][iVar] = solver[TRANS_SOL]->node[iPoint]->GetGammaEff(); iVar++;
         }
         
         /*--- Load data for the intermittency of the BC trans. model. ---*/
