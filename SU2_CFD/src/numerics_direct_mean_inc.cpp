@@ -142,8 +142,8 @@ void CUpwFDSInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_J
   MeandRhodT = 0.0; dRhodT_i = 0.0; dRhodT_j = 0.0;
   if (variable_density) {
     MeandRhodT = -MeanDensity/MeanTemperature;
-    dRhodT_i   = -Density_i/Temperature_i;
-    dRhodT_j   = -Density_j/Temperature_j;
+    dRhodT_i   = -DensityInc_i/Temperature_i;
+    dRhodT_j   = -DensityInc_j/Temperature_j;
   }
 
   /*--- Compute ProjFlux_i ---*/
