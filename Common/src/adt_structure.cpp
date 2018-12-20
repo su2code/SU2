@@ -1241,7 +1241,7 @@ bool CADTElemClass::CoorInQuadrilateral(const unsigned long elemID,
 
     /* Compute the negative of the Jacobian matrix. */
     const su2double a00 = V1x + parCoor[1]*V3x, a01 = V2x + parCoor[0]*V3x;
-    const su2double a10 = V1y + parCoor[1]*V3y, a11 = V2y + parCoor[1]*V3y;
+    const su2double a10 = V1y + parCoor[1]*V3y, a11 = V2y + parCoor[0]*V3y;
 
     /* Compute the update of the parametric coordinates. */
     detInv = 1.0/(a00*a11 - a01*a10);

@@ -1730,7 +1730,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   
   /*--- Local variables ---*/
   
@@ -1778,6 +1778,22 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       Pressure_Thermodynamic = FluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
+      
+    case INC_IDEAL_GAS_POLY:
+      
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      FluidModel = new CIncIdealGasPolynomial(config->GetGas_Constant(), Pressure_Thermodynamic);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = FluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
 
     default:
 
@@ -1795,6 +1811,9 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
+    
+    for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar), iVar);
 
     /*--- Use the fluid model to compute the dimensional viscosity/conductivity. ---*/
 
@@ -1922,6 +1941,18 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
       
+    case INC_IDEAL_GAS_POLY:
+      FluidModel = new CIncIdealGasPolynomial(Gas_ConstantND, Pressure_ThermodynamicND);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+        for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStreamND);
+      break;
+      
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1932,14 +1963,27 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
 
     config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
-    /*--- Sutherland's model ---*/    
+    /*--- Sutherland's model ---*/
+    
     config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
     config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
+    /*--- Viscosity model via polynomial. ---*/
+
+    config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
+    
     /*--- Constant thermal conductivity model ---*/
 
     config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    
+    /*--- Conductivity model via polynomial. ---*/
+
+    config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(0)/Conductivity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Conductivity_Ref, iVar);
     
     /*--- Set up the transport property models. ---*/
 
@@ -2043,6 +2087,30 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
         else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
         break;
+        
+      case INC_IDEAL_GAS_POLY:
+        cout << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
+        cout << "Variable density incompressible flow using ideal gas law." << endl;
+        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
+        cout << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
+        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
+        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
+        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
+        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
+        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
+        cout << "Cp(T) polynomial coefficients: \n  (";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          cout << config->GetCp_PolyCoeff(iVar);
+          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+        }
+        cout << ")." << endl;
+        cout << "Cp(T) polynomial coefficients (non-dim.): \n  (";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          cout << config->GetCp_PolyCoeffND(iVar);
+          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+        }
+        cout << ")." << endl;
+        break;
       
     }
     if (viscous) {
@@ -2071,7 +2139,22 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
           cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
           cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
           break;
-
+          
+        case POLYNOMIAL_VISCOSITY:
+          cout << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
+          cout << "Mu(T) polynomial coefficients: \n  (";
+          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+            cout << config->GetMu_PolyCoeff(iVar);
+            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+          }
+          cout << ")." << endl;
+          cout << "Mu(T) polynomial coefficients (non-dim.): \n  (";
+          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+            cout << config->GetMu_PolyCoeffND(iVar);
+            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+          }
+          cout << ")." << endl;
+          break;
       }
 
       if (energy) {
@@ -2089,7 +2172,36 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
             cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
             break;
 
+          case POLYNOMIAL_CONDUCTIVITY:
+            cout << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
+            cout << "Kt(T) polynomial coefficients: \n  (";
+            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              cout << config->GetKt_PolyCoeff(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+            }
+            cout << ")." << endl;
+            cout << "Kt(T) polynomial coefficients (non-dim.): \n  (";
+            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+              cout << config->GetKt_PolyCoeffND(iVar);
+              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
+            }
+            cout << ")." << endl;
+            break;
         }
+        
+        if (turbulent) {
+          switch (config->GetKind_ConductivityModel_Turb()) {
+            case CONSTANT_PRANDTL_TURB:
+              cout << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
+              cout << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
+              break;
+            case NO_CONDUCTIVITY_TURB:
+              cout << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
+              cout << "No turbulent component in effective thermal conductivity." << "\n";
+              break;
+          }
+        }
+        
       }
 
     }
