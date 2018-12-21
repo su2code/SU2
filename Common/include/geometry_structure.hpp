@@ -1601,6 +1601,44 @@ public:
    */
   void SetCustomBoundaryHeatFlux(unsigned short val_marker, unsigned long val_vertex, su2double val_customBoundaryHeatFlux);
   
+  /*!
+   * \brief Filter values given at the element CG by performing a weighted average over a radial neighbourhood.
+   * \param[in] filter_radius - Parameter defining the size of the neighbourhood.
+   * \param[in] kernels - Kernel types and respective parameter, size of vector defines number of filter recursions.
+   * \param[in] input_values - "Raw" values.
+   * \param[out] output_values - Filtered values.
+   */
+  void FilterValuesAtElementCG(const vector<su2double> filter_radius, const vector<pair<unsigned short,su2double> > &kernels,
+                               const su2double *input_values, su2double *output_values) const;
+  
+  /*!
+   * \brief Build the global (entire mesh!) adjacency matrix for the elements in compressed format.
+   *        Used by FilterValuesAtElementCG to search for geometrically close neighbours.
+   * \param[out] neighbour_start - i'th position stores the start position in "neighbour_idx" for the immediate
+   *             neighbours of global element "i". Size nElemDomain+1
+   * \param[out] neighbour_idx - Global index of the neighbours, mush be NULL on entry and free'd by calling function.
+   */
+  void GetGlobalElementAdjacencyMatrix(vector<unsigned long> &neighbour_start, long *&neighbour_idx) const;
+  
+  /*!
+   * \brief Get the neighbours of the global element in the first position of "neighbours" that are within "radius" of it.
+   * \param[in] iElem_global - Element of interest.
+   * \param[in] radius - Parameter defining the size of the neighbourhood.
+   * \param[in] neighbour_start - See GetGlobalElementAdjacencyMatrix.
+   * \param[in] neighbour_idx - See GetGlobalElementAdjacencyMatrix.
+   * \param[in] cg_elem - Global element centroid coordinates in row major format {x0,y0,x1,y1,...}. Size nDim*nElemDomain.
+   * \param[in,out] neighbours - The neighbours of iElem_global.
+   */
+  void GetRadialNeighbourhood(const unsigned long iElem_global, const passivedouble radius,
+                              const vector<unsigned long> &neighbour_start, const long *neighbour_idx,
+                              const su2double *cg_elem, vector<long> &neighbours) const;
+
+  /*!
+   * \brief Compute and store the volume of the elements.
+   * \param[in] config - Problem configuration.
+   */
+  void SetElemVolume(CConfig *config);
+
 };
 
 /*!
