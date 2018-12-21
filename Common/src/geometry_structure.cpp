@@ -824,7 +824,7 @@ void CGeometry::CompleteComms(CGeometry *geometry,
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
     
-    SU2_MPI::Waitall(nP2PSend, req_P2PSend, &status);
+    SU2_MPI::Waitall(nP2PSend, req_P2PSend, MPI_STATUS_IGNORE);
     
   }
   
