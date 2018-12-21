@@ -1013,8 +1013,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
   
   su2double relax = config->GetAitkenStatRelax();
 
-  su2double relax = config->GetAitkenStatRelax();
-
   for (iPoint = 0; iPoint < nPoint; iPoint++){
 
     /*--- Extract the adjoint solution ---*/
