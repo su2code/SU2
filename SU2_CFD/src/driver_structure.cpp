@@ -3435,6 +3435,14 @@ void CDriver::Iteration_Preprocessing() {
       }
       break;
 
+    case TNE2_EULER: case TNE2_NAVIER_STOKES:
+
+      if (rank == MASTER_NODE)
+          cout << ": Two-Temp Euler/Navier-Stokes/RANS fluid iteration." << endl;
+        iteration_container[iZone][iInst] = new CFluidIteration(config_container[iZone]);
+
+      break;
+
     case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:
       if (rank == MASTER_NODE)
         cout << ": finite element Euler/Navier-Stokes/RANS/LES flow iteration." << endl;
