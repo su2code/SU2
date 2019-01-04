@@ -101,6 +101,7 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
   bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
   bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
 
+  SetHistoryOutputValue("TIME_ITER",  config[val_iZone]->GetTimeIter());    
   SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
   
@@ -182,6 +183,7 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
 void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
   AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
   AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
 

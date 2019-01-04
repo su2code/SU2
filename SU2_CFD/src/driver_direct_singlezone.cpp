@@ -109,6 +109,10 @@ void CSinglezoneDriver::StartSolver() {
 }
 
 void CSinglezoneDriver::Preprocess(unsigned long TimeIter) {
+  
+  /*--- Set the current time iteration in the config ---*/
+  
+  config_container[ZONE_0]->SetTimeIter(TimeIter);
 
   /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
   /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/

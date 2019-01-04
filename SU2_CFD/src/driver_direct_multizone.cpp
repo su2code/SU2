@@ -201,12 +201,19 @@ void CMultizoneDriver::StartSolver() {
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   bool unsteady = driver_config->GetTime_Domain();
+  
+  
+  /*--- Set the current time iteration in the config ---*/
+  
+  driver_config->SetTimeIter(TimeIter);
 
   for (iZone = 0; iZone < nZone; iZone++){
 
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetExtIter(TimeIter);
+    config_container[iZone]->SetTimeIter(TimeIter);
+    
 
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/

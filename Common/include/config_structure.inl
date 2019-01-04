@@ -305,6 +305,8 @@ inline void CConfig::SetOuterIter(unsigned long val_iter) { OuterIter = val_iter
 
 inline void CConfig::SetInnerIter(unsigned long val_iter) { InnerIter = val_iter; }
 
+inline void CConfig::SetTimeIter(unsigned long val_iter) { TimeIter = val_iter; }
+
 inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
 
 inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
@@ -314,6 +316,8 @@ inline unsigned long CConfig::GetExtIter_OffSet(void) { return ExtIter_OffSet; }
 inline unsigned long CConfig::GetOuterIter(void) { return OuterIter; }
 
 inline unsigned long CConfig::GetInnerIter(void) { return InnerIter; }
+
+inline unsigned long CConfig::GetTimeIter(void) { return TimeIter; }
 
 inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
