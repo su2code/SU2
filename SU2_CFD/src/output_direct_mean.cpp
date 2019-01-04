@@ -113,6 +113,8 @@ CFlowOutput::~CFlowOutput(void) {
 void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
+  /// DESCRIPTION: The time iteration index.
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
   /// DESCRIPTION: The internal iteration index.
   AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
   /// DESCRIPTION: The external iteration index.
@@ -561,6 +563,7 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];
   
+  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
   SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());  
   SetHistoryOutputValue("PHYS_TIME", timeused);

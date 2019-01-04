@@ -397,6 +397,7 @@ private:
   unsigned long IntIter;			/*!< \brief Current internal iteration number. */
   unsigned long OuterIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long InnerIter;			/*!< \brief Current Outer Iteration for multizone problems. */
+  unsigned long TimeIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
@@ -3086,6 +3087,18 @@ public:
    * \param[in] val_iter - Current FSI iteration number.
    */
   void SetInnerIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Set the current time iteration number.
+   * \param[in] val_iter - Current FSI iteration number.
+   */
+  void SetTimeIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Get the current time iteration number.
+   * \param[in] val_iter - Current time iterationnumber.
+   */
+  unsigned long GetTimeIter();
   
   /*!
    * \brief Set the current internal iteration number.
