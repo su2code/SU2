@@ -10897,7 +10897,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       else {
         Outlet_Density_Total[iMarker_Outlet] = 0.0;
       }
-            
+      
       if (iMesh == MESH_0) {
         config->SetPeriodic_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
       }
@@ -10905,6 +10905,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     
     // Subtract the bulk temperature to set Q
     // HARD CODED for 2 markers and the absolutr value should not be here!!! TDE
+    // OPTION 3 compute energy Q via inlet and outlet bulk temperature, after FLuent way, but bulk temperature not done as in fluent
     su2double dT = 0.0;
       dT = fabs(Outlet_Density_Total[1] - Outlet_Density_Total[0]);
     
@@ -10994,10 +10995,10 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             /*--- Get the specified wall heat flux from config ---*/
 
 
-            /*--- OPTION 1 for Heatflux calculation ---*/
+            /*--- OPTION 1 for Heatflux calculation from config file ---*/
             su2double Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
 
-            /*--- OPTION 2 for Heatflux calculation ---*/
+            /*--- OPTION 2 for Heatflux calculation from computing actual heatflux ---*/
             su2double GradTemperature = 0.0;
             // turn off for no energy equation
             for (iDim = 0; iDim < nDim; iDim++)

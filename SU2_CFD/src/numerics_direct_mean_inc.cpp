@@ -899,13 +899,13 @@ CSourceIncPeriodicBodyForce::CSourceIncPeriodicBodyForce(unsigned short val_nDim
   Body_Force_Vector = new su2double[nDim];
   su2double norm2_PBtranslate = 0.0;
   
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    norm2_PBtranslate =+ pow(config->GetPeriodicTranslation(0)[iDim],2);
+  
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     if (config->GetPeriodicTranslation(0)[iDim] == 0) {
       Body_Force_Vector[iDim] = 0.0;
     } else {
-      Body_Force_Vector[iDim] = DeltaP_BodyForce/config->GetPeriodicTranslation(0)[iDim]; // wrong
-      for (iDim = 0; iDim < nDim; iDim++)
-        norm2_PBtranslate =+ pow(config->GetPeriodicTranslation(0)[iDim],2);
       Body_Force_Vector[iDim] = DeltaP_BodyForce/norm2_PBtranslate*config->GetPeriodicTranslation(0)[iDim];
     }
   }
