@@ -380,6 +380,15 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
     Surface_CMy      = new su2double[config->GetnMarker_Monitoring()];
     Surface_CMz      = new su2double[config->GetnMarker_Monitoring()];
 
+    /*--- Rotocraft coefficients ---*/
+    CT_Inv           = new su2double[nMarker];
+    CQ_Inv           = new su2double[nMarker];
+    CMerit_Inv       = new su2double[nMarker];
+
+    CT_Mnt           = new su2double[nMarker];
+    CQ_Mnt           = new su2double[nMarker];
+    CMerit_Mnt       = new su2double[nMarker];
+
 	/*--- Initialize total coefficients ---*/
     Total_CD        = 0.0;    Total_CL           = 0.0;    Total_CSF            = 0.0;
     Total_CMx       = 0.0;    Total_CMy          = 0.0;    Total_CMz            = 0.0;
@@ -597,7 +606,6 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 	unsigned short iVar, iMarker;
 
 	/*--- Array deallocation ---*/
-  if (Velocity_Inf != NULL)     delete [] Velocity_Inf;
   if (CD_Inv != NULL)           delete [] CD_Inv;
   if (CL_Inv != NULL)           delete [] CL_Inv;
   if (CSF_Inv != NULL)          delete [] CSF_Inv;
@@ -618,10 +626,10 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   if (Surface_CMy_Inv != NULL)  delete [] Surface_CMy_Inv;
   if (Surface_CMz_Inv != NULL)  delete [] Surface_CMz_Inv;
 
-  if (lowerlimit != NULL)  			delete [] lowerlimit;
-  if (upperlimit != NULL) 			delete [] upperlimit;
+  if (lowerlimit != NULL)  		delete [] lowerlimit;
+  if (upperlimit != NULL) 		delete [] upperlimit;
 
-	if (Surface_CL != NULL)       delete [] Surface_CL;
+  if (Surface_CL != NULL)       delete [] Surface_CL;
   if (Surface_CD != NULL)       delete [] Surface_CD;
   if (Surface_CSF != NULL)      delete [] Surface_CSF;
   if (Surface_CEff != NULL)     delete [] Surface_CEff;
@@ -638,7 +646,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
   if (CEquivArea_Inv != NULL)   delete [] CEquivArea_Inv;
   if (CNearFieldOF_Inv != NULL) delete [] CNearFieldOF_Inv;
 
-	if (Primitive != NULL)        delete [] Primitive;
+  if (Primitive != NULL)        delete [] Primitive;
   if (Primitive_i != NULL)      delete [] Primitive_i;
   if (Primitive_j != NULL)      delete [] Primitive_j;
 
@@ -2099,7 +2107,7 @@ void CTNE2EulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solution_c
 
 	/*--- Set booleans based on config settings ---*/
 	bool implicit 		= (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-	bool muscl    		= (config->GetMUSCL_Flow() && (iMesh == MESH_0));
+    bool muscl    		= (config->GetMUSCL_TNE2() && (iMesh == MESH_0));
 	bool disc_adjoint = config->GetDiscrete_Adjoint();
   bool limiter      = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) &&
 											!(disc_adjoint && config->GetFrozen_Limiter_Disc()));
@@ -5612,6 +5620,15 @@ CTNE2NSSolver::CTNE2NSSolver(CGeometry *geometry, CConfig *config,
 	CFx_Inv        = new su2double[nMarker];
 	CFy_Inv        = new su2double[nMarker];
 	CFz_Inv        = new su2double[nMarker];
+
+    /*--- Rotorcraft coefficients ---*/
+    CT_Inv         = new su2double[nMarker];
+    CQ_Inv         = new su2double[nMarker];
+    CMerit_Inv     = new su2double[nMarker];
+
+    CT_Mnt         = new su2double[nMarker];
+    CQ_Mnt         = new su2double[nMarker];
+    CMerit_Mnt     = new su2double[nMarker];
 
 	/*--- Initialize total coefficients ---*/
 	Total_CD    = 0.0;  Total_CL    = 0.0;  Total_CSF = 0.0;

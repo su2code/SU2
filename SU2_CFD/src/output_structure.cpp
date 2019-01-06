@@ -12793,7 +12793,7 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       case FEM_ELASTICITY: case DISC_ADJ_FEM:
         LoadLocalData_Elasticity(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
-      case HEAT_EQUATION_FVM:
+      case HEAT_EQUATION_FVM: case TNE2_EULER: case TNE2_NAVIER_STOKES:
         LoadLocalData_Base(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0], iZone);
         break;
       case FEM_EULER: case FEM_NAVIER_STOKES: case FEM_RANS: case FEM_LES:

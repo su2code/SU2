@@ -477,15 +477,8 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   if (Primitive          != NULL) delete [] Primitive;
 	//if (Secondary          != NULL) delete [] Secondary;
   if (Limiter_Primitive  != NULL) delete [] Limiter_Primitive;
-  if (Limiter            != NULL) delete [] Limiter;
+  //if (Limiter            != NULL) delete [] Limiter;
 	//if (Limiter_Secondary) != NULL) delete [] Limiter_Secondary;
-
-  if (Res_TruncError != NULL) delete [] Res_TruncError;
-  if (Residual_Old   != NULL) delete [] Residual_Old;
-  if (Residual_Sum   != NULL) delete [] Residual_Sum;
-  if (Limiter        != NULL) delete [] Limiter;
-  if (Solution_Max   != NULL) delete [] Solution_Max;
-  if (Solution_Min   != NULL) delete [] Solution_Min;
 
 	if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
