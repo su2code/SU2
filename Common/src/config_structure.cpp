@@ -55,7 +55,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 #include "../include/ad_structure.hpp"
-
+#include "../include/toolboxes/printing_toolbox.hpp"
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
@@ -5993,11 +5993,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
-        cout << "Multigrid Level:                  ";
+        PrintingToolbox::CTablePrinter MGTable(&std::cout);
+        
+        MGTable.AddColumn("MG Level",         10);
+        MGTable.AddColumn("Presmooth",     10);
+        MGTable.AddColumn("PostSmooth",    10);
+        MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+        MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          cout.width(6); cout << iLevel;
+          MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
         }
-        cout << endl;
+        MGTable.PrintFooter();
       }
 
 			if (Unsteady_Simulation != TIME_STEPPING) {
@@ -6007,33 +6014,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << endl;
 			}
 			
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PreSmooth coefficients:        ";
-        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMGLevels+1; iMG_PreSmooth++) {
-          cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PostSmooth coefficients:       ";
-        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMGLevels+1; iMG_PostSmooth++) {
-          cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG CorrecSmooth coefficients:     ";
-        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMGLevels+1; iMG_CorrecSmooth++) {
-          cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
-        }
-        cout << endl;
-      }
 
     }
 
