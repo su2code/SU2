@@ -893,23 +893,21 @@ CSourceIncPeriodicBodyForce::CSourceIncPeriodicBodyForce(unsigned short val_nDim
 
   /*--- Store the pointer to the constant body force vector. ---*/
   
-  su2double DeltaP_BodyForce = config->GetDeltaP_BodyForce();
-  //bool energy =  config->GetEnergy_Equation(); // to be changed
-  //if (energy) su2double Temperature_Source_Periodic = config->GetTemperature_Source_Periodic();
   Body_Force_Vector = new su2double[nDim];
   su2double norm2_PBtranslate = 0.0;
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    norm2_PBtranslate =+ pow(config->GetPeriodicTranslation(0)[iDim],2);
+    norm2_PBtranslate += pow(config->GetPeriodicTranslation(0)[iDim],2);
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     if (config->GetPeriodicTranslation(0)[iDim] == 0) {
       Body_Force_Vector[iDim] = 0.0;
     } else {
-      Body_Force_Vector[iDim] = DeltaP_BodyForce/norm2_PBtranslate*config->GetPeriodicTranslation(0)[iDim];
+      Body_Force_Vector[iDim] = config->GetDeltaP_BodyForce()/norm2_PBtranslate*config->GetPeriodicTranslation(0)[iDim];
     }
   }
   
+  // TK output has to be done differently or at least if rank==master
   cout << "Body force vector based on delta p: [ ";
   for (unsigned short iDim = 0; iDim < nDim; iDim++) {
     cout << Body_Force_Vector[iDim] << "  ";
@@ -927,18 +925,15 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
 
   unsigned short iDim;
   su2double DensityInc_0 = 0.0;
-  su2double Pressure_Ref    = config->GetPressure_Ref(); // check if pressure and force ref are the same
-  su2double Temperature_Ref    = config->GetTemperature_Ref();
-  bool energy =  config->GetEnergy_Equation();
+  su2double Pressure_Ref = config->GetPressure_Ref(); // check if pressure and force ref are the same
+  su2double Temperature_Ref = config->GetTemperature_Ref();
   bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
-  su2double C_p = V_i[nDim+7];
   su2double Velocity[nDim];
   
   for (iDim = 0; iDim < nDim; iDim++)
       Velocity[iDim] = V_i[iDim+1];
   
-  su2double Delta_T = 10.0;
-  su2double norm_translation = 0.0;
+  su2double norm2_translation = 0.0;
   
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
@@ -953,26 +948,27 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
    subtracted the operating density * gravity, i.e., removed the
    hydrostatic pressure component (important for pressure BCs). ---*/
 
-  for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim] / Pressure_Ref; // check if pres_ref is the same as force ref
+  /*--- Compute the periodic pressure contribution to the momentum equation ---*/
 
-  /*--- Zero the temperature contribution ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim] / Pressure_Ref; // TK check if pres_ref is the same as force ref
+
+  /*--- Compute the periodic temperature contribution to the energy equation ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
-    norm_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
+    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
   }
-  norm_translation = sqrt(norm_translation);
-      
 
-  if (energy) {
+  if (config->GetEnergy_Equation()) {
     
-    su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / config->GetPeriodic_MassFlow("outlet") / pow(norm_translation,2); // HARDCODED inlet !!!!
+    su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / config->GetPeriodic_MassFlow("outlet") / norm2_translation; // TK HARDCODED inlet !!!!
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_residual[nDim+1] = Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim] * Volume * Body_Force_T; // maybe make it class var
+      val_residual[nDim+1] += Volume * Body_Force_T * Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim]; // TK maybe make it class var
     }
+  } else {
+    val_residual[nDim+1] = 0.0;
   }
-  else val_residual[nDim+1] = 0.0;
 
 }
 

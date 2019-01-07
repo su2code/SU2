@@ -871,25 +871,23 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
+   * \return Recovered/Physical pressure for periodic flow.
    */
-  virtual su2double GetPressure_Recovered(void);
+  virtual su2double GetPressure_Recovered(void); // TK
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
+   * \return Recovered/Physical temperature for periodic flow.
    */
   virtual su2double GetTemperature_Recovered(void);
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
    */
   virtual void SetPressure_Recovered(su2double val_pressure);
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
    */
   virtual void SetTemperature_Recovered(su2double val_temperature);
   
@@ -3787,25 +3785,23 @@ public:
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
+   * \return Recovered/Physical pressure for periodic flow.
    */
-  su2double GetPressure_Recovered(void);
+  su2double GetPressure_Recovered(void); // TK
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
+   * \return Recovered/Physical temperature for periodic flow.
    */
   su2double GetTemperature_Recovered(void);
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
    */
   void SetPressure_Recovered(su2double val_pressure);
   
   /*!
    * \brief A virtual member.
-   * \return Old value of the flow density.
    */
   void SetTemperature_Recovered(su2double val_temperature);
   
