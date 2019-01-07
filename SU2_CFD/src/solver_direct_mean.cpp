@@ -3913,7 +3913,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       case CONSTANT_CONDUCTIVITY:
         ModelTable << "CONSTANT_CONDUCTIVITY";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_ConstantND()/config->GetKt_Constant() << Unit.str() << config->GetKt_ConstantND();         
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
