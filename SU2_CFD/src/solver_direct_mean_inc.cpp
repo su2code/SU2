@@ -2144,7 +2144,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       case CONSTANT_CONDUCTIVITY:
         ModelTable << "CONSTANT_CONDUCTIVITY";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_ConstantND()/config->GetKt_Constant() << Unit.str() << config->GetKt_ConstantND();         
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
         Unit.str("");
         NonDimTable.PrintFooter();
         break;
@@ -2168,12 +2168,12 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
       ModelTable << "CONSTANT_DENSITY";
       if (energy){
         Unit << "N.m/kg.K";
-        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_CpND()/config->GetSpecific_Heat_Cp() << Unit.str() << config->GetSpecific_Heat_CpND();         
+        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
         Unit.str("");
       }
       if (boussinesq){
         Unit << "K^-1";
-        NonDimTable << "Thermal Exp." << config->GetThermal_Expansion_Coeff() << config->GetThermal_Expansion_CoeffND()/config->GetThermal_Expansion_Coeff() << Unit.str() <<  config->GetThermal_Expansion_CoeffND();         
+        NonDimTable << "Thermal Exp." << config->GetThermal_Expansion_Coeff() << config->GetThermal_Expansion_Coeff()/config->GetThermal_Expansion_CoeffND() << Unit.str() <<  config->GetThermal_Expansion_CoeffND();         
         Unit.str("");
       }
       Unit << "Pa";
@@ -2185,7 +2185,7 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
     case INC_IDEAL_GAS:
       ModelTable << "INC_IDEAL_GAS";      
       Unit << "N.m/kg.K";
-      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_CpND()/config->GetSpecific_Heat_Cp() << Unit.str() << config->GetSpecific_Heat_CpND();         
+      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
       Unit.str("");
       Unit << "g/mol";
       NonDimTable << "Molecular weight" << config->GetMolecular_Weight()<< 1.0 << Unit.str() << config->GetMolecular_Weight();         
