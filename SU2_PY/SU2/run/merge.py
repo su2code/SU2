@@ -84,6 +84,8 @@ def merge( config ):
     # # MERGING # #
     if 'FLUID_STRUCTURE_INTERACTION' in multizone_cases:
         merge_multizone(konfig)
+    elif konfig['OUTPUT_FORMAT'] == 'PARAVIEW_BINARY':
+        pass
     else:
         if 'WRT_UNSTEADY' in special_cases:
             merge_unsteady(konfig)
@@ -123,7 +125,7 @@ def merge_solution( config ):
 def merge_multizone( config, begintime=0, endtime=None ):
 
     if not endtime:
-        endtime = config.EXT_ITER
+        endtime = config.TIME_ITER
     
     SU2_SOL_FSI( config )
     

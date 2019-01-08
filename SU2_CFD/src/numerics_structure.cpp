@@ -2284,8 +2284,8 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
 
     factor = 0.5/Density;
-    val_Proj_Jac_Tensor_i[3][0] += factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[3][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[3][0] -= factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[3][0] -= factor*proj_viscousflux_vel;
     val_Proj_Jac_Tensor_i[3][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_j[3][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_i[3][2] += factor*val_Proj_Visc_Flux[2];
@@ -2338,8 +2338,8 @@ void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar, su2double val_la
         val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
     
     factor = 0.5/Density;
-    val_Proj_Jac_Tensor_i[4][0] += factor*proj_viscousflux_vel;
-    val_Proj_Jac_Tensor_j[4][0] += factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_i[4][0] -= factor*proj_viscousflux_vel;
+    val_Proj_Jac_Tensor_j[4][0] -= factor*proj_viscousflux_vel;
     val_Proj_Jac_Tensor_i[4][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_j[4][1] += factor*val_Proj_Visc_Flux[1];
     val_Proj_Jac_Tensor_i[4][2] += factor*val_Proj_Visc_Flux[2];
@@ -2972,18 +2972,28 @@ void CNumerics::CreateBasis(su2double *val_Normal) {
   }
 }
 
-void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
-                                      const su2double Dissipation_i, const su2double Dissipation_j,
-                                      const su2double Sensor_i, const su2double Sensor_j,
-                                      su2double& Dissipation_ij, CConfig *config){
-  unsigned short iDim;
+void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
+                                   const su2double Dissipation_j,
+                                   const su2double Sensor_i,
+                                   const su2double Sensor_j,
+                                   su2double& Dissipation_ij,
+                                   CConfig *config) {
+
+  /*--- Check for valid input ---*/
+
+  assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
+  assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
+  assert((Sensor_i >= 0) && (Sensor_i <= 1));
+  assert((Sensor_j >= 0) && (Sensor_j <= 1));
+
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+
+  /*--- A minimum level of upwinding is used to enhance stability ---*/
+
+  const su2double Min_Dissipation = 0.05;
   
-  su2double Ducros_ij, Delta, Aaux, phi1, phi2;
-  static const su2double ch1 = 3.0, ch2 = 1.0, phi_max = 1.0;
-  static const su2double Const_DES = 5.0;
-  
-  su2double phi_hybrid_i, phi_hybrid_j;
+  const su2double Mean_Dissipation = 0.5*(Dissipation_i + Dissipation_j);
+  const su2double Mean_Sensor = 0.5*(Sensor_i + Sensor_j);
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
 
@@ -2992,6 +3002,8 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
     if (roe_low_diss == FD_DUCROS){
       
       /*--- See Jonhsen et al. JCP 229 (2010) pag. 1234 ---*/
+
+      su2double Ducros_ij;
       
       if (0.5*(Sensor_i + Sensor_j) > 0.65)
         Ducros_ij = 1.0;
@@ -3000,30 +3012,26 @@ void CNumerics::SetRoe_Dissipation(su2double *Coord_i, su2double *Coord_j,
       
       Dissipation_ij = max(Ducros_ij, Dissipation_ij);
     }
-  }
-  else if (roe_low_diss == NTS || roe_low_diss == NTS_DUCROS){
 
-    Delta = 0.0;
-    for (iDim=0;iDim<nDim;++iDim)
-        Delta += pow((Coord_j[iDim]-Coord_i[iDim]),2.);
-    Delta=sqrt(Delta);
+  } else if (roe_low_diss == NTS) {
+    
+    Dissipation_ij = max(Min_Dissipation, Mean_Dissipation);
 
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_i)) - 0.5, 0.0);
-    phi_hybrid_i = phi_max * tanh(pow(Aaux,ch1));
-    
-    Aaux = ch2 * max(((Const_DES*Delta)/(Dissipation_j)) - 0.5, 0.0);
-    phi_hybrid_j = phi_max * tanh(pow(Aaux,ch1));
-    
-    if (roe_low_diss == NTS){
-      Dissipation_ij = max(0.5*(phi_hybrid_i+phi_hybrid_j),0.05);
-    } else if (roe_low_diss == NTS_DUCROS){
-      
-      phi1 = 0.5*(Sensor_i+Sensor_j);
-      phi2 = 0.5*(phi_hybrid_i+phi_hybrid_j);
-      
-      Dissipation_ij = min(max(phi1 + phi2 - (phi1*phi2),0.05),1.0);
-      
-    }
+  } else if (roe_low_diss == NTS_DUCROS) {
+
+    /*--- See Xiao et al. INT J HEAT FLUID FL 51 (2015) pag. 141
+     * https://doi.org/10.1016/j.ijheatfluidflow.2014.10.007 ---*/
+
+    const su2double phi1 = Mean_Sensor;
+    const su2double phi2 = Mean_Dissipation;
+
+    Dissipation_ij = max(Min_Dissipation, phi1 + phi2 - (phi1*phi2));
+
+  } else {
+
+    SU2_MPI::Error("Unrecognized upwind/central blending scheme!",
+                   CURRENT_FUNCTION);
+
   }
 
 }

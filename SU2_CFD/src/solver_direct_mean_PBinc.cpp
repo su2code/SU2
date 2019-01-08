@@ -2211,7 +2211,7 @@ void CPBIncEulerSolver::Upwind_Residual(CGeometry *geometry, CSolver **solver_co
   bool grid_movement    = config->GetGrid_Movement();
 
   /*--- Loop over all the edges ---*/
-
+  
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     
     /*--- Points in edge and normal vectors ---*/
@@ -3561,7 +3561,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
     }
 
   }
-
+  
   /*--- Initialize residual and solution at the ghost points ---*/
 
   for (iPoint = nPointDomain; iPoint < nPoint; iPoint++) {
@@ -3727,7 +3727,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-        Local_Delta_Time = 1.0e-4*config->GetCFL(iMesh);
+        Local_Delta_Time = 2.0e-4*config->GetCFL(iMesh);
         node[iPoint]->SetDelta_Time(Local_Delta_Time);
       }
       else {
@@ -4007,7 +4007,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   
   Criteria = 1.0e-7;
   
-  //cout<<"Mass flux: "<<log10(Res_MassFlux)<<endl<<"Net Mass flux: "<<Net_Mass<<endl;
+  //cout<<"Mass flux: "<<log10(ResMassFlux)<<endl;
 }
 
 
@@ -4024,7 +4024,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	
   
   /*--- Pressure Corrections ---*/
-	alpha_p = 0.2;
+	alpha_p = 0.1;
 	for (iPoint = 0; iPoint < nPoint; iPoint++) {
 		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
 		Pressure_Correc = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
@@ -4046,7 +4046,9 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	   for (iVar = 0; iVar < nVar; iVar++) {
 			factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
 			vel_corr[iPoint][iVar] = factor*(solver_container[POISSON_SOL]->node[iPoint]->GetGradient(0,iVar));
+			//cout<<iVar<<"\t"<<vel_corr[iPoint][iVar]<<"\t";
 		}
+		//cout<<factor<<endl;
    }
 		
   /*--- Reassign strong boundary conditions ---*/

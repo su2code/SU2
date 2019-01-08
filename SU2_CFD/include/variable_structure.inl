@@ -1380,10 +1380,6 @@ inline void CPotentialVariable :: SetPoisson_Coeff(su2double val_Poisson_Coeff) 
 
 inline su2double CPotentialVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
 
-inline su2double* CHeatVariable::GetSolution_Direct() { return Solution_Direct;}
-
-inline void CHeatVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
-
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 
 inline su2double CTurbSAVariable::GetHarmonicBalance_Source(unsigned short val_var) { return HB_Source[val_var]; }
