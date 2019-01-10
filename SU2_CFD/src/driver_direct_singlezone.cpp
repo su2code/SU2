@@ -72,9 +72,9 @@ void CSinglezoneDriver::StartSolver() {
   }
 
   /*--- Set the initial time iteration to the restart iteration. ---*/
-  if (config_container[ZONE_0]->GetRestart())
+  if (config_container[ZONE_0]->GetRestart() && driver_config->GetTime_Domain())
     TimeIter = config_container[ZONE_0]->GetRestart_Iter();
-
+  
   /*--- Run the problem until the number of time iterations required is reached. ---*/
   while ( TimeIter < config_container[ZONE_0]->GetnTime_Iter() ) {
 

@@ -77,7 +77,7 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("OUTER_ITER");
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
     RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_DENSITY");
     RequestedScreenFields.push_back("RMS_MOMENTUM-X");

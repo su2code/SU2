@@ -7,6 +7,38 @@
 
 namespace PrintingToolbox { 
 
+/*!
+ * \class CTablePrinter
+ * \brief Class for writing output in a table. 
+ *  
+ * For example the output
+ * 
+ * +-------------------------------------------+
+ * |  MG Level| Presmooth|PostSmooth|CorrectSmo|
+ * +-------------------------------------------+
+ * |         0|         1|         0|         0|
+ * |         1|         1|         0|         0| 
+ * |         2|         1|         0|         0|
+ * |         3|         1|         0|         0|
+ * +-------------------------------------------+
+ * 
+ * 
+ * can be generated with the code 
+ * 
+ * CTablePrinter MGTable(&std::cout);
+ * MGTable.AddColumn("MG Level",      10);
+ * MGTable.AddColumn("Presmooth",     10);
+ * MGTable.AddColumn("PostSmooth",    10);
+ * MGTable.AddColumn("CorrectSmooth", 10);
+ * MGTable.PrintHeader();
+ * for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
+ *   MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
+ * }
+ * MGTable.PrintFooter();
+ * 
+ * 
+ * \author T. Albring
+ */
 class CTablePrinter{
 public:
   CTablePrinter(std::ostream * output, const std::string & separator = "|");
@@ -17,54 +49,82 @@ public:
     LEFT,
     RIGHT
   };
+
+  /*!
+   * \brief Get number of columns of the table
+   * \return Number of columns.
+   */
+  int GetNumColumns() const;
   
-  class endl{};
-  int get_num_columns() const;
-  int get_table_width() const;
-  void set_separator(const std::string & separator);
-  void set_align(int align_);
-  void set_print_header_bottom_line(bool print);
-  void set_print_header_top_line(bool print);
+  /*!
+   * \brief Get total width of the table.
+   * \return Total width of the table.
+   */
+  int GetTableWidth() const;
 
+  /*!
+   * \brief Set the separator between columns (outer decoration)
+   * \param[in] separator - The separation character.
+   */
+  void SetSeparator(const std::string & separator);
+  
+  /*!
+   * \brief Set the alignment of the table entries (CENTER only works for the header at the moment).
+   * \param[in] align_ - The alignment (CENTER, LEFT, RIGHT).
+   */
+  void SetAlign(int align_);
+  
+  /*!
+   * \brief Set whether to print the line at the bottom of the table.
+   * \param[in] print - If TRUE, the bottom line is printed.
+   */
+  void SetPrintHeaderBottomLine(bool print);
+  
+  /*!
+   * \brief Set whether to print the line at the top of the table.
+   * \param[in] print - If TRUE, the top line is printed.
+   */
+  void SetPrintHeaderTopLine(bool print);
+  
+  
+  /*!
+   * \brief Add a column to the table by specifiying the header name and the width.
+   * \param[in] header_name - The name printed in the header.
+   * \param[in] column_width - The width of the column.
+   */
   void AddColumn(const std::string & header_name, int column_width);
+  
+  /*!
+   * \brief Print the header.
+   */
   void PrintHeader();
+  
+  /*!
+   * \brief Print the footer.
+   */
   void PrintFooter();
-
-  CTablePrinter& operator<<(endl input){
-    while (j_ != 0){
-      *this << "";
-    }
-    return *this;
-  }
-
-  // Can we merge these?
-//  TablePrinter& operator<<(float input);
-//  TablePrinter& operator<<(double input);
-
+  
   template<typename T> CTablePrinter& operator<<(T input){
-    std::stringstream ss;
-    
-    ss << input;
-    
+
     int indent = 0;
-   
+
+    /* --- Set the left separator --- */
     if (j_ == 0)
       *out_stream_ << "|";
 
+    /* --- Determine and set the current alignment in the stream --- */
     if(align_ == LEFT)
       *out_stream_ << std::left;
-    else if (align_ == RIGHT)
+    else if (align_ == RIGHT || align_ == CENTER)
       *out_stream_ << std::right; 
-    else if (align_ == CENTER) {
-      *out_stream_ << std::right;       
-      indent = (column_widths_.at(j_) - ss.str().size()) / 2;
-    }
 
-    // Leave 3 extra space: One for negative sign, one for zero, one for decimal
+    /*--- Print the current column value to the stream --- */
     *out_stream_ << std::setw(column_widths_.at(j_) - indent)
                  << input;
 
-    if (j_ == get_num_columns()-1){
+    /*--- Reset the column counter and if it is the last column, 
+     * add also a line break ---*/
+    if (j_ == GetNumColumns()-1){
       *out_stream_ << std::setw(indent+2) << "|\n";
       i_ = i_ + 1;
       j_ = 0;
@@ -77,67 +137,24 @@ public:
   }
 
 private:
+  
+  /*!
+   * \brief Print a horizontal line.
+   */
   void PrintHorizontalLine();
 
-//  template<typename T> void OutputDecimalNumber(T input){
-//    // If we cannot handle this number, indicate so
-//    if (input < 10*(precision_.at(j_)-1) || input > 10*precision_.at(j_)){
-//      std::stringstream string_out;
-//      string_out << std::setiosflags(std::ios::fixed)
-//                 << std::setprecision(precision_.at(j_))
-//                 << std::setw(column_widths_.at(j_))
-//                 << input;
-  
-//      std::string string_rep_of_number = string_out.str();
-  
-//      string_rep_of_number[precision_.at(j_)-1] = '*';
-//      std::string string_to_print = string_rep_of_number.substr(0, precision_.at(j_));
-//      *out_stream_ << string_to_print;
-//    } else {
-  
-//      // determine what precision we need
-//      int precision = precision_.at(j_) - 1; // leave room for the decimal point
-//      if (input < 0)
-//        --precision; // leave room for the minus sign
-  
-//      // leave room for digits before the decimal?
-//      if (input < -1 || input > 1){
-//        int num_digits_before_decimal = 1 + (int)log10(std::abs(input));
-//        precision -= num_digits_before_decimal;
-//      }
-//      else
-//        precision --; // e.g. 0.12345 or -0.1234
-  
-//      if (precision < 0)
-//        precision = 0; // don't go negative with precision
-  
-//      *out_stream_ << std::setiosflags(std::ios::fixed)
-//                   << std::setprecision(precision)
-//                   << std::setw(column_widths_.at(j_))
-//                   << input;
-//    }
-  
-//    if (j_ == get_num_columns()-1){
-//      *out_stream_ << "|\n";
-//      i_ = i_ + 1;
-//      j_ = 0;
-//    } else {
-//      *out_stream_ << separator_;
-//      j_ = j_ + 1;
-//    }
-//  }
-  
-  std::ostream * out_stream_;
-  std::vector<std::string> column_headers_;
-  std::vector<int> column_widths_;
-  std::string separator_;
+  std::ostream * out_stream_;               /*< \brief The output stream. */
+  std::vector<std::string> column_headers_; /*< \brief Vector of column header names. */
+  std::vector<int> column_widths_;          /*< \brief Vector of column widths. */
+  std::string separator_;                   /*< \brief Column separator char. */
 
-  int i_; // index of current row
-  int j_; // index of current column
+  int i_; /*< \brief Index of the current row. */
+  int j_; /*< \brief Index of the current column. */
 
-  int table_width_;
-  int align_;
-  bool print_header_top_line_, print_header_bottom_line_;
+  int table_width_;  /*< \brief The total width of the table. */
+  int align_;        /*< \brief The current alignment. */
+  bool print_header_top_line_,  /*< \brief Printing the header top line. */
+  print_header_bottom_line_;   /*< \brief Printing the header bottom line. */
 };
 
 }

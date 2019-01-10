@@ -18,36 +18,30 @@ PrintingToolbox::CTablePrinter::~CTablePrinter(){
 
 }
 
-int PrintingToolbox::CTablePrinter::get_num_columns() const {
+int PrintingToolbox::CTablePrinter::GetNumColumns() const {
   return column_headers_.size();
 }
 
-int PrintingToolbox::CTablePrinter::get_table_width() const {
+int PrintingToolbox::CTablePrinter::GetTableWidth() const {
   return table_width_;
 }
 
-void PrintingToolbox::CTablePrinter::set_separator(const std::string &separator){
+void PrintingToolbox::CTablePrinter::SetSeparator(const std::string &separator){
   separator_ = separator;
 }
 
-void PrintingToolbox::CTablePrinter::set_print_header_bottom_line(bool print){
+void PrintingToolbox::CTablePrinter::SetPrintHeaderBottomLine(bool print){
   print_header_bottom_line_ = print;
 }
 
-void PrintingToolbox::CTablePrinter::set_print_header_top_line(bool print){
+void PrintingToolbox::CTablePrinter::SetPrintHeaderTopLine(bool print){
   print_header_top_line_ = print;
 }
 
-void PrintingToolbox::CTablePrinter::set_align(int align){
+void PrintingToolbox::CTablePrinter::SetAlign(int align){
   align_ = align;
 }
 
-
-/** \brief Add a column to our table
- ** 
- ** \param header_name Name to be print for the header
- ** \param column_width the width of the column (has to be >=5)
- ** */
 void PrintingToolbox::CTablePrinter::AddColumn(const std::string & header_name, int column_width){
   if (column_width < 4){
     throw std::invalid_argument("Column size has to be >= 4");
@@ -75,7 +69,7 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
   if (print_header_top_line_) PrintHorizontalLine();
   *out_stream_ << "|";
   int indent = 0;
-  for (int i=0; i<get_num_columns(); ++i){
+  for (int i=0; i<GetNumColumns(); ++i){
     
     std::stringstream ss;
     
@@ -93,7 +87,7 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
     }
 
     *out_stream_ << std::setw(column_widths_.at(i) - indent) << column_headers_.at(i).substr(0, column_widths_.at(i));
-    if (i != get_num_columns()-1){
+    if (i != GetNumColumns()-1){
       *out_stream_ << std::setw(1+indent) << separator_;
     }
   }
@@ -105,14 +99,4 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
 void PrintingToolbox::CTablePrinter::PrintFooter(){
   PrintHorizontalLine();
 }
-
-//TablePrinter& TablePrinter::operator<<(float input){
-//  OutputDecimalNumber<float>(input);
-//  return *this;
-//}
-
-//TablePrinter& TablePrinter::operator<<(double input){
-//  OutputDecimalNumber<double>(input);
-//  return *this;
-//}
 
