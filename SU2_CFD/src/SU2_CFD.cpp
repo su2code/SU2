@@ -126,9 +126,18 @@ int main(int argc, char *argv[]) {
 
   } else if (config->GetKind_Solver() == MULTIZONE) {
 
-    /*--- Multizone Driver. ---*/
+    /*--- Multizone Drivers. ---*/
 
-    driver = new CMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+    if (config->GetDiscrete_Adjoint()) {
+
+      driver = new CDiscAdjMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+    }
+    else {
+
+      driver = new CMultizoneDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+    }
 
   } else if (config->GetUnsteady_Simulation() == HARMONIC_BALANCE) {
 
@@ -168,7 +177,9 @@ int main(int argc, char *argv[]) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
-      } else {
+      }
+
+      else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
         
