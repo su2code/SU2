@@ -37,7 +37,7 @@
 
 #include "../include/output_structure.hpp"
 
-CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
+CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
   
   nDim = geometry->GetnDim();
  
@@ -46,16 +46,17 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     RequestedHistoryFields.push_back("SENSITIVITIES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("EXT_ITER");
-    RequestedScreenFields.push_back("RMS_ADJ_DENSITY");
-    RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");    
+    RequestedScreenFields.push_back("RMS_ADJ_PRESSURE");
+    RequestedScreenFields.push_back("RMS_ADJ_VELOCITY-X");
     RequestedScreenFields.push_back("SENS_GEO");
     RequestedScreenFields.push_back("SENS_AOA");
     nRequestedScreenFields = RequestedScreenFields.size();
@@ -74,7 +75,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   
 }
 
-CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
+CDiscAdjFlowIncOutput::~CDiscAdjFlowIncOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -82,7 +83,7 @@ CDiscAdjFlowOutput::~CDiscAdjFlowOutput(void) {
 
 }
 
-void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
+void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
 
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
@@ -94,14 +95,14 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
-  /// DESCRIPTION: Root-mean square residual of the adjoint density.
-  AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-X", "rms[A_RhoU]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the adjoint momentum y-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-Y", "rms[A_RhoV]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the adjoint momentum z-component.
-  AddHistoryOutput("RMS_ADJ_MOMENTUM-Z", "rms[A_RhoW]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
+  AddHistoryOutput("RMS_ADJ_PRESSURE",    "rms[A_P]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Root-mean square residual of the adjoint Velocity x-component.
+  AddHistoryOutput("RMS_ADJ_VELOCITY-X", "rms[A_U]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint Velocity y-component.
+  AddHistoryOutput("RMS_ADJ_VELOCITY-Y", "rms[A_V]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the adjoint Velocity z-component.
+  AddHistoryOutput("RMS_ADJ_VELOCITY-Z", "rms[A_W]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the adjoint energy.
   AddHistoryOutput("RMS_ADJ_ENERGY",     "rms[A_E]",    FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
   switch(turb_model){
@@ -120,16 +121,14 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// END_GROUP
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
-  /// DESCRIPTION: Maximum residual of the adjoint density.
-  AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: Maximum residual of the adjoint momentum y-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: Maximum residual of the adjoint momentum z-component
-  AddHistoryOutput("MAX_ADJ_MOMENTUM-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-  /// DESCRIPTION: Maximum residual of the adjoint energy.
-  AddHistoryOutput("MAX_ADJ_ENERGY",     "max[A_E]",    FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint Pressure.
+  AddHistoryOutput("MAX_ADJ_Pressure",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the adjoint Velocity x-component
+  AddHistoryOutput("MAX_ADJ_VELOCITY-X", "max[A_RhoU]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint Velocity y-component
+  AddHistoryOutput("MAX_ADJ_VELOCITY-Y", "max[A_RhoV]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+  /// DESCRIPTION: Maximum residual of the adjoint Velocity z-component
+  AddHistoryOutput("MAX_ADJ_VELOCITY-Z", "max[A_RhoW]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Maximum residual of the adjoint nu tilde.
@@ -163,20 +162,18 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   
 }
 
-void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { 
-
-  SetHistoryOutputValue("INT_ITER", config[val_iZone]->GetIntIter());
-  SetHistoryOutputValue("EXT_ITER", config[val_iZone]->GetExtIter());
   
-  SetHistoryOutputValue("RMS_ADJ_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)));
-  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)));
-  SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(2)));
-  if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
-    SetHistoryOutputValue("RMS_ADJ_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));
-    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(4)));
-  } else {
-    SetHistoryOutputValue("RMS_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));    
+  SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
+  SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
+  SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter()); 
+  
+  SetHistoryOutputValue("RMS_ADJ_PRESSURE", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(0)));
+  SetHistoryOutputValue("RMS_ADJ_VELOCITY-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(1)));
+  SetHistoryOutputValue("RMS_ADJ_VELOCITY-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(2)));
+  if (nDim == 3) {
+    SetHistoryOutputValue("RMS_ADJ_VELOCITY-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_RMS(3)));
   }
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -188,14 +185,11 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
     break;
   default: break;
   }
-  SetHistoryOutputValue("MAX_ADJ_DENSITY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(0)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(1)));
-  SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(2)));
-  if (geometry[val_iZone][val_iInst][MESH_0]->GetnDim() == 3) {
-    SetHistoryOutputValue("MAX_ADJ_MOMENTUM-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(3)));
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(4)));
-  } else {
-    SetHistoryOutputValue("MAX_ADJ_ENERGY", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(3)));    
+  SetHistoryOutputValue("MAX_ADJ_Pressure", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(0)));
+  SetHistoryOutputValue("MAX_ADJ_VELOCITY-X", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(1)));
+  SetHistoryOutputValue("MAX_ADJ_VELOCITY-Y", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(2)));
+  if (nDim == 3) {
+    SetHistoryOutputValue("MAX_ADJ_VELOCITY-Z", log10(solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL]->GetRes_Max(3)));
   }
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
@@ -216,7 +210,7 @@ void CDiscAdjFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****so
 
 }
 
-void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
+void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: COORDINATES, DESCRIPTION: Coordinates of the mesh nodes.
   /// DESCRIPTION: x coordinates of the mesh nodes.
@@ -229,17 +223,16 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   /// END_GROUP
   
   /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
-  /// DESCRIPTION: Adjoint density.
-  AddVolumeOutput("ADJ_DENSITY",    "Adjoint_Density",    "CONSERVATIVE"); 
-  /// DESCRIPTION: Adjoint momentum x-component.
-  AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE"); 
-  /// DESCRIPTION: Adjoint momentum y-component.
-  AddVolumeOutput("ADJ_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint Pressure.
+  AddVolumeOutput("ADJ_PRESSURE",    "Adjoint_Pressure",    "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint Velocity x-component.
+  AddVolumeOutput("ADJ_VELOCITY-X", "Adjoint_Velocity_x", "CONSERVATIVE"); 
+  /// DESCRIPTION: Adjoint Velocity y-component.
+  AddVolumeOutput("ADJ_VELOCITY-Y", "Adjoint_Velocity_y", "CONSERVATIVE"); 
   if (nDim == 3)
-    /// DESCRIPTION: Adjoint momentum z-component.
-    AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE"); 
-  /// DESCRIPTION: Adjoint energy.
-  AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "CONSERVATIVE");           
+    /// DESCRIPTION: Adjoint Velocity z-component.
+    AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "CONSERVATIVE"); 
+ 
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Adjoint nu tilde.
@@ -268,15 +261,15 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   /// END_GROUP
   
   /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the conservative variables. 
-  /// DESCRIPTION: Residual of the adjoint density.
-  AddVolumeOutput("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");  
-  /// DESCRIPTION: Residual of the adjoint momentum x-component.
-  AddVolumeOutput("RES_ADJ_MOMENTUM-X", "Residual_Adjoint_Momentum_x", "RESIDUAL");  
-  /// DESCRIPTION: Residual of the adjoint momentum y-component.
-  AddVolumeOutput("RES_ADJ_MOMENTUM-Y", "Residual_Adjoint_Momentum_y", "RESIDUAL");  
+  /// DESCRIPTION: Residual of the adjoint Pressure.
+  AddVolumeOutput("RES_ADJ_PRESSURE",    "Residual_Adjoint_Pressure",    "RESIDUAL");  
+  /// DESCRIPTION: Residual of the adjoint Velocity x-component.
+  AddVolumeOutput("RES_ADJ_VELOCITY-X", "Residual_Adjoint_Velocity_x", "RESIDUAL");  
+  /// DESCRIPTION: Residual of the adjoint Velocity y-component.
+  AddVolumeOutput("RES_ADJ_VELOCITY-Y", "Residual_Adjoint_Velocity_y", "RESIDUAL");  
   if (nDim == 3)
-    /// DESCRIPTION: Residual of the adjoint momentum z-component.
-    AddVolumeOutput("RES_ADJ_MOMENTUM-Z", "Residual_Adjoint_Momentum_z", "RESIDUAL"); 
+    /// DESCRIPTION: Residual of the adjoint Velocity z-component.
+    AddVolumeOutput("RES_ADJ_Velocity-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL"); 
   /// DESCRIPTION: Residual of the adjoint energy. 
   AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL");            
   switch(turb_model){
@@ -308,7 +301,7 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
  
 }
 
-void CDiscAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
   CVariable* Node_AdjTurb = NULL;
@@ -323,16 +316,13 @@ void CDiscAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
   
-  SetVolumeOutputValue("ADJ_DENSITY",    iPoint, Node_AdjFlow->GetSolution(0));
-  SetVolumeOutputValue("ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(1));
-  SetVolumeOutputValue("ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(2));
+  SetVolumeOutputValue("ADJ_PRESSURE",    iPoint, Node_AdjFlow->GetSolution(0));
+  SetVolumeOutputValue("ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(1));
+  SetVolumeOutputValue("ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2));
   if (nDim == 3){
-    SetVolumeOutputValue("ADJ_MOMENTUM-Z", iPoint, Node_AdjFlow->GetSolution(3));
+    SetVolumeOutputValue("ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3));
     SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(4));
-  } else {
-    SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(3));    
   }
-  
   // Turbulent 
   switch(turb_model){
   case SST:
@@ -348,16 +338,12 @@ void CDiscAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   }
   
   // Residuals
-  SetVolumeOutputValue("RES_ADJ_DENSITY", iPoint, Node_AdjFlow->GetSolution(0) - Node_AdjFlow->GetSolution_Old(0));
-  SetVolumeOutputValue("RES_ADJ_MOMENTUM-X", iPoint, Node_AdjFlow->GetSolution(1) - Node_AdjFlow->GetSolution_Old(1));
-  SetVolumeOutputValue("RES_ADJ_MOMENTUM-Y", iPoint, Node_AdjFlow->GetSolution(2) - Node_AdjFlow->GetSolution_Old(2));
+  SetVolumeOutputValue("RES_ADJ_PRESSURE", iPoint, Node_AdjFlow->GetSolution(0) - Node_AdjFlow->GetSolution_Old(0));
+  SetVolumeOutputValue("RES_ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(1) - Node_AdjFlow->GetSolution_Old(1));
+  SetVolumeOutputValue("RES_ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2) - Node_AdjFlow->GetSolution_Old(2));
   if (nDim == 3){
-    SetVolumeOutputValue("RES_ADJ_MOMENTUM-Z", iPoint, Node_AdjFlow->GetSolution(3) - Node_AdjFlow->GetSolution_Old(3));
-    SetVolumeOutputValue("RES_ADJ_ENERGY", iPoint, Node_AdjFlow->GetSolution(4) - Node_AdjFlow->GetSolution_Old(4));
-  } else {
-    SetVolumeOutputValue("RES_ADJ_ENERGY", iPoint, Node_AdjFlow->GetSolution(3) - Node_AdjFlow->GetSolution_Old(3));   
-  }
-  
+    SetVolumeOutputValue("RES_ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3) - Node_AdjFlow->GetSolution_Old(3));
+  } 
   switch(config->GetKind_Turb_Model()){
   case SST:
     SetVolumeOutputValue("RES_ADJ_KINETIC_ENERGY", iPoint, Node_AdjTurb->GetSolution(0) - Node_AdjTurb->GetSolution_Old(0));
@@ -378,13 +364,13 @@ void CDiscAdjFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CS
   
 }
 
-void CDiscAdjFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
+void CDiscAdjFlowIncOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
   
   SetVolumeOutputValue("SENSITIVITY", iPoint, solver[ADJFLOW_SOL]->GetCSensitivity(iMarker, iVertex));
   
 }
 
-bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+bool CDiscAdjFlowIncOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
  if (!write_dualtime){
    return true;
  }
@@ -393,7 +379,7 @@ bool CDiscAdjFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dua
  }
 }
 
-bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) {  
+bool CDiscAdjFlowIncOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
     write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
@@ -403,7 +389,7 @@ bool CDiscAdjFlowOutput::WriteScreen_Header(CConfig *config) {
   return write_header;
 }
 
-bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+bool CDiscAdjFlowIncOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   bool write_output = false;
   
   if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
@@ -416,14 +402,14 @@ bool CDiscAdjFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime
   return write_output;
 }
 
-bool CDiscAdjFlowOutput::SetInit_Residuals(CConfig *config){
+bool CDiscAdjFlowIncOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
         (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
   
 }
 
-bool CDiscAdjFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CDiscAdjFlowIncOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
   
   return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       

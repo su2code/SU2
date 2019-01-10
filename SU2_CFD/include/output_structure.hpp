@@ -1422,6 +1422,71 @@ public:
 
 };
 
+
+/*! \class CDiscAdjFlowOutput
+ *  \brief Output class for flow discrete adjoint problems.
+ *  \author R. Sanchez.
+ *  \date June 5, 2018.
+ */
+class CDiscAdjFlowIncOutput : public COutput {
+private:
+
+  unsigned short nDim, turb_model;
+  
+public:
+
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometry, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CDiscAdjFlowIncOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+
+
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+
+};
+
 /*! \class CDiscAdjFEAOutput
  *  \brief Output class for elasticity discrete adjoint problems.
  *  \author R. Sanchez.
