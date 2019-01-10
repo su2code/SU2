@@ -92,6 +92,9 @@ namespace AD{
 
   inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {
     AD::globalTape.evaluate(TapePositions[enter], TapePositions[leave]);
+    if (leave == 0) {
+      adjointVectorPosition = 0;
+    }
   }
 
   inline void Reset() {
