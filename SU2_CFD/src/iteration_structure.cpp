@@ -2359,9 +2359,9 @@ void CDiscAdjFluidIteration::InitializeAdjoint(CSolver *****solver_container, CG
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
   bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
 
-  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
+//  /*--- Initialize the adjoint of the objective function (typically with 1.0) ---*/
   
-  solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+//  solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL]->SetAdj_ObjFunc(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
   /*--- Initialize the adjoints the conservative variables ---*/
 
