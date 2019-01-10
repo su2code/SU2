@@ -151,7 +151,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	  Solution_Adj_Old = new su2double [nVar];
 	}
 
-  if(config->GetBoolZoneSpecific() && config->GetAD_Mode()) {
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     Input_AdjIndices = new int[nVar];
     Output_AdjIndices = new int[nVar];
 	}

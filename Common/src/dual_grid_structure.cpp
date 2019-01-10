@@ -73,7 +73,7 @@ CPoint::CPoint(unsigned short val_nDim, unsigned long val_globalindex, CConfig *
 
   Coord = new su2double[nDim];
 
-  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
     Input_AdjIndices = new int[nDim];
     Output_AdjIndices = new int[nDim];
   }
@@ -172,7 +172,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, unsigned long val_g
   Coord[0] = val_coord_0; 
   Coord[1] = val_coord_1;
 
-  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
     Input_AdjIndices = new int[nDim];
     Output_AdjIndices = new int[nDim];
   }
@@ -272,7 +272,7 @@ CPoint::CPoint(su2double val_coord_0, su2double val_coord_1, su2double val_coord
   Coord[1] = val_coord_1; 
   Coord[2] = val_coord_2;
 
-  if(config->GetAD_Mode() && config->GetBoolZoneSpecific()) {
+  if(config->GetAD_Mode() && config->GetMultizone_Problem()) {
     Input_AdjIndices = new int[nDim];
     Output_AdjIndices = new int[nDim];
   }
