@@ -64,12 +64,16 @@ namespace AD{
 
   extern su2double::TapeType::Position StartPosition, EndPosition;
 
+  extern std::vector<su2double::TapeType::Position> TapePositions;
+
   extern std::vector<su2double::GradientData> localInputValues;
 
   extern std::vector<su2double*> localOutputValues;
 
   inline void RegisterInput(su2double &data) {AD::globalTape.registerInput(data);
                                              inputValues.push_back(data.getGradientData());}
+
+  inline void RegisterInput_intIndexBased(su2double &data) {AD::globalTape.registerInput(data);}
 
   inline void RegisterOutput(su2double& data) {AD::globalTape.registerOutput(data);}
 
@@ -79,17 +83,41 @@ namespace AD{
 
   inline void StopRecording() {AD::globalTape.setPassive();}
 
+  inline void PrintStatistics() {AD::globalTape.printStatistics();}
+
   inline void ClearAdjoints() {AD::globalTape.clearAdjoints(); }
 
   inline void ComputeAdjoint() {AD::globalTape.evaluate();
                                adjointVectorPosition = 0;}
 
+  inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {
+    AD::globalTape.evaluate(TapePositions[enter], TapePositions[leave]);
+    if (leave == 0) {
+      adjointVectorPosition = 0;
+    }
+  }
+
   inline void Reset() {
+    globalTape.reset();
     if (inputValues.size() != 0) {
-      globalTape.reset();
       adjointVectorPosition = 0;
       inputValues.clear();
     }
+    if (TapePositions.size() != 0) {
+      TapePositions.clear();
+    }    
+  }
+
+  inline void Set_AdjIndex(int &index, su2double &data) {
+    index = data.getGradientData();
+  }
+
+  inline void SetDerivative(int index, const double val) {
+    AD::globalTape.setGradient(index, val);
+  }
+
+  inline double GetDerivative(int index) {
+    return AD::globalTape.getGradient(index);
   }
 
   inline void SetPreaccIn(const su2double &data) {
@@ -159,6 +187,9 @@ namespace AD{
     }
   }
 
+  inline void Push_TapePosition() {
+    TapePositions.push_back(AD::globalTape.getPosition());
+  }
 
   inline void delete_handler(void *handler) {
     CheckpointHandler *checkpoint = static_cast<CheckpointHandler*>(handler);
@@ -170,15 +201,27 @@ namespace AD{
 
   inline void RegisterInput(su2double &data) {}
 
+  inline void RegisterInput_intIndexBased(su2double &data) {}
+
   inline void RegisterOutput(su2double& data) {}
 
   inline void StartRecording() {}
 
   inline void StopRecording() {}
 
+  inline void PrintStatistics() {}
+
   inline void ClearAdjoints() {}
 
   inline void ComputeAdjoint() {}
+
+  inline void ComputeAdjoint(unsigned short entry, unsigned short exit) {}
+
+  inline void Set_AdjIndex(int &index, su2double &data) {}
+
+  inline void SetDerivative(int index, const double val) {}
+
+  inline double GetDerivative(int position) { return 0.0; }
 
   inline void Reset() {}
 
@@ -199,5 +242,7 @@ namespace AD{
   inline void StartPreacc() {}
 
   inline void EndPreacc() {}
+
+  inline void Push_TapePosition() {}
 #endif
 }

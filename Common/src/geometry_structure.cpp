@@ -1353,10 +1353,21 @@ void CGeometry::ComputeAirfoil_Section(su2double *Plane_P0, su2double *Plane_Nor
 void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned short iDim;
   unsigned long iPoint;
+
+  bool input    = true;
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    for (iDim = 0; iDim < nDim; iDim++) {
-      AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->Set_AdjIndices(input);
+        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      }
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
@@ -1365,9 +1376,20 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned short iDim;
   unsigned long iPoint;
 
+  bool input    = false;
+
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    for (iDim = 0; iDim < nDim; iDim++){
-      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->Set_AdjIndices(input);
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
+    }
+    else {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
   }
 }
