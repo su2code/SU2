@@ -237,7 +237,7 @@ void CDiscAdjMultizoneDriver::Run() {
 
       config_container[iZone]->SetOuterIter(iOuter_Iter);
 
-      iteration_container[iZone][INST_0]->Preprocess(output, integration_container, geometry_container,
+      iteration_container[iZone][INST_0]->Preprocess(output[iZone], integration_container, geometry_container,
                                                        solver_container, numerics_container, config_container,
                                                        surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
@@ -274,8 +274,8 @@ void CDiscAdjMultizoneDriver::Run() {
     AD::ComputeAdjoint(3,0);
 
     for (iZone = 0; iZone < nZone; iZone++) {
-
-      iteration_container[iZone][INST_0]->Iterate(output, integration_container, geometry_container,
+      
+      iteration_container[iZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
@@ -283,12 +283,14 @@ void CDiscAdjMultizoneDriver::Run() {
     Add_IterAdjoints();
 
     for (iZone = 0; iZone < nZone; iZone++) {
+      
+      config_container[iZone]->SetInnerIter(0);
 
       ComputeZonewiseAdjoints(iZone);
 
       for (jZone = 0; jZone < nZone; jZone++) {
 
-          iteration_container[jZone][INST_0]->Iterate(output, integration_container, geometry_container,
+          iteration_container[jZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container,
                                             solver_container, numerics_container, config_container,
                                             surface_movement, grid_movement, FFDBox, jZone, INST_0);
       }
@@ -503,11 +505,11 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
     AD::Push_TapePosition();
 
     /*--- Do one iteration of the direct solver ---*/
-    direct_iteration[iZone][INST_0]->Preprocess(output, integration_container, geometry_container, solver_container,
+    direct_iteration[iZone][INST_0]->Preprocess(output[iZone], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
     /*--- Iterate the zone as a block a single time ---*/
-    direct_iteration[iZone][INST_0]->Iterate(output, integration_container, geometry_container, solver_container,
+    direct_iteration[iZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
 //    Corrector(iZone);
