@@ -307,7 +307,7 @@ public:
    * \brief Get the adjoint values of the (geometric) coordinates.
    * \param[in] adj_sol - Adjoint values of the Coord variables.
    */
-  void GetAdjointSolution(su2double *adj_sol);
+  void GetAdjointSolution(su2double adj_sol, unsigned short iDim);
   
   /*!
 	 * \brief Get the coordinates of the control volume.
