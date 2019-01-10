@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tobias.kattmann@de.bosch.com
   
 branches:
     only:
-        - develop
+        - feature_periodic_streamwise
 
 python:
     - 2.7
@@ -82,7 +82,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b feature_periodic_streamwise https://github.com/su2code/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases

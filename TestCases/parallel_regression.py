@@ -338,6 +338,17 @@ def main():
     inc_buoyancy.tol       = 0.00001
     test_list.append(inc_buoyancy)
 
+    # Laminar cylinder in channel, streamwise periodic
+    streamwise_periodic_cylinder          = TestCase('streamwise_periodic_cylinder')
+    streamwise_periodic_cylinder.cfg_dir   = "incomp_navierstokes/half_cylinder"
+    streamwise_periodic_cylinder.cfg_file  = "streamwise_periodic.cfg"
+    streamwise_periodic_cylinder.test_iter = 10
+    streamwise_periodic_cylinder.test_vals = [-7.024390, -5.517378, 0.015077, 0.016414] #last 4 lines
+    streamwise_periodic_cylinder.su2_exec  = "parallel_computation.py -f"
+    streamwise_periodic_cylinder.timeout   = 1600
+    streamwise_periodic_cylinder.tol       = 0.00001
+    test_list.append(streamwise_periodic_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
