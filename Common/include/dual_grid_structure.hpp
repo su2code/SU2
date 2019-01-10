@@ -174,6 +174,8 @@ private:
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
+  int *Input_AdjIndices,              /*!< \brief Indices of Coord variables in the adjoint vector. */
+  *Output_AdjIndices;                 /*!< \brief Indices of Coord variables in the adjoint vector after having been updated. */
 
 public:
 	
@@ -287,7 +289,25 @@ public:
 	 * \param[in] val_dim - Position to store the coordinate.		 
 	 * \param[in] val_coord - Coordinate for val_dim.			 
 	 */
-	void SetCoord(unsigned short val_dim, su2double val_coord);
+  void SetCoord(unsigned short val_dim, su2double val_coord);
+
+  /*!
+   * \brief Set the adjoint vector indices of Coord vector.
+   * \param[in] input - Save them to the input or output indices vector.
+   */
+  void Set_AdjIndices(bool input);
+
+  /*!
+   * \brief Set the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void SetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the (geometric) coordinates.
+   * \param[in] adj_sol - Adjoint values of the Coord variables.
+   */
+  void GetAdjointSolution(su2double adj_sol, unsigned short iDim);
   
   /*!
 	 * \brief Get the coordinates of the control volume.

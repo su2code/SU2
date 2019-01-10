@@ -96,6 +96,7 @@ libSU2Core_sources = \
   ../src/integration_structure.cpp \
   ../src/integration_time.cpp \
   ../src/driver_direct_multizone.cpp \
+  ../src/driver_adjoint_multizone.cpp \
   ../src/driver_direct_singlezone.cpp \
   ../src/driver_structure.cpp \
   ../src/iteration_structure.cpp \

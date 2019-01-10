@@ -60,7 +60,8 @@ class CVariable {
 protected:
   
   su2double *Solution,    /*!< \brief Solution of the problem. */
-  *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  *Solution_Old,      /*!< \brief Old solution of the problem R-K. */
+  *Solution_Iter;     /*!< \brief Intermediate solution of the discrete adjoint multizone problem. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -91,6 +92,9 @@ protected:
                                                        note that this variable cannnot be static, it is possible to
                                                        have different number of nVar in the same problem. */
   su2double *Solution_Adj_Old;    /*!< \brief Solution of the problem in the previous AD-BGS iteration. */
+  
+  int *Input_AdjIndices,          /*!< \brief Indices of Solution variables in the adjoint vector. */
+  *Output_AdjIndices;             /*!< \brief Indices of Solution variables in the adjoint vector after having been updated. */
   
   /*--- Old solution container for BGS iterations ---*/
   
@@ -310,10 +314,20 @@ public:
 
   /*!
    * \brief A virtual member.
+   */
+  virtual void Set_IterSolution_Zero(void);
+
+  /*!
+   * \brief A virtual member.
    * \param[in] val_var - Number of the variable.
    * \param[in] val_solution - Value that we want to add to the solution.
    */
   virtual void AddSolution_New(unsigned short val_var, su2double val_solution);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual void Add_IterSolution(su2double* val_sol);
 
   /*!
    * \brief Add a value to the solution, clipping the values.
@@ -614,6 +628,11 @@ public:
    * \return Value of the min solution for the variable <i>val_var</i>.
    */
   su2double GetSolution_Min(unsigned short val_var);
+  
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double *Get_IterSolution(void);
   
   /*!
    * \brief Get the value of the preconditioner Beta.
@@ -2281,6 +2300,17 @@ public:
    * \param[in] input - input or output variables.
    */
   void RegisterSolution(bool input);
+
+  /*!
+   * \brief Register the variables in the solution array as input/output variable.
+   * \param[in] input - input or output variables.
+   */
+  void RegisterSolution_intIndexBased(bool input);
+
+  /*!
+   * \brief Saving the adjoint vector position with respect to the solution variables.
+   */
+  void Set_AdjIndices(bool input);
   
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.
@@ -2297,12 +2327,24 @@ public:
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void SetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Set the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void SetAdjointSolution_intIndexBased(su2double *adj_sol);
   
   /*!
    * \brief Get the adjoint values of the solution.
    * \param[in] adj_sol - The adjoint values of the solution.
    */
   void GetAdjointSolution(su2double *adj_sol);
+
+  /*!
+   * \brief Get the adjoint values of the solution.
+   * \param[in] adj_sol - The adjoint values of the solution.
+   */
+  void GetAdjointSolution_intIndexBased(su2double *adj_sol);
   
   /*!
    * \brief Set the adjoint values of the solution at time n.
@@ -4692,6 +4734,22 @@ public:
   void SetSolution_Direct(su2double *sol);
   
   su2double* GetSolution_Direct();
+
+  /*!
+   * \brief Get the intermediate solution.
+   * \return Pointer to the intermediate solution vector.
+   */
+  su2double *Get_IterSolution(void);
+
+  /*!
+   * \brief Set to zero the intermediate solution.
+   */
+  void Set_IterSolution_Zero(void);
+
+  /*!
+   * \brief Add the values in val_sol to the intermediate solution.
+   */
+  void Add_IterSolution(su2double* val_sol);
   
   /*!
    * \brief Set the restart geometry (coordinate of the converged solution)

@@ -1711,3 +1711,122 @@ public:
 
 };
 
+/*!
+ * \class CMultizoneDriver
+ * \brief Class for driving zone-specific iterations.
+ * \author O. Burghardt, T. Albring, R. Sanchez
+ * \version 6.0.1 "Falcon"
+ */
+class CDiscAdjMultizoneDriver : public CMultizoneDriver {
+protected:
+
+  bool fsi;
+  bool cht;
+
+  unsigned long TimeIter;
+
+  unsigned short *nVarZone;
+  su2double **init_res,      /*!< \brief Stores the initial residual. */
+            **residual,      /*!< \brief Stores the current residual. */
+            **residual_rel;  /*!< \brief Stores the residual relative to the initial. */
+
+  su2double flow_criteria,
+            flow_criteria_rel,
+            structure_criteria,
+            structure_criteria_rel;
+
+  bool *prefixed_motion;     /*!< \brief Determines if a fixed motion is imposed in the config file. */
+
+  unsigned short RecordingState;    /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;                /*!< \brief The value of the objective function.*/
+  int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
+  CIteration*** direct_iteration;   /*!< \brief A pointer to the direct iteration.*/
+  unsigned short *nInst;            /*!< \brief Number of instances per zone for the primal solve.*/
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CDiscAdjMultizoneDriver(char* confFile,
+             unsigned short val_nZone,
+             unsigned short val_nDim,
+             bool val_periodic,
+             SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjMultizoneDriver(void);
+
+  /*!
+   * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
+   */
+  void StartSolver();
+
+  /*!
+   * \brief Run an discrete adjoint update of all solvers within multiple zones.
+   */
+  void Run();
+
+//  /*!
+//   * \brief Output the solution in solution file.
+//   */
+//  void Output(unsigned long TimeIter);
+
+//  /*!
+//   * \brief Check the convergence at the outer level.
+//   */
+//  bool OuterConvergence(unsigned long OuterIter);
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+
+  /*!
+   * \brief Summary of all routines to evaluate the adjoints in iZone.
+   * \param[in] iZone - Zone in which adjoints are evaluated depending on their (preceding) seeding.
+   */
+  void ComputeZonewiseAdjoints(unsigned short iZone);
+
+  /*!
+   * \brief Saves the current solution (adjoint) values to Solution_Old.
+   */
+  void Set_OldAdjoints(void);
+
+  /*!
+   * \brief Sets the current iterated solution (adjoint) values to zero.
+   */
+  void SetIter_Zero(void);
+
+  /*!
+   * \brief Adds the current solution (adjoint) values to the iterated solution.
+   */
+  void Add_IterAdjoints(void);
+
+  /*!
+   * \brief Set the current solution (adjoint) values to the current iterated ones.
+   */
+  void SetAdjoints_Iter(void);
+
+  /*!
+   * \brief Computing the RMS residual on driver level (since we iterate zone-wise).
+   */
+  void SetResidual_RMS(void);
+};
+

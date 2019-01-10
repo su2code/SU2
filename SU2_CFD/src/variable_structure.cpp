@@ -44,6 +44,7 @@ CVariable::CVariable(void) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -56,6 +57,8 @@ CVariable::CVariable(void) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
   
 }
@@ -65,6 +68,7 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -77,6 +81,8 @@ CVariable::CVariable(unsigned short val_nvar, CConfig *config) {
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
 
   /*--- Initialize the number of solution variables. This version
@@ -100,6 +106,7 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   /*--- Array initialization ---*/
   Solution = NULL;
   Solution_Old = NULL;
+  Solution_Iter = NULL;
   Solution_time_n = NULL;
   Solution_time_n1 = NULL;
   Gradient = NULL;
@@ -112,6 +119,8 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   Residual_Old = NULL;
   Residual_Sum = NULL;
   Solution_Adj_Old = NULL;
+  Input_AdjIndices = NULL;
+  Output_AdjIndices = NULL;
   Solution_BGS_k = NULL;
   
   /*--- Initializate the number of dimension and number of variables ---*/
@@ -144,14 +153,23 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
 	}
+
+  if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
+    Input_AdjIndices = new int[nVar];
+    Output_AdjIndices = new int[nVar];
+  }
   
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Input_AdjIndices[iVar] = -1;
+    Output_AdjIndices[iVar] = -1;
+  }
+
   if (config->GetMultizone_Problem()) {
     Solution_BGS_k = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       Solution_BGS_k[iVar] = 0.0;
     }
   }
-  
 }
 
 CVariable::~CVariable(void) {
@@ -170,6 +188,8 @@ CVariable::~CVariable(void) {
   if (Residual_Old        != NULL) delete [] Residual_Old;
   if (Residual_Sum        != NULL) delete [] Residual_Sum;
   if (Solution_Adj_Old    != NULL) delete [] Solution_Adj_Old;
+  if (Input_AdjIndices    != NULL) delete [] Input_AdjIndices;
+  if (Output_AdjIndices   != NULL) delete [] Output_AdjIndices;
   if (Solution_BGS_k      != NULL) delete [] Solution_BGS_k;
   
   if (Gradient != NULL) {

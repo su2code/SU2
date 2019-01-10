@@ -257,7 +257,13 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node[iPoint]->RegisterSolution(input);
+    if(config->GetMultizone_Problem()) {
+      direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
+      direct_solver->node[iPoint]->Set_AdjIndices(input);
+    }
+    else {
+      direct_solver->node[iPoint]->RegisterSolution(input);   
+    }
   }
   if (time_n_needed) {
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
@@ -377,7 +383,13 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register output variables on the tape ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    direct_solver->node[iPoint]->RegisterSolution(input);
+    if(config->GetMultizone_Problem()) {
+      direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
+      direct_solver->node[iPoint]->Set_AdjIndices(input);
+    }
+    else {
+      direct_solver->node[iPoint]->RegisterSolution(input);   
+    }
   }
 }
 
@@ -481,11 +493,18 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Set the old solution ---*/
 
-    node[iPoint]->Set_OldSolution();
+    if(!config->GetMultizone_Problem()) {
+      node[iPoint]->Set_OldSolution();          
+    }
 
     /*--- Extract the adjoint solution ---*/
 
-    direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+    if(config->GetMultizone_Problem()) {
+      direct_solver->node[iPoint]->GetAdjointSolution_intIndexBased(Solution);
+    }
+    else {
+      direct_solver->node[iPoint]->GetAdjointSolution(Solution);
+    }
 
     /*--- Store the adjoint solution ---*/
 
@@ -519,16 +538,18 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the residuals ---*/
 
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-      for (iVar = 0; iVar < nVar; iVar++) {
-          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
+  if(!config->GetMultizone_Problem()) {
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+            residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
 
-          AddRes_RMS(iVar,residual*residual);
-          AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
+            AddRes_RMS(iVar,residual*residual);
+            AddRes_Max(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        }
+    }
+
+    SetResidual_RMS(geometry, config);         
   }
-
-  SetResidual_RMS(geometry, config);
 }
 
 void CDiscAdjSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
@@ -739,7 +760,12 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      Solution[iVar] = node[iPoint]->GetSolution(iVar);
+      if(config->GetMultizone_Problem()) {
+        Solution[iVar] = node[iPoint]->GetSolution_Old(iVar);      
+      }
+      else {
+        Solution[iVar] = node[iPoint]->GetSolution(iVar);
+      }      
     }
     if (fsi) {
       for (iVar = 0; iVar < nVar; iVar++) {
@@ -751,9 +777,13 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
-    direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+    if(config->GetMultizone_Problem()) {
+      direct_solver->node[iPoint]->SetAdjointSolution_intIndexBased(Solution);
+    }
+    else {
+      direct_solver->node[iPoint]->SetAdjointSolution(Solution);
+    }
   }
-
 }
 
 void CDiscAdjSolver::SetAdjoint_OutputMesh(CGeometry *geometry, CConfig *config){
@@ -806,9 +836,11 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
 
+//      geometry->node[iPoint]->GetAdjointSolution(Sensitivity, iDim);
+
       /*--- Set the index manually to zero. ---*/
 
-     AD::ResetInput(Coord[iDim]);
+      AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
@@ -845,7 +877,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
+       || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
       Sens = 0.0;
 
