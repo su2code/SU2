@@ -1354,12 +1354,14 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   unsigned long iPoint;
 
   bool input    = true;
-  bool taping2  = config->GetBoolZoneSpecific();
   
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(taping2) {
-      AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
-      node[iPoint]->Set_AdjIndices(input);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->Set_AdjIndices(input);
+        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
     else {
       for (iDim = 0; iDim < nDim; iDim++) {
@@ -1374,12 +1376,14 @@ void CGeometry::RegisterOutput_Coordinates(CConfig *config){
   unsigned long iPoint;
 
   bool input    = false;
-  bool taping2  = config->GetBoolZoneSpecific();
 
   for (iPoint = 0; iPoint < nPoint; iPoint++){
-    if(taping2) {
-      AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
-      node[iPoint]->Set_AdjIndices(input);
+    if(config->GetMultizone_Problem()) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+//        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+//        node[iPoint]->Set_AdjIndices(input);
+        AD::RegisterOutput(node[iPoint]->GetCoord()[iDim]);
+      }
     }
     else {
       for (iDim = 0; iDim < nDim; iDim++) {

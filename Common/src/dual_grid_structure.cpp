@@ -417,10 +417,8 @@ void CPoint::SetAdjointSolution(su2double *adj_sol) {
   }
 }
 
-void CPoint::GetAdjointSolution(su2double *adj_sol) {
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    adj_sol[iDim] = AD::GetDerivative(Input_AdjIndices[iDim]);
-  }
+void CPoint::GetAdjointSolution(su2double adj_sol, unsigned short iDim) {
+  adj_sol = AD::GetDerivative(Input_AdjIndices[iDim]);
 }
 
 CEdge::CEdge(unsigned long val_iPoint, unsigned long val_jPoint, unsigned short val_nDim) : CDualGrid(val_nDim) {
