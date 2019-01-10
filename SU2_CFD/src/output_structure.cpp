@@ -340,6 +340,10 @@ COutput::COutput(CConfig *config) {
     RequestedVolumeFields.push_back(config->GetVolumeOutput_Field(iField));
   }
   
+  grid_movement = config->GetGrid_Movement(); 
+  
+  multizone     = config->GetMultizone_Problem();
+  
 }
 
 COutput::~COutput(void) {
@@ -11061,8 +11065,8 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
     
     if (config->GetMultizone_Problem()){
       MultiZoneHeaderTable->AddColumn(MultiZoneHeaderString, nRequestedScreenFields*field_width + (nRequestedScreenFields-1));      
-      MultiZoneHeaderTable->set_align(PrintingToolbox::CTablePrinter::CENTER);
-      MultiZoneHeaderTable->set_print_header_bottom_line(false);
+      MultiZoneHeaderTable->SetAlign(PrintingToolbox::CTablePrinter::CENTER);
+      MultiZoneHeaderTable->SetPrintHeaderBottomLine(false);
     }
     
   }

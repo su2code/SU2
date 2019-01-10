@@ -48,10 +48,6 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
   
-  grid_movement = config->GetGrid_Movement(); 
-  
-  multizone = config->GetMultizone_Problem();
-  
   su2double Gas_Constant, Mach2Vel, Mach_Motion;
   unsigned short iDim;
   su2double Gamma = config->GetGamma();
@@ -117,123 +113,175 @@ CIncFlowOutput::~CIncFlowOutput(void) {
 
 void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   
-  // Iteration numbers
-  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER");  
-  AddHistoryOutput("INNER_ITER",   "Inner_Iter",  FORMAT_INTEGER, "ITER");
-  
-  // Residuals
-  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("RMS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    break;  
-  case SST:
-    AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    break;
-  }
-  
-  // Residuals
-  AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("MAX_NU_TILDE", "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    break;  
-  case SST:
-    AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    break;
-  }
-  
-  // Residuals
-  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddHistoryOutput("BGS_NU_TILDE", "rms[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-    break;  
-  case SST:
-    AddHistoryOutput("BGS_KINETIC_ENERGY", "rms[k]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_DISSIPATION",    "rms[w]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-    break;
-  }
-  
-  if (heat || weakly_coupled_heat){
-    AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-    
-    AddHistoryOutput("HEATFLUX", "HF(Total)",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
-    AddHistoryOutput("HEATFLUX_MAX", "HF(Max)",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
-    AddHistoryOutput("TEMPERATURE", "Temp(Total)", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
-  }
-  
-  // Aerodynamic coefficients
-  AddHistoryOutput("DRAG",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("LIFT",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
-  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
+  /// DESCRIPTION: The time iteration index.
+  AddHistoryOutput("TIME_ITER",     "Time_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// DESCRIPTION: The internal iteration index.
+  AddHistoryOutput("OUTER_ITER",   "Outer_Iter",  FORMAT_INTEGER, "ITER"); 
+  /// DESCRIPTION: The external iteration index.
+  AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
+  /// END_GROUP
 
+  /// DESCRIPTION: Currently used wall-clock time.
+  AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
+  
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// DESCRIPTION: Root-mean square residual of the pressure.
+  AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the velocity x-component.  
+  AddHistoryOutput("RMS_VELOCITY-X", "rms[U]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the velocity y-component.  
+  AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the velocity z-component.  
+  AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the temperature.
+  AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
+  AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
+  AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
+  AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// END_GROUP
+  
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// DESCRIPTION: Maximum residual of the pressure.
+  AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the velocity x-component.   
+  AddHistoryOutput("MAX_VELOCITY-X", "max[U]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the velocity y-component.   
+  AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the velocity z-component.   
+  AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the temperature.
+  AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+  AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
+  AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
+  AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);  
+  /// END_GROUP
+  
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// DESCRIPTION: BGS residual of the pressure.
+  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the momentum x-component.  
+  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the momentum x-component.  
+  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the momentum x-component.  
+  AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Maximum residual of the temperature.
+  AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of nu tilde (SA model).  
+  AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of kinetic energy (SST model).    
+  AddHistoryOutput("BGS_KINETIC_ENERGY", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: BGS residual of the dissipation (SST model).    
+  AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  /// END_GROUP
+
+  /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
+  /// DESCRIPTION: Drag coefficient 
+  AddHistoryOutput("DRAG",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Lift coefficient 
+  AddHistoryOutput("LIFT",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Sideforce coefficient   
+  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the x-axis    
+  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the y-axis    
+  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the z-axis      
+  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in x direction    
+  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in y direction    
+  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in z direction      
+  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Lift-to-drag ratio
+  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  /// END_GROUP
+ 
+  /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
+  /// DESCRIPTION: Total heatflux
+  AddHistoryOutput("HEATFLUX", "HF",      FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Maximal heatflux  
+  AddHistoryOutput("HEATFLUX_MAX", "maxHF",    FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  /// DESCRIPTION: Temperature
+  AddHistoryOutput("TEMPERATURE", "Temp", FORMAT_SCIENTIFIC, "HEAT", TYPE_COEFFICIENT);
+  /// END_GROUP
+  
+  
+  /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Aerodynamic coefficients and forces per surface.
   vector<string> Marker_Monitoring;
   for (unsigned short iMarker_Monitoring = 0; iMarker_Monitoring < config->GetnMarker_Monitoring(); iMarker_Monitoring++){
     Marker_Monitoring.push_back(config->GetMarker_Monitoring_TagBound(iMarker_Monitoring));
-  }
+  }  
   
-  // Aerodynamic coefficients (per surface)  
-  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
-  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring);
+  /// DESCRIPTION: Drag coefficient   
+  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Lift coefficient   
+  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Sideforce coefficient     
+  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the x-axis      
+  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the y-axis      
+  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Moment around the z-axis        
+  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in x direction      
+  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in y direction      
+  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Force in z direction        
+  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Lift-to-drag ratio  
+  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  /// END_GROUP 
   
-  
-  // Misc.
+  /// DESCRIPTION: Angle of attack  
   AddHistoryOutput("AOA",         "AoA",                      FORMAT_SCIENTIFIC, "AOA");
-  AddHistoryOutput("PHYS_TIME",   "Time(min)",                FORMAT_SCIENTIFIC, "PHYS_TIME");
+  /// DESCRIPTION: Linear solver iterations   
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER,    "LINSOL_ITER");
   
-  // Surface output
+  /// BEGIN_GROUP: AERO_COEFF_SURF, DESCRIPTION: Surface values on non-solid markers.
   vector<string> Marker_Analyze;
   for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config->GetnMarker_Analyze(); iMarker_Analyze++){
     Marker_Analyze.push_back(config->GetMarker_Analyze_TagBound(iMarker_Analyze));
   }  
-  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze);
-
+  /// DESCRIPTION: Average mass flow    
+  AddHistoryOutputPerSurface("AVG_MASSFLOW",             "Avg_Massflow",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average Mach number      
+  AddHistoryOutputPerSurface("AVG_MACH",                 "Avg_Mach",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average Temperature        
+  AddHistoryOutputPerSurface("AVG_TEMP",                 "Avg_Temp",                  FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average Pressure  
+  AddHistoryOutputPerSurface("AVG_PRESS",                "Avg_Press",                 FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average Density  
+  AddHistoryOutputPerSurface("AVG_DENSITY",              "Avg_Density",               FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average Enthalpy  
+  AddHistoryOutputPerSurface("AVG_ENTHALPY",             "Avg_Enthalpy",              FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average velocity in normal direction of the surface
+  AddHistoryOutputPerSurface("AVG_NORMALVEL",            "Avg_NormalVel",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Flow uniformity 
+  AddHistoryOutputPerSurface("UNIFORMITY",               "Uniformity",                FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Secondary strength
+  AddHistoryOutputPerSurface("SECONDARY_STRENGTH",       "Secondary_Strength",        FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Momentum distortion  
+  AddHistoryOutputPerSurface("MOMENTUM_DISTORTION",      "Momentum_Distortion",       FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Secondary over uniformity 
+  AddHistoryOutputPerSurface("SECONDARY_OVER_UNIFORMITY", "Secondary_Over_Uniformity", FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average total temperature  
+  AddHistoryOutputPerSurface("AVG_TOTALTEMP",            "Avg_TotalTemp",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Average total pressure   
+  AddHistoryOutputPerSurface("AVG_TOTALPRESS",           "Avg_TotalPress",            FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// DESCRIPTION: Pressure drop    
+  AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
+  /// END_GROUP
   
 }
 

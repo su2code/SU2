@@ -2069,6 +2069,11 @@ public:
   
   /*!
    * \brief A virtual member.
+   */
+  virtual void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
+  /*!
+   * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solution - Container vector with all the solutions.
    */
@@ -8278,7 +8283,12 @@ public:
                              string val_marker,
                              CGeometry *geometry,
                              CConfig *config);
-
+  
+  /*!
+   * \brief A virtual member.
+   */
+  void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+  
 };
 
 /*!

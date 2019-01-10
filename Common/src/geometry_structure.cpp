@@ -21210,7 +21210,7 @@ CMultiGridGeometry::CMultiGridGeometry(CGeometry ****geometry, CConfig **config_
       MGTable.AddColumn("CVs", 10);
       MGTable.AddColumn("Aggl. Rate", 10);
       MGTable.AddColumn("CFL", 10);
-      MGTable.set_align(PrintingToolbox::CTablePrinter::RIGHT);
+      MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
       
       
       if (iMesh == 1){

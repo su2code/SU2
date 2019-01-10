@@ -3844,31 +3844,46 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     
     if (grid_movement) cout << "Force coefficients computed using MACH_MOTION." << endl;
     else cout << "Force coefficients computed using free-stream values." << endl;
+        
+    stringstream NonDimTableOut, ModelTableOut;
+    stringstream Unit;  
     
-    cout <<"-- Input conditions:"<< endl;
+    cout << endl;
+    PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
+    ModelTableOut <<"-- Models:"<< endl;
+
+    ModelTable.AddColumn("Viscosity Model", 25);
+    ModelTable.AddColumn("Conductivity Model", 26);
+    ModelTable.AddColumn("Fluid Model", 25);
+    ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    ModelTable.PrintHeader();
     
-    PrintingToolbox::CTablePrinter NonDimTable(&std::cout);
-    stringstream Unit;    
-    
-    NonDimTable.AddColumn("Name", 18);
+    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);    
+    NonDimTable.AddColumn("Name", 22);
     NonDimTable.AddColumn("Dim. value", 14);
     NonDimTable.AddColumn("Ref. value", 14);
     NonDimTable.AddColumn("Unit", 10);
     NonDimTable.AddColumn("Non-dim. value", 14);
-    NonDimTable.set_align(PrintingToolbox::CTablePrinter::RIGHT);
+    NonDimTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    
+    NonDimTableOut <<"-- Fluid properties:"<< endl;
     
     NonDimTable.PrintHeader();
-    
-    if (viscous){
-      if (config->GetKind_ViscosityModel() == CONSTANT_VISCOSITY){
+
+    if (viscous) {
+      
+      switch(config->GetKind_ViscosityModel()){
+      case CONSTANT_VISCOSITY:
+        ModelTable << "CONSTANT_VISCOSITY";
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
-        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_ConstantND()/config->GetMu_Constant() << Unit.str() << config->GetMu_ConstantND();
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
         Unit.str("");
         NonDimTable.PrintFooter();
-      }
-
-      if (config->GetKind_ViscosityModel() == SUTHERLAND){
+        break;
+        
+      case SUTHERLAND:
+        ModelTable << "SUTHERLAND";        
         if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
         else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
         NonDimTable << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
@@ -3882,23 +3897,31 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         NonDimTable << "Sutherland Const." << config->GetMu_S() << config->GetTemperature_Ref() << Unit.str() << config->GetMu_SND();
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+        
       }
-
-      if (config->GetKind_ConductivityModel() == CONSTANT_PRANDTL){
-        NonDimTable << "Prandtl (Lam.)" << "-" << "-" << "-" << config->GetPrandtl_Lam();         
+      switch(config->GetKind_ConductivityModel()){
+      case CONSTANT_PRANDTL:
+        ModelTable << "CONSTANT_PRANDTL";
+        NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();         
         Unit.str("");
         NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
         Unit.str("");
         NonDimTable.PrintFooter();
-      }
-      if (config->GetKind_ConductivityModel() == CONSTANT_CONDUCTIVITY){
+        break;
+        
+      case CONSTANT_CONDUCTIVITY:
+        ModelTable << "CONSTANT_CONDUCTIVITY";
         Unit << "W/m^2.K";
-        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_ConstantND()/config->GetKt_Constant() << Unit.str() << config->GetKt_ConstantND();         
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
         Unit.str("");
         NonDimTable.PrintFooter();
+        break;
+        
       }
+      
     }
-    
+
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
     else if (config->GetSystemMeasurements() == US) Unit << "lbf.ft/slug.R";
     NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();
@@ -3908,6 +3931,21 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     NonDimTable << "Spec. Heat Ratio" << "-" << "-" << "-" << Gamma;
     Unit.str("");
     
+    switch(config->GetKind_FluidModel()){
+    case STANDARD_AIR:
+      ModelTable << "STANDARD_AIR";
+      break;
+    case IDEAL_GAS:
+      ModelTable << "IDEAL_GAS";
+      break;
+    case VW_GAS:
+      ModelTable << "VW_GAS";
+      break;
+    case PR_GAS:
+      ModelTable << "PR_GAS";
+      break;
+    }
+ 
     if (config->GetKind_FluidModel() == VW_GAS || config->GetKind_FluidModel() == PR_GAS){
         NonDimTable << "Critical Pressure" << config->GetPressure_Critical() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_Critical() /config->GetPressure_Ref();
         Unit.str("");
@@ -3916,18 +3954,11 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         Unit.str("");
     }
     NonDimTable.PrintFooter();
-    if (unsteady){
-      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
-      Unit.str("");
-      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
-      Unit.str("");
-      NonDimTable.PrintFooter();
-    }
     
-    cout <<"-- Free-stream conditions:"<< endl;
+    NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
     
     NonDimTable.PrintHeader();
-
+    
     if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
     else if (config->GetSystemMeasurements() == US) Unit << "psf";
     NonDimTable << "Static Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
@@ -3986,8 +4017,20 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       NonDimTable << "Wave Length"   << "-" << "-" << "-" << 2.0*PI_NUMBER*Froude*Froude;
     }
     NonDimTable.PrintFooter();
+    ModelTable.PrintFooter();
     
-    cout << endl;
+    if (unsteady){
+      NonDimTable.PrintHeader();
+      NonDimTableOut << "-- Unsteady conditions" << endl;
+      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      Unit.str("");
+      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+    }
+    
+    cout << ModelTableOut.str();
+    cout << NonDimTableOut.str();
     
   }
   
@@ -8837,6 +8880,9 @@ void CEulerSolver::Evaluate_ObjFunc(CConfig *config) {
     case SURFACE_SECOND_OVER_UNIFORM:
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
       break;
+    case TOTAL_AVG_TEMPERATURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Temperature(0);
+      break;
     case CUSTOM_OBJFUNC:
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
@@ -13366,6 +13412,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
                      (config->GetFSI_Simulation()));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
 
   string UnstExt, text_line;
   ifstream restart_file;
@@ -13387,6 +13434,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   /*--- Skip coordinates ---*/
   
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
+
+  /*--- Store the number of variables for the turbulence model
+   (that could appear in the restart file before the grid velocities). ---*/
+  unsigned short turbVars = 0;
+  if (turbulent){
+    if (turb_model == SST) turbVars = 2;  
+    else turbVars = 1;
+  }
 
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
@@ -13431,15 +13486,6 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
 
       if (grid_movement && val_update_geo) {
 
-        /*--- First, remove any variables for the turbulence model that
-         appear in the restart file before the grid velocities. ---*/
-
-        if (turb_model == SA || turb_model == SA_NEG) {
-          index++;
-        } else if (turb_model == SST) {
-          index+=2;
-        }
-
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
         /*--- the grid velocities are set to 0. This is useful for FSI computations ---*/
@@ -13452,7 +13498,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
