@@ -2306,7 +2306,7 @@ public:
   /*!
    * \brief Saving the adjoint vector position with respect to the solution variables.
    */
-  virtual void Set_AdjIndices(bool input);
+  void Set_AdjIndices(bool input);
   
   /*!
    * \brief Register the variables in the solution_time_n array as input/output variable.

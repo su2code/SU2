@@ -1983,7 +1983,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     case FEM_NAVIER_STOKES: case DISC_ADJ_FEM_NS : fem_ns = true; break;
     case FEM_RANS : case DISC_ADJ_FEM_RANS : fem_ns = true; fem_turbulent = true; break;
     case FEM_LES :  fem_ns = true; break;
-    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT: heat_fvm = true; break;
     case FEM_ELASTICITY: case DISC_ADJ_FEM: fem = true; break;
     case ADJ_EULER : euler = true; adj_euler = true; break;
     case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;

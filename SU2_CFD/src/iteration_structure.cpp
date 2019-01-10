@@ -2453,10 +2453,10 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
+  solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
   solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
   }
@@ -2479,15 +2479,15 @@ void CDiscAdjFluidIteration::RegisterOutput(CSolver *****solver_container, CGeom
   
   /*--- Register conservative variables as output of the iteration ---*/
   
-    solver_container[iZone][iInst][MESH_0][FLOW_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],config_container[iZone]);
+    solver_container[iZone][iInst][MESH_0][ADJFLOW_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],config_container[iZone]);
   
   }
   if ((Kind_Solver == DISC_ADJ_RANS) && !frozen_visc){
-    solver_container[iZone][iInst][MESH_0][TURB_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
+    solver_container[iZone][iInst][MESH_0][ADJTURB_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
                                                                  config_container[iZone]);
   }
   if (heat){
-    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
+    solver_container[iZone][iInst][MESH_0][ADJHEAT_SOL]->RegisterOutput(geometry_container[iZone][iInst][MESH_0],
                                                                  config_container[iZone]);
   }
 }

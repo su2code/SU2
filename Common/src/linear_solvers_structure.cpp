@@ -354,13 +354,13 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   su2double beta = w[0].norm();
   
-  if ( (beta < tol*norm0) || (beta < eps) ) {
+//  if ( (beta < tol*norm0) || (beta < eps) ) {
     
-    /*---  System is already solved ---*/
+//    /*---  System is already solved ---*/
     
-    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
-    return 0;
-  }
+//    if (rank == MASTER_NODE) cout << "CSysSolve::FGMRES(): system solved by initial guess." << endl;
+//    return 0;
+//  }
   
   /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
 	 holds the negative residual, as mentioned above) ---*/

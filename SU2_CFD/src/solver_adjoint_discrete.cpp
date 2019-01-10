@@ -836,9 +836,11 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
       Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
 
+//      geometry->node[iPoint]->GetAdjointSolution(Sensitivity, iDim);
+
       /*--- Set the index manually to zero. ---*/
 
-     AD::ResetInput(Coord[iDim]);
+      AD::ResetInput(Coord[iDim]);
 
       /*--- If sharp edge, set the sensitivity to 0 on that region ---*/
 
@@ -875,7 +877,8 @@ void CDiscAdjSolver::SetSurface_Sensitivity(CGeometry *geometry, CConfig *config
 
     if(config->GetMarker_All_KindBC(iMarker) == EULER_WALL
        || config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX
-       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) {
+       || config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL
+       || config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE) {
 
       Sens = 0.0;
 

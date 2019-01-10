@@ -156,6 +156,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Output_AdjIndices = new int[nVar];
 	}
   
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Input_AdjIndices[iVar] = -1;
+    Output_AdjIndices[iVar] = -1;
+  }
 }
 
 CVariable::~CVariable(void) {
