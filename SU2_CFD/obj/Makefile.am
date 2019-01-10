@@ -124,6 +124,7 @@ libSU2Core_sources = \
   ../src/output_direct_heat.cpp \
   ../src/output_adjoint_elasticity.cpp \
   ../src/output_adjoint_discrete.cpp \
+  ../src/output_adjoint_discrete_inc.cpp \
   ../src/output_adjoint_mean.cpp \
   ../src/output_driver.cpp \
   ../src/python_wrapper_structure.cpp \
