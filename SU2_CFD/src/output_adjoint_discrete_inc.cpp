@@ -382,7 +382,7 @@ bool CDiscAdjFlowIncOutput::WriteHistoryFile_Output(CConfig *config, bool write_
 bool CDiscAdjFlowIncOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = (config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0;
+    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -397,7 +397,7 @@ bool CDiscAdjFlowIncOutput::WriteScreen_Output(CConfig *config, bool write_dualt
     write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
-    write_output = (config->GetExtIter() % config->GetWrt_Con_Freq() == 0) ;    
+    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
   return write_output;
 }
