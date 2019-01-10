@@ -301,6 +301,10 @@ void CDiscAdjMultizoneDriver::Run() {
     SetAdjoints_Iter();
 
     SetResidual_RMS();
+    
+    for (iZone = 0; iZone < nZone; iZone++) {
+      output[iZone]->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, iZone, INST_0);
+    }    
 
     /*--- Check convergence in each zone --*/
 
@@ -535,14 +539,14 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
       }
     }
 
-    iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output, iZone, INST_0);
+    iteration_container[iZone][INST_0]->RegisterOutput(solver_container, geometry_container, config_container, output[iZone], iZone, INST_0);
 
     AD::Push_TapePosition();
   }
 
   AD::StopRecording();
 
-  AD::PrintStatistics();
+//  AD::PrintStatistics();
 
   RecordingState = kind_recording;
 }
@@ -588,26 +592,26 @@ void CDiscAdjMultizoneDriver::SetObjFunction() {
 
   /*--- Specific scalar objective functions ---*/
 
-  for (iZone = 0; iZone < nZone; iZone++){
-    switch (config_container[iZone]->GetKind_Solver()) {
-      case EULER:                   case NAVIER_STOKES:                   case RANS:
-      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+//  for (iZone = 0; iZone < nZone; iZone++){
+//    switch (config_container[iZone]->GetKind_Solver()) {
+//      case EULER:                   case NAVIER_STOKES:                   case RANS:
+//      case DISC_ADJ_EULER:          case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
 
-        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-          output->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);
+//        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+//          output[iZone]->SpecialOutput_AnalyzeSurface(solver_container[iZone][INST_0][MESH_0][FLOW_SOL], geometry_container[iZone][INST_0][MESH_0], config_container[iZone], false);
 
-        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
-          output->SpecialOutput_Distortion(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if (config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+//          output[iZone]->SpecialOutput_Distortion(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
 
-        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
-          output->SpecialOutput_SonicBoom(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if (config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
+//          output[iZone]->SpecialOutput_SonicBoom(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
 
-        if (config_container[ZONE_0]->GetPlot_Section_Forces())
-          output->SpecialOutput_SpanLoad(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
+//        if (config_container[ZONE_0]->GetPlot_Section_Forces())
+//          output[iZone]->SpecialOutput_SpanLoad(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], false);
 
-        break;
-    }
-  }
+//        break;
+//    }
+//  }
 
   /*--- Surface based obj. function ---*/
 
