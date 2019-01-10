@@ -1736,7 +1736,7 @@ protected:
   su2double ObjFunc;                /*!< \brief The value of the objective function.*/
   int ObjFunc_Index;                /*!< \brief Index of the value of the objective function.*/
   CIteration*** direct_iteration;   /*!< \brief A pointer to the direct iteration.*/
-  unsigned short *nInst;
+  unsigned short *nInst;            /*!< \brief Number of instances per zone for the primal solve.*/
 
 public:
 
@@ -1758,7 +1758,12 @@ public:
   ~CDiscAdjMultizoneDriver(void);
 
   /*!
-   * \brief Run an discrete adjoint update of all solvers within multiple zones. We do not overload StartSolver so far.
+   * \brief [Overload] Launch the computation for discrete adjoint multizone problems.
+   */
+  void StartSolver();
+
+  /*!
+   * \brief Run an discrete adjoint update of all solvers within multiple zones.
    */
   void Run();
 
@@ -1773,26 +1778,15 @@ public:
 //  bool OuterConvergence(unsigned long OuterIter);
 
   /*!
-   * \brief Routine to provide all the desired physical transfers between the different zones during one iteration.
-   * \return Boolean that determines whether the mesh needs to be updated for this particular transfer
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
    */
-  bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
-
-  /*!
-   * \brief Run one iteration of the solver.
-   */
-  void DirectRun(unsigned short iZone);
+  void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Set the objective function. It is virtual because it depends on the kind of physics.
    */
   void SetObjFunction();
-
-  /*!
-   * \brief Record one iteration of a flow iteration in within multiple zones.
-   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
-   */
-  void SetRecording(unsigned short kind_recording);
 
   /*!
    * \brief Initialize the adjoint value of the objective function.
