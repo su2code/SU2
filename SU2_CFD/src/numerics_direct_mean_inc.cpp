@@ -891,21 +891,19 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 
 CSourceIncPeriodicBodyForce::CSourceIncPeriodicBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
 
-  /*--- Store the pointer to the constant body force vector. ---*/
+  /*--- Store the pointer to the constant body force vector used in the momentum equations. ---*/
   
+  implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   Body_Force_Vector = new su2double[nDim];
-  su2double norm2_PBtranslate = 0.0;
+  su2double norm2_translation = 0.0;
+  su2double Pressure_Ref = config->GetPressure_Ref(); // TK check if pressure and force ref are the same
   
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    norm2_PBtranslate += pow(config->GetPeriodicTranslation(0)[iDim],2);
+    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
   
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    if (config->GetPeriodicTranslation(0)[iDim] == 0) {
-      Body_Force_Vector[iDim] = 0.0;
-    } else {
-      Body_Force_Vector[iDim] = config->GetDeltaP_BodyForce()/norm2_PBtranslate*config->GetPeriodicTranslation(0)[iDim];
-    }
-  }
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Body_Force_Vector[iDim] = config->GetDeltaP_BodyForce()/norm2_translation*config->GetPeriodicTranslation(0)[iDim] / Pressure_Ref; // TK check if pres_ref is the same as force ref
+  
   
   // TK output has to be done differently or at least if rank==master
   cout << "Body force vector based on delta p: [ ";
@@ -921,19 +919,27 @@ CSourceIncPeriodicBodyForce::~CSourceIncPeriodicBodyForce(void) {
 
 }
 
-void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConfig *config) {
+void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
 
-  unsigned short iDim;
-  su2double DensityInc_0 = 0.0;
-  su2double Pressure_Ref = config->GetPressure_Ref(); // check if pressure and force ref are the same
-  su2double Temperature_Ref = config->GetTemperature_Ref();
-  bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
+  unsigned short iDim, iVar, jVar;
+  su2double norm2_translation = 0.0;
+  su2double dot_product = 0.0;
+  su2double Body_Force_T_factor;
+  //su2double DensityInc_0 = 0.0;
+  //bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
   su2double Velocity[nDim];
   
   for (iDim = 0; iDim < nDim; iDim++)
       Velocity[iDim] = V_i[iDim+1];
   
-  su2double norm2_translation = 0.0;
+  /*--- Initialize the Jacobian contribution to zero ---*/
+  
+  if (implicit) {
+    for (iVar=0; iVar < nVar; iVar++) {
+      for (jVar=0; jVar < nVar; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
+    }
+  }
   
   /*--- Check for variable density. If we have a variable density
    problem, we should subtract out the hydrostatic pressure component. ---*/
@@ -951,25 +957,32 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, CConf
   /*--- Compute the periodic pressure contribution to the momentum equation ---*/
 
   for (iDim = 0; iDim < nDim; iDim++)
-    val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim] / Pressure_Ref; // TK check if pres_ref is the same as force ref
+    val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim];
 
   /*--- Compute the periodic temperature contribution to the energy equation ---*/
 
   for (iDim = 0; iDim < nDim; iDim++) {
     norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
   }
-
+  
   if (config->GetEnergy_Equation()) {
     
-    su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / config->GetPeriodic_MassFlow("outlet") / norm2_translation; // TK HARDCODED inlet !!!!
+    Body_Force_T_factor = config->GetPeriodic_HeatfluxIntegrated() * DensityInc_i / (config->GetPeriodic_MassFlow("outlet") * norm2_translation); // TK HARDCODED inlet !!!!
     
     for (iDim = 0; iDim < nDim; iDim++) {
-      val_residual[nDim+1] += Volume * Body_Force_T * Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim]; // TK maybe make it class var
+      dot_product += Velocity[iDim] * config->GetPeriodicTranslation(0)[iDim];
+    }
+    val_residual[nDim+1] = Volume * Body_Force_T_factor * dot_product;
+    
+    /*--- TK Jacobian contribution of energy equation periodic source term ---*/
+    if (implicit) {
+      for (iDim = 0; iDim < nDim; iDim++)
+        Jacobian_i[nDim+1][iDim+1] = 0.0;//Volume * Body_Force_T_factor * config->GetPeriodicTranslation(0)[iDim]; // TK Added Jacobian makes no difference at all... Why
     }
   } else {
     val_residual[nDim+1] = 0.0;
   }
-
+  
 }
 
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

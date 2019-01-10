@@ -3048,13 +3048,17 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
 
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
-      /*--- Compute the rotating frame source residual ---*/
+      /*--- Compute the streamwise periodic source residual ---*/
 
-      numerics->ComputeResidual(Residual, config);
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
 
       /*--- Add the source residual to the total ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Add the implicit Jacobian contribution ---*/
+      
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
     }
   }
@@ -10911,7 +10915,8 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       dT = fabs(Outlet_Density_Total[1] - Outlet_Density_Total[0]);
     
     if (iMesh == MESH_0) {
-      config->SetPeriodic_HeatfluxIntegrated(dT*config->GetPeriodic_MassFlow("outlet")*node[0]->GetSpecificHeatCp());
+      if (config->GetExtIter() == 0) { config->SetPeriodic_HeatfluxIntegrated(3.1415); } // TK HARDCODED starting help with value from BC definition
+      else { config->SetPeriodic_HeatfluxIntegrated(dT*config->GetPeriodic_MassFlow("outlet")*node[0]->GetSpecificHeatCp());}
     }
     
     /*--- Screen output using the values already stored in the config container ---*/
@@ -10993,24 +10998,6 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
 
             string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
 
-            /*--- Get the specified wall heat flux from config ---*/
-            su2double Wall_HeatFlux = 0.0;
-
-            /*--- OPTION 1 for Heatflux calculation from config file ---*/
-            Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
-
-            /*--- OPTION 2 for Heatflux calculation from computing actual heatflux ---*/
-            su2double GradTemperature = 0.0;
-            // turn off for no energy equation
-            for (iDim = 0; iDim < nDim; iDim++)
-              GradTemperature -= node[iPoint]->GetGradient_Primitive(nDim+1, iDim)*Vector[iDim]; // Vector is Area normal TK should it be unit normal here?
-
-            su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
-            Wall_HeatFlux = -thermal_conductivity*GradTemperature;
-
-            /*--- END OPTIONS ---*/
-
-
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
 
             for (iDim = 0; iDim < nDim; iDim++) {
@@ -11020,11 +11007,28 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
               MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
             }
             Area = sqrt (Area);
-
+            
+            /*--- Get the specified wall heat flux from config ---*/
+            su2double Wall_HeatFlux = 0.0;
+            
+            /*--- OPTION 2 for Heatflux calculation from computing actual heatflux ---*/
+            su2double GradTemperature = 0.0;
+            // turn off for no energy equation
+            for (iDim = 0; iDim < nDim; iDim++) // TK This would need to be done with recoverd Temperature!!!
+              GradTemperature -= node[iPoint]->GetGradient_Primitive(nDim+1, iDim)*Vector[iDim]; // Vector is Area normal TK should it be unit normal here? A test with division by Area showed that the area normal is correct
+            
+            su2double thermal_conductivity = node[iPoint]->GetThermalConductivity();
+            Wall_HeatFlux = -thermal_conductivity*GradTemperature;
+            
+            /*--- OPTION 1 for Heatflux calculation from config file ---*/
+            Wall_HeatFlux = -config->GetWall_HeatFlux(Marker_Tag)/config->GetHeat_Flux_Ref();
+            
+            /*--- END OPTIONS ---*/
+            
             Outlet_MassFlow[iMarker] += MassFlow;
             Outlet_Density[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
             Outlet_Area[iMarker]     += Area;
-
+            
           }
         }
       }
@@ -11086,12 +11090,9 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       }
     }
 
-
-
     if (iMesh == MESH_0) {
       config->SetPeriodic_HeatfluxIntegrated(Heatflux_Integrated);
     }
-
 
     /*--- Screen output using the values already stored in the config container ---*/
 
@@ -12203,47 +12204,56 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   
   /*--- Compute recovered pressure and temperature for streamwise periodic BC ---*/
   
-  if (config->GetPeriodic_BC_Body_Force() == YES) {
+  if (config->GetPeriodic_BC_Body_Force()) {
     
     /*--- Define and initialize helping variables ---*/
-    su2double norm2_translation_vector;
+    
+    su2double norm2_translation;
     su2double dot_product;
-    su2double PerBoundNodeCoord[nDim]; // reference node on inlet periodic marker x^*
+    su2double Reference_node[nDim];
     su2double Pressure_Recovered, Temperature_Recovered;
     
+    /*--- Reference node on inlet periodic marker to compute relative distance along periodic translation vector ---*/
+    
     for (iDim = 0; iDim < nDim; iDim++)
-      PerBoundNodeCoord[iDim] = config->GetPeriodicRefNode_BodyForce()[iDim];
+      Reference_node[iDim] = config->GetPeriodicRefNode_BodyForce()[iDim];
+    
+    /*--- Compute recoverd p/T for all points ---*/
     
     for (iPoint = 0; iPoint < nPoint; iPoint++) {
       
-      /*--- First, ompute correction based on relative distance (0,l) between periodic markers ---*/
-      dot_product = 0.0;
-      norm2_translation_vector = 0.0;
+      /*--- First, compute helping terms based on relative distance (0,l) between periodic markers ---*/
+      
+      norm2_translation = 0.0; dot_product = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
-        dot_product += (geometry->node[iPoint]->GetCoord(iDim) - PerBoundNodeCoord[iDim]) * config->GetPeriodicTranslation(0)[iDim];
-        norm2_translation_vector += config->GetPeriodicTranslation(0)[iDim]*config->GetPeriodicTranslation(0)[iDim]; // what is best for CoDi pow?
+        dot_product += fabs((geometry->node[iPoint]->GetCoord(iDim) - Reference_node[iDim]) * config->GetPeriodicTranslation(0)[iDim]);
+        norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
       }
       
-      /*--- Second, substract correction from reduced pressure to get recoverd pressure ---*/
-      Pressure_Recovered = node[iPoint]->GetSolution(0);
-      Pressure_Recovered -= (config->GetDeltaP_BodyForce())*dot_product/norm2_translation_vector;
+      /*--- Second, substract/add correction from reduced pressure/temperature to get recoverd pressure/temperature ---*/
+      
+      Pressure_Recovered = node[iPoint]->GetSolution(0) - config->GetDeltaP_BodyForce()*dot_product/norm2_translation;
       
       if (config->GetEnergy_Equation()) {
         Temperature_Recovered = node[iPoint]->GetSolution(nDim+1);
-        if (config->GetExtIter() > 0)  // TK TDE here we have to avoid a mdot = 0 (inf)
-          Temperature_Recovered += config->GetPeriodic_HeatfluxIntegrated()/config->GetPeriodic_MassFlow("outlet")/node[iPoint]->GetSpecificHeatCp()*dot_product/norm2_translation_vector;  // TK HARDCODED inlet !!!!!
+        
+        /*--- Avoid m_dot=0 in 0th iteration, as m_dot is in the denominator ---*/
+        
+        if (config->GetExtIter() > 0)
+          Temperature_Recovered += config->GetPeriodic_HeatfluxIntegrated()/config->GetPeriodic_MassFlow("outlet")/node[iPoint]->GetSpecificHeatCp()*dot_product/norm2_translation;  // TK HARDCODED inlet !!!!!
       }
-    
-      //cout << iPoint << "  " << Pressure_Recovered << "  " << Temperature_Recovered<< endl;
-      node[iPoint]->SetPressure_Recovered(Pressure_Recovered);
-      node[iPoint]->SetTemperature_Recovered(Temperature_Recovered);
       
+      /*--- Save the recovered values of p and T ---*/
+      
+      node[iPoint]->SetPressure_Recovered(Pressure_Recovered);
+      if (config->GetEnergy_Equation()) node[iPoint]->SetTemperature_Recovered(Temperature_Recovered);
     }
     
+    /*--- Compute the integrated Heatflux Q into the domain, and massflow over periodic markers ---*/
+    
+    GetPeriodic_Properties(geometry, config, iMesh, Output);
   }
-  
-  if (config->GetPeriodic_BC_Body_Force()) GetPeriodic_Properties(geometry, config, iMesh, Output);
-  
+    
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
   StrainMag_Max = 0.0; Omega_Max = 0.0;
@@ -13143,7 +13153,9 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
 
         Res_Visc[nDim+1] = Wall_HeatFlux*Area;
         
-        // streamwise periodic
+        /*--- With streamwise periodic BC and heatflux walls an additional
+         term is introduced in the boundary formulation ---*/
+         
         if (config->GetPeriodic_BC_Body_Force()) {
           
           su2double Cp = node[iPoint]->GetSpecificHeatCp();
@@ -13155,7 +13167,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
           
           su2double Body_Force_T = config->GetPeriodic_HeatfluxIntegrated() * thermal_conductivity / config->GetPeriodic_MassFlow("outlet") / Cp / norm2_translation; // TK hardcoded
           
-          su2double dot_product = 0.0; // t*n*A , n is unitnormal, Normal here is n*A
+          su2double dot_product = 0.0; // TK t*n*A , n is unitnormal, Normal here is n*A
           for (iDim = 0; iDim < nDim; iDim++) {
             dot_product += config->GetPeriodicTranslation(0)[iDim]*Normal[iDim];
           }

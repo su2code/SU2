@@ -5273,7 +5273,8 @@ public:
  * \version 6.1.0 "Falcon"
  */
 class CSourceIncPeriodicBodyForce : public CNumerics {
-  su2double *Body_Force_Vector;
+  bool implicit; /*!< \brief Implicit calculation. */
+  su2double *Body_Force_Vector; /*!< \brief Additional source term vector in streamwise periodic comp for the momentum equations. */
 
 public:
 
@@ -5292,9 +5293,10 @@ public:
   /*!
    * \brief Source term integration for a body force.
    * \param[out] val_residual - Pointer to the residual vector.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[in] config - Definition of the particular problem.
    */
-  void ComputeResidual(su2double *val_residual, CConfig *config);
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
   
 };
 

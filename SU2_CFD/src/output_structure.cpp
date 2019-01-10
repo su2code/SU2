@@ -13676,17 +13676,18 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
           
         }
         
-        if (config->GetPeriodic_BC_Body_Force() == YES) {
+        /*--- Recovered p/T for streamwise periodic BC ---*/
+        if (config->GetPeriodic_BC_Body_Force()) {
           
           /*--- TK Recovered p/T comp is already done in CIncNSSolver::Preprocessing() ---*/
           Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetPressure_Recovered();    iVar++;
-          Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetTemperature_Recovered(); iVar++;
+          if(energy) { Local_Data[jPoint][iVar] = solver[FirstIndex]->node[iPoint]->GetTemperature_Recovered(); iVar++; }
                     
           Local_Data[jPoint][iVar] = rank; iVar++;
           
-        } // body force bracket
+        }
 
-      } // low memory output bracket
+      }
 
       /*--- Increment the point counter, as there may have been halos we
        skipped over during the data loading. ---*/
