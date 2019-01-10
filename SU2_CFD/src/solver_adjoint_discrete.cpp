@@ -257,7 +257,7 @@ void CDiscAdjSolver::RegisterSolution(CGeometry *geometry, CConfig *config) {
   /*--- Register solution at all necessary time instances and other variables on the tape ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(config->GetBoolZoneSpecific()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
       direct_solver->node[iPoint]->Set_AdjIndices(input);
     }
@@ -383,7 +383,7 @@ void CDiscAdjSolver::RegisterOutput(CGeometry *geometry, CConfig *config) {
   /*--- Register output variables on the tape ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
-    if(config->GetBoolZoneSpecific()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->node[iPoint]->RegisterSolution_intIndexBased(input);
       direct_solver->node[iPoint]->Set_AdjIndices(input);
     }
@@ -493,13 +493,13 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
     /*--- Set the old solution ---*/
 
-    if(!config->GetBoolZoneSpecific()) {
+    if(!config->GetMultizone_Problem()) {
       node[iPoint]->Set_OldSolution();          
     }
 
     /*--- Extract the adjoint solution ---*/
 
-    if(config->GetBoolZoneSpecific()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->node[iPoint]->GetAdjointSolution_intIndexBased(Solution);
     }
     else {
@@ -538,7 +538,7 @@ void CDiscAdjSolver::ExtractAdjoint_Solution(CGeometry *geometry, CConfig *confi
 
   /*--- Set the residuals ---*/
 
-  if(!config->GetBoolZoneSpecific()) {
+  if(!config->GetMultizone_Problem()) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
         for (iVar = 0; iVar < nVar; iVar++) {
             residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->GetSolution_Old(iVar);
@@ -760,7 +760,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
 
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
-      if(config->GetBoolZoneSpecific()) {
+      if(config->GetMultizone_Problem()) {
         Solution[iVar] = node[iPoint]->GetSolution_Old(iVar);      
       }
       else {
@@ -777,7 +777,7 @@ void CDiscAdjSolver::SetAdjoint_Output(CGeometry *geometry, CConfig *config) {
         Solution[iVar] += node[iPoint]->GetDual_Time_Derivative(iVar);
       }
     }
-    if(config->GetBoolZoneSpecific()) {
+    if(config->GetMultizone_Problem()) {
       direct_solver->node[iPoint]->SetAdjointSolution_intIndexBased(Solution);
     }
     else {
