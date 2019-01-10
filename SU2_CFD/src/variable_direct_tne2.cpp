@@ -41,26 +41,26 @@
 CTNE2EulerVariable::CTNE2EulerVariable(void) : CVariable() {
 
   /*--- Array initialization ---*/
-	Primitive          = NULL;
-	//Secondary          = NULL;
+  Primitive          = NULL;
+  //Secondary          = NULL;
 
-	Gradient_Primitive = NULL;
-	//Gradient_Secondary = NULL;
+  Gradient_Primitive = NULL;
+  //Gradient_Secondary = NULL;
 
-	Limiter_Primitive  = NULL;
+  Limiter_Primitive  = NULL;
   Limiter            = NULL;
   //Limiter_Secondary  = NULL;
 
-	nPrimVar           = 0;
-	nPrimVarGrad       = 0;
+  nPrimVar           = 0;
+  nPrimVarGrad       = 0;
 
-	//nSecondaryVar      = 0;
-	//nSecondaryVarGrad  = 0;
+  //nSecondaryVar      = 0;
+  //nSecondaryVarGrad  = 0;
 
-	//Undivided_Laplacian = NULL;
-	//Solution_New        = NULL;
+  //Undivided_Laplacian = NULL;
+  //Solution_New        = NULL;
 
-	dPdU   = NULL;   dTdU   = NULL;
+  dPdU   = NULL;   dTdU   = NULL;
   dTvedU = NULL;   eves   = NULL;
   Cvves  = NULL;
 
@@ -91,24 +91,24 @@ CTNE2EulerVariable::CTNE2EulerVariable(unsigned short val_ndim,
   nDim         = val_ndim;
   nVar         = val_nvar;
 
-	nPrimVar     = val_nprimvar;
+  nPrimVar     = val_nprimvar;
   nPrimVarGrad = val_nprimvargrad;
 
-	nSpecies     = config->GetnSpecies();
+  nSpecies     = config->GetnSpecies();
   ionization   = config->GetIonization();
 
   /*--- Array initialization ---*/
-	Primitive          = NULL;
-	//Secondary          = NULL;
+  Primitive          = NULL;
+  //Secondary          = NULL;
 
-	Gradient_Primitive = NULL;
-	//Gradient_Secondary = NULL;
+  Gradient_Primitive = NULL;
+  //Gradient_Secondary = NULL;
 
-	Limiter_Primitive  = NULL;
+  Limiter_Primitive  = NULL;
   Limiter            = NULL;
-	//Limiter_Secondary  = NULL;
+  //Limiter_Secondary  = NULL;
 
-	//Solution_New       = NULL;
+  //Solution_New       = NULL;
 
   dPdU   = NULL;   dTdU   = NULL;
   dTvedU = NULL;   eves   = NULL;
@@ -148,7 +148,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   unsigned short *nElStates;
   su2double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   su2double rhoE, rhoEve, Ev, Ee, Ef, T, Tve, rho, rhoCvtr, rhos;
-  su2double Ru, sqvel, num, denom, conc, soundspeed;
+  su2double RuSI, Ru, sqvel, num, denom, conc, soundspeed;
 
   /*--- Get Mutation++ mixture ---*/
   nSpecies     = config->GetnSpecies();
@@ -172,61 +172,59 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   RHOCVVE_INDEX = nSpecies+nDim+7;
 
   /*--- Array initialization ---*/
-	Primitive          = NULL;
-	//Secondary          = NULL;
+  Primitive          = NULL;
+  //Secondary          = NULL;
 
-	Gradient_Primitive = NULL;
-	//Gradient_Secondary = NULL;
+  Gradient_Primitive = NULL;
+  //Gradient_Secondary = NULL;
 
-	Limiter_Primitive  = NULL;
+  Limiter_Primitive  = NULL;
   Limiter            = NULL;
   //Limiter_Secondary  = NULL;
 
   //Solution_New = NULL;
 
-	/*--- Allocate & initialize residual vectors ---*/
-	Res_TruncError = new su2double [nVar];
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_TruncError[iVar] = 0.0;
-	}
+  /*--- Allocate & initialize residual vectors ---*/
+  Res_TruncError = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
 
-	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  /*--- If using multigrid, allocate residual-smoothing vectors ---*/
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 
-	if (nMGSmooth > 0) {
-		Residual_Sum = new su2double [nVar];
-		Residual_Old = new su2double [nVar];
-	}
-
+  if (nMGSmooth > 0) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
 
   /*--- Allocate & initialize primitive variable & gradient arrays ---*/
   Limiter = new su2double [nVar];
   for (iVar = 0; iVar < nVar; iVar++) Limiter[iVar] = 0.0;
 
-	Limiter_Primitive = new su2double [nPrimVarGrad];
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++) Limiter_Primitive[iVar] = 0.0;
+  Limiter_Primitive = new su2double [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) Limiter_Primitive[iVar] = 0.0;
 
-	//Limiter_Secondary = new su2double [nSecondaryVarGrad];
-	//for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) Limiter_Secondary[iVar] = 0.0;
+  //Limiter_Secondary = new su2double [nSecondaryVarGrad];
+  //for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) Limiter_Secondary[iVar] = 0.0;
 
   Solution_Max      = new su2double [nPrimVarGrad];
   Solution_Min      = new su2double [nPrimVarGrad];
- 	for (iVar = 0; iVar < nVar; iVar++){
-		Solution_Max[iVar] = 0.0;
-		Solution_Min[iVar] = 0.0;
-	}
+  for (iVar = 0; iVar < nVar; iVar++){
+    Solution_Max[iVar] = 0.0;
+    Solution_Min[iVar] = 0.0;
+  }
 
-	/*--- Incompressible flow, primitive variables ---*/
-	Primitive = new su2double [nPrimVar];
-	for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
+  /*--- Incompressible flow, primitive variables ---*/
+  Primitive = new su2double [nPrimVar];
+  for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
 
-	//Secondary = new su2double [nSecondaryVar];
+  //Secondary = new su2double [nSecondaryVar];
   //for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar] = 0.0;
 
-
-	/*--- Compressible flow, gradients primitive variables ---*/
-	Gradient_Primitive = new su2double* [nPrimVarGrad];
+  /*--- Compressible flow, gradients primitive variables ---*/
+  Gradient_Primitive = new su2double* [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Gradient_Primitive[iVar] = new su2double [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
@@ -258,24 +256,25 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
   hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
 
   /*--- Rename & initialize for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;            // Universal gas constant [J/(kmol*K)]
-  Tve     = val_temperature_ve;                // Vibrational temperature [K]
-  T       = val_temperature;                   // Translational-rotational temperature [K]
-  sqvel   = 0.0;                               // Velocity^2 [m2/s2]
-  rhoE    = 0.0;                               // Mixture total energy per mass [J/kg]
-  rhoEve  = 0.0;                               // Mixture vib-el energy per mass [J/kg]
-  denom   = 0.0;
-  conc    = 0.0;
-  rhoCvtr = 0.0;
+  RuSI      = UNIVERSAL_GAS_CONSTANT;           // Universal gas constant [J/(mol*K)]
+  Ru        = 1000.0*RuSI;                       // Universal gas constant [J/(kmol*K)]
+  Tve       = val_temperature_ve;                // Vibrational temperature [K]
+  T         = val_temperature;                   // Translational-rotational temperature [K]
+  sqvel     = 0.0;                               // Velocity^2 [m2/s2]
+  rhoE      = 0.0;                               // Mixture total energy per mass [J/kg]
+  rhoEve    = 0.0;                               // Mixture vib-el energy per mass [J/kg]
+  denom     = 0.0;
+  conc      = 0.0;
+  rhoCvtr   = 0.0;
 
   /*--- Calculate mixture density from supplied primitive quantities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-    denom += val_massfrac[iSpecies] * (Ru/(Ms[iSpecies]/1000)) * T;
+    denom += val_massfrac[iSpecies] * (Ru/Ms[iSpecies]) * T;
 
-    for (iSpecies = 0; iSpecies < nEl; iSpecies++)
-    denom += val_massfrac[nSpecies-1] * (Ru/(Ms[nSpecies-1]/1000)) * Tve;
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++)
+    denom += val_massfrac[nSpecies-1] * (Ru/Ms[nSpecies-1]) * Tve;
 
-	rho = val_pressure / denom;
+  rho = val_pressure / denom;
 
   /*--- Calculate sound speed and extract velocities ---*/
   for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
@@ -283,9 +282,9 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
     rhoCvtr += rho*val_massfrac[iSpecies] * (3.0/2.0 + xi[iSpecies]/2.0) * Ru/Ms[iSpecies];
   }
 
-	soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
+  soundspeed = sqrt((1.0 + Ru/rhoCvtr*conc) * val_pressure/rho);
 
-	for (iDim = 0; iDim < nDim; iDim++)
+  for (iDim = 0; iDim < nDim; iDim++)
     sqvel += val_mach[iDim]*soundspeed * val_mach[iDim]*soundspeed;
 
   /*--- Calculate energy (RRHO) from supplied primitive quanitites ---*/
@@ -306,12 +305,12 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
     num = 0.0;
     denom = g[iSpecies][0] * exp(thetae[iSpecies][0]/Tve);
 
-	  for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
+    for (iEl = 1; iEl < nElStates[iSpecies]; iEl++) {
       num   += g[iSpecies][iEl] * thetae[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
       denom += g[iSpecies][iEl] * exp(-thetae[iSpecies][iEl]/Tve);
     }
 
-	  Ee = Ru/Ms[iSpecies] * (num/denom);
+    Ee = Ru/Ms[iSpecies] * (num/denom);
 
     // Mixture total energy
     rhoE += rhos * ((3.0/2.0+xi[iSpecies]/2.0) * Ru/Ms[iSpecies] * (T-Tref[iSpecies])
@@ -321,7 +320,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double val_pressure,
     rhoEve += rhos * (Ev + Ee);
   }
 
-	for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
+  for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
     // Species formation energy
     Ef = hf[nSpecies-1] - Ru/Ms[nSpecies-1] * Tref[nSpecies-1];
 
@@ -359,7 +358,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
                                                                     val_nvar,
                                                                     config) {
 
-	unsigned short iVar, iDim, iMesh, nMGSmooth;
+  unsigned short iVar, iDim, iMesh, nMGSmooth;
 
   nSpecies     = config->GetnSpecies();
   nDim         = val_ndim;
@@ -382,32 +381,32 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
   RHOCVVE_INDEX = nSpecies+nDim+7;
 
   /*--- Array initialization ---*/
-	Primitive          = NULL;
-	//Secondary          = NULL;
+  Primitive          = NULL;
+  //Secondary          = NULL;
 
-	Gradient_Primitive = NULL;
-	//Gradient_Secondary = NULL;
+  Gradient_Primitive = NULL;
+  //Gradient_Secondary = NULL;
 
-	Limiter_Primitive  = NULL;
+  Limiter_Primitive  = NULL;
   Limiter            = NULL;
-	//Limiter_Secondary  = NULL;
+  //Limiter_Secondary  = NULL;
 
-	//Solution_New        = NULL;
+  //Solution_New        = NULL;
 
   /*--- Allocate & initialize residual vectors ---*/
-	Res_TruncError = new su2double [nVar];
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Res_TruncError[iVar] = 0.0;
-	}
+  Res_TruncError = new su2double [nVar];
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Res_TruncError[iVar] = 0.0;
+  }
 
-	/*--- If using multigrid, allocate residual-smoothing vectors ---*/
-	for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
-		nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
+  /*--- If using multigrid, allocate residual-smoothing vectors ---*/
+  for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++)
+    nMGSmooth += config->GetMG_CorrecSmooth(iMesh);
 
-	if (nMGSmooth > 0) {
-		Residual_Sum = new su2double [nVar];
-		Residual_Old = new su2double [nVar];
-	}
+  if (nMGSmooth > 0) {
+    Residual_Sum = new su2double [nVar];
+    Residual_Old = new su2double [nVar];
+  }
 
   /*--- If using limiters, allocate the arrays ---*/
   Limiter_Primitive = new su2double [nPrimVarGrad];
@@ -422,7 +421,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
   for (iVar = 0; iVar < nVar; iVar++)
     Limiter[iVar] = 0.0;
 
-	Solution_Max = new su2double [nPrimVarGrad];
+  Solution_Max = new su2double [nPrimVarGrad];
   Solution_Min = new su2double [nPrimVarGrad];
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     Solution_Max[iVar] = 0.0;
@@ -440,7 +439,7 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
       Gradient_Primitive[iVar][iDim] = 0.0;
   }
 
-	//Gradient_Secondary = new su2double* [nSecondaryVarGrad];
+  //Gradient_Secondary = new su2double* [nSecondaryVarGrad];
   //for (iVar = 0; iVar < nSecondaryVarGrad; iVar++) {
   //  Gradient_Secondary[iVar] = new su2double [nDim];
   //  for (iDim = 0; iDim < nDim; iDim++)
@@ -459,11 +458,11 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
   /*--- Determine the number of heavy species ---*/
   ionization = config->GetIonization();
 
-	/*--- Initialize Solution & Solution_Old vectors ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Solution[iVar]     = val_solution[iVar];
-		Solution_Old[iVar] = val_solution[iVar];
-	}
+  /*--- Initialize Solution & Solution_Old vectors ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Solution[iVar]     = val_solution[iVar];
+    Solution_Old[iVar] = val_solution[iVar];
+  }
 
   /*--- Initialize Tve to the free stream for Newton-Raphson method ---*/
   Primitive[TVE_INDEX] = config->GetTemperature_FreeStream();
@@ -472,15 +471,16 @@ CTNE2EulerVariable::CTNE2EulerVariable(su2double *val_solution,
 }
 
 CTNE2EulerVariable::~CTNE2EulerVariable(void) {
-	unsigned short iVar;
+
+  unsigned short iVar;
 
   if (Primitive          != NULL) delete [] Primitive;
-	//if (Secondary          != NULL) delete [] Secondary;
+  //if (Secondary          != NULL) delete [] Secondary;
   if (Limiter_Primitive  != NULL) delete [] Limiter_Primitive;
   //if (Limiter            != NULL) delete [] Limiter;
-	//if (Limiter_Secondary) != NULL) delete [] Limiter_Secondary;
+  //if (Limiter_Secondary) != NULL) delete [] Limiter_Secondary;
 
-	if (Gradient_Primitive != NULL) {
+  if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
@@ -491,7 +491,7 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   //  delete [] Gradient_Secondary;
   //}
 
-	if (dPdU   != NULL) delete [] dPdU;
+  if (dPdU   != NULL) delete [] dPdU;
   if (dTdU   != NULL) delete [] dTdU;
   if (dTvedU != NULL) delete [] dTvedU;
   if (eves   != NULL) delete [] eves;
@@ -499,11 +499,12 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
 }
 
 void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
-	unsigned short iVar, iDim;
 
-	for (iVar = 0; iVar < val_primvar; iVar++)
-		for (iDim = 0; iDim < nDim; iDim++)
-			Gradient_Primitive[iVar][iDim] = 0.0;
+  unsigned short iVar, iDim;
+
+  for (iVar = 0; iVar < val_primvar; iVar++)
+    for (iDim = 0; iDim < nDim; iDim++)
+      Gradient_Primitive[iVar][iDim] = 0.0;
 }
 
 //void CEulerVariable::SetGradient_SecondaryZero(unsigned short val_secondaryvar) {
@@ -515,20 +516,22 @@ void CTNE2EulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {
 //}
 
 su2double CTNE2EulerVariable::GetProjVel(su2double *val_vector) {
-	su2double ProjVel, density;
-	unsigned short iDim, iSpecies;
 
-	ProjVel = 0.0;
+  su2double ProjVel, density;
+  unsigned short iDim, iSpecies;
+
+  ProjVel = 0.0;
   density = 0.0;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     density += Solution[iSpecies];
 	for (iDim = 0; iDim < nDim; iDim++)
-		ProjVel += Solution[nSpecies+iDim]*val_vector[iDim]/density;
+      ProjVel += Solution[nSpecies+iDim]*val_vector[iDim]/density;
 
-	return ProjVel;
+  return ProjVel;
 }
 
 bool CTNE2EulerVariable::SetDensity(void) {
+
   unsigned short iSpecies;
   su2double Density;
 
@@ -543,6 +546,7 @@ bool CTNE2EulerVariable::SetDensity(void) {
 }
 
 void CTNE2EulerVariable::SetVelocity2(void) {
+
   unsigned short iDim;
 
   Velocity2 = 0.0;
@@ -560,7 +564,7 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   su2double *xi, *Ms, *thetav, **thetae, **g, *hf, *Tref;
   su2double rho, rhoE, rhoEve, rhoEve_t, rhoE_ref, rhoE_f;
   su2double evs, eels;
-  su2double Ru, sqvel, rhoCvtr, rhoCvve;
+  su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
   su2double Cvvs, Cves, Tve, Tve2, Tve_o;
   su2double f, df, tol;
   su2double exptv, thsqr, thoTve;
@@ -592,7 +596,8 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   nElStates = config->GetnElStates();
 
   /*--- Rename & initialize for convenience ---*/
-  Ru       = UNIVERSAL_GAS_CONSTANT;           // Universal gas constant [J/(kmol*K)]
+  RuSI     = UNIVERSAL_GAS_CONSTANT;           // Universal gas constant [J/(mol*K)]
+  Ru       = 1000.0*RuSI;                      // Universal gas constant [J/(kmol*k)]
   rho      = Primitive[RHO_INDEX];             // Mixture density [kg/m3]
   rhoE     = Solution[nSpecies+nDim];          // Density * energy [J/m3]
   rhoEve   = Solution[nSpecies+nDim+1];        // Density * energy_ve [J/m3]
@@ -718,7 +723,6 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
     Primitive[TVE_INDEX] = Tvemax;
   }
 
-
   /*--- Assign Gas Properties ---*/
   Primitive[RHOCVTR_INDEX] = rhoCvtr;
   Primitive[RHOCVVE_INDEX] = rhoCvve;
@@ -728,14 +732,13 @@ bool CTNE2EulerVariable::SetTemperature(CConfig *config) {
   else return true;
 }
 
-
 void CTNE2EulerVariable::SetGasProperties(CConfig *config) {
 
   // NOTE: Requires computation of vib-el temperature.
   // NOTE: For now, neglecting contribution from electronic excitation
 
   unsigned short iSpecies, nHeavy, nEl;
-  su2double rhoCvtr, rhoCvve, Ru, Tve;
+  su2double rhoCvtr, rhoCvve, RuSI, Ru, Tve;
   su2double *xi, *Ms, *thetav;
 
   /*--- Determine the number of heavy species ---*/
@@ -746,7 +749,8 @@ void CTNE2EulerVariable::SetGasProperties(CConfig *config) {
   xi     = config->GetRotationModes(); // Rotational modes of energy storage
   Ms     = config->GetMolar_Mass();    // Species molar mass
   thetav = config->GetCharVibTemp();   // Species characteristic vib. temperature [K]
-  Ru     = UNIVERSAL_GAS_CONSTANT;     // Universal gas constant [J/(kmol*K)]
+  RuSI   = UNIVERSAL_GAS_CONSTANT;     // Universal gas constant [J/(mol*K)]
+  Ru     = 1000.0*RuSI;                // Universal gas constant [J/(kmol*K)]
   Tve    = Primitive[nSpecies+1];      // Vibrational-electronic temperature [K]
 
   rhoCvtr = 0.0;
@@ -782,7 +786,7 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
 
   unsigned short iSpecies, nHeavy, nEl;
   su2double *Ms;
-  su2double P, Ru;
+  su2double P, RuSI, Ru;
 
   /*--- Determine the number of heavy species ---*/
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
@@ -792,7 +796,8 @@ bool CTNE2EulerVariable::SetPressure(CConfig *config) {
   Ms = config->GetMolar_Mass();
 
   /*--- Rename for convenience ---*/
-  Ru = UNIVERSAL_GAS_CONSTANT;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
 
   /*--- Solve for mixture pressure using ideal gas law & Dalton's law ---*/
   // Note: If free electrons are present, use Tve for their partial pressure
@@ -813,31 +818,29 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
 
   // NOTE: Requires SetDensity(), SetTemperature(), SetPressure(), & SetGasProperties().
 
-//  unsigned short iDim, iSpecies, nHeavy, nEl;
-//  double dPdrhoE, factor, Ru, radical, radical2;
-//  double *Ms, *xi;
-//
-//  /*--- Determine the number of heavy species ---*/
-//  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
-//  else            { nHeavy = nSpecies;   nEl = 0; }
-//
-//  /*--- Read gas mixture properties from config ---*/
-//  Ms = config->GetMolar_Mass();
-//  xi = config->GetRotationModes();
-//
-//  /*--- Rename for convenience ---*/
-//  Ru = UNIVERSAL_GAS_CONSTANT;
-//
-//  /*--- Calculate partial derivative of pressure w.r.t. rhoE ---*/
-//  factor = 0.0;
-//  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
-//    factor += Solution[iSpecies] / Ms[iSpecies];
-//  dPdrhoE = Ru/Primitive[RHOCVTR_INDEX] * factor;
-//
-//  /*--- Calculate a^2 using Gnoffo definition (NASA TP 2867) ---*/
-//  radical = (1.0+dPdrhoE) * Primitive[P_INDEX]/Primitive[RHO_INDEX];
-
-
+  //  unsigned short iDim, iSpecies, nHeavy, nEl;
+  //  double dPdrhoE, factor, Ru, radical, radical2;
+  //  double *Ms, *xi;
+  //
+  //  /*--- Determine the number of heavy species ---*/
+  //  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  //  else            { nHeavy = nSpecies;   nEl = 0; }
+  //
+  //  /*--- Read gas mixture properties from config ---*/
+  //  Ms = config->GetMolar_Mass();
+  //  xi = config->GetRotationModes();
+  //
+  //  /*--- Rename for convenience ---*/
+  //  Ru = UNIVERSAL_GAS_CONSTANT;
+  //
+  //  /*--- Calculate partial derivative of pressure w.r.t. rhoE ---*/
+  //  factor = 0.0;
+  //  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++)
+  //    factor += Solution[iSpecies] / Ms[iSpecies];
+  //  dPdrhoE = Ru/Primitive[RHOCVTR_INDEX] * factor;
+  //
+  //  /*--- Calculate a^2 using Gnoffo definition (NASA TP 2867) ---*/
+  //  radical = (1.0+dPdrhoE) * Primitive[P_INDEX]/Primitive[RHO_INDEX];
 
   /// alternative
   unsigned short iSpecies, iDim;
@@ -854,8 +857,8 @@ bool CTNE2EulerVariable::SetSoundSpeed(CConfig *config) {
   if (radical2 < 0.0) return true;
   else {Primitive[A_INDEX] = sqrt(radical2); return false; }
 
-//  if (radical < 0.0) return true;
-//  else { Primitive[A_INDEX] = sqrt(radical); return false; }
+  //  if (radical < 0.0) return true;
+  //  else { Primitive[A_INDEX] = sqrt(radical); return false; }
 }
 
 void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
@@ -866,7 +869,7 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
 
   unsigned short iDim, iSpecies, iEl, nHeavy, nEl, *nElStates;
   su2double *Ms, *Tref, *hf, *xi, *thetav, **thetae, **g;
-  su2double Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
+  su2double RuSI, Ru, RuBAR, CvtrBAR, rhoCvtr, rhoCvve, Cvtrs, rho_el, sqvel, conc;
   su2double rho, rhos, T, Tve, ef;
   su2double num, denom;
 
@@ -897,7 +900,8 @@ void CTNE2EulerVariable::CalcdPdU(su2double *V, su2double *val_eves,
   nElStates = config->GetnElStates();
 
   /*--- Rename for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
   T       = V[T_INDEX];
   Tve     = V[TVE_INDEX];
   rho     = V[RHO_INDEX];
@@ -960,7 +964,7 @@ su2double CTNE2EulerVariable::CalcEve(CConfig *config, su2double val_Tve,
                                    unsigned short val_Species) {
 
   unsigned short iEl, *nElStates;
-  su2double *Ms, *thetav, **thetae, **g, *hf, *Tref, Ru;
+  su2double *Ms, *thetav, **thetae, **g, *hf, *Tref, RuSI, Ru;
   su2double Tve, Ev, Eel, Ef;
   su2double num, denom;
 
@@ -968,8 +972,9 @@ su2double CTNE2EulerVariable::CalcEve(CConfig *config, su2double val_Tve,
   Ms        = config->GetMolar_Mass();
 
   /*--- Rename for convenience ---*/
-  Ru  = UNIVERSAL_GAS_CONSTANT;
-  Tve = val_Tve;
+  RuSI  = UNIVERSAL_GAS_CONSTANT;
+  Ru    = 1000.0*RuSI;
+  Tve   = val_Tve;
 
   /*--- Electron species energy ---*/
   if ((ionization) && (val_Species == nSpecies-1)) {
@@ -1019,7 +1024,7 @@ su2double CTNE2EulerVariable::CalcEve(CConfig *config, su2double val_Tve,
 su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double val_T,
                                   su2double val_eves, unsigned short val_Species) {
 
-  su2double Ru, *xi, *Ms, *hf, *Tref, T, eve, ef, hs;
+  su2double RuSI, Ru, *xi, *Ms, *hf, *Tref, T, eve, ef, hs;
 
   /*--- Read from config ---*/
   xi   = config->GetRotationModes();
@@ -1028,8 +1033,9 @@ su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double val_T,
   Tref = config->GetRefTemperature();
 
   /*--- Rename for convenience ---*/
-  Ru = UNIVERSAL_GAS_CONSTANT;
-  T = val_T;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
+  T    = val_T;
 
   /*--- Calculate vibrational-electronic energy per unit mass ---*/
   eve = val_eves;
@@ -1041,8 +1047,8 @@ su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double val_T,
      + (3.0/2.0+xi[val_Species]/2.0)*Ru/Ms[val_Species]*T
      + hf[val_Species] + eve;
 
-//  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
-//   + eve + ef;
+  //  hs = (3.0/2.0+xi[val_Species]/2.0) * Ru/Ms[val_Species] * (T-Tref[val_Species])
+  //   + eve + ef;
 
   return hs;
 }
@@ -1050,7 +1056,7 @@ su2double CTNE2EulerVariable::CalcHs(CConfig *config, su2double val_T,
 su2double CTNE2EulerVariable::CalcCvve(su2double val_Tve, CConfig *config, unsigned short val_Species) {
 
   unsigned short iEl, *nElStates;
-  su2double *Ms, *thetav, **thetae, **g, Ru;
+  su2double *Ms, *thetav, **thetae, **g, RuSI, Ru;
   su2double thoTve, exptv, thsqr, Cvvs, Cves;
   su2double Tve;
   su2double num, num2, num3, denom;
@@ -1063,8 +1069,9 @@ su2double CTNE2EulerVariable::CalcCvve(su2double val_Tve, CConfig *config, unsig
   nElStates = config->GetnElStates();
 
   /*--- Rename for convenience ---*/
-  Ru  = UNIVERSAL_GAS_CONSTANT;
-  Tve = val_Tve;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
+  Tve  = val_Tve;
 
   /*--- If requesting electron specific heat ---*/
   if (ionization && val_Species == nSpecies-1) {
@@ -1115,7 +1122,7 @@ void CTNE2EulerVariable::CalcdTdU(su2double *V, CConfig *config,
 
   unsigned short iDim, iSpecies, nHeavy, nEl;
   su2double *Ms, *xi, *Tref, *hf;
-  su2double v2, ef, T, Cvtrs, rhoCvtr, Ru;
+  su2double v2, ef, T, Cvtrs, rhoCvtr, RuSI, Ru;
 
   if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
   else            { nHeavy = nSpecies;   nEl = 0; }
@@ -1129,7 +1136,8 @@ void CTNE2EulerVariable::CalcdTdU(su2double *V, CConfig *config,
   /*--- Rename for convenience ---*/
   rhoCvtr = V[RHOCVTR_INDEX];
   T       = V[T_INDEX];
-  Ru      = UNIVERSAL_GAS_CONSTANT;
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
 
   /*--- Calculate supporting quantities ---*/
   v2 = 0.0;
@@ -1256,9 +1264,9 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
                                       su2double *val_Cvves) {
 
   bool ionization, errT, errTve, NRconvg, Bconvg, nonPhys;
-	unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
+  unsigned short iDim, iEl, iSpecies, nHeavy, nEl, iIter, maxBIter, maxNIter;
   su2double rho, rhoE, rhoEve, rhoE_f, rhoE_ref, rhoEve_min, rhoEve_max, rhoEve_t;
-  su2double Ru, sqvel, rhoCvtr, rhoCvve;
+  su2double RuSI, Ru, sqvel, rhoCvtr, rhoCvve;
   su2double Tve, Tve2, Tve_o;
   su2double f, df, NRtol, Btol, scale;
   su2double Tmin, Tmax, Tvemin, Tvemax;
@@ -1295,7 +1303,8 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
   ionization = config->GetIonization();
 
   /*--- Rename variables for convenience ---*/
-  Ru     = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(kmol*K)]
+  RuSI   = UNIVERSAL_GAS_CONSTANT;    // Universal gas constant [J/(mol*K)]
+  Ru     = 1000.0*RuSI;               // Universal gas constant [J/(kmol*K)]
   rhoE   = U[nSpecies+nDim];          // Density * energy [J/m3]
   rhoEve = U[nSpecies+nDim+1];        // Density * energy_ve [J/m3]
 
@@ -1312,12 +1321,11 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     if (U[iSpecies] < 0.0) {
       V[RHOS_INDEX+iSpecies] = 1E-20;
       U[iSpecies]            = 1E-20;
-//      nonPhys                = true;
+      //nonPhys                = true;
     } else
       V[RHOS_INDEX+iSpecies] = U[iSpecies];
     V[RHO_INDEX]            += U[iSpecies];
   }
-
 
   /*--- Assign mixture velocity ---*/
   sqvel = 0.0;
@@ -1325,7 +1333,6 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
     V[VEL_INDEX+iDim] = U[nSpecies+iDim]/V[RHO_INDEX];
     sqvel            += V[VEL_INDEX+iDim]*V[VEL_INDEX+iDim];
   }
-
 
   /*--- Translational-Rotational Temperature ---*/
 
@@ -1520,7 +1527,7 @@ bool CTNE2EulerVariable::Cons2PrimVar(CConfig *config, su2double *U, su2double *
 void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *U) {
   unsigned short iDim, iEl, iSpecies, nEl, nHeavy;
   unsigned short *nElStates;
-  su2double Ru, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
+  su2double Ru, RuSI, Tve, T, sqvel, rhoE, rhoEve, Ef, Ev, Ee, rhos, rhoCvtr, num, denom;
   su2double *thetav, *Ms, *xi, *hf, *Tref;
   su2double **thetae, **g;
 
@@ -1540,7 +1547,8 @@ void CTNE2EulerVariable::Prim2ConsVar(CConfig *config, su2double *V, su2double *
   hf        = config->GetEnthalpy_Formation(); // Formation enthalpy [J/kg]
 
   /*--- Rename & initialize for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(kmol*K)]
+  RuSI    = UNIVERSAL_GAS_CONSTANT;         // Universal gas constant [J/(mol*K)] (SI units)
+  Ru      = 1000.0*RuSI;                    // Universal gas constant [J/(kmol*K)]
   Tve     = V[TVE_INDEX];                   // Vibrational temperature [K]
   T       = V[T_INDEX];                     // Translational-rotational temperature [K]
   sqvel   = 0.0;                            // Velocity^2 [m2/s2]
@@ -1612,7 +1620,7 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
                                               su2double **GradV) {
 
   unsigned short iSpecies, iEl, iDim, jDim, iVar, nHeavy, *nElStates;
-  su2double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, Ru;
+  su2double rho, rhoCvtr, rhoCvve, T, Tve, eve, ef, eref, RuSI, Ru;
   su2double Cvvs, Cves, dCvvs, dCves;
   su2double thoTve, exptv;
   su2double An1, Bd1, Bn1, Bn2, Bn3, Bn4, A, B;
@@ -1642,7 +1650,8 @@ bool CTNE2EulerVariable::GradCons2GradPrimVar(CConfig *config, su2double *U,
   Ms      = config->GetMolar_Mass();
   Tref    = config->GetRefTemperature();
   hf      = config->GetEnthalpy_Formation();
-  Ru      = UNIVERSAL_GAS_CONSTANT;
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
   thetav  = config->GetCharVibTemp();
   g       = config->GetElDegeneracy();
   thetae  = config->GetCharElTemp();
@@ -1786,9 +1795,9 @@ CTNE2NSVariable::CTNE2NSVariable(unsigned short val_ndim,
                                                                        config) {
 
   Temperature_Ref = config->GetTemperature_Ref();
-	Viscosity_Ref   = config->GetViscosity_Ref();
-	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-	Prandtl_Lam     = config->GetPrandtl_Lam();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new su2double[nSpecies];
   Dij = new su2double*[nSpecies];
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1814,10 +1823,10 @@ CTNE2NSVariable::CTNE2NSVariable(su2double val_pressure, su2double *val_massfrac
                                                                        val_nvarprimgrad,
                                                                        config) {
 
-	Temperature_Ref = config->GetTemperature_Ref();
-	Viscosity_Ref   = config->GetViscosity_Ref();
-	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-	Prandtl_Lam     = config->GetPrandtl_Lam();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new su2double[nSpecies];
   Dij = new su2double*[nSpecies];
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1834,10 +1843,10 @@ CTNE2NSVariable::CTNE2NSVariable(su2double *val_solution, unsigned short val_ndi
                                                                        val_nprimvar,
                                                                        val_nprimvargrad,
                                                                        config) {
-	Temperature_Ref = config->GetTemperature_Ref();
-	Viscosity_Ref   = config->GetViscosity_Ref();
-	Viscosity_Inf   = config->GetViscosity_FreeStreamND();
-	Prandtl_Lam     = config->GetPrandtl_Lam();
+  Temperature_Ref = config->GetTemperature_Ref();
+  Viscosity_Ref   = config->GetViscosity_Ref();
+  Viscosity_Inf   = config->GetViscosity_FreeStreamND();
+  Prandtl_Lam     = config->GetPrandtl_Lam();
   DiffusionCoeff  = new su2double[nSpecies];
   Dij = new su2double*[nSpecies];
   for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1855,7 +1864,7 @@ void CTNE2NSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
 
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
   su2double rho, T, Tve, P;
-  su2double *Ms, Mi, Mj, pi, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
+  su2double *Ms, Mi, Mj, pi, RuSI, Ru, kb, gam_i, gam_j, gam_t, Theta_v;
   su2double denom, d1_ij, D_ij;
   su2double ***Omega00, Omega_ij;
 
@@ -1871,7 +1880,8 @@ void CTNE2NSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
   Tve  = Primitive[TVE_INDEX];
   P    = Primitive[P_INDEX];
   pi   = PI_NUMBER;
-  Ru   = UNIVERSAL_GAS_CONSTANT;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
   kb   = BOLTZMANN_CONSTANT;
 
   /*--- Calculate mixture gas constant ---*/
@@ -1970,8 +1980,8 @@ void CTNE2NSVariable::SetDiffusionCoeff_GuptaYos(CConfig *config) {
 void CTNE2NSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
 
   unsigned short iSpecies, jSpecies, nHeavy, nEl;
-	su2double rho, T, Tve;
-  su2double *Ms, Mi, Mj, pi, Ru, Na, gam_i, gam_j, denom;
+  su2double rho, T, Tve;
+  su2double *Ms, Mi, Mj, pi, Ru, RuSI, Na, gam_i, gam_j, denom;
   su2double ***Omega11, Omega_ij, d2_ij;
 
   /*--- Acquire gas parameters from CConfig ---*/
@@ -1981,12 +1991,13 @@ void CTNE2NSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
   else            {nHeavy = nSpecies;    nEl = 0;}
 
   /*--- Rename for convenience ---*/
-  rho = Primitive[RHO_INDEX];
-  T   = Primitive[T_INDEX];
-  Tve = Primitive[TVE_INDEX];
-  pi  = PI_NUMBER;
-  Ru  = UNIVERSAL_GAS_CONSTANT;
-  Na  = AVOGAD_CONSTANT;
+  rho  = Primitive[RHO_INDEX];
+  T    = Primitive[T_INDEX];
+  Tve  = Primitive[TVE_INDEX];
+  pi   = PI_NUMBER;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
+  Na   = AVOGAD_CONSTANT;
 
   LaminarViscosity = 0.0;
 
@@ -2058,7 +2069,7 @@ void CTNE2NSVariable::SetLaminarViscosity_GuptaYos(CConfig *config) {
 void CTNE2NSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
 	unsigned short iSpecies, jSpecies, nHeavy, nEl;
   su2double rho, T, Tve, Cvve;
-  su2double *xi, *Ms, Mi, Mj, mi, mj, pi, R, Ru, Na, kb, gam_i, gam_j, Theta_v;
+  su2double *xi, *Ms, Mi, Mj, mi, mj, pi, R, RuSI, Ru, Na, kb, gam_i, gam_j, Theta_v;
   su2double denom_t, denom_r, d1_ij, d2_ij, a_ij;
   su2double ***Omega00, ***Omega11, Omega_ij;
 
@@ -2081,7 +2092,8 @@ void CTNE2NSVariable ::SetThermalConductivity_GuptaYos(CConfig *config) {
   Tve  = Primitive[TVE_INDEX];
   Cvve = Primitive[RHOCVVE_INDEX]/rho;
   pi   = PI_NUMBER;
-  Ru   = UNIVERSAL_GAS_CONSTANT;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
   Na   = AVOGAD_CONSTANT;
   kb   = BOLTZMANN_CONSTANT;
 
@@ -2149,7 +2161,7 @@ void CTNE2NSVariable::SetTransportCoefficients_WBE(CConfig *config) {
 
   unsigned short iSpecies, jSpecies;
   su2double *Ms, Mi, Mj, M;
-  su2double rho, T, Tve, Ru, *xi;
+  su2double rho, T, Tve, RuSI, Ru, *xi;
   su2double Xs[nSpecies], conc;
   su2double Cves;
   su2double phis[nSpecies], mus[nSpecies], ks[nSpecies], kves[nSpecies];
@@ -2158,12 +2170,13 @@ void CTNE2NSVariable::SetTransportCoefficients_WBE(CConfig *config) {
   su2double ***Omega00, Omega_ij;
 
   /*--- Rename for convenience ---*/
-  rho = Primitive[RHO_INDEX];
-  T   = Primitive[T_INDEX];
-  Tve = Primitive[TVE_INDEX];
-  Ms  = config->GetMolar_Mass();
-  xi  = config->GetRotationModes();
-  Ru  = UNIVERSAL_GAS_CONSTANT;
+  rho  = Primitive[RHO_INDEX];
+  T    = Primitive[T_INDEX];
+  Tve  = Primitive[TVE_INDEX];
+  Ms   = config->GetMolar_Mass();
+  xi   = config->GetRotationModes();
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
 
   /*--- Acquire collision integral information ---*/
   Omega00 = config->GetCollisionIntegral00();
@@ -2272,23 +2285,23 @@ void CTNE2NSVariable::SetTransportCoefficients_WBE(CConfig *config) {
 
 
 bool CTNE2NSVariable::SetVorticity(void) {
-	su2double u_y = Gradient_Primitive[VEL_INDEX][1];
-	su2double v_x = Gradient_Primitive[VEL_INDEX+1][0];
-	su2double u_z = 0.0;
-	su2double v_z = 0.0;
-	su2double w_x = 0.0;
-	su2double w_y = 0.0;
+  su2double u_y = Gradient_Primitive[VEL_INDEX][1];
+  su2double v_x = Gradient_Primitive[VEL_INDEX+1][0];
+  su2double u_z = 0.0;
+  su2double v_z = 0.0;
+  su2double w_x = 0.0;
+  su2double w_y = 0.0;
 
-	if (nDim == 3) {
-		u_z = Gradient_Primitive[VEL_INDEX][2];
-		v_z = Gradient_Primitive[VEL_INDEX+1][2];
-		w_x = Gradient_Primitive[VEL_INDEX+2][0];
-		w_y = Gradient_Primitive[VEL_INDEX+2][1];
-	}
+  if (nDim == 3) {
+    u_z = Gradient_Primitive[VEL_INDEX][2];
+    v_z = Gradient_Primitive[VEL_INDEX+1][2];
+    w_x = Gradient_Primitive[VEL_INDEX+2][0];
+    w_y = Gradient_Primitive[VEL_INDEX+2][1];
+  }
 
-	Vorticity[0] = w_y-v_z;
-	Vorticity[1] = -(w_x-u_z);
-	Vorticity[2] = v_x-u_y;
+  Vorticity[0] = w_y-v_z;
+  Vorticity[1] = -(w_x-u_z);
+  Vorticity[2] = v_x-u_y;
 
   return false;
 }

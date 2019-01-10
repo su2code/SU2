@@ -3986,8 +3986,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
           MassFrac_FreeStream = new su2double[nSpecies];
           for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
             MassFrac_FreeStream[iSpecies] = Gas_Composition[iSpecies];
-  //        MassFrac_FreeStream[0] = 0.99;
-  //        MassFrac_FreeStream[1] = 0.01;
 
           /*--- Assign gas properties ---*/
 

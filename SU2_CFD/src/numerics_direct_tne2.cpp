@@ -215,7 +215,7 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
       for (kVar = 0; kVar < nVar; kVar++)
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
-	    val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
+      val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
       val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
       val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
     }
@@ -235,7 +235,7 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
 
   /*--- Set booleans from CConfig settings ---*/
   ionization = config->GetIonization();
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 
   /*--- Set iterator size ---*/
   nVar         = val_nVar;
@@ -245,18 +245,18 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
   nSpecies     = config->GetnSpecies();
 
   /*--- Allocate arrays ---*/
-	Diff_U   = new su2double [nVar];
+  Diff_U   = new su2double [nVar];
   Fc_i	   = new su2double [nVar];
-	Fc_j	   = new su2double [nVar];
-	Lambda_i = new su2double [nVar];
+  Fc_j	   = new su2double [nVar];
+  Lambda_i = new su2double [nVar];
   Lambda_j = new su2double [nVar];
 
   rhos_i   = new su2double [nSpecies];
   rhos_j   = new su2double [nSpecies];
   rhosst_i = new su2double [nSpecies];
   rhosst_j = new su2double [nSpecies];
-	u_i		   = new su2double [nDim];
-	u_j		   = new su2double [nDim];
+  u_i		   = new su2double [nDim];
+  u_j		   = new su2double [nDim];
   ust_i    = new su2double [nDim];
   ust_j    = new su2double [nDim];
   Vst_i    = new su2double [nPrimVar];
@@ -268,20 +268,20 @@ CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
   dPdUst_i = new su2double [nVar];
   dPdUst_j = new su2double [nVar];
 
-	P_Tensor		= new su2double* [nVar];
-	invP_Tensor	= new su2double* [nVar];
-	for (unsigned short iVar = 0; iVar < nVar; iVar++) {
-		P_Tensor[iVar]    = new su2double [nVar];
-		invP_Tensor[iVar] = new su2double [nVar];
-	}
+  P_Tensor		= new su2double* [nVar];
+  invP_Tensor	= new su2double* [nVar];
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    P_Tensor[iVar]    = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
+  }
 }
 
 CUpwMSW_TNE2::~CUpwMSW_TNE2(void) {
 
-	delete [] Diff_U;
+  delete [] Diff_U;
   delete [] Fc_i;
-	delete [] Fc_j;
-	delete [] Lambda_i;
+  delete [] Fc_j;
+  delete [] Lambda_i;
   delete [] Lambda_j;
 
   delete [] rhos_i;
@@ -470,7 +470,7 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                                                           config) {
 
   /*--- Read configuration parameters ---*/
-	implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -478,7 +478,7 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   nDim     = val_nDim;
   nSpecies = config->GetnSpecies();
 
-	FcL    = new su2double [nVar];
+  FcL    = new su2double [nVar];
   FcR    = new su2double [nVar];
   dmLP   = new su2double [nVar];
   dmRM   = new su2double [nVar];
@@ -488,12 +488,12 @@ CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   daR    = new su2double [nVar];
   rhos_i = new su2double [nSpecies];
   rhos_j = new su2double [nSpecies];
-	u_i    = new su2double [nDim];
-	u_j    = new su2double [nDim];
+  u_i    = new su2double [nDim];
+  u_j    = new su2double [nDim];
 }
 
 CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
-	delete [] FcL;
+  delete [] FcL;
   delete [] FcR;
   delete [] dmLP;
   delete [] dmRM;
@@ -501,8 +501,8 @@ CUpwAUSM_TNE2::~CUpwAUSM_TNE2(void) {
   delete [] dpRM;
   delete [] rhos_i;
   delete [] rhos_j;
-	delete [] u_i;
-	delete [] u_j;
+  delete [] u_i;
+  delete [] u_j;
 }
 
 void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
@@ -513,23 +513,24 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   unsigned short iDim, iVar, jVar, iSpecies, nHeavy, nEl;
   su2double rho_i, rho_j, rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double Cvtrs;
-  su2double Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
   su2double e_ve_i, e_ve_j;
   su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
 
   /*--- Compute geometric quantities ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
-  Ms = config->GetMolar_Mass();
-  xi = config->GetRotationModes();
-  Ru = UNIVERSAL_GAS_CONSTANT;
+  Ms   = config->GetMolar_Mass();
+  xi   = config->GetRotationModes();
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
 
   /*--- Determine the number of heavy particle species ---*/
   if (ionization) {
@@ -545,7 +546,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   }
 
   /*--- Pull stored primitive variables ---*/
-  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, c]
+  // Primitives: [rho1,...,rhoNs, T, Tve, u, v, w, P, rho, h, a, c]
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     rhos_i[iSpecies] = V_i[RHOS_INDEX+iSpecies];
     rhos_j[iSpecies] = V_j[RHOS_INDEX+iSpecies];
@@ -570,34 +571,34 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   rhoCvve_i = V_i[RHOCVVE_INDEX];
   rhoCvve_j = V_j[RHOCVVE_INDEX];
 
-	/*--- Projected velocities ---*/
-	ProjVel_i = 0.0; ProjVel_j = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		ProjVel_i += u_i[iDim]*UnitNormal[iDim];
-		ProjVel_j += u_j[iDim]*UnitNormal[iDim];
-	}
+  /*--- Projected velocities ---*/
+  ProjVel_i = 0.0; ProjVel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVel_i += u_i[iDim]*UnitNormal[iDim];
+    ProjVel_j += u_j[iDim]*UnitNormal[iDim];
+  }
 
   /*--- Calculate L/R Mach numbers ---*/
-	mL = ProjVel_i/a_i;
-	mR = ProjVel_j/a_j;
+  mL = ProjVel_i/a_i;
+  mR = ProjVel_j/a_j;
 
   /*--- Calculate split numerical fluxes ---*/
-  	if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
+  if (fabs(mL) <= 1.0) mLP = 0.25*(mL+1.0)*(mL+1.0);
   else                 mLP = 0.5*(mL+fabs(mL));
 
-	if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
-	else                 mRM = 0.5*(mR-fabs(mR));
+  if (fabs(mR) <= 1.0) mRM = -0.25*(mR-1.0)*(mR-1.0);
+  else                 mRM = 0.5*(mR-fabs(mR));
 
   mF = mLP + mRM;
 
-	if (fabs(mL) <= 1.0) pLP = 0.25*P_i*(mL+1.0)*(mL+1.0)*(2.0-mL);
-	else                 pLP = 0.5*P_i*(mL+fabs(mL))/mL;
+  if (fabs(mL) <= 1.0) pLP = 0.25*P_i*(mL+1.0)*(mL+1.0)*(2.0-mL);
+  else                 pLP = 0.5*P_i*(mL+fabs(mL))/mL;
 
-	if (fabs(mR) <= 1.0) pRM = 0.25*P_j*(mR-1.0)*(mR-1.0)*(2.0+mR);
-	else                 pRM = 0.5*P_j*(mR-fabs(mR))/mR;
+  if (fabs(mR) <= 1.0) pRM = 0.25*P_j*(mR-1.0)*(mR-1.0)*(2.0+mR);
+  else                 pRM = 0.5*P_j*(mR-fabs(mR))/mR;
 
-	pF = pLP + pRM;
-	Phi = fabs(mF);
+  pF = pLP + pRM;
+  Phi = fabs(mF);
 
   /*--- Assign left & right convective vectors ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -620,7 +621,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
 
 
-	if (implicit) {
+  if (implicit) {
 
     /*--- Initialize the Jacobians ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -853,7 +854,7 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
   nDim     = val_nDim;
   nSpecies = config->GetnSpecies();
 
-	FcL     = new su2double [nVar];
+  FcL     = new su2double [nVar];
   FcR     = new su2double [nVar];
   dmLdL   = new su2double [nVar];
   dmLdR   = new su2double [nVar];
@@ -877,14 +878,14 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
   daR     = new su2double [nVar];
   rhos_i  = new su2double [nSpecies];
   rhos_j  = new su2double [nSpecies];
-	u_i     = new su2double [nDim];
-	u_j     = new su2double [nDim];
+  u_i     = new su2double [nDim];
+  u_j     = new su2double [nDim];
   dPdU_i  = new su2double [nVar];
   dPdU_j  = new su2double [nVar];
 }
 
 CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
-	delete [] FcL;
+  delete [] FcL;
   delete [] FcR;
   delete [] dmLdL;
   delete [] dmLdR;
@@ -908,8 +909,8 @@ CUpwAUSMPWplus_TNE2::~CUpwAUSMPWplus_TNE2(void) {
   delete [] daR;
   delete [] rhos_i;
   delete [] rhos_j;
-	delete [] u_i;
-	delete [] u_j;
+  delete [] u_i;
+  delete [] u_j;
   delete [] dPdU_i;
   delete [] dPdU_j;
 }
@@ -926,7 +927,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   su2double rhoCvtr_i, rhoCvtr_j, rhoCvve_i, rhoCvve_j;
   su2double aij, atl, gtl_i, gtl_j, sqVi, sqVj, Hnorm;
   su2double ProjVel_i, ProjVel_j;
-  su2double rhoRi, rhoRj, Ru, rho_el_i, rho_el_j, *Ms, *xi;
+  su2double rhoRi, rhoRj, RuSI, Ru, rho_el_i, rho_el_j, *Ms, *xi;
   su2double w, fL, fR, alpha;
   su2double mL, mR, mLP, mRM, mF, mbLP, mbRM, pLP, pRM, ps;
   su2double fact, gam, dV2L, dV2R;
@@ -938,21 +939,22 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     val_residual[iVar] = 0.0;
 
   /*--- Calculate geometric quantities ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Read from config ---*/
   Ms = config->GetMolar_Mass();
   xi = config->GetRotationModes();
-  Ru = UNIVERSAL_GAS_CONSTANT;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
 
   /*--- Determine the number of heavy particle species ---*/
-    if (ionization) {
+  if (ionization) {
     nHeavy = nSpecies-1;
     nEl = 1;
     rho_el_i = V_i[nSpecies-1];
@@ -1379,7 +1381,7 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
 
   unsigned short iDim, iSpecies, iVar;
   su2double rho_i, rho_j, h_i, h_j, a_i, a_j;
-  su2double ProjVel_i, ProjVel_j, Ru;
+  su2double ProjVel_i, ProjVel_j, RuSI, Ru;
 
   /*--- Calculate geometrical quantities ---*/
 	Area = 0;
@@ -1394,7 +1396,8 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
   h_i   = V_i[H_INDEX];   h_j   = V_j[H_INDEX];
   a_i   = V_i[A_INDEX];   a_j   = V_j[A_INDEX];
-  Ru    = UNIVERSAL_GAS_CONSTANT;
+  RuSI = UNIVERSAL_GAS_CONSTANT;
+  Ru   = 1000.0*RuSI;
 
   /*--- Compute mean quantities for the variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -1947,7 +1950,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   su2double T_min, epsilon;
   su2double T, Tve, Thf, Thb, Trxnf, Trxnb, Keq, Cf, eta, theta, kf, kb, kfb;
   su2double rho, rhoCvtr, rhoCvve, P;
-  su2double *Ms, fwdRxn, bkwRxn, alpha, Ru;
+  su2double *Ms, fwdRxn, bkwRxn, alpha, RuSI, Ru;
   su2double *Tcf_a, *Tcf_b, *Tcb_a, *Tcb_b;
   su2double *hf, *Tref, *xi;
   su2double af, bf, ab, bb, coeff;
@@ -1979,7 +1982,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Rename for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
   rho     = V_i[RHO_INDEX];
   P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
@@ -2010,8 +2014,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
     Trxnb = pow(T, ab)*pow(Tve, bb);
 
     /*--- Calculate the modified temperature ---*/
-		Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
-		Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
+    Thf = 0.5 * (Trxnf+T_min + sqrt((Trxnf-T_min)*(Trxnf-T_min)+epsilon*epsilon));
+    Thb = 0.5 * (Trxnb+T_min + sqrt((Trxnb-T_min)*(Trxnb-T_min)+epsilon*epsilon));
 
     /*--- Get the Keq & Arrhenius coefficients ---*/
     GetKeqConstants(A, iReaction, config);
@@ -2025,19 +2029,20 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
 
     /*--- Calculate rate coefficients ---*/
     kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
-		kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
+    kfb = Cf * exp(eta*log(Thb)) * exp(-theta/Thb);
     kb  = kfb / Keq;
 
     /*--- Determine production & destruction of each species ---*/
     fwdRxn = 1.0;
-		bkwRxn = 1.0;
-		for (ii = 0; ii < 3; ii++) {
-			/*--- Reactants ---*/
-			iSpecies = RxnMap[iReaction][0][ii];
+    bkwRxn = 1.0;
+    for (ii = 0; ii < 3; ii++) {
+      /*--- Reactants ---*/
+      iSpecies = RxnMap[iReaction][0][ii];
       if ( iSpecies != nSpecies)
         fwdRxn *= 0.001*U_i[iSpecies]/Ms[iSpecies];
-			/*--- Products ---*/
-			jSpecies = RxnMap[iReaction][1][ii];
+
+      /*--- Products ---*/
+      jSpecies = RxnMap[iReaction][1][ii];
       if (jSpecies != nSpecies) {
         bkwRxn *= 0.001*U_i[jSpecies]/Ms[jSpecies];
       }
@@ -2046,14 +2051,14 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
     bkwRxn = 1000.0 * kb * bkwRxn;
 
     for (ii = 0; ii < 3; ii++) {
-			/*--- Products ---*/
+      /*--- Products ---*/
       iSpecies = RxnMap[iReaction][1][ii];
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
                                        * eve_i[iSpecies] * Volume;
       }
-			/*--- Reactants ---*/
+      /*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
@@ -2184,7 +2189,7 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 	// Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl;
-  su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, Ru, conc, N;
+  su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
   su2double Qtv, taunum, taudenom;
   su2double mu, A_sr, B_sr, num, denom;
   su2double Cs;
@@ -2206,7 +2211,8 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
   else            { nHeavy = nSpecies;   nEl = 0; }
 
   /*--- Rename for convenience ---*/
-  Ru      = UNIVERSAL_GAS_CONSTANT;
+  RuSI    = UNIVERSAL_GAS_CONSTANT;
+  Ru      = 1000.0*RuSI;
   P       = V_i[P_INDEX];
   T       = V_i[T_INDEX];
   Tve     = V_i[TVE_INDEX];
