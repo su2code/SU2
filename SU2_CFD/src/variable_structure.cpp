@@ -157,11 +157,11 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
     Input_AdjIndices = new int[nVar];
     Output_AdjIndices = new int[nVar];
-  }
-  
-  for (iVar = 0; iVar < nVar; iVar++) {
-    Input_AdjIndices[iVar] = -1;
-    Output_AdjIndices[iVar] = -1;
+
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Input_AdjIndices[iVar] = -1;
+      Output_AdjIndices[iVar] = -1;
+    }
   }
 
   if (config->GetMultizone_Problem()) {
