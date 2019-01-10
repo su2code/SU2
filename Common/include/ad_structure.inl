@@ -83,10 +83,16 @@ namespace AD{
 
   inline void StopRecording() {AD::globalTape.setPassive();}
 
+  inline void PrintStatistics() {AD::globalTape.printStatistics();}
+
   inline void ClearAdjoints() {AD::globalTape.clearAdjoints(); }
 
   inline void ComputeAdjoint() {AD::globalTape.evaluate();
                                adjointVectorPosition = 0;}
+
+  inline void ComputeAdjoint(unsigned short enter, unsigned short leave) {
+    AD::globalTape.evaluate(TapePositions[enter], TapePositions[leave]);
+  }
 
   inline void Reset() {
     globalTape.reset();
@@ -199,6 +205,8 @@ namespace AD{
   inline void StartRecording() {}
 
   inline void StopRecording() {}
+
+  inline void PrintStatistics() {}
 
   inline void ClearAdjoints() {}
 

@@ -59,6 +59,11 @@ namespace AD{
   void StopRecording();
 
   /*!
+   * \brief Prints out tape statistics.
+   */
+  void PrintStatistics();
+
+  /*!
    * \brief Registers the variable as an input and saves internal data (indices). I.e. as a leaf of the computational graph.
    * \param[in] data - The variable to be registered as input.
    */
