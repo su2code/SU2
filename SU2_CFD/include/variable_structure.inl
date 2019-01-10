@@ -1357,8 +1357,9 @@ inline void CVariable::SetAdjointSolution(su2double *adj_sol) {
 }
 
 inline void CVariable::SetAdjointSolution_intIndexBased(su2double *adj_sol) {
-    for (unsigned short iVar = 0; iVar < nVar; iVar++)
-      AD::SetDerivative(Output_AdjIndices[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+    AD::SetDerivative(Output_AdjIndices[iVar], SU2_TYPE::GetValue(adj_sol[iVar]));
+  }
 }
 
 inline void CVariable::GetAdjointSolution(su2double *adj_sol) {

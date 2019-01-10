@@ -3969,6 +3969,9 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       case FEM_ELASTICITY:
         Kind_Solver = DISC_ADJ_FEM;
         break;
+      case HEAT_EQUATION_FVM:
+        Kind_Solver = DISC_ADJ_HEAT;
+        break;
       default:
         break;
     }

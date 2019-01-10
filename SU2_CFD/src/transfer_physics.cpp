@@ -704,7 +704,7 @@ void CTransfer_ConjugateHeatVars::GetDonor_Variable(CSolver *donor_solution, CGe
                || (donor_config->GetKind_Solver() == DISC_ADJ_RANS));
   bool compressible_flow  = (donor_config->GetKind_Regime() == COMPRESSIBLE) && flow;
   bool incompressible_flow = (donor_config->GetEnergy_Equation()) && flow;
-  bool heat_equation      = donor_config->GetKind_Solver() == HEAT_EQUATION_FVM;
+  bool heat_equation      = (donor_config->GetKind_Solver() == HEAT_EQUATION_FVM || donor_config->GetKind_Solver() == DISC_ADJ_HEAT);
 
   Temperature_Ref   = donor_config->GetTemperature_Ref();
   Prandtl_Lam       = donor_config->GetPrandtl_Lam();
