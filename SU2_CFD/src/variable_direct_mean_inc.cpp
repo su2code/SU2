@@ -417,6 +417,9 @@ CIncNSVariable::CIncNSVariable(su2double val_pressure, su2double *val_velocity, 
                          CConfig *config) : CIncEulerVariable(val_pressure, val_velocity, val_temperature, val_nDim, val_nvar, config) {
   
   DES_LengthScale = 0.0;
+  
+  /*--- Initialize the porosity value for topology optimization. ---*/
+  Porosity = 0.0;
 
 }
 
@@ -424,6 +427,9 @@ CIncNSVariable::CIncNSVariable(su2double *val_solution, unsigned short val_nDim,
                          unsigned short val_nvar, CConfig *config) : CIncEulerVariable(val_solution, val_nDim, val_nvar, config) {
   
   DES_LengthScale = 0.0;
+  
+  /*--- Initialize the porosity value for topology optimization. ---*/
+  Porosity = 0.0;
   
 }
 

@@ -1446,7 +1446,14 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void Friction_Forces(CGeometry *geometry, CConfig *config);
-    
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void Power_Dissipation(CGeometry *geometry, CConfig *config);
+  
   /*!
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
@@ -9255,6 +9262,28 @@ public:
    */
   void SetOmega_Max(su2double val_omega_max);
 
+  /*!
+   * \brief Compute the power dissipation by integrating over all boundaries.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Power_Dissipation(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Register variables within the solver class data for AD.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] reset - Boolean controlling the registration of the variables.
+   */
+  void RegisterVariables(CGeometry *geometry, CConfig *config, bool reset);
+  
+  /*!
+   * \brief Extract the sensitivity of variables registered with AD within the solver class data.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config);
+  
 };
 
 /*!

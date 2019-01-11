@@ -886,6 +886,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("INC_INLET_DAMPING", Inc_Inlet_Damping, 0.1);
   /*!\brief INC_OUTLET_DAMPING \n DESCRIPTION: Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow (0.1 by default). \ingroup Config*/
   addDoubleOption("INC_OUTLET_DAMPING", Inc_Outlet_Damping, 0.1);
+  /*!\brief DARCY_NUMBER \n DESCRIPTION: Darcy number for viscous, incompressible flow (1e-5 by default). \ingroup Config*/
+  addDoubleOption("DARCY_NUMBER", Darcy_Number, 1e-5);
   
   /*!\brief FREESTREAM_TEMPERATURE_VE\n DESCRIPTION: Free-stream vibrational-electronic temperature (288.15 K by default) \ingroup Config*/
   addDoubleOption("FREESTREAM_TEMPERATURE_VE", Temperature_ve_FreeStream, 288.15);

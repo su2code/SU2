@@ -547,6 +547,7 @@ private:
   su2double Inc_Inlet_Damping;  /*!< \brief Damping factor applied to the iterative updates to the velocity at a pressure inlet in incompressible flow. */
   su2double Inc_Outlet_Damping; /*!< \brief Damping factor applied to the iterative updates to the pressure at a mass flow outlet in incompressible flow. */
   bool Inc_Inlet_UseNormal;    /*!< \brief Flag for whether to use the local normal as the flow direction for an incompressible pressure inlet. */
+  su2double Darcy_Number;      /*!< \brief Darcy number for the viscous flow problem (topology optimization). */
   su2double Linear_Solver_Error;		/*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Deform_Linear_Solver_Error;    /*!< \brief Min error of the linear solver for the implicit formulation. */
   su2double Linear_Solver_Error_FSI_Struc;		/*!< \brief Min error of the linear solver for the implicit formulation in the structural side for FSI problems . */
@@ -763,6 +764,7 @@ private:
   Wrt_Halo,                   /*!< \brief Write rind layers in solution files */
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
+  Wrt_PorosityFile,                   /*!< \brief Write a template porosity file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
@@ -3256,6 +3258,18 @@ public:
   void SetWrt_InletFile(bool val_wrt_inletfile);
 
   /*!
+   * \brief Get information about writing a template porosity file.
+   * \return <code>TRUE</code> means that a template porosity file will be written.
+   */
+  bool GetWrt_PorosityFile(void);
+  
+  /*!
+   * \brief Set information about writing a template porosity file.
+   * \param[in] val_wrt_inletfile - flag for whether to write a template porosity file.
+   */
+  void SetWrt_PorosityFile(bool val_wrt_inletfile);
+  
+  /*!
    * \brief Get information about writing a 1D slice of a 2D cartesian solution.
    * \return <code>TRUE</code> means that a 1D slice of a 2D cartesian solution will be written.
    */
@@ -4748,6 +4762,12 @@ public:
    * \return Damping factor applied to pressure updates at incompressible mass flow outlet.
    */
   su2double GetInc_Outlet_Damping(void);
+  
+  /*!
+   * \brief Get the damping factor applied to velocity updates at incompressible pressure inlets.
+   * \return Damping factor applied to velocity updates at incompressible pressure inlets.
+   */
+  su2double GetDarcy_Number(void);
   
   /*!
    * \brief Get the kind of mixing process for averaging quantities at the boundaries.

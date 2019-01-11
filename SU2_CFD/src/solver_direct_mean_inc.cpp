@@ -2965,7 +2965,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool body_force     = config->GetBody_Force();
   bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous        = config->GetViscous();
-
+  bool topology       = config->GetTopology_Optimization();
 
   /*--- Initialize the source residual to zero ---*/
 
@@ -3154,6 +3154,74 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       LinSysRes.AddBlock(iPoint, Residual);
       
       /*--- Implicit part ---*/
+      
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      
+    }
+  }
+  
+  if (topology) {
+    
+    unsigned short iDim, jDim, iVar, jVar;
+    su2double Porosity, Density, Volume, Velocity[3];
+    
+    /*--- Set the Brinkman penalization value, Lambda, based on the Darcy
+     number in order to make sure that high values of porosity result in
+     impermeable "solids," i.e., nearly zero velocity. ---*/
+    
+    su2double Lambda = (config->GetViscosity_FreeStreamND()/
+                        (config->GetDensity_FreeStreamND()*config->GetDarcy_Number()));
+    
+    /*--- Loop over all points ---*/
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- Get the current flow primitive variables. ---*/
+      
+      Density = node[iPoint]->GetDensity();
+      for (iDim = 0; iDim < nDim; iDim++)
+        Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+      
+      /*--- Load the volume of the dual mesh cell ---*/
+      
+      Volume = geometry->node[iPoint]->GetVolume();
+      
+      /*--- Get the current value of the porosity in this cell. ---*/
+      
+      Porosity = node[iPoint]->GetPorosity();
+      
+      /*--- Zero the continuity contribution ---*/
+      
+      Residual[0] = 0.0;
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        Residual[iDim+1] = Volume * Density * Lambda * Porosity * Velocity[iDim];
+      
+      /*--- Energy contribution... ---*/
+      
+      Residual[nDim+1] = 0.0;
+      
+      /*--- Calculate the source term Jacobian ---*/
+      
+      if (implicit) {
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            Jacobian_i[iVar][jVar] = 0.0;
+          }
+        }
+        for (iDim = 0; iDim < nDim; iDim++) {
+          for (jDim = 0; jDim < nDim; jDim++) {
+            if (iDim == jDim)
+              Jacobian_i[iDim+1][jDim+1] = Volume * Density * Lambda * Porosity;
+          }
+        }
+      }
+      
+      /*--- Add the source residual to the total ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Add the implicit Jacobian contribution ---*/
       
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
@@ -7445,6 +7513,25 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
+  
+  /*--- Check for porosity for topology optimization, if the file is not
+   found, then the porosity values are initialized to zero and a template
+   file is written when the first output files are generated. ---*/
+
+  if (config->GetTopology_Optimization()) {
+    ifstream porosity_file;
+    porosity_file.open("porosity.dat", ios::in);
+    if (!porosity_file.fail()) {
+      if (iMesh == MESH_0) {
+        geometry->ReadPorosity(config);
+        for (iPoint = 0; iPoint < nPoint; iPoint++)
+          node[iPoint]->SetPorosity(geometry->node[iPoint]->GetAuxVar());
+      }
+      config->SetWrt_PorosityFile(false);
+    } else {
+      config->SetWrt_PorosityFile(true);
+    }
+  }
 
 }
 
@@ -8778,4 +8865,315 @@ void CIncNSSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **sol
 
     }
   }
+}
+
+void CIncNSSolver::Power_Dissipation(CGeometry *geometry,
+                                     CConfig *config) {
+  
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  su2double Mach = 0.0, Pressure, Temperature = 0.0, TotalPressure = 0.0, TotalTemperature = 0.0,
+  Enthalpy, Velocity[3], TangVel[3], Velocity2, MassFlow, Density, Area,
+  AxiFactor = 1.0, SoundSpeed, Vn, Vn2, Vtang2, Weight = 1.0;
+  
+  unsigned short nMarker      = config->GetnMarker_All();
+  unsigned short nDim         = geometry->GetnDim();
+  unsigned short Kind_Average = config->GetKind_Average();
+  
+  string Monitoring_Tag, Marker_Tag;
+  unsigned short iMarker_Monitoring;
+  
+    unsigned short Monitoring;
+
+  bool axisymmetric               = config->GetAxisymmetric();
+  unsigned short nMarker_Monitoring  = config->GetnMarker_Monitoring();
+  
+  su2double  *Vector                    = new su2double[nDim];
+  su2double  *Surface_MassFlow          = new su2double[nMarker];
+  su2double  *Surface_Mach              = new su2double[nMarker];
+  su2double  *Surface_Temperature       = new su2double[nMarker];
+  su2double  *Surface_Density           = new su2double[nMarker];
+  su2double  *Surface_Enthalpy          = new su2double[nMarker];
+  su2double  *Surface_NormalVelocity    = new su2double[nMarker];
+  su2double  *Surface_StreamVelocity2   = new su2double[nMarker];
+  su2double  *Surface_TransvVelocity2   = new su2double[nMarker];
+  su2double  *Surface_Pressure          = new su2double[nMarker];
+  su2double  *Surface_TotalTemperature  = new su2double[nMarker];
+  su2double  *Surface_TotalPressure     = new su2double[nMarker];
+  su2double  *Surface_VelocityIdeal     = new su2double[nMarker];
+  su2double  *Surface_Area              = new su2double[nMarker];
+  su2double  *Surface_MassFlow_Abs      = new su2double[nMarker];
+  
+  /*--- Compute the numerical fan face Mach number, and the total area of the inflow ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    Surface_MassFlow[iMarker]          = 0.0;
+    Surface_Mach[iMarker]              = 0.0;
+    Surface_Temperature[iMarker]       = 0.0;
+    Surface_Density[iMarker]           = 0.0;
+    Surface_Enthalpy[iMarker]          = 0.0;
+    Surface_NormalVelocity[iMarker]    = 0.0;
+    Surface_StreamVelocity2[iMarker]   = 0.0;
+    Surface_TransvVelocity2[iMarker]   = 0.0;
+    Surface_Pressure[iMarker]          = 0.0;
+    Surface_TotalTemperature[iMarker]  = 0.0;
+    Surface_TotalPressure[iMarker]     = 0.0;
+    Surface_VelocityIdeal[iMarker]     = 0.0;
+    Surface_Area[iMarker]              = 0.0;
+    Surface_MassFlow_Abs[iMarker]      = 0.0;
+    
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        if ((geometry->node[iPoint]->GetDomain()) && (geometry->node[iPoint]->GetPhysicalBoundary())) {
+          
+          geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+          
+          if (axisymmetric) {
+            if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+              AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+            else
+              AxiFactor = 1.0;
+          } else {
+            AxiFactor = 1.0;
+          }
+          
+          Density = node[iPoint]->GetDensity();
+          Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vn = 0.0; Vtang2 = 0.0;
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+            Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+            Velocity2 += Velocity[iDim] * Velocity[iDim];
+            Vn += Velocity[iDim] * Vector[iDim] * AxiFactor;
+            MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+          }
+          
+          Area       = sqrt (Area);
+          if (AxiFactor == 0.0) Vn = 0.0; else Vn /= Area;
+          Vn2        = Vn * Vn;
+          Pressure   = node[iPoint]->GetPressure();
+          SoundSpeed = node[iPoint]->GetSoundSpeed();
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            TangVel[iDim] = Velocity[iDim] - Vn*Vector[iDim]*AxiFactor/Area;
+            Vtang2       += TangVel[iDim]*TangVel[iDim];
+          }
+          
+            if (config->GetKind_DensityModel() == VARIABLE) {
+              Mach = sqrt(node[iPoint]->GetVelocity2())/
+              sqrt(node[iPoint]->GetSpecificHeatCp()*config->GetPressure_ThermodynamicND()/(node[iPoint]->GetSpecificHeatCv()*node[iPoint]->GetDensity()));
+            } else {
+              Mach = sqrt(node[iPoint]->GetVelocity2())/
+              sqrt(config->GetBulk_Modulus()/(node[iPoint]->GetDensity()));
+            }
+            Temperature       = node[iPoint]->GetTemperature();
+            Enthalpy          = node[iPoint]->GetSpecificHeatCp()*Temperature;
+            TotalTemperature  = Temperature + 0.5*Velocity2/node[iPoint]->GetSpecificHeatCp();
+            TotalPressure     = Pressure + 0.5*Density*Velocity2;
+          
+          /*--- Compute the mass Surface_MassFlow ---*/
+          
+          Surface_Area[iMarker]             += Area;
+          Surface_MassFlow[iMarker]         += MassFlow;
+          Surface_MassFlow_Abs[iMarker]     += abs(MassFlow);
+          
+          if (Kind_Average == AVERAGE_MASSFLUX) Weight = abs(MassFlow);
+          else if (Kind_Average == AVERAGE_AREA) Weight = abs(Area);
+          else Weight = 1.0;
+        
+          Surface_TotalPressure[iMarker]    += TotalPressure*Vn;
+
+          
+        }
+      }
+      
+  }
+  
+  /*--- Copy to the appropriate structure ---*/
+  
+  su2double *Surface_TotalPressure_Local     = new su2double [nMarker_Monitoring];
+
+  su2double *Surface_TotalPressure_Total     = new su2double [nMarker_Monitoring];
+
+  
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+
+    Surface_TotalPressure_Local[iMarker_Monitoring]     = 0.0;
+
+    Surface_TotalPressure_Total[iMarker_Monitoring]     = 0.0;
+
+    
+  }
+  
+  /*--- Compute the numerical fan face Mach number, mach number, temperature and the total area ---*/
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    
+    Monitoring = config->GetMarker_All_Monitoring(iMarker);
+    
+    /*--- Obtain the origin for the moment computation for a particular marker ---*/
+    
+    if (Monitoring == YES) {
+      for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+        Monitoring_Tag = config->GetMarker_Monitoring_TagBound(iMarker_Monitoring);
+        Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if (Monitoring_Tag == Marker_Tag) {
+          
+        /*--- Add the Surface_MassFlow, and Surface_Area to the particular boundary ---*/
+          
+          Surface_TotalPressure_Local[iMarker_Monitoring] += Surface_TotalPressure[iMarker];
+        }
+      }
+    }
+
+    
+  }
+  
+#ifdef HAVE_MPI
+
+  SU2_MPI::Allreduce(Surface_TotalPressure_Local, Surface_TotalPressure_Total, nMarker_Monitoring, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+
+#else
+  
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+    Surface_TotalPressure_Total[iMarker_Monitoring]  = Surface_TotalPressure_Local[iMarker_Monitoring];
+  }
+  
+#endif
+  
+  /*--- Compute the value of Surface_Area_Total, and Surface_Pressure_Total, and
+   set the value in the config structure for future use ---*/
+  
+  su2double Power_Dissipation = 0.0;
+  
+  for (iMarker_Monitoring = 0; iMarker_Monitoring < nMarker_Monitoring; iMarker_Monitoring++) {
+    Power_Dissipation += Surface_TotalPressure_Total[iMarker_Monitoring] * config->GetPressure_Ref() * config->GetVelocity_Ref();
+  }
+  
+  /*--- Power dissipation is hard-coded as the custom objective for now.
+   Will create its own entry soon. ---*/
+  
+  if (config->GetTopology_Optimization())
+    Total_Custom_ObjFunc = Power_Dissipation;
+
+  /*--- Write a file with the objective for the optimizer to read, since
+   this quantity is not yet in the history file. ---*/
+  
+  if ((rank == MASTER_NODE) && !config->GetDiscrete_Adjoint()) {
+    ofstream file("power.dat");
+    file << setprecision(15);
+    file << std::scientific;
+    file << Power_Dissipation << endl;
+    file.close();
+  }
+  
+  delete [] Surface_TotalPressure_Local;
+  delete [] Surface_TotalPressure_Total;
+  
+  delete [] Surface_MassFlow;
+  delete [] Surface_Mach;
+  delete [] Surface_Temperature;
+  delete [] Surface_Density;
+  delete [] Surface_Enthalpy;
+  delete [] Surface_NormalVelocity;
+  delete [] Surface_Pressure;
+  delete [] Surface_TotalTemperature;
+  delete [] Surface_TotalPressure;
+  delete [] Surface_Area;
+  delete [] Vector;
+  delete [] Surface_VelocityIdeal;
+  delete [] Surface_MassFlow_Abs;
+  
+}
+
+void CIncNSSolver::RegisterVariables(CGeometry *geometry, CConfig *config, bool reset) {
+
+  if (!config->GetTopology_Optimization()) return;
+  
+  for (unsigned long iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++)
+    node[iPoint]->RegisterPorosity();
+  
+}
+
+void CIncNSSolver::ExtractAdjoint_Variables(CGeometry *geometry, CConfig *config) {
+
+  if (!config->GetTopology_Optimization()) return;
+  
+  unsigned long iPoint,
+  nPoint = geometry->GetnPoint(),
+  nPointDomain = geometry->GetGlobal_nPointDomain();
+  
+  unsigned short nDim = geometry->GetnDim();
+  unsigned short vals_per_point = nDim+2;
+  
+  /*--- Allocate and initialize an array onto which the derivatives of every partition
+   will be reduced, this is to output results in the correct order, it is not a very
+   memory efficient solution...  ---*/
+  su2double *send_buf = new su2double[nPointDomain*vals_per_point], *rec_buf = NULL;
+  for(iPoint=0; iPoint<nPointDomain*vals_per_point; ++iPoint) send_buf[iPoint] = 0.0;
+  
+  unsigned long total_index;
+  for(iPoint=0; iPoint<nPoint; ++iPoint) {
+    unsigned long Global_Index = geometry->node[iPoint]->GetGlobalIndex();
+    total_index = Global_Index*vals_per_point;
+    for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+      send_buf[total_index] = SU2_TYPE::GetValue(geometry->node[iPoint]->GetCoord(iDim));
+      total_index++;
+    }
+    send_buf[total_index] = SU2_TYPE::GetValue(node[iPoint]->GetAdjointPorosity());
+    total_index++;
+    send_buf[total_index] = SU2_TYPE::GetValue(node[iPoint]->GetPorosity());
+  }
+  
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) rec_buf = new su2double[nPointDomain*vals_per_point];
+  SU2_MPI::Reduce(send_buf,rec_buf,nPointDomain*vals_per_point,MPI_DOUBLE,MPI_SUM,MASTER_NODE,MPI_COMM_WORLD);
+#else
+  rec_buf = send_buf;
+#endif
+  
+  /*--- The master writes the file ---*/
+  if (rank == MASTER_NODE) {
+    string filename = "of_grad_power.dat";
+    ofstream file;
+    file.open(filename.c_str());
+    file << setprecision(15);
+    file << std::scientific;
+    for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
+      unsigned long total_index = iPoint*vals_per_point;
+      for (unsigned long jPoint = 0; jPoint < vals_per_point-1; jPoint++) {
+        file << rec_buf[total_index];
+        if (jPoint < vals_per_point-2) file << "\t";
+        else file << endl;
+        total_index++;
+      }
+    }
+    file.close();
+  }
+  
+  /*--- The master writes the file ---*/
+  if (rank == MASTER_NODE) {
+    string filename = "porosity_new.dat";
+    ofstream file;
+    file.open(filename.c_str());
+    file << setprecision(15);
+    file << std::scientific;
+    for(iPoint=0; iPoint<nPointDomain; ++iPoint) {
+      unsigned long total_index = iPoint*vals_per_point;
+      for (unsigned long jPoint = 0; jPoint < vals_per_point-2; jPoint++) {
+        file << rec_buf[total_index] << "\t";
+        total_index++;
+      }
+      file << rec_buf[total_index+1]*0.9 + 0.1*min(max(rec_buf[total_index+1] - rec_buf[total_index], 0.0),1.0) << endl;
+    }
+    file.close();
+  }
+
+  delete [] send_buf;
+#ifdef HAVE_MPI
+  if (rank == MASTER_NODE) delete [] rec_buf;
+#endif
+  
 }

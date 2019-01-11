@@ -174,6 +174,7 @@ private:
   unsigned short nNeighbor;           /*!< \brief Number of neighbors. */
   bool Flip_Orientation;              /*!< \brief Flip the orientation of the normal. */
   su2double MaxLength;                /*!< \brief The maximum cell-center to cell-center length. */
+  su2double Aux_Var;                  /*!< \brief Auxiliary variable defined at each node. */
 
 public:
 	
@@ -764,6 +765,18 @@ public:
    */
   void GetAdjointCoord(su2double *adj_coor);
 
+  /*!
+   * \brief Set the value of an auxiliary variable at a node.
+   * \param[in] val_auxvar - Input value of the auxiliary variable.
+   */
+  void SetAuxVar(su2double val_auxvar);
+  
+  /*!
+   * \brief Get the value of an auxiliary variable at a node.
+   * \return Value of the auxiliary variable.
+   */
+  su2double GetAuxVar(void);
+  
 };
 
 /*! 

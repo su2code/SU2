@@ -874,6 +874,8 @@ inline void CSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Power_Dissipation(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }

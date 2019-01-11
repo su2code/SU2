@@ -260,6 +260,10 @@ inline void CPoint::GetAdjointCoord(su2double *adj_coor){
     }
 }
 
+inline void CPoint::SetAuxVar(su2double val_auxvar) { Aux_Var = val_auxvar; }
+
+inline su2double CPoint::GetAuxVar(void) { return Aux_Var; }
+
 inline unsigned short CEdge::GetnNodes() { return 2; }
 
 inline unsigned long CEdge::GetNode(unsigned short val_node) { return Nodes[val_node]; }

@@ -12360,6 +12360,18 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       config[iZone]->SetWrt_InletFile(false);
     }
 
+    /*--- Write a template porosity file for topology optimization. ---*/
+    
+    if (config[iZone]->GetWrt_PorosityFile()) {
+      MergeCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
+      
+      if (rank == MASTER_NODE) {
+        Write_PorosityFile(config[iZone], geometry[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0]);
+        DeallocateCoordinates(config[iZone], geometry[iZone][iInst][MESH_0]);
+      }
+      config[iZone]->SetWrt_PorosityFile(false);
+    }
+      
     /*--- This switch statement will become a call to a virtual function
      defined within each of the "physics" output child classes that loads
      the local data for that particular problem alone. ---*/
@@ -13153,10 +13165,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
   bool variable_density     = (config->GetKind_DensityModel() == VARIABLE);
   bool energy               = config->GetEnergy_Equation();
   bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
-  bool wrt_cp           = (variable_density &&
+  bool wrt_cp               = (variable_density &&
                            (config->GetKind_FluidModel() == INC_IDEAL_GAS_POLY));
-  bool wrt_kt           = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
+  bool wrt_kt               = ((config->GetKind_ConductivityModel() != CONSTANT_CONDUCTIVITY) &&
                            (config->GetViscous()));
+  bool topology             = config->GetTopology_Optimization();
+
   int *Local_Halo = NULL;
 
   stringstream varname;
@@ -13395,6 +13409,11 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
     
     /*--- New variables get registered here before the end of the loop. ---*/
 
+    if (topology) {
+      nVar_Par += 1;
+      Variable_Names.push_back("Porosity");
+    }
+    
   }
 
   /*--- Auxiliary vectors for variables defined on surfaces only. ---*/
@@ -13627,6 +13646,12 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
         
         if (wrt_kt) {
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetThermalConductivity(); iVar++;
+        }
+        
+        /*--- Load the porosity for fluid topology optimization. ---*/
+        
+        if (topology) {
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetPorosity(); iVar++;
         }
         
         /*--- New variables can be loaded to the Local_Data structure here,
@@ -18646,6 +18671,46 @@ void COutput::Write_InletFile_Flow(CConfig *config, CGeometry *geometry, CSolver
   err << "  specification." << endl << endl;
   SU2_MPI::Error(err.str(), CURRENT_FUNCTION);
 
+}
+
+void COutput::Write_PorosityFile(CConfig *config, CGeometry *geometry, CSolver **solver) {
+  
+  unsigned short iDim;
+  unsigned long iPoint;
+  
+  const unsigned short nDim = geometry->GetnDim();
+
+  /*--- Write the porosity template file. Note that we have previously merged
+   all of the coordinates in the MergeCoordinates() routine. ---*/
+  
+  ofstream node_file("porosity.dat");
+  node_file << setprecision(15);
+  node_file << std::scientific;
+
+  /*--- Loop over all points and write a file with zero porosities. ---*/
+  
+  for (iPoint = 0; iPoint < nGlobal_Poin; iPoint++) {
+    
+    /*--- Write the grid coordinates first ---*/
+    
+    for (iDim = 0; iDim < nDim; iDim++) {
+      node_file << Coords[iDim][iPoint] << "\t";
+    }
+    
+    /*--- Write the value of the porosity ---*/
+    
+    node_file << 0.0 << endl;
+    
+  }
+  
+  node_file.close();
+  
+  /*--- Print a message to inform the user about the template file. ---*/
+  
+  cout << endl;
+  cout << "  Created a template porosity file with node coordinates" << endl;
+  cout << "  and zero initial porosity at `porosity.dat`." << endl;
+  
 }
 
 void COutput::DeallocateInletCoordinates(CConfig *config, CGeometry *geometry) {

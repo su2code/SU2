@@ -1043,6 +1043,14 @@ public:
    */
   void DeallocateInletCoordinates(CConfig *config, CGeometry *geometry);
   
+  /*!
+   * \brief Write a template porosity profile file for topology optimization.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver - Solver container.
+   */
+  void Write_PorosityFile(CConfig *config, CGeometry *geometry, CSolver **solver);
+  
   /*! 
    * \brief Create and write a CSV file with a slice of data.
    * \param[in] config - Definition of the particular problem.

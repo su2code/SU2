@@ -1573,6 +1573,12 @@ public:
    */
   void SetElemVolume(CConfig *config);
 
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void ReadPorosity(CConfig *config);
+  
 };
 
 /*!
@@ -2653,6 +2659,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 */
   su2double* GetAverageGridVel(unsigned short val_marker, unsigned short val_span);
 
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  void ReadPorosity(CConfig *config);
+  
 };
 
 /*! 

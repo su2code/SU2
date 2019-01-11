@@ -2382,6 +2382,31 @@ public:
 
   virtual su2double GetSolution_Old_Accel(unsigned short iVar);
 
+  
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  virtual void SetPorosity(su2double val_Porosity);
+  
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  virtual su2double GetPorosity(void);
+  
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  virtual su2double GetAdjointPorosity(void);
+  
+  /*!
+   * \brief Get the adjoint values of the coordinates.
+   * \param[in] adj_sol - The adjoint values of the coordinates.
+   */
+  virtual void RegisterPorosity(void);
+  
 };
 
 /*!
@@ -4048,10 +4073,11 @@ public:
  */
 class CIncNSVariable : public CIncEulerVariable {
 private:
-  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
-  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
-  
-  su2double DES_LengthScale;
+  su2double Vorticity[3];     /*!< \brief Vorticity of the fluid. */
+  su2double StrainMag;        /*!< \brief Magnitude of rate of strain tensor. */
+  su2double DES_LengthScale;  /*!< \brief Length scale for Detached Eddy Dimulation (DES). */
+  su2double Porosity;         /*! <\brief The porosity value at each point (topology optimization). */
+
 public:
   
   /*!
@@ -4157,6 +4183,29 @@ public:
    * \return Value of the DES length Scale.
    */
   su2double GetDES_LengthScale(void);
+  
+  /*!
+   * \brief Set the value of the porosity at a node.
+   * \param[in] val_Porosity - The input value of the porosity.
+   */
+  void SetPorosity(su2double val_Porosity);
+  
+  /*!
+   * \brief Get the value of the porosity at a node.
+   * \return Value of the porosity.
+   */
+  su2double GetPorosity(void);
+  
+  /*!
+   * \brief Get the value of the porosity sensitivity at a node.
+   * \return Value of the porosity sensitivity.
+   */
+  su2double GetAdjointPorosity(void);
+  
+  /*!
+   * \brief Register the porosity at a node for AD.
+   */
+  void RegisterPorosity(void);
   
 };
 

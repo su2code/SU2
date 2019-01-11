@@ -1209,6 +1209,8 @@ inline su2double CConfig::GetInc_Inlet_Damping(void) { return Inc_Inlet_Damping;
 
 inline su2double CConfig::GetInc_Outlet_Damping(void) { return Inc_Outlet_Damping; }
 
+inline su2double CConfig::GetDarcy_Number(void) { return Darcy_Number; }
+
 inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_Inflow; }
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
@@ -1709,6 +1711,10 @@ inline bool CConfig::GetWrt_Performance(void) { return Wrt_Performance; }
 inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 
 inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
+
+inline bool CConfig::GetWrt_PorosityFile(void) { return Wrt_PorosityFile; }
+
+inline void CConfig::SetWrt_PorosityFile(bool val_wrt_inletfile) { Wrt_PorosityFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 

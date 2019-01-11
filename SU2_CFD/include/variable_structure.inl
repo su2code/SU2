@@ -694,6 +694,14 @@ inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* V
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
 
+inline void CVariable::SetPorosity(su2double val_Porosity) { }
+
+inline su2double CVariable::GetPorosity(void) { return 0.0; }
+
+inline su2double CVariable::GetAdjointPorosity(void) { return 0.0; }
+
+inline void CVariable::RegisterPorosity(void) { }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CNSVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
@@ -705,6 +713,14 @@ inline void CNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES
 inline void CIncNSVariable::SetDES_LengthScale(su2double val_des_lengthscale) { DES_LengthScale = val_des_lengthscale; }
 
 inline su2double CIncNSVariable::GetDES_LengthScale(void) { return DES_LengthScale; }
+
+inline void CIncNSVariable::SetPorosity(su2double val_Porosity) { Porosity = val_Porosity; }
+
+inline su2double CIncNSVariable::GetPorosity(void) { return Porosity; }
+
+inline su2double CIncNSVariable::GetAdjointPorosity(void) { return SU2_TYPE::GetDerivative(Porosity); }
+
+inline void CIncNSVariable::RegisterPorosity(void) { AD::RegisterInput(Porosity); }
 
 inline void CEulerVariable::SetSolution_New(void) {
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
