@@ -245,7 +245,7 @@ CDriver::CDriver(char* confFile,
             if (Kind_Regime == COMPRESSIBLE) cout << "Compressible RANS equations." << endl;
             if (Kind_Regime == INCOMPRESSIBLE) cout << "Incompressible RANS equations." << endl;
             break;
-          case HEAT_EQUATION_FVM: cout << "Heat equation." << endl; break;
+          case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT: cout << "Heat equation." << endl; break;
           case FEM_ELASTICITY: case DISC_ADJ_FEM: cout << "Elasticity solver." << endl; break;
           case ADJ_EULER: cout << "Continuous Euler adjoint equations." << endl; break;
           case ADJ_NAVIER_STOKES: cout << "Continuous Navier-Stokes adjoint equations." << endl; break;
@@ -1175,7 +1175,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   fem, disc_adj_fem,
   radiation, p1_rad,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_turb,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
   fem_dg_flow, fem_dg_shock_persson,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
   
@@ -1192,8 +1192,8 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
   neg_spalart_allmaras = false;
   disc_adj         = false;
   fem              = false;  disc_adj_fem     = false;
-  heat_fvm         = false;
-  transition       = false;  fem_transition  = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
   template_solver  = false;
   fem_dg_flow      = false;  fem_dg_shock_persson = false;
   radiation        = false;  p1_rad           = false;
@@ -1225,6 +1225,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
     case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
   
   /*--- Determine the kind of FEM solver used for the flow. ---*/
@@ -1377,6 +1378,10 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][ADJTURB_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][TURB_SOL], RUNTIME_TURB_SYS, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJTURB_SOL]->GetnVar();
       }
+      if (heat_fvm) {
+        solver_container[val_iInst][iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
+        if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJHEAT_SOL]->GetnVar();
+      }
       if (p1_rad){
         solver_container[val_iInst][iMGlevel][ADJRAD_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][RAD_SOL], RUNTIME_RADIATION_SYS, iMGlevel);
         if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJRAD_SOL]->GetnVar();
@@ -1386,6 +1391,11 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     if (disc_adj_fem) {
       solver_container[val_iInst][iMGlevel][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][FEA_SOL], RUNTIME_FEA_SYS, iMGlevel);
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJFEA_SOL]->GetnVar();
+    }
+
+    if (disc_adj_heat) {
+      solver_container[val_iInst][iMGlevel][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[val_iInst][iMGlevel], config, solver_container[val_iInst][iMGlevel][HEAT_SOL], RUNTIME_HEAT_SYS, iMGlevel);
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][ADJHEAT_SOL]->GetnVar();
     }
   }
 
@@ -1535,7 +1545,7 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   adj_euler, adj_ns, adj_turb,
   heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
   radiation, p1_rad,
-  template_solver, disc_adj, disc_adj_fem, disc_adj_turb;
+  template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
   int val_iter = 0;
 
   /*--- Initialize some useful booleans ---*/
@@ -1547,7 +1557,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   fem              = false;  disc_adj_fem     = false;
   radiation        = false;  p1_rad           = false;
   disc_adj_turb    = false;
-  heat_fvm         = false;  template_solver  = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  template_solver  = false;
 
   /*--- Check for restarts and use the LoadRestart() routines. ---*/
 
@@ -1598,6 +1609,8 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
     case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
     case DISC_ADJ_FEM_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+
   }
 
   /*--- Determine the kind of FEM solver used for the flow. ---*/
@@ -1635,6 +1648,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
       if (fem_dg_flow)
         solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
+    if (heat_fvm) {
+      solver_container[val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
   }
 
   if (restart) {
@@ -1654,12 +1670,17 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
       solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
       if (disc_adj_turb)
         solver_container[val_iInst][MESH_0][ADJTURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      if (disc_adj_heat)
+        solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
       if (p1_rad)
         solver_container[val_iInst][MESH_0][ADJRAD_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (disc_adj_fem) {
         if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
         solver_container[val_iInst][MESH_0][ADJFEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (disc_adj_heat) {
+      solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
   }
 
@@ -1682,7 +1703,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   adj_euler, adj_ns, adj_turb,
   heat_fvm, fem, radiation,
   spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
-  template_solver, disc_adj, disc_adj_turb, disc_adj_fem,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
   e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
 
   /*--- Initialize some useful booleans ---*/
@@ -1693,7 +1714,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
   neg_spalart_allmaras = false;
   disc_adj        = false;
   fem              = false;  disc_adj_fem    = false;
-  heat_fvm        = false;
+  heat_fvm        = false;   disc_adj_heat   = false;
   radiation        = false;
   transition       = false;
   template_solver  = false;
@@ -1722,6 +1743,7 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
     case DISC_ADJ_FEM_NS: ns = true; disc_adj = true; break;
     case DISC_ADJ_FEM_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
   
   /*--- Assign turbulence model booleans ---*/
@@ -1761,6 +1783,13 @@ void CDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **ge
       if (disc_adj_turb || adj_turb) {
         delete solver_container[val_iInst][iMGlevel][ADJTURB_SOL];
       }
+      if (heat_fvm) {
+        delete solver_container[val_iInst][iMGlevel][ADJHEAT_SOL];
+      }
+    }
+
+    if (disc_adj_heat) {
+      delete solver_container[val_iInst][iMGlevel][ADJHEAT_SOL];
     }
 
     /*--- DeAllocate solution for direct problem ---*/
@@ -1805,7 +1834,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, fem,
       fem_euler, fem_ns, fem_turbulent,
-      heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem;
+      heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem, disc_adj_heat;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1815,7 +1844,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   fem_euler        = false;
   fem_ns           = false;
   fem_turbulent    = false;
-  heat_fvm         = false;
+  heat_fvm         = false; disc_adj_heat    = false;
   fem 			       = false; disc_adj_fem     = false;
   radiation        = false;
   transition       = false;
@@ -1843,6 +1872,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
     case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_RANS : ns = true; turbulent = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
 
   /*--- Test for radiation models ---*/
@@ -1880,6 +1910,7 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
 
   if (disc_adj) integration_container[val_iInst][ADJFLOW_SOL] = new CIntegration(config);
   if (disc_adj_fem) integration_container[val_iInst][ADJFEA_SOL] = new CIntegration(config);
+  if (disc_adj_heat) integration_container[val_iInst][ADJHEAT_SOL] = new CIntegration(config);
 
 }
 
@@ -1887,7 +1918,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     CGeometry **geometry, CConfig *config, unsigned short val_iInst) {
   bool euler, adj_euler, ns, adj_ns, turbulent, adj_turb, fem,
       fem_euler, fem_ns, fem_turbulent,
-      heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem;
+      heat_fvm, radiation, template_solver, transition, disc_adj, disc_adj_fem, disc_adj_heat;
 
   /*--- Initialize some useful booleans ---*/
   euler            = false; adj_euler        = false;
@@ -1897,7 +1928,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   fem_euler        = false;
   fem_ns           = false;
   fem_turbulent    = false;
-  heat_fvm         = false;
+  heat_fvm         = false; disc_adj_heat    = false;
   fem              = false; disc_adj_fem     = false;
   radiation        = false;
   transition       = false;
@@ -1925,6 +1956,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
     case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
     case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; break;
     case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
   }
 
   /*--- Test for radiation models ---*/
@@ -1944,6 +1976,7 @@ void CDriver::Integration_Postprocessing(CIntegration ***integration_container,
   if (heat_fvm) delete integration_container[val_iInst][HEAT_SOL];
   if (fem) delete integration_container[val_iInst][FEA_SOL];
   if (disc_adj_fem) delete integration_container[val_iInst][ADJFEA_SOL];
+  if (disc_adj_heat) delete integration_container[val_iInst][ADJHEAT_SOL];
   if (radiation) delete integration_container[val_iInst][RAD_SOL];
 
   /*--- DeAllocate solution for adjoint problem ---*/
@@ -2187,6 +2220,13 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
                 numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSM_Flow(nDim, nVar_Flow, config);
+              }
+              break;
+
+	    case AUSMPLUSUP:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
+                numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM] = new CUpwAUSMPLUSUP_Flow(nDim, nVar_Flow, config);
               }
               break;
               
@@ -2940,7 +2980,7 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
         if (compressible) {
           /*--- Compressible flow ---*/
           switch (config->GetKind_Upwind_Flow()) {
-            case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP: case L2ROE: case LMROE: case SLAU: case SLAU2:
+            case ROE: case AUSM : case TURKEL: case HLLC: case MSW:  case CUSP: case L2ROE: case LMROE: case SLAU: case SLAU2: case AUSMPLUSUP:
               for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_TERM];
                 delete numerics_container[val_iInst][iMGlevel][FLOW_SOL][CONV_BOUND_TERM];
@@ -3298,6 +3338,12 @@ void CDriver::Iteration_Preprocessing() {
         cout << ": discrete adjoint FEM structural iteration." << endl;
       iteration_container[iZone][iInst] = new CDiscAdjFEAIteration(config_container[iZone]);
       break;
+
+    case DISC_ADJ_HEAT:
+      if (rank == MASTER_NODE)
+        cout << ": discrete adjoint heat iteration." << endl;
+      iteration_container[iZone][iInst] = new CDiscAdjHeatIteration(config_container[iZone]);
+      break;
     }
 
   }
@@ -3439,44 +3485,41 @@ void CDriver::Interface_Preprocessing() {
         case EULER : case NAVIER_STOKES: case RANS: 
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           fluid_target  = true;   
-
           break;
 
         case FEM_ELASTICITY: case DISC_ADJ_FEM:
           structural_target = true;   
-
           break;
 
-        case HEAT_EQUATION_FVM:
+        case HEAT_EQUATION_FVM: case DISC_ADJ_HEAT:
           heat_target = true;
-        }
-
+          break;
+      }
 
       switch ( config_container[donorZone]->GetKind_Solver() ) {
 
-      case EULER : case NAVIER_STOKES: case RANS: 
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
-        fluid_donor  = true;   
-
+        case EULER : case NAVIER_STOKES: case RANS:
+        case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+          fluid_donor  = true;
           break;
 
-      case FEM_ELASTICITY: case DISC_ADJ_FEM:
-        structural_donor = true;  
-
+        case FEM_ELASTICITY: case DISC_ADJ_FEM:
+          structural_donor = true;
           break;
 
-      case HEAT_EQUATION_FVM :
-        heat_donor = true;
-        }
+        case HEAT_EQUATION_FVM : case DISC_ADJ_HEAT:
+          heat_donor = true;
+          break;
+      }
 
-        /*--- Begin the creation of the communication pattern among zones ---*/
+      /*--- Begin the creation of the communication pattern among zones ---*/
 
-        /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
-        if (fluid_donor && fluid_target)
-          nVar = solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
-        else
-          /*--- If at least one of the components is structural ---*/
-          nVar = nDim;
+      /*--- Retrieve the number of conservative variables (for problems not involving structural analysis ---*/
+      if (fluid_donor && fluid_target)
+        nVar = solver_container[donorZone][INST_0][MESH_0][FLOW_SOL]->GetnVar();
+      else
+        /*--- If at least one of the components is structural ---*/
+        nVar = nDim;
 
       if (rank == MASTER_NODE) cout << "From zone " << donorZone << " to zone " << targetZone << ": ";
 
@@ -4811,6 +4854,7 @@ void CDiscAdjFluidDriver::SetAdj_ObjFunction(){
 void CDiscAdjFluidDriver::SetObjFunction(){
 
   bool compressible = (config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool heat         = (config_container[ZONE_0]->GetWeakly_Coupled_Heat());
 
   ObjFunc = 0.0;
 
@@ -4847,6 +4891,14 @@ void CDiscAdjFluidDriver::SetObjFunction(){
   for (iZone = 0; iZone < nZone; iZone++){
     solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(config_container[iZone]);
     ObjFunc += solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
+      }
+    }
   }
 
   if (rank == MASTER_NODE){
