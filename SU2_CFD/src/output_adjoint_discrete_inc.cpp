@@ -74,7 +74,7 @@ CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometr
   }
   
   stringstream ss;
-  ss << "Zone " << config->GetiZone() << " (Discrete Adjoint)";
+  ss << "Zone " << config->GetiZone() << " (Adj. Incomp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
 }
