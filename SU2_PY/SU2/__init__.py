@@ -17,6 +17,7 @@ from SU2 import mesh
 from SU2 import eval
 from SU2 import opt
 from SU2 import util
+from SU2 import mor
 
 try:
     import readline
