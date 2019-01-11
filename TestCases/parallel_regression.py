@@ -349,6 +349,17 @@ def main():
     streamwise_periodic_cylinder.tol       = 0.00001
     test_list.append(streamwise_periodic_cylinder)
 
+    # Laminar heated cylinder with polynomial fluid model
+    inc_poly_cylinder          = TestCase('inc_poly_cylinder')
+    inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
+    inc_poly_cylinder.test_iter = 20
+    inc_poly_cylinder.test_vals = [-7.812686, -2.080649, 0.016033, 1.912088] #last 4 columns
+    inc_poly_cylinder.su2_exec  = "parallel_computation.py -f"
+    inc_poly_cylinder.timeout   = 1600
+    inc_poly_cylinder.tol       = 0.00001
+    test_list.append(inc_poly_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
