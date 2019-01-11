@@ -8191,7 +8191,7 @@ void CIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
 
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == CHT_WALL_INTERFACE)) {
 
       /*--- Forces initialization at each Marker ---*/
 
