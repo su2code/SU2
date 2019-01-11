@@ -47,7 +47,8 @@ int main(int argc, char *argv[]) {
   ofstream Gradient_file;
   bool fem_solver = false;
   bool periodic   = false;
-
+  bool multizone = false;
+  
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
   int rank, size;
@@ -71,6 +72,7 @@ int main(int argc, char *argv[]) {
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   COutput *output                       = NULL;
+  CConfig *driver_config                = NULL;  
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -95,6 +97,7 @@ int main(int argc, char *argv[]) {
   geometry_container  = new CGeometry**[nZone];
   surface_movement    = new CSurfaceMovement*[nZone];
   grid_movement       = new CVolumetricMovement*[nZone];
+  
   nInst               = new unsigned short[nZone];
   
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -105,20 +108,49 @@ int main(int argc, char *argv[]) {
     nInst[iZone]                  = 1;
   }
   
+  /*--- Initialize the configuration of the driver ---*/
+  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, 0, VERB_NONE);
+
+  /*--- Initialize a char to store the zone filename ---*/
+  char zone_file_name[MAX_STRING_SIZE];
+
+  /*--- Store a boolean for multizone problems ---*/
+  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+
+    if (multizone){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+    }
+    else{
+      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+    }
+    config_container[iZone]->SetMPICommunicator(MPICommunicator);
+
+  }
+  
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetKind_Solver() == MULTIZONE){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      config_container[iZone]->SetMultizone(driver_config, config_container);
+    }
+  }
+  
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
   
   for (iZone = 0; iZone < nZone; iZone++) {
-    
-    /*--- Definition of the configuration option class for all zones. In this
-     constructor, the input configuration file is parsed and all options are
-     read and stored. ---*/
-    
-    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-
-    /*--- Set the MPI communicator ---*/
-    config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
