@@ -1432,6 +1432,7 @@ class CDiscAdjFlowIncOutput : public COutput {
 private:
 
   unsigned short nDim, turb_model;
+  bool heat, weakly_coupled_heat;
   
 public:
 
