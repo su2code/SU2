@@ -64,6 +64,7 @@ protected:
   unsigned short nDim, nVar;  /*!< \brief Number of dimensions and variables. */
   su2double Gamma;        /*!< \brief Fluid's Gamma constant (ratio of specific heats). */
   su2double Gamma_Minus_One;    /*!< \brief Fluids's Gamma - 1.0  . */
+  su2double Minf;    /*!< \brief Free stream Mach number . */
   su2double Gas_Constant;         /*!< \brief Gas constant. */
   su2double *Vector; /*!< \brief Auxiliary vector. */
   su2double *Enthalpy_formation;
@@ -78,7 +79,8 @@ public:
   
   su2double
   **tau,    /*!< \brief Viscous stress tensor. */
-  **delta;      /*!< \brief Identity matrix. */
+  **delta,      /*!< \brief Identity matrix. */
+  **delta3;   /*!< \brief 3 row Identity matrix. */
   su2double
   *Diffusion_Coeff_i, /*!< \brief Species diffusion coefficients at point i. */
   *Diffusion_Coeff_j; /*!< \brief Species diffusion coefficients at point j. */
@@ -208,6 +210,19 @@ public:
   su2double Dissipation_ij;
     
   su2double *l, *m;
+
+  su2double **MeanReynoldsStress; /*!< \brief Mean Reynolds stress tensor  */
+  su2double **MeanPerturbedRSM;   /*!< \brief Perturbed Reynolds stress tensor  */
+  bool using_uq;                  /*!< \brief Flag for UQ methodology  */
+  su2double PerturbedStrainMag;   /*!< \brief Strain magnitude calculated using perturbed stress tensor  */
+  unsigned short Eig_Val_Comp;    /*!< \brief Component towards which perturbation is perfromed */
+  su2double uq_delta_b;           /*!< \brief Magnitude of perturbation */
+  su2double uq_urlx;                 /*!< \brief Under-relaxation factor for numerical stability */
+  bool uq_permute;                   /*!< \brief Flag for eigenvector permutation */
+
+  /* Supporting data structures for the eigenspace perturbation for UQ methodology */
+  su2double **A_ij, **newA_ij, **Eig_Vec, **New_Eig_Vec, **Corners;
+  su2double *Eig_Val, *Barycentric_Coord, *New_Coord;
 
   /*!
    * \brief Constructor of the class.
@@ -1590,6 +1605,49 @@ public:
                           const su2double Dissipation_j,
                           const su2double Sensor_i, const su2double Sensor_j,
                           su2double& Dissipation_ij, CConfig *config);
+
+  /*!
+   * \brief Setting the UQ framework usage
+   * \param[in] val_using_uq
+   */
+  void SetUsing_UQ(bool val_using_uq);
+
+  /*!
+   * \brief Decomposes the symmetric matrix A_ij, into eigenvectors and eigenvalues
+   * \param[in] A_i: symmetric matrix to be decomposed
+   * \param[in] Eig_Vec: strores the eigenvectors
+   * \param[in] Eig_Val: stores the eigenvalues
+   * \param[in] n: order of matrix A_ij
+   */
+  static void EigenDecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+
+  /*!
+   * \brief Recomposes the eigenvectors and eigenvalues into a matrix
+   * \param[in] A_ij: recomposed matrix
+   * \param[in] Eig_Vec: eigenvectors
+   * \param[in] Eig_Val: eigenvalues
+   * \param[in] n: order of matrix A_ij
+   */
+  static void EigenRecomposition(su2double **A_ij, su2double **Eig_Vec, su2double *Eig_Val, unsigned short n);
+
+  /*!
+   * \brief tred2
+   * \param[in] V: matrix that needs to be decomposed
+   * \param[in] d: holds eigenvalues
+   * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
+   */
+  static void tred2(su2double **V, su2double *d, su2double *e, unsigned short n);
+
+  /*!
+   * \brief tql2
+   * \param[in] V: matrix that will hold the eigenvectors
+   * \param[in] d: array that will hold the ordered eigenvalues
+   * \param[in] e: supplemental data structure
+   * \param[in] n: order of matrix V
+
+   */
+  static void tql2(su2double **V, su2double *d, su2double *e, unsigned short n);
   
 };
 
@@ -2076,6 +2134,54 @@ public:
   
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwAUSMPLUSUP_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ -up.
+ * \ingroup ConvDiscr
+ * \author Amit Sachdeva
+ */
+class CUpwAUSMPLUSUP_Flow : public CNumerics {
+private:
+  bool implicit;
+  su2double *Diff_U;
+  su2double *Velocity_i, *Velocity_j, *RoeVelocity;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *delta_wave, *delta_vel;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double sq_vel, Proj_ModJac_Tensor_ij, Density_i, Energy_i, SoundSpeed_i, Pressure_i, Enthalpy_i,
+  Density_j, Energy_j, SoundSpeed_j, Pressure_j, Enthalpy_j, R, RoeDensity, RoeEnthalpy, RoeSoundSpeed,
+  ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  unsigned short iDim, iVar, jVar, kVar;
+  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pF, Phi;
+  su2double astarL, astarR, ahatL, ahatR, aF, rhoF, MFsq, Mrefsq, Mp, Pu, fa;
+  su2double Kp, Ku, sigma, alpha, beta, param1, mfP, mfM;
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUSUP_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUSUP_Flow(void);
+  
+  /*!
+   * \brief Compute the AUSM+ -up flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -3084,7 +3190,26 @@ public:
 	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
 	 */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
-  
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
@@ -3132,6 +3257,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
@@ -3475,6 +3620,27 @@ public:
 	 * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
 	 */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
 };
 
 
@@ -3523,6 +3689,26 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
+   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 /*!
@@ -5196,6 +5382,30 @@ public:
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
   
+  /*!
+   * \brief Initialize the Reynolds Stress Matrix
+   * \param[in] turb_ke turbulent kinetic energy of node
+   */
+  void SetReynoldsStressMatrix(su2double turb_ke);
+
+  /*!
+   * \brief Perturb the Reynolds stress tensor based on parameters
+   * \param[in] turb_ke: turbulent kinetic energy of the noce
+   * \param[in] config: config file
+   */
+  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
+  /*!
+     * \brief A virtual member. Get strain magnitude based on perturbed reynolds stress matrix
+     * \param[in] turb_ke: turbulent kinetic energy of the node
+     */
+  void SetPerturbedStrainMag(su2double turb_ke);
+
+  /*!
+   * \brief Get the mean rate of strain matrix based on velocity gradients
+   * \param[in] S_ij
+   */
+  void GetMeanRateOfStrainMatrix(su2double **S_ij);
+
 };
 
 /*!
