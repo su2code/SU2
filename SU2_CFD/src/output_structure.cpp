@@ -11022,7 +11022,7 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
         (config->GetOutput_FileFormat() == FIELDVIEW)) SPRINTF (buffer, ".dat");
     else if ((config->GetOutput_FileFormat() == TECPLOT_BINARY) ||
              (config->GetOutput_FileFormat() == FIELDVIEW_BINARY))  SPRINTF (buffer, ".plt");
-    else if (config->GetOutput_FileFormat() == PARAVIEW)  SPRINTF (buffer, ".csv");
+    else if (config->GetOutput_FileFormat() == PARAVIEW || config->GetOutput_FileFormat() == PARAVIEW_BINARY)  SPRINTF (buffer, ".csv");
     strcat(char_histfile, buffer);
     
 //    if(!(std::find(RequestedHistoryFields.begin(), RequestedHistoryFields.end(), "EXT_ITER") != RequestedHistoryFields.end())) {
