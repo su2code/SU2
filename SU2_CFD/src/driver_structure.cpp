@@ -3676,6 +3676,12 @@ void CDriver::Output_Preprocessing(){
       }
       break;
 
+    case DISC_ADJ_HEAT:
+      if (rank == MASTER_NODE)
+        cout << ": discrete adjoint heat output structure." << endl;
+      output[iZone] = new CDiscAdjHeatOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
+      break;
+      
     case DISC_ADJ_FEM:
       if (rank == MASTER_NODE)
         cout << ": discrete adjoint FEA output structure." << endl;
