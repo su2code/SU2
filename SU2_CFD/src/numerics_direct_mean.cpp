@@ -1289,7 +1289,8 @@ void CUpwAUSMPLUSUP2_Flow::ComputeResidual(su2double *val_residual, su2double **
   else pRM = 0.5*(mR-fabs(mR))/mR;
   
   /*... Modified pressure flux ...*/
-  pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;  // Use This definition
+  //Use this definition
+  pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Density_j+Density_i)*aF;
   //pFi=sqrt(0.5*(sq_veli+sq_velj))*(pLP+pRM-1.0)*0.5*(Pressure_i+Pressure_j)/aF;  
   pF=0.5*(Pressure_j+Pressure_i)+0.5*(pLP-pRM)*(Pressure_i-Pressure_j)+pFi;  
 
