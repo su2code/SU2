@@ -2509,6 +2509,7 @@ public:
 class CHeatFVMVariable : public CVariable {
 protected:
   su2double *Solution_Direct;  /*!< \brief Direct solution container for use in the adjoint Heat solver. */
+  su2double* Solution_BGS_k;    /*!< \brief Old solution container for BGS iterations ---*/
   
 public:
   
@@ -2538,7 +2539,7 @@ public:
  * \brief Main class for defining the variables of the FEM Linear Elastic structural problem.
  * \ingroup Structural Finite Element Analysis Variables
  * \author F. Palacios, R. Sanchez.
- * \version 4.0.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CFEAVariable : public CVariable {
 protected:
@@ -4856,7 +4857,7 @@ public:
  * \brief Main class for defining the variables of the adjoint solver.
  * \ingroup Discrete_Adjoint
  * \author T. Albring, R. Sanchez.
- * \version 4.2.0 "Cardinal"
+ * \version 6.1.0 "Falcon"
  */
 class CDiscAdjFEAVariable : public CVariable {
 private:
