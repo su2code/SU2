@@ -1126,7 +1126,7 @@ void CPBFluidIteration::Iterate(COutput *output,
   /* ---- Start velocity and pressure correction loop---*/
   
   /*--- Have to check net mass flux/convergence to stop the loop, this value is provisional ---*/
-  nMassIter = 10; nPressureIter = 10;
+  nMassIter = 50; nPressureIter = 1000;
   
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/

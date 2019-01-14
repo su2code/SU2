@@ -1325,7 +1325,7 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
   /*--- Skip coordinates ---*/
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
-
+  
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -1360,7 +1360,8 @@ void CPBIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      node[iPoint_Local]->SetPressure_val(Restart_Data[index]);
+      for (iVar = 1; iVar < nVar; iVar++) Solution[iVar-1] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
@@ -4046,9 +4047,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	   for (iVar = 0; iVar < nVar; iVar++) {
 			factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
 			vel_corr[iPoint][iVar] = factor*(solver_container[POISSON_SOL]->node[iPoint]->GetGradient(0,iVar));
-			//cout<<iVar<<"\t"<<vel_corr[iPoint][iVar]<<"\t";
 		}
-		//cout<<factor<<endl;
    }
 		
   /*--- Reassign strong boundary conditions ---*/
@@ -4059,7 +4058,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     
     switch (KindBC) {
 		
-		/*case OUTLET_FLOW:
+		case OUTLET_FLOW:
 		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
            if (geometry->node[iPoint]->GetDomain()) {
@@ -4067,7 +4066,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		       node[iPoint]->SetPressure_val(Current_Pressure);
 		   }
          }
-		break;*/
+		break;
 		
 		case INLET_FLOW:
 		

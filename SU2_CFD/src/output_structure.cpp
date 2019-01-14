@@ -4803,7 +4803,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     su2double *residual_fem          = NULL;
     su2double *residual_heat         = NULL;
     su2double *residual_poisson      = NULL;
-    su2double *residual_mass		 = NULL;
+    su2double residual_mass;
     
     /*--- Coefficients Monitored arrays ---*/
     su2double *aeroelastic_plunge = NULL,
@@ -4866,7 +4866,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     
     residual_adjflow      = new su2double[nVar_AdjFlow];
     residual_adjturbulent = new su2double[nVar_AdjTurb];
-    residual_mass       = new su2double[1];    
     /*--- Allocate memory for the coefficients being monitored ---*/
     aeroelastic_plunge = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
     aeroelastic_pitch  = new su2double[config[ZONE_0]->GetnMarker_Monitoring()];
@@ -5049,19 +5048,12 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         }
         
         /*--- Flow Residuals ---*/
-        for (iVar = 0; iVar < nVar_Flow; iVar++) {
+        for (iVar = 0; iVar < nVar_Flow; iVar++) 
           residual_flow[iVar] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetRes_RMS(iVar);
-         // cout<<residual_flow[iVar]<<"\t"<<iVar<<"\t";
-	  }
-	  //cout<<endl;
-          
-       // cout<<"Flow Res from output: "<<"\t"<<residual_flow[0]<<"\t"<<log10(residual_flow[0])<<endl;
-          
+	     
         /*--- Mass flux residual (for pressure-based problem) ---*/
         if (pressure_based)
-           residual_mass[0] = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
-           
-       // cout<<"Mass Res from output: "<<"\t"<<residual_mass[0]<<"\t"<<log10(residual_mass[0])<<endl;
+           residual_mass = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetResMassFlux();
         
         /*--- Turbulent residual ---*/
         
@@ -5391,7 +5383,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             /*--- Flow residual ---*/
             if (nDim == 2) {
               if (compressible) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
-              if (incompressible && (pressure_based))  SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_mass[0]), dummy);
+              if (incompressible && (pressure_based))  SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_mass), dummy);
               if (incompressible && (!pressure_based)) SPRINTF (flow_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_flow[0]), log10 (residual_flow[1]), log10 (residual_flow[2]), log10 (residual_flow[3]), dummy);
             }
             else {
@@ -5485,7 +5477,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           case POISSON_EQUATION:
             
             SPRINTF (poisson_resid, ", %14.8e, %14.8e, %14.8e, %14.8e, %14.8e", log10 (residual_poisson[0]), dummy, dummy, dummy, dummy );
-            //cout<<"In switch case of sprintf"<<endl;
           
             break;
           case FEM_ELASTICITY:
@@ -5667,7 +5658,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
             //            if (!fluid_structure) {
               if (incompressible && !weakly_coupled_heat) {
               if (energy) {cout << "   Res[Press]" << "     Res[Temp]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
-              else if (pressure_based) {cout << "   Res[Mass]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
+              else if (pressure_based) {cout << "   Res[Velx]" << "     Res[Mass]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               else {cout << "   Res[Press]" << "     Res[Velx]" << "   CLift(Total)" << "   CDrag(Total)" << endl;}
               }
               else if (incompressible && weakly_coupled_heat) cout << "   Res[Press]" << "     Res[Heat]" << "   HFlux(Total)";
@@ -6001,6 +5992,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
                 }
                 if (incompressible && !weakly_coupled_heat) {
                   if (energy) {cout.width(14); cout << log10(residual_flow[nDim+1]);}
+                  else if (pressure_based) {cout.width(14); cout << log10(residual_mass);}
                   else {cout.width(14); cout << log10(residual_flow[1]);}
                 }
                 if (incompressible && weakly_coupled_heat)  { cout.width(14); cout << log10(residual_heat[0]);}
