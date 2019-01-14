@@ -890,32 +890,12 @@ void CSourceIncBodyForce::ComputeResidual(su2double *val_residual, CConfig *conf
 }
 
 CSourceIncPeriodicBodyForce::CSourceIncPeriodicBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {
-
-  /*--- Store the pointer to the constant body force vector used in the momentum equations. ---*/
   
   implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
-  Body_Force_Vector = new su2double[nDim];
-  su2double norm2_translation = 0.0;
-  su2double Pressure_Ref = config->GetPressure_Ref(); // TK check if pressure and force ref are the same
   
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
-  
-  for (unsigned short iDim = 0; iDim < nDim; iDim++)
-    Body_Force_Vector[iDim] = config->GetDeltaP_BodyForce()/norm2_translation*config->GetPeriodicTranslation(0)[iDim] / Pressure_Ref; // TK check if pres_ref is the same as force ref
-  
-  
-  // TK output has to be done differently or at least if rank==master
-  cout << "Body force vector based on delta p: [ ";
-  for (unsigned short iDim = 0; iDim < nDim; iDim++) {
-    cout << Body_Force_Vector[iDim] << "  ";
-  }
-  cout << " ]" << endl;
 }
 
 CSourceIncPeriodicBodyForce::~CSourceIncPeriodicBodyForce(void) {
-
-  if (Body_Force_Vector != NULL) delete [] Body_Force_Vector;
 
 }
 
@@ -924,13 +904,18 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, su2do
   unsigned short iDim, iVar, jVar;
   su2double norm2_translation = 0.0;
   su2double dot_product = 0.0;
+  su2double Body_Force_Vector[nDim];
   su2double Body_Force_T_factor;
+  su2double Pressure_Ref = config->GetPressure_Ref(); // TK check if pressure and force ref are the same
   //su2double DensityInc_0 = 0.0;
   //bool variable_density  = (config->GetKind_DensityModel() == VARIABLE);
   su2double Velocity[nDim];
   
   for (iDim = 0; iDim < nDim; iDim++)
       Velocity[iDim] = V_i[iDim+1];
+  
+  for (iDim = 0; iDim < nDim; iDim++)
+    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
   
   /*--- Initialize the Jacobian contribution to zero ---*/
   
@@ -956,14 +941,20 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, su2do
 
   /*--- Compute the periodic pressure contribution to the momentum equation ---*/
 
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Body_Force_Vector[iDim] = config->GetDeltaP_BodyForce()/norm2_translation*config->GetPeriodicTranslation(0)[iDim] / Pressure_Ref; // TK check if pres_ref is the same as force ref
+
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[iDim+1] = -Volume * Body_Force_Vector[iDim];
 
-  /*--- Compute the periodic temperature contribution to the energy equation ---*/
+  // TK output has to be done differently or at least if rank==master
+  //cout << "Body force vector based on delta p: [ ";
+  //for (unsigned short iDim = 0; iDim < nDim; iDim++) {
+    //cout << Body_Force_Vector[iDim] << "  ";
+  //}
+  //cout << " ]" << endl;
 
-  for (iDim = 0; iDim < nDim; iDim++) {
-    norm2_translation += pow(config->GetPeriodicTranslation(0)[iDim],2);
-  }
+  /*--- Compute the periodic temperature contribution to the energy equation ---*/  
   
   if (config->GetEnergy_Equation()) {
     
@@ -982,7 +973,7 @@ void CSourceIncPeriodicBodyForce::ComputeResidual(su2double *val_residual, su2do
   } else {
     val_residual[nDim+1] = 0.0;
   }
-  
+
 }
 
 CSourceBoussinesq::CSourceBoussinesq(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) {

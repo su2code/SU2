@@ -760,8 +760,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Apply a body force as a source term for periodic boundary conditions (NO, YES) */
   addBoolOption("PERIODIC_BC_BODY_FORCE", Periodic_BC_Body_Force, false);
-  /* DESCRIPTION: Delta pressure on which basis body force will be computed  */
-  addDoubleOption("DELTA_P_BODY_FORCE", DeltaP_BodyForce, 0.0);
+  /* DESCRIPTION: Delta pressure on which basis body force will be computed  */ // TK 1.0 is now the starting value for specified massflow, or simply the value that you specify
+  addDoubleOption("DELTA_P_BODY_FORCE", DeltaP_BodyForce, 1.0);
+  /* DESCRIPTION: Massflow basis body (via Delta P) force will be computed  */
+  addDoubleOption("STREAMWISE_PERIODIC_MASSFLOW", Streamwise_periodic_massflow, 0.0);
   
   /*!\brief RESTART_SOL \n DESCRIPTION: Restart solution from native solution file \n Options: NO, YES \ingroup Config */
   addBoolOption("RESTART_SOL", Restart, false);

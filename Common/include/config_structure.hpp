@@ -1055,6 +1055,7 @@ private:
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
   bool Periodic_BC_Body_Force; /*!< \brief Flag to know if a body force is included in the formulation, used for periodic BC as inlet & outlet. */
   su2double DeltaP_BodyForce;  /*!< \brief Value of prescribed pressure drop which results in an artificial body force vector. */
+  su2double Streamwise_periodic_massflow;  /*!< \brief Value of prescribed massflow which results in an delta p and therefore an artificial body force vector. */
   su2double *PeriodicRefNode_BodyForce; /*!< \brief Coordinates of the reference node on the receiving periodic marker, for recovered pressure computation only. Size nDim.*/
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
@@ -5997,10 +5998,22 @@ public:
   bool GetPeriodic_BC_Body_Force(void);
 
   /*!
-   * \brief Get a pointer to the pressure delta from which body force vector is computed.
+   * \brief Get the value of the pressure delta from which body force vector is computed.
    * \return Delta Pressure for body force computation.
    */
   su2double GetDeltaP_BodyForce(void);
+  
+  /*!
+   * \brief Set the value of the pressure delta from which body force vector is computed.
+   * \param[in] delta_p - pressure difference between in- and outlet.
+   */
+  void SetDeltaP_BodyForce(su2double delta_p);
+
+/*!
+   * \brief Get the value of the massflow from which body force vector is computed.
+   * \return Massflow for body force computation.
+   */
+  su2double GetStreamwise_periodic_massflow(void);
 
   /*!
    * \brief Get a pointer to the reference node coordinate vector.

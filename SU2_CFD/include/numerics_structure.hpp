@@ -5274,8 +5274,7 @@ public:
  */
 class CSourceIncPeriodicBodyForce : public CNumerics {
   bool implicit; /*!< \brief Implicit calculation. */
-  su2double *Body_Force_Vector; /*!< \brief Additional source term vector in streamwise periodic comp for the momentum equations. */
-
+  
 public:
 
   /*!

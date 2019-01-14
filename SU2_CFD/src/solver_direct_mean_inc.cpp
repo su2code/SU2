@@ -10877,7 +10877,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
   
   bool axisymmetric = config->GetAxisymmetric();
 
-  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0)
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*1)) == 0) // TK output at every iteration
                        && (config->GetExtIter()!= 0))
                       || (config->GetExtIter() == 1));
   
@@ -10896,9 +10896,10 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
   
   if (Evaluate_BC) {
     
-    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
-    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_MassFlow    = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Density     = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Temperature = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Area        = new su2double[config->GetnMarker_All()];
     
     /*--- Comute MassFlow, average temp, press, etc. ---*/
     
@@ -10906,6 +10907,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
       
       Outlet_MassFlow[iMarker] = 0.0;
       Outlet_Density[iMarker]  = 0.0;
+      Outlet_Temperature[iMarker]  = 0.0;
       Outlet_Area[iMarker]     = 0.0;
       
       if ((config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) ) {
@@ -10945,9 +10947,10 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             Temperature  = node[iPoint]->GetTemperature_Recovered();
             //cout << iPoint << "  " << Temperature << endl;
             
-            Outlet_MassFlow[iMarker] += MassFlow;
-            Outlet_Density[iMarker]  += Temperature*Area;
-            Outlet_Area[iMarker]     += Area;
+            Outlet_MassFlow[iMarker]    += MassFlow;
+            Outlet_Density[iMarker]     += Density*Area;
+            Outlet_Temperature[iMarker] += Temperature*Area;
+            Outlet_Area[iMarker]        += Area;
           }
         }
       }
@@ -10957,19 +10960,23 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     
     su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
     su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Temperature_Local  = new su2double[nMarker_Outlet];
     su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
     
     su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
     su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Temperature_Total  = new su2double[nMarker_Outlet];
     su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
     
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
       Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Temperature_Local[iMarker_Outlet]  = 0.0;
       Outlet_Area_Local[iMarker_Outlet]     = 0.0;
       
       Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
       Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Temperature_Total[iMarker_Outlet]  = 0.0;
       Outlet_Area_Total[iMarker_Outlet]     = 0.0;
     }
     
@@ -10983,6 +10990,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
             Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
             Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            Outlet_Temperature_Local[iMarker_Outlet]  += Outlet_Temperature[iMarker];
             Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
           }
         }
@@ -10995,6 +11003,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     
     SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Temperature_Local, Outlet_Temperature_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     
 #else
@@ -11002,6 +11011,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
       Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Temperature_Total[iMarker_Outlet]  = Outlet_Temperature_Local[iMarker_Outlet];
       Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
     }
     
@@ -11010,13 +11020,17 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
         Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
+        Outlet_Temperature_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
       }
       else {
         Outlet_Density_Total[iMarker_Outlet] = 0.0;
+        Outlet_Temperature_Total[iMarker_Outlet] = 0.0;
       }
       
       if (iMesh == MESH_0) {
         config->SetPeriodic_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]); // TK maybe use own function here, but otherwise no problem
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]); // TK maybe use own function here, but otherwise no problem
       }
     }
     
@@ -11024,7 +11038,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     // OPTION 3 compute energy Q via inlet and outlet bulk temperature, after FLuent way bulk tmep is not computed correctly
     // HARD CODED for 2 markers and the absolutr value should not be here!!! TDE
     su2double dT = 0.0;
-      dT = fabs(Outlet_Density_Total[1] - Outlet_Density_Total[0]);
+      dT = fabs(Outlet_Temperature_Total[1] - Outlet_Temperature_Total[0]); // TK !! Here was Density before  as the container was used for that
     
     if (iMesh == MESH_0) {
       if (config->GetExtIter() == 0) { config->SetPeriodic_HeatfluxIntegrated(3.1415); } // TK HARDCODED starting help with value from BC definition
@@ -11079,6 +11093,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
 
       Outlet_MassFlow[iMarker] = 0.0;
       Outlet_Density[iMarker]  = 0.0;
+      Outlet_Temperature[iMarker]  = 0.0;
       Outlet_Area[iMarker]     = 0.0;
 
       if ((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX) ) { // This if-clause can be omitted for OPTION 2 
@@ -11138,7 +11153,8 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
             /*--- END OPTIONS ---*/
             
             Outlet_MassFlow[iMarker] += MassFlow;
-            Outlet_Density[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
+            Outlet_Density[iMarker]  += Density*Area;
+            Outlet_Temperature[iMarker]  += Wall_HeatFlux*Area; // /Area added due to real GradTemperature (Heatflux) computation.
             Outlet_Area[iMarker]     += Area;
             
           }
@@ -11152,10 +11168,12 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
       Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Temperature_Local[iMarker_Outlet]  = 0.0;
       Outlet_Area_Local[iMarker_Outlet]     = 0.0;
 
       Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
       Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Temperature_Total[iMarker_Outlet]  = 0.0;
       Outlet_Area_Total[iMarker_Outlet]     = 0.0;
     }
 
@@ -11169,7 +11187,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
           if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
             Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
             Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
-            //cout << "Outlet_Density_Local: " << Outlet_Density_Local[iMarker_Outlet] << endl;
+            Outlet_Temperature_Local[iMarker_Outlet]  += Outlet_Temperature[iMarker];
             Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
           }
         }
@@ -11182,6 +11200,7 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
 
     SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Temperature_Local, Outlet_Temperature_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
 
 #else
@@ -11189,16 +11208,24 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
       Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
       Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Temperature_Total[iMarker_Outlet]  = Outlet_Temperature_Local[iMarker_Outlet];
       Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
     }
 
 #endif
-
+    
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-
+      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
+        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
+      }
+      else {
+        Outlet_Density_Total[iMarker_Outlet] = 0.0;
+      }
+      
       if (iMesh == MESH_0) {
         config->SetPeriodic_Heatflux(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
-        Heatflux_Integrated += Outlet_Density_Total[iMarker_Outlet];
+        //Heatflux_Integrated += Outlet_Density_Total[iMarker_Outlet]; // TK changing to dedicated T container
+        Heatflux_Integrated += Outlet_Temperature_Total[iMarker_Outlet];
       }
     }
 
@@ -11239,17 +11266,64 @@ void CIncEulerSolver::GetPeriodic_Properties(CGeometry *geometry, CConfig *confi
 
     }
 
+    /*--- Compute Update for Delta P if a massflow is prescribed for streamwise periodic BC ---*/
+    
+    if (config->GetStreamwise_periodic_massflow() != 0.0) {
+      
+      /*--- Load/define all necessary variables ---*/
+      
+      su2double Delta_P_old = config->GetDeltaP_BodyForce() / config->GetPressure_Ref(); // Nondimensionalize the dimensional cfg value
+      su2double Delta_P;
+      su2double Density_avg = config->GetOutlet_Density("outlet");
+      su2double Area = config->GetOutlet_Area("outlet");
+      su2double Massflow = config->GetPeriodic_MassFlow("outlet");
+      su2double target_Massflow = config->GetStreamwise_periodic_massflow()/(config->GetDensity_Ref() * config->GetVelocity_Ref()); // Nondimensionalize the dimensional cfg value
+      su2double ddP;
+      su2double Damping = config->GetInc_Outlet_Damping();
+      
+      /*--- Compute update to Delta p based on massflow-difference ---*/
+      ddP = 0.5 / ( Density_avg * Area*Area) * (target_Massflow*target_Massflow - Massflow*Massflow);
+      
+      /*--- Store updated pressure difference ---*/
+      Delta_P = Delta_P_old + Damping*ddP;
+      config->SetDeltaP_BodyForce(Delta_P);
+      
+      /*--- Output the new value of Delta P and ddp ---*/
+      
+      if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) { //TK Move whole computation up in front of output
+      
+        cout.precision(5);
+        cout.setf(ios::fixed, ios::floatfield);
+  
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+          cout << endl << "---------------------------- Streamwise periodic pressure: massflow update --------------------------" << endl;
+        }
+
+        cout << "Delta Delta P: " << ddP * config->GetPressure_Ref() << endl;
+        cout << "New Delta P: " << Delta_P * config->GetPressure_Ref() << endl;
+  
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
+          cout << "-------------------------------------------------------------------------" << endl << endl;
+        }
+  
+        cout.unsetf(ios_base::floatfield);
+
+      }
+    }
     
     delete [] Outlet_MassFlow_Local;
     delete [] Outlet_Density_Local;
+    delete [] Outlet_Temperature_Local;
     delete [] Outlet_Area_Local;
     
     delete [] Outlet_MassFlow_Total;
     delete [] Outlet_Density_Total;
+    delete [] Outlet_Temperature_Total;
     delete [] Outlet_Area_Total;
     
     delete [] Outlet_MassFlow;
     delete [] Outlet_Density;
+    delete [] Outlet_Temperature;
     delete [] Outlet_Area;
     
   }

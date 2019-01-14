@@ -1648,6 +1648,10 @@ inline su2double* CConfig::GetBody_Force_Vector(void) { return Body_Force_Vector
 
 inline su2double CConfig::GetDeltaP_BodyForce(void) { return DeltaP_BodyForce; }
 
+inline void CConfig::SetDeltaP_BodyForce(su2double delta_p) { DeltaP_BodyForce = delta_p; }
+
+inline su2double CConfig::GetStreamwise_periodic_massflow(void) { return Streamwise_periodic_massflow; }
+
 inline su2double* CConfig::GetPeriodicRefNode_BodyForce(void) { return PeriodicRefNode_BodyForce; }
 
 inline void CConfig::SetPeriodicRefNode_BodyForce(su2double* RefNode, unsigned short nDim) {
