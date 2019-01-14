@@ -336,6 +336,17 @@ def main():
     inc_buoyancy.tol       = 0.00001
     test_list.append(inc_buoyancy)
 
+    # Laminar heated cylinder with polynomial fluid model
+    inc_poly_cylinder          = TestCase('inc_poly_cylinder')
+    inc_poly_cylinder.cfg_dir   = "incomp_navierstokes/cylinder"
+    inc_poly_cylinder.cfg_file  = "poly_cylinder.cfg"
+    inc_poly_cylinder.test_iter = 20
+    inc_poly_cylinder.test_vals = [-8.108218, -2.158606, 0.019142, 1.902461] #last 4 columns
+    inc_poly_cylinder.su2_exec  = "SU2_CFD"
+    inc_poly_cylinder.timeout   = 1600
+    inc_poly_cylinder.tol       = 0.00001
+    test_list.append(inc_poly_cylinder)
+
     ############################
     ### Incompressible RANS  ###
     ############################
