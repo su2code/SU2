@@ -2873,7 +2873,7 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
   
   if (roe_low_diss == FD || roe_low_diss == FD_DUCROS){
     
-    Dissipation_ij = max(Min_Dissipation, 0.5 * (Dissipation_i + Dissipation_j));
+    Dissipation_ij = max(Min_Dissipation,1.0 - (0.5 * (Dissipation_i + Dissipation_j)));
 
     if (roe_low_diss == FD_DUCROS){
       
