@@ -825,6 +825,9 @@ inline void CSolver::ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **s
                                                CNumerics **numerics, CConfig *config,
                                                unsigned short iMesh, unsigned short RunTime_EqSystem) {}
 
+inline void CSolver::Compute_Average(CGeometry *geometry,  CSolver **solver_container,
+                                     CConfig *config,  unsigned short iMesh){}
+
 inline void CSolver::ComputeSpatialJacobian(CGeometry *geometry,  CSolver **solver_container,
                                             CNumerics **numerics, CConfig *config,
                                             unsigned short iMesh, unsigned short RunTime_EqSystem) {}
@@ -1007,6 +1010,10 @@ inline void CSolver::Copy_Zone_Solution(CSolver ***solver1_solution, CGeometry *
 inline CFluidModel* CSolver::GetFluidModel(void) { return NULL;}
 
 inline su2double* CSolver::GetVecSolDOFs(void) {return NULL;}
+
+inline su2double* CSolver::GetVecSolDOFsAve(void) {return NULL;}
+
+inline su2double* CSolver::GetVecSolDOFsPrime(void) {return NULL;}
 
 inline unsigned long CSolver::GetnDOFsGlobal(void) {return 0;}
 
@@ -1764,6 +1771,10 @@ inline void CNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsig
 inline CFluidModel* CFEM_DG_EulerSolver::GetFluidModel(void) { return FluidModel;}
 
 inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFs(void) {return VecSolDOFs.data();}
+
+inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFsAve(void) {return VecSolDOFsAve.data();}
+
+inline su2double* CFEM_DG_EulerSolver::GetVecSolDOFsPrime(void) {return VecSolDOFsPrime.data();}
 
 inline unsigned long CFEM_DG_EulerSolver::GetnDOFsGlobal(void) {return nDOFsGlobal;}
 

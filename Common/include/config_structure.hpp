@@ -1075,8 +1075,8 @@ private:
   bool Compute_Entropy;                      /*!< \brief Whether or not to compute the entropy in the fluid model. */
   bool Use_Lumped_MassMatrix_DGFEM;          /*!< \brief Whether or not to use the lumped mass matrix for DGFEM. */
   bool Jacobian_Spatial_Discretization_Only; /*!< \brief Flag to know if only the exact Jacobian of the spatial discretization must be computed. */
-  bool Compute_Average; /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
-  
+  bool Compute_Average;                      /*!< \brief Whether or not to compute averages for unsteady simulations in FV or DG solver. */
+  bool Restart_Average;                      /*!< \brief Whether or not to restart average process from a previous averaged solution. */
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
@@ -9035,6 +9035,12 @@ public:
    * \return YES if start computing averages
    */
   bool GetCompute_Average(void);
+ 
+  /*!
+   * \brief Get Restart Average.
+   * \return YES if restart computing averages
+   */
+  bool GetRestart_Average(void);
   
   /*!
    * \brief Get topology optimization.

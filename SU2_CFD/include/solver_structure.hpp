@@ -656,6 +656,16 @@ public:
    * \brief A virtual member.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  virtual void Compute_Average(CGeometry *geometry,  CSolver **solver_container,
+                               CConfig *config, unsigned short iMesh);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] numerics - Description of the numerical method.
    * \param[in] config - Definition of the particular problem.
    * \param[in] iMesh - Index of the mesh in multigrid computations.
@@ -4006,6 +4016,16 @@ public:
    * \brief A virtual member.
    */
   virtual su2double* GetVecSolDOFs(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double* GetVecSolDOFsAve(void);
+
+  /*!
+   * \brief A virtual member.
+   */
+  virtual su2double* GetVecSolDOFsPrime(void);
 
   /*!
    * \brief A virtual member.
@@ -13367,6 +13387,9 @@ protected:
 
   vector<su2double> VecSolDOFs;    /*!< \brief Vector, which stores the solution variables in the owned DOFs. */
   vector<su2double> VecSolDOFsNew; /*!< \brief Vector, which stores the new solution variables in the owned DOFs (needed for classical RK4 scheme). */
+  vector<su2double> VecSolDOFsAve; /*!< \brief Vector, which stores the average solution variables in the owned DOFs (needed for compute average process). */
+  vector<su2double> VecSolDOFsPrime; /*!< \brief Vector, which stores the prime average solution variables in the owned DOFs (needed for compute average process). */
+  
   vector<su2double> VecDeltaTime;  /*!< \brief Vector, which stores the time steps of the owned volume elements. */
 
   vector<su2double> VecSolDOFsPredictorADER; /*!< \brief Vector, which stores the ADER predictor solution in the owned
@@ -13502,6 +13525,18 @@ public:
    * \return Pointer to the vector of the solution degrees of freedom.
    */
   su2double* GetVecSolDOFs(void);
+  
+  /*!
+   * \brief Get a pointer to the vector of the average of the solution degrees of freedom.
+   * \return Pointer to the vector of the average of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFsAve(void);
+
+  /*!
+   * \brief Get a pointer to the vector of the prime average of the solution degrees of freedom.
+   * \return Pointer to the vector of the prime average of the solution degrees of freedom.
+   */
+  su2double* GetVecSolDOFsPrime(void);
 
   /*!
    * \brief Get the global number of solution degrees of freedom for the calculation.
@@ -13644,6 +13679,16 @@ public:
   void ADER_SpaceTimeIntegration(CGeometry *geometry,  CSolver **solver_container,
                                  CNumerics **numerics, CConfig *config,
                                  unsigned short iMesh, unsigned short RunTime_EqSystem);
+  
+  /*!
+   * \brief Function to carry out the statistical average process.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iMesh - Index of the mesh in multigrid computations.
+   */
+  void Compute_Average(CGeometry *geometry,  CSolver **solver_container, CConfig *config,
+                       unsigned short iMesh);
 
   /*!
    * \brief Function, which controls the computation of the spatial Jacobian.
@@ -14083,7 +14128,7 @@ public:
    * \param[in] val_update_geo - Flag for updating coords and grid velocity.
    */
   void LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo);
-
+  
   /*!
    * \brief Provide the non dimensional lift coefficient (inviscid contribution).
    * \param val_marker Surface where the coefficient is going to be computed.
