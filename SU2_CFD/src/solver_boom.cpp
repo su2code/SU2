@@ -1709,12 +1709,12 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   /*---Predictor---*/
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
 
-    AD::StartPreacc();
-    AD::SetPreaccIn(signal.P[i]);
-    AD::SetPreaccIn(signal.P[i+1]);
-    AD::SetPreaccIn(signal.P[i-1]);
-    AD::SetPreaccIn(dsigma);
-    AD::SetPreaccIn(dtau);
+    //AD::StartPreacc();
+    //AD::SetPreaccIn(signal.P[i]);
+    //AD::SetPreaccIn(signal.P[i+1]);
+    //AD::SetPreaccIn(signal.P[i-1]);
+    //AD::SetPreaccIn(dsigma);
+    //AD::SetPreaccIn(dtau);
       
     p_i = signal.P[i];
     p_ip = signal.P[i+1];
@@ -1734,8 +1734,8 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
 
     Ptmp[i] = p_i - dsigma/(2.*dtau)*(f_ip - f_im);
       
-    AD::SetPreaccOut(Ptmp[i]);
-    AD::EndPreacc();
+    //AD::SetPreaccOut(Ptmp[i]);
+    //AD::EndPreacc();
 
   }
   Ptmp[0] = signal.P[0];
@@ -1745,14 +1745,14 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
   su2double p_iml, p_imr, p_ipl, p_ipr, f_l, f_r;
   for(unsigned long i = 2; i < signal.len[iPhi]-2; i++){
       
-    AD::StartPreacc();
-    AD::SetPreaccIn(signal.P[i]);
-    AD::SetPreaccIn(Ptmp[i]);
-    AD::SetPreaccIn(Ptmp[i+1]);
-    AD::SetPreaccIn(Ptmp[i-1]);
-    AD::SetPreaccIn(Ptmp[i-2]);
-    AD::SetPreaccIn(dsigma);
-    AD::SetPreaccIn(dtau);
+    //AD::StartPreacc();
+    //AD::SetPreaccIn(signal.P[i]);
+    //AD::SetPreaccIn(Ptmp[i]);
+    //AD::SetPreaccIn(Ptmp[i+1]);
+    //AD::SetPreaccIn(Ptmp[i-1]);
+    //AD::SetPreaccIn(Ptmp[i-2]);
+    //AD::SetPreaccIn(dsigma);
+    //AD::SetPreaccIn(dtau);
 
     p_iml = Ptmp[i-1] + 0.5*(Ptmp[i-1]-Ptmp[i-2]);
     p_imr = Ptmp[i] - 0.5*(Ptmp[i]-Ptmp[i-1]);
@@ -1772,8 +1772,8 @@ void CBoom_AugBurgers::Nonlinearity(unsigned short iPhi){
     f_ip = 0.5*(f_l + f_r - abs(A_ip)*(p_ipr - p_ipl));
 
     signal.P[i] = signal.P[i] - dsigma/dtau*(f_ip - f_im);
-    AD::SetPreaccOut(signal.P[i]);
-    AD::EndPreacc();
+    //AD::SetPreaccOut(signal.P[i]);
+    //AD::EndPreacc();
 
   }
 
@@ -1793,16 +1793,16 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
   /*---Tridiagonal matrix-vector multiplication B_tv * Pk (see Cleveland thesis)---*/
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
       
-    AD::StartPreacc();
-    AD::SetPreaccIn(signal.P[i]);
-    AD::SetPreaccIn(signal.P[i+1]);
-    AD::SetPreaccIn(signal.P[i-1]);
-    AD::SetPreaccIn(lambda);
+    //AD::StartPreacc();
+    //AD::SetPreaccIn(signal.P[i]);
+    //AD::SetPreaccIn(signal.P[i+1]);
+    //AD::SetPreaccIn(signal.P[i-1]);
+    //AD::SetPreaccIn(lambda);
 
     y[i] = alpha_p*lambda*(signal.P[i+1]+signal.P[i-1]) + (1.-2.*alpha_p*lambda)*signal.P[i];
       
-    AD::SetPreaccOut(y[i]);
-    AD::EndPreacc();
+    //AD::SetPreaccOut(y[i]);
+    //AD::EndPreacc();
 
   }
 
@@ -1814,18 +1814,18 @@ void CBoom_AugBurgers::Attenuation(unsigned short iPhi){
   di[0] = signal.P[0];
   for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
       
-    AD::StartPreacc();
-    AD::SetPreaccIn(y[i]);
-    AD::SetPreaccIn(ci[i-1]);
-    AD::SetPreaccIn(di[i-1]);
-    AD::SetPreaccIn(lambda);
+    //AD::StartPreacc();
+    //AD::SetPreaccIn(y[i]);
+    //AD::SetPreaccIn(ci[i-1]);
+    //AD::SetPreaccIn(di[i-1]);
+    //AD::SetPreaccIn(lambda);
 
     ci[i] = -alpha*lambda/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
     di[i] = (y[i] + alpha*lambda*di[i-1])/((1.+2.*alpha*lambda) + alpha*lambda*ci[i-1]);
       
-    AD::SetPreaccOut(ci[i]);
-    AD::SetPreaccOut(di[i]);
-    AD::EndPreacc();
+    //AD::SetPreaccOut(ci[i]);
+    //AD::SetPreaccOut(di[i]);
+    //AD::EndPreacc();
 
   }
 
@@ -1855,32 +1855,32 @@ void CBoom_AugBurgers::Relaxation(unsigned short iPhi, unsigned long iIter){
     /*---Tridiagonal matrix-vector multiplication B_nu * Pk (see Cleveland thesis)---*/
     for(unsigned long i = 1; i < signal.len[iPhi]-1; i++){
         
-      AD::StartPreacc();
-      AD::SetPreaccIn(signal.P[i]);
-      AD::SetPreaccIn(signal.P[i+1]);
-      AD::SetPreaccIn(signal.P[i-1]);
-      AD::SetPreaccIn(lambda[j]);
-      AD::SetPreaccIn(mur[j]);
+      //AD::StartPreacc();
+      //AD::SetPreaccIn(signal.P[i]);
+      //AD::SetPreaccIn(signal.P[i+1]);
+      //AD::SetPreaccIn(signal.P[i-1]);
+      //AD::SetPreaccIn(lambda[j]);
+      //AD::SetPreaccIn(mur[j]);
 
       y[i] = (alpha_p*lambda[j]-mur[j])*signal.P[i-1] + (1.-2.*alpha_p*lambda[j])*signal.P[i] + (alpha_p*lambda[j]+mur[j])*signal.P[i+1];
         
-      AD::SetPreaccOut(y[i]);
-      AD::EndPreacc();
+      //AD::SetPreaccOut(y[i]);
+      //AD::EndPreacc();
 
     }
     
-    AD::StartPreacc();
-    AD::SetPreaccIn(lambda[j]);
-    AD::SetPreaccIn(mur[j]);
+    //AD::StartPreacc();
+    //AD::SetPreaccIn(lambda[j]);
+    //AD::SetPreaccIn(mur[j]);
       
     a = -(alpha*lambda[j] + mur[j]);
     b = 1. + 2.*alpha*lambda[j];
     c = -(alpha*lambda[j] - mur[j]);
       
-    AD::SetPreaccOut(a);
-    AD::SetPreaccOut(b);
-    AD::SetPreaccOut(c);
-    AD::EndPreacc();
+    //AD::SetPreaccOut(a);
+    //AD::SetPreaccOut(b);
+    //AD::SetPreaccOut(c);
+    //AD::EndPreacc();
     
     /*---Solve for Pk+1 via Thomas algorithm for tridiagonal matrix---*/
     ci  = new su2double[signal.len[iPhi]-1];
