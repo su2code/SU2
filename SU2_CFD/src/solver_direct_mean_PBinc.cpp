@@ -3859,7 +3859,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	
 	/*------- Rhie-Chow interpolation ---------*/
 	
-	dist_ij = 0; proj_vector_ij = 0;
+	dist_ij = 0; proj_vector_ij = 0; dist_ij_2 = 0.0;
     Coord_i = geometry->node[iPoint]->GetCoord();
     Coord_j = geometry->node[jPoint]->GetCoord();
 	for (iDim = 0; iDim < nDim; iDim++) {
@@ -4007,8 +4007,6 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
   ResMassFlux = sqrt(ResMassFlux);
   
   Criteria = 1.0e-7;
-  
-  //cout<<"Mass flux: "<<log10(ResMassFlux)<<endl;
 }
 
 
@@ -4518,11 +4516,11 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   Gamma_Minus_One = Gamma - 1.0;
   
   /*--- Define geometry constants in the solver structure
-   * Incompressible flow, primitive variables (P, vx, vy, vz, rho, lamMu, EddyMu, Kt_eff, Cp, Cv) --- */
+   * Incompressible flow, primitive variables (P, vx, vy, vz, rho, lamMu, EddyMu) --- */
 
   nDim = geometry->GetnDim();
   
-  nVar = nDim; nPrimVar = nDim+7; nPrimVarGrad = nDim+2;
+  nVar = nDim; nPrimVar = nDim+4; nPrimVarGrad = nDim+2;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -4656,22 +4654,6 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
     }
   }
 
-  /*--- Store the values of the temperature and the heat flux density at the boundaries,
-   used for coupling with a solid donor cell ---*/
-  unsigned short nHeatConjugateVar = 4;
-
-  HeatConjugateVar = new su2double** [nMarker];
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    HeatConjugateVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
-    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-
-      HeatConjugateVar[iMarker][iVertex] = new su2double [nHeatConjugateVar];
-      for (iVar = 1; iVar < nHeatConjugateVar ; iVar++) {
-        HeatConjugateVar[iMarker][iVertex][iVar] = 0.0;
-      }
-      HeatConjugateVar[iMarker][iVertex][0] = config->GetTemperature_FreeStreamND();
-    }
-  }
   
   /*--- Inviscid force definition and coefficient in all the markers ---*/
   
@@ -4718,6 +4700,39 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
       CSkinFriction[iMarker][iDim] = new su2double[geometry->nVertex[iMarker]];
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         CSkinFriction[iMarker][iDim][iVertex] = 0.0;
+      }
+    }
+  }
+  
+  /*--- Store the value of the Total Pressure at the inlet BC ---*/
+  
+  Inlet_Ttotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ttotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ttotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Total Temperature at the inlet BC ---*/
+  
+  Inlet_Ptotal = new su2double* [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_Ptotal[iMarker] = new su2double [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_Ptotal[iMarker][iVertex] = 0;
+    }
+  }
+  
+  /*--- Store the value of the Flow direction at the inlet BC ---*/
+  
+  Inlet_FlowDir = new su2double** [nMarker];
+  for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    Inlet_FlowDir[iMarker] = new su2double* [geometry->nVertex[iMarker]];
+    for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+      Inlet_FlowDir[iMarker][iVertex] = new su2double [nDim];
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Inlet_FlowDir[iMarker][iVertex][iDim] = 0;
       }
     }
   }
@@ -4823,11 +4838,6 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   CMerit_Visc      = new su2double[nMarker];
   CT_Visc          = new su2double[nMarker];
   CQ_Visc          = new su2double[nMarker];
-  
-  /*--- Heat based coefficients ---*/
-
-  HF_Visc    = new su2double[nMarker];
-  MaxHF_Visc = new su2double[nMarker];
 
   /*--- Init total coefficients ---*/
 
@@ -4852,7 +4862,6 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   
   Density_Inf     = config->GetDensity_FreeStreamND();
   Pressure_Inf    = config->GetPressure_FreeStreamND();
-  Temperature_Inf = config->GetTemperature_FreeStreamND();
   Velocity_Inf    = config->GetVelocity_FreeStreamND();
   Viscosity_Inf   = config->GetViscosity_FreeStreamND();
   Tke_Inf         = config->GetTke_FreeStreamND();
@@ -4891,7 +4900,7 @@ CPBIncNSSolver::CPBIncNSSolver(CGeometry *geometry, CConfig *config, unsigned sh
   /*--- Initialize the solution to the far-field state everywhere. ---*/
 
   for (iPoint = 0; iPoint < nPoint; iPoint++)
-    node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
+    node[iPoint] = new CPBIncNSVariable(Pressure_Inf, Velocity_Inf, nDim, nVar, config);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
   if (fsi){
@@ -4988,6 +4997,148 @@ CPBIncNSSolver::~CPBIncNSSolver(void) {
   
 }
 
+void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+	
+	  unsigned long iPoint, ErrorCounter = 0;
+  su2double StrainMag = 0.0, Omega = 0.0, *Vorticity;
+  
+  unsigned long ExtIter     = config->GetExtIter();
+  bool cont_adjoint         = config->GetContinuous_Adjoint();
+  bool disc_adjoint         = config->GetDiscrete_Adjoint();
+  bool implicit             = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool center               = ((config->GetKind_ConvNumScheme_Flow() == SPACE_CENTERED) || (cont_adjoint && config->GetKind_ConvNumScheme_AdjFlow() == SPACE_CENTERED));
+  bool center_jst           = center && config->GetKind_Centered_Flow() == JST;
+  bool limiter_flow         = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
+  bool fixed_cl             = config->GetFixed_CL_Mode();
+  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+
+  /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
+  
+  if ((fixed_cl) && (!disc_adjoint) && (!cont_adjoint)) { SetFarfield_AoA(geometry, solver_container, config, iMesh, Output); }
+  
+  /*--- Set the primitive variables ---*/
+  
+  ErrorCounter = SetPrimitive_Variables(solver_container, config, Output);
+  
+  /*--- Artificial dissipation ---*/
+  
+  if (center && !Output) {
+    SetMax_Eigenvalue(geometry, config);
+    if ((center_jst) && (iMesh == MESH_0)) {
+      SetCentered_Dissipation_Sensor(geometry, config);
+      SetUndivided_Laplacian(geometry, config);
+    }
+  }
+  
+  /*--- Compute gradient of the primitive variables ---*/
+  
+  if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
+    SetPrimitive_Gradient_GG(geometry, config);
+  }
+  if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) {
+    SetPrimitive_Gradient_LS(geometry, config);
+  }
+
+  /*--- Compute the limiter in case we need it in the turbulence model
+   or to limit the viscous terms (check this logic with JST and 2nd order turbulence model) ---*/
+
+  if ((iMesh == MESH_0) && (limiter_flow || limiter_turb || limiter_adjflow)
+      && !Output && !van_albada) { SetPrimitive_Limiter(geometry, config); }
+  
+  /*--- Update the beta value based on the maximum velocity / viscosity. ---*/
+
+  SetBeta_Parameter(geometry, solver_container, config, iMesh);
+
+  /*--- Evaluate the vorticity and strain rate magnitude ---*/
+  
+  StrainMag_Max = 0.0; Omega_Max = 0.0;
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    solver_container[FLOW_SOL]->node[iPoint]->SetVorticity();
+    solver_container[FLOW_SOL]->node[iPoint]->SetStrainMag();
+    
+    StrainMag = solver_container[FLOW_SOL]->node[iPoint]->GetStrainMag();
+    Vorticity = solver_container[FLOW_SOL]->node[iPoint]->GetVorticity();
+    Omega = sqrt(Vorticity[0]*Vorticity[0]+ Vorticity[1]*Vorticity[1]+ Vorticity[2]*Vorticity[2]);
+    
+    StrainMag_Max = max(StrainMag_Max, StrainMag);
+    Omega_Max = max(Omega_Max, Omega);
+    
+  }
+  
+  /*--- Initialize the Jacobian matrices ---*/
+  
+  if (implicit && !disc_adjoint) Jacobian.SetValZero();
+
+  /*--- Error message ---*/
+  
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+    
+#ifdef HAVE_MPI
+    unsigned long MyErrorCounter = ErrorCounter; ErrorCounter = 0;
+    su2double MyOmega_Max = Omega_Max; Omega_Max = 0.0;
+    su2double MyStrainMag_Max = StrainMag_Max; StrainMag_Max = 0.0;
+    
+    SU2_MPI::Allreduce(&MyErrorCounter, &ErrorCounter, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyStrainMag_Max, &StrainMag_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(&MyOmega_Max, &Omega_Max, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+#endif
+
+    if (iMesh == MESH_0) {
+      config->SetNonphysical_Points(ErrorCounter);
+      solver_container[FLOW_SOL]->SetStrainMag_Max(StrainMag_Max);
+      solver_container[FLOW_SOL]->SetOmega_Max(Omega_Max);
+    }
+    
+  }
+  
+}
+
+
+unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
+	
+  
+  unsigned long iPoint, ErrorCounter = 0;
+  su2double eddy_visc = 0.0, turb_ke = 0.0, DES_LengthScale = 0.0;
+  unsigned short turb_model = config->GetKind_Turb_Model();
+  bool physical = true;
+  
+  bool tkeNeeded = false;
+  
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    
+    /*--- Retrieve the value of the kinetic energy (if needed) ---*/
+    
+    if (turb_model != NONE) {
+      eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
+      if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
+
+    }
+    
+    /*--- Initialize the non-physical points vector ---*/
+    
+    node[iPoint]->SetNon_Physical(false);
+    
+    /*--- Incompressible flow, primitive variables --- */
+
+    physical = node[iPoint]->SetPrimVar(Density_Inf, eddy_visc, turb_ke, FluidModel);
+    
+    /*--- Record any non-physical points. ---*/
+
+    if (!physical) { node[iPoint]->SetNon_Physical(true); ErrorCounter++; }
+
+    /*--- Initialize the convective, source and viscous residual vector ---*/
+    
+    if (!Output) LinSysRes.SetBlock_Zero(iPoint);
+    
+  }
+
+  return ErrorCounter;
+	
+	
+}
 
 
 void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -5013,11 +5164,6 @@ void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_cont
 }
 
 
-void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
-	
-}
 
 
-unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
-	
-}
+

@@ -339,6 +339,8 @@ inline bool CVariable::SetPrimVar(su2double Density_Inf, CConfig *config) { retu
 
 inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double Viscosity_Inf, su2double eddy_visc, su2double turb_ke, CConfig *config) { return true; }
 
+inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel) {return true;}
+
 inline su2double CVariable::GetPrimitive(unsigned short val_var) { return 0; }
 
 inline su2double *CVariable::GetPrimitive(void) { return NULL; }
@@ -1150,6 +1152,29 @@ inline void CIncNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nD
 inline void CIncNSVariable::SetThermalConductivity(su2double val_thermal_conductivity) {
   Primitive[nDim+6] = val_thermal_conductivity;
 }
+//------------------------------------------------------------------------------------------------------------------------------------------------------//
+
+
+inline su2double CPBIncNSVariable::GetEddyViscosity(void) { return Primitive[nDim+5]; }
+
+inline su2double CPBIncNSVariable::GetLaminarViscosity(void) { return Primitive[nDim+4]; }
+
+inline su2double CPBIncNSVariable::GetThermalConductivity(void) { return Primitive[nDim+6]; }
+
+inline su2double* CPBIncNSVariable::GetVorticity(void) { return Vorticity; }
+
+inline su2double CPBIncNSVariable::GetStrainMag(void) { return StrainMag; }
+
+inline void CPBIncNSVariable::SetLaminarViscosity(su2double val_laminar_viscosity_inc) { Primitive[nDim+4] = val_laminar_viscosity_inc; }
+
+inline void CPBIncNSVariable::SetEddyViscosity(su2double eddy_visc) { Primitive[nDim+5] = eddy_visc; }
+
+inline void CPBIncNSVariable::SetThermalConductivity(su2double val_thermal_conductivity) {
+  Primitive[nDim+6] = val_thermal_conductivity;
+}
+
+//------------------------------------------------------------------------------------------------------------------------------------------------------//
+
 
 inline su2double CTransLMVariable::GetIntermittency() { return Solution[0]; }
 

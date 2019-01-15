@@ -967,7 +967,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iVar = 0; iVar < nVar; iVar++) {
     SetRes_RMS(iVar, 0.0);
     SetRes_Max(iVar, 0.0, 0);
-    //local_Res_TruncError[iVar] = 0.0;
   }
    
 	/*--- Initialize residual and solution at the ghost points ---*/
@@ -975,7 +974,7 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 	  
 	 /*--- Read the residual ---*/
-     //if (config->GetnMGLevels() > 0) local_Res_TruncError = node[iPoint]->GetResTruncError();
+     if (config->GetnMGLevels() > 0) local_Res_TruncError = node[iPoint]->GetResTruncError();
 
 	/*--- Read the volume ---*/
 
@@ -985,7 +984,6 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 
     if (node[iPoint]->GetDelta_Time() != 0.0) {
       Delta = Vol / node[iPoint]->GetDelta_Time();
-      //cout<<node[iPoint]->GetDelta_Time()<<endl;
       Jacobian.AddVal2Diag(iPoint, Delta);
      }
     else {
@@ -1001,7 +999,8 @@ void CPoissonSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
 	/*--- Right hand side of the system (-Residual) and initial guess (x = 0) ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
       total_index = iPoint*nVar+iVar;
-      LinSysRes[total_index] = - (LinSysRes[total_index] );//+ local_Res_TruncError[iVar] );
+      //LinSysRes[total_index] = - (LinSysRes[total_index] + local_Res_TruncError[iVar] );
+      LinSysRes[total_index] = - (LinSysRes[total_index]);
       LinSysSol[total_index] = 0.0;
       AddRes_RMS(iVar, LinSysRes[total_index]*LinSysRes[total_index]);
       AddRes_Max(iVar, fabs(LinSysRes[total_index]), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());

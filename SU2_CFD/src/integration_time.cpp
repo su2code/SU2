@@ -69,6 +69,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER)            ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)               ||
                        (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
+  const bool turb = ((config[iZone]->GetKind_Solver() == RANS)                         ||
+					 (config[iZone]->GetKind_Solver() == FEM_RANS)                     ||
+					 (config[iZone]->GetKind_Solver() == DISC_ADJ_RANS));
   const unsigned short SolContainer_Position = config[iZone]->GetContainerPosition(RunTime_EqSystem);
   unsigned short RecursiveParam = config[iZone]->GetMGCycle();
   
@@ -88,9 +91,9 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
                              solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position],
                              geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
       
-      SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
+      if (turb) SetRestricted_Solution(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
       
-      SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
+      if (turb) SetRestricted_EddyVisc(RUNTIME_TURB_SYS, solver_container[iZone][iInst][iMGLevel][SolContainer_Position], solver_container[iZone][iInst][iMGLevel+1][SolContainer_Position], geometry[iZone][iInst][iMGLevel], geometry[iZone][iInst][iMGLevel+1], config[iZone]);
       
     }
   }
@@ -110,7 +113,6 @@ void CMultiGridIntegration::MultiGrid_Iteration(CGeometry ****geometry,
   FinestMesh = config[iZone]->GetFinestMesh();
 
   /*--- Perform the Full Approximation Scheme multigrid ---*/
-  
   MultiGrid_Cycle(geometry, solver_container, numerics_container, config,
                   FinestMesh, RecursiveParam, RunTime_EqSystem,
                   Iteration, iZone, iInst);
@@ -176,7 +178,6 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
           solver_container[iZone][iInst][iMesh][SolContainer_Position]->Set_NewSolution(geometry[iZone][iInst][iMesh]);
 
         /*--- Compute time step, max eigenvalue, and integration scheme (steady and unsteady problems) ---*/
-        
         solver_container[iZone][iInst][iMesh][SolContainer_Position]->SetTime_Step(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iMesh, Iteration);
         
         /*--- Restrict the solution and gradient for the adjoint problem ---*/
@@ -185,12 +186,10 @@ void CMultiGridIntegration::MultiGrid_Cycle(CGeometry ****geometry,
         
       }
       
-      /*--- Space integration ---*/
-      
+      /*--- Space integration ---*/      
       Space_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], numerics_container[iZone][iInst][iMesh][SolContainer_Position], config[iZone], iMesh, iRKStep, RunTime_EqSystem);
       
       /*--- Time integration, update solution using the old solution plus the solution increment ---*/
-      
       Time_Integration(geometry[iZone][iInst][iMesh], solver_container[iZone][iInst][iMesh], config[iZone], iRKStep, RunTime_EqSystem, Iteration);
       
       /*--- Send-Receive boundary conditions, and postprocessing ---*/

@@ -1154,11 +1154,6 @@ void CPBFluidIteration::Iterate(COutput *output,
     
     /*--- Set the prmitive value based on updated solution ---*/
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Postprocessing(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], MESH_0);
-    
-    
-    /*--- Set source term for pressure correction equation based on current flow solution ---*/
-    //solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetPoissonSourceTerm(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
-    
       
   /*--- Write the convergence history ---*/
 

@@ -1293,7 +1293,15 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
       if (incompressible) {
-        solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+        if (pressure_based) {
+			solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CPBIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
+			solver_container[val_iInst][iMGlevel][FLOW_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+			solver_container[val_iInst][iMGlevel][POISSON_SOL] = new CPoissonSolverFVM(geometry[val_iInst][iMGlevel], config);
+			solver_container[val_iInst][iMGlevel][POISSON_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    	    cout<<"Pressure based."<<endl;
+    	}
+		else
+			solver_container[val_iInst][iMGlevel][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
       }
       if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
     }
@@ -1834,7 +1842,10 @@ void CDriver::Integration_Preprocessing(CIntegration ***integration_container,
   if (euler && pressure_based) { 
 	  integration_container[val_iInst][FLOW_SOL] = new CSingleGridIntegration(config);
 	  integration_container[val_iInst][POISSON_SOL] = new CSingleGridIntegration(config);
-	  cout<<"Should print this."<<endl;
+  }
+  if (ns && pressure_based) { 
+	  integration_container[val_iInst][FLOW_SOL] = new CSingleGridIntegration(config);
+	  integration_container[val_iInst][POISSON_SOL] = new CSingleGridIntegration(config);
   }
 
   /*--- Allocate integration container for finite element flow solver. ---*/
@@ -2007,7 +2018,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
     }
     
-  if (euler && pressure_based) poisson = true;
+  if (pressure_based) poisson = true;
   
   /*--- Number of variables for the template ---*/
   
@@ -2306,14 +2317,26 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       }
     }
     if (incompressible) {
-      /*--- Incompressible flow, use preconditioning method ---*/
-      numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedInc_Flow(nDim, nVar_Flow, config);
-      for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
-      
-      /*--- Definition of the boundary condition method ---*/
-      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-        numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+		if (pressure_based)  {
+			/*--- Incompressible flow, use pressure based method ---*/
+			numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedPBInc_Flow(nDim, nVar_Flow, config);
+			for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+			  numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, config);
+			  
+			/*--- Definition of the boundary condition method ---*/
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradPBInc_Flow(nDim, nVar_Flow, config);			
+		}
+		else {
+			/*--- Incompressible flow, use preconditioning method ---*/
+			numerics_container[val_iInst][MESH_0][FLOW_SOL][VISC_TERM] = new CAvgGradCorrectedInc_Flow(nDim, nVar_Flow, config);
+			for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+			  numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+			  
+			/*--- Definition of the boundary condition method ---*/
+            for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+              numerics_container[val_iInst][iMGlevel][FLOW_SOL][VISC_BOUND_TERM] = new CAvgGradInc_Flow(nDim, nVar_Flow, config);
+		  }
     }
     
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
@@ -2498,14 +2521,16 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
  /*--- Solver definition for the poisson/pressure correction problem ---*/
   if (poisson) {
 		  /*--- Pressure correction (Poisson) equation ---*/
-           numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
-		   numerics_container[val_iInst][MESH_0][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+           numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
+		   numerics_container[val_iInst][iMGlevel][POISSON_SOL][VISC_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 		   /*--- Assign the convective boundary term as well to account for flow BCs as well --*/
 		   numerics_container[val_iInst][MESH_0][POISSON_SOL][CONV_BOUND_TERM] = new CAvgGrad_Poisson(nDim, nVar_Poisson, config);
 
  		  /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
-		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
-		   numerics_container[val_iInst][MESH_0][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+		   numerics_container[val_iInst][iMGlevel][POISSON_SOL][SOURCE_FIRST_TERM] = new CSource_PoissonFVM(nDim, nVar_Poisson, config);
+		   numerics_container[val_iInst][iMGlevel][POISSON_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Poisson, config);
+	   }
   }
 
   /*--- Solver definition of the finite volume heat solver  ---*/

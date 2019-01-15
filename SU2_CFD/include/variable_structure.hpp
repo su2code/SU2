@@ -1172,8 +1172,7 @@ public:
   /*!
    * \brief A virtual member.
    */
-  //virtual bool SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config);
-  //inline bool CVariable::SetPrimVar(su2double Density_Inf, su2double pressure_val, CConfig *config) {return true;}
+  virtual bool SetPrimVar(su2double Density_Inf, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
   
   /*!
    * \brief A virtual member.
@@ -4459,6 +4458,118 @@ public:
   su2double GetDES_LengthScale(void);
   
 };
+//------------------------------------------------------------------------------------
+
+//------------------------------------------------------------------------------------
+/*!
+ * \class CPBIncNSVariable
+ * \brief Main class for defining the variables of the incompressible Navier-Stokes solver.
+ * \ingroup Navier_Stokes_Equations
+ */
+class CPBIncNSVariable : public CPBIncEulerVariable {
+private:
+  su2double Vorticity[3];    /*!< \brief Vorticity of the fluid. */
+  su2double StrainMag;       /*!< \brief Magnitude of rate of strain tensor. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   */
+  CPBIncNSVariable(void);
+  
+  /*!
+   * \overload
+   * \param[in] val_pressure - value of the pressure.
+   * \param[in] val_velocity - Value of the flow velocity (initialization value).
+   * \param[in] val_temperature - Value of the temperature (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPBIncNSVariable(su2double val_pressure, su2double *val_velocity, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \overload
+   * \param[in] val_solution - Pointer to the flow value (initialization value).
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nvar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CPBIncNSVariable(su2double *val_solution, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CPBIncNSVariable(void);
+  
+  /*!
+   * \brief Set the laminar viscosity.
+   */
+  void SetLaminarViscosity(su2double laminarViscosity);
+  
+  /*!
+   * \brief Set the vorticity value.
+   */
+  bool SetVorticity(void);
+  
+  /*!
+   * \brief Set the rate of strain magnitude.
+   */
+  bool SetStrainMag(void);
+  
+  /*!
+   * \overload
+   * \param[in] eddy_visc - Value of the eddy viscosity.
+   */
+  void SetEddyViscosity(su2double eddy_visc);
+  
+  /*!
+   * \brief Get the laminar viscosity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetLaminarViscosity(void);
+  
+  /*!
+   * \brief Get the eddy viscosity of the flow.
+   * \return The eddy viscosity of the flow.
+   */
+  su2double GetEddyViscosity(void);
+  
+  /*!
+   * \brief Set the thermal conductivity.
+   */
+  void SetThermalConductivity(su2double thermalConductivity);
+
+  /*!
+   * \brief Get the thermal conductivity of the flow.
+   * \return Value of the laminar viscosity of the flow.
+   */
+  su2double GetThermalConductivity(void);
+
+  /*!
+   * \brief Get the value of the vorticity.
+   * \param[in] val_dim - Index of the dimension.
+   * \return Value of the vorticity.
+   */
+  su2double *GetVorticity(void);
+  
+  /*!
+   * \brief Get the value of the magnitude of rate of strain.
+   * \return Value of the rate of strain magnitude.
+   */
+  su2double GetStrainMag(void);
+  
+  /*!
+   * \brief Set all the primitive variables for incompressible flows
+   */
+  bool SetPrimVar(su2double Density_Inf, su2double eddy_visc, su2double turb_ke, CFluidModel *FluidModel);
+  using CVariable::SetPrimVar;
+    
+};
+//------------------------------------------------------------------------------------
+//------------------------------------------------------------------------------------
+
 
 /*!
  * \class CTurbVariable
