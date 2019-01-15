@@ -626,9 +626,13 @@ void CFluidIteration::Iterate(COutput *output,
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
-  integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+  if (config_container[val_iZone]->GetKind_Solver() != TNE2_EULER){
+    integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone, val_iInst);
-  
+  }else{
+    integration_container[val_iZone][val_iInst][TNE2_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
+                                                                  config_container, RUNTIME_TNE2_SYS, IntIter, val_iZone, val_iInst);
+  }
   if ((config_container[val_iZone]->GetKind_Solver() == RANS) ||
       ((config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS) && !frozen_visc)) {
     
@@ -1188,14 +1192,23 @@ void CFEMFluidIteration::Iterate(COutput *output,
     config_container[val_iZone]->SetGlobalParam(FEM_LES, RUNTIME_FLOW_SYS, ExtIter);
   
   /*--- Solve the Euler, Navier-Stokes, RANS or LES equations (one iteration) ---*/
-  
-  integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+  if (config_container[val_iZone]->GetKind_Solver() != TNE2_EULER){
+    integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container,
+                                                                                  solver_container,
+                                                                                  numerics_container,
+                                                                                  config_container,
+                                                                                  RUNTIME_FLOW_SYS,
+                                                                                  IntIter, val_iZone,
+                                                                                  val_iInst);
+  }else{
+    integration_container[val_iZone][val_iInst][TNE2_SOL]->SingleGrid_Iteration(geometry_container,
                                                                               solver_container,
                                                                               numerics_container,
                                                                               config_container,
-                                                                              RUNTIME_FLOW_SYS,
+                                                                              RUNTIME_TNE2_SYS,
                                                                               IntIter, val_iZone,
                                                                               val_iInst);
+  }
 }
 
 void CFEMFluidIteration::Update(COutput *output,

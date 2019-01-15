@@ -501,7 +501,6 @@ void CMultiGridIntegration::SetProlongated_Correction(CSolver *sol_fine, CGeomet
   delete [] Solution;
 }
 
-
 void CMultiGridIntegration::SetProlongated_Solution(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
   unsigned long Point_Fine, Point_Coarse;
   unsigned short iChildren;
@@ -773,8 +772,8 @@ void CMultiGridIntegration::NonDimensional_Parameters(CGeometry **geometry, CSol
         if (config->GetConvCriteria() == RESIDUAL) {
           if (config->GetResidual_Func_Flow() == RHO_RESIDUAL) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(0));
           else if (config->GetResidual_Func_Flow() == RHO_ENERGY_RESIDUAL) {
-            if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(3));
-            else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(4));
+            if (nDim == 2) (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(5));
+            else (*monitor) = log10(solver_container[FinestMesh][TNE2_SOL]->GetRes_RMS(6));
           }
         }
 
@@ -957,7 +956,6 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
   sol_coarse->Set_MPI_Solution(geo_coarse, config);
   
 }
-
 
 CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(config) { }
 

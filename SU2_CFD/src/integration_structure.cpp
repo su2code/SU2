@@ -842,7 +842,6 @@ void CIntegration::Convergence_Monitoring_FEM_Adj(CGeometry *geometry, CConfig *
 
 }
 
-
 void CIntegration::Convergence_Monitoring_FSI(CGeometry *fea_geometry, CConfig *fea_config, CSolver *fea_solver, unsigned long iOuterIter) {
   
   su2double FEA_check[2] = {0.0, 0.0};

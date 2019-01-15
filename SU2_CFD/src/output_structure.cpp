@@ -6100,7 +6100,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           switch (config[val_iZone]->GetKind_Solver()) {
           case EULER :                  case NAVIER_STOKES:
           case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
-	  case TNE2_EULER: case TNE2_NAVIER_STOKES:
+          case TNE2_EULER: case TNE2_NAVIER_STOKES:
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
@@ -6459,6 +6459,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               cout.width(13); cout << log10(residual_flow[0]);
+              cout.width(13); cout << log10(residual_flow[1]);
+              cout.width(13); cout << log10(residual_flow[2]);
               if (!equiv_area) {
                 if (compressible) {
                   if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
@@ -7063,7 +7065,7 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
     }
     
     if (config[ZONE_0]->GetSystemMeasurements() == US) { Total_CoPx *= 12.0; Total_CoPy *= 12.0; Total_CoPz *= 12.0; }
-    
+
     /*--- Flow inviscid solution coefficients ---*/
     
     Inv_CL =
