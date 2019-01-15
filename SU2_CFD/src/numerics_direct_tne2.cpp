@@ -554,8 +554,6 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   P_i       = V_i[P_INDEX];
   P_j       = V_j[P_INDEX];
-  P_i       = 100000.0;
-      P_j= 100000.0;
   h_i       = V_i[H_INDEX];
   h_j       = V_j[H_INDEX];
   a_i       = V_i[A_INDEX];

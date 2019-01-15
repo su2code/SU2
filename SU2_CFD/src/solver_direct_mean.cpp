@@ -4395,6 +4395,7 @@ unsigned long CEulerSolver::SetPrimitive_Variables(CSolver **solver_container, C
 
   return ErrorCounter;
 }
+
 void CEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                                 unsigned short iMesh, unsigned long Iteration) {
 

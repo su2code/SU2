@@ -92,6 +92,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   unsigned short direct_diff = config->GetDirectDiff();
+  int Unst_RestartIter;
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+
+  bool adjoint = config->GetDiscrete_Adjoint();
   string filename_ = config->GetSolution_FlowFileName();
 
   su2double *Mvec_Inf;
@@ -107,6 +113,23 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
     /*--- Multizone problems require number of the zone to be appended ---*/
     if (nZone > 1) filename_ = config->GetMultizone_FileName(filename_, iZone);
+
+    /*--- Modify file name for a dual-time unsteady restart ---*/
+    if (dual_time) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+        Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
+
+
+    /*--- Modify file name for a time stepping unsteady restart ---*/
+    if (time_stepping) {
+      if (adjoint) Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+      else Unst_RestartIter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+      filename_ = config->GetUnsteady_FileName(filename_, Unst_RestartIter);
+    }
 
     /*--- Read and store the restart metadata ---*/
     Read_SU2_Restart_Metadata(geometry, config, false, filename_);
@@ -145,7 +168,6 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Surface_CMx = NULL; Surface_CMy = NULL; Surface_CMz = NULL;
 
   /*--- Supersonic simulation array initialization ---*/
-
   CEquivArea_Inv   = NULL;
   CNearFieldOF_Inv = NULL;
 
@@ -185,14 +207,14 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
 
-  /*--- Perform the non-dimensionalization for the flow equations using the
-    specified reference values. ---*/
-  SetNondimensionalization(geometry, config, iMesh);
-
   /*--- Store the number of vertices on each marker for deallocation ---*/
   nVertex = new unsigned long[nMarker];
   for (iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
+
+  /*--- Perform the non-dimensionalization for the flow equations using the
+    specified reference values. ---*/
+  SetNondimensionalization(geometry, config, iMesh);
 
   /*--- Allocate a CVariable array for each node of the mesh ---*/
   node = new CVariable*[nPoint];
@@ -234,6 +256,12 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   Secondary   = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary[iVar]   = 0.0;
   Secondary_i = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_i[iVar] = 0.0;
   Secondary_j = new su2double[nSecondaryVar]; for (iVar = 0; iVar < nSecondaryVar; iVar++) Secondary_j[iVar] = 0.0;
+
+  /*--- Define some auxiliary vectors related to the undivided lapalacian ---*/
+    if (config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) {
+    iPoint_UndLapl = new su2double [nPoint];
+    jPoint_UndLapl = new su2double [nPoint];
+  }
 
   /*--- Allocate arrays for conserved variable limits ---*/
   lowerlimit = new su2double[nVar];
@@ -424,25 +452,25 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
 
   /*--- Initialize the secondary values for direct derivative approxiations ---*/
   switch(direct_diff) {
-  case NO_DERIVATIVE:
-    /*--- Default ---*/
-    break;
-  case D_DENSITY:
-    SU2_TYPE::SetDerivative(Density_Inf, 1.0);
-    break;
-  case D_PRESSURE:
-    SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
-    break;
-  case D_TEMPERATURE:
-    SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
-    break;
-  case D_MACH: case D_AOA:
-  case D_SIDESLIP: case D_REYNOLDS:
-  case D_TURB2LAM: case D_DESIGN:
-    /*--- Already done in postprocessing of config ---*/
-    break;
-  default:
-    break;
+    case NO_DERIVATIVE:
+      /*--- Default ---*/
+      break;
+    case D_DENSITY:
+      SU2_TYPE::SetDerivative(Density_Inf, 1.0);
+      break;
+    case D_PRESSURE:
+      SU2_TYPE::SetDerivative(Pressure_Inf, 1.0);
+      break;
+    case D_TEMPERATURE:
+      SU2_TYPE::SetDerivative(Temperature_Inf, 1.0);
+      break;
+    case D_MACH: case D_AOA:
+    case D_SIDESLIP: case D_REYNOLDS:
+    case D_TURB2LAM: case D_DESIGN:
+      /*--- Already done in postprocessing of config ---*/
+      break;
+    default:
+      break;
   }
 
   /*--- Vectorize free stream Mach number based on AoA & AoS ---*/
@@ -1754,31 +1782,37 @@ void CTNE2EulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *c
   delete [] Limiter;
 }
 
-void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,CConfig *config,
-                                     unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
+void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_container,
+                                     CConfig *config, unsigned short iMesh,
+                                     unsigned short iRKStep,
+                                     unsigned short RunTime_EqSystem, bool Output) {
+  unsigned long iPoint, ErrorCounter = 0;
 
-  unsigned long ErrorCounter = 0;
   unsigned long ExtIter = config->GetExtIter();
-  bool cont_adjoint     = config->GetContinuous_Adjoint();
   bool disc_adjoint     = config->GetDiscrete_Adjoint();
   bool implicit         = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  bool muscl            = (config->GetMUSCL_TNE2() || (cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == ROE));
-  bool limiter          = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) &&
-                           !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
-  bool center       	= ((config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED) ||
-                         (cont_adjoint && config->GetKind_ConvNumScheme_AdjTNE2() == SPACE_CENTERED));
+  bool muscl            = config->GetMUSCL_TNE2();
+  bool limiter          = ((config->GetKind_SlopeLimit_TNE2() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
+  bool center           = config->GetKind_ConvNumScheme_TNE2() == SPACE_CENTERED;
   bool center_jst       = center && (config->GetKind_Centered_TNE2() == JST);
   bool van_albada       = config->GetKind_SlopeLimit_TNE2() == VAN_ALBADA_EDGE;
-  bool interface        = (config->GetnMarker_InterfaceBound() != 0);
   bool nonPhys;
 
-  /* --- Compute interface MPI --- */
-  if (interface) {Set_MPI_Interface(geometry, config); }
+  for (iPoint = 0; iPoint < nPoint; iPoint ++) {
+
+    /*--- Primitive variables [rho1,...,rhoNs,T,Tve,u,v,w,P,rho,h,c] ---*/
+    nonPhys = node[iPoint]->SetPrimVar_Compressible(config);
+    if (nonPhys) ErrorCounter++;
+
+    /*--- Initialize the convective residual vector ---*/
+    LinSysRes.SetBlock_Zero(iPoint);
+
+  }
 
   /*--- Upwind second order reconstruction ---*/
   if ((muscl && !center) && (iMesh == MESH_0) && !Output) {
 
-    /*--- Gradient computation ---*/
+    /*--- Calculate the gradients ---*/
     if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
       SetPrimitive_Gradient_GG(geometry, config);
     }
@@ -1787,12 +1821,14 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     }
 
     /*--- Limiter computation ---*/
-    if (limiter && (iMesh == MESH_0) && !Output && !van_albada)
-    { SetPrimitive_Limiter(geometry, config); }
+    if ((limiter) && (iMesh == MESH_0) && !Output && !van_albada) {
+      SetPrimitive_Limiter(geometry, config);
+    }
+
   }
 
   /*--- Artificial dissipation ---*/
-  if (center && !Output) {
+  if (center && !Output){
     SetMax_Eigenvalue(geometry, config);
     if ((center_jst) && (iMesh == MESH_0)) {
       SetCentered_Dissipation_Sensor(geometry, config);
@@ -1800,7 +1836,7 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
     }
   }
 
-  /*--- Initialize the Jacobian matrices ---*/
+  /*--- Initialize the jacobian matrices ---*/
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
 
   /*--- Error message ---*/
@@ -1816,19 +1852,18 @@ void CTNE2EulerSolver::Preprocessing(CGeometry *geometry, CSolver **solution_con
 void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_container, CConfig *config,
                                     unsigned short iMesh, unsigned long Iteration) {
 
-  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel=0.0, Lambda, Local_Delta_Time,
-    Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
+  su2double *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time,
+  Global_Delta_Time = 1E6, Global_Delta_UnstTimeND, ProjVel, ProjVel_i, ProjVel_j;
   unsigned long iEdge, iVertex, iPoint, jPoint;
   unsigned short iDim, iMarker;
 
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
   bool time_steping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
-  bool implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
-  bool grid_movement = config->GetGrid_Movement();
 
   Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
-
 
   /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++)
@@ -1870,29 +1905,39 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
-      for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
 
-        /*--- Point identification, Normal vector and area ---*/
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
-        Area = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      /*--- Point identification, Normal vector and area ---*/
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
 
-        /*--- Mean Values ---*/
-        Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
-        Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
+      /*--- Mean Values ---*/
+      Mean_ProjVel = node[iPoint]->GetProjVel(Normal);
+      Mean_SoundSpeed = node[iPoint]->GetSoundSpeed() * Area;
 
-        /*--- Inviscid contribution ---*/
-        Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
-        if (geometry->node[iPoint]->GetDomain()) {
-          node[iPoint]->AddMax_Lambda_Inv(Lambda);
-        }
+      /*--- Adjustment for grid movement ---*/
+      if (grid_movement) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVel += GridVel[iDim]*Normal[iDim];
+        Mean_ProjVel -= ProjVel;
       }
+
+      /*--- Inviscid contribution ---*/
+      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      if (geometry->node[iPoint]->GetDomain()) {
+        node[iPoint]->AddMax_Lambda_Inv(Lambda);
+      }
+
+    }
   }
 
   /*--- Each element uses their own speed, steady state simulation ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
+
     if (Vol != 0.0) {
       Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
       Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
@@ -1905,7 +1950,9 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
     else {
       node[iPoint]->SetDelta_Time(0.0);
     }
+
   }
+
 
   /*--- Compute the max and the min dt (in parallel) ---*/
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -1934,17 +1981,17 @@ void CTNE2EulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solution_cont
 #endif
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
-      /*--- Sets the regular CFL equal to the unsteady CFL ---*/
-      config->SetCFL(iMesh,config->GetUnst_CFL());
+            /*--- Sets the regular CFL equal to the unsteady CFL ---*/
+            config->SetCFL(iMesh,config->GetUnst_CFL());
 
-      /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
-            it computes the time step based on the unsteady CFL ---*/
-      if (config->GetCFL(iMesh) == 0.0) {
-        node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
-      } else {
-        node[iPoint]->SetDelta_Time(Global_Delta_Time);
-      }
-    }
+            /*--- If the unsteady CFL is set to zero, it uses the defined unsteady time step, otherwise
+             it computes the time step based on the unsteady CFL ---*/
+            if (config->GetCFL(iMesh) == 0.0) {
+                node[iPoint]->SetDelta_Time(config->GetDelta_UnstTime());
+            } else {
+                node[iPoint]->SetDelta_Time(Global_Delta_Time);
+            }
+        }
   }
 
   /*--- Recompute the unsteady time step for the dual time strategy
@@ -2873,6 +2920,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
   }
 
   /*--- Update the solution ---*/
+
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     Vol = geometry->node[iPoint]->GetVolume();
     Delta = node[iPoint]->GetDelta_Time() / Vol;
@@ -2885,7 +2933,7 @@ void CTNE2EulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **so
         Res = local_Residual[iVar] + local_Res_TruncError[iVar];
         node[iPoint]->AddSolution(iVar, -Res*Delta);
         AddRes_RMS(iVar, Res*Res);
-        AddRes_Max(iVar, fabs(Res), geometry-> node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
+        AddRes_Max(iVar, fabs(Res), geometry->node[iPoint]->GetGlobalIndex(), geometry->node[iPoint]->GetCoord());
       }
     }
 
