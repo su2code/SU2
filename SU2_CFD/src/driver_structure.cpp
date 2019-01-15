@@ -2010,7 +2010,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   nVar_Trans            = 0,
   nVar_Turb             = 0,
   nVar_Adj_Flow         = 0,
-  //nVar_Adj_TNE2         = 0,
   nVar_Adj_Turb         = 0,
   nVar_FEM              = 0,
   nVar_Heat             = 0;
@@ -2103,8 +2102,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (adj_euler)        nVar_Adj_Flow = solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)           nVar_Adj_Flow = solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)         nVar_Adj_Turb = solver_container[val_iInst][MESH_0][ADJTURB_SOL]->GetnVar();
-  //if (adj_tne2_euler)   nVar_Adj_TNE2 = solver_container[val_iInst][MESH_0][ADJTNE2_SOL]->GetnVar();
-  //if (adj_tne2_ns)      nVar_Adj_TNE2 = solver_container[val_iInst][MESH_0][ADJTNE2_SOL]->GetnVar();
 
   /*--- Number of dimensions ---*/
   
@@ -2385,11 +2382,6 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   /*--- Solver definition for the Potential, Euler, Navier-Stokes problems ---*/
   if ((tne2_euler) || (tne2_ns)) {
 
-    /*--- Defining Source Terms? --*/
-    for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-      numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-      numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
-    }
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_TNE2()) {
       case NO_CONVECTIVE :
@@ -2480,10 +2472,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
-
-      if (config->GetAxisymmetric() == YES)
-         numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSourceAxisymmetric_Flow(nDim, nVar_Flow, config);
-      
+      numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
       numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
   }
@@ -3628,7 +3617,7 @@ void CDriver::Interface_Preprocessing() {
 
       switch ( config_container[targetZone]->GetKind_Solver() ) {
 
-        case EULER : case NAVIER_STOKES: case RANS: 
+        case EULER : case NAVIER_STOKES: case RANS:
         case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
           fluid_target  = true;   
           break;
@@ -4170,6 +4159,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+  case TNE2_EULER: case TNE2_NAVIER_STOKES:
+    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
     case HEAT_EQUATION_FVM:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:

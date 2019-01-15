@@ -12258,7 +12258,6 @@ void CEulerSolver::BC_Engine_Inflow(CGeometry *geometry, CSolver **solver_contai
   
 }
 
-
 void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   
   unsigned short iDim;
@@ -13461,7 +13460,6 @@ void CEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *confi
 
 }
 
-
 void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
 
   unsigned long iPoint;
@@ -13779,8 +13777,6 @@ void CEulerSolver::SetFreeStream_TurboSolution(CConfig *config) {
 
 }
 
-
-
 void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
   unsigned long iVertex, iPoint;
@@ -13952,7 +13948,6 @@ void CEulerSolver::PreprocessAverage(CSolver **solver, CGeometry *geometry, CCon
   delete [] TotalAreaVelocity;
 
 }
-
 
 void CEulerSolver::TurboAverageProcess(CSolver **solver, CGeometry *geometry, CConfig *config, unsigned short marker_flag) {
 
@@ -16774,7 +16769,6 @@ void CNSSolver::Evaluate_ObjFunc(CConfig *config) {
     }
     
 }
-
 
 void CNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   

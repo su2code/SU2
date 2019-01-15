@@ -44,7 +44,7 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
                            CConfig *config) : CNumerics(val_nDim, val_nVar,
                                                         config) {
 
-	unsigned short iVar;
+  unsigned short iVar;
 
   /*--- Read configuration parameters ---*/
   implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
@@ -58,47 +58,47 @@ CUpwRoe_TNE2::CUpwRoe_TNE2(unsigned short val_nDim, unsigned short val_nVar,
   nSpecies     = config->GetnSpecies();
 
   /*--- Allocate arrays ---*/
-	Diff_U      = new su2double  [nVar];
+  Diff_U      = new su2double  [nVar];
   RoeU        = new su2double  [nVar];
   RoeV        = new su2double  [nPrimVar];
   RoedPdU     = new su2double  [nVar];
   RoeEve      = new su2double  [nSpecies];
-	Lambda      = new su2double  [nVar];
-	Epsilon     = new su2double  [nVar];
-	P_Tensor    = new su2double* [nVar];
-	invP_Tensor = new su2double* [nVar];
+  Lambda      = new su2double  [nVar];
+  Epsilon     = new su2double  [nVar];
+  P_Tensor    = new su2double* [nVar];
+  invP_Tensor = new su2double* [nVar];
 
-	for (iVar = 0; iVar < nVar; iVar++) {
-		P_Tensor[iVar]    = new su2double [nVar];
-		invP_Tensor[iVar] = new su2double [nVar];
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    P_Tensor[iVar]    = new su2double [nVar];
+    invP_Tensor[iVar] = new su2double [nVar];
+  }
 
-	ProjFlux_i = new su2double [nVar];
-	ProjFlux_j = new su2double [nVar];
+  ProjFlux_i = new su2double [nVar];
+  ProjFlux_j = new su2double [nVar];
 
 }
 
 CUpwRoe_TNE2::~CUpwRoe_TNE2(void) {
 
-	unsigned short iVar;
+  unsigned short iVar;
 
-	delete [] Diff_U;
+  delete [] Diff_U;
   delete [] RoeU;
   delete [] RoeV;
   delete [] RoedPdU;
   delete [] RoeEve;
-	delete [] Lambda;
-	delete [] Epsilon;
+  delete [] Lambda;
+  delete [] Epsilon;
 
-	for (iVar = 0; iVar < nVar; iVar++) {
-		delete [] P_Tensor[iVar];
-		delete [] invP_Tensor[iVar];
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    delete [] P_Tensor[iVar];
+    delete [] invP_Tensor[iVar];
+  }
 
-	delete [] P_Tensor;
-	delete [] invP_Tensor;
+  delete [] P_Tensor;
+  delete [] invP_Tensor;
   delete [] ProjFlux_i;
-	delete [] ProjFlux_j;
+  delete [] ProjFlux_j;
 }
 
 void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
@@ -108,31 +108,23 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
 
   unsigned short iDim, iSpecies, iVar, jVar, kVar;
 
-	/*--- AD setup ---*/
-	//AD::StartPreacc();
-  //AD::SetPreaccIn(V_i, nSpecies+nDim+4);
-  //AD::SetPreaccIn(V_j, nSpecies+nDim+4);
-  //AD::SetPreaccIn(Normal, nDim);
-  //if (grid_movement) {
-  //  AD::SetPreaccIn(GridVel_i, nDim); AD::SetPreaccIn(GridVel_j, nDim);
-  //}
+  /*--- Face area (norm or the normal vector) ---*/
+  Area = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-  /*--- Compute geometrical quantities ---*/
-	Area = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
-
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  /*--- Unit Normal ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Calculate Roe variables ---*/
   R    = sqrt(abs(V_j[RHO_INDEX]/V_i[RHO_INDEX]));
 
-	for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
     RoeU[iVar] = (R*U_j[iVar] + U_i[iVar])/(R+1);
 
-	for (iVar = 0; iVar < nPrimVar; iVar++)
+  for (iVar = 0; iVar < nPrimVar; iVar++)
     RoeV[iVar] = (R*V_j[iVar] + V_i[iVar])/(R+1);
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -161,16 +153,16 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
   }
 
   RoeSoundSpeed = sqrt((1.0+RoedPdU[nSpecies+nDim])*
-                       RoeV[P_INDEX]/RoeV[RHO_INDEX]);
+      RoeV[P_INDEX]/RoeV[RHO_INDEX]);
 
   /*--- Calculate eigenvalues ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Lambda[iSpecies] = ProjVelocity;
 
-	for (iDim = 0; iDim < nDim-1; iDim++)
+  for (iDim = 0; iDim < nDim-1; iDim++)
     Lambda[nSpecies+iDim] = ProjVelocity;
 
-	Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
+  Lambda[nSpecies+nDim-1] = ProjVelocity + RoeSoundSpeed;
   Lambda[nSpecies+nDim]   = ProjVelocity - RoeSoundSpeed;
   Lambda[nSpecies+nDim+1] = ProjVelocity;
 
@@ -182,9 +174,9 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
     Epsilon[nSpecies+iDim] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));
   Epsilon[nSpecies+nDim-1] = 4.0*max(0.0, max(Lambda[nSpecies+nDim-1]-(ProjVelocity_i+V_i[A_INDEX]),
-                                              (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
+                                     (ProjVelocity_j+V_j[A_INDEX])-Lambda[nSpecies+nDim-1]));
   Epsilon[nSpecies+nDim]   = 4.0*max(0.0, max(Lambda[nSpecies+nDim]-(ProjVelocity_i-V_i[A_INDEX]),
-                                              (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
+                                     (ProjVelocity_j-V_j[A_INDEX])-Lambda[nSpecies+nDim]));
   Epsilon[nSpecies+nDim+1] = 4.0*max(0.0, max(Lambda[iDim]-ProjVelocity_i,
                                               ProjVelocity_j-Lambda[iDim] ));
   for (iVar = 0; iVar < nVar; iVar++)
@@ -198,8 +190,10 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
 
   /*--- Calculate inviscid projected Jacobians ---*/
   // Note: Scaling value is 0.5 because inviscid flux is based on 0.5*(Fc_i+Fc_j)
-  GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
-  GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
+  if (implicit){
+    GetInviscidProjJac(U_i, V_i, dPdU_i, Normal, 0.5, val_Jacobian_i);
+    GetInviscidProjJac(U_j, V_j, dPdU_j, Normal, 0.5, val_Jacobian_j);
+  }
 
   /*--- Difference of conserved variables at iPoint and jPoint ---*/
   for (iVar = 0; iVar < nVar; iVar++)
@@ -216,13 +210,15 @@ void CUpwRoe_TNE2::ComputeResidual(su2double *val_residual,
         Proj_ModJac_Tensor_ij += P_Tensor[iVar][kVar]*Lambda[kVar]*invP_Tensor[kVar][jVar];
 
       val_residual[iVar] -= 0.5*Proj_ModJac_Tensor_ij*Diff_U[jVar]*Area;
-      val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
-      val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+      if (implicit){
+        val_Jacobian_i[iVar][jVar] += 0.5*Proj_ModJac_Tensor_ij*Area;
+        val_Jacobian_j[iVar][jVar] -= 0.5*Proj_ModJac_Tensor_ij*Area;
+      }
     }
   }
 
-	//AD::SetPreaccOut(val_residual, nVar);
-	//AD::EndPreacc();
+  //AD::SetPreaccOut(val_residual, nVar);
+  //AD::EndPreacc();
 }
 
 CUpwMSW_TNE2::CUpwMSW_TNE2(unsigned short val_nDim,
@@ -314,30 +310,30 @@ void CUpwMSW_TNE2::ComputeResidual(su2double *val_residual,
                                    su2double **val_Jacobian_i,
                                    su2double **val_Jacobian_j, CConfig *config) {
 
-	unsigned short iDim, iSpecies, iVar, jVar, kVar;
+  unsigned short iDim, iSpecies, iVar, jVar, kVar;
   su2double P_i, P_j;
   su2double ProjVel_i, ProjVel_j, ProjVelst_i, ProjVelst_j;
   su2double sqvel_i, sqvel_j;
-	su2double epsilon, alpha, w, dp, onemw;
+  su2double epsilon, alpha, w, dp, onemw;
   su2double Proj_ModJac_Tensor_i, Proj_ModJac_Tensor_j;
 
   /*--- Set parameters in the numerical method ---*/
   alpha   = 5.0;
   epsilon = 0.0;
   /*--- Calculate supporting geometry parameters ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Initialize flux & Jacobian vectors ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		Fc_i[iVar] = 0.0;
-		Fc_j[iVar] = 0.0;
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Fc_i[iVar] = 0.0;
+    Fc_j[iVar] = 0.0;
+  }
   if (implicit) {
     for (iVar = 0; iVar < nVar; iVar++) {
       for (jVar = 0; jVar < nVar; jVar++) {
@@ -426,7 +422,7 @@ void CUpwMSW_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
-	/*--- Flow eigenvalues at j (Lambda-) ---*/
+  /*--- Flow eigenvalues at j (Lambda-) ---*/
   for (iVar = 0; iVar < nSpecies+nDim-1; iVar++)
     Lambda_j[iVar]          = 0.5*(ProjVelst_j - sqrt(ProjVelst_j*ProjVelst_j +
                                                       epsilon*epsilon));
@@ -445,7 +441,7 @@ void CUpwMSW_TNE2::ComputeResidual(su2double *val_residual,
   GetPMatrix(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, P_Tensor);
   GetPMatrix_inv(Ust_j, Vst_j, dPdU_j, UnitNormal, l, m, invP_Tensor);
 
-	/*--- Projected flux (f-) ---*/
+  /*--- Projected flux (f-) ---*/
   for (iVar = 0; iVar < nVar; iVar++) {
     for (jVar = 0; jVar < nVar; jVar++) {
       Proj_ModJac_Tensor_j = 0.0;
@@ -459,10 +455,10 @@ void CUpwMSW_TNE2::ComputeResidual(su2double *val_residual,
     }
   }
 
-	/*--- Flux splitting ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
-	}
+  /*--- Flux splitting ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_residual[iVar] = Fc_i[iVar]+Fc_j[iVar];
+  }
 }
 
 CUpwAUSM_TNE2::CUpwAUSM_TNE2(unsigned short val_nDim, unsigned short val_nVar,
@@ -558,6 +554,8 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
 
   P_i       = V_i[P_INDEX];
   P_j       = V_j[P_INDEX];
+  P_i       = 100000.0;
+      P_j= 100000.0;
   h_i       = V_i[H_INDEX];
   h_j       = V_j[H_INDEX];
   a_i       = V_i[A_INDEX];
@@ -617,9 +615,9 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
   /*--- Compute numerical flux ---*/
   for (iVar = 0; iVar < nVar; iVar++)
     val_residual[iVar] = 0.5*((mF+Phi)*FcL[iVar]+(mF-Phi)*FcR[iVar])*Area;
+
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += pF*UnitNormal[iDim]*Area;
-
 
   if (implicit) {
 
@@ -638,9 +636,9 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
     for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
       Cvtrs = (3.0/2.0+xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
       daL[iSpecies] = 1.0/(2.0*a_i) * (1/rhoCvtr_i*(Ru/Ms[iSpecies] - Cvtrs*dPdU_i[nSpecies+nDim])*P_i/rho_i
-                                       + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
+          + 1.0/rho_i*(1.0+dPdU_i[nSpecies+nDim])*(dPdU_i[iSpecies] - P_i/rho_i));
       daR[iSpecies] = 1.0/(2.0*a_j) * (1/rhoCvtr_j*(Ru/Ms[iSpecies] - Cvtrs*dPdU_j[nSpecies+nDim])*P_j/rho_j
-                                       + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
+          + 1.0/rho_j*(1.0+dPdU_j[nSpecies+nDim])*(dPdU_j[iSpecies] - P_j/rho_j));
     }
     for (iSpecies = 0; iSpecies < nEl; iSpecies++) {
       daL[nSpecies-1] = 1.0/(2.0*a_i*rho_i) * (1+dPdU_i[nSpecies+nDim])*(dPdU_i[nSpecies-1] - P_i/rho_i);
@@ -705,12 +703,12 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
                                                    -ProjVel_i*daL[iSpecies]/(a_i*a_i))*(3.0-3.0*mL));
         for (iDim = 0; iDim < nDim; iDim++)
           dpLP[nSpecies+iDim] = 0.25*(mL+1.0) * (-u_i[iDim]*dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
-                                                 + P_i*( -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim]
-                                                        + UnitNormal[iDim]/(rho_i*a_i))*(3.0-3.0*mL));
+              + P_i*( -ProjVel_i/(a_i*a_i) * daL[nSpecies+iDim]
+              + UnitNormal[iDim]/(rho_i*a_i))*(3.0-3.0*mL));
         dpLP[nSpecies+nDim]   = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim]*(mL+1.0)*(2.0-mL)
-                                                 + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim])*(3.0-3.0*mL));
+            + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim])*(3.0-3.0*mL));
         dpLP[nSpecies+nDim+1] = 0.25*(mL+1.0) * (dPdU_i[nSpecies+nDim+1]*(mL+1.0)*(2.0-mL)
-                                                 + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1])*(3.0-3.0*mL));
+            + P_i*(-ProjVel_i/(a_i*a_i) * daL[nSpecies+nDim+1])*(3.0-3.0*mL));
       } else {
 
         /*--- Mach number ---*/
@@ -788,12 +786,12 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
                                                    -ProjVel_j*daR[iSpecies]/(a_j*a_j))*(3.0+3.0*mR));
         for (iDim = 0; iDim < nDim; iDim++)
           dpRM[nSpecies+iDim] = 0.25*(mR-1.0) * ((-u_j[iDim]*dPdU_j[nSpecies+nDim])*(mR-1.0)*(2.0+mR)
-                                                 + P_j*( -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim]
-                                                        + UnitNormal[iDim]/(rho_j*a_j))*(3.0+3.0*mR));
+              + P_j*( -ProjVel_j/(a_j*a_j) * daR[nSpecies+iDim]
+              + UnitNormal[iDim]/(rho_j*a_j))*(3.0+3.0*mR));
         dpRM[nSpecies+nDim]   = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim]*(mR-1.0)*(2.0+mR)
-                                                 + P_j*(-ProjVel_j/(a_j*a_j)*daR[nSpecies+nDim])*(3.0+3.0*mR));
+            + P_j*(-ProjVel_j/(a_j*a_j)*daR[nSpecies+nDim])*(3.0+3.0*mR));
         dpRM[nSpecies+nDim+1] = 0.25*(mR-1.0) * (dPdU_j[nSpecies+nDim+1]*(mR-1.0)*(2.0+mR)
-                                                 + P_j*(-ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim+1])*(3.0+3.0*mR));
+            + P_j*(-ProjVel_j/(a_j*a_j) * daR[nSpecies+nDim+1])*(3.0+3.0*mR));
 
       } else {
 
@@ -836,7 +834,7 @@ void CUpwAUSM_TNE2::ComputeResidual(su2double *val_residual,
         val_Jacobian_j[iVar][jVar] *= Area;
       }
     }
-	}
+  }
 }
 
 CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
@@ -846,7 +844,7 @@ CUpwAUSMPWplus_TNE2::CUpwAUSMPWplus_TNE2(unsigned short val_nDim,
                                                                       config) {
 
   /*--- Read configuration parameters ---*/
-	implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit   = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -995,18 +993,18 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     rhoRj += V_j[RHOS_INDEX+iSpecies]*Ru/Ms[iSpecies];
   }
 
-	/*--- Projected velocities ---*/
-	ProjVel_i = 0.0; ProjVel_j = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		ProjVel_i += u_i[iDim]*UnitNormal[iDim];
-		ProjVel_j += u_j[iDim]*UnitNormal[iDim];
-	}
+  /*--- Projected velocities ---*/
+  ProjVel_i = 0.0; ProjVel_j = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVel_i += u_i[iDim]*UnitNormal[iDim];
+    ProjVel_j += u_j[iDim]*UnitNormal[iDim];
+  }
   sqVi = 0.0;   sqVj = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     sqVi += (u_i[iDim]-ProjVel_i*UnitNormal[iDim])
-          * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
+        * (u_i[iDim]-ProjVel_i*UnitNormal[iDim]);
     sqVj += (u_j[iDim]-ProjVel_j*UnitNormal[iDim])
-          * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
+        * (u_j[iDim]-ProjVel_j*UnitNormal[iDim]);
   }
 
   /*--- Calculate interface numerical speed of sound ---*/
@@ -1025,8 +1023,8 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   else                                  aij = atl*atl/max(fabs(ProjVel_j),atl);
 
   /*--- Calculate L/R Mach & Pressure functions ---*/
-	mL	= ProjVel_i/aij;
-	mR	= ProjVel_j/aij;
+  mL	= ProjVel_i/aij;
+  mR	= ProjVel_j/aij;
   if (fabs(mL) <= 1.0) {
     mLP = 0.25*(mL+1.0)*(mL+1.0);
     pLP = P_i*(0.25*(mL+1.0)*(mL+1.0)*(2.0-mL)+alpha*mL*(mL*mL-1.0)*(mL*mL-1.0));
@@ -1052,7 +1050,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   else fR = 0.0;
 
   /*--- Calculate modified M functions ---*/
-	mF = mLP + mRM;
+  mF = mLP + mRM;
   if (mF >= 0.0) {
     mbLP = mLP + mRM*((1.0-w)*(1.0+fR) - fL);
     mbRM = mRM*w*(1.0+fR);
@@ -1081,7 +1079,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
   for (iDim = 0; iDim < nDim; iDim++)
     val_residual[nSpecies+iDim] += (pLP*UnitNormal[iDim] + pRM*UnitNormal[iDim])*Area;
 
-	if (implicit) {
+  if (implicit) {
 
     /*--- Initialize the Jacobians ---*/
     for (iVar = 0; iVar < nVar; iVar++) {
@@ -1115,42 +1113,42 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     //dHnL[nSpecies+nDim+1] = 0.5*dPdU_i[nSpecies+nDim+1];
     //dHnR[nSpecies+nDim+1] = 0.5*dPdU_j[nSpecies+nDim+1];
 
-  //    //////////////////
-  //    //debug:
-  //    cout << "sqVi before: " << sqVi << endl;
-  //    //check sqV routine w/ conserved:
-  //    double rVi, delta;
-  //    rVi = 0.0;
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
-  //    }
-  //    sqVi = 0.0;
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      sqVi += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
-  //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
-  //    }
-  //    cout << "sqVi after: " << sqVi << endl;
-  //
-  //      //perturb:
-  //    delta = V_i[0];
-  //    rho_i = V_i[0]+V_i[1]+delta;
-  //    rVi = 0.0;
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
-  //    }
-  //    sqVj = 0.0;
-  //    for (iDim = 0; iDim < nDim; iDim++) {
-  //      sqVj += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
-  //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
-  //    }
-  //    cout << "FD: " << (sqVj-sqVi)/delta << endl;
-  //    cout << "analytic: " << -2*sqVi/(rho_i-delta) << endl;
-  //    cout << "V0: " << V_i[0] << endl;
-  //    cout << "V1: " << V_i[1] << endl;
-  //    cout << "rho_i: " << rho_i << endl;
-  //    cout << "delta: " << delta << endl;
-  //    cout << "diff: " << sqVj-sqVi << endl;
-  //    cin.get();
+    //    //////////////////
+    //    //debug:
+    //    cout << "sqVi before: " << sqVi << endl;
+    //    //check sqV routine w/ conserved:
+    //    double rVi, delta;
+    //    rVi = 0.0;
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+    //    }
+    //    sqVi = 0.0;
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      sqVi += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+    //    }
+    //    cout << "sqVi after: " << sqVi << endl;
+    //
+    //      //perturb:
+    //    delta = V_i[0];
+    //    rho_i = V_i[0]+V_i[1]+delta;
+    //    rVi = 0.0;
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      rVi += rho_i*u_i[iDim]*UnitNormal[iDim];
+    //    }
+    //    sqVj = 0.0;
+    //    for (iDim = 0; iDim < nDim; iDim++) {
+    //      sqVj += (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])
+    //            * (rho_i*u_i[iDim]-rVi*UnitNormal[iDim])/(rho_i*rho_i);
+    //    }
+    //    cout << "FD: " << (sqVj-sqVi)/delta << endl;
+    //    cout << "analytic: " << -2*sqVi/(rho_i-delta) << endl;
+    //    cout << "V0: " << V_i[0] << endl;
+    //    cout << "V1: " << V_i[1] << endl;
+    //    cout << "rho_i: " << rho_i << endl;
+    //    cout << "delta: " << delta << endl;
+    //    cout << "diff: " << sqVj-sqVi << endl;
+    //    cin.get();
 
 
 
@@ -1170,8 +1168,8 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     //    }
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      daL[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_i)*ProjVel_i)
-   //                          + 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+iDim];
-   //       daR[nSpecies+iDim] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+iDim];
+    //                          + 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+iDim];
+    //       daR[nSpecies+iDim] = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+iDim];
     //    }
     //    daL[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnL[nSpecies+nDim];
     //    daR[nSpecies+nDim]   = 2*atl/fabs(ProjVel_i)*fact*dHnR[nSpecies+nDim];
@@ -1188,7 +1186,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     //    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     //      daR[iSpecies] = atl*atl/(rho_j*fabs(ProjVel_j))
     //                    + 2*atl/fabs(ProjVel_j)*fact*dHnR[iSpecies];
-     //     daL[iSpecies] = 2*atl/fabs(ProjVel_j)*fact*dHnL[iSpecies];
+    //     daL[iSpecies] = 2*atl/fabs(ProjVel_j)*fact*dHnL[iSpecies];
     //    }
     //    for (iDim = 0; iDim < nDim; iDim++) {
     //      daR[nSpecies+iDim] = -UnitNormal[iDim]*atl*atl/(fabs(ProjVel_j)*ProjVel_j)
@@ -1200,20 +1198,20 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     //    daR[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnR[nSpecies+nDim+1];
     //    daL[nSpecies+nDim+1] = 2*atl/fabs(ProjVel_j)*fact*dHnL[nSpecies+nDim+1];
     //  }
-   // }
+    // }
 
-  //    cout << "atl: " << atl << endl;
-  //    cout << "ProjVel_i: " << ProjVel_i << endl;
-  //    cout << "term1: " << atl*atl/(rho_i*fabs(ProjVel_i)) << endl;
-  //    cout << "term2: " << endl;
-  //    for (iVar = 0; iVar < nVar; iVar++)
-  //      cout << 2*atl/fabs(ProjVel_i)*fact*dHnL[iVar] << endl;
-  //    cout << "area: " << Area << endl;
-  //    cout << "daL: " << endl;
-  //    for (iVar = 0; iVar < nVar; iVar++) {
-  //      cout << daL[iVar] << endl;
-  //    }
-  //    cin.get();
+    //    cout << "atl: " << atl << endl;
+    //    cout << "ProjVel_i: " << ProjVel_i << endl;
+    //    cout << "term1: " << atl*atl/(rho_i*fabs(ProjVel_i)) << endl;
+    //    cout << "term2: " << endl;
+    //    for (iVar = 0; iVar < nVar; iVar++)
+    //      cout << 2*atl/fabs(ProjVel_i)*fact*dHnL[iVar] << endl;
+    //    cout << "area: " << Area << endl;
+    //    cout << "daL: " << endl;
+    //    for (iVar = 0; iVar < nVar; iVar++) {
+    //      cout << daL[iVar] << endl;
+    //    }
+    //    cin.get();
 
     /*--- Derivatives of advection speed, mL & mR ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
@@ -1273,7 +1271,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     /*--- Derivatives of pressure function ---*/
     if (fabs(mL) <= 1.0) {
       fact = 0.5*(mL+1)*(2-mL) - 0.25*(mL+1)*(mL+1)
-           + alpha*(mL*mL-1)*(mL*mL-1) + 4*alpha*mL*mL*(mL*mL-1);
+          + alpha*(mL*mL-1)*(mL*mL-1) + 4*alpha*mL*mL*(mL*mL-1);
       for (iVar = 0; iVar < nVar; iVar++) {
         dpLPdL[iVar] = dPdU_i[iVar]*pLP/P_i + P_i*fact*dmLdL[iVar];
         dpLPdR[iVar] = P_i*fact*dmLdR[iVar];
@@ -1286,7 +1284,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
     }
     if (fabs(mR) <= 1.0) {
       fact = 0.5*(mR-1)*(2+mR) + 0.25*(mR-1)*(mR-1)
-           - alpha*(mR*mR-1)*(mR*mR-1) - 4*alpha*mR*mR*(mR*mR-1);
+          - alpha*(mR*mR-1)*(mR*mR-1) - 4*alpha*mR*mR*(mR*mR-1);
       for (iVar = 0; iVar < nVar; iVar++) {
         dpRMdR[iVar] = dPdU_j[iVar]*pRM/P_j + P_j*fact*dmRdR[iVar];
         dpRMdL[iVar] = P_j*fact*dmRdL[iVar];
@@ -1307,7 +1305,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
       val_Jacobian_i[iVar][iVar] += mbLP*aij*Area;
       val_Jacobian_i[nSpecies+nDim][iVar] += mbLP*aij*dPdU_i[iVar]*Area;
 
-        // pressure terms
+      // pressure terms
       for (iDim = 0; iDim < nDim; iDim++) {
         val_Jacobian_i[nSpecies+iDim][iVar] += dpLPdL[iVar]*UnitNormal[iDim]*Area;
         val_Jacobian_i[nSpecies+iDim][iVar] += dpRMdL[iVar]*UnitNormal[iDim]*Area;
@@ -1328,7 +1326,7 @@ void CUpwAUSMPWplus_TNE2::ComputeResidual(su2double *val_residual,
         val_Jacobian_j[nSpecies+iDim][iVar] += dpRMdR[iVar]*UnitNormal[iDim]*Area;
       }
     }
-	}
+  }
 }
 
 CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
@@ -1340,7 +1338,7 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
                                                           config) {
 
   /*--- Read configuration parameters ---*/
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
   ionization = config->GetIonization();
 
   /*--- Define useful constants ---*/
@@ -1350,27 +1348,27 @@ CCentLax_TNE2::CCentLax_TNE2(unsigned short val_nDim,
   nDim         = val_nDim;
   nSpecies     = config->GetnSpecies();
 
-	/*--- Artifical dissipation part ---*/
-	Param_p = 0.3;
-	Param_Kappa_0 = config->GetKappa_1st_TNE2();
+  /*--- Artifical dissipation part ---*/
+  Param_p = 0.3;
+  Param_Kappa_0 = config->GetKappa_1st_TNE2();
 
-	/*--- Allocate some structures ---*/
-	Diff_U   = new su2double[nVar];
+  /*--- Allocate some structures ---*/
+  Diff_U   = new su2double[nVar];
   MeanU    = new su2double[nVar];
   MeanV    = new su2double[nPrimVar];
   MeanEve  = new su2double[nSpecies];
   MeandPdU = new su2double[nVar];
-	ProjFlux = new su2double [nVar];
+  ProjFlux = new su2double [nVar];
 
 }
 
 CCentLax_TNE2::~CCentLax_TNE2(void) {
-	delete [] Diff_U;
+  delete [] Diff_U;
   delete [] MeanU;
   delete [] MeanV;
   delete [] MeanEve;
   delete [] MeandPdU;
-	delete [] ProjFlux;
+  delete [] ProjFlux;
 }
 
 void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
@@ -1384,13 +1382,13 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
   su2double ProjVel_i, ProjVel_j, RuSI, Ru;
 
   /*--- Calculate geometrical quantities ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Rename for convenience ---*/
   rho_i = V_i[RHO_INDEX]; rho_j = V_j[RHO_INDEX];
@@ -1409,78 +1407,78 @@ void CCentLax_TNE2::ComputeResidual(su2double *val_resconv,
 
   var->CalcdPdU(MeanV, MeanEve, config, MeandPdU);
 
-	/*--- Get projected flux tensor ---*/
+  /*--- Get projected flux tensor ---*/
   GetInviscidProjFlux(MeanU, MeanV, Normal, ProjFlux);
 
-	/*--- Compute inviscid residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		val_resconv[iVar] = ProjFlux[iVar];
-		val_resvisc[iVar] = 0.0;
-	}
+  /*--- Compute inviscid residual ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_resconv[iVar] = ProjFlux[iVar];
+    val_resvisc[iVar] = 0.0;
+  }
 
-	/*--- Jacobians of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
-	if (implicit) {
+  /*--- Jacobians of the inviscid flux, scale = 0.5 because val_resconv ~ 0.5*(fc_i+fc_j)*Normal ---*/
+  if (implicit) {
     GetInviscidProjJac(MeanU, MeanV, MeandPdU, Normal, 0.5, val_Jacobian_i);
 
-		for (iVar = 0; iVar < nVar; iVar++)
-			for (jVar = 0; jVar < nVar; jVar++)
-				val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
-	}
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Jacobian_j[iVar][jVar] = val_Jacobian_i[iVar][jVar];
+  }
 
-	/*--- Computes differences btw. conservative variables ---*/
+  /*--- Computes differences btw. conservative variables ---*/
   for (iVar = 0; iVar < nVar; iVar++)
-		Diff_U[iVar] = U_i[iVar] - U_j[iVar];
+    Diff_U[iVar] = U_i[iVar] - U_j[iVar];
   Diff_U[nSpecies+nDim] = rho_i*h_i - rho_j*h_j;
 
-	/*--- Compute the local spectral radius and the stretching factor ---*/
-	ProjVel_i = 0; ProjVel_j = 0; Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		ProjVel_i += V_i[VEL_INDEX+iDim]*Normal[iDim];
-		ProjVel_j += V_j[VEL_INDEX+iDim]*Normal[iDim];
-	}
-	Area = sqrt(Area);
-	Local_Lambda_i = (fabs(ProjVel_i)+a_i*Area);
-	Local_Lambda_j = (fabs(ProjVel_j)+a_j*Area);
-	MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
+  /*--- Compute the local spectral radius and the stretching factor ---*/
+  ProjVel_i = 0; ProjVel_j = 0; Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    ProjVel_i += V_i[VEL_INDEX+iDim]*Normal[iDim];
+    ProjVel_j += V_j[VEL_INDEX+iDim]*Normal[iDim];
+  }
+  Area = sqrt(Area);
+  Local_Lambda_i = (fabs(ProjVel_i)+a_i*Area);
+  Local_Lambda_j = (fabs(ProjVel_j)+a_j*Area);
+  MeanLambda = 0.5*(Local_Lambda_i+Local_Lambda_j);
 
-	Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
-	Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
-	StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
+  Phi_i = pow(Lambda_i/(4.0*MeanLambda+EPS),Param_p);
+  Phi_j = pow(Lambda_j/(4.0*MeanLambda+EPS),Param_p);
+  StretchingFactor = 4.0*Phi_i*Phi_j/(Phi_i+Phi_j+EPS);
 
-	sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
-	Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
+  sc0 = 3.0*(su2double(Neighbor_i)+su2double(Neighbor_j))/(su2double(Neighbor_i)*su2double(Neighbor_j));
+  Epsilon_0 = Param_Kappa_0*sc0*su2double(nDim)/3.0;
 
-	/*--- Compute viscous part of the residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++) {
-		val_resvisc[iVar] = Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
-	}
+  /*--- Compute viscous part of the residual ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    val_resvisc[iVar] = Epsilon_0*Diff_U[iVar]*StretchingFactor*MeanLambda;
+  }
 
-	if (implicit) {
-		cte = Epsilon_0*StretchingFactor*MeanLambda;
+  if (implicit) {
+    cte = Epsilon_0*StretchingFactor*MeanLambda;
 
-		for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
-			val_Jacobian_i[iVar][iVar] += cte;
-			val_Jacobian_j[iVar][iVar] -= cte;
-		}
+    for (iVar = 0; iVar < nSpecies+nDim; iVar++) {
+      val_Jacobian_i[iVar][iVar] += cte;
+      val_Jacobian_j[iVar][iVar] -= cte;
+    }
 
-		/*--- Last rows: CAREFUL!! You have differences of \rho_Enthalpy, not differences of \rho_Energy ---*/
+    /*--- Last rows: CAREFUL!! You have differences of \rho_Enthalpy, not differences of \rho_Energy ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_i[nSpecies+nDim][iSpecies] += cte*dPdU_i[iSpecies];
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
-		val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_Jacobian_i[nSpecies+nDim][nSpecies+iDim]   += cte*dPdU_i[nSpecies+iDim];
+    val_Jacobian_i[nSpecies+nDim][nSpecies+nDim]     += cte*(1+dPdU_i[nSpecies+nDim]);
     val_Jacobian_i[nSpecies+nDim][nSpecies+nDim+1]   += cte*dPdU_i[nSpecies+nDim+1];
     val_Jacobian_i[nSpecies+nDim+1][nSpecies+nDim+1] += cte;
 
-		/*--- Last row of Jacobian_j ---*/
+    /*--- Last row of Jacobian_j ---*/
     for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
       val_Jacobian_j[nSpecies+nDim][iSpecies] -= cte*dPdU_j[iSpecies];
-		for (iDim = 0; iDim < nDim; iDim++)
-			val_Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
-		val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
+    for (iDim = 0; iDim < nDim; iDim++)
+      val_Jacobian_j[nSpecies+nDim][nSpecies+iDim]   -= cte*dPdU_j[nSpecies+nDim];
+    val_Jacobian_j[nSpecies+nDim][nSpecies+nDim]     -= cte*(1+dPdU_j[nSpecies+nDim]);
     val_Jacobian_j[nSpecies+nDim][nSpecies+nDim+1]   -= cte*dPdU_j[nSpecies+nDim+1];
     val_Jacobian_j[nSpecies+nDim+1][nSpecies+nDim+1] -= cte;
-	}
+  }
 }
 
 CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
@@ -1491,7 +1489,7 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
                                                           val_nVar,
                                                           config) {
 
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 
   /*--- Rename for convenience ---*/
   nDim         = val_nDim;
@@ -1500,9 +1498,9 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
   nPrimVarGrad = val_nPrimVarGrad;
 
   /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
-	PrimVar_i    = new su2double [nPrimVar];
-	PrimVar_j    = new su2double [nPrimVar];
-	Mean_PrimVar = new su2double [nPrimVar];
+  PrimVar_i    = new su2double [nPrimVar];
+  PrimVar_j    = new su2double [nPrimVar];
+  Mean_PrimVar = new su2double [nPrimVar];
 
   Mean_U      = new su2double[nVar];
   Mean_dPdU   = new su2double[nVar];
@@ -1517,16 +1515,16 @@ CAvgGrad_TNE2::CAvgGrad_TNE2(unsigned short val_nDim,
   Mean_Diffusion_Coeff = new su2double[nSpecies];
 
   /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
-	Mean_GradPrimVar = new su2double* [nPrimVarGrad];
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-		Mean_GradPrimVar[iVar] = new su2double [nDim];
+  Mean_GradPrimVar = new su2double* [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
 }
 
 CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
 
-	delete [] PrimVar_i;
-	delete [] PrimVar_j;
-	delete [] Mean_PrimVar;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+  delete [] Mean_PrimVar;
   delete [] Mean_Diffusion_Coeff;
 
   delete [] Mean_U;
@@ -1539,9 +1537,9 @@ CAvgGrad_TNE2::~CAvgGrad_TNE2(void) {
     delete [] Mean_GU[iVar];
   delete [] Mean_GU;
 
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-		delete [] Mean_GradPrimVar[iVar];
-	delete [] Mean_GradPrimVar;
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] Mean_GradPrimVar[iVar];
+  delete [] Mean_GradPrimVar;
 }
 
 void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
@@ -1551,27 +1549,27 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
 
   unsigned short iSpecies, iVar, iDim;
 
-	/*--- Normalized normal vector ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  /*--- Normalized normal vector ---*/
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
-	/*--- Mean transport coefficients ---*/
+  /*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-	Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
+  Mean_Laminar_Viscosity = 0.5*(Laminar_Viscosity_i +
                                 Laminar_Viscosity_j);
   Mean_Thermal_Conductivity = 0.5*(Thermal_Conductivity_i +
                                    Thermal_Conductivity_j);
   Mean_Thermal_Conductivity_ve = 0.5*(Thermal_Conductivity_ve_i +
                                       Thermal_Conductivity_ve_j);
 
-	/*--- Mean gradient approximation ---*/
+  /*--- Mean gradient approximation ---*/
   // Mass fraction
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     PrimVar_i[iSpecies] = V_i[iSpecies]/V_i[RHO_INDEX];
@@ -1595,39 +1593,39 @@ void CAvgGrad_TNE2::ComputeResidual(su2double *val_residual,
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
-		}
-	}
+    }
+  }
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies]  = 0.5*(eve_i[iSpecies]  + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
-	/*--- Get projected flux tensor ---*/
-	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
+  /*--- Get projected flux tensor ---*/
+  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Normal,
                      Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                      config);
 
-	/*--- Update viscous residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		val_residual[iVar] = Proj_Flux_Tensor[iVar];
+  /*--- Update viscous residual ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = Proj_Flux_Tensor[iVar];
 
-	/*--- Compute the implicit part ---*/
-	if (implicit) {
-		dist_ij = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-		dist_ij = sqrt(dist_ij);
+  /*--- Compute the implicit part ---*/
+  if (implicit) {
+    dist_ij = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+    dist_ij = sqrt(dist_ij);
 
     GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
                        Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
                        Mean_Thermal_Conductivity, Mean_Thermal_Conductivity_ve,
                        dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
                        val_Jacobian_i, val_Jacobian_j, config);
-	}
+  }
 }
 
 CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
@@ -1638,7 +1636,7 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
                                                                             val_nVar,
                                                                             config) {
 
-	implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
+  implicit = (config->GetKind_TimeIntScheme_TNE2() == EULER_IMPLICIT);
 
   /*--- Rename for convenience ---*/
   nDim         = val_nDim;
@@ -1647,9 +1645,9 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
   nPrimVarGrad = val_nPrimVarGrad;
 
   /*--- Compressible flow, primitive variables nDim+3, (T,vx,vy,vz,P,rho) ---*/
-	PrimVar_i    = new su2double [nPrimVar];
-	PrimVar_j    = new su2double [nPrimVar];
-	Mean_PrimVar = new su2double [nPrimVar];
+  PrimVar_i    = new su2double [nPrimVar];
+  PrimVar_j    = new su2double [nPrimVar];
+  Mean_PrimVar = new su2double [nPrimVar];
 
   Mean_Eve  = new su2double[nSpecies];
   Mean_Cvve = new su2double[nSpecies];
@@ -1657,9 +1655,9 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
   Mean_Diffusion_Coeff = new su2double[nSpecies];
 
   /*--- Compressible flow, primitive gradient variables nDim+3, (T,vx,vy,vz) ---*/
-	Mean_GradPrimVar = new su2double* [nPrimVarGrad];
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-		Mean_GradPrimVar[iVar] = new su2double [nDim];
+  Mean_GradPrimVar = new su2double* [nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    Mean_GradPrimVar[iVar] = new su2double [nDim];
 
   Proj_Mean_GradPrimVar_Edge = new su2double[nPrimVarGrad];
   Edge_Vector = new su2double[3];
@@ -1667,46 +1665,46 @@ CAvgGradCorrected_TNE2::CAvgGradCorrected_TNE2(unsigned short val_nDim,
 
 CAvgGradCorrected_TNE2::~CAvgGradCorrected_TNE2(void) {
 
-	delete [] PrimVar_i;
-	delete [] PrimVar_j;
-	delete [] Mean_PrimVar;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+  delete [] Mean_PrimVar;
 
   delete [] Mean_Eve;
   delete [] Mean_Cvve;
 
   delete [] Mean_Diffusion_Coeff;
 
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-		delete [] Mean_GradPrimVar[iVar];
-	delete [] Mean_GradPrimVar;
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+    delete [] Mean_GradPrimVar[iVar];
+  delete [] Mean_GradPrimVar;
 
   delete [] Proj_Mean_GradPrimVar_Edge;
   delete [] Edge_Vector;
 }
 
 void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
-                                    su2double **val_Jacobian_i,
-                                    su2double **val_Jacobian_j,
-                                    CConfig *config) {
+                                             su2double **val_Jacobian_i,
+                                             su2double **val_Jacobian_j,
+                                             CConfig *config) {
 
   unsigned short iSpecies;
   su2double dist_ij_2;
 
-	/*--- Normalized normal vector ---*/
-	Area = 0;
-	for (iDim = 0; iDim < nDim; iDim++)
-		Area += Normal[iDim]*Normal[iDim];
-	Area = sqrt(Area);
+  /*--- Normalized normal vector ---*/
+  Area = 0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    Area += Normal[iDim]*Normal[iDim];
+  Area = sqrt(Area);
 
-	for (iDim = 0; iDim < nDim; iDim++)
-		UnitNormal[iDim] = Normal[iDim]/Area;
+  for (iDim = 0; iDim < nDim; iDim++)
+    UnitNormal[iDim] = Normal[iDim]/Area;
 
   /*--- Compute vector going from iPoint to jPoint ---*/
-	dist_ij_2 = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
-		dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
-	}
+  dist_ij_2 = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Edge_Vector[iDim] = Coord_j[iDim]-Coord_i[iDim];
+    dist_ij_2 += Edge_Vector[iDim]*Edge_Vector[iDim];
+  }
 
   /*--- Make a local copy of the primitive variables ---*/
   // NOTE: We are transforming the species density terms to species mass fractions
@@ -1733,22 +1731,22 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
     Mean_PrimVar[iVar] = 0.5*(PrimVar_i[iVar]+PrimVar_j[iVar]);
   }
   for (iVar = nSpecies; iVar < nPrimVarGrad; iVar++) {
-		for (iDim = 0; iDim < nDim; iDim++) {
-			Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Mean_GradPrimVar[iVar][iDim] = 0.5*(PrimVar_Grad_i[iVar][iDim] +
                                           PrimVar_Grad_j[iVar][iDim]);
-		}
-	}
+    }
+  }
 
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
     Mean_Eve[iSpecies] = 0.5*(eve_i[iSpecies] + eve_j[iSpecies]);
     Mean_Cvve[iSpecies] = 0.5*(Cvve_i[iSpecies] + Cvve_j[iSpecies]);
   }
 
-	/*--- Mean transport coefficients ---*/
+  /*--- Mean transport coefficients ---*/
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     Mean_Diffusion_Coeff[iSpecies] = 0.5*(Diffusion_Coeff_i[iSpecies] +
                                           Diffusion_Coeff_j[iSpecies]);
-	Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
+  Mean_Laminar_Viscosity           = 0.5*(Laminar_Viscosity_i +
                                           Laminar_Viscosity_j);
   Mean_Thermal_Conductivity        = 0.5*(Thermal_Conductivity_i +
                                           Thermal_Conductivity_j);
@@ -1757,34 +1755,34 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
 
 
   /*--- Projection of the mean gradient in the direction of the edge ---*/
-	for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
-		Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
     for (iDim = 0; iDim < nDim; iDim++) {
       Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
     }
-	}
+  }
 
-	/*--- Get projected flux tensor ---*/
-	GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
+  /*--- Get projected flux tensor ---*/
+  GetViscousProjFlux(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve,
                      Normal, Mean_Diffusion_Coeff,
                      Mean_Laminar_Viscosity,
                      Mean_Thermal_Conductivity,
                      Mean_Thermal_Conductivity_ve,
                      config);
 
-	/*--- Update viscous residual ---*/
-	for (iVar = 0; iVar < nVar; iVar++)
-		val_residual[iVar] = Proj_Flux_Tensor[iVar];
+  /*--- Update viscous residual ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    val_residual[iVar] = Proj_Flux_Tensor[iVar];
 
-	/*--- Compute the implicit part ---*/
-	if (implicit) {
-		dist_ij = 0.0;
-		for (iDim = 0; iDim < nDim; iDim++)
-			dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
-		dist_ij = sqrt(dist_ij);
+  /*--- Compute the implicit part ---*/
+  if (implicit) {
+    dist_ij = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      dist_ij += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+    dist_ij = sqrt(dist_ij);
 
     GetViscousProjJacs(Mean_PrimVar, Mean_GradPrimVar, Mean_Eve, Mean_Cvve,
                        Mean_Diffusion_Coeff, Mean_Laminar_Viscosity,
@@ -1792,7 +1790,7 @@ void CAvgGradCorrected_TNE2::ComputeResidual(su2double *val_residual,
                        dist_ij, UnitNormal, Area, Proj_Flux_Tensor,
                        val_Jacobian_i, val_Jacobian_j, config);
 
-	}
+  }
 }
 
 CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
@@ -1817,8 +1815,8 @@ CSource_TNE2::CSource_TNE2(unsigned short val_nDim,
 
   /*--- Allocate arrays ---*/
   RxnConstantTable = new su2double*[6];
-	for (iVar = 0; iVar < 6; iVar++)
-		RxnConstantTable[iVar] = new su2double[5];
+  for (iVar = 0; iVar < 6; iVar++)
+    RxnConstantTable[iVar] = new su2double[5];
 
   tau_sr = new su2double*[nSpecies];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
@@ -1933,8 +1931,8 @@ void CSource_TNE2::GetKeqConstants(su2double *A, unsigned short val_Reaction,
   /*--- Interpolate ---*/
   for (ii = 0; ii < 5; ii++) {
     A[ii] =  (RxnConstantTable[iIndex+1][ii] - RxnConstantTable[iIndex][ii])
-           / (tmp2 - tmp1) * (N - tmp1)
-           + RxnConstantTable[iIndex][ii];
+        / (tmp2 - tmp1) * (N - tmp1)
+        + RxnConstantTable[iIndex][ii];
   }
   return;
 }
@@ -2025,7 +2023,7 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
 
     /*--- Calculate Keq ---*/
     Keq = exp(  A[0]*(Thb/1E4) + A[1] + A[2]*log(1E4/Thb)
-              + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
+        + A[3]*(1E4/Thb) + A[4]*(1E4/Thb)*(1E4/Thb) );
 
     /*--- Calculate rate coefficients ---*/
     kf  = Cf * exp(eta*log(Thf)) * exp(-theta/Thf);
@@ -2056,14 +2054,14 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] += Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * eve_i[iSpecies] * Volume;
+            * eve_i[iSpecies] * Volume;
       }
       /*--- Reactants ---*/
       iSpecies = RxnMap[iReaction][0][ii];
       if (iSpecies != nSpecies) {
         val_residual[iSpecies] -= Ms[iSpecies] * (fwdRxn-bkwRxn) * Volume;
         val_residual[nSpecies+nDim+1] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                       * eve_i[iSpecies] * Volume;
+            * eve_i[iSpecies] * Volume;
       }
     }
 
@@ -2089,16 +2087,16 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       coeff = kf * (eta/Thf+theta/(Thf*Thf)) * dThf;
       for (iVar = 0; iVar < nVar; iVar++) {
         dkf[iVar] = coeff * (  af*Trxnf/T*dTdU_i[iVar]
-                             + bf*Trxnf/Tve*dTvedU_i[iVar] );
+                               + bf*Trxnf/Tve*dTvedU_i[iVar] );
       }
       // Bkw
       coeff = kb * (eta/Thb+theta/(Thb*Thb)) * dThb;
       for (iVar = 0; iVar < nVar; iVar++) {
         dkb[iVar] = coeff*(  ab*Trxnb/T*dTdU_i[iVar]
-                           + bb*Trxnb/Tve*dTvedU_i[iVar])
-        - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
-               - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb * (  ab*Trxnb/T*dTdU_i[iVar]
-                                                            + bb*Trxnb/Tve*dTvedU_i[iVar]);
+                             + bb*Trxnb/Tve*dTvedU_i[iVar])
+            - kb*((A[0]*Thb/1E4 - A[2] - A[3]*1E4/Thb
+            - 2*A[4]*(1E4/Thb)*(1E4/Thb))/Thb) * dThb * (  ab*Trxnb/T*dTdU_i[iVar]
+                                                           + bb*Trxnb/Tve*dTvedU_i[iVar]);
       }
 
       /*--- Rxn rate derivatives ---*/
@@ -2115,8 +2113,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
       for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
         // Fwd
         dRfok[iSpecies] =  0.001*alphak[iSpecies]/Ms[iSpecies]
-                         * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
-                               max(0, alphak[iSpecies]-1)      );
+            * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                  max(0, alphak[iSpecies]-1)      );
         for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
           if (jSpecies != iSpecies)
             dRfok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
@@ -2124,8 +2122,8 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
         dRfok[iSpecies] *= 1000.0;
         // Bkw
         dRbok[iSpecies] =  0.001*betak[iSpecies]/Ms[iSpecies]
-                         * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
-                               max(0, betak[iSpecies]-1)       );
+            * pow(0.001*U_i[iSpecies]/Ms[iSpecies],
+                  max(0, betak[iSpecies]-1)       );
         for (jSpecies = 0; jSpecies < nSpecies; jSpecies++)
           if (jSpecies != iSpecies)
             dRbok[iSpecies] *= pow(0.001*U_i[jSpecies]/Ms[jSpecies],
@@ -2141,16 +2139,16 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] +=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
             val_Jacobian_i[nEve][iVar] +=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * eve_i[iSpecies] * Volume;
+                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+                * eve_i[iSpecies] * Volume;
           }
 
           for (jVar = 0; jVar < nVar; jVar++) {
             val_Jacobian_i[nEve][jVar] += Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                        * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
+                * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
           }
         }
 
@@ -2160,17 +2158,17 @@ void CSource_TNE2::ComputeChemistry(su2double *val_residual,
           for (iVar = 0; iVar < nVar; iVar++) {
             val_Jacobian_i[iSpecies][iVar] -=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
+                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar]) * Volume;
             val_Jacobian_i[nEve][iVar] -=
                 Ms[iSpecies] * ( dkf[iVar]*(fwdRxn/kf) + kf*dRfok[iVar]
-                                -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
-                             * eve_i[iSpecies] * Volume;
+                                 -dkb[iVar]*(bkwRxn/kb) - kb*dRbok[iVar])
+                * eve_i[iSpecies] * Volume;
 
           }
 
           for (jVar = 0; jVar < nVar; jVar++) {
             val_Jacobian_i[nEve][jVar] -= Ms[iSpecies] * (fwdRxn-bkwRxn)
-                                        * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
+                * Cvve_i[iSpecies] * dTvedU_i[jVar] * Volume;
           }
         } // != nSpecies
       } // ii
@@ -2184,9 +2182,9 @@ void CSource_TNE2::ComputeVibRelaxation(su2double *val_residual,
 
   /*--- Trans.-rot. & vibrational energy exchange via inelastic collisions ---*/
   // Note: Electronic energy not implemented
-	// Note: Landau-Teller formulation
+  // Note: Landau-Teller formulation
   // Note: Millikan & White relaxation time (requires P in Atm.)
-	// Note: Park limiting cross section
+  // Note: Park limiting cross section
   unsigned short iSpecies, jSpecies, iVar, jVar;
   unsigned short nEv, nHeavy, nEl;
   su2double rhos, P, T, Tve, rhoCvtr, rhoCvve, RuSI, Ru, conc, N;
@@ -2296,8 +2294,8 @@ void CSource_TNE2::ComputeAxisymmetric(su2double *val_residual,
   su2double rho, rhou, rhov, rhoEve, vel2, H, yinv;
 
   /*--- Calculate inverse of y coordinate ---*/
-	if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
-	else yinv = 0.0;
+  if (Coord_i[1]!= 0.0) yinv = 1.0/Coord_i[1];
+  else yinv = 0.0;
 
   /*--- Rename for convenience ---*/
   rho    = V_i[RHO_INDEX];
