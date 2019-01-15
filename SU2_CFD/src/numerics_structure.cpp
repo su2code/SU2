@@ -2859,10 +2859,12 @@ void CNumerics::SetRoe_Dissipation(const su2double Dissipation_i,
 
   assert((Dissipation_i >= 0) && (Dissipation_i <= 1));
   assert((Dissipation_j >= 0) && (Dissipation_j <= 1));
-  assert((Sensor_i >= 0) && (Sensor_i <= 1));
-  assert((Sensor_j >= 0) && (Sensor_j <= 1));
-
   unsigned short roe_low_diss = config->GetKind_RoeLowDiss();
+  
+  if (roe_low_diss == FD_DUCROS || roe_low_diss == NTS_DUCROS){
+    assert((Sensor_i >= 0) && (Sensor_i <= 1));
+    assert((Sensor_j >= 0) && (Sensor_j <= 1));
+  }
 
   /*--- A minimum level of upwinding is used to enhance stability ---*/
 
