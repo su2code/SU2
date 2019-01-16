@@ -73,6 +73,8 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
+  ../include/output_structure_legacy.hpp \
+  ../include/output_structure_legacy.inl \
   ../include/sgs_model.hpp \
   ../include/sgs_model.inl \
   ../include/solver_structure.hpp \
@@ -127,6 +129,7 @@ libSU2Core_sources = \
   ../src/output_adjoint_discrete_inc.cpp \
   ../src/output_adjoint_mean.cpp \
   ../src/output_driver.cpp \
+  ../src/output_structure_legacy.cpp \
   ../src/python_wrapper_structure.cpp \
   ../src/solver_adjoint_mean.cpp \
   ../src/solver_adjoint_turbulent.cpp \

@@ -60,6 +60,7 @@
 
 #include "../../Common/include/toolboxes/printing_toolbox.hpp"
 #include "../../Common/include/toolboxes/signal_processing_toolbox.hpp"
+#include "../include/output_structure_legacy.hpp"
 
 using namespace std;
 
@@ -72,6 +73,8 @@ using namespace std;
 class COutput {
 
 protected:
+  
+  COutputLegacy *output_legacy;
 
   unsigned long nGlobal_Poin;   // Global number of nodes with halos
   unsigned long nSurf_Poin;   // Global number of nodes of the surface
@@ -1035,6 +1038,8 @@ public:
   virtual bool SetUpdate_Averages(CConfig *config, bool dualtime);
   
   void Postprocess_HistoryFields(CConfig *config);
+  
+  COutputLegacy* GetLegacyOutput();
 };
 
 /*! \class CFlowOutput
