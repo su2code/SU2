@@ -835,15 +835,23 @@ int CBoom_AugBurgers::Intersect2D(su2double r0, su2double *Coord_i, su2double *C
 
 int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *pp1){
   
-  su2double y0 = r0*sin(phi), z0 = -r0*cos(phi);
+  su2double y0 = r0*sin(phi), z0 = -r0*cos(phi), tol = 1.0E-9;
   su2double ymin = 1.0E9, ymax = -1.0E9, zmin = 1.0E9, zmax = -1.0E9;
-
+    
   /*--- First check simple bounding box ---*/
   for(int iCoord = 0; iCoord < nCoord; iCoord++){
     if(Coord_i[iCoord][1] < ymin) ymin = Coord_i[iCoord][1];
     if(Coord_i[iCoord][1] > ymax) ymax = Coord_i[iCoord][1];
     if(Coord_i[iCoord][2] < zmin) zmin = Coord_i[iCoord][2];
     if(Coord_i[iCoord][2] > zmax) zmax = Coord_i[iCoord][2];
+  }
+    
+  /*--- Perturb y0 if within tolerance of symmetry plane ---*/
+  if(abs(y0) < tol && y0 < ymin && ymin <= tol){
+    y0 += tol;
+  }
+  if(abs(y0) < tol && y0 > ymax && ymax >= -tol ){
+    y0 -= tol;
   }
 
   if(y0 < ymin || y0 > ymax || z0 < zmin || z0 > zmax){
@@ -1128,7 +1136,7 @@ void CBoom_AugBurgers::SolverPreprocessing(CSolver *solver, CConfig *config, CGe
             /*---Check for duplicate points---*/
             signal.len[iPhi] = nPanel[iPhi];
             for(iPanel = 1; iPanel < nPanel[iPhi]; iPanel++){
-                if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-6){
+                if(abs(signal.x[iPhi][iPanel-1]-signal.x[iPhi][iPanel]) < 1.0E-9){
                     for(unsigned long jPanel = iPanel; jPanel < nPanel[iPhi]; jPanel++){
                         signal.x[iPhi][jPanel-1] = signal.x[iPhi][jPanel];
                         signal.p_prime[iPhi][jPanel-1] = signal.p_prime[iPhi][jPanel];
