@@ -6263,7 +6263,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (nMarker_Euler != 0) {   
     BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-      BoundaryTable << Marker_Euler[iMarker_Euler] << " ";
+      BoundaryTable << Marker_Euler[iMarker_Euler];
       if (iMarker_Euler < nMarker_Euler-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();

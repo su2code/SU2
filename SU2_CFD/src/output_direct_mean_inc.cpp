@@ -467,7 +467,8 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "CONSERVATIVE");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "CONSERVATIVE");
-  AddVolumeOutput("TEMPERATURE",  "Temperature","CONSERVATIVE");  
+  if (config->GetEnergy_Equation())
+    AddVolumeOutput("TEMPERATURE",  "Temperature","CONSERVATIVE");  
   
   switch(config->GetKind_Turb_Model()){
   case SST:
@@ -491,7 +492,6 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   }
   
   // Primitive variables
-  AddVolumeOutput("MACH",           "Mach",                 "PRIMITIVE");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
   AddVolumeOutput("DENSITY",        "Density",              "PRIMITIVE");
   
@@ -625,7 +625,6 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
       SetVolumeOutputValue("GRID_VELOCITY-Z", iPoint, Node_Geo->GetGridVel()[2]);
   }
   
-  SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2())/Node_Flow->GetSoundSpeed());
   SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - RefPressure)*factor*RefArea);
   SetVolumeOutputValue("DENSITY", iPoint, Node_Flow->GetDensity());
   

@@ -77,6 +77,7 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
+    if (config->GetTime_Domain()) RequestedHistoryFields.push_back("TIME_ITER");    
     if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
     RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_DENSITY");
@@ -688,7 +689,7 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
 }
 
 bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
- if (!write_dualtime && config->GetnInner_Iter() == config->GetInnerIter() - 1){
+ if (!write_dualtime){
    return true;
  }
  else {
@@ -699,7 +700,7 @@ bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) 
 bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
-    write_header = ((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
+    write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
@@ -711,7 +712,7 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   
   if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
       && write_dualtime ){
-    write_output = (config->GetIntIter() % config->GetWrt_Con_Freq_DualTime() == 0);
+    write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
     write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
