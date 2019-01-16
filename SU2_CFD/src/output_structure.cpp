@@ -11075,10 +11075,15 @@ void COutput::PreprocessHistoryOutput(CConfig *config){
 
 void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
   
-  /*--- Make sure that coordinates are always in the volume output --- */
+  /*--- Make sure that coordinates and conservative variables are always in the volume output --- */
   
   if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "COORDINATES") != RequestedVolumeFields.end())) {
     RequestedVolumeFields.push_back("COORDINATES");
+    nRequestedVolumeFields++;
+  }
+  
+  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "CONSERVATIVE") != RequestedVolumeFields.end())) {
+    RequestedVolumeFields.push_back("CONSERVATIVE");
     nRequestedVolumeFields++;
   }
   
@@ -11116,14 +11121,16 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
         
         found_field[iReqField] = true;
       }
-    }
-    
-    
-//    if ((std::find(found_field.begin(), found_field.end(), false) != found_field.end())){
-////      SU2_MPI::Error(string("There is no volume output field/group with name ") + std::find(found_field.begin(), found_field.end(), false) + string(" defined in the current solver."), CURRENT_FUNCTION);
-//    }
+    }    
   }
   
+  /*--- Check if all requested fields were found ---*/
+  
+  for (unsigned short iReqField = 0; iReqField < nRequestedVolumeFields; iReqField++){
+    if (!found_field[iReqField]){
+      SU2_MPI::Error(string("There is no volume output field/group with name ") + RequestedVolumeFields[iReqField] + string(" defined in the current solver."), CURRENT_FUNCTION);
+    }
+  }
   
   /*--- Now that we know the number of fields, create the local data array to temporarily store the volume output 
    * before writing it to file ---*/
