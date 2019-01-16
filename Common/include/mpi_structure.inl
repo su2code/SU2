@@ -98,7 +98,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
     std::cout << std::endl << std::endl;    
   }
-  Abort(currentComm, 0);
+  Abort(currentComm, EXIT_FAILURE);
 }
 
 
