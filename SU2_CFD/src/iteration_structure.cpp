@@ -663,12 +663,11 @@ void CFluidIteration::Iterate(COutput *output,
     
   }
   
-  
   /*--- Write the convergence history ---*/
 
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() && (!config_container[val_iZone]->GetMultizone_Problem() && !config_container[val_iZone]->GetSinglezone_Driver())) {
     
-    output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
+    output->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
     
   }
   
@@ -754,13 +753,9 @@ bool CFluidIteration::Monitor(COutput *output,
   /*--- If convergence was reached --*/
   StopCalc = integration_container[val_iZone][INST_0][FLOW_SOL]->GetConvergence();
 
-  /*--- Write the convergence history for the fluid (only screen output) ---*/
-
-  /*--- The logic is right now case dependent ----*/
-  /*--- This needs to be generalized when the new output structure comes ---*/
-  output_history = (steady);
-
-  if (output_history) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, UsedTime, val_iZone, INST_0);
+  if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
+    output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);    
+  }
 
   return StopCalc;
 
@@ -1265,9 +1260,9 @@ void CHeatIteration::Iterate(COutput *output,
   
   /*--- Write the convergence history ---*/
 
-  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() ) {
+  if ( unsteady && !config_container[val_iZone]->GetDiscrete_Adjoint() && (!config_container[val_iZone]->GetMultizone_Problem() && !config_container[val_iZone]->GetSinglezone_Driver())) {
 
-    output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
+    output->GetLegacyOutput()->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, val_iInst);
   }
 }
 

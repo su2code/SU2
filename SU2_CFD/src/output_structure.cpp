@@ -38,7 +38,12 @@
 #include "../include/output_structure.hpp"
 
 COutput::COutput(CConfig *config) {
-
+  
+  
+  if(!config->GetMultizone_Problem() && !config->GetSinglezone_Driver()){
+    output_legacy = new COutputLegacy(config);
+  }
+  
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
   

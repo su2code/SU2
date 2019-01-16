@@ -35,10 +35,10 @@
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../include/output_structure.hpp"
+#include "../include/output_structure_legacy.hpp"
 
 
-void COutput::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
+void COutputLegacy::ComputeTurboPerformance(CSolver *solver_container, CGeometry *geometry, CConfig *config) {
 
   CFluidModel *FluidModel;
   unsigned short nDim = geometry->GetnDim();

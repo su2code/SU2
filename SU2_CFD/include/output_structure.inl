@@ -138,3 +138,5 @@ inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 inline bool COutput::SetInit_Residuals(CConfig *config) {return false;}
 
 inline bool COutput::SetUpdate_Averages(CConfig *config, bool dualtime) {return false;}
+
+inline COutputLegacy* COutput::GetLegacyOutput() {return output_legacy;}
