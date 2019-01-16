@@ -12921,9 +12921,9 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
         nVar_Par +=1;
         Variable_Names.push_back("VVPrimeMean");
         nVar_Par +=1;
-        Variable_Names.push_back("WWPrimeMean");
-        nVar_Par +=1;
         Variable_Names.push_back("UVPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("WWPrimeMean");
         nVar_Par +=1;
         Variable_Names.push_back("UWPrimeMean");
         nVar_Par +=1;
@@ -13198,19 +13198,65 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             }
           }
           
+          /* Compute prime average of the velocity. */
+          
+          /* u'u' = umean * umean - uumean */
+          const su2double umean = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(1) / Avg_Iter;
+          const su2double uumean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(0) / Avg_Iter;
+          const su2double vmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(2) / Avg_Iter;
+          const su2double vvmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(1) / Avg_Iter;
+          const su2double pmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
+          
+          /* u'u' = umean * umean - uumean */
+          Local_Data[jPoint][iVar] = umean * umean - uumean;
+          iVar++;
+          
+          /* v'v' = vmean * vmean - vvmean */
+          Local_Data[jPoint][iVar] = vmean * vmean - vvmean;
+          iVar++;
           
           if (geometry->GetnDim() == 2){
-            for (jVar = 0; jVar < geometry->GetnDim()+2; jVar++) {
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
-              iVar++;
-            }
+            const su2double uvmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(2) / Avg_Iter;
+            const su2double ppmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(3) / Avg_Iter;
+            
+            /* u'v' = umean * vmean - uvmean */
+            Local_Data[jPoint][iVar] = umean * vmean - uvmean;
+            iVar++;
+            
+            /* p'p' = pmean * pmean - ppmean */
+            Local_Data[jPoint][iVar] = pmean * pmean - ppmean;
+            iVar++;
+
           }
           else{
-            for (jVar = 0; jVar < geometry->GetnDim()+4; jVar++) {
-              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
-              iVar++;
-            }
+            const su2double wmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(3) / Avg_Iter;
+            const su2double wwmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(2) / Avg_Iter;
+            const su2double uvmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(3) / Avg_Iter;
+            const su2double uwmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(4) / Avg_Iter;
+            const su2double vwmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(5) / Avg_Iter;
+            const su2double ppmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(6) / Avg_Iter;
+            
+            /* u'v' = umean * vmean - uvmean */
+            Local_Data[jPoint][iVar] = umean * vmean - uvmean;
+            iVar++;
+            
+            /* w'w' = wmean * wmean - wwmean */
+            Local_Data[jPoint][iVar] = wmean * wmean - wwmean;
+            iVar++;
+            
+            /* u'w' = umean * wmean - uwmean */
+            Local_Data[jPoint][iVar] = umean * wmean - uwmean;
+            iVar++;
+            
+            /* v'w' = vmean * wmean - vwmean */
+            Local_Data[jPoint][iVar] = vmean * wmean - vwmean;
+            iVar++;
+            
+            /* p'p' = pmean * pmean - ppmean */
+            Local_Data[jPoint][iVar] = pmean * pmean - ppmean;
+            iVar++;
           }
+
         }
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
