@@ -354,7 +354,6 @@ public:
 	vector<su2double> XCoordList;	/*!< \brief Vector containing points appearing on a single plane */
 	CPrimalGrid*** newBound;            /*!< \brief Boundary vector for new periodic elements (primal grid information). */
 	unsigned long *nNewElem_Bound;			/*!< \brief Number of new periodic elements of the boundary. */
-
   
   /*--- Partitioning-specific variables ---*/
   map<unsigned long,unsigned long> Global_to_Local_Elem;
@@ -371,6 +370,26 @@ public:
 #endif
 #endif
   
+  /*--- Data structures for point-to-point MPI communications. ---*/
+  
+  int countPerPeriodicPoint;                  /*!< \brief Maximum number of pieces of data sent per vertex in periodic comms. */
+  int nPeriodicSend;                       /*!< \brief Number of sends during periodic comms. */
+  int nPeriodicRecv;                       /*!< \brief Number of receives during periodic comms. */
+  int *nPoint_PeriodicSend;                /*!< \brief Data structure holding number of vertices for each send in periodic comms. */
+  int *nPoint_PeriodicRecv;                /*!< \brief Data structure holding number of vertices for each recv in periodic comms. */
+  int *Neighbors_PeriodicSend;             /*!< \brief Data structure holding the ranks of the neighbors for periodic send comms. */
+  int *Neighbors_PeriodicRecv;             /*!< \brief Data structure holding the ranks of the neighbors for periodic recv comms. */
+  map<int, int> PeriodicSend2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic send comms. */
+  map<int, int> PeriodicRecv2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
+  unsigned long *Local_Point_PeriodicSend; /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
+  unsigned long *Local_Point_PeriodicRecv; /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
+  su2double *bufD_PeriodicRecv;            /*!< \brief Data structure for su2double periodic receive. */
+  su2double *bufD_PeriodicSend;            /*!< \brief Data structure for su2double periodic send. */
+  unsigned short *bufS_PeriodicRecv;       /*!< \brief Data structure for unsigned long periodic receive. */
+  unsigned short *bufS_PeriodicSend;       /*!< \brief Data structure for unsigned long periodic send. */
+  SU2_MPI::Request *req_PeriodicSend;      /*!< \brief Data structure for periodic send requests. */
+  SU2_MPI::Request *req_PeriodicRecv;      /*!< \brief Data structure for periodic recv requests. */
+  
 	/*!
 	 * \brief Constructor of the class.
 	 */
@@ -381,6 +400,36 @@ public:
 	 */
 	virtual ~CGeometry(void);
 
+  /*!
+   * \brief Routine to set up persistent data structures for periodic MPI communications.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void PreprocessPeriodicComms(CGeometry *geometry, CConfig *config);
+  
+  /*!
+   * \brief Routine to allocate buffers for periodic MPI communications. Also called to dynamically reallocate if not enough memory is found for comms during runtime.
+   * \param[in] val_countPerPeriodicPoint - Maximum count of the data type per vertex in periodic comms, e.g., nPrimvarGrad*nDim.
+   */
+  void AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint);
+  
+  /*!
+   * \brief Routine to launch non-blocking recvs only for all periodic communications. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void PostPeriodicRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  
+  /*!
+   * \brief Routine to launch a single non-blocking send once the buffer is loaded for a periodic commucation. Note that this routine is called by any class that has loaded data into the generic communication buffers.
+   * \param[in] geometry     - Geometrical definition of the problem.
+   * \param[in] config       - Definition of the particular problem.
+   * \param[in] commType     - Enumerated type for the quantity to be communicated.
+   * \param[in] val_iMessage - Index of the message in the order they are stored.
+   */
+  void PostPeriodicSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  
 	/*! 
 	 * \brief Get number of coordinates.
 	 * \return Number of coordinates.
