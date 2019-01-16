@@ -65,6 +65,10 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   Solution_New = NULL;
 
   Solution_BGS_k = NULL;
+  
+  Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
@@ -78,6 +82,7 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
   bool fsi = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
+  bool calculate_average = config->GetCompute_Average();
 
   /*--- Array initialization ---*/
   
@@ -103,6 +108,10 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
   Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
+  
+  Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
@@ -240,6 +249,41 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
       }
       Solution_BGS_k[nVar-1] = val_density*val_energy;
   }
+  
+  /*--- Allocate vector for Average of primitive variables ---*/
+  
+  if (calculate_average){
+    unsigned short nVar_Avg;
+    
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy, nut/nu*/
+      nVar_Avg = nVar + 4;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz, nut/nu */
+      nVar_Avg = nVar + 5;
+    }
+    
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      nVar_Avg += 1;
+    }
+    
+    Solution_Avg = new su2double [nVar_Avg];
+    for (iVar = 0; iVar < nVar_Avg; iVar++)
+      Solution_Avg[iVar] = 0.0;
+    
+    if (nDim == 2){
+      Solution_RMS = new su2double [nDim+2];
+      for (iVar = 0; iVar < nDim+2; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    else{
+      Solution_RMS = new su2double [nDim+4];
+      for (iVar = 0; iVar < nDim+4; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    
+  }
 
 }
 
@@ -253,6 +297,7 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   bool classical_rk4 = (config->GetKind_TimeIntScheme_Flow() == CLASSICAL_RK4_EXPLICIT);
   bool fsi = config->GetFSI_Simulation();
   bool multizone = config->GetMultizone_Problem();
+  bool calculate_average = config->GetCompute_Average();
 
   /*--- Array initialization ---*/
   
@@ -278,6 +323,10 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
   Undivided_Laplacian = NULL;
 
   Solution_New = NULL;
+  
+  Solution_Avg = NULL;
+  
+  Solution_RMS = NULL;
  
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
@@ -406,6 +455,41 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
         Solution_BGS_k[iVar] = val_solution[iVar];
       }
   }
+  
+  /*--- Allocate vector for Average of primitive variables ---*/
+  
+  if (calculate_average){
+    unsigned short nVar_Avg;
+    
+    if (nDim == 2){
+      /*--- Density, U, V, E, Pressure, Cfx, Cfy, nut/nu*/
+      nVar_Avg = nVar + 4;
+    }
+    else{
+      /*--- Density, U, V, W, E, Pressure, Cfx, Cfy, Cfz, nut/nu */
+      nVar_Avg = nVar + 5;
+    }
+    
+    if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+      nVar_Avg += 1;
+    }
+    
+    Solution_Avg = new su2double [nVar_Avg];
+    for (iVar = 0; iVar < nVar_Avg; iVar++)
+      Solution_Avg[iVar] = 0.0;
+    
+    if (nDim == 2){
+      Solution_RMS = new su2double [nDim+2];
+      for (iVar = 0; iVar < nDim+2; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    else{
+      Solution_RMS = new su2double [nDim+4];
+      for (iVar = 0; iVar < nDim+4; iVar++)
+        Solution_RMS[iVar] = 0.0;
+    }
+    
+  }
 
 }
 
@@ -436,6 +520,10 @@ CEulerVariable::~CEulerVariable(void) {
   if (Solution_New != NULL) delete [] Solution_New;
   
   if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
+  
+  if (Solution_Avg != NULL) delete [] Solution_Avg;
+  
+  if (Solution_RMS != NULL) delete [] Solution_RMS;
 
 }
 

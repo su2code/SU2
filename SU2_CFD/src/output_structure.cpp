@@ -12638,10 +12638,12 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   su2double Gas_Constant, Mach2Vel, Mach_Motion, RefDensity, RefPressure = 0.0, factor = 0.0;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL, *Aux_Heat = NULL, *Aux_yPlus = NULL, *Aux_Buffet = NULL;
   su2double *Grid_Vel = NULL;
+  su2double Avg_Iter = (config->GetExtIter() - config->GetUnst_RestartIter()) + 2;
   
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
+  bool calculate_average    = (config->GetCompute_Average());
   
   int *Local_Halo = NULL;
   
@@ -12868,6 +12870,67 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
     if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
       nVar_Par +=1;
       Variable_Names.push_back("Roe_Dissipation");
+    }
+    
+    if (calculate_average) {
+      nVar_Par +=1;
+      Variable_Names.push_back("DensityMean");
+      nVar_Par +=1;
+      Variable_Names.push_back("UMean");
+      nVar_Par +=1;
+      Variable_Names.push_back("VMean");
+      if (geometry->GetnDim()==3){
+        nVar_Par +=1;
+        Variable_Names.push_back("WMean");
+      }
+      nVar_Par +=1;
+      Variable_Names.push_back("EMean");
+      nVar_Par +=1;
+      Variable_Names.push_back("PMean");
+      
+      if (config->GetKind_Solver() == RANS){
+        nVar_Par +=1;
+        Variable_Names.push_back("CfxMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("CfyMean");
+        if (geometry->GetnDim()==3){
+          nVar_Par +=1;
+          Variable_Names.push_back("CfzMean");
+        }
+        nVar_Par +=1;
+        Variable_Names.push_back("NutNuMean");
+        if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+          nVar_Par +=1;
+          Variable_Names.push_back("RoeDissipationMean");
+        }
+      }
+      
+      if (geometry->GetnDim()==2){
+        nVar_Par +=1;
+        Variable_Names.push_back("UUPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("VVPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("UVPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("PPPrimeMean");
+      }
+      else{
+        nVar_Par +=1;
+        Variable_Names.push_back("UUPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("VVPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("WWPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("UVPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("UWPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("VWPrimeMean");
+        nVar_Par +=1;
+        Variable_Names.push_back("PPPrimeMean");
+      }
     }
     
     /*--- New variables get registered here before the end of the loop. ---*/
@@ -13102,6 +13165,53 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetRoe_Dissipation(); iVar++;
         }
         
+        if (calculate_average){
+          for (jVar = 0; jVar < nVar_First; jVar++) {
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(jVar) / Avg_Iter;
+            iVar++;
+          }
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
+          iVar++;
+          
+          if (config->GetKind_Solver() == RANS){
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+1) / Avg_Iter;
+            iVar++;
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+2) / Avg_Iter;
+            iVar++;
+            if (geometry->GetnDim() == 3){
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
+              iVar++;
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+4) / Avg_Iter;
+              iVar++;
+              if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+                Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+5) / Avg_Iter;
+                iVar++;
+              }
+            }
+            else{
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+3) / Avg_Iter;
+              iVar++;
+              if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
+                Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First+4) / Avg_Iter;
+                iVar++;
+              }
+            }
+          }
+          
+          
+          if (geometry->GetnDim() == 2){
+            for (jVar = 0; jVar < geometry->GetnDim()+2; jVar++) {
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
+              iVar++;
+            }
+          }
+          else{
+            for (jVar = 0; jVar < geometry->GetnDim()+4; jVar++) {
+              Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(jVar) / Avg_Iter;
+              iVar++;
+            }
+          }
+        }
         /*--- New variables can be loaded to the Local_Data structure here,
          assuming they were registered above correctly. ---*/
         

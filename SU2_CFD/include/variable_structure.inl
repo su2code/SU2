@@ -694,6 +694,14 @@ inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* V
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
 
+inline su2double CVariable::GetSolution_Avg(unsigned short val_var) { return 0.0; }
+
+inline su2double CVariable::GetSolution_RMS(unsigned short val_var) { return 0.0; }
+
+inline void CVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) { }
+
+inline void CVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) { }
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CNSVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
@@ -860,6 +868,18 @@ inline su2double CEulerVariable::Get_BGSSolution_k(unsigned short iDim) { return
 inline void CEulerVariable::Set_BGSSolution_k(void) { 
   for (unsigned short iVar = 0; iVar < nVar; iVar++)
     Solution_BGS_k[iVar] = Solution[iVar];
+}
+
+inline su2double CEulerVariable::GetSolution_Avg(unsigned short val_var) { return Solution_Avg[val_var]; }
+
+inline su2double CEulerVariable::GetSolution_RMS(unsigned short val_var) { return Solution_RMS[val_var]; }
+
+inline void CEulerVariable::AddSolution_Avg(unsigned short val_var, su2double val_solution) {
+  Solution_Avg[val_var] += val_solution;
+}
+
+inline void CEulerVariable::AddSolution_RMS(unsigned short val_var, su2double val_solution) {
+  Solution_RMS[val_var] += val_solution;
 }
 
 inline su2double CNSVariable::GetEddyViscosity(void) { return Primitive[nDim+6]; }
