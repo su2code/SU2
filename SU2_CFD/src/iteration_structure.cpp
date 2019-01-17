@@ -1463,8 +1463,6 @@ void CFEAIteration::Iterate(COutput *output,
       /*----------------- If the solver is non-linear, we need to subiterate using a Newton-Raphson approach ----------------------*/
 
       for (IntIter = 1; IntIter < config_container[val_iZone]->GetDyn_nIntIter(); IntIter++) {
-        
-        config_container[val_iZone]->SetInnerIter(IntIter);
 
         /*--- Limits to only one structural iteration for the discrete adjoint FEM problem ---*/
         if (disc_adj_fem) break;
@@ -1474,6 +1472,7 @@ void CFEAIteration::Iterate(COutput *output,
         write_output = output->PrintOutput(IntIter-1, config_container[val_iZone]->GetWrt_Con_Freq_DualTime());
         if (write_output) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);
 
+        config_container[val_iZone]->SetInnerIter(IntIter);
         config_container[val_iZone]->SetIntIter(IntIter);
 
         integration_container[val_iZone][val_iInst][FEA_SOL]->Structural_Iteration(geometry_container, solver_container, numerics_container,
@@ -1784,7 +1783,28 @@ bool CFEAIteration::Monitor(COutput *output,
     CVolumetricMovement ***grid_movement,
     CFreeFormDefBox*** FFDBox,
     unsigned short val_iZone,
-    unsigned short val_iInst)     { return false; }
+    unsigned short val_iInst)     {
+
+  bool StopCalc = false;
+
+#ifndef HAVE_MPI
+  StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+#else
+  StopTime = MPI_Wtime();
+#endif
+  UsedTime = StopTime - StartTime;
+
+  /*--- If convergence was reached --*/
+  StopCalc = integration_container[val_iZone][INST_0][FEA_SOL]->GetConvergence();
+
+  if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
+    output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);
+  }
+
+  return StopCalc;
+
+}
+
 void CFEAIteration::Postprocess(COutput *output,
                                           CIntegration ****integration_container,
                                           CGeometry ****geometry_container,
@@ -1811,11 +1831,16 @@ void CFEAIteration::Solve(COutput *output,
                                 ) {
 
   bool multizone = config_container[val_iZone]->GetMultizone_Problem();
+  bool Convergence = false;
 
   /*------------------ Structural subiteration ----------------------*/
   Iterate(output, integration_container, geometry_container,
       solver_container, numerics_container, config_container,
       surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
+
+  Convergence = Monitor(output, integration_container, geometry_container,
+                        solver_container, numerics_container, config_container,
+                        surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
   /*--- Write the convergence history for the structure (only screen output) ---*/
 //  if (multizone) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
