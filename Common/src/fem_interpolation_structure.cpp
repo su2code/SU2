@@ -360,8 +360,7 @@ void CFEMInterpolationSol::BuildSurfaceADT(
       faceIDInElement[l] = low->faceID;
     }
     else
-      Terminate("CFEMInterpolationSol::BuildSurfaceADT", __FILE__, __LINE__,
-                "Boundary face not found in volume elements. The grid is not valid.");
+      SU2_MPI::Error("Boundary face not found in volume elements. The grid is not valid.", CURRENT_FUNCTION);
   }
   
   // Release the memory of localFaces again, because it is not needed anymore.
@@ -886,8 +885,7 @@ void CFEMInterpolationSol::HighOrderContainmentSearch(
   
   // Terminate if the Newton algorithm did not converge.
   if(itCount == maxIt)
-    Terminate("CFEMInterpolationSol::HighOrderContainmentSearch", __FILE__, __LINE__,
-              "Newton did not converge");
+    SU2_MPI::Error("Newton did not converge.", CURRENT_FUNCTION);
 }
 
 void CFEMInterpolationSol::SurfaceInterpolationSolution(
@@ -1243,8 +1241,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
       else if((cornerPointsSurf[0] == cornerPointsVol[1]) &&
               (cornerPointsSurf[1] == cornerPointsVol[0])) r = -parCoor[0];
       else
-        Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                  "Lines do not match. This should not happen.");
+        SU2_MPI::Error("Lines do not match. This should not happen.", CURRENT_FUNCTION);
       break;
     }
       
@@ -1267,8 +1264,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s = parCoor[0];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Triangles do not match. This should not happen.");
+          SU2_MPI::Error("Triangles do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else if(cornerPointsSurf[0] == cornerPointsVol[1])
       {
@@ -1285,8 +1281,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s = parCoor[1];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Triangles do not match. This should not happen.");
+          SU2_MPI::Error("Triangles do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else if(cornerPointsSurf[0] == cornerPointsVol[2])
       {
@@ -1303,12 +1298,10 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s = -1.0 - parCoor[0] - parCoor[1];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Triangles do not match. This should not happen.");
+          SU2_MPI::Error("Triangles do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else
-        Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                  "Triangles do not match. This should not happen.");
+        SU2_MPI::Error("Triangles do not match. This should not happen.", CURRENT_FUNCTION);
       break;
     }
       
@@ -1333,8 +1326,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s = parCoor[0];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Quadrilaterals do not match. This should not happen.");
+          SU2_MPI::Error("Quadrilaterals do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else if(cornerPointsSurf[0] == cornerPointsVol[1])
       {
@@ -1353,8 +1345,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s =  parCoor[0];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Quadrilaterals do not match. This should not happen.");
+          SU2_MPI::Error("Quadrilaterals do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else if(cornerPointsSurf[0] == cornerPointsVol[2])
       {
@@ -1373,8 +1364,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
           s = -parCoor[1];
         }
         else
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Quadrilaterals do not match. This should not happen.");
+          SU2_MPI::Error("Quadrilaterals do not match. This should not happen.", CURRENT_FUNCTION);
       }
       else if(cornerPointsSurf[0] == cornerPointsVol[3])
       {
@@ -1394,15 +1384,13 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         }
       }
       else
-        Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                  "Quadrilaterals do not match. This should not happen.");
+        SU2_MPI::Error("Quadrilaterals do not match. This should not happen.", CURRENT_FUNCTION);
       break;
     }
       
     default:
     {
-      Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                "This should not happen");
+      SU2_MPI::Error("This should not happen.", CURRENT_FUNCTION);
     }
   }
   
@@ -1424,8 +1412,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 1: parCoor[0] = -r;   parCoor[1] =  r;   break;
         case 2: parCoor[0] = -1.0; parCoor[1] = -r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a triangle. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a triangle. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
@@ -1441,8 +1428,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 2: parCoor[0] = -r;   parCoor[1] =  1.0; break;
         case 3: parCoor[0] = -1.0; parCoor[1] = -r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a quadrilatral. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a quadrilatral. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
@@ -1458,8 +1444,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 2: parCoor[0] = -1.0;     parCoor[1] =  r;   parCoor[2] =  s;   break;
         case 3: parCoor[0] = -1.0-r-s; parCoor[1] =  s;   parCoor[2] =  r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a tetrahedron. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a tetrahedron. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
@@ -1476,8 +1461,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 3: parCoor[0] = 0.5*(s-1.0);     parCoor[1] = 0.5*(1.0+s) + r; parCoor[2] =  s;   break;
         case 4: parCoor[0] = 0.5*(r-1.0);     parCoor[1] = 0.5*(1.0+r) + s; parCoor[2] =  r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a pyramid. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a pyramid. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
@@ -1494,8 +1478,7 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 3: parCoor[0] = -1.0; parCoor[1] =  r;   parCoor[2] =  s;   break;
         case 4: parCoor[0] = -s;   parCoor[1] =  s;   parCoor[2] =  r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a prism. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a prism. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
@@ -1513,16 +1496,14 @@ void CFEMInterpolationSurfElem::ConvertParCoorToVolume(const CFEMInterpolationVo
         case 4: parCoor[0] = -1.0; parCoor[1] =  r;   parCoor[2] =  s;   break;
         case 5: parCoor[0] =  1.0; parCoor[1] =  s;   parCoor[2] =  r;   break;
         default:
-          Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                    "Invalid face ID of a hexahedron. This should not happen");
+          SU2_MPI::Error("Invalid face ID of a hexahedron. This should not happen.", CURRENT_FUNCTION);
       }
       break;
     }
       
     default:
     {
-      Terminate("CFEMInterpolationSurfElem::ConvertParCoorToVolume", __FILE__, __LINE__,
-                "This should not happen");
+      SU2_MPI::Error("This should not happen.", CURRENT_FUNCTION);
     }
   }
 }
@@ -1558,8 +1539,7 @@ void CFEMInterpolationSurfElem::GetCornerPoints(unsigned short &nCornerPoints,
       
     default:
     {
-      Terminate("CFEMInterpolationSurfElem::GetCornerPoints", __FILE__, __LINE__,
-                "This should not happen");
+      SU2_MPI::Error("This should not happen.", CURRENT_FUNCTION);
       break;
     }
   }
@@ -1657,8 +1637,7 @@ void CFEMInterpolationVolElem::GetCornerPointsAllFaces(unsigned short &nFaces,
       break;
       
     default:
-      Terminate("CFEMInterpolationVolElem::GetCornerPoints", __FILE__, __LINE__,
-                "This should not happen");
+      SU2_MPI::Error("This should not happen.", CURRENT_FUNCTION);
       break;
   }
   
@@ -1801,8 +1780,7 @@ void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
     else
     {
       // Unknown format. Write an error message and exit.
-      Terminate("CFEMInterpolationGrid::DetermineSolutionFormat", __FILE__, __LINE__,
-                "Unknown solution format");
+      SU2_MPI::Error("Unknown solution format.", CURRENT_FUNCTION);
     }
   }
 }
@@ -1852,8 +1830,7 @@ void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double
     {
       // Check if high order elements are present.
       if( HighOrderElementsInZone() )
-        Terminate("CFEMInterpolationGridZone::DetermineCoorInterpolation", __FILE__, __LINE__,
-                  "Cell centered data requested, but high order elements present. Not possible");
+        SU2_MPI::Error("Cell centered data requested, but high order elements present. Not possible.", CURRENT_FUNCTION);
       
       // Allocate the memory for the cell centered coordinates.
       const unsigned long nElem = mVolElems.size();
