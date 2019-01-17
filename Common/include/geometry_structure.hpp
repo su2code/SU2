@@ -383,6 +383,7 @@ public:
   map<int, int> PeriodicRecv2Neighbor;     /*!< \brief Data structure holding the reverse mapping of the ranks of the neighbors for periodic recv comms. */
   unsigned long *Local_Point_PeriodicSend; /*!< \brief Data structure holding the local index of all vertices to be sent in periodic comms. */
   unsigned long *Local_Point_PeriodicRecv; /*!< \brief Data structure holding the local index of all vertices to be received in periodic comms. */
+    unsigned long *Local_Marker_PeriodicRecv; /*!< \brief Data structure holding the local index of the periodic marker for a particular vertex to be received in periodic comms. */
   su2double *bufD_PeriodicRecv;            /*!< \brief Data structure for su2double periodic receive. */
   su2double *bufD_PeriodicSend;            /*!< \brief Data structure for su2double periodic send. */
   unsigned short *bufS_PeriodicRecv;       /*!< \brief Data structure for unsigned long periodic receive. */

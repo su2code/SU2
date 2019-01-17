@@ -17284,65 +17284,68 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
     }
   }
   
-  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      iPeriodic = config->GetMarker_All_PerBound(iMarker);
-      if ((iPeriodic == val_periodic) ||
-          (iPeriodic == val_periodic + nPeriodic/2)) {
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
-          GlobalIndex_jPoint = GetDonorGlobalIndex(iMarker, iVertex);
-          
-          if ((geometry->node[iPoint]->GetDomain()) &&
-              (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
-            
-            /*--- Update the volume and time step using the donor info. ---*/
-            
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_j[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
-            }
-            
-            su2double Vol = geometry->node[iPoint]->GetVolume();
-            geometry->node[iPoint]->SetVolume(Vol + PrimVar_j[nVar+3]);
-            
-            su2double dt = node[iPoint]->GetDelta_Time();
-            if (PrimVar_j[nVar+4] < dt)
-              node[iPoint]->SetDelta_Time(PrimVar_j[nVar+4]);
-            
-            /*--- Access the residual from the donor. ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
-            }
-            
-            /*--- Access the Jacobian from the donor. ---*/
-            
-            if (implicit) {
-              int ii = 0;
-              for (iVar = 0; iVar < nVar; iVar++) {
-                for (jVar = 0; jVar < nVar; jVar++) {
-                  Jacobian_i[iVar][jVar] = GetDonorJacobian(iMarker, iVertex, iVar, jVar);
-                  ii++;
-                }
-              }
-            }
-            
-            /*--- Add contributions to total residual and Jacobian. ---*/
-            
-            LinSysRes.AddBlock(iPoint, Residual);
-            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-            
-          }
-        }
-      }
-    }
-  }
+//  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
+//
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//
+//      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+//      if ((iPeriodic == val_periodic) ||
+//          (iPeriodic == val_periodic + nPeriodic/2)) {
+//
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+//          GlobalIndex_jPoint = GetDonorGlobalIndex(iMarker, iVertex);
+//
+//          if ((geometry->node[iPoint]->GetDomain()) &&
+//              (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+//
+//            /*--- Update the volume and time step using the donor info. ---*/
+//
+//            for (iVar = 0; iVar < nPrimVar; iVar++) {
+//              PrimVar_j[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
+//            }
+//
+//            su2double Vol = geometry->node[iPoint]->GetVolume();
+//            geometry->node[iPoint]->SetVolume(Vol + PrimVar_j[nVar+3]);
+//
+//            su2double dt = node[iPoint]->GetDelta_Time();
+//            if (PrimVar_j[nVar+4] < dt)
+//              node[iPoint]->SetDelta_Time(PrimVar_j[nVar+4]);
+//
+//            /*--- Access the residual from the donor. ---*/
+//
+//            for (iVar = 0; iVar < nVar; iVar++) {
+//              Residual[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
+//            }
+//
+//            /*--- Access the Jacobian from the donor. ---*/
+//
+//            if (implicit) {
+//              int ii = 0;
+//              for (iVar = 0; iVar < nVar; iVar++) {
+//                for (jVar = 0; jVar < nVar; jVar++) {
+//                  Jacobian_i[iVar][jVar] = GetDonorJacobian(iMarker, iVertex, iVar, jVar);
+//                  ii++;
+//                }
+//              }
+//            }
+//
+//            /*--- Add contributions to total residual and Jacobian. ---*/
+//
+//            LinSysRes.AddBlock(iPoint, Residual);
+//            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//
+//          }
+//        }
+//      }
+//    }
+//  }
+//
+  InitiatePeriodicComms(geometry, config, val_periodic, SOLUTION);
+  CompletePeriodicComms(geometry, config, val_periodic, SOLUTION);
   
   /*--- Free locally allocated memory ---*/
   
