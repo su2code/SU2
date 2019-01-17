@@ -1693,6 +1693,257 @@ bool CFEMInterpolationGridZone::HighOrderElementsInZone(void) const
   return highOrder;
 }
 
+int CFEMInterpolationGridZone::ReadSU2ZoneData(std::ifstream &su2File,
+                                   const int     zoneID,
+                                   const bool    multipleZones)
+{
+  std::ostringstream message;
+  
+  // Read the spatial dimension for this zone. If no information is found about
+  // the number of dimensions, set it to its default value of 3.
+  int nDim;
+  ResetPositionIfstream(su2File, zoneID, multipleZones);
+  if( !FindIntValueFromKeyword(su2File, "ndime", nDim) ) nDim = 3;
+  
+  // Determine the number of volume elements in this zone.
+  int nElem;
+  if( !FindIntValueFromKeyword(su2File, "nelem", nElem) )
+    SU2_MPI::Error("No volume elements found.", CURRENT_FUNCTION);
+  
+  // Allocate the memory for volume elements.
+  mVolElems.resize(nElem);
+  
+  // Loop over the elements.
+  unsigned long nSolDOFs = 0;
+  for(int i=0; i<nElem; ++i)
+  {
+    // Read the entire line as a string and make it ready for reading.
+    std::string lineBuf;
+    std::getline(su2File, lineBuf);
+    std::istringstream istr(lineBuf);
+    
+    // Read the su2 element type and determine the polynomial degree and
+    // DOFs for both the grid and solution.
+    int su2ElemType, VTKType, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol;
+    istr >> su2ElemType;
+    
+    DetermineElementInfo(su2ElemType, VTKType, nPolyGrid, nPolySol,
+                         nDOFsGrid, nDOFsSol);
+    
+    // Allocate the memory for the connectivity and read it.
+    std::vector<unsigned long> connSU2(nDOFsGrid);
+    for(int j=0; j<nDOFsGrid; ++j)
+      istr >> connSU2[j];
+    
+    // Store the data for this element.
+    mVolElems[i].StoreElemData(i, VTKType, nPolyGrid, nPolySol, nDOFsGrid,
+                               nDOFsSol, nSolDOFs, connSU2.data());
+    
+    // Update nSolDOFs.
+    nSolDOFs += nDOFsSol;
+  }
+  
+  // Determine the number of grid points in this zone.
+  ResetPositionIfstream(su2File, zoneID, multipleZones);
+  int nPoints;
+  if( !FindIntValueFromKeyword(su2File, "npoin", nPoints) )
+  {
+    message << "No points for zone " << zoneID
+    << " found in the su2 file.";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+  
+  // Allocate the memory for the coordinates.
+  mCoor.resize(nDim);
+  for(int iDim=0; iDim<nDim; ++iDim)
+    mCoor[iDim].resize(nPoints);
+  
+  // Read the coordinates.
+  for(int i=0; i<nPoints; ++i)
+  {
+    std::string lineBuf;
+    std::getline(su2File, lineBuf);
+    std::istringstream istr(lineBuf);
+    
+    for(int iDim=0; iDim<nDim; ++iDim)
+      istr >> mCoor[iDim][i];
+  }
+  
+  // Set the position in ifstream to the beginning of this zone and
+  // determine the number of boundary markers.
+  ResetPositionIfstream(su2File, zoneID, multipleZones);
+  
+  int nMarkers;
+  if( !FindIntValueFromKeyword(su2File, "nmark", nMarkers) )
+  {
+    message << "No boundary markers for zone " << zoneID
+    << " found in the su2 file.";
+    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+  }
+  
+  // Loop over the boundary markers to determine the total number of surface elements.
+  nElem = 0;
+  for(int iMarker=0; iMarker<nMarkers; ++iMarker)
+  {
+    // Read the number of surface elements for this marker and update nElem.
+    int nSurfElem;
+    if( !FindIntValueFromKeyword(su2File, "marker_elems", nSurfElem) )
+      SU2_MPI::Error("String \"MARKER_ELEMS\" not found.", CURRENT_FUNCTION);
+    nElem += nSurfElem;
+  }
+  
+  // Allocate the memory for the surface elements.
+  mSurfElems.resize(nElem);
+  
+  // Reset the position in ifstream to the location where the marker
+  // information for this zone starts.
+  ResetPositionIfstream(su2File, zoneID, multipleZones);
+  FindIntValueFromKeyword(su2File, "nmark", nMarkers);
+  
+  // Loop over the boundary markers to store the surface connectivity.
+  // Note that the surface connectivity is stored as one entity. The
+  // information of the boundary markers is not kept.
+  nElem = 0;
+  for(int iMarker=0; iMarker<nMarkers; ++iMarker)
+  {
+    // Read the number of surface elements for this marker.
+    int nSurfElem;
+    FindIntValueFromKeyword(su2File, "marker_elems", nSurfElem);
+    
+    // Loop over the surface elements.
+    for(int i=0; i<nSurfElem; ++i, ++nElem)
+    {
+      // Read the entire line as a string and make it ready for reading.
+      std::string lineBuf;
+      std::getline(su2File, lineBuf);
+      std::istringstream istr(lineBuf);
+      
+      // Read the su2 element type and determine the polynomial degree and
+      // DOFs for both the grid and solution. For surface elements the
+      // grid and solution information is always the same and therefore
+      // nPolySol and nDOFsSol are not used afterwards.
+      int su2ElemType, VTKType, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol;
+      istr >> su2ElemType;
+      
+      DetermineElementInfo(su2ElemType, VTKType, nPolyGrid, nPolySol,
+                           nDOFsGrid, nDOFsSol);
+      
+      // Allocate the memory for the connectivity and read it.
+      std::vector<unsigned long> connSU2(nDOFsGrid);
+      for(int j=0; j<nDOFsGrid; ++j)
+        istr >> connSU2[j];
+      
+      // Store the data for this surface element.
+      mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
+                                      connSU2.data());
+    }
+  }
+  
+  // Return the dimension for this zone.
+  return nDim;
+}
+
+void CFEMInterpolationGridZone::ResetPositionIfstream(std::ifstream &su2File,
+                                          const int     zoneID,
+                                          const bool    multipleZones)
+{
+  // Reset the position to the beginning of the file.
+  su2File.clear();
+  su2File.seekg(0);
+  
+  // When multiple zones are present, search the correct zone.
+  if( multipleZones )
+  {
+    int zoneNumber = -1;
+    while(zoneNumber != zoneID)
+    {
+      if( !FindIntValueFromKeyword(su2File, "izone", zoneNumber) )
+      {
+        std::ostringstream message;
+        message << "No information for zone " << zoneID
+        << " found in the su2 file.";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+    }
+  }
+}
+
+void CFEMInterpolationGridZone::DetermineElementInfo(int su2ElemType,
+                                         int &VTKType,
+                                         int &nPolyGrid,
+                                         int &nPolySol,
+                                         int &nDOFsGrid,
+                                         int &nDOFsSol)
+{
+  // Check if the su2ElemType is larger than 10000. If that is the case then
+  // the polynomial degree of the grid and solution is different.
+  if(su2ElemType > 10000)
+  {
+    nPolySol    = su2ElemType/10000 - 1;
+    su2ElemType = su2ElemType%10000;
+    nPolyGrid   = su2ElemType/100 + 1;
+  }
+  else
+  {
+    nPolyGrid = su2ElemType/100 + 1;
+    nPolySol  = nPolyGrid;
+  }
+  
+  // Determine the VTK type of the element.
+  VTKType = su2ElemType%100;
+  
+  // Determine the number of DOFs for the grid and solution.
+  nDOFsGrid = DetermineNDOFs(VTKType, nPolyGrid);
+  nDOFsSol  = DetermineNDOFs(VTKType, nPolySol);
+}
+
+int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
+                                  const int nPoly)
+{
+  // Initialization.
+  const int nDOFsEdge = nPoly + 1;
+  int nDOFs = 0;
+  
+  // Determine the element type and set the number of DOFs from the polynomial
+  // degree of the element.
+  switch( VTKType )
+  {
+    case LINE:
+      nDOFs = nDOFsEdge;
+      break;
+      
+    case TRIANGLE:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)/2;
+      break;
+      
+    case QUADRILATERAL:
+      nDOFs = nDOFsEdge*nDOFsEdge;
+      break;
+      
+    case TETRAHEDRON:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)*(nDOFsEdge+2)/6;
+      break;
+      
+    case PYRAMID:
+      nDOFs = nDOFsEdge*(nDOFsEdge+1)*(2*nDOFsEdge+1)/6;
+      break;
+      
+    case PRISM:
+      nDOFs = nDOFsEdge*nDOFsEdge*(nDOFsEdge+1)/2;
+      break;
+      
+    case HEXAHEDRON:
+      nDOFs = nDOFsEdge*nDOFsEdge*nDOFsEdge;
+      break;
+      
+    default:
+      SU2_MPI::Error("Unsupported element type encountered.", CURRENT_FUNCTION);
+  }
+  
+  // Return nDOFs.
+  return nDOFs;
+}
+
 void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
 {
   // Determine the total number of elements, grid DOFs and DG solution DOFs in
