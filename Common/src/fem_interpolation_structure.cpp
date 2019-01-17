@@ -37,6 +37,10 @@
 
 #include "../include/fem_interpolation_structure.hpp"
 
+CFEMInterpolationSol::CFEMInterpolationSol(void){}
+
+CFEMInterpolationSol::~CFEMInterpolationSol(void){}
+
 void CFEMInterpolationSol::InterpolateSolution(
                                    const std::vector<std::vector<su2double> > &coorInterpol,
                                    const CFEMInterpolationGrid                *inputGrid,
@@ -1666,6 +1670,157 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   }
 }
 
+void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
+                                                           const SolutionFormatT  solFormatWrite)
+{
+  // Determine the number of dimensions.
+  const unsigned short nDim = mCoor.size();
+  
+  // Make a distinction between the requested formats.
+  switch( solFormatWrite )
+  {
+    case VertexCentered:
+    case FEM:
+    {
+      // Vertex centered scheme. The coordinates for interpolation are simply the
+      // coordinates of the grid.
+      const unsigned long nPoints = mCoor[0].size();
+      coorInterpol.resize(nDim*nPoints);
+      
+      unsigned long ii = 0;
+      for(unsigned long i=0; i<nPoints; ++i)
+      {
+        for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
+          coorInterpol[ii] = mCoor[iDim][i];
+      }
+      
+      break;
+    }
+      
+      //--------------------------------------------------------------------------
+      
+    case CellCentered:
+    {
+      // Check if high order elements are present.
+      if( HighOrderElementsInZone() )
+        SU2_MPI::Error("Cell centered data requested, but high order elements present. Not possible.", CURRENT_FUNCTION);
+      
+      // Allocate the memory for the cell centered coordinates.
+      const unsigned long nElem = mVolElems.size();
+      coorInterpol.assign(nDim*nElem, 0.0);
+      
+      // Loop over the elements and compute the coordinates of the cell centers.
+      for(unsigned long i=0; i<nElem; ++i)
+      {
+        su2double *CC = coorInterpol.data() + i*nDim;
+        
+        for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
+        {
+          const unsigned long ii = mVolElems[i].mConnGrid[j];
+          for(unsigned short iDim=0; iDim<nDim; ++iDim)
+            CC[iDim] += mCoor[iDim][ii];
+        }
+        
+        for(unsigned short iDim=0; iDim<nDim; ++iDim)
+          CC[iDim] /= mVolElems[i].mNDOFsGrid;
+      }
+      
+      break;
+    }
+      
+      //--------------------------------------------------------------------------
+      
+    case DG_FEM:
+    {
+      // Determine the number of DOFs for which the coordinates must be
+      // determined.
+      const unsigned long nDOFsTot = mVolElems.back().mOffsetSolDOFsDG
+      + mVolElems.back().mNDOFsSol;
+      
+      // Allocate the memory for the coordinates. Initialize it to zero.
+      coorInterpol.assign(nDim*nDOFsTot, 0.0);
+      
+      // Define the vectors of the standard elements in case an
+      // interpolation must be carried out for the coordinates.
+      std::vector<CFEMStandardElement> standardElementsGrid;
+      std::vector<CFEMStandardElement> standardElementsSol;
+      
+      // Loop over the elements to determine the coordinates of its DOFs.
+      unsigned long ii = 0;
+      for(unsigned long i=0; i<mVolElems.size(); ++i)
+      {
+        // Determine if the grid DOFs and solution DOFs coincide.
+        if(mVolElems[i].mNDOFsGrid == mVolElems[i].mNDOFsSol)
+        {
+          // Simply copy the coordinates.
+          for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
+          {
+            const unsigned long jj = mVolElems[i].mConnGrid[j];
+            for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
+              coorInterpol[ii] = mCoor[iDim][jj];
+          }
+        }
+        else
+        {
+          // The polynomial degree of the grid and solution differs.
+          // The coordinates of the solution DOFs must be interpolated.
+          // First determine the index in the list of standard elements.
+          // If not present yet, create the standard elements.
+          unsigned long j;
+          for(j=0; j<standardElementsSol.size(); ++j)
+          {
+            if(standardElementsSol[j].SameStandardElement(mVolElems[i].mVTK_TYPE,
+                                                          mVolElems[i].mNPolySol,
+                                                          false) &&
+               standardElementsGrid[j].SameStandardElement(mVolElems[i].mVTK_TYPE,
+                                                           mVolElems[i].mNPolyGrid,
+                                                           false))
+              break;
+          }
+          
+          if(j == standardElementsSol.size())
+          {
+            standardElementsSol.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
+                                                              mVolElems[i].mNPolySol,
+                                                              false));
+            standardElementsGrid.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
+                                                               mVolElems[i].mNPolyGrid,
+                                                               false,
+                                                               standardElementsSol[j].GetOrderExact(),
+                                                               standardElementsSol[j].GetRDOFs(),
+                                                               standardElementsSol[j].GetSDOFs(),
+                                                               standardElementsSol[j].GetTDOFs()));
+          }
+          
+          // Get the interpolation data for the coordinates of the solution
+          // DOFs. The standard element of the grid must be used to obtain this
+          // information.
+          const su2double *lagBasisSolDOFs = standardElementsGrid[j].GetBasisFunctionsSolDOFs();
+          
+          // Loop over the solution DOFs to interpolate the coordinates.
+          for(unsigned short j=0; j<mVolElems[i].mNDOFsSol; ++j)
+          {
+            // Set the pointer to store the interpolation data for this DOF.
+            const su2double *weights = lagBasisSolDOFs + j*mVolElems[i].mNDOFsGrid;
+            
+            // Loop over the number of dimensions.
+            for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
+            {
+              for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
+              {
+                const unsigned long jj = mVolElems[i].mConnGrid[j];
+                coorInterpol[ii] += weights[j]*mCoor[iDim][jj];
+              }
+            }
+          }
+        }
+      }
+      
+      break;
+    }
+  }
+}
+
 size_t CFEMInterpolationGridZone::GetNSolDOFs(const SolutionFormatT solFormat) const
 {
   // Determine the solution format and return the appropriate value.
@@ -1694,8 +1849,8 @@ bool CFEMInterpolationGridZone::HighOrderElementsInZone(void) const
 }
 
 int CFEMInterpolationGridZone::ReadSU2ZoneData(std::ifstream &su2File,
-                                   const int     zoneID,
-                                   const bool    multipleZones)
+                                               const int     zoneID,
+                                               const bool    multipleZones)
 {
   std::ostringstream message;
   
@@ -1843,37 +1998,12 @@ int CFEMInterpolationGridZone::ReadSU2ZoneData(std::ifstream &su2File,
   return nDim;
 }
 
-void CFEMInterpolationGridZone::ResetPositionIfstream(std::ifstream &su2File,
-                                          const int     zoneID,
-                                          const bool    multipleZones)
-{
-  // Reset the position to the beginning of the file.
-  su2File.clear();
-  su2File.seekg(0);
-  
-  // When multiple zones are present, search the correct zone.
-  if( multipleZones )
-  {
-    int zoneNumber = -1;
-    while(zoneNumber != zoneID)
-    {
-      if( !FindIntValueFromKeyword(su2File, "izone", zoneNumber) )
-      {
-        std::ostringstream message;
-        message << "No information for zone " << zoneID
-        << " found in the su2 file.";
-        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-      }
-    }
-  }
-}
-
 void CFEMInterpolationGridZone::DetermineElementInfo(int su2ElemType,
-                                         int &VTKType,
-                                         int &nPolyGrid,
-                                         int &nPolySol,
-                                         int &nDOFsGrid,
-                                         int &nDOFsSol)
+                                                     int &VTKType,
+                                                     int &nPolyGrid,
+                                                     int &nPolySol,
+                                                     int &nDOFsGrid,
+                                                     int &nDOFsSol)
 {
   // Check if the su2ElemType is larger than 10000. If that is the case then
   // the polynomial degree of the grid and solution is different.
@@ -1898,7 +2028,7 @@ void CFEMInterpolationGridZone::DetermineElementInfo(int su2ElemType,
 }
 
 int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
-                                  const int nPoly)
+                                              const int nPoly)
 {
   // Initialization.
   const int nDOFsEdge = nPoly + 1;
@@ -1944,6 +2074,47 @@ int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
   return nDOFs;
 }
 
+void CFEMInterpolationGridZone::ResetPositionIfstream(std::ifstream &su2File,
+                                                      const int     zoneID,
+                                                      const bool    multipleZones)
+{
+  // Reset the position to the beginning of the file.
+  su2File.clear();
+  su2File.seekg(0);
+  
+  // When multiple zones are present, search the correct zone.
+  if( multipleZones )
+  {
+    int zoneNumber = -1;
+    while(zoneNumber != zoneID)
+    {
+      if( !FindIntValueFromKeyword(su2File, "izone", zoneNumber) )
+      {
+        std::ostringstream message;
+        message << "No information for zone " << zoneID
+        << " found in the su2 file.";
+        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
+      }
+    }
+  }
+}
+
+CFEMInterpolationGrid::CFEMInterpolationGrid(void){}
+
+CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}
+
+void CFEMInterpolationGrid::DetermineCoorInterpolation(std::vector<std::vector<su2double> > &coorInterpol,
+                                                       const SolutionFormatT                solFormatWrite)
+{
+  // Allocate the first index for coorInterpol.
+  coorInterpol.resize(mGridZones.size());
+  
+  // Loop over the zones and determine the coordinates for which the
+  // interpolation must be carried out.
+  for(unsigned long i=0; i<mGridZones.size(); ++i)
+    mGridZones[i].DetermineCoorInterpolation(coorInterpol[i], solFormatWrite);
+}
+
 void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
 {
   // Determine the total number of elements, grid DOFs and DG solution DOFs in
@@ -1987,165 +2158,3 @@ void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
   }
 }
 
-void CFEMInterpolationGrid::DetermineCoorInterpolation(std::vector<std::vector<su2double> > &coorInterpol,
-                                                       const SolutionFormatT                solFormatWrite)
-{
-  // Allocate the first index for coorInterpol.
-  coorInterpol.resize(mGridZones.size());
-  
-  // Loop over the zones and determine the coordinates for which the
-  // interpolation must be carried out.
-  for(unsigned long i=0; i<mGridZones.size(); ++i)
-    mGridZones[i].DetermineCoorInterpolation(coorInterpol[i], solFormatWrite);
-}
-
-void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
-                                                           const SolutionFormatT  solFormatWrite)
-{
-  // Determine the number of dimensions.
-  const unsigned short nDim = mCoor.size();
-  
-  // Make a distinction between the requested formats.
-  switch( solFormatWrite )
-  {
-    case VertexCentered:
-    case FEM:
-    {
-      // Vertex centered scheme. The coordinates for interpolation are simply the
-      // coordinates of the grid.
-      const unsigned long nPoints = mCoor[0].size();
-      coorInterpol.resize(nDim*nPoints);
-      
-      unsigned long ii = 0;
-      for(unsigned long i=0; i<nPoints; ++i)
-      {
-        for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
-          coorInterpol[ii] = mCoor[iDim][i];
-      }
-      
-      break;
-    }
-      
-      //--------------------------------------------------------------------------
-      
-    case CellCentered:
-    {
-      // Check if high order elements are present.
-      if( HighOrderElementsInZone() )
-        SU2_MPI::Error("Cell centered data requested, but high order elements present. Not possible.", CURRENT_FUNCTION);
-      
-      // Allocate the memory for the cell centered coordinates.
-      const unsigned long nElem = mVolElems.size();
-      coorInterpol.assign(nDim*nElem, 0.0);
-      
-      // Loop over the elements and compute the coordinates of the cell centers.
-      for(unsigned long i=0; i<nElem; ++i)
-      {
-        su2double *CC = coorInterpol.data() + i*nDim;
-        
-        for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
-        {
-          const unsigned long ii = mVolElems[i].mConnGrid[j];
-          for(unsigned short iDim=0; iDim<nDim; ++iDim)
-            CC[iDim] += mCoor[iDim][ii];
-        }
-        
-        for(unsigned short iDim=0; iDim<nDim; ++iDim)
-          CC[iDim] /= mVolElems[i].mNDOFsGrid;
-      }
-      
-      break;
-    }
-      
-      //--------------------------------------------------------------------------
-      
-    case DG_FEM:
-    {
-      // Determine the number of DOFs for which the coordinates must be
-      // determined.
-      const unsigned long nDOFsTot = mVolElems.back().mOffsetSolDOFsDG
-      + mVolElems.back().mNDOFsSol;
-      
-      // Allocate the memory for the coordinates. Initialize it to zero.
-      coorInterpol.assign(nDim*nDOFsTot, 0.0);
-      
-      // Define the vectors of the standard elements in case an
-      // interpolation must be carried out for the coordinates.
-      std::vector<CFEMStandardElement> standardElementsGrid;
-      std::vector<CFEMStandardElement> standardElementsSol;
-      
-      // Loop over the elements to determine the coordinates of its DOFs.
-      unsigned long ii = 0;
-      for(unsigned long i=0; i<mVolElems.size(); ++i)
-      {
-        // Determine if the grid DOFs and solution DOFs coincide.
-        if(mVolElems[i].mNDOFsGrid == mVolElems[i].mNDOFsSol)
-        {
-          // Simply copy the coordinates.
-          for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
-          {
-            const unsigned long jj = mVolElems[i].mConnGrid[j];
-            for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
-              coorInterpol[ii] = mCoor[iDim][jj];
-          }
-        }
-        else
-        {
-          // The polynomial degree of the grid and solution differs.
-          // The coordinates of the solution DOFs must be interpolated.
-          // First determine the index in the list of standard elements.
-          // If not present yet, create the standard elements.
-          unsigned long j;
-          for(j=0; j<standardElementsSol.size(); ++j)
-          {
-            if(standardElementsSol[j].SameStandardElement(mVolElems[i].mVTK_TYPE,
-                                                          mVolElems[i].mNPolySol,
-                                                          false) &&
-               standardElementsGrid[j].SameStandardElement(mVolElems[i].mVTK_TYPE,
-                                                           mVolElems[i].mNPolyGrid,
-                                                           false))
-              break;
-          }
-          
-          if(j == standardElementsSol.size())
-          {
-            standardElementsSol.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
-                                                                  mVolElems[i].mNPolySol,
-                                                                  false));
-            standardElementsGrid.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
-                                                                   mVolElems[i].mNPolyGrid,
-                                                                   false,
-                                                                   standardElementsSol[j].GetOrderExact(),
-                                                                   standardElementsSol[j].GetRDOFs(),
-                                                                   standardElementsSol[j].GetSDOFs(),
-                                                                   standardElementsSol[j].GetTDOFs()));
-          }
-          
-          // Get the interpolation data for the coordinates of the solution
-          // DOFs. The standard element of the grid must be used to obtain this
-          // information.
-          const su2double *lagBasisSolDOFs = standardElementsGrid[j].GetBasisFunctionsSolDOFs();
-          
-          // Loop over the solution DOFs to interpolate the coordinates.
-          for(unsigned short j=0; j<mVolElems[i].mNDOFsSol; ++j)
-          {
-            // Set the pointer to store the interpolation data for this DOF.
-            const su2double *weights = lagBasisSolDOFs + j*mVolElems[i].mNDOFsGrid;
-            
-            // Loop over the number of dimensions.
-            for(unsigned short iDim=0; iDim<nDim; ++iDim, ++ii)
-            {
-              for(unsigned short j=0; j<mVolElems[i].mNDOFsGrid; ++j)
-              {
-                const unsigned long jj = mVolElems[i].mConnGrid[j];
-                coorInterpol[ii] += weights[j]*mCoor[iDim][jj];
-              }
-            }
-          }
-        }
-      }
-      
-      break;
-    }
-  }
-}

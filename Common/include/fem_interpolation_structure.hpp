@@ -200,12 +200,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEMInterpolationFaceOfElem(void);
+  CFEMInterpolationFaceOfElem(void){}
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEMInterpolationFaceOfElem(void);
+  ~CFEMInterpolationFaceOfElem(void){}
   
   /*!
    * \brief Copy constructor.
@@ -249,12 +249,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEMInterpolationSurfElem(void);
+  CFEMInterpolationSurfElem(void){}
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEMInterpolationSurfElem(void);
+  ~CFEMInterpolationSurfElem(void){}
   
   /*!
    * \brief Copy constructor.
@@ -311,12 +311,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-   CFEMInterpolationVolElem(void);
+   CFEMInterpolationVolElem(void){}
   
   /*!
    * \brief Destructor of the class.
    */
-   ~CFEMInterpolationVolElem(void);
+   ~CFEMInterpolationVolElem(void){}
   
   /*!
    * \brief Copy constructor.
@@ -375,12 +375,12 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEMInterpolationGridZone(void);
+  CFEMInterpolationGridZone(void){}
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CFEMInterpolationGridZone(void);
+  ~CFEMInterpolationGridZone(void){}
   
   /*!
    * \brief Copy constructor.
