@@ -194,12 +194,6 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
   writeFreq = writeFreq/10;
   if(writeFreq == 0) writeFreq = 1;
   writeFreq *= 10;
-  
-  // Start of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-#pragma omp parallel
-  {
-#endif
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
@@ -207,9 +201,6 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
     std::vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
     
     // Loop over the DOFs to be corrected.
-#ifdef HAVE_OPENMP
-#pragma omp for schedule(dynamic,10)
-#endif
     for(unsigned long l=0; l<nDOFs; ++l)
     {
       // Write a message about the number of DOFs to be interpolated.
@@ -261,11 +252,6 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
       for(unsigned short iDim=0; iDim<nDim; ++iDim)
         coor[iDim] += wallCoorInputGrid[iDim] - wallCoorOutputGrid[iDim];
     }
-    
-    // End of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-  }
-#endif
   
   // Write a message that the curvature correction is finished.
   std::cout << "Grid zone " << zoneID+1 << ": Curvature correction finished"
@@ -622,12 +608,6 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
   writeFreq = writeFreq/10;
   if(writeFreq == 0) writeFreq = 1;
   writeFreq *= 10;
-  
-  // Start of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-#pragma omp parallel
-  {
-#endif
     
     // Define the local vector to store the failed searches for each thread.
     std::vector<long> localPointsFailed;
@@ -637,9 +617,6 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
     std::vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
     
     // Loop over the DOFs to be interpolated.
-#ifdef HAVE_OPENMP
-#pragma omp for schedule(dynamic,10)
-#endif
     for(unsigned long l=0; l<nDOFsInterpol; ++l)
     {
       // Write a message about the number of DOFs to be interpolated.
@@ -681,20 +658,8 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
     }
     
     // Store the local failed points in pointsSearchFailed.
-#ifdef HAVE_OPENMP
-#pragma omp critical
-    {
-#endif
-      pointsSearchFailed.insert(pointsSearchFailed.end(),
-                                localPointsFailed.begin(), localPointsFailed.end());
-#ifdef HAVE_OPENMP
-    }
-#endif
-    
-    // End of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-  }
-#endif
+    pointsSearchFailed.insert(pointsSearchFailed.end(),
+                              localPointsFailed.begin(), localPointsFailed.end());
   
   // Write a message that the volume search is finished.
   std::cout << "Grid zone " << zoneID+1 << ": Volume search finished"
@@ -950,12 +915,6 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
   writeFreq = writeFreq/10;
   if(writeFreq == 0) writeFreq = 1;
   writeFreq *= 10;
-  
-  // Start of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-#pragma omp parallel
-  {
-#endif
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
@@ -963,9 +922,6 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     std::vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
     
     // Loop over the points for which a minimum distance search must be carried out.
-#ifdef HAVE_OPENMP
-#pragma omp for schedule(dynamic,10)
-#endif
     for(unsigned long l=0; l<pointsMinDistSearch.size(); ++l)
     {
       // Write a message about the number of DOFs to be interpolated via
@@ -1010,11 +966,6 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
                      &volElems[adjElemID[parElem]], solFormatInput, parCoor,
                      mSolDOFs[ll]);
     }
-    
-    // End of the parallel region, if OpenMP is used.
-#ifdef HAVE_OPENMP
-  }
-#endif
   
   // Write a message that the surface search is finished.
   std::cout << "Grid zone " << zoneID+1 << ": Surface search finished"
