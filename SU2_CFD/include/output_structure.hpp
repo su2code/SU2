@@ -1044,7 +1044,7 @@ public:
 
 /*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
 class CFlowOutput : public COutput {
@@ -1114,7 +1114,7 @@ public:
 
 /*! \class CFlowOutput
  *  \brief Output class for compressible Flow problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 30, 2018.
  */
 class CIncFlowOutput : public COutput {
@@ -1183,7 +1183,7 @@ public:
 
 /*! \class CFEAOutput
  *  \brief Output class for FEA problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date May 24, 2018.
  */
 class CFEAOutput : public COutput {
@@ -1192,6 +1192,9 @@ private:
 protected:
 
   unsigned short nVar_FEM;
+  bool linear_analysis,
+       nonlinear_analysis,
+       dynamic;
 
 public:
 
@@ -1241,7 +1244,7 @@ public:
 
 /*! \class CHeatOutput
  *  \brief Output class for heat problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CHeatOutput : public COutput {
@@ -1301,7 +1304,7 @@ public:
 
 /*! \class CAdjFlowOutput
  *  \brief Output class for flow continuous adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CAdjFlowOutput : public COutput {
@@ -1365,7 +1368,7 @@ public:
 
 /*! \class CDiscAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFlowOutput : public COutput {
@@ -1430,7 +1433,7 @@ public:
 
 /*! \class CDiscAdjFlowOutput
  *  \brief Output class for flow discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFlowIncOutput : public COutput {
@@ -1495,7 +1498,7 @@ public:
 
 /*! \class CDiscAdjFEAOutput
  *  \brief Output class for elasticity discrete adjoint problems.
- *  \author R. Sanchez.
+ *  \author R. Sanchez, T. Albring.
  *  \date June 5, 2018.
  */
 class CDiscAdjFEAOutput : public COutput {

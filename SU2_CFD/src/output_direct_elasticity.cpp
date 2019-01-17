@@ -39,8 +39,9 @@
 
 CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_iZone) : COutput(config) {
 
-  bool linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  linear_analysis = (config->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
+  nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
+  dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
   
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
@@ -48,21 +49,33 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   
   nDim = geometry->GetnDim();
 
+  /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
     RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   
+  /*--- Default fields for screen output ---*/
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("OUTER_ITER");
+    if (dynamic) RequestedScreenFields.push_back("TIME_ITER");
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
     RequestedScreenFields.push_back("INNER_ITER");
-    RequestedScreenFields.push_back("RMS_UTOL");
-    RequestedScreenFields.push_back("RMS_RTOL");
+    if(linear_analysis){
+      RequestedScreenFields.push_back("RMS_DISP_X");
+      RequestedScreenFields.push_back("RMS_DISP_Y");
+      RequestedScreenFields.push_back("RMS_DISP_Z");
+    }
+    if(nonlinear_analysis){
+      RequestedScreenFields.push_back("RMS_UTOL");
+      RequestedScreenFields.push_back("RMS_RTOL");
+      RequestedScreenFields.push_back("RMS_ETOL");
+    }
     RequestedScreenFields.push_back("VMS");
     nRequestedScreenFields = RequestedScreenFields.size();
   }
   
+  /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
     RequestedVolumeFields.push_back("DISPLACEMENT");
@@ -70,7 +83,6 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
 
-  
   stringstream ss;
   ss << "Zone " << config->GetiZone() << " (Structure)";
   MultiZoneHeaderString = ss.str();
@@ -97,10 +109,6 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
 
   CSolver* fea_solver = solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL];
   
-  
-  bool linear_analysis = (config[val_iZone]->GetGeometricConditions() == SMALL_DEFORMATIONS);  // Linear analysis.
-  bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-
   SetHistoryOutputValue("TIME_ITER",  config[val_iZone]->GetTimeIter());    
   SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
@@ -113,11 +121,6 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
 
   
   if (linear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_RMS(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_RMS(2)));    
-    }
     SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
@@ -127,40 +130,11 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
     SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));    
-    }
-    SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_FEM(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_FEM(2)));    
+      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));
     }
   }
   
-  if (linear_analysis){
-    SetHistoryOutputValue("MAX_UTOL", log10(fea_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_RTOL", log10(fea_solver->GetRes_Max(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("MAX_ETOL", log10(fea_solver->GetRes_Max(2)));    
-    }
-    SetHistoryOutputValue("MAX_DISP_X", log10(fea_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_DISP_Y", log10(fea_solver->GetRes_Max(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("MAX_DISP_Z", log10(fea_solver->GetRes_Max(2)));    
-    }
-  } else if (nonlinear_analysis){
-    SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputValue("RMS_RTOL", log10(fea_solver->GetRes_FEM(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_ETOL", log10(fea_solver->GetRes_FEM(2)));    
-    }
-    SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_FEM(0)));
-    SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_FEM(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_FEM(2)));    
-    }
-  }
-  
-  if (config[val_iZone]->GetMultizone_Problem()){
+  if (multizone){
     SetHistoryOutputValue("BGS_UTOL", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_RTOL", log10(fea_solver->GetRes_BGS(1)));
     if (nVar_FEM == 3){
@@ -172,7 +146,6 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
       SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));    
     }
   }
-  
   
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
   SetHistoryOutputValue("LOAD_INCREMENT", fea_solver->GetLoad_Increment());
@@ -192,30 +165,24 @@ void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
-  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-  
-  AddHistoryOutput("MAX_UTOL",   "max[U]", FORMAT_FIXED,  "MAX_RES");
-  AddHistoryOutput("MAX_RTOL",   "max[R]", FORMAT_FIXED,  "MAX_RES");
-  AddHistoryOutput("MAX_ETOL",   "max[E]", FORMAT_FIXED,  "MAX_RES");
-  AddHistoryOutput("MAX_DISP_X", "max[DispX]", FORMAT_FIXED,  "MAX_RES");
-  AddHistoryOutput("MAX_DISP_Y", "max[DispY]", FORMAT_FIXED,  "MAX_RES");
-  AddHistoryOutput("MAX_DISP_Z", "max[DispZ]", FORMAT_FIXED,  "MAX_RES");
-  
-  AddHistoryOutput("BGS_UTOL",   "bgs[U]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_RTOL",   "bgs[R]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_ETOL",   "bgs[E]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  
-  
-  
-  AddHistoryOutput("VMS",            "VonMises_Stress", FORMAT_FIXED, "VMS");
+  if (nonlinear_analysis){
+    AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_UTOL",   "bgs[U]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_RTOL",   "bgs[R]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_ETOL",   "bgs[E]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  }
+  if (linear_analysis){
+    AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+    AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  }
+
+  AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");
   AddHistoryOutput("LOAD_RAMP",      "Load_Ramp",       FORMAT_FIXED, "LOAD_RAMP");
   
@@ -235,17 +202,19 @@ void CFEAOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **
   SetVolumeOutputValue("DISPLACEMENT-Y", iPoint, Node_Struc->GetSolution(1));
   if (nDim == 3) SetVolumeOutputValue("DISPLACEMENT-Z", iPoint, Node_Struc->GetSolution(2));
   
-  SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(0));
-  SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(1));
-  if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(2));
+  if(dynamic){
+    SetVolumeOutputValue("VELOCITY-X", iPoint, Node_Struc->GetSolution_Vel(0));
+    SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Struc->GetSolution_Vel(1));
+    if (nDim == 3) SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Struc->GetSolution_Vel(2));
   
-  SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(0));
-  SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(1));
-  if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(2));
+    SetVolumeOutputValue("ACCELERATION-X", iPoint, Node_Struc->GetSolution_Accel(0));
+    SetVolumeOutputValue("ACCELERATION-Y", iPoint, Node_Struc->GetSolution_Accel(1));
+    if (nDim == 3) SetVolumeOutputValue("ACCELERATION-Z", iPoint, Node_Struc->GetSolution_Accel(2));
+  }
   
   SetVolumeOutputValue("STRESS-XX", iPoint, Node_Struc->GetStress_FEM()[0]);
   SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM()[1]);
-  SetVolumeOutputValue("STRESS-YY", iPoint, Node_Struc->GetStress_FEM()[2]);
+  SetVolumeOutputValue("STRESS-XY", iPoint, Node_Struc->GetStress_FEM()[2]);
   if (nDim == 3){
     SetVolumeOutputValue("STRESS-ZZ", iPoint, Node_Struc->GetStress_FEM()[3]);
     SetVolumeOutputValue("STRESS-XZ", iPoint, Node_Struc->GetStress_FEM()[4]);
@@ -293,8 +262,6 @@ inline bool CFEAOutput::WriteHistoryFile_Output(CConfig *config, bool write_dual
 
 inline bool CFEAOutput::WriteScreen_Header(CConfig *config) {  
   
-  bool nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
-
   bool write_header;
   if (nonlinear_analysis) write_header = (config->GetIntIter() == 0);
   else write_header = (((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0));
