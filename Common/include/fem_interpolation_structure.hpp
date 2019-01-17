@@ -81,9 +81,9 @@ public:
    * \brief Main function for the interpolation of the given coordinates in the given grid and solution.
    */
   void InterpolateSolution(const std::vector<std::vector<su2double> > &coorInterpol,
-                           const CFEMInterpolationGrid                           *inputGrid,
+                           const CFEMInterpolationGrid               *inputGrid,
                            const CFEMInterpolationSol                *inputSol,
-                           const CFEMInterpolationGrid                           *outputGrid);
+                           const CFEMInterpolationGrid               *outputGrid);
   
   /*!
    * \brief Make available the solution DOFs.
