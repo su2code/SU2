@@ -5216,6 +5216,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool flow = (config[val_iZone]->GetKind_Solver() == EULER) || (config[val_iZone]->GetKind_Solver() == NAVIER_STOKES) ||
     (config[val_iZone]->GetKind_Solver() == RANS) || (config[val_iZone]->GetKind_Solver() == FEM_EULER) || (config[val_iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == FEM_RANS) || (config[val_iZone]->GetKind_Solver() == FEM_LES) || (config[val_iZone]->GetKind_Solver() == ADJ_EULER) ||
     (config[val_iZone]->GetKind_Solver() == ADJ_NAVIER_STOKES) || (config[val_iZone]->GetKind_Solver() == ADJ_RANS);
+    bool tne2 = (config[val_iZone]->GetKind_Solver() == TNE2_EULER) || (config[val_iZone]->GetKind_Solver() == TNE2_NAVIER_STOKES);
     bool buffet = (config[val_iZone]->GetBuffet_Monitoring() || config[val_iZone]->GetKind_ObjFunc() == BUFFET_SENSOR);
     
     bool fem = ((config[val_iZone]->GetKind_Solver() == FEM_ELASTICITY) ||          // FEM structural solver.
@@ -5224,7 +5225,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     bool nonlinear_analysis = (config[val_iZone]->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
     bool fsi = (config[val_iZone]->GetFSI_Simulation());          // FEM structural solver.
     bool discadj_fem = (config[val_iZone]->GetKind_Solver() == DISC_ADJ_FEM);
-    
+
     bool turbo = config[val_iZone]->GetBoolTurbomachinery();
 
     unsigned short nTurboPerf  = config[val_iZone]->GetnMarker_TurboPerformance();
@@ -5310,7 +5311,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
     unsigned short nVar_Flow = 0, nVar_Turb = 0,
     nVar_Trans = 0, nVar_Heat = 0,
     nVar_AdjFlow = 0, nVar_AdjTurb = 0, nVar_AdjHeat = 0,
-    nVar_FEM = 0;
+    nVar_FEM = 0, nSpecies = 0;
     
     /*--- Direct problem variables ---*/
     if (compressible) nVar_Flow = nDim+2; else nVar_Flow = nDim+2;
@@ -5319,6 +5320,10 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
         case SA: case SA_NEG: case SA_E: case SA_E_COMP: case SA_COMP: nVar_Turb = 1; break;
         case SST:    nVar_Turb = 2; break;
       }
+    }
+    if (tne2) {
+      nSpecies = config[val_iZone]->GetnSpecies();
+      nVar_Flow = nSpecies+nDim+2;
     }
     if (transition) nVar_Trans = 2;
     if (heat) nVar_Heat = 1;
@@ -6100,7 +6105,7 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           switch (config[val_iZone]->GetKind_Solver()) {
           case EULER :                  case NAVIER_STOKES:
           case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
-          case TNE2_EULER: case TNE2_NAVIER_STOKES:
+
             /*--- Visualize the maximum residual ---*/
             iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max(0);
             Coord = solver_container[val_iZone][val_iInst][FinestMesh][FLOW_SOL]->GetPoint_Max_Coord(0);
@@ -6237,6 +6242,50 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
             break;
 
+          case TNE2_EULER: case TNE2_NAVIER_STOKES:
+
+            /*--- Visualize the maximum residual ---*/
+            iPointMaxResid = solver_container[val_iZone][val_iInst][FinestMesh][TNE2_SOL]->GetPoint_Max(0);
+            Coord = solver_container[val_iZone][val_iInst][FinestMesh][TNE2_SOL]->GetPoint_Max_Coord(0);
+
+            cout << endl << "----------------------- Residual Evolution Summary ----------------------" << endl;
+
+            cout << "log10[Maximum residual]: " << log10(solver_container[val_iZone][val_iInst][FinestMesh][TNE2_SOL]->GetRes_Max(0)) << "." << endl;
+
+            if (config[val_iZone]->GetSystemMeasurements() == SI) {
+              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0] << ", " << Coord[1];
+              if (nDim == 3) cout << ", " << Coord[2];
+              cout <<   ")." << endl;
+            }
+            else {
+              cout <<"Maximum residual point " << iPointMaxResid << ", located at (" << Coord[0]*12.0 << ", " << Coord[1]*12.0;
+              if (nDim == 3) cout << ", " << Coord[2]*12.0;
+              cout <<   ")." << endl;
+            }
+
+            /*--- Print out the number of non-physical points and reconstructions ---*/
+
+            if (config[val_iZone]->GetNonphysical_Points() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Points() << " non-physical points in the solution." << endl;
+            if (config[val_iZone]->GetNonphysical_Reconstr() > 0)
+              cout << "There are " << config[val_iZone]->GetNonphysical_Reconstr() << " non-physical states in the upwind reconstruction." << endl;
+
+            cout << "-------------------------------------------------------------------------" << endl;
+
+            if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
+            else cout << endl << " IntIter" << " ExtIter";
+
+            //THIS NEEDS TO BE UPDATED FOR MULTIPlE SPECIES.....
+            cout << "    Res[Rho1]" << "    Res[Rho2]"<< "    Res[RhoE]" << "    Res[RhoEve]" << "     CL(Total)" << "      CD(Total)";
+
+            if(extra_heat_output) {
+              cout <<  "     Res[Heat]" << "   HFlux(Total)";
+            }
+
+            cout << endl;
+
+            break;
+
             case HEAT_EQUATION_FVM :
               if (!Unsteady) cout << endl << " Iter" << "    Time(s)";
               else cout << endl << " IntIter" << "  ExtIter";
@@ -6314,6 +6363,9 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               } else {
                 cout << "      Sens_Geo" << "      Sens_AoA" << endl;
               }
+              break;
+
+            case DISC_ADJ_TNE2_EULER:
               break;
 
             case ADJ_RANS : case DISC_ADJ_RANS:
@@ -6417,7 +6469,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
       
       switch (config[val_iZone]->GetKind_Solver()) {
         case EULER : case NAVIER_STOKES:
-        case TNE2_EULER: case TNE2_NAVIER_STOKES:
         case FEM_EULER : case FEM_NAVIER_STOKES: case FEM_LES:
           
           /*--- Write history file ---*/
@@ -6459,8 +6510,6 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
               cout.precision(6);
               cout.setf(ios::fixed, ios::floatfield);
               cout.width(13); cout << log10(residual_flow[0]);
-              cout.width(13); cout << log10(residual_flow[1]);
-              cout.width(13); cout << log10(residual_flow[2]);
               if (!equiv_area) {
                 if (compressible) {
                   if (nDim == 2 ) { cout.width(14); cout << log10(residual_flow[3]); }
@@ -6514,6 +6563,58 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
           }
           break;
           
+
+        case TNE2_EULER: case TNE2_NAVIER_STOKES:
+
+          /*--- Write history file ---*/
+
+          if ((!DualTime_Iteration) && (output_files)) {
+          if (!turbo) {
+            config[val_iZone]->GetHistFile()[0] << begin << direct_coeff;
+            if (buffet) config[val_iZone]->GetHistFile()[0] << buffet_coeff;
+            if (thermal) config[val_iZone]->GetHistFile()[0] << heat_coeff;
+            if (equiv_area) config[val_iZone]->GetHistFile()[0] << equivalent_area_coeff;
+            if (engine || actuator_disk) config[val_iZone]->GetHistFile()[0] << engine_coeff;
+            if (inv_design) {
+              config[val_iZone]->GetHistFile()[0] << Cp_inverse_design;
+              if (thermal) config[val_iZone]->GetHistFile()[0] << Heat_inverse_design;
+            }
+            if (rotating_frame && !turbo) config[val_iZone]->GetHistFile()[0] << rotating_frame_coeff;
+            config[val_iZone]->GetHistFile()[0] << flow_resid;
+            if (weakly_coupled_heat) config[val_iZone]->GetHistFile()[0] << heat_resid;
+          }
+          else {
+            config[val_iZone]->GetHistFile()[0] << begin << turbo_coeff << flow_resid;
+          }
+
+          if (aeroelastic) config[val_iZone]->GetHistFile()[0] << aeroelastic_coeff;
+          if (output_per_surface) config[val_iZone]->GetHistFile()[0] << monitoring_coeff;
+          if (output_surface) config[val_iZone]->GetHistFile()[0] << surface_outputs;
+          if (direct_diff != NO_DERIVATIVE) {
+            config[val_iZone]->GetHistFile()[0] << d_direct_coeff;
+            if (output_surface) config[val_iZone]->GetHistFile()[0] << d_surface_outputs;
+          }
+          if (output_comboObj) config[val_iZone]->GetHistFile()[0] << combo_obj;
+          config[val_iZone]->GetHistFile()[0] << end;
+          config[val_iZone]->GetHistFile()[0].flush();
+        }
+
+          /*--- Write screen output ---*/
+          if ((val_iZone == 0 && val_iInst == 0)|| fluid_structure){
+            if(DualTime_Iteration || !Unsteady) {
+              cout.precision(6);
+              cout.setf(ios::fixed, ios::floatfield);
+              cout.width(13); cout << log10(residual_flow[0]);
+              cout.width(13); cout << log10(residual_flow[1]);
+              cout.width(13); cout << log10(residual_flow[4]);
+              cout.width(13); cout << log10(residual_flow[5]);
+              cout.width(15); cout << min(10000.0, max(-10000.0, Total_CL)); cout.width(15); cout << min(10000.0, max(-10000.0, Total_CD));
+              if (extra_heat_output) { cout.width(15); cout << Extra_Heat_Residual; cout.width(15); cout << Extra_Total_Heat; }
+            }
+            cout << endl;
+          }
+          break;
+
         case RANS :
           
           /*--- Write history file ---*/
@@ -7321,6 +7422,9 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
       case EULER:
         if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Euler equations." << "\n";
         if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Euler equations." << "\n";
+        break;
+      case TNE2_EULER:
+        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Two-Temperature NonEquil. Euler equations." << "\n";
         break;
       case NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
@@ -8700,12 +8804,13 @@ void COutput::SetResult_Files(CSolver *****solver_container, CGeometry ****geome
     switch (config[iZone]->GetKind_Solver()) {
         
       case EULER : case NAVIER_STOKES : case RANS :
-      case TNE2_EULER: case TNE2_NAVIER_STOKES:
       case FEM_EULER : case FEM_NAVIER_STOKES : case FEM_RANS : case FEM_LES :
-        
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
         break;
         
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][TNE2_SOL], iExtIter, iZone, INST_0);
+        break;
 
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS : case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
         if (Wrt_Csv) SetSurfaceCSV_Adjoint(config[iZone], geometry[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL], solver_container[iZone][INST_0][MESH_0][FLOW_SOL], iExtIter, iZone, INST_0);
@@ -11751,11 +11856,13 @@ void COutput::SpecialOutput_FSI(ofstream *FSIHist_file, CGeometry ****geometry, 
       /*--- Flow residual output ---*/
 
       case EULER : case NAVIER_STOKES: case RANS :
+      case TNE2_EULER: case TNE2_NAVIER_STOKES:
         FSIHist_file[0] << flow_resid;
         if (turbulent) FSIHist_file[0] << turb_resid;
       break;
 
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
+      case DISC_ADJ_TNE2_EULER: case DISC_ADJ_TNE2_NAVIER_STOKES:
         FSIHist_file[0] << adj_flow_resid;
         break;
 
@@ -12752,6 +12859,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
       case EULER : case NAVIER_STOKES : case RANS :
         if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
             solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
+        break;
+      case TNE2_EULER : case TNE2_NAVIER_STOKES :
+        if (Wrt_Csv) SetSurfaceCSV_Flow(config[iZone], geometry[iZone][iInst][MESH_0],
+          solver_container[iZone][iInst][MESH_0][FLOW_SOL], iExtIter, iZone, iInst);
         break;
       case ADJ_EULER : case ADJ_NAVIER_STOKES : case ADJ_RANS :
       case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES: case DISC_ADJ_RANS:
