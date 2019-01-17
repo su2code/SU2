@@ -11087,10 +11087,10 @@ void COutput::PreprocessVolumeOutput(CConfig *config, CGeometry *geometry){
     nRequestedVolumeFields++;
   }
   
-  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "CONSERVATIVE") != RequestedVolumeFields.end())) {
-    RequestedVolumeFields.push_back("CONSERVATIVE");
-    nRequestedVolumeFields++;
-  }
+//  if(!(std::find(RequestedVolumeFields.begin(), RequestedVolumeFields.end(), "CONSERVATIVE") != RequestedVolumeFields.end())) {
+//    RequestedVolumeFields.push_back("CONSERVATIVE");
+//    nRequestedVolumeFields++;
+//  }
   
   /*--- Set the volume output fields using a virtual function call to the child implementation ---*/  
   
