@@ -132,6 +132,8 @@ CGeometry::CGeometry(void) {
   Local_Point_PeriodicSend = NULL;
   Local_Point_PeriodicRecv = NULL;
   
+  Local_Marker_PeriodicRecv = NULL;
+  
 }
 
 CGeometry::~CGeometry(void) {
@@ -239,6 +241,8 @@ CGeometry::~CGeometry(void) {
   if (Local_Point_PeriodicSend != NULL) delete [] Local_Point_PeriodicSend;
   if (Local_Point_PeriodicRecv != NULL) delete [] Local_Point_PeriodicRecv;
   
+  if (Local_Marker_PeriodicRecv != NULL) delete [] Local_Marker_PeriodicRecv;
+
 }
 
 
@@ -258,10 +262,10 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   /*--- Local variables. ---*/
   
   unsigned short iMarker;
-  unsigned long iPoint, jPoint, iPeriodic;
-  unsigned long  nVertexS, nVertexR, iVertex, MarkerS, MarkerR;
+  unsigned long iPoint, iVertex, iPeriodic;
   
   int iRank, iSend, iRecv, count;
+  int iMessage, offset, source, dest, tag;
   
   /*--- Create some temporary structures for tracking sends/recvs. ---*/
   
@@ -290,16 +294,16 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
         
         if (geometry->node[iPoint]->GetDomain()) {
           
-        iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
-        
-        /*--- If we have not visited this element yet, increment our
-         number of elements that must be sent to a particular proc. ---*/
-        
-        //if ((nPoint_Flag[iRank] != (int)iPoint)) {
-          nPoint_Flag[iRank]    = (int)iPoint;
-          nPoint_Send_All[iRank+1] += 1;
-        //}
-        
+          iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
+          
+          /*--- If we have not visited this element yet, increment our
+           number of elements that must be sent to a particular proc. ---*/
+          
+          if ((nPoint_Flag[iRank] != (int)iPoint)) {
+            nPoint_Flag[iRank]    = (int)iPoint;
+            nPoint_Send_All[iRank+1] += 1;
+          }
+          
         }
       }
     }
@@ -385,6 +389,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Point_PeriodicRecv[iRecv] = 0;
   
+  Local_Marker_PeriodicRecv = NULL;
+  Local_Marker_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+    Local_Marker_PeriodicRecv[iRecv] = 0;
+  
   /*--- We allocate the memory for communicating values in a later step
    once we know the maximum packet size that we need to communicate. This
    memory is deallocated and reallocated automatically in the case that
@@ -407,11 +416,13 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   /*--- Allocate arrays for sending the global ID. ---*/
   
-  unsigned long *idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
-  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++) idSend[iSend] = 0;
+  unsigned short nPackets = 2;
+  
+  unsigned long *idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]*nPackets];
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]*nPackets; iSend++) idSend[iSend] = 0;
   
   /*--- Build lists of local index values for send. ---*/
-
+  
   count = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
@@ -420,6 +431,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           
           /*--- Get the destination rank and number of points to send. ---*/
+          
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           if (geometry->node[iPoint]->GetDomain()) {
@@ -430,8 +442,10 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
               
               Local_Point_PeriodicSend[count] = iPoint;
               
-              idSend[count] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
-              
+              idSend[count] = geometry->vertex[iMarker][iVertex]->GetDonorPoint(); count++;
+            
+              idSend[count] = iPeriodic;
+
               count++;
             }
             
@@ -441,115 +455,86 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     }
   }
   
-  unsigned long *idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
-  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+  unsigned long *idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]*nPackets];
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++)
     idRecv[iRecv] = 0;
-
-  cout << rank << " here are the counts s / r: " <<nPoint_PeriodicSend[nPeriodicSend]<< "  " <<nPoint_PeriodicRecv[nPeriodicRecv]<< "  " << nPeriodicRecv <<"  " << nPeriodicSend << endl;
-  /*--- Local variables ---*/
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-  int iMessage, offset, nPointP2P, source, tag;
-
+  
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
    the data and send from the neighbor ranks. ---*/
-
+  
   iMessage = 0;
   for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
-
+    
     /*--- Compute our location in the recv buffer. ---*/
-
-    offset = nPoint_PeriodicRecv[iRecv];
-
+    
+    offset = nPackets*nPoint_PeriodicRecv[iRecv];
+    
     /*--- Take advantage of cumulative storage format to get the number
      of elems that we need to recv. ---*/
-
-    count = nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv];
-
+    
+    count = nPackets*(nPoint_PeriodicRecv[iRecv+1] - nPoint_PeriodicRecv[iRecv]);
+    
     /*--- Get the rank from which we receive the message. ---*/
-
+    
     source = Neighbors_PeriodicRecv[iRecv];
     tag    = source + 1;
-
+    
     /*--- Post non-blocking recv for this proc. ---*/
-
-    cout <<" RRR: " << rank << "  recvs " << count << " points from " << source << " at offset " << offset << " out of " <<  nPoint_PeriodicRecv[nPeriodicRecv] << endl;
-
+    
     SU2_MPI::Irecv(&(static_cast<unsigned long*>(idRecv)[offset]),
                    count, MPI_UNSIGNED_LONG, source, tag, MPI_COMM_WORLD,
                    &(req_PeriodicRecv[iMessage]));
-
+    
     /*--- Increment message counter. ---*/
-
+    
     iMessage++;
-
+    
   }
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-  // SENDS
-
-  /*--- Local variables ---*/
-
-  int dest;
-
+  
   /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
-
+  
   iMessage = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
-
-  /*--- Compute our location in the send buffer. ---*/
-
-  offset = nPoint_PeriodicSend[iSend];
-
-  /*--- Take advantage of cumulative storage format to get the number
-   of points that we need to send. ---*/
-
-  count = nPoint_PeriodicSend[iSend+1] - nPoint_PeriodicSend[iSend];
-
-  /*--- Get the rank to which we send the message. ---*/
-
-  dest = Neighbors_PeriodicSend[iSend];
-  tag  = rank + 1;
-
-  /*--- Post non-blocking send for this proc. ---*/
-
-    cout <<" SSS: " << rank << "  sends " << count << " points to " << dest << " at offset " << offset << " out of " <<  nPoint_PeriodicSend[nPeriodicSend] << endl;
-
+    
+    /*--- Compute our location in the send buffer. ---*/
+    
+    offset = nPackets*nPoint_PeriodicSend[iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. ---*/
+    
+    count = nPackets*(nPoint_PeriodicSend[iSend+1] - nPoint_PeriodicSend[iSend]);
+    
+    /*--- Get the rank to which we send the message. ---*/
+    
+    dest = Neighbors_PeriodicSend[iSend];
+    tag  = rank + 1;
+    
+    /*--- Post non-blocking send for this proc. ---*/
+    
     SU2_MPI::Isend(&(static_cast<unsigned long*>(idSend)[offset]),
                    count, MPI_UNSIGNED_LONG, dest, tag, MPI_COMM_WORLD,
                    &(req_PeriodicSend[iMessage]));
-
+    
+    /*--- Increment message counter. ---*/
+    
+    iMessage++;
+    
   }
-
-  /*--- Local variables ---*/
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
-
-  int ind;
-  SU2_MPI::Status status;
-
-
-//  /*--- Wait for the non-blocking sends to complete. ---*/
-//
-//  for (iSend = 0; iSend < nPeriodicSend; iSend++)
-//    SU2_MPI::Waitany(nPeriodicSend, req_PeriodicSend, &ind, &status);
-//
-//  /*--- Wait for the non-blocking recvs to complete. ---*/
-//
-//  for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++)
-//    SU2_MPI::Waitany(nPeriodicRecv, req_PeriodicRecv, &ind, &status);
-//
+  
+  /*--- Wait for the non-blocking sends to complete. ---*/
   
   SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
   SU2_MPI::Waitall(nPeriodicRecv, req_PeriodicRecv, MPI_STATUS_IGNORE);
-
+  
   // Store our local IDs
-
-  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++) {
-    Local_Point_PeriodicRecv[iRecv] = idRecv[iRecv];
+  
+  int ii = 0;
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++) {
+    Local_Point_PeriodicRecv[iRecv] = idRecv[ii]; ii++;
+    Local_Marker_PeriodicRecv[iRecv] = idRecv[ii]; ii++;
   }
-
-  SU2_MPI::Barrier(MPI_COMM_WORLD);
   
   delete [] idSend;
   delete [] idRecv;

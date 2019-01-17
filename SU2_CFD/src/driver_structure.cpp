@@ -287,7 +287,7 @@ CDriver::CDriver(char* confFile,
         for (unsigned short iPeriodic = 1; iPeriodic <= config_container[ZONE_0]->GetnMarker_Periodic()/2; iPeriodic++) {
           geometry_container[iZone][iInst][iMesh]->MatchPeriodic(config_container[iZone], iPeriodic);
         }
-        //geometry_container[iZone][iInst][iMesh]->PreprocessPeriodicComms(geometry_container[iZone][iInst][iMesh], config_container[iZone]);
+        geometry_container[iZone][iInst][iMesh]->PreprocessPeriodicComms(geometry_container[iZone][iInst][iMesh], config_container[iZone]);
       }
 
     }

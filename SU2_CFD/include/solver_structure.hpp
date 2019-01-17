@@ -166,6 +166,30 @@ public:
   virtual ~CSolver(void);
   
   /*!
+   * \brief Routine to load a solver quantity into the data structures for MPI periodic communication and to launch non-blocking sends and recvs.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   * \param[in] commType - Enumerated type for the quantity to be communicated.
+   */
+  void InitiatePeriodicComms(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short val_periodic_index,
+                             unsigned short commType);
+  
+  /*!
+   * \brief Routine to complete the set of non-blocking periodic communications launched by InitiatePeriodicComms() and unpacking of the data in the solver class.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] val_periodic_index - Index for the periodic marker to be treated (first in a pair).
+   * \param[in] commType - Enumerated type for the quantity to be unpacked.
+   */
+  void CompletePeriodicComms(CGeometry *geometry,
+                             CConfig *config,
+                             unsigned short val_periodic_index,
+                             unsigned short commType);
+  
+  /*!
    * \brief Set number of linear solver iterations.
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
