@@ -77,7 +77,7 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
   if (nRequestedScreenFields == 0){
-    if (config->GetTime_Domain()) RequestedHistoryFields.push_back("TIME_ITER");    
+    if (config->GetTime_Domain()) RequestedScreenFields.push_back("TIME_ITER");
     if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
     RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_DENSITY");
@@ -710,8 +710,7 @@ bool CFlowOutput::WriteScreen_Header(CConfig *config) {
 bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   bool write_output = false;
   
-  if (((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND) ) 
-      && write_dualtime ){
+  if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
     write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq_DualTime() == 0);
   }
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){

@@ -65,6 +65,7 @@ su2_dot_ldadd += \
   ../../SU2_CFD/src/libSU2Core_a-output_fieldview.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_su2.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_a-output_structure_legacy.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-variable_structure.$(OBJEXT) \
   ../../Common/lib/libSU2.a
 endif
@@ -78,6 +79,7 @@ su2_dot_ldadd += \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure_legacy.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
    ../../Common/lib/libSU2_AD.a
 endif
