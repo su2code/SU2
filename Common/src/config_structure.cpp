@@ -2379,6 +2379,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Permuting eigenvectors for UQ analysis */
   addBoolOption("UQ_PERMUTE", uq_permute, false);
 
+  /* DESCRIPTION: Interpolating solutions between two meshes */
+  addBoolOption("INTERPOLATE_SOLUTION", interpolate, false);
+
   /* END_CONFIG_OPTIONS */
 
 }

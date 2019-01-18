@@ -1098,6 +1098,8 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
+  bool interpolate;             /*!< \brief Determines if solution interpolation is taking place */
+
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -9163,6 +9165,12 @@ public:
    * \return YES if the forces breakdown file is written.
    */
   bool GetWrt_ForcesBreakdown(void);
+
+  /*!
+   * \brief Check if solution interpolation is being carried out
+   * \return <code>TRUE<\code> if solution interpolation is taking place
+  */
+  bool GetInterpolate_Solution(void);
 };
 
 #include "config_structure.inl"

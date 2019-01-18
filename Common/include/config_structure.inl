@@ -2076,3 +2076,5 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
+
+inline bool CConfig::GetInterpolate_Solution(void) { return interpolate; }
