@@ -43,11 +43,11 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   nonlinear_analysis = (config->GetGeometricConditions() == LARGE_DEFORMATIONS);  // Nonlinear analysis.
   dynamic = (config->GetTime_Domain() || (config->GetDynamic_Analysis() == DYNAMIC));  // Dynamic analysis.
   
+  nDim = geometry->GetnDim();
+
   /*--- Initialize number of variables ---*/
   if (linear_analysis) nVar_FEM = nDim;
   if (nonlinear_analysis) nVar_FEM = 3;
-  
-  nDim = geometry->GetnDim();
 
   /*--- Default fields for screen output ---*/
   if (nRequestedHistoryFields == 0){
@@ -124,7 +124,7 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
     SetHistoryOutputValue("RMS_DISP_X", log10(fea_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISP_Y", log10(fea_solver->GetRes_RMS(1)));
     if (nVar_FEM == 3){
-      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));    
+      SetHistoryOutputValue("RMS_DISP_Z", log10(fea_solver->GetRes_RMS(2)));
     }
   } else if (nonlinear_analysis){
     SetHistoryOutputValue("RMS_UTOL", log10(fea_solver->GetRes_FEM(0)));
@@ -135,16 +135,9 @@ void CFEAOutput::LoadHistoryData(CGeometry ****geometry,
   }
   
   if (multizone){
-    SetHistoryOutputValue("BGS_UTOL", log10(fea_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_RTOL", log10(fea_solver->GetRes_BGS(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("BGS_ETOL", log10(fea_solver->GetRes_BGS(2)));    
-    }
     SetHistoryOutputValue("BGS_DISP_X", log10(fea_solver->GetRes_BGS(0)));
     SetHistoryOutputValue("BGS_DISP_Y", log10(fea_solver->GetRes_BGS(1)));
-    if (nVar_FEM == 3){
-      SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));    
-    }
+    if (nVar_FEM == 3) SetHistoryOutputValue("BGS_DISP_Z", log10(fea_solver->GetRes_BGS(2)));
   }
   
   SetHistoryOutputValue("VMS", fea_solver->GetTotal_CFEA());
@@ -165,22 +158,18 @@ void CFEAOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("LINSOL_ITER", "Linear_Solver_Iterations", FORMAT_INTEGER, "LINSOL_ITER");
   
   // Residuals
-  if (nonlinear_analysis){
-    AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_UTOL",   "bgs[U]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_RTOL",   "bgs[R]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_ETOL",   "bgs[E]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  }
-  if (linear_analysis){
-    AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-    AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
-  }
+
+  AddHistoryOutput("RMS_UTOL",   "rms[U]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_RTOL",   "rms[R]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_ETOL",   "rms[E]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+
+  AddHistoryOutput("RMS_DISP_X", "rms[DispX]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Y", "rms[DispY]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("RMS_DISP_Z", "rms[DispZ]", FORMAT_FIXED,  "RMS_RES", TYPE_RESIDUAL);
+
+  AddHistoryOutput("BGS_DISP_X", "bgs[DispX]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Y", "bgs[DispY]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
+  AddHistoryOutput("BGS_DISP_Z", "bgs[DispZ]", FORMAT_FIXED,  "BGS_RES", TYPE_RESIDUAL);
 
   AddHistoryOutput("VMS",            "VonMises", FORMAT_SCIENTIFIC, "VMS");
   AddHistoryOutput("LOAD_INCREMENT", "Load_Increment",  FORMAT_FIXED, "LOAD_INCREMENT");

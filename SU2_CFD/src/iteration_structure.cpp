@@ -1797,6 +1797,8 @@ bool CFEAIteration::Monitor(COutput *output,
   /*--- If convergence was reached --*/
   StopCalc = integration_container[val_iZone][INST_0][FEA_SOL]->GetConvergence();
 
+  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Compute_NodalStress(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], numerics_container[val_iZone][val_iInst][MESH_0][FEA_SOL], config_container[val_iZone]);
+
   if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
     output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);
   }
