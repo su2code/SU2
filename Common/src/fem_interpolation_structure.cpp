@@ -50,7 +50,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   CFEMInterpolationGrid InputGrid(config, input_geometry, nZone);
   CFEMInterpolationGrid OutputGrid(config, output_geometry, nZone);
   
-  // Load solution data into inteprolation sol class.
+  // Load solution data into interpolation sol class.
   unsigned short iZone, iVar, nVar;
   unsigned short nVar_Template = 0,
                  nVar_Flow     = 0,
@@ -240,7 +240,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       }
     }
     
-    offsetDOFs = nDOFsTot;
+    offsetDOFs += nDOFsTot;
   }
   
 }
@@ -1353,6 +1353,190 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
   }
 }
 
+CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
+                                           CGeometry**    geometry,
+                                           CSolver***     solution,
+                                           unsigned short nZone)
+{
+  
+  unsigned short iZone, iVar, nVar;
+  unsigned short nVar_Template = 0,
+  nVar_Flow     = 0,
+  nVar_Trans    = 0,
+  nVar_Turb     = 0,
+  nVar_Adj_Flow = 0,
+  nVar_Adj_Turb = 0,
+  nVar_FEM      = 0,
+  nVar_Heat     = 0;
+  
+  bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm,
+  fem, disc_adj_fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+  fem_dg_flow, fem_dg_shock_persson,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  unsigned long offsetDOFs = 0;
+  for(iZone = 0; iZone < nZone; iZone++){
+    // Determine type of problem.
+    switch (config[iZone]->GetKind_Solver()) {
+      case TEMPLATE_SOLVER: template_solver = true; break;
+      case EULER : euler = true; break;
+      case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case FEM_EULER : fem_euler = true; break;
+      case FEM_NAVIER_STOKES: fem_ns = true; break;
+      case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
+      case FEM_LES : fem_ns = true; break;
+      case HEAT_EQUATION_FVM: heat_fvm = true; break;
+      case FEM_ELASTICITY: fem = true; break;
+      case ADJ_EULER : euler = true; adj_euler = true; break;
+      case ADJ_NAVIER_STOKES : ns = true; turbulent = (config[iZone]->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+      case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config[iZone]->GetFrozen_Visc_Cont()); break;
+      case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+      case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+      case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+      case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
+      case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+      case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+    }
+    
+    switch( config[iZone]->GetKind_FEM_Flow() ) {
+      case DG: fem_dg_flow = true; break;
+    }
+    
+    switch( config[iZone]->GetKind_FEM_DG_Shock() ) {
+      case PERSSON: fem_dg_shock_persson = true; break;
+    }
+    
+    // Get number of variables.
+    if(template_solver){
+      nVar_Template = solution[iZone][TEMPLATE_SOL]->GetnVar();
+    }
+    
+    if(euler || fem_euler){
+      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+    }
+    
+    if(ns){
+      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        nVar_Turb = solution[iZone][TURB_SOL]->GetnVar();
+      }
+      if(transition){
+        nVar_Trans = solution[iZone][TRANS_SOL]->GetnVar();
+      }
+    }
+    
+    if(fem_ns){
+      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
+      }
+      if(transition){
+        SU2_MPI::Error("Finite element transition model not yet implemented.", CURRENT_FUNCTION);
+      }
+    }
+    
+    if(adj_euler){
+      nVar_Adj_Flow = solution[iZone][ADJFLOW_SOL]->GetnVar();
+    }
+    
+    if(adj_ns){
+      nVar_Adj_Flow = solution[iZone][ADJFLOW_SOL]->GetnVar();
+      if(adj_turbulent){
+        nVar_Adj_Turb = solution[iZone][ADJTURB_SOL]->GetnVar();
+      }
+    }
+    
+    if(fem){
+      nVar_FEM = solution[iZone][FEA_SOL]->GetnVar();
+    }
+    
+    if(heat_fvm){
+      nVar_Heat = solution[iZone][HEAT_SOL]->GetnVar();
+    }
+    
+    // Copy data.
+    unsigned long iDOF, jDOF = 0;
+    nDOFsTot = geometry[iZone]->GetnPoint();
+    for(iDOF = offsetDOFs; iDOF < offsetDOFs + nDOFsTot; iDOF++, jDOF++){
+      
+      if(template_solver){
+        for(iVar = 0; iVar < nVar_Template; iVar++){
+           solution[iZone][TEMPLATE_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(euler || fem_euler || ns || fem_ns){
+        for(iVar = 0; iVar < nVar_Flow; iVar++){
+           solution[iZone][FLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(turbulent){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Flow; iVar < nVar_Flow + nVar_Turb; iVar++, jVar++){
+          solution[iZone][TURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(transition){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Flow + nVar_Turb; iVar < nVar_Flow + nVar_Turb + nVar_Trans; iVar++, jVar++){
+          solution[iZone][TRANS_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(adj_euler || adj_ns){
+        for(iVar = 0; iVar < nVar_Adj_Flow; iVar++){
+          solution[iZone][ADJFLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(adj_turbulent){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Adj_Flow; iVar < nVar_Adj_Flow + nVar_Adj_Turb; iVar++, jVar++){
+          solution[iZone][ADJTURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(fem){
+        for(iVar = 0; iVar < nVar_FEM; iVar++){
+          solution[iZone][FEA_SOL]->node[jDOF]->GetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+      
+      if(heat_fvm){
+        for(iVar = 0; iVar < nVar_Heat; iVar++){
+          solution[iZone][HEAT_SOL]->node[jDOF]->GetSolution(iVar, mSolDOFs[iDOF][iVar]);
+        }
+      }
+    }
+    
+    offsetDOFs += nDOFsTot;
+  }
+  
+}
+
 CFEMInterpolationFaceOfElem::CFEMInterpolationFaceOfElem()
 {
   nCornerPoints   = 0;
@@ -1875,7 +2059,7 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   }
 }
 
-void CFEMInterpolationGridZone::CopyZoneData(CGeometry* geometry)
+void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CGeometry* geometry)
 {
   unsigned long iElem, nElem, iPoint, nPoint;
   unsigned short iNode, iDim, nDim, iMarker, nMarker;

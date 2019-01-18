@@ -202,6 +202,14 @@ private:
                                    std::vector<CFEMStandardElement>     &standardElementsGrid,
                                    std::vector<CFEMStandardElement>     &standardElementsSol,
                                    std::vector<unsigned short>          &indInStandardElements);
+  
+  /*!
+   * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
+   */
+  void CopySolToSU2Solution(CConfig**      config,
+                            CGeometry***   geometry,
+                            CSolver**      solution,
+                            unsigned short nZone);
 };
 
 /*!
@@ -412,9 +420,9 @@ public:
   CFEMInterpolationGridZone& operator=(const CFEMInterpolationGridZone &other) {Copy(other); return (*this);}
   
   /*!
-   * \brief Function, which copies data from the geometry structure to the interpolation zone data structure for a single zone.
+   * \brief Function, which copies data from the SU2 geometry structure to the interpolation zone data structure for a single zone.
    */
-  void CopyZoneData(CGeometry* geometry);
+  void CopySU2GeometryToGrid(CGeometry* geometry);
   
   /*!
    * \brief Function, which determines the coordinates for the points to be interpolated.
