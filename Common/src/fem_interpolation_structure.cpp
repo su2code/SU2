@@ -46,9 +46,202 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
                                            CSolver***     output_solution,
                                            unsigned short nZone)
 {
-  // Load geometry data into interpolation grid class
+  // Load geometry data into interpolation grid class.
   CFEMInterpolationGrid InputGrid(config, input_geometry, nZone);
   CFEMInterpolationGrid OutputGrid(config, output_geometry, nZone);
+  
+  // Load solution data into inteprolation sol class.
+  unsigned short iZone, iVar, nVar;
+  unsigned short nVar_Template = 0,
+                 nVar_Flow     = 0,
+                 nVar_Trans    = 0,
+                 nVar_Turb     = 0,
+                 nVar_Adj_Flow = 0,
+                 nVar_Adj_Turb = 0,
+                 nVar_FEM      = 0,
+                 nVar_Heat     = 0;
+  
+  bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm,
+  fem, disc_adj_fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+  fem_dg_flow, fem_dg_shock_persson,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  // Allocate memory for the solution.
+  unsigned long nDOFsTot = 0;
+  for(iZone = 0; iZone < nZone; iZone++){
+    nDOFsTot += input_geometry[iZone]->GetnPoint();
+  }
+  mSolDOFs.resize(nDOFsTot);
+  
+  unsigned long offsetDOFs = 0;
+  for(iZone = 0; iZone < nZone; iZone++){
+    // Determine type of problem.
+    switch (config[iZone]->GetKind_Solver()) {
+      case TEMPLATE_SOLVER: template_solver = true; break;
+      case EULER : euler = true; break;
+      case NAVIER_STOKES: ns = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case RANS : ns = true; turbulent = true; if (config[iZone]->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case FEM_EULER : fem_euler = true; break;
+      case FEM_NAVIER_STOKES: fem_ns = true; break;
+      case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
+      case FEM_LES : fem_ns = true; break;
+      case HEAT_EQUATION_FVM: heat_fvm = true; break;
+      case FEM_ELASTICITY: fem = true; break;
+      case ADJ_EULER : euler = true; adj_euler = true; break;
+      case ADJ_NAVIER_STOKES : ns = true; turbulent = (config[iZone]->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+      case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config[iZone]->GetFrozen_Visc_Cont()); break;
+      case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+      case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+      case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+      case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
+      case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+      case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+    }
+    
+    switch( config[iZone]->GetKind_FEM_Flow() ) {
+      case DG: fem_dg_flow = true; break;
+    }
+    
+    switch( config[iZone]->GetKind_FEM_DG_Shock() ) {
+      case PERSSON: fem_dg_shock_persson = true; break;
+    }
+    
+    // Get number of variables.
+    if(template_solver){
+      nVar_Template = input_solution[iZone][TEMPLATE_SOL]->GetnVar();
+      nVar          = nVar_Template;
+    }
+    
+    if(euler || fem_euler){
+      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      nVar      = nVar_Flow;
+    }
+    
+    if(ns){
+      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        nVar_Turb = input_solution[iZone][TURB_SOL]->GetnVar();
+      }
+      if(transition){
+        nVar_Trans = input_solution[iZone][TRANS_SOL]->GetnVar();
+      }
+      nVar = nVar_Flow + nVar_Turb + nVar_Trans;
+    }
+    
+    if(fem_ns){
+      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      if(turbulent){
+        SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
+      }
+      if(transition){
+        SU2_MPI::Error("Finite element transition model not yet implemented.", CURRENT_FUNCTION);
+      }
+      nVar = nVar_Flow + nVar_Turb + nVar_Trans;
+    }
+    
+    if(adj_euler){
+      nVar_Adj_Flow = input_solution[iZone][ADJFLOW_SOL]->GetnVar();
+      nVar          = nVar_Adj_Flow;
+    }
+    
+    if(adj_ns){
+      nVar_Adj_Flow = input_solution[iZone][ADJFLOW_SOL]->GetnVar();
+      if(adj_turbulent){
+        nVar_Adj_Turb = input_solution[iZone][ADJTURB_SOL]->GetnVar();
+      }
+      nVar = nVar_Adj_Flow + nVar_Adj_Turb;
+    }
+    
+    if(fem){
+      nVar_FEM = input_solution[iZone][FEA_SOL]->GetnVar();
+      nVar     = nVar_FEM;
+    }
+    
+    if(heat_fvm){
+      nVar_Heat = input_solution[iZone][HEAT_SOL]->GetnVar();
+      nVar      = nVar_Heat;
+    }
+    
+    // Copy data.
+    unsigned long iDOF, jDOF = 0;
+    nDOFsTot = input_geometry[iZone]->GetnPoint();
+    for(iDOF = offsetDOFs; iDOF < offsetDOFs + nDOFsTot; iDOF++, jDOF++){
+      mSolDOFs[iDOF].resize(nVar);
+      
+      if(template_solver){
+        for(iVar = 0; iVar < nVar_Template; iVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][TEMPLATE_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+      
+      if(euler || fem_euler || ns || fem_ns){
+        for(iVar = 0; iVar < nVar_Flow; iVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][FLOW_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+
+      if(turbulent){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Flow; iVar < nVar_Flow + nVar_Turb; iVar++, jVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][TURB_SOL]->node[jDOF]->GetSolution(jVar);
+        }
+      }
+      
+      if(transition){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Flow + nVar_Turb; iVar < nVar_Flow + nVar_Turb + nVar_Trans; iVar++, jVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][TRANS_SOL]->node[jDOF]->GetSolution(jVar);
+        }
+      }
+      
+      if(adj_euler || adj_ns){
+        for(iVar = 0; iVar < nVar_Adj_Flow; iVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][ADJFLOW_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+      
+      if(adj_turbulent){
+        unsigned short jVar = 0;
+        for(iVar = nVar_Adj_Flow; iVar < nVar_Adj_Flow + nVar_Adj_Turb; iVar++, jVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][ADJTURB_SOL]->node[jDOF]->GetSolution(jVar);
+        }
+      }
+      
+      if(fem){
+        for(iVar = 0; iVar < nVar_FEM; iVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][FEA_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+      
+      if(heat_fvm){
+        for(iVar = 0; iVar < nVar_Heat; iVar++){
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][HEAT_SOL]->node[jDOF]->GetSolution(iVar);
+        }
+      }
+    }
+    
+    offsetDOFs = nDOFsTot;
+  }
   
 }
 
@@ -77,7 +270,6 @@ void CFEMInterpolationSol::InterpolateSolution(
     mMetaData[i] = inputSol->mMetaData[i];
   
   mIterNumber = inputSol->mIterNumber;
-  mVarNames   = inputSol->mVarNames;
   
   // Determine the number of variables to be interpolated and allocate the memory
   // for the solution DOFs.
@@ -178,14 +370,14 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
   std::vector<unsigned short> inputGridIndInStandardBoundaryFaces;
   
   // Build the surface ADT for the input grid.
-  su2_adtElemClass inputGridADT;
+  ADTElemClass inputGridADT;
   BuildSurfaceADT(inputGridZone, inputGridADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, inputGridIndInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
   
   // Build the surface ADT for the output grid.
   std::vector<unsigned short> outputGridIndInStandardBoundaryFaces;
-  su2_adtElemClass outputGridADT;
+  ADTElemClass outputGridADT;
   BuildSurfaceADT(outputGridZone, outputGridADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, outputGridIndInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
@@ -277,7 +469,7 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
 
 void CFEMInterpolationSol::BuildSurfaceADT(
                                const CFEMInterpolationGridZone           *gridZone,
-                               su2_adtElemClass                          &surfaceADT,
+                               ADTElemClass                          &surfaceADT,
                                std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesGrid,
                                std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesSol,
                                std::vector<unsigned short>               &indInStandardBoundaryFaces,
@@ -597,7 +789,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
   }
   
   // Build the local ADT.
-  su2_adtElemClass volumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+  ADTElemClass volumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
                              subElementIDInParent, parentElement);
   
   // Release the memory of the vectors used to build the ADT. To make sure
@@ -912,7 +1104,7 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
   std::vector<unsigned short> indInStandardBoundaryFaces;
   
   // Build the surface ADT.
-  su2_adtElemClass surfaceADT;
+  ADTElemClass surfaceADT;
   BuildSurfaceADT(gridZone, surfaceADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, indInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
@@ -2214,6 +2406,7 @@ CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
   unsigned short iZone;
   
   // Loop over the number of zones to copy the data from geometry to grid class.
+  mGridZones.resize(nZones);
   for(iZone = 0; iZone < nZone; iZone++)
     mGridZones[iZone].CopyZoneData(geometry[iZone]);
 }
