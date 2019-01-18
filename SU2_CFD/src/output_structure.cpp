@@ -2393,6 +2393,8 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
                          ( config->GetKind_Solver() == ADJ_EULER         ) ||
                          ( config->GetKind_Solver() == ADJ_NAVIER_STOKES ) ||
                          ( config->GetKind_Solver() == ADJ_RANS          )   );
+  bool tne2           = (( config->GetKind_Solver() == TNE2_EULER        ) ||
+                         ( config->GetKind_Solver() == TNE2_NAVIER_STOKES)   );
   bool fem = (config->GetKind_Solver() == FEM_ELASTICITY);
   
   unsigned short iDim;
@@ -2418,7 +2420,24 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     RefPressure = solver[FLOW_SOL]->GetPressure_Inf();
     factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
   }
-  
+
+  if (tne2) {
+    if (grid_movement) {
+      Gas_Constant = config->GetGas_ConstantND();
+      Mach2Vel = sqrt(Gamma*Gas_Constant*config->GetTemperature_FreeStreamND());
+      Mach_Motion = config->GetMach_Motion();
+      RefVel2 = (Mach_Motion*Mach2Vel)*(Mach_Motion*Mach2Vel);
+    }
+    else {
+      RefVel2 = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        RefVel2  += solver[TNE2_SOL]->GetVelocity_Inf(iDim)*solver[TNE2_SOL]->GetVelocity_Inf(iDim);
+    }
+    RefDensity  = solver[TNE2_SOL]->GetDensity_Inf();
+    RefPressure = solver[TNE2_SOL]->GetPressure_Inf();
+    factor = 1.0 / (0.5*RefDensity*RefArea*RefVel2);
+  }
+
   /*--- Prepare send buffers for the conservative variables. Need to
    find the total number of conservative variables and also the
    index for their particular solution container. ---*/
@@ -2475,7 +2494,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
     /* -- Add Temperature (T-R and V-E), Mach to restart ---*/
 
     if ((Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES) ) {
-      //iVar_Temp = nVar_Total; nVar_Total++;
       iVar_Tempv = nVar_Total; nVar_Total++;
     }
 
@@ -2497,7 +2515,6 @@ void COutput::MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solv
 
     if (Kind_Solver == TNE2_NAVIER_STOKES) {
       nVar_Total += config->GetnSpecies()+3;
-      //iVar_Limiter = nVar_Total; nVar_Total++;
     }
 
     /*--- Add Eddy Viscosity to the restart file ---*/
