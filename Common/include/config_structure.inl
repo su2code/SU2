@@ -2077,4 +2077,4 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
-inline bool CConfig::GetInterpolate_Solution(void) { return interpolate; }
+inline bool CConfig::GetInterpolate_Solution(void) { return interpolate_solution; }

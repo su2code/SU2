@@ -39,7 +39,10 @@
 #pragma once
 
 #include "adt_structure.hpp"
+#include "config_structure.hpp"
+#include "geometry_structure.hpp"
 #include "fem_geometry_structure.hpp"
+#include "solver_structure.hpp"
 
 using namespace std;
 
@@ -65,6 +68,22 @@ public:
    * \brief Constructor of the class.
    */
   CFEMInterpolationSol(void);
+  
+  /*!
+   * \overload
+   * \brief Constructor of the class.
+   * \param[in] config          - Definition of the particular problem.
+   * \param[in] input_geometry  - The source grid for interpolation.
+   * \param[in] output_geometry - The target grid for interpolation.
+   * \param[in] input_solution  - The source solution structure for interpolation.
+   * \param[in] output_solution - The target solution structure for interpolation.
+   */
+  CFEMInterpolationSol(CConfig**      config,
+                       CGeometry***   input_geometry,
+                       CGeometry**    output_geometry,
+                       CSolver**      input_solution,
+                       CSolver***     output_solution,
+                       unsigned short nZone);
   
   /*!
    * \brief Destructor of the class.
@@ -393,6 +412,11 @@ public:
   CFEMInterpolationGridZone& operator=(const CFEMInterpolationGridZone &other) {Copy(other); return (*this);}
   
   /*!
+   * \brief Function, which copies data from the geometry structure to the interpolation zone data structure for a single zone.
+   */
+  void CopyZoneData(CGeometry* geometry);
+  
+  /*!
    * \brief Function, which determines the coordinates for the points to be interpolated.
    */
   void DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
@@ -471,6 +495,16 @@ public:
    * \brief Constructor of the class.
    */
   CFEMInterpolationGrid(void);
+  
+  /*!
+   * \overload
+   * \brief Constructor of the class.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] geometry - The grid for interpolation.
+   */
+  CFEMInterpolationGrid(CConfig**      config,
+                        CGeometry**    geometry,
+                        unsigned short nZone);
   
   /*!
    * \brief Destructor of the class.

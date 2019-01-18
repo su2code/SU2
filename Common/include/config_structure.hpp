@@ -1098,7 +1098,7 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
-  bool interpolate;             /*!< \brief Determines if solution interpolation is taking place */
+  bool interpolate_solution;             /*!< \brief Determines if solution interpolation is taking place */
 
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
