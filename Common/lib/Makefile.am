@@ -60,6 +60,7 @@ lib_sources = \
   ../include/dual_grid_structure.inl \
   ../include/fem_geometry_structure.hpp \
   ../include/fem_geometry_structure.inl \
+  ../include/fem_interpolation_structure.hpp \
   ../include/fem_standard_element.hpp \
   ../include/fem_standard_element.inl \
   ../include/geometry_structure.hpp \
@@ -100,6 +101,7 @@ lib_sources = \
   ../src/dual_grid_structure.cpp \
   ../src/fem_geometry_structure.cpp \
   ../src/fem_integration_rules.cpp \
+  ../src/fem_interpolation_structure.cpp \
   ../src/fem_standard_element.cpp \
   ../src/fem_wall_distance.cpp \
   ../src/fem_work_estimate_metis.cpp \
