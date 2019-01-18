@@ -2380,7 +2380,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("UQ_PERMUTE", uq_permute, false);
 
   /* DESCRIPTION: Interpolating solutions between two meshes */
-  addBoolOption("INTERPOLATE_SOLUTION", interpolate, false);
+  addBoolOption("INTERPOLATE_SOLUTION", interpolate_solution, false);
 
   /* END_CONFIG_OPTIONS */
 

@@ -39,6 +39,19 @@
 
 CFEMInterpolationSol::CFEMInterpolationSol(void){}
 
+CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
+                                           CGeometry**    input_geometry,
+                                           CGeometry**    output_geometry,
+                                           CSolver***     input_solution,
+                                           CSolver***     output_solution,
+                                           unsigned short nZone)
+{
+  // Load geometry data into interpolation grid class
+  CFEMInterpolationGrid InputGrid(config, input_geometry, nZone);
+  CFEMInterpolationGrid OutputGrid(config, output_geometry, nZone);
+  
+}
+
 CFEMInterpolationSol::~CFEMInterpolationSol(void){}
 
 void CFEMInterpolationSol::InterpolateSolution(
@@ -1670,6 +1683,99 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   }
 }
 
+void CFEMInterpolationGridZone::CopyZoneData(CGeometry* geometry)
+{
+  unsigned long iElem, nElem, iPoint, nPoint;
+  unsigned short iNode, iDim, nDim, iMarker, nMarker;
+  
+  // Allocate the memory for volume elements.
+  nElem = geometry->GetnElem();
+  mVolElems.resize(nElem);
+  
+  // Loop over the elements.
+  unsigned long nSolDOFs = 0;
+  for(iElem = 0; iElem < nElem; iElem++){
+    int VTKType, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol;
+    
+    // Determine the VTK type of the element
+    VTKType = geometry->elem[iElem]->GetVTK_Type();
+    
+    // Determine the polynomial degree of the grid and solution. GetNPoly returns 0 if not FEM.
+    nPolyGrid = geometry->elem[iElem]->GetNPolyGrid();
+    nPolySol  = geometry->elem[iElem]->GetNPolySol();
+    if(nPolyGrid == 0){
+      nPolyGrid = 1;
+      nPolySol  = nPolyGrid;
+    }
+    
+    // Determine the number of DOFs for the grid and solution.
+    nDOFsGrid = DetermineNDOFs(VTKType, nPolyGrid);
+    nDOFsSol  = DetermineNDOFs(VTKType, nPolySol);
+    
+    // Allocate the memory for the connectivity and read it.
+    std::vector<unsigned long> connSU2(nDOFsGrid);
+    for(iNode = 0; iNode < nDOFsGrid; iNode++)
+      connSU2[iNode] = geometry->elem[iElem]->GetNode(iNode);
+    
+    // Store the data for this element.
+    mVolElems[iElem].StoreElemData(iElem, VTKType, nPolyGrid, nPolySol, nDOFsGrid,
+                                   nDOFsSol, nSolDOFs, connSU2.data());
+    
+    // Update nSolDOFs.
+    nSolDOFs += nDOFsSol;
+
+  }
+  
+  // Allocate the memory for the coordinates.
+  nPoint = geometry->GetnPoint();
+  nDim   = geometry->GetnDim();
+  mCoor.resize(nDim);
+  for(iDim = 0; iDim < nDim; iDim++){
+    mCoor[iDim].resize(nPoint);
+    // Copy the coordinates.
+    for(iPoint = 0; iPoint < nPoint; iPoint++){
+      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord()[iDim];
+    }
+  }
+  
+  // Allocate the memory for the surface elements.
+  nElem = geometry->nLocal_Bound_Elem;
+  mSurfElems.resize(nElem);
+  
+  // Loop over the boundary markers to store the surface connectivity.
+  // Note that the surface connectivity is stored as one entity. The
+  // information of the boundary markers is not kept.
+  nElem = 0;
+  nMarker = config->GetnMarker_All();
+  for(iMarker = 0; iMarker < nMarker; iMarker++){
+    for(iElem = 0 iElem = geometry->GetnElem_Bound(iMarker); iElem++, nElem++){
+      int VTKType, nPolyGrid, nDOFsGrid;
+      
+      // Determine the VTK type of the element
+      VTKType = geometry->bound[iMarker][iElem]->GetVTK_Type();
+      
+      // Determine the polynomial degree of the grid and solution. GetNPoly returns 0 if not FEM.
+      nPolyGrid = geometry->bound[iMarker][iElem]->GetNPolyGrid();
+      if(nPolyGrid == 0){
+        nPolyGrid = 1;
+      }
+      
+      // Determine the number of DOFs for the grid and solution.
+      nDOFsGrid = DetermineNDOFs(VTKType, nPolyGrid);
+      
+      // Allocate the memory for the connectivity and read it.
+      std::vector<unsigned long> connSU2(nDOFsGrid);
+      for(iNode = 0; iNode < nDOFsGrid; iNode++)
+        connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
+      
+      // Store the data for this element.
+      mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
+                                      connSU2.data());
+    }
+  }
+  
+}
+
 void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
                                                            const SolutionFormatT  solFormatWrite)
 {
@@ -2100,6 +2206,17 @@ void CFEMInterpolationGridZone::ResetPositionIfstream(std::ifstream &su2File,
 }
 
 CFEMInterpolationGrid::CFEMInterpolationGrid(void){}
+
+CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
+                                             CGeometry**    geometry,
+                                             unsigned short nZone)
+{
+  unsigned short iZone;
+  
+  // Loop over the number of zones to copy the data from geometry to grid class.
+  for(iZone = 0; iZone < nZone; iZone++)
+    mGridZones[iZone].CopyZoneData(geometry[iZone]);
+}
 
 CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}
 
