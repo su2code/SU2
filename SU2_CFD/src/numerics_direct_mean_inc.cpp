@@ -658,7 +658,7 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
       const su2double dist_ij = sqrt(dist_ij_2);
       SetIncTauJacobian(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
-                        dist_ij, UnitNormal, Area);
+                        dist_ij, UnitNormal);
       GetViscousIncProjJacs(Area, val_Jacobian_i, val_Jacobian_j);
 
       /*--- Include the temperature equation Jacobian. ---*/
@@ -749,15 +749,15 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
     val_Proj_Jac_Tensor_i[0][2] = 0.0;
     val_Proj_Jac_Tensor_i[0][3] = 0.0;
 
-    val_Proj_Jac_Tensor_i[1][0] = tau_jacobian_i[0][0];
-    val_Proj_Jac_Tensor_i[1][1] = tau_jacobian_i[0][1];
-    val_Proj_Jac_Tensor_i[1][2] = tau_jacobian_i[0][2];
-    val_Proj_Jac_Tensor_i[1][3] = tau_jacobian_i[0][3];
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[0][2];
+    val_Proj_Jac_Tensor_i[1][3] = val_dS*tau_jacobian_i[0][3];
 
-    val_Proj_Jac_Tensor_i[2][0] = tau_jacobian_i[1][0];
-    val_Proj_Jac_Tensor_i[2][1] = tau_jacobian_i[1][1];
-    val_Proj_Jac_Tensor_i[2][2] = tau_jacobian_i[1][2];
-    val_Proj_Jac_Tensor_i[2][3] = tau_jacobian_i[1][3];
+    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
+    val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
 
     val_Proj_Jac_Tensor_i[3][0] = 0.0;
     val_Proj_Jac_Tensor_i[3][1] = 0.0;
@@ -772,23 +772,23 @@ void CAvgGradInc_Flow::GetViscousIncProjJacs(su2double val_dS,
     val_Proj_Jac_Tensor_i[0][3] = 0.0;
     val_Proj_Jac_Tensor_i[0][4] = 0.0;
 
-    val_Proj_Jac_Tensor_i[1][0] = tau_jacobian_i[0][0];
-    val_Proj_Jac_Tensor_i[1][1] = tau_jacobian_i[0][1];
-    val_Proj_Jac_Tensor_i[1][2] = tau_jacobian_i[0][2];
-    val_Proj_Jac_Tensor_i[1][3] = tau_jacobian_i[0][3];
-    val_Proj_Jac_Tensor_i[1][4] = tau_jacobian_i[0][4];
+    val_Proj_Jac_Tensor_i[1][0] = val_dS*tau_jacobian_i[0][0];
+    val_Proj_Jac_Tensor_i[1][1] = val_dS*tau_jacobian_i[0][1];
+    val_Proj_Jac_Tensor_i[1][2] = val_dS*tau_jacobian_i[0][2];
+    val_Proj_Jac_Tensor_i[1][3] = val_dS*tau_jacobian_i[0][3];
+    val_Proj_Jac_Tensor_i[1][4] = val_dS*tau_jacobian_i[0][4];
 
-    val_Proj_Jac_Tensor_i[2][0] = tau_jacobian_i[1][0];
-    val_Proj_Jac_Tensor_i[2][1] = tau_jacobian_i[1][1];
-    val_Proj_Jac_Tensor_i[2][2] = tau_jacobian_i[1][2];
-    val_Proj_Jac_Tensor_i[2][3] = tau_jacobian_i[1][3];
-    val_Proj_Jac_Tensor_i[2][4] = tau_jacobian_i[1][4];
+    val_Proj_Jac_Tensor_i[2][0] = val_dS*tau_jacobian_i[1][0];
+    val_Proj_Jac_Tensor_i[2][1] = val_dS*tau_jacobian_i[1][1];
+    val_Proj_Jac_Tensor_i[2][2] = val_dS*tau_jacobian_i[1][2];
+    val_Proj_Jac_Tensor_i[2][3] = val_dS*tau_jacobian_i[1][3];
+    val_Proj_Jac_Tensor_i[2][4] = val_dS*tau_jacobian_i[1][4];
 
-    val_Proj_Jac_Tensor_i[3][0] = tau_jacobian_i[2][0];
-    val_Proj_Jac_Tensor_i[3][1] = tau_jacobian_i[2][1];
-    val_Proj_Jac_Tensor_i[3][2] = tau_jacobian_i[2][2];
-    val_Proj_Jac_Tensor_i[3][3] = tau_jacobian_i[2][3];
-    val_Proj_Jac_Tensor_i[3][4] = tau_jacobian_i[2][4];
+    val_Proj_Jac_Tensor_i[3][0] = val_dS*tau_jacobian_i[2][0];
+    val_Proj_Jac_Tensor_i[3][1] = val_dS*tau_jacobian_i[2][1];
+    val_Proj_Jac_Tensor_i[3][2] = val_dS*tau_jacobian_i[2][2];
+    val_Proj_Jac_Tensor_i[3][3] = val_dS*tau_jacobian_i[2][3];
+    val_Proj_Jac_Tensor_i[3][4] = val_dS*tau_jacobian_i[2][4];
 
     val_Proj_Jac_Tensor_i[4][0] = 0.0;
     val_Proj_Jac_Tensor_i[4][1] = 0.0;
