@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - thomas.economon@us.bosch.com
   
 branches:
     only:
-        - develop
+        - feature_periodic
 
 python:
     - 2.7
