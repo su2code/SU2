@@ -2912,19 +2912,7 @@ class CAvgGrad_Base : public CNumerics {
   *Proj_Mean_GradPrimVar_Edge, /*!< \brief Inner product of the Mean gradient and the edge vector. */
   *Edge_Vector;                /*!< \brief Vector from point i to point j. */
 
-  /*!
-   * \brief Calculate the viscous + turbulent stress tensor
-   * \param[in] val_primvar - Primitive variables.
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_turb_ke - Turbulent kinetic energy
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   */
-  void GetStressTensor(const su2double *val_primvar,
-                       su2double **val_gradprimvar,
-                       const su2double val_turb_ke,
-                       const su2double val_laminar_viscosity,
-                       const su2double val_eddy_viscosity);
+
 
   /*!
    * \brief Add a correction using a Quadratic Constitutive Relation
@@ -2938,7 +2926,7 @@ class CAvgGrad_Base : public CNumerics {
    *
    * \param[in] val_gradprimvar
    */
-  void AddQCR(su2double **val_gradprimvar);
+  void AddQCR(const su2double* const *val_gradprimvar);
 
   /*!
    * \brief Scale the stress tensor using a predefined wall stress.
@@ -2950,8 +2938,7 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_tau_wall - The wall stress
    */
   void AddTauWall(const su2double *val_normal,
-                  const su2double val_tau_wall);
-
+                  su2double val_tau_wall);
 
   /**
    * \brief Calculate the Jacobian of the viscous + turbulent stress tensor
@@ -2966,10 +2953,10 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
-  void GetTauJacobian(const su2double* val_Mean_PrimVar,
-                      const su2double val_laminar_viscosity,
-                      const su2double val_eddy_viscosity,
-                      const su2double val_dist_ij,
+  void SetTauJacobian(const su2double* val_Mean_PrimVar,
+                      su2double val_laminar_viscosity,
+                      su2double val_eddy_viscosity,
+                      su2double val_dist_ij,
                       const su2double *val_normal);
 
 
@@ -2985,11 +2972,11 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_dist_ij - Distance between the points.
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    */
-  void GetIncTauJacobian(const su2double val_laminar_viscosity,
-                         const su2double val_eddy_viscosity,
-                         const su2double val_dist_ij,
+  void SetIncTauJacobian(su2double val_laminar_viscosity,
+                         su2double val_eddy_viscosity,
+                         su2double val_dist_ij,
                          const su2double *val_normal,
-                         const su2double val_dS);
+                         su2double val_dS);
 
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
@@ -3016,10 +3003,26 @@ class CAvgGrad_Base : public CNumerics {
    * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
    */
   void GetViscousProjJacs(const su2double *val_Mean_PrimVar,
-                          const su2double val_dS,
+                          su2double val_dS,
                           const su2double *val_Proj_Visc_Flux,
                           su2double **val_Proj_Jac_Tensor_i,
                           su2double **val_Proj_Jac_Tensor_j);
+
+  /*!
+   * \brief Apply a correction to the gradient to reduce the truncation error
+   *
+   * \param[in] val_PrimVar_i - Primitive variables at point i
+   * \param[in] val_PrimVar_j - Primitive variables at point j
+   * \param[in] val_edge_vector - The vector between points i and j
+   * \param[in] val_dist_ij_2 - The distance between points i and j, squared
+   * \param[in] val_nPrimVar - The number of primitive variables
+   */
+  void CorrectGradient(su2double** GradPrimVar,
+                       const su2double* val_PrimVar_i,
+                       const su2double* val_PrimVar_j,
+                       const su2double* val_edge_vector,
+                       su2double val_dist_ij_2,
+                       const unsigned short val_nPrimVar);
 
  public:
 
@@ -3046,6 +3049,36 @@ class CAvgGrad_Base : public CNumerics {
    * \param[in] val_tauwall_j - Value of the wall shear stress at point j.
    */
   void SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j);
+
+  /*!
+   * \brief Calculate the viscous + turbulent stress tensor
+   * \param[in] val_primvar - Primitive variables.
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_turb_ke - Turbulent kinetic energy
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   */
+  void SetStressTensor(const su2double *val_primvar,
+                       const su2double* const *val_gradprimvar,
+                       su2double val_turb_ke,
+                       su2double val_laminar_viscosity,
+                       su2double val_eddy_viscosity);
+
+  /*!
+   * \brief Get a component of the viscous stress tensor.
+   *
+   * \param[in] iDim - The first index
+   * \param[in] jDim - The second index
+   * \return The component of the viscous stress tensor at iDim, jDim
+   */
+  su2double GetStressTensor(unsigned short iDim, unsigned short jDim) const;
+
+  /*!
+   * \brief Get a component of the heat flux vector.
+   * \param[in] iDim - The index of the component
+   * \return The component of the heat flux vector at iDim
+   */
+  su2double GetHeatFluxVector(unsigned short iDim) const;
 };
 
 /*!
@@ -3055,37 +3088,6 @@ class CAvgGrad_Base : public CNumerics {
  * \author A. Bueno, and F. Palacios
  */
 class CAvgGrad_Flow : public CAvgGrad_Base {
-private:
-
-  /*!
-   * \brief Compute the heat flux due to molecular and turbulent diffusivity
-   * \param[in] val_gradprimvar - Gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Laminar viscosity.
-   * \param[in] val_eddy_viscosity - Eddy viscosity.
-   */
-  void GetHeatFluxVector(su2double **val_gradprimvar,
-                         const su2double val_laminar_viscosity,
-                         const su2double val_eddy_viscosity);
-
-  /*!
-   * \brief Compute the Jacobian of the heat flux vector
-   *
-   * This Jacobian is projected onto the normal vector, so it is of
-   * dimension nVar.
-   *
-   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
-   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   */
-  void GetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
-                           const su2double val_laminar_viscosity,
-                           const su2double val_eddy_viscosity,
-                           const su2double val_dist_ij,
-                           const su2double *val_normal);
-
 public:
 
   /*!
@@ -3095,7 +3097,8 @@ public:
    * \param[in] val_correct_grad - Apply a correction to the gradient
    * \param[in] config - Definition of the particular problem.
    */
-  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar, bool val_correct_grad, CConfig *config);
+  CAvgGrad_Flow(unsigned short val_nDim, unsigned short val_nVar,
+                bool val_correct_grad, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
@@ -3110,6 +3113,35 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+
+  /*!
+   * \brief Compute the heat flux due to molecular and turbulent diffusivity
+   * \param[in] val_gradprimvar - Gradient of the primitive variables.
+   * \param[in] val_laminar_viscosity - Laminar viscosity.
+   * \param[in] val_eddy_viscosity - Eddy viscosity.
+   */
+  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
+                         su2double val_laminar_viscosity,
+                         su2double val_eddy_viscosity);
+
+  /*!
+   * \brief Compute the Jacobian of the heat flux vector
+   *
+   * This Jacobian is projected onto the normal vector, so it is of
+   * dimension nVar.
+   *
+   * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
+   * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
+   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
+   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
+   * \param[in] val_dist_ij - Distance between the points.
+   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
+   */
+  void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
+                           su2double val_laminar_viscosity,
+                           su2double val_eddy_viscosity,
+                           su2double val_dist_ij,
+                           const su2double *val_normal);
 };
 
 /*!
@@ -3132,11 +3164,11 @@ private:
    * \param[in] val_thermal_conductivity - Thermal Conductivity.
    * \param[in] val_heat_capacity_cp - Heat Capacity at constant pressure.
    */
-  void GetHeatFluxVector(su2double **val_gradprimvar,
-                          const su2double val_laminar_viscosity,
-                          const su2double val_eddy_viscosity,
-                          const su2double val_thermal_conductivity,
-                          const su2double val_heat_capacity_cp);
+  void SetHeatFluxVector(const su2double* const *val_gradprimvar,
+                         su2double val_laminar_viscosity,
+                         su2double val_eddy_viscosity,
+                         su2double val_thermal_conductivity,
+                         su2double val_heat_capacity_cp);
 
   /*!
    * \brief Compute the Jacobian of the heat flux vector
@@ -3151,12 +3183,12 @@ private:
    * \param[in] val_heat_capacity_cp - Value of the specific heat at constant pressure.
    * \param[in] val_dist_ij - Distance between the points.
    */
-  void GetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
+  void SetHeatFluxJacobian(const su2double *val_Mean_PrimVar,
                            const su2double *val_Mean_SecVar,
-                           const su2double val_eddy_viscosity,
-                           const su2double val_thermal_conductivity,
-                           const su2double val_heat_capacity_cp,
-                           const su2double val_dist_ij);
+                           su2double val_eddy_viscosity,
+                           su2double val_thermal_conductivity,
+                           su2double val_heat_capacity_cp,
+                           su2double val_dist_ij);
 
 public:
 
@@ -3184,6 +3216,7 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
+
 /*!
  * \class CAvgGradInc_Flow
  * \brief Class for computing viscous term using an average of gradients.
@@ -3198,7 +3231,7 @@ private:
   bool energy;    /*!< \brief computation with the energy equation. */
 
   /*
-   * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
+   * \brief Compute the projection of the viscous fluxes into a direction
    *
    * The viscous + turbulent stress tensor must be calculated before calling
    * this function.
@@ -3207,8 +3240,8 @@ private:
    * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
    * \param[in] val_thermal_conductivity - Thermal conductivity.
    */
-  void GetViscousIncProjFlux(su2double **val_gradprimvar,
-                             su2double *val_normal,
+  void GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
+                             const su2double *val_normal,
                              su2double val_thermal_conductivity);
 
   /*!
