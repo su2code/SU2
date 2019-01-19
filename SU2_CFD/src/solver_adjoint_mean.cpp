@@ -391,8 +391,6 @@ CAdjEulerSolver::~CAdjEulerSolver(void) {
   if (Sens_Press != NULL) delete [] Sens_Press;
   if (Sens_Temp != NULL) delete [] Sens_Temp;
   if (Sens_BPress != NULL) delete [] Sens_BPress;
-  if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
   if (FlowPrimVar_i != NULL) delete [] FlowPrimVar_i;
   if (FlowPrimVar_j != NULL) delete [] FlowPrimVar_j;
   

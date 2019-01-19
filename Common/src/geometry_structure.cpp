@@ -254,7 +254,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
    these markers and establish the neighboring ranks and number of
    send/recv points per pair. We will store this information and set
    up persistent data structures so that we can reuse them throughout
-   the calculation for any point-to-point communications. The goal
+   the calculation for any periodic boundary communications. The goal
    is to break the non-blocking comms into InitiatePeriodicComms() and
    CompletePeriodicComms() in separate routines so that we can overlap the
    communication and computation to hide the communication latency. ---*/
@@ -264,7 +264,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   unsigned short iMarker;
   unsigned long iPoint, iVertex, iPeriodic;
   
-  int iRank, iSend, iRecv, count;
+  int iRank, iSend, iRecv, count, ii, jj;
   int iMessage, offset, source, dest, tag;
   
   /*--- Create some temporary structures for tracking sends/recvs. ---*/
@@ -281,29 +281,31 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   /*--- Loop through all of our periodic markers and track
    our sends with each rank. ---*/
   
-  // MAY NEED TO TRACK THE PAIR NUMBER SO WE CAN LAUNCH THESE IN PAIRS!
-  
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
       iPeriodic = config->GetMarker_All_PerBound(iMarker);
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         
-        /*--- Get the destination rank and number of points to send. ---*/
+        /*--- Get the current periodic point index. We only communicate
+         the owned nodes on a rank, as the MPI comms will take care of
+         the halos after completing the periodic comms. ---*/
         
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         
         if (geometry->node[iPoint]->GetDomain()) {
           
+          /*--- Get the rank that holds the matching periodic point
+           on the other marker in the periodic pair. ---*/
+          
           iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
           
-          /*--- If we have not visited this element yet, increment our
-           number of elements that must be sent to a particular proc. ---*/
+          /*--- If we have not visited this point last, increment our
+           number of points that must be sent to a particular proc. ---*/
           
           if ((nPoint_Flag[iRank] != (int)iPoint)) {
             nPoint_Flag[iRank]    = (int)iPoint;
             nPoint_Send_All[iRank+1] += 1;
           }
-          
         }
       }
     }
@@ -313,19 +315,17 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   /*--- Communicate the number of points to be sent/recv'd amongst
    all processors. After this communication, each proc knows how
-   many cells it will receive from each other processor. ---*/
+   many periodic points it will receive from each other processor. ---*/
   
   SU2_MPI::Alltoall(&(nPoint_Send_All[1]), 1, MPI_INT,
                     &(nPoint_Recv_All[1]), 1, MPI_INT, MPI_COMM_WORLD);
   
-  /*--- Prepare to send connectivities. First check how many
-   messages we will be sending and receiving. Here we also put
-   the counters into cumulative storage format to make the
-   communications simpler. ---*/
+  /*--- Check how many messages we will be sending and receiving.
+   Here we also put the counters into cumulative storage format to
+   make the communications simpler. Note that we are allowing each
+   rank to communicate through the MPI wrappers to themselves. ---*/
   
   nPeriodicSend = 0; nPeriodicRecv = 0;
-  
-  // allow send to own rank!
   
   for (iRank = 0; iRank < size; iRank++) {
     if ((nPoint_Send_All[iRank+1] > 0)) nPeriodicSend++;
@@ -335,7 +335,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     nPoint_Recv_All[iRank+1] += nPoint_Recv_All[iRank];
   }
   
-  /*--- Allocate only as much memory as we need for the Periodic neighbors. ---*/
+  /*--- Allocate only as much memory as needed for the periodic neighbors. ---*/
   
   nPoint_PeriodicSend = new int[nPeriodicSend+1]; nPoint_PeriodicSend[0] = 0;
   nPoint_PeriodicRecv = new int[nPeriodicRecv+1]; nPoint_PeriodicRecv[0] = 0;
@@ -345,13 +345,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   iSend = 0; iRecv = 0;
   for (iRank = 0; iRank < size; iRank++) {
-    
     if ((nPoint_Send_All[iRank+1] > nPoint_Send_All[iRank])) {
       Neighbors_PeriodicSend[iSend] = iRank;
       nPoint_PeriodicSend[iSend+1] = nPoint_Send_All[iRank+1];
       iSend++;
     }
-    
     if ((nPoint_Recv_All[iRank+1] > nPoint_Recv_All[iRank])) {
       Neighbors_PeriodicRecv[iRecv] = iRank;
       nPoint_PeriodicRecv[iRecv+1] = nPoint_Recv_All[iRank+1];
@@ -361,7 +359,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   /*--- Create a reverse mapping of the message to the rank so that we
    can quickly access the correct data in the buffers when receiving
-   messages dynamically. ---*/
+   messages dynamically later during the iterations. ---*/
   
   PeriodicSend2Neighbor.clear();
   for (iSend = 0; iSend < nPeriodicSend; iSend++)
@@ -374,10 +372,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   delete [] nPoint_Send_All;
   delete [] nPoint_Recv_All;
   
-  /*--- Allocate the memory that we need for receiving the conn
-   values and then cue up the non-blocking receives. Note that
-   we do not include our own rank in the communications. We will
-   directly copy our own data later. ---*/
+  /*--- Allocate the memory to store the local index values for both
+   the send and receive periodic points and periodic index. ---*/
   
   Local_Point_PeriodicSend = NULL;
   Local_Point_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
@@ -394,7 +390,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
     Local_Marker_PeriodicRecv[iRecv] = 0;
   
-  /*--- We allocate the memory for communicating values in a later step
+  /*--- We allocate the buffers for communicating values in a later step
    once we know the maximum packet size that we need to communicate. This
    memory is deallocated and reallocated automatically in the case that
    the previously allocated memory is not sufficient. ---*/
@@ -414,46 +410,58 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     req_PeriodicRecv   = new SU2_MPI::Request[nPeriodicRecv];
   }
   
-  /*--- Allocate arrays for sending the global ID. ---*/
+  /*--- Allocate arrays for sending the periodic point index and marker
+   index to the recv rank so that it can store the local values. Therefore,
+   the recv rank can quickly loop through the buffers to unpack the data. ---*/
   
   unsigned short nPackets = 2;
-  
   unsigned long *idSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]*nPackets];
-  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]*nPackets; iSend++) idSend[iSend] = 0;
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]*nPackets; iSend++)
+    idSend[iSend] = 0;
   
-  /*--- Build lists of local index values for send. ---*/
+  /*--- Build the lists of local index and periodic marker index values. ---*/
   
-  count = 0;
+  ii = 0; jj = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
         iPeriodic = config->GetMarker_All_PerBound(iMarker);
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           
-          /*--- Get the destination rank and number of points to send. ---*/
+          /*--- Get the current periodic point index. We only communicate
+           the owned nodes on a rank, as the MPI comms will take care of
+           the halos after completing the periodic comms. ---*/
           
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           
           if (geometry->node[iPoint]->GetDomain()) {
             
+            /*--- Get the rank that holds the matching periodic point
+             on the other marker in the periodic pair. ---*/
+            
             iRank = (int)geometry->vertex[iMarker][iVertex]->GetDonorProcessor();
             
+            /*--- If the rank for the current periodic point matches the
+             rank of the current send message, then store the local point
+             index on the matching periodic point and the periodic marker
+             index to be communicated to the recv rank. ---*/
+            
             if (iRank == Neighbors_PeriodicSend[iSend]) {
-              
-              Local_Point_PeriodicSend[count] = iPoint;
-              
-              idSend[count] = geometry->vertex[iMarker][iVertex]->GetDonorPoint(); count++;
-            
-              idSend[count] = iPeriodic;
-
-              count++;
+              Local_Point_PeriodicSend[ii] = iPoint;
+              jj = ii*nPackets;
+              idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
+              jj++;
+              idSend[jj] = (unsigned long)iPeriodic;
+              ii++;
             }
-            
           }
         }
       }
     }
   }
+  
+  /*--- Allocate arrays for receiving the periodic point index and marker
+   index to the recv rank so that it can store the local values. ---*/
   
   unsigned long *idRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]*nPackets];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++)
@@ -461,7 +469,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
-   the data and send from the neighbor ranks. ---*/
+   the data and send from the periodically matching ranks. ---*/
   
   iMessage = 0;
   for (iRecv = 0; iRecv < nPeriodicRecv; iRecv++) {
@@ -492,7 +500,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     
   }
   
-  /*--- Post the non-blocking send as soon as the buffer is loaded. ---*/
+  /*--- Post the non-blocking sends. ---*/
   
   iMessage = 0;
   for (iSend = 0; iSend < nPeriodicSend; iSend++) {
@@ -523,24 +531,22 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     
   }
   
-  /*--- Wait for the non-blocking sends to complete. ---*/
+  /*--- Wait for the non-blocking comms to complete. ---*/
   
   SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
   SU2_MPI::Waitall(nPeriodicRecv, req_PeriodicRecv, MPI_STATUS_IGNORE);
   
-  // Store our local IDs
+  /*--- Store the local periodic point and marker index values in our
+   data structures so we can quickly unpack data during the iterations. ---*/
   
-  int ii = 0;
-  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++) {
-    Local_Point_PeriodicRecv[iRecv] = idRecv[ii]; ii++;
+  ii = 0;
+  for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++) {
+    Local_Point_PeriodicRecv[iRecv]  = idRecv[ii]; ii++;
     Local_Marker_PeriodicRecv[iRecv] = idRecv[ii]; ii++;
   }
   
   delete [] idSend;
   delete [] idRecv;
-  
-  // create flags so that we can process boundaries and internal separately
-  // need points and edges for this.. use Local_Points_Send
   
 }
 
@@ -22059,7 +22065,7 @@ void CMultiGridGeometry::MatchPeriodic(CConfig *config, unsigned short val_perio
   
   unsigned short iMarker, iPeriodic, nPeriodic;
   unsigned long iVertex, iPoint;
-  int iProcessor = size;
+  int iProcessor = rank;
   
   /*--- Evaluate the number of periodic boundary conditions ---*/
   

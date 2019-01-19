@@ -80,6 +80,10 @@ inline unsigned long CPoint::GetPoint(unsigned short val_point) { return Point[v
 
 inline su2double CPoint::GetVolume (void) { return Volume[0]; }
 
+inline su2double CPoint::GetPeriodicVolume (void) { return Periodic_Volume; }
+
+inline void CPoint::SetPeriodicVolume (su2double val_volume) { Periodic_Volume = val_volume; }
+
 inline su2double CPoint::GetMaxLength(void) {return MaxLength;}
 
 inline bool CPoint::GetMove (void) { return Move; }

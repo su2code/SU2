@@ -147,6 +147,7 @@ private:
   vector<unsigned long> Point;        /*!< \brief Points surrounding the central node of the control volume. */
   vector<long> Edge;                  /*!< \brief Edges that set up a control volume. */
   su2double *Volume;                  /*!< \brief Volume or Area of the control volume in 3D and 2D. */
+  su2double Periodic_Volume;          /*!< \brief Missing component of volume or area of a control volume on a periodic marker in 3D and 2D. */
   bool Domain,                        /*!< \brief Indicates if a point must be computed or belong to another boundary */
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
@@ -403,6 +404,18 @@ public:
 	 */
 	su2double GetVolume(void);
 	
+  /*!
+   * \brief Get the missing component of area or volume for a control volume on a periodic marker.
+   * \return Periodic component of area or volume for a control volume on a periodic marker.
+   */
+  su2double GetPeriodicVolume(void);
+  
+  /*!
+   * \brief Set the missing component of area or volume for a control volume on a periodic marker.
+   * \param[in] val_volume - Value of the volume from the missing components of the CV on the periodic marker.
+   */
+  void SetPeriodicVolume(su2double val_volume);
+  
 	/*!
 	 * \brief Get the maximum cell-center to cell-center length.
 	 * \return The maximum cell-center to cell-center length.

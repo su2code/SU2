@@ -123,7 +123,8 @@ protected:
   **Jacobian_ij,        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_ji,        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
   **Jacobian_jj;        /*!< \brief Auxiliary matrices for storing point to point Jacobians. */
-  
+  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
+  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double **Smatrix,  /*!< \brief Auxiliary structure for computing gradients by least-squares */
   **Cvector;       /*!< \brief Auxiliary structure for computing gradients by least-squares */
 
@@ -4786,8 +4787,6 @@ protected:
   *Surface_HF_Visc,            /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;         /*!< \brief Maximum heat flux for each monitored surface. */
   
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -7289,8 +7288,6 @@ protected:
   *Surface_HF_Visc,     /*!< \brief Total (integrated) heat flux for each monitored surface. */
   *Surface_MaxHF_Visc;  /*!< \brief Maximum heat flux for each monitored surface. */
 
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   su2double *SecondaryVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
   *SecondaryVar_j;      /*!< \brief Auxiliary vector for storing the solution at point j. */
   su2double *PrimVar_i,  /*!< \brief Auxiliary vector for storing the solution at point i. */
@@ -10654,8 +10651,6 @@ protected:
   su2double Total_Sens_Press;    /*!< \brief Total farfield sensitivity to pressure. */
   su2double Total_Sens_Temp;    /*!< \brief Total farfield sensitivity to temperature. */
   su2double Total_Sens_BPress;    /*!< \brief Total sensitivity to back pressure. */
-  su2double *iPoint_UndLapl,  /*!< \brief Auxiliary variable for the undivided Laplacians. */
-  *jPoint_UndLapl;      /*!< \brief Auxiliary variable for the undivided Laplacians. */
   bool space_centered;  /*!< \brief True if space centered scheeme used. */
   su2double **Jacobian_Axisymmetric; /*!< \brief Storage for axisymmetric Jacobian. */
   unsigned long nMarker;        /*!< \brief Total number of markers using the grid information. */

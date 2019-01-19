@@ -3213,65 +3213,68 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
     }
   }
   
-  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
+//  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
+//
+//  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//
+//      iPeriodic = config->GetMarker_All_PerBound(iMarker);
+//      if ((iPeriodic == val_periodic) ||
+//          (iPeriodic == val_periodic + nPeriodic/2)) {
+//
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
+//          GlobalIndex_jPoint = GetDonorGlobalIndex(iMarker, iVertex);
+//
+//          if ((geometry->node[iPoint]->GetDomain()) &&
+//              (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
+//
+//            /*--- Update the volume and time step using the donor info. ---*/
+//
+//            for (iVar = 0; iVar < nPrimVar; iVar++) {
+//              PrimVar_j[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
+//            }
+//
+//            su2double Vol = geometry->node[iPoint]->GetVolume();
+//            geometry->node[iPoint]->SetVolume(Vol + GetDonorPrimVar(iMarker, iVertex, nVar+3));
+//
+////            su2double dt = node[iPoint]->GetDelta_Time();
+////            if (PrimVar_j[nVar+4] < dt)
+////              node[iPoint]->SetDelta_Time(PrimVar_j[nVar+4]);
+//
+//            /*--- Access the residual from the donor. ---*/
+//
+//            for (iVar = 0; iVar < nVar; iVar++) {
+//              Residual[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
+//            }
+//
+//            /*--- Access the Jacobian from the donor. ---*/
+//
+//            if (implicit) {
+//              int ii = 0;
+//              for (iVar = 0; iVar < nVar; iVar++) {
+//                for (jVar = 0; jVar < nVar; jVar++) {
+//                  Jacobian_i[iVar][jVar] = GetDonorJacobian(iMarker, iVertex, iVar, jVar);
+//                  ii++;
+//                }
+//              }
+//            }
+//
+//            /*--- Add contributions to total residual and Jacobian. ---*/
+//
+//            LinSysRes.AddBlock(iPoint, Residual);
+//            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+//
+//          }
+//        }
+//      }
+//    }
+//  }
   
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      
-      iPeriodic = config->GetMarker_All_PerBound(iMarker);
-      if ((iPeriodic == val_periodic) ||
-          (iPeriodic == val_periodic + nPeriodic/2)) {
-        
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          GlobalIndex_iPoint = geometry->node[iPoint]->GetGlobalIndex();
-          GlobalIndex_jPoint = GetDonorGlobalIndex(iMarker, iVertex);
-          
-          if ((geometry->node[iPoint]->GetDomain()) &&
-              (GlobalIndex_iPoint != GlobalIndex_jPoint)) {
-            
-            /*--- Update the volume and time step using the donor info. ---*/
-            
-            for (iVar = 0; iVar < nPrimVar; iVar++) {
-              PrimVar_j[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
-            }
-            
-            su2double Vol = geometry->node[iPoint]->GetVolume();
-            geometry->node[iPoint]->SetVolume(Vol + GetDonorPrimVar(iMarker, iVertex, nVar+3));
-            
-//            su2double dt = node[iPoint]->GetDelta_Time();
-//            if (PrimVar_j[nVar+4] < dt)
-//              node[iPoint]->SetDelta_Time(PrimVar_j[nVar+4]);
-            
-            /*--- Access the residual from the donor. ---*/
-            
-            for (iVar = 0; iVar < nVar; iVar++) {
-              Residual[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
-            }
-            
-            /*--- Access the Jacobian from the donor. ---*/
-            
-            if (implicit) {
-              int ii = 0;
-              for (iVar = 0; iVar < nVar; iVar++) {
-                for (jVar = 0; jVar < nVar; jVar++) {
-                  Jacobian_i[iVar][jVar] = GetDonorJacobian(iMarker, iVertex, iVar, jVar);
-                  ii++;
-                }
-              }
-            }
-            
-            /*--- Add contributions to total residual and Jacobian. ---*/
-            
-            LinSysRes.AddBlock(iPoint, Residual);
-            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-            
-          }
-        }
-      }
-    }
-  }
+  InitiatePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
+  CompletePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
   
   /*--- Free locally allocated memory ---*/
   
@@ -3304,7 +3307,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Read the volume ---*/
     
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
@@ -4069,13 +4073,6 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       DonorGlobalIndex[iMarker][iVertex] = 0;
     }
   }
-
-  /*--- Store volume for periodic if necessary (MG too). ---*/
-
-  if (config->GetnMarker_Periodic() != 0) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->SetAuxVar(geometry->node[iPoint]->GetVolume());
-  }
       
 }
 
@@ -4120,22 +4117,6 @@ void CTurbSASolver::Preprocessing(CGeometry *geometry, CSolver **solver_containe
   su2double** PrimGrad_Flow = NULL;
   su2double* Vorticity = NULL;
   su2double Laminar_Viscosity = 0;
-  
-  /*--- Store the original volume for periodic cells on the boundaries,
-   since this will be increased as we complete the CVs during our
-   updates. ---*/
-  
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Reset to the original volume. ---*/
-        geometry->node[iPoint]->SetVolume(node[iPoint]->GetAuxVar());
-        
-      }
-    }
-  }
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
@@ -6449,13 +6430,6 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
       DonorGlobalIndex[iMarker][iVertex] = 0;
     }
   }
-
-  /*--- Store volume for periodic if necessary (MG too). ---*/
-  
-  if (config->GetnMarker_Periodic() != 0) {
-    for (unsigned long iPoint = 0; iPoint < nPoint; iPoint++)
-      node[iPoint]->SetAuxVar(geometry->node[iPoint]->GetVolume());
-  }
       
 }
 
@@ -6500,21 +6474,6 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_turb     = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
-  /*--- Store the original volume for periodic cells on the boundaries,
-   since this will be increased as we complete the CVs during our
-   updates. ---*/
-  
-  for (unsigned short iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      for (unsigned long iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        unsigned long iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        
-        /*--- Reset to the original volume. ---*/
-        geometry->node[iPoint]->SetVolume(node[iPoint]->GetAuxVar());
-        
-      }
-    }
-  }
   
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
