@@ -581,3 +581,11 @@ inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tau
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
+
+inline su2double CAvgGrad_Base::GetStressTensor(unsigned short iDim, unsigned short jDim) const {
+  return tau[iDim][jDim];
+}
+
+inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
+  return heat_flux_vector[iDim];
+}

@@ -628,20 +628,12 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
   /*--- Projection of the mean gradient in the direction of the edge ---*/
 
   if (correct_gradient && dist_ij_2 != 0.0) {
-    for (iVar = 0; iVar < nVar; iVar++) {
-      Proj_Mean_GradPrimVar_Edge[iVar] = 0.0;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Proj_Mean_GradPrimVar_Edge[iVar] += Mean_GradPrimVar[iVar][iDim]*Edge_Vector[iDim];
-      }
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Mean_GradPrimVar[iVar][iDim] -= (Proj_Mean_GradPrimVar_Edge[iVar] -
-                                        (PrimVar_j[iVar]-PrimVar_i[iVar]))*Edge_Vector[iDim] / dist_ij_2;
-      }
-    }
+    CorrectGradient(Mean_GradPrimVar, PrimVar_i, PrimVar_j, Edge_Vector,
+                    dist_ij_2, nVar);
   }
   
   /*--- Get projected flux tensor ---*/
-  GetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
          Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
   GetViscousIncProjFlux(Mean_GradPrimVar, Normal, Mean_Thermal_Conductivity);
   
@@ -665,7 +657,7 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
     } else {
 
       const su2double dist_ij = sqrt(dist_ij_2);
-      GetIncTauJacobian(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
+      SetIncTauJacobian(Mean_Laminar_Viscosity, Mean_Eddy_Viscosity,
                         dist_ij, UnitNormal, Area);
       GetViscousIncProjJacs(Area, val_Jacobian_i, val_Jacobian_j);
 
@@ -699,9 +691,9 @@ void CAvgGradInc_Flow::ComputeResidual(su2double *val_residual, su2double **val_
 
 }
 
-void CAvgGradInc_Flow::GetViscousIncProjFlux(su2double **val_gradprimvar,
-                                          su2double *val_normal,
-                                          su2double val_thermal_conductivity) {
+void CAvgGradInc_Flow::GetViscousIncProjFlux(const su2double* const *val_gradprimvar,
+                                             const su2double *val_normal,
+                                             su2double val_thermal_conductivity) {
 
   /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
