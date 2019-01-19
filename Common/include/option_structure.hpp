@@ -115,7 +115,7 @@ const unsigned int BUFSIZE = 3000000;		     /*!< \brief MPI buffer. */
 const unsigned int MAX_PARAMETERS = 10;		   /*!< \brief Maximum number of parameters for a design variable definition. */
 const unsigned int MAX_NUMBER_PERIODIC = 10; /*!< \brief Maximum number of periodic boundary conditions. */
 const unsigned int MAX_STRING_SIZE = 200;    /*!< \brief Maximum number of domains. */
-const unsigned int MAX_NUMBER_FFD = 10;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
+const unsigned int MAX_NUMBER_FFD = 15;	     /*!< \brief Maximum number of FFDBoxes for the FFD. */
 const unsigned int MAX_SOLS = 7;		         /*!< \brief Maximum number of solutions at the same time (dimension of solution container array). */
 const unsigned int MAX_TERMS = 6;		         /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
 const unsigned int MAX_TERMS_FEA = 10;       /*!< \brief Maximum number of terms in the numerical equations (dimension of solver container array). */
@@ -568,8 +568,8 @@ enum ENUM_FLUIDMODEL {
 	VW_GAS = 2,
 	PR_GAS = 3,
   CONSTANT_DENSITY = 4,
-  INC_IDEAL_GAS = 6
-
+  INC_IDEAL_GAS = 5,
+  INC_IDEAL_GAS_POLY = 6
 };
 
 static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, ENUM_FLUIDMODEL>
@@ -578,7 +578,8 @@ static const map<string, ENUM_FLUIDMODEL> FluidModel_Map = CCreateMap<string, EN
 ("VW_GAS", VW_GAS)
 ("PR_GAS", PR_GAS)
 ("CONSTANT_DENSITY", CONSTANT_DENSITY)
-("INC_IDEAL_GAS", INC_IDEAL_GAS);
+("INC_IDEAL_GAS", INC_IDEAL_GAS)
+("INC_IDEAL_GAS_POLY", INC_IDEAL_GAS_POLY);
 
 /*!
  * \brief types of gas models
@@ -663,24 +664,40 @@ static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateM
  */
 enum ENUM_VISCOSITYMODEL {
 	CONSTANT_VISCOSITY = 0, /*!< \brief _____. */
-	SUTHERLAND = 1
+	SUTHERLAND = 1,
+  POLYNOMIAL_VISCOSITY = 2
 };
 
 static const map<string, ENUM_VISCOSITYMODEL> ViscosityModel_Map = CCreateMap<string, ENUM_VISCOSITYMODEL>
 ("CONSTANT_VISCOSITY", CONSTANT_VISCOSITY)
-("SUTHERLAND", SUTHERLAND);
+("SUTHERLAND", SUTHERLAND)
+("POLYNOMIAL_VISCOSITY", POLYNOMIAL_VISCOSITY);
 
 /*!
  * \brief types of thermal conductivity model
  */
 enum ENUM_CONDUCTIVITYMODEL {
 	CONSTANT_CONDUCTIVITY = 0, /*!< \brief _____. */
-	CONSTANT_PRANDTL = 1
+	CONSTANT_PRANDTL = 1,
+  POLYNOMIAL_CONDUCTIVITY = 2
 };
 
 static const map<string, ENUM_CONDUCTIVITYMODEL> ConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL>
 ("CONSTANT_CONDUCTIVITY", CONSTANT_CONDUCTIVITY)
-("CONSTANT_PRANDTL", CONSTANT_PRANDTL);
+("CONSTANT_PRANDTL", CONSTANT_PRANDTL)
+("POLYNOMIAL_CONDUCTIVITY", POLYNOMIAL_CONDUCTIVITY);
+
+/*!
+ * \brief types of turbulent thermal conductivity model
+ */
+enum ENUM_CONDUCTIVITYMODEL_TURB {
+  NO_CONDUCTIVITY_TURB  = 0,  /*!< \brief No turbulent contribution to the effective thermal conductivity for RANS. */
+  CONSTANT_PRANDTL_TURB = 1   /*!< \brief Include contribution to effective conductivity using constant turbulent Prandtl number for RANS. */
+};
+
+static const map<string, ENUM_CONDUCTIVITYMODEL_TURB> TurbConductivityModel_Map = CCreateMap<string, ENUM_CONDUCTIVITYMODEL_TURB>
+("NONE", NO_CONDUCTIVITY_TURB)
+("CONSTANT_PRANDTL_TURB", CONSTANT_PRANDTL_TURB);
 
 /*!
  * \brief types of unsteady mesh motion
@@ -1344,6 +1361,17 @@ static const map<string, INLET_TYPE> Inlet_Map = CCreateMap<string, INLET_TYPE>
 ("INPUT_FILE", INPUT_FILE)
 ("VELOCITY_INLET", VELOCITY_INLET)
 ("PRESSURE_INLET", PRESSURE_INLET);
+
+/*!
+ * \brief types outlet boundary treatments
+ */
+enum OUTLET_TYPE {
+  PRESSURE_OUTLET = 1,    /*!< \brief Gauge pressure outlet for incompressible flow */
+  MASS_FLOW_OUTLET = 2,   /*!< \brief Mass flow outlet for incompressible flow. */
+};
+static const map<string, OUTLET_TYPE> Outlet_Map = CCreateMap<string, OUTLET_TYPE>
+("PRESSURE_OUTLET", PRESSURE_OUTLET)
+("MASS_FLOW_OUTLET", MASS_FLOW_OUTLET);
 
 /*!
  * \brief types engine inflow boundary treatments

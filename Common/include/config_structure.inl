@@ -105,6 +105,12 @@ inline void CConfig::SetActDisk_Mach(unsigned short val_imarker, su2double val_a
 
 inline void CConfig::SetActDisk_Force(unsigned short val_imarker, su2double val_actdisk_force) { ActDisk_Force[val_imarker] = val_actdisk_force; }
 
+inline void CConfig::SetOutlet_MassFlow(unsigned short val_imarker, su2double val_massflow) { Outlet_MassFlow[val_imarker] = val_massflow; }
+
+inline void CConfig::SetOutlet_Density(unsigned short val_imarker, su2double val_density) { Outlet_Density[val_imarker] = val_density; }
+
+inline void CConfig::SetOutlet_Area(unsigned short val_imarker, su2double val_area) { Outlet_Area[val_imarker] = val_area; }
+
 inline void CConfig::SetSurface_DC60(unsigned short val_imarker, su2double val_surface_distortion) { Surface_DC60[val_imarker] = val_surface_distortion; }
 
 inline void CConfig::SetSurface_MassFlow(unsigned short val_imarker, su2double val_surface_massflow) { Surface_MassFlow[val_imarker] = val_surface_massflow; }
@@ -885,6 +891,8 @@ inline unsigned short CConfig::GetKind_ViscosityModel(void) { return Kind_Viscos
 
 inline unsigned short CConfig::GetKind_ConductivityModel(void) { return Kind_ConductivityModel; }
 
+inline unsigned short CConfig::GetKind_ConductivityModel_Turb(void) { return Kind_ConductivityModel_Turb; }
+
 inline su2double CConfig::GetMu_Constant(void) { return Mu_Constant; }
 
 inline su2double CConfig::GetMu_ConstantND(void) { return Mu_ConstantND; }
@@ -905,6 +913,24 @@ inline su2double CConfig::GetMu_S(void) { return Mu_S; }
 
 inline su2double CConfig::GetMu_SND(void) { return Mu_SND; }
 
+inline unsigned short CConfig::GetnPolyCoeffs(void) { return nPolyCoeffs; }
+
+inline su2double CConfig::GetCp_PolyCoeff(unsigned short val_index) { return CpPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetCp_PolyCoeffND(unsigned short val_index) { return CpPolyCoefficientsND[val_index]; }
+
+inline su2double CConfig::GetMu_PolyCoeff(unsigned short val_index) { return MuPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetMu_PolyCoeffND(unsigned short val_index) { return MuPolyCoefficientsND[val_index]; }
+
+inline su2double* CConfig::GetMu_PolyCoeffND(void) { return MuPolyCoefficientsND; }
+
+inline su2double CConfig::GetKt_PolyCoeff(unsigned short val_index) { return KtPolyCoefficients[val_index]; }
+
+inline su2double CConfig::GetKt_PolyCoeffND(unsigned short val_index) { return KtPolyCoefficientsND[val_index]; }
+
+inline su2double* CConfig::GetKt_PolyCoeffND(void) { return KtPolyCoefficientsND; }
+
 inline void CConfig::SetMu_ConstantND(su2double mu_const) { Mu_ConstantND = mu_const; }
 
 inline void CConfig::SetMu_RefND(su2double mu_ref) { Mu_RefND = mu_ref; }
@@ -914,6 +940,12 @@ inline void CConfig::SetMu_Temperature_RefND(su2double mu_Tref) {Mu_Temperature_
 inline void CConfig::SetMu_SND(su2double mu_s) {Mu_SND = mu_s; }
 
 inline void CConfig::SetKt_ConstantND(su2double kt_const) { Kt_ConstantND = kt_const; }
+
+inline void CConfig::SetCp_PolyCoeffND(su2double val_coeff, unsigned short val_index) { CpPolyCoefficientsND[val_index] = val_coeff; }
+
+inline void CConfig::SetMu_PolyCoeffND(su2double val_coeff, unsigned short val_index) { MuPolyCoefficientsND[val_index] = val_coeff; }
+
+inline void CConfig::SetKt_PolyCoeffND(su2double val_coeff, unsigned short val_index) { KtPolyCoefficientsND[val_index] = val_coeff; }
 
 inline unsigned short CConfig::GetKind_GridMovement(unsigned short val_iZone) { return Kind_GridMovement[val_iZone]; }
 
@@ -1269,6 +1301,10 @@ inline unsigned short CConfig::GetnInc_Inlet(void) { return nInc_Inlet;}
 
 inline bool CConfig::GetInc_Inlet_UseNormal(void) { return Inc_Inlet_UseNormal;}
 
+inline su2double CConfig::GetInc_Inlet_Damping(void) { return Inc_Inlet_Damping; }
+
+inline su2double CConfig::GetInc_Outlet_Damping(void) { return Inc_Outlet_Damping; }
+
 inline unsigned short CConfig::GetKind_Engine_Inflow(void) { return Kind_Engine_Inflow; }
 
 inline unsigned short CConfig::GetKind_ActDisk(void) { return Kind_ActDisk; }
@@ -1401,6 +1437,8 @@ inline string CConfig::GetMarker_ActDiskInlet_TagBound(unsigned short val_marker
 
 inline string CConfig::GetMarker_ActDiskOutlet_TagBound(unsigned short val_marker) { return Marker_ActDiskOutlet[val_marker]; }
 
+inline string CConfig::GetMarker_Outlet_TagBound(unsigned short val_marker) { return Marker_Outlet[val_marker]; }
+
 inline string CConfig::GetMarker_EngineInflow_TagBound(unsigned short val_marker) { return Marker_EngineInflow[val_marker]; }
 
 inline string CConfig::GetMarker_EngineExhaust_TagBound(unsigned short val_marker) { return Marker_EngineExhaust[val_marker]; }
@@ -1513,6 +1551,8 @@ inline unsigned short CConfig::GetnMarker_NearFieldBound(void) { return nMarker_
 inline unsigned short CConfig::GetnMarker_ActDiskInlet(void) { return nMarker_ActDiskInlet; }
 
 inline unsigned short CConfig::GetnMarker_ActDiskOutlet(void) { return nMarker_ActDiskOutlet; }
+
+inline unsigned short CConfig::GetnMarker_Outlet(void) { return nMarker_Outlet; }
 
 inline unsigned short CConfig::GetnMarker_Periodic(void) { return nMarker_PerBound; }
 
