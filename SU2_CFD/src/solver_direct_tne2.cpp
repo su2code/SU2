@@ -5026,7 +5026,7 @@ void CTNE2EulerSolver::BC_Supersonic_Inlet(CGeometry *geometry, CSolver **soluti
   bool viscous              = config->GetViscous();
   string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
 
-  su2double *U_inlet = new su2double[nVar]; su2double *U_domain = new su2double[nVar];
+  su2double *U_inlet = new su2double[nVar];     su2double *U_domain = new su2double[nVar];
   su2double *V_inlet = new su2double[nPrimVar]; su2double *V_domain = new su2double[nPrimVar];
   su2double *Normal = new su2double[nDim];
 
