@@ -4159,8 +4159,8 @@ bool CDriver::Monitor(unsigned long ExtIter) {
   switch (config_container[ZONE_0]->GetKind_Solver()) {
     case EULER: case NAVIER_STOKES: case RANS:
       StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
-  case TNE2_EULER: case TNE2_NAVIER_STOKES:
-    StopCalc = integration_container[ZONE_0][INST_0][FLOW_SOL]->GetConvergence(); break;
+    case TNE2_EULER: case TNE2_NAVIER_STOKES:
+      StopCalc = integration_container[ZONE_0][INST_0][TNE2_SOL]->GetConvergence(); break;
     case HEAT_EQUATION_FVM:
       StopCalc = integration_container[ZONE_0][INST_0][HEAT_SOL]->GetConvergence(); break;
     case FEM_ELASTICITY:
@@ -4577,7 +4577,6 @@ void CTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
   output->ComputeTurboPerformance(solver_container[targetZone][INST_0][MESH_0][FLOW_SOL], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone]);
 
 }
-
 
 bool CTurbomachineryDriver::Monitor(unsigned long ExtIter) {
 
@@ -5183,7 +5182,6 @@ void CDiscAdjTurbomachineryDriver::SetMixingPlane(unsigned short donorZone){
     }
   }
 }
-
 
 void CDiscAdjTurbomachineryDriver::SetTurboPerformance(unsigned short targetZone){
 
