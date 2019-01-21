@@ -589,3 +589,5 @@ inline su2double CAvgGrad_Base::GetStressTensor(unsigned short iDim, unsigned sh
 inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
   return heat_flux_vector[iDim];
 }
+
+inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
