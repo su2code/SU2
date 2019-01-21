@@ -12,15 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - Thomas.Economon@us.bosch.com
-            - e.t.a.vanderweide@utwente.nl
-            - jhchoi89@stanford.edu
-            - gomer@stanford.edu
-            - esmolina@stanford.edu
+            - molinaedu85@gmail.com
   
 branches:
     only:
-        - feature_hom
+        - feature_FV_Average
 
 python:
     - 2.7
