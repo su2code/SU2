@@ -2158,63 +2158,63 @@ void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
 
 /*----------- Start Visc PB flux ---------*/
 /*-----------------------------------------------------------------------------*/
-//void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
-                                          //su2double **val_gradprimvar,
-                                          //su2double *val_normal,
-                                          //su2double val_laminar_viscosity) {
+void CNumerics::GetViscousPBIncProjFlux(su2double *val_primvar,
+                                          su2double **val_gradprimvar,
+                                          su2double *val_normal,
+                                          su2double val_laminar_viscosity) {
 
-  //unsigned short iVar, iDim, jDim;
-  //su2double total_viscosity, div_vel, Density;
+  unsigned short iVar, iDim, jDim;
+  su2double total_viscosity, div_vel, Density;
 
-  //Density = val_primvar[nDim+1];
+  Density = val_primvar[nDim+1];
 
-  //total_viscosity = (val_laminar_viscosity);
+  total_viscosity = (val_laminar_viscosity);
 
-  ///*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
+  /*--- The full stress tensor is needed for variable density, as nabla.u != 0 ---*/
   
-  //div_vel = 0.0;
-  //for (iDim = 0 ; iDim < nDim; iDim++)
-    //div_vel += val_gradprimvar[iDim+1][iDim];
+  div_vel = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    div_vel += val_gradprimvar[iDim][iDim];
 
-  //for (iDim = 0 ; iDim < nDim; iDim++)
-    //for (jDim = 0 ; jDim < nDim; jDim++)
-      //tau[iDim][jDim] = (total_viscosity*(val_gradprimvar[jDim+1][iDim] +
-                                          //val_gradprimvar[iDim+1][jDim] )
-                         //-TWO3*total_viscosity*div_vel*delta[iDim][jDim]
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    for (jDim = 0 ; jDim < nDim; jDim++)
+      tau[iDim][jDim] = (total_viscosity*(val_gradprimvar[jDim][iDim] +
+                                          val_gradprimvar[iDim][jDim] )
+                         -TWO3*total_viscosity*div_vel*delta[iDim][jDim]);
                          //-TWO3*Density*val_turb_ke*delta[iDim][jDim]);
 
-  ///*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
 
-  //if (nDim == 2) {
-    //Flux_Tensor[0][0] = tau[0][0];
-    //Flux_Tensor[1][0] = tau[0][1];
+  if (nDim == 2) {
+    Flux_Tensor[0][0] = tau[0][0];
+    Flux_Tensor[1][0] = tau[0][1];
     
-    //Flux_Tensor[0][1] = tau[1][0];
-    //Flux_Tensor[1][1] = tau[1][1];
+    Flux_Tensor[0][1] = tau[1][0];
+    Flux_Tensor[1][1] = tau[1][1];
 
-  //} else {
+  } else {
 
-    //Flux_Tensor[0][0] = tau[0][0];
-    //Flux_Tensor[1][0] = tau[0][1];
-    //Flux_Tensor[2][0] = tau[0][2];
+    Flux_Tensor[0][0] = tau[0][0];
+    Flux_Tensor[1][0] = tau[0][1];
+    Flux_Tensor[2][0] = tau[0][2];
 
-    //Flux_Tensor[0][1] = tau[1][0];
-    //Flux_Tensor[1][1] = tau[1][1];
-    //Flux_Tensor[2][1] = tau[1][2];
+    Flux_Tensor[0][1] = tau[1][0];
+    Flux_Tensor[1][1] = tau[1][1];
+    Flux_Tensor[2][1] = tau[1][2];
 
-    //Flux_Tensor[0][2] = tau[2][0];
-    //Flux_Tensor[1][2] = tau[2][1];
-    //Flux_Tensor[2][2] = tau[2][2];
+    Flux_Tensor[0][2] = tau[2][0];
+    Flux_Tensor[1][2] = tau[2][1];
+    Flux_Tensor[2][2] = tau[2][2];
 
-  //}
+  }
 
-  //for (iVar = 0; iVar < nVar; iVar++) {
-    //Proj_Flux_Tensor[iVar] = 0.0;
-    //for (iDim = 0; iDim < nDim; iDim++)
-      //Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
-  //}
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim] * val_normal[iDim];
+  }
 
-//}
+}
 /*----------- End Visc PB flux ---------*/
 /*-----------------------------------------------------------------------------*/
 
@@ -2936,6 +2936,74 @@ void CNumerics::GetViscousIncProjJacs(su2double val_laminar_viscosity,
   }
   
 }
+
+/*----------- Start Visc PB Jac ---------*/
+/*-----------------------------------------------------------------------------*/
+
+void CNumerics::GetViscousPBIncProjJacs(su2double val_laminar_viscosity,
+                                          su2double val_eddy_viscosity, su2double val_dist_ij, su2double *val_normal, su2double val_dS,
+                                          su2double **val_Proj_Jac_Tensor_i, su2double **val_Proj_Jac_Tensor_j) {
+  unsigned short iDim, iVar, jVar;
+
+  su2double theta = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++)
+    theta += val_normal[iDim]*val_normal[iDim];
+
+  su2double total_viscosity = val_laminar_viscosity + val_eddy_viscosity;
+  su2double factor = total_viscosity/(val_dist_ij)*val_dS;
+
+  if (nDim == 3) {
+    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+    su2double thetaz = theta + val_normal[2]*val_normal[2]/3.0;
+
+    su2double etax = val_normal[1]*val_normal[2]/3.0;
+    su2double etay = val_normal[0]*val_normal[2]/3.0;
+    su2double etaz = val_normal[0]*val_normal[1]/3.0;
+
+    val_Proj_Jac_Tensor_i[0][0] = -factor*thetax;
+    val_Proj_Jac_Tensor_i[0][1] = -factor*etaz;
+    val_Proj_Jac_Tensor_i[0][2] = -factor*etay;
+    
+    val_Proj_Jac_Tensor_i[1][0] = -factor*etaz;
+    val_Proj_Jac_Tensor_i[1][1] = -factor*thetay;
+    val_Proj_Jac_Tensor_i[1][2] = -factor*etax;
+    
+    val_Proj_Jac_Tensor_i[2][0] = -factor*etay;
+    val_Proj_Jac_Tensor_i[2][1] = -factor*etax;
+    val_Proj_Jac_Tensor_i[2][2] = -factor*thetaz;
+
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+
+  }
+
+  if (nDim == 2) {
+    su2double thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    su2double thetay = theta + val_normal[1]*val_normal[1]/3.0;
+    su2double etaz = val_normal[0]*val_normal[1]/3.0;
+
+
+    val_Proj_Jac_Tensor_i[0][0] = -factor*thetax;
+    val_Proj_Jac_Tensor_i[0][1] = -factor*etaz;
+
+    val_Proj_Jac_Tensor_i[1][0] = -factor*etaz;
+    val_Proj_Jac_Tensor_i[1][1] = -factor*thetay;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        val_Proj_Jac_Tensor_j[iVar][jVar] = -val_Proj_Jac_Tensor_i[iVar][jVar];
+  }
+  
+}
+
+
+
+/*----------- End Visc PB Jac ---------*/
+/*-----------------------------------------------------------------------------*/
+
 
 void CNumerics::CreateBasis(su2double *val_Normal) {
   unsigned short iDim;

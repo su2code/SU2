@@ -4535,17 +4535,6 @@ public:
    * \return The eddy viscosity of the flow.
    */
   su2double GetEddyViscosity(void);
-  
-  /*!
-   * \brief Set the thermal conductivity.
-   */
-  void SetThermalConductivity(su2double thermalConductivity);
-
-  /*!
-   * \brief Get the thermal conductivity of the flow.
-   * \return Value of the laminar viscosity of the flow.
-   */
-  su2double GetThermalConductivity(void);
 
   /*!
    * \brief Get the value of the vorticity.

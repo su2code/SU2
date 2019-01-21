@@ -894,6 +894,12 @@ public:
                                  su2double val_eddy_viscosity,
                                  su2double val_turb_ke,
                                  su2double val_thermal_conductivity);
+                                 
+                                 
+  void GetViscousPBIncProjFlux(su2double *val_primvar,
+                                          su2double **val_gradprimvar,
+                                          su2double *val_normal,
+                                          su2double val_laminar_viscosity);
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -1071,6 +1077,12 @@ public:
                                  su2double *val_normal, su2double val_dS,
                                  su2double **val_Proj_Jac_Tensor_i,
                                  su2double **val_Proj_Jac_Tensor_j);
+                                 
+  void GetViscousPBIncProjJacs(su2double val_laminar_viscosity,
+                                          su2double val_eddy_viscosity, su2double val_dist_ij, 
+                                          su2double *val_normal, su2double val_dS,
+                                          su2double **val_Proj_Jac_Tensor_i, 
+                                          su2double **val_Proj_Jac_Tensor_j);
   
   /*!
    * \overload

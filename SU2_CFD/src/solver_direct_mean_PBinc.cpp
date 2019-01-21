@@ -2456,7 +2456,7 @@ void CPBIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *c
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
   Partial_Gradient, Partial_Res, *Normal;
 
-  /*--- Incompressible flow, primitive variables nDim+3, (P, vx, vy, vz, rho, beta) ---*/
+  /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) ---*/
 
   PrimVar_Vertex = new su2double [nPrimVarGrad];
   PrimVar_i = new su2double [nPrimVarGrad];
@@ -4985,16 +4985,6 @@ CPBIncNSSolver::~CPBIncNSSolver(void) {
     delete [] CSkinFriction;
   }
   
-  if (HeatConjugateVar != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        delete [] HeatConjugateVar[iMarker][iVertex];
-      }
-      delete [] HeatConjugateVar[iMarker];
-    }
-    delete [] HeatConjugateVar;
-  }
-  
 }
 
 void CPBIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config, unsigned short iMesh, unsigned short iRKStep, unsigned short RunTime_EqSystem, bool Output) {
@@ -5114,7 +5104,6 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
     if (turb_model != NONE) {
       eddy_visc = solver_container[TURB_SOL]->node[iPoint]->GetmuT();
       if (tkeNeeded) turb_ke = solver_container[TURB_SOL]->node[iPoint]->GetSolution(0);
-
     }
     
     /*--- Initialize the non-physical points vector ---*/
@@ -5140,14 +5129,349 @@ unsigned long CPBIncNSSolver::SetPrimitive_Variables(CSolver **solver_container,
 	
 }
 
+void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
+                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
+							
+  unsigned long iPoint, jPoint, iEdge;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    /*--- Points, coordinates and normal vector in edge ---*/
+    
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
+                       geometry->node[jPoint]->GetCoord());
+    numerics->SetNormal(geometry->edge[iEdge]->GetNormal());
+    
+    /*--- Primitive and secondary variables ---*/
+    
+    numerics->SetPrimitive(node[iPoint]->GetPrimitive(),
+                           node[jPoint]->GetPrimitive());
+    numerics->SetSecondary(node[iPoint]->GetSecondary(),
+                           node[jPoint]->GetSecondary());
+    
+    /*--- Gradient and limiters ---*/
+    
+    numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
+                                 node[jPoint]->GetGradient_Primitive());
+    
+    /*--- Turbulent kinetic energy ---*/
+    
+    if (config->GetKind_Turb_Model() == SST)
+      numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                     solver_container[TURB_SOL]->node[jPoint]->GetSolution(0));
+    
+    /*--- Compute and update residual ---*/
+    
+    numerics->ComputeResidual(Res_Visc, Jacobian_i, Jacobian_j, config);
+
+    LinSysRes.SubtractBlock(iPoint, Res_Visc);
+    LinSysRes.AddBlock(jPoint, Res_Visc);
+    
+    /*--- Implicit part ---*/
+    
+    if (implicit) {
+      Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+      Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
+      Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
+      Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
+    }
+    
+  }
+}
+
+
 
 void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container, CConfig *config,
                     unsigned short iMesh, unsigned long Iteration) {
+						
+  su2double Mean_BetaInc2, *Normal, Area, Vol, Mean_SoundSpeed = 0.0, Mean_ProjVel = 0.0, Lambda, Local_Delta_Time, Local_Delta_Time_Visc,
+  Global_Delta_Time = 1E6, Mean_LaminarVisc = 0.0, Mean_EddyVisc = 0.0, Mean_Density = 0.0, Mean_Thermal_Conductivity = 0.0, Mean_Cv = 0.0, Lambda_1, Lambda_2, K_v = 0.25, Global_Delta_UnstTimeND;
+  unsigned long iEdge, iVertex, iPoint = 0, jPoint = 0;
+  unsigned short iDim, iMarker;
+  su2double ProjVel, ProjVel_i, ProjVel_j;
+  
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool energy = config->GetEnergy_Equation();
+
+  Min_Delta_Time = 1.E6; Max_Delta_Time = 0.0;
+  
+  /*--- Set maximum inviscid eigenvalue to zero, and compute sound speed and viscosity ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    node[iPoint]->SetMax_Lambda_Inv(0.0);
+    node[iPoint]->SetMax_Lambda_Visc(0.0);
+  }
+  
+  /*--- Loop interior edges ---*/
+  
+  for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
+    
+    /*--- Point identification, Normal vector and area ---*/
+    
+    iPoint = geometry->edge[iEdge]->GetNode(0);
+    jPoint = geometry->edge[iEdge]->GetNode(1);
+    
+    Normal = geometry->edge[iEdge]->GetNormal();
+    Area = 0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+    
+    /*--- Mean Values ---*/
+    
+    Mean_ProjVel    = 0.5 * (node[iPoint]->GetProjVel(Normal) + node[jPoint]->GetProjVel(Normal));
+    Mean_BetaInc2   = 0.5 * (node[iPoint]->GetBetaInc2()      + node[jPoint]->GetBetaInc2());
+    Mean_Density    = 0.5 * (node[iPoint]->GetDensity()       + node[jPoint]->GetDensity());
+    Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
+    
+    /*--- Adjustment for grid movement ---*/
+    
+    if (grid_movement) {
+      su2double *GridVel_i = geometry->node[iPoint]->GetGridVel();
+      su2double *GridVel_j = geometry->node[jPoint]->GetGridVel();
+      ProjVel_i = 0.0; ProjVel_j =0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        ProjVel_i += GridVel_i[iDim]*Normal[iDim];
+        ProjVel_j += GridVel_j[iDim]*Normal[iDim];
+      }
+      Mean_ProjVel -= 0.5 * (ProjVel_i + ProjVel_j);
+    }
+    
+    /*--- Inviscid contribution ---*/
+    
+    Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Inv(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Inv(Lambda);
+    
+    /*--- Viscous contribution ---*/
+    
+    Mean_LaminarVisc          = 0.5*(node[iPoint]->GetLaminarViscosity()    + node[jPoint]->GetLaminarViscosity());
+    Mean_EddyVisc             = 0.5*(node[iPoint]->GetEddyViscosity()       + node[jPoint]->GetEddyViscosity());
+    Mean_Density              = 0.5*(node[iPoint]->GetDensity()             + node[jPoint]->GetDensity());
+    Mean_Thermal_Conductivity = 0.5*(node[iPoint]->GetThermalConductivity() + node[jPoint]->GetThermalConductivity());
+    Mean_Cv                   = 0.5*(node[iPoint]->GetSpecificHeatCv()      + node[jPoint]->GetSpecificHeatCv());
+
+    Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+    Lambda_2 = 0.0;
+    if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
+    Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+    
+    if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+    if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddMax_Lambda_Visc(Lambda);
+    
+  }
+  
+  /*--- Loop boundary edges ---*/
+  
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+      
+      /*--- Point identification, Normal vector and area ---*/
+      
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
+      Area = 0.0; for (iDim = 0; iDim < nDim; iDim++) Area += Normal[iDim]*Normal[iDim]; Area = sqrt(Area);
+      
+      /*--- Mean Values ---*/
+      
+      Mean_ProjVel    = node[iPoint]->GetProjVel(Normal);
+      Mean_BetaInc2   = node[iPoint]->GetBetaInc2();
+      Mean_Density    = node[iPoint]->GetDensity();
+      Mean_SoundSpeed = sqrt(Mean_BetaInc2*Area*Area);
+
+      /*--- Adjustment for grid movement ---*/
+      
+      if (grid_movement) {
+        su2double *GridVel = geometry->node[iPoint]->GetGridVel();
+        ProjVel = 0.0;
+        for (iDim = 0; iDim < nDim; iDim++)
+          ProjVel += GridVel[iDim]*Normal[iDim];
+        Mean_ProjVel -= ProjVel;
+      }
+      
+      /*--- Inviscid contribution ---*/
+      
+      Lambda = fabs(Mean_ProjVel) + Mean_SoundSpeed;
+      if (geometry->node[iPoint]->GetDomain()) {
+        node[iPoint]->AddMax_Lambda_Inv(Lambda);
+      }
+      
+      /*--- Viscous contribution ---*/
+
+      Mean_LaminarVisc          = node[iPoint]->GetLaminarViscosity();
+      Mean_EddyVisc             = node[iPoint]->GetEddyViscosity();
+      Mean_Density              = node[iPoint]->GetDensity();
+      Mean_Thermal_Conductivity = node[iPoint]->GetThermalConductivity();
+      Mean_Cv                   = node[iPoint]->GetSpecificHeatCv();
+
+      Lambda_1 = (4.0/3.0)*(Mean_LaminarVisc + Mean_EddyVisc);
+      Lambda_2 = 0.0;
+      if (energy) Lambda_2 = (1.0/Mean_Cv)*Mean_Thermal_Conductivity;
+      Lambda = (Lambda_1 + Lambda_2)*Area*Area/Mean_Density;
+      
+      if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
+      
+    }
+  }
+  
+  /*--- Each element uses their own speed, steady state simulation ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    Vol = geometry->node[iPoint]->GetVolume();
+    
+    if (Vol != 0.0) {
+      Local_Delta_Time = config->GetCFL(iMesh)*Vol / node[iPoint]->GetMax_Lambda_Inv();
+      Local_Delta_Time_Visc = config->GetCFL(iMesh)*K_v*Vol*Vol/ node[iPoint]->GetMax_Lambda_Visc();
+      Local_Delta_Time = min(Local_Delta_Time, Local_Delta_Time_Visc);
+      Global_Delta_Time = min(Global_Delta_Time, Local_Delta_Time);
+      Min_Delta_Time = min(Min_Delta_Time, Local_Delta_Time);
+      Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
+      if (Local_Delta_Time > config->GetMax_DeltaTime())
+        Local_Delta_Time = config->GetMax_DeltaTime();
+        Local_Delta_Time = config->GetCFL(iMesh)*1.0e-4;
+      node[iPoint]->SetDelta_Time(Local_Delta_Time);
+    }
+    else {
+      node[iPoint]->SetDelta_Time(0.0);
+    }
+    
+  }
+  
+  /*--- Compute the max and the min dt (in parallel) ---*/
+  if (config->GetConsole_Output_Verb() == VERB_HIGH) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Min_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Min_Delta_Time = rbuf_time;
+    
+    sbuf_time = Max_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MAX, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Max_Delta_Time = rbuf_time;
+#endif
+  }
+  
+  /*--- For exact time solution use the minimum delta time of the whole mesh ---*/
+  if (config->GetUnsteady_Simulation() == TIME_STEPPING) {
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_Time;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_Time = rbuf_time;
+#endif
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++)
+      node[iPoint]->SetDelta_Time(Global_Delta_Time);
+  }
+  
+  /*--- Recompute the unsteady time step for the dual time strategy
+   if the unsteady CFL is diferent from 0 ---*/
+  if ((dual_time) && (Iteration == 0) && (config->GetUnst_CFL() != 0.0) && (iMesh == MESH_0)) {
+    Global_Delta_UnstTimeND = config->GetUnst_CFL()*Global_Delta_Time/config->GetCFL(iMesh);
+    
+#ifdef HAVE_MPI
+    su2double rbuf_time, sbuf_time;
+    sbuf_time = Global_Delta_UnstTimeND;
+    SU2_MPI::Reduce(&sbuf_time, &rbuf_time, 1, MPI_DOUBLE, MPI_MIN, MASTER_NODE, MPI_COMM_WORLD);
+    SU2_MPI::Bcast(&rbuf_time, 1, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
+    Global_Delta_UnstTimeND = rbuf_time;
+#endif
+    config->SetDelta_UnstTimeND(Global_Delta_UnstTimeND);
+  }
+  
+  /*--- The pseudo local time (explicit integration) cannot be greater than the physical time ---*/
+  if (dual_time)
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      if (!implicit) {
+        Local_Delta_Time = min((2.0/3.0)*config->GetDelta_UnstTimeND(), node[iPoint]->GetDelta_Time());
+        node[iPoint]->SetDelta_Time(Local_Delta_Time);
+      }
+    }
+
 
 }
 
 void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
+unsigned short iDim, iVar, jVar;// Wall_Function;
+  unsigned long iVertex, iPoint, total_index;
+  
+  su2double *GridVel, *Normal, Area, Wall_HeatFlux;
 
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  
+  /*--- Identify the boundary by string name ---*/
+  
+  string Marker_Tag = config->GetMarker_All_TagBound(val_marker);
+
+  /*--- Loop over all of the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Compute dual-grid area and boundary normal ---*/
+      
+      Normal = geometry->vertex[val_marker][iVertex]->GetNormal();
+      
+      Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+
+      /*--- Initialize the convective & viscous residuals to zero ---*/
+      
+      for (iVar = 0; iVar < nVar; iVar++) {
+        Res_Conv[iVar] = 0.0;
+        Res_Visc[iVar] = 0.0;
+        if (implicit) {
+          for (jVar = 0; jVar < nVar; jVar++)
+            Jacobian_i[iVar][jVar] = 0.0;
+        }
+      }
+
+      /*--- Store the corrected velocity at the wall which will
+       be zero (v = 0), unless there are moving walls (v = u_wall)---*/
+      
+      if (grid_movement) {
+        GridVel = geometry->node[iPoint]->GetGridVel();
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = GridVel[iDim];
+      } else {
+        for (iDim = 0; iDim < nDim; iDim++) Vector[iDim] = 0.0;
+      }
+      
+      /*--- Impose the value of the velocity as a strong boundary
+       condition (Dirichlet). Fix the velocity and remove any
+       contribution to the residual at this node. ---*/
+      
+      node[iPoint]->SetVelocity_Old(Vector);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        LinSysRes.SetBlock_Zero(iPoint, iDim);
+      //node[iPoint]->SetVel_ResTruncError_Zero();
+
+      /*--- Enforce the no-slip boundary condition in a strong way by
+       modifying the velocity-rows of the Jacobian (1 on the diagonal). ---*/
+      
+      if (implicit) {
+        for (iVar = 0; iVar < nDim; iVar++) {
+          total_index = iPoint*nVar+iVar;
+          Jacobian.DeleteValsRowi(total_index);
+        }
+      }
+      
+    }
+  }
 }
 
   
@@ -5158,12 +5482,4 @@ void CPBIncNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_co
 void CPBIncNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config){
 
 }
-
-void CPBIncNSSolver::Viscous_Residual(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics,
-                        CConfig *config, unsigned short iMesh, unsigned short iRKStep) {
-}
-
-
-
-
 

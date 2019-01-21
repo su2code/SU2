@@ -92,7 +92,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double val_pressure, su2double *val_
 
   /*--- Allocate and initialize the primitive variables and gradients ---*/
   
-  nPrimVar = nDim+2; nPrimVarGrad = nDim+2;
+  nPrimVar = nDim+4; nPrimVarGrad = nDim+2;
 
   /*--- Allocate residual structures ---*/
   
@@ -211,7 +211,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
   Undivided_Laplacian = NULL;
  
   /*--- Allocate and initialize the primitive variables and gradients ---*/
-  nPrimVar = nDim+2; nPrimVarGrad = nDim+2;
+  nPrimVar = nDim+4; nPrimVarGrad = nDim+2;
   
   /*--- Allocate residual structures ---*/
   Res_TruncError = new su2double [nVar];
@@ -278,7 +278,7 @@ CPBIncEulerVariable::CPBIncEulerVariable(su2double *val_solution, unsigned short
     WindGustDer = new su2double [nDim+1];
   }
   
-  /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) ---*/
+  /*--- Incompressible flow, primitive variables nDim+2, (P, vx, vy, vz, rho) (P, vx, vy, vz, rho, lamMu, EddyMu) ---*/
   
   Primitive = new su2double [nPrimVar];
   for (iVar = 0; iVar < nPrimVar; iVar++) Primitive[iVar] = 0.0;
@@ -466,15 +466,7 @@ bool CPBIncNSVariable::SetPrimVar(su2double Density_Inf, su2double eddy_visc, su
   SetEddyViscosity(eddy_visc);
   FluidModel->SetEddyViscosity(eddy_visc);
 
-  /*--- Set thermal conductivity (effective value if RANS). ---*/
   
-  SetThermalConductivity(FluidModel->GetThermalConductivity());
-
-  /*--- Set specific heats ---*/
-
-  SetSpecificHeatCp(FluidModel->GetCp());
-  SetSpecificHeatCv(FluidModel->GetCv());
-
   return physical;
   
 }
