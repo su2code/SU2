@@ -1079,7 +1079,7 @@ private:
 
   ofstream *ConvHistFile;       /*!< \brief Store the pointer to each history file */
   bool Time_Domain;             /*!< \brief Determines if the multizone problem is solved in time-domain */
-  unsigned long Outer_Iter,    /*!< \brief Determines the number of outer iterations in the multizone problem */
+  unsigned long Outer_Iter,     /*!< \brief Determines the number of outer iterations in the multizone problem */
   Inner_Iter,                   /*!< \brief Determines the number of inner iterations in each multizone block */
   Time_Iter,                    /*!< \brief Determines the number of time iterations in the multizone problem */
   Iter,                         /*!< \brief Determines the number of pseudo-time iterations in a single-zone problem */
@@ -1093,13 +1093,16 @@ private:
   bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
   
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
-  su2double uq_delta_b;            /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
+  su2double uq_delta_b;         /*!< \brief Parameter used to perturb eigenvalues of Reynolds Stress Matrix */
   unsigned short eig_val_comp;  /*!< \brief Parameter used to determine type of eigenvalue perturbation */
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
-  bool interpolate_solution;             /*!< \brief Determines if solution interpolation is taking place */
-
+  bool interpolate_solution;              /*!< \brief Determines if solution interpolation is taking place */
+  string Target_Mesh_FileName;            /*!< \brief File name of target mesh for interpolation */
+  string Interpolated_Restart_FileName;   /*!< \brief File name of interpolated solution that is ouput */
+  bool use_target_mesh;                   /*!< \brief Determines if the target mesh should be used (for geometry initilization) */
+  
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
    there would be no list of all the config file options. ---*/
@@ -9171,6 +9174,30 @@ public:
    * \return <code>TRUE<\code> if solution interpolation is taking place
   */
   bool GetInterpolate_Solution(void);
+
+  /*!
+   * \brief Get name of the target grid.
+   * \return File name of the target grid.
+   */
+  string GetTarget_Mesh_FileName(void);
+
+  /*!
+   * \brief Get name of the interpolated solution file name
+   * \return File name of the interpolated solution output
+   */
+  string GetInterpolated_Restart_FileName(void);
+
+  /*!
+   * \brief Get if the target mesh file name should be returned
+   * \return File name of the target grid.
+   */
+  bool GetUsing_Target_Mesh(void);
+
+  /*!
+   * \brief Get if the target mesh file name should be returned
+   * \return File name of the target grid.
+   */
+  void SetUsing_Target_Mesh(bool val_using_target_mesh);
 };
 
 #include "config_structure.inl"

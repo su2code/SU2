@@ -2382,6 +2382,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Interpolating solutions between two meshes */
   addBoolOption("INTERPOLATE_SOLUTION", interpolate_solution, false);
 
+  /* DESCRIPTION: Interpolated output file restart flow */
+  addStringOption("INTERPOLATED_RESTART_FILENAME", Interpolated_Restart_FileName, string("interpolated_restart_flow.dat"));
+
+  /* DESCRIPTION: Target mesh for solution interpolation */
+  addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
+
   /* END_CONFIG_OPTIONS */
 
 }
@@ -3032,7 +3038,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
    movement (both rotating frame and moving walls can be steady), make sure that
    there is no grid motion ---*/
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] != MOVING_WALL) &&
        (Kind_GridMovement[ZONE_0] != ROTATING_FRAME) &&
@@ -3040,7 +3046,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
        (Kind_GridMovement[ZONE_0] != FLUID_STRUCTURE)))
     Grid_Movement = false;
   
-  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL) &&
+  if ((Kind_SU2 == SU2_CFD || Kind_SU2 == SU2_SOL || Kind_SU2 == SU2_INTERP) &&
       (Unsteady_Simulation == STEADY) &&
       ((Kind_GridMovement[ZONE_0] == MOVING_HTP)))
     Grid_Movement = true;
@@ -4934,6 +4940,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
     case SU2_MSH: cout << "|   |___/\\___//___|   Suite (Mesh Adaptation Code)                      |" << endl; break;
     case SU2_GEO: cout << "|   |___/\\___//___|   Suite (Geometry Definition Code)                  |" << endl; break;
     case SU2_SOL: cout << "|   |___/\\___//___|   Suite (Solution Exporting Code)                   |" << endl; break;
+    case SU2_INTERP: cout << "|   |___/\\___//___|   Suite (Solution Interpolating Code)               |" << endl; break;
   }
 
   cout << "|                                                                       |" << endl;
@@ -6223,6 +6230,12 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
       case CGNS_SOL: cout << "The output file format is CGNS (.cgns)." << endl; break;
     }
     cout << "Flow variables file name: " << Flow_FileName << "." << endl;
+  }
+
+  if (val_software == SU2_INTERP) {
+    if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
+    if (WRT_BINARY_RESTART) cout << "Writing binary SU2 native restart file." << endl;
+    else cout << "Writing ASCII SU2 native restart file." << endl;
   }
 
   if (val_software == SU2_DEF) {

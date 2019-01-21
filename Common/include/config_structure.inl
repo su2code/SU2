@@ -2078,3 +2078,11 @@ inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
 inline bool CConfig::GetInterpolate_Solution(void) { return interpolate_solution; }
+
+inline string CConfig::GetTarget_Mesh_FileName(void) { return Target_Mesh_FileName; }
+
+inline string CConfig::GetInterpolated_Restart_FileName(void) { return Interpolater_Restart_FileName; }
+
+inline bool CConfig::GetUsing_Target_Mesh(void) { return use_target_mesh; }
+
+inline void CConfig::GetUsing_Target_Mesh(bool val_using_target_mesh) { use_target_mesh = val_using_target_mesh; }
