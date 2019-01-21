@@ -488,15 +488,10 @@ void COutput::SetSurfaceCSV_Flow(CConfig *config, CGeometry *geometry,
   SurfFlow_file << "\"Pressure\", \"Pressure_Coefficient\", ";
   
   switch (solver) {
-    case EULER : SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
-    case TNE2_EULER: SurfFlow_file << "\"Mach_Number\"" <<"\n"; break;
-    case NAVIER_STOKES: case RANS:
+    case EULER: case TNE2_EULER: SurfFlow_file <<  "\"Mach_Number\"" << "\n"; break;
+    case NAVIER_STOKES: case RANS: case TNE2_NAVIER_STOKES:
       if (nDim == 2) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
       if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\", \"Temperature\", \"Temperature_ve\"" << "\n";
-      break;
-    case TNE2_NAVIER_STOKES:
-      if (nDim == 2) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Heat_Flux\"" << "\n";
-      if (nDim == 3) SurfFlow_file <<  "\"Skin_Friction_Coefficient_X\", \"Skin_Friction_Coefficient_Y\", \"Skin_Friction_Coefficient_Z\", \"Heat_Flux\" \"Temperature\", \"Temperature_ve\"" << "\n";
       break;
   }
   
