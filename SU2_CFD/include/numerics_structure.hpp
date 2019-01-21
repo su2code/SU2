@@ -3340,26 +3340,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
-
-  /*!
-   * \brief Initialize the Reynolds Stress Matrix
-   * \param[in] turb_ke turbulent kinetic energy of node
-   */
-  void SetReynoldsStressMatrix(su2double turb_ke);
-
-  /*!
-   * \brief Perturb the Reynolds stress tensor based on parameters
-   * \param[in] turb_ke: turbulent kinetic energy of the noce
-   * \param[in] Eig_Val_Comp: Defines type of eigenspace perturbation
-   * \param[in] beta_delta: Defines the amount of eigenvalue perturbation
-   */
-  void SetPerturbedRSM(su2double turb_ke, CConfig *config);
-
-  /*!
-   * \brief Get the mean rate of strain matrix based on velocity gradients
-   * \param[in] S_ij
-   */
-  void GetMeanRateOfStrainMatrix(su2double **S_ij);
 };
 
 

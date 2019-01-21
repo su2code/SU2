@@ -4769,7 +4769,7 @@ void CAvgGrad_Base::GetMeanRateOfStrainMatrix(su2double **S_ij) const
 }
 
 void CAvgGrad_Base::SetReynoldsStressMatrix(su2double turb_ke){
-  unsigned short jDim;
+  unsigned short iDim, jDim;
   su2double **S_ij = new su2double* [3];
   su2double muT = Mean_Eddy_Viscosity;
   su2double divVel = 0;
