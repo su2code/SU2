@@ -121,6 +121,9 @@ AC_ARG_ENABLE(DEF,
 AC_ARG_ENABLE(SOL,
    	AS_HELP_STRING([--disable-SOL], [build the SU2_SOL executable (default = yes)]),
 	[build_SOL=$enableval], [build_SOL="yes"])
+AC_ARG_ENABLE(INTERP,
+        AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
+        [build_INTERP=$enableval], [build_INTERP="yes"])
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
@@ -301,6 +304,7 @@ then
   build_MSH=no
   build_DEF=no
   build_SOL=no
+  build_INTERP=no
   build_GEO=no
   build_PY=no
   build_PY_WRAPPER=no
@@ -317,6 +321,7 @@ AM_CONDITIONAL([BUILD_DOT],[test $build_DOT != "no"])
 AM_CONDITIONAL([BUILD_MSH],[test $build_MSH != "no"])
 AM_CONDITIONAL([BUILD_DEF],[test $build_DEF != "no"])
 AM_CONDITIONAL([BUILD_SOL],[test $build_SOL != "no"])
+AM_CONDITIONAL([BUILD_INTERP],[test $build_INTERP != "no"])
 AM_CONDITIONAL([BUILD_GEO],[test $build_GEO != "no"])
 AM_CONDITIONAL([BUILD_PY],[test $build_PY != "no"])
 AM_CONDITIONAL([BUILD_PY_WRAPPER], [test $build_PY_WRAPPER != "no"])
@@ -331,6 +336,7 @@ AC_OUTPUT(Makefile \
 	SU2_MSH/obj/Makefile \
 	SU2_DEF/obj/Makefile \
 	SU2_SOL/obj/Makefile \
+        SU2_INTERP/obj/Makefile \
 	SU2_GEO/obj/Makefile \
 	SU2_PY/Makefile \
 	SU2_PY/pySU2/Makefile)
@@ -410,6 +416,7 @@ Build Configuration Summary:
     Build SU2_MSH:        $build_MSH
     Build SU2_DEF:        $build_DEF
     Build SU2_SOL:        $build_SOL
+    Build SU2_INTERP:     $build_INTERP
     Build SU2_GEO:        $build_GEO
     Build Py Wrapper:     $build_PY_WRAPPER
 
