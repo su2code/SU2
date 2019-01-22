@@ -41,7 +41,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short iZone, nZone = SINGLE_ZONE, iInst, io, max_io = 2, iMesh;
+  unsigned short iZone, nZone = SINGLE_ZONE, iInst, io, max_io = 2, iMesh, iSol;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   ofstream ConvHist_file;
   char config_file_name[MAX_STRING_SIZE];
@@ -155,15 +155,15 @@ int main(int argc, char *argv[]) {
     for(io = 0; io < max_io; io++){
       for (iZone = 0; iZone < nZone; iZone++) {
         /*--- Set the interface markers for multizone ---*/
-        config_container[io][iZone]->SetMultizone(driver_config, config_container);
+        config_container[io][iZone]->SetMultizone(driver_config, config_container[io]);
       }
     }
   }
 
-  for (io = 0; io < max_io; i++){
+  for (io = 0; io < max_io; io++){
     for (iZone = 0; iZone < nZone; iZone++){
       solver_container[io][iZone] = new CSolver** [config_container[io][iZone]->GetnMGLevels()+1];
-      for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++) {
+      for (iMesh = 0; iMesh <= config_container[io][iZone]->GetnMGLevels(); iMesh++) {
         solver_container[io][iZone][iMesh] = NULL;
         solver_container[io][iZone][iMesh] = new CSolver* [MAX_SOLS];
         for (iSol = 0; iSol < MAX_SOLS; iSol++)
@@ -179,13 +179,13 @@ int main(int argc, char *argv[]) {
 
     /*--- Determine whether or not the FEM solver is used, which decides the
      type of geometry classes that are instantiated. ---*/
-      fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)          ||
-        (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-        (config_container[iZone]->GetKind_Solver() == FEM_RANS)           ||
-        (config_container[iZone]->GetKind_Solver() == FEM_LES)            ||
-        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+      fem_solver = ((config_container[io][iZone]->GetKind_Solver() == FEM_EULER)          ||
+        (config_container[io][iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+        (config_container[io][iZone]->GetKind_Solver() == FEM_RANS)           ||
+        (config_container[io][iZone]->GetKind_Solver() == FEM_LES)            ||
+        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -711,22 +711,22 @@ int main(int argc, char *argv[]) {
   for (io = 0; io < max_io; io++){
     for (iZone = 0; iZone < nZone; iZone++){
       config_container[io][iZone]->SetiInst(INST_0);
-      solver_container[io][iZone][MESH_0][FLOW_SOL] = new CNSSolver(geometry[io][iZone][INST_0], config[io][iZone], 0);
-      if (config[io][iZone]->GetKind_Turb_Model() == SA){
-        solver_container[io][iZone][MESH_0][TURB_SOL] = new CTurbSASolver(geometry[io][iZone][INST_0], config[io][iZone], MESH_0, solver_container[io][iZone][MESH_0][FLOW_SOL]->GetFluidModel() );
-        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][MESH_0][TURB_SOL]->Postprocessing(geometry[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config[io][iZone], MESH_0);
+      solver_container[io][iZone][MESH_0][FLOW_SOL] = new CNSSolver(geometry_container[io][iZone][INST_0], config_container[io][iZone], MESH_0);
+      if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
+        solver_container[io][iZone][MESH_0][TURB_SOL] = new CTurbSASolver(geometry_container[io][iZone][INST_0], config_container[io][iZone], MESH_0, solver_container[io][iZone][MESH_0][FLOW_SOL]->GetFluidModel() );
+        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[io][iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config_container[io][iZone], MESH_0);
       }
-      else if (config[io][iZone]->GetKind_Turb_Model() == SST){
-        solver_container[io][iZone][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry[io][iZone][INST_0], config[io][iZone], MESH_0);
-        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][MESH_0][TURB_SOL]->Postprocessing(geometry[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config[io][iZone], MESH_0);
-        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
+        solver_container[io][iZone][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry_container[io][iZone][INST_0], config_container[io][iZone], MESH_0);
+        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+        solver_container[io][iZone][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config_container[io][iZone], MESH_0);
+        solver_container[io][iZone][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0], solver_container[io][iZone][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
 
       if (io == 0){
-        solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry[io][iZone], solver_container[io][iZone], config[io][iZone], val_iter, update_geo);
-        solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry[io][iZone], solver_container[io][iZone], config[io][iZone], val_iter, update_geo);
+        solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+        solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
       }
     }
   }
@@ -762,7 +762,7 @@ int main(int argc, char *argv[]) {
   if (solver_container != NULL){
     for (io = 0; io < max_io; io++){
       for (iZone = 0; iZone < nZone; iZone++){
-        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
+        for (iMesh = 0; iMesh <= config_container[io][iZone]->GetnMGLevels(); iMesh++){
           for (iSol = 0; iSol < MAX_SOLS; iSol++){
             if (solver_container[io][iZone][iMesh][iSol] != NULL){
               delete solver_container[io][iZone][iMesh][iSol];
