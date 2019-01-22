@@ -2592,7 +2592,7 @@ CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
   // Loop over the number of zones to copy the data from geometry to grid class.
   mGridZones.resize(nZones);
   for(iZone = 0; iZone < nZone; iZone++)
-    mGridZones[iZone].CopyZoneData(geometry[iZone]);
+    mGridZones[iZone].CopySU2GeometryToGrid(geometry[iZone]);
 }
 
 CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}
