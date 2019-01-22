@@ -785,18 +785,18 @@ int main(int argc, char *argv[]) {
   
   if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
 
-  if (config != NULL){
+  if (config_container != NULL){
     for (io = 0; io < max_io; io++){
       for (iZone = 0; iZone < nZone; iZone++){
-        if (config[io][iZone] != NULL){
-          delete config[io][iZone];
+        if (config_container[io][iZone] != NULL){
+          delete config_container[io][iZone];
         }
       }
-      if (config[iZone] != NULL){
-        delete config[iZone];
+      if (config_container[iZone] != NULL){
+        delete config_container[iZone];
       }
     }
-    delete [] config;
+    delete [] config_container;
   }
   
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
