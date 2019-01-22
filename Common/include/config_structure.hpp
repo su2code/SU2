@@ -5248,6 +5248,11 @@ public:
   bool GetRestart(void);
 
   /*!
+   * \brief Sets restart information
+   */
+  void SetRestart(void val_restart);
+
+  /*!
    * \brief Flag for whether binary SU2 native restart files are written.
    * \return Flag for whether binary SU2 native restart files are written, if <code>TRUE</code> then the code will output binary restart files.
    */
@@ -5313,6 +5318,11 @@ public:
    * \return File name of the input grid.
    */
   string GetMesh_FileName(void);
+
+  /*!
+   * \brief set name of the input grid.
+   */
+  void SetMesh_FileName(string val_filename);
   
   /*!
    * \brief Get name of the output grid, this parameter is important for grid
