@@ -6234,7 +6234,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   if (val_software == SU2_INTERP) {
     if (Low_MemoryOutput) cout << "Writing output files with low memory RAM requirements."<< endl;
-    if (WRT_BINARY_RESTART) cout << "Writing binary SU2 native restart file." << endl;
+    if (Wrt_Binary_Restart) cout << "Writing binary SU2 native restart file." << endl;
     else cout << "Writing ASCII SU2 native restart file." << endl;
   }
 
