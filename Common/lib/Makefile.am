@@ -121,7 +121,7 @@ lib_sources = \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
-  ../src/wall_model.cpp
+  ../src/wall_model.cpp 
 
 lib_cxxflags = -fPIC
 lib_ldadd =

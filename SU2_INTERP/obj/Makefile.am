@@ -43,6 +43,8 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_INTERP
 
 ___bin_SU2_INTERP_SOURCES = \
+  ../include/fem_interpolation_structure.hpp \
+  ../src/fem_interpolation_structure.cpp \
   ../include/SU2_INTERP.hpp \
   ../src/SU2_INTERP.cpp
 
