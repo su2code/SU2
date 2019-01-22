@@ -117,6 +117,17 @@ def main():
     polar_naca0012.tol       = 0.00001
     test_list.append(polar_naca0012)
 
+    # HYPERSONIC FLOW PAST BLUNT BODY
+    naca0012           = TestCase('bluntbody')
+    naca0012.cfg_dir   = "euler/bluntbody"
+    naca0012.cfg_file  = "blunt.cfg"
+    naca0012.test_iter = 20
+    naca0012.test_vals = [0.571704, 6.958347, -0.000000, 1.658687] #last 4 columns
+    naca0012.su2_exec  = "SU2_CFD"
+    naca0012.timeout   = 1600
+    naca0012.tol       = 0.00001
+    test_list.append(bluntbody)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
