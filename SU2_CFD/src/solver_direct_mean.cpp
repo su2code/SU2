@@ -864,6 +864,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -15556,6 +15558,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CNSSolver::~CNSSolver(void) {

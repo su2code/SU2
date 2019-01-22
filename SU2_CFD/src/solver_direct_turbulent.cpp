@@ -1452,6 +1452,8 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
       }
   }
 
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "SA";
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -3786,6 +3788,9 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
           Inlet_TurbVars[iMarker][iVertex][1] = omega_Inf;
         }
       }
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "K-W SST";
 
 }
 

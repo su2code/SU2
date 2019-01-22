@@ -140,6 +140,8 @@ protected:
   unsigned long *nCol_InletFile;       /*!< \brief Auxiliary structure for holding the number of columns for a particular marker in an inlet profile file. */
   passivedouble *Inlet_Data; /*!< \brief Auxiliary structure for holding the data values from an inlet profile file. */
 
+  string SolverName;      /*!< \brief Store the name of the solver for output purposes. */
+
 public:
   
   CSysVector LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
@@ -4366,6 +4368,12 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Retrieve the solver name for output purposes.
+   * \param[out] val_solvername - Name of the solver.
+   */
+  string GetSolverName(void);
 
 };
 
