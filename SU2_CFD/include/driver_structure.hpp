@@ -43,6 +43,7 @@
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
 #include "output_structure.hpp"
+#include "output_driver.hpp"
 #include "numerics_structure.hpp"
 #include "transfer_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
@@ -97,6 +98,7 @@ protected:
   CNumerics ******numerics_container;            /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig **config_container;                   /*!< \brief Definition of the particular problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
+  CDriverOutput *driver_output;                 /*!< \brief Definition of the driver output. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
   CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */

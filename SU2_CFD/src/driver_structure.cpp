@@ -105,6 +105,7 @@ CDriver::CDriver(char* confFile,
   transfer_types                 = new unsigned short*[nZone];
   nInst                          = new unsigned short[nZone];
   driver_config                  = NULL;
+  driver_output                  = NULL;
 
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -3720,6 +3721,11 @@ void CDriver::Output_Preprocessing(){
     
     output[iZone]->PreprocessVolumeOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0]);
 
+  }
+
+  if (driver_config->GetKind_Solver() == MULTIZONE){
+    driver_output = new CDriverOutput(config_container);
+    driver_output->SetHistoryOutputFields(output, solver_container, config_container);
   }
   
 }

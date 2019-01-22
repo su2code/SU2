@@ -73,6 +73,7 @@ libSU2Core_sources = \
   ../include/numerics_structure.inl \
   ../include/output_structure.hpp \
   ../include/output_structure.inl \
+  ../include/output_driver.hpp \
   ../include/output_structure_legacy.hpp \
   ../include/output_structure_legacy.inl \
   ../include/sgs_model.hpp \
