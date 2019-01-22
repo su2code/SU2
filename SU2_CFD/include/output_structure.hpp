@@ -2,7 +2,7 @@
  * \file output_structure.hpp
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
- * \author F. Palacios, T. Economon, M. Colonno
+ * \author F. Palacios, T. Economon, M. Colonno, T. Albring, R. Sanchez
  * \version 6.1.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
@@ -267,12 +267,12 @@ protected:
     VolumeOutputField(string fieldname, int offset, string volumeoutputgroup):
       FieldName(fieldname), Offset(offset), OutputGroup(volumeoutputgroup){}
   };
-  
-  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */ 
-  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */ 
-  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */ 
-  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */ 
-  
+
+  std::map<string, HistoryOutputField >         HistoryOutput_Map;    /*!< \brief Associative map to access data stored in the history output fields by a string identifier. */
+  std::vector<string>                           HistoryOutput_List;   /*!< \brief Vector that contains the keys of the HistoryOutput_Map in the order of their insertion. */
+  std::map<string, vector<HistoryOutputField> > HistoryOutputPerSurface_Map; /*!< \brief Associative map to access data stored in the history per surface output fields by a string identifier. */
+  std::vector<string>                           HistoryOutputPerSurface_List;  /*!< \brief Vector that contains the keys of the HistoryOutputPerSurface_Map in the order of their insertion. */
+
   std::map<string, VolumeOutputField >          VolumeOutput_Map;
   std::vector<string>                           VolumeOutput_List;
   

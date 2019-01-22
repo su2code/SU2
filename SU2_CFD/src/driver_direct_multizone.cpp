@@ -285,6 +285,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
@@ -338,6 +339,7 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
@@ -357,6 +359,7 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
       iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
@@ -464,6 +467,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
             config_container[iZone]);}
     }
   }
+
+  /*--- Print out the convergence data to screen and history file ---*/
+  driver_output->SetBody(output, solver_container, driver_config, config_container);
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 
