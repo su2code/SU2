@@ -361,6 +361,12 @@ private:
                                                     box candidates during the nearest element
                                                     search. */
 public:
+
+  /*!
+   * \brief Default constructor.
+   */
+  CADTElemClass();
+  
   /*!
    * \brief Constructor of the class.
    * \param[in]     val_nDim     Number of spatial dimensions of the problem.
