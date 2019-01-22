@@ -5168,19 +5168,19 @@ void CAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jac
   else if (TauWall_j > 0.0) Mean_TauWall = TauWall_j;
   else Mean_TauWall = -1.0;
 
-  /*--- Get projected flux tensor ---*/
-
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-  if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
-  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
-
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
     SetReynoldsStressMatrix(Mean_turb_ke);
     SetPerturbedRSM(Mean_turb_ke, config);
   }
+
+  /*--- Get projected flux tensor ---*/
+
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
+  if (config->GetQCR()) AddQCR(Mean_GradPrimVar);
+  if (Mean_TauWall > 0) AddTauWall(Normal, Mean_TauWall);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity);
@@ -5435,18 +5435,17 @@ void CGeneralAvgGrad_Flow::ComputeResidual(su2double *val_residual, su2double **
                     dist_ij_2, nDim+1);
   }
   
-  
-  /*--- Get projected flux tensor ---*/
-  
-  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
-         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
-
   /* --- If using UQ methodology, set Reynolds Stress tensor and perform perturbation--- */
 
   if (using_uq){
     SetReynoldsStressMatrix(Mean_turb_ke);
     SetPerturbedRSM(Mean_turb_ke, config);
   }
+
+  /*--- Get projected flux tensor ---*/
+  
+  SetStressTensor(Mean_PrimVar, Mean_GradPrimVar, Mean_turb_ke,
+         Mean_Laminar_Viscosity, Mean_Eddy_Viscosity);
 
   SetHeatFluxVector(Mean_GradPrimVar, Mean_Laminar_Viscosity,
                     Mean_Eddy_Viscosity, Mean_Thermal_Conductivity, Mean_Cp);
