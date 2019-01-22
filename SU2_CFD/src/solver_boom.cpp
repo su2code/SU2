@@ -276,7 +276,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
     A2 = new su2double[n*nDonor];
     iDim=0;
     /*--- Copy only the rows that are non-degenerate ---*/
-    for (k=0; k<n; k++) {
+    for (k=0; k<nDim+1; k++) {
       if (test[k]) {
         for (iDonor=0;iDonor<nDonor;iDonor++ ) {
           A2[nDonor*iDim+iDonor]=A[nDonor*k+iDonor];
@@ -354,7 +354,7 @@ void Isoparameters(unsigned short nDim, unsigned short nDonor, su2double *X, su2
   }
 
   /*--- Isoparametric coefficients have been calculated. Run checks to eliminate outside-element issues ---*/
-  if (nDonor==4 && nDim == 2) {
+  if (nDonor==4) {
     //-- Bilinear coordinates, bounded by [-1,1] ---
     su2double xi, eta;
     xi = -isoparams[0]+isoparams[1]+isoparams[2]-isoparams[3];
