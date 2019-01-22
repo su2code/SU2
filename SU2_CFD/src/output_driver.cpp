@@ -188,9 +188,15 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
         /*--- Set an unique name for the averaged history data per solver ---*/
         name = "ZONE" + to_string(iZone) + "_SOL" + to_string(iSol);
         /*--- Set an unique name for the history headers of the averaged data per solver ---*/
-        header = "avgres[" + to_string(iZone) + "][" + to_string(iSol) + "]";
+        header = solver[iZone][INST_0][MESH_0][iSol]->GetSolverName();
+        header += "[" + to_string(iZone) + "]";
 
+        /*--- Add the average residual of the current solver to output ---*/
         AddHistoryOutput(name, header, FORMAT_FIXED,  "SOL_AVGRES", TYPE_RESIDUAL);
+
+        /*--- Request the average residual for screen output ---*/
+        RequestedScreenFields.push_back(name);
+
       }
     }
 
@@ -198,8 +204,6 @@ void CDriverOutput::SetHistoryOutputFields(COutput **output, CSolver *****solver
     name = "ZONE" + to_string(iZone);
     /*--- Set an unique name for the history headers of the averaged data ---*/
     header = "avgres[" + to_string(iZone) + "]";
-    /*--- Request the average residual for screen output ---*/
-    RequestedScreenFields.push_back(name);
 
     AddHistoryOutput(name, header, FORMAT_FIXED,  "ZONE_AVGRES", TYPE_RESIDUAL);
   }

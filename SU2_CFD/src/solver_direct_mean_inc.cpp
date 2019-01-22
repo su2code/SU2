@@ -557,6 +557,9 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
 
   Set_MPI_Solution(geometry, config);
 
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "INC.FLOW";
+
 }
 
 CIncEulerSolver::~CIncEulerSolver(void) {
@@ -7354,6 +7357,9 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "INC.FLOW";
 
 }
 

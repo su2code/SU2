@@ -464,6 +464,8 @@ CFEASolver::CFEASolver(CGeometry *geometry, CConfig *config) : CSolver() {
   
   if(dynamic) Set_MPI_Solution_Old(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "FEA";
 }
 
 CFEASolver::~CFEASolver(void) {
