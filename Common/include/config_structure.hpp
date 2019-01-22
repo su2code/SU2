@@ -5250,7 +5250,7 @@ public:
   /*!
    * \brief Sets restart information
    */
-  void SetRestart(void val_restart);
+  void SetRestart(bool val_restart);
 
   /*!
    * \brief Flag for whether binary SU2 native restart files are written.
