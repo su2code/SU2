@@ -75,10 +75,10 @@ def main():
     test_list.append(discadj_cylinder3D)
 
     # Arina nozzle 2D
-    discadj_arina2k              = TestCase('discadj_arina2k’)
-    discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k”
-    discadj_arina2k.cfg_file     = “Arina2K.cfg"
-    discadj_arina2k.test_iter    = 3000
+    discadj_arina2k              = TestCase('discadj_arina2k')
+    discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
+    discadj_arina2k.cfg_file     = "Arina2K.cfg"
+    discadj_arina2k.test_iter    = 20
     discadj_arina2k.test_vals    = [-3.576977, -4.165617, 4.7303e+04, 0.0000e+0] #last 4 columns
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
