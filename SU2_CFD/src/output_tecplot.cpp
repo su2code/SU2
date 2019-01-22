@@ -175,7 +175,8 @@ void COutput::SetTecplotASCII(CConfig *config, CGeometry *geometry, CSolver **so
       }
       
       if (config->GetWrt_SharpEdges()) {
-        if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)))  {
+        if (((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+             (Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)))  {
           Tecplot_File << ", \"Sharp_Edge_Dist\"";
         }
       }
@@ -834,6 +835,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
   /*--- Special cases where a number needs to be appended to the file name. ---*/
   
   if ((Kind_Solver == EULER || Kind_Solver == NAVIER_STOKES || Kind_Solver == RANS ||
+       Kind_Solver == TNE2_EULER || Kind_Solver == TNE2_NAVIER_STOKES ||
        Kind_Solver == ADJ_EULER || Kind_Solver == ADJ_NAVIER_STOKES || Kind_Solver == ADJ_RANS ||
        Kind_Solver == DISC_ADJ_EULER || Kind_Solver == DISC_ADJ_NAVIER_STOKES || Kind_Solver == DISC_ADJ_RANS) &&
       (val_nZone > 1) ) {
@@ -2821,7 +2823,8 @@ string COutput::AssembleVariableNames(CGeometry *geometry, CConfig *config, unsi
     }
     
     if (config->GetWrt_SharpEdges()) {
-      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS)) {
+      if ((Kind_Solver == EULER) || (Kind_Solver == NAVIER_STOKES) || (Kind_Solver == RANS) ||
+          (Kind_Solver == TNE2_EULER) || (Kind_Solver == TNE2_NAVIER_STOKES)  ) {
         variables << "Sharp_Edge_Dist ";
         *NVar += 1;
       }
