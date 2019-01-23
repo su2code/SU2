@@ -179,4 +179,16 @@ public:
 
   void SetScreen_Output(COutput **output, CConfig *driver_config, CConfig **config);
 
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *driver_config, CConfig **config);
+
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *driver_config, CConfig **config);
+
 };

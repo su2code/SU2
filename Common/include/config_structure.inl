@@ -2071,6 +2071,10 @@ inline bool CConfig::GetMultizone_Residual(void) { return Multizone_Residual; }
 
 inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
 
+inline bool CConfig::GetWrt_ZoneConv(void) { return Wrt_ZoneConv; }
+
+inline bool CConfig::GetWrt_ZoneHist(void) { return Wrt_ZoneHist; }
+
 inline bool CConfig::GetSpecial_Output(void) { return SpecialOutput; }
 
 inline bool CConfig::GetWrt_ForcesBreakdown(void) { return Wrt_ForcesBreakdown; }

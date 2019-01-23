@@ -704,6 +704,10 @@ bool CFlowOutput::WriteScreen_Header(CConfig *config) {
   } else {
     write_header = (config->GetUnsteady_Simulation() == DT_STEPPING_1ST || config->GetUnsteady_Simulation() == DT_STEPPING_2ND) && config->GetIntIter() == 0;
   }
+
+  /*--- For multizone problems, print the header only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
+  if(config->GetMultizone_Problem()) write_header = (write_header && config->GetWrt_ZoneConv());
+
   return write_header;
 }
 
@@ -716,6 +720,10 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   else if (((config->GetUnsteady_Simulation() == STEADY) || (config->GetUnsteady_Simulation() == TIME_STEPPING) )){
     write_output = (config->GetInnerIter() % config->GetWrt_Con_Freq() == 0) ;    
   } 
+
+  /*--- For multizone problems, print the body only if requested explicitly (default of GetWrt_ZoneConv is false) ---*/
+  if(config->GetMultizone_Problem()) write_output = (write_output && config->GetWrt_ZoneConv());
+
   return write_output;
 }
 
