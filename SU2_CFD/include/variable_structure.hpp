@@ -1581,6 +1581,12 @@ public:
   
   /*!
    * \brief A virtual member.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  virtual void SetVelocity(su2double *val_velocity);
+  
+  /*!
+   * \brief A virtual member.
    * \param[in] laminarViscosity
    */
   virtual void SetLaminarViscosity(su2double laminarViscosity);
@@ -3830,6 +3836,12 @@ public:
    * \param[in] val_velocity - Pointer to the velocity.
    */
   void SetVelocity_Old(su2double *val_velocity);
+  
+  /*!
+   * \brief Set the velocity vector from the solution.
+   * \param[in] val_velocity - Pointer to the velocity.
+   */
+  void SetVelocity(su2double *val_velocity);
   
   /*!
    * \brief Set all the primitive variables for incompressible flows.

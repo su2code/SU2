@@ -2708,7 +2708,78 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
 }
 
 void CIncEulerSolver::Postprocessing(CGeometry *geometry, CSolver **solver_container, CConfig *config,
-                                  unsigned short iMesh) { }
+                                  unsigned short iMesh) {
+
+  int test = 0;
+  cout << "CIncEulerSolver::Postprocessing" << endl;
+  //cin >> test;
+  /*--- Define necessary variables ---*/
+  unsigned short iMarker, Kind_BC, iDim;
+  unsigned long iPoint, iVertex;
+  su2double Area, dot_product, Velocity[3];
+  su2double *AreaNormal, *UnitNormal, *Vector;
+  AreaNormal = new su2double[nDim];
+  UnitNormal = new su2double[nDim];
+  Vector     = new su2double[nDim];
+  
+  /*--- Loop over all Euler_Wall/Symmetry_Plane marker ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    
+    Kind_BC = config->GetMarker_All_KindBC(iMarker);
+    if ((Kind_BC == SYMMETRY_PLANE) || (Kind_BC == EULER_WALL)) {
+      
+      /*--- Loop over all vertices on the marker ---*/
+      
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        
+        /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
+        
+        if (geometry->node[iPoint]->GetDomain()) {
+          test++;
+          /*--- Compute outward facing unit normal  ---*/
+          geometry->vertex[iMarker][iVertex]->GetNormal(AreaNormal);
+          
+          Area = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) Area += AreaNormal[iDim]*AreaNormal[iDim];
+          Area = sqrt (Area);
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            UnitNormal[iDim] = -AreaNormal[iDim]/Area;
+          }
+          /*--- Get Velocity and compute required dot product ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+          }
+          
+          dot_product = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            dot_product += Velocity[iDim] * UnitNormal[iDim];
+          }
+          /*---Compute velocity correction to in order to fullfill v \cdot n = 0
+           * and set Primitive ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Vector[iDim] = Velocity[iDim] - dot_product * UnitNormal[iDim];
+          }
+          
+          /*--- Where to set the corrected velocity? ---*/
+          for (iDim = 0; iDim < nDim; iDim++) {
+            node[iPoint]->SetPrimitive(iDim+1, Vector[iDim]); //This does nothing!
+          }
+          //node[iPoint]->SetVelocity(Vector); // Set Solution directly
+        }
+      }
+    }
+  }
+  cout << "Sym vertex counter: " << test << endl;
+  
+  delete [] AreaNormal;
+  delete [] UnitNormal;
+  delete [] Vector;
+  
+}//TK implement correction here 
 
 unsigned long CIncEulerSolver::SetPrimitive_Variables(CSolver **solver_container, CConfig *config, bool Output) {
   
@@ -3139,11 +3210,11 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   for (iVar = 0; iVar < nVar; iVar++) Residual[iVar] = 0.0;
 
   if (body_force || periodic_bc_body_force) {
-
+    
     /*--- Loop over all points ---*/
-
+    
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-
+      
       /*--- Load the conservative variables ---*/
 
       numerics->SetConservative(node[iPoint]->GetSolution(),
@@ -5641,7 +5712,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
     
     if (geometry->node[iPoint]->GetDomain()) {
       
-      /*--- Normal vector for this vertex (negative for outward convention) ---*/
+      /*--- Normal vector for this vertex (negative for outward convention) ---*/ //TK is the normal vector averaged?
       
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       
@@ -5660,7 +5731,7 @@ void CIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_contai
 
       Residual[0] = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
-        Residual[iDim+1] = Pressure*NormalArea[iDim];
+        Residual[iDim+1] = Pressure*NormalArea[iDim]; //TK Here maybe Residual[iDim+1] = Pressure*UnitNormal[iDim]*Area; but that is exactly whats happening
       Residual[nDim+1] = 0.0;
 
       /*--- Add the Reynolds stress tensor contribution ---*/
@@ -13304,7 +13375,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
       /*--- Initialize the convective & viscous residuals to zero ---*/
       
       for (iVar = 0; iVar < nVar; iVar++) {
-        Res_Conv[iVar] = 0.0;
+        Res_Conv[iVar] = 0.0; // TK Not used after that in this function ??
         Res_Visc[iVar] = 0.0;
         if (implicit) {
           for (jVar = 0; jVar < nVar; jVar++)
@@ -13326,7 +13397,7 @@ void CIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_contai
        condition (Dirichlet). Fix the velocity and remove any
        contribution to the residual at this node. ---*/
       
-      node[iPoint]->SetVelocity_Old(Vector);
+      node[iPoint]->SetVelocity_Old(Vector); // TK Why _Old? Is there a solution copying directly afterwards? 
       
       for (iDim = 0; iDim < nDim; iDim++)
         LinSysRes.SetBlock_Zero(iPoint, iDim+1);

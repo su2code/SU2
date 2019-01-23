@@ -445,6 +445,8 @@ inline void CVariable::SetVelocity2(void) { }
 
 inline void CVariable::SetVelocity_Old(su2double *val_velocity) { }
 
+inline void CVariable::SetVelocity(su2double *val_velocity) { }
+
 inline void CVariable::SetVel_ResTruncError_Zero(unsigned short iSpecies) { }
 
 inline void CVariable::SetLaminarViscosity(su2double laminarViscosity) { }
@@ -1017,6 +1019,11 @@ inline su2double *CIncEulerVariable::GetPrimitive(void) { return Primitive; }
 inline void CIncEulerVariable::SetVelocity_Old(su2double *val_velocity) {
   for (unsigned short iDim = 0; iDim < nDim; iDim++)
     Solution_Old[iDim+1] = val_velocity[iDim];
+}
+
+inline void CIncEulerVariable::SetVelocity(su2double *val_velocity) {
+  for (unsigned short iDim = 0; iDim < nDim; iDim++)
+    Solution[iDim+1] = val_velocity[iDim];
 }
 
 inline void CIncEulerVariable::AddGradient_Primitive(unsigned short val_var, unsigned short val_dim, su2double val_value) { Gradient_Primitive[val_var][val_dim] += val_value; }
