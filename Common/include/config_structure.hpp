@@ -1090,6 +1090,8 @@ private:
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
+  bool Wrt_ZoneHist;            /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
   Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
   string *ScreenOutput,    /*!< \brief Kind of the screen output. */
@@ -9182,6 +9184,19 @@ public:
    * \return YES if the (new) single-zone driver is to be used.
    */
   bool GetSinglezone_Driver(void);
+
+  /*!
+   * \brief Check if the convergence history of each individual zone is written to screen
+   * \return YES if the zone convergence history of each individual zone must be written to screen
+   */
+  bool GetWrt_ZoneConv(void);
+
+  /*!
+   * \brief Check if the convergence history of each individual zone is written to file
+   * \return YES if the zone convergence history of each individual zone must be written to file
+   */
+  bool GetWrt_ZoneHist(void);
+
 
   /*!
    * \brief Check if the special output is written

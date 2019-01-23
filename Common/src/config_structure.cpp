@@ -1880,7 +1880,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Visualize the deformation (volume grid) */
   addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
@@ -2125,8 +2125,17 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
+
+  /* DESCRIPTION: Determines if the convergence history of each individual zone is written to screen */
+  addBoolOption("WRT_ZONE_CONV", Wrt_ZoneConv, false);
+  /* DESCRIPTION: Determines if the convergence history of each individual zone is written to file */
+  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, true);
+
+
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
+
+
 
   /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
   *  Options: NO, YES \ingroup Config */

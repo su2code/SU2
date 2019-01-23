@@ -77,11 +77,11 @@ void CDriverOutput::SetBody(COutput **output, CSolver *****solver, CConfig *driv
     //if (write_history) SetHistoryFile_Output(config[val_iZone]);
 
     /*--- Write the screen header---------------------------------------------------------------------------*/
-    write_header = true;
+    write_header = WriteScreen_Header(driver_config, config);
     if (write_header) SetScreen_Header(driver_config, config);
 
     /*--- Write the screen output---------------------------------------------------------------------------*/
-    write_screen = true;
+    write_screen = WriteScreen_Output(driver_config, config);
     if (write_screen) SetScreen_Output(output, driver_config, config);
 
   }
@@ -257,3 +257,27 @@ void CDriverOutput::SetScreen_Output(COutput **output, CConfig *driver_config, C
     (*OuterConvergenceTable) << out.str();
   }
 }
+
+inline bool CDriverOutput::WriteScreen_Header(CConfig *driver_config, CConfig **config) {
+
+  unsigned short iZone;
+  bool write_header = true;
+
+  /*--- If the zone output is disabled for every zone ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+    write_header = (write_header && (!config[iZone]->GetWrt_ZoneConv()));
+  }
+
+  /*--- If the outer iteration is zero ---*/
+  write_header = (write_header && (driver_config->GetOuterIter() == 0));
+
+  return write_header;
+
+}
+inline bool CDriverOutput::WriteScreen_Output(CConfig *driver_config, CConfig **config) {
+
+  bool write_output = true;
+
+  return write_output;
+}
+

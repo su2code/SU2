@@ -71,6 +71,9 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
   bool harmonic_balance = (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool discrete_adjoint = config_container[val_iZone]->GetDiscrete_Adjoint();
 
+  /*--- Only write to screen if this option is enabled ---*/
+  bool Screen_Output = config_container[val_iZone]->GetDeform_Output();
+
   /*--- For a harmonic balance case, set "iteration number" to the zone number,
    so that the meshes are positioned correctly for each instance. ---*/
   if (harmonic_balance) {
@@ -308,12 +311,12 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
 
     case FLUID_STRUCTURE:
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && Screen_Output)
         cout << endl << "Deforming the grid for Fluid-Structure Interaction applications." << endl;
 
       /*--- Deform the volume grid around the new boundary locations ---*/
 
-      if (rank == MASTER_NODE)
+      if (rank == MASTER_NODE && Screen_Output)
         cout << "Deforming the volume grid." << endl;
       grid_movement[val_iZone][val_iInst]->SetVolume_Deformation(geometry_container[val_iZone][val_iInst][MESH_0],
                                            config_container[val_iZone], true);
@@ -322,12 +325,12 @@ void CIteration::SetGrid_Movement(CGeometry ****geometry_container,
       stat_mesh = (nIterMesh == 0);
 
       if (!adjoint && !stat_mesh) {
-        if (rank == MASTER_NODE)
+        if (rank == MASTER_NODE && Screen_Output)
           cout << "Computing grid velocities by finite differencing." << endl;
         geometry_container[val_iZone][val_iInst][MESH_0]->SetGridVelocity(config_container[val_iZone], ExtIter);
       }
       else if (stat_mesh) {
-          if (rank == MASTER_NODE)
+          if (rank == MASTER_NODE && Screen_Output)
             cout << "The mesh is up-to-date. Using previously stored grid velocities." << endl;
       }
 
