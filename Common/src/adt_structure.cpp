@@ -710,11 +710,11 @@ CADTElemClass::CADTElemClass(unsigned short         val_nDim,
 }
 
 CADTElemClass::CADTElemClass(unsigned short              val_nDim,
-                             std::vector<su2double>      &val_coor,
-                             std::vector<unsigned long>  &val_connElem,
-                             std::vector<unsigned short> &val_VTKElem,
-                             std::vector<unsigned short> &val_markerID,
-                             std::vector<unsigned long>  &val_elemID) {
+                             vector<su2double>      &val_coor,
+                             vector<unsigned long>  &val_connElem,
+                             vector<unsigned short> &val_VTKElem,
+                             vector<unsigned short> &val_markerID,
+                             vector<unsigned long>  &val_elemID) {
 
   /* Call CreateADT to do the actual work. */
   CreateADT(val_nDim, val_coor, val_connElem, val_VTKElem,
@@ -722,11 +722,11 @@ CADTElemClass::CADTElemClass(unsigned short              val_nDim,
 }
 
 void CADTElemClass::CreateADT(unsigned short              val_nDim,
-                              std::vector<su2double>      &val_coor,
-                              std::vector<unsigned long>  &val_connElem,
-                              std::vector<unsigned short> &val_VTKElem,
-                              std::vector<unsigned short> &val_markerID,
-                              std::vector<unsigned long>  &val_elemID) {
+                              vector<su2double>      &val_coor,
+                              vector<unsigned long>  &val_connElem,
+                              vector<unsigned short> &val_VTKElem,
+                              vector<unsigned short> &val_markerID,
+                              vector<unsigned long>  &val_elemID) {
 
   /* Copy the dimension of the problem into nDim. */
   nDim = val_nDim;
@@ -789,8 +789,8 @@ void CADTElemClass::CreateADT(unsigned short              val_nDim,
       xP = coorPoints.data() + nDim*elemConns[j];
 
       for(unsigned short k=0; k<nDim; ++k) {
-        BBMin[k] = std::min(BBMin[k], xP[k]);
-        BBMax[k] = std::max(BBMax[k], xP[k]);
+        BBMin[k] = min(BBMin[k], xP[k]);
+        BBMax[k] = max(BBMax[k], xP[k]);
       }
     }
 
@@ -798,7 +798,7 @@ void CADTElemClass::CreateADT(unsigned short              val_nDim,
        the tree traversal does not go wrong due to round off error. */
     for(unsigned short k=0; k<nDim; ++k) {
       const su2double lenScale = BBMax[k] - BBMin[k];
-      const su2double tol      = std::max(1.e-25, 1.e-6*lenScale);
+      const su2double tol      = max(1.e-25, 1.e-6*lenScale);
 
       BBMin[k] -= tol;
       BBMax[k] += tol;
@@ -902,8 +902,8 @@ bool CADTElemClass::DetermineContainingElement(
                     int                        &rankID,
                     su2double                  *parCoor,
                     su2double                  *weightsInterpol,
-                    std::vector<unsigned long> &frontLeaves,
-                    std::vector<unsigned long> &frontLeavesNew) {
+                    vector<unsigned long> &frontLeaves,
+                    vector<unsigned long> &frontLeavesNew) {
 
   /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
      it only contains the root leaf. Make sure to wipe out any data from a
@@ -1179,9 +1179,9 @@ void CADTElemClass::DetermineNearestElement(
                        unsigned long                    &elemID,
                        int                              &rankID,
                        su2double                        *weightsInterpol,
-                       std::vector<CBBoxTargetClass>    &BBoxTargets,
-                       std::vector<unsigned long>       &frontLeaves,
-                       std::vector<unsigned long>       &frontLeavesNew) {
+                       vector<CBBoxTargetClass>    &BBoxTargets,
+                       vector<unsigned long>       &frontLeaves,
+                       vector<unsigned long>       &frontLeavesNew) {
 
   /*----------------------------------------------------------------------------*/
   /*--- Step 1: Initialize the distance (squared) to the quaranteed distance ---*/
@@ -1196,7 +1196,7 @@ void CADTElemClass::DetermineNearestElement(
   for(unsigned short k=0; k<nDim; ++k) {
     const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
     const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-    const su2double ds    = std::max(dsMin, dsMax);
+    const su2double ds    = max(dsMin, dsMax);
 
     dist += ds*ds;
   }
@@ -1257,7 +1257,7 @@ void CADTElemClass::DetermineNearestElement(
             for(unsigned short k=0; k<nDim; ++k) {
               const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
               const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-              const su2double ds    = std::max(dsMin, dsMax);
+              const su2double ds    = max(dsMin, dsMax);
 
               guarDist2 += ds*ds;
             }
@@ -1265,7 +1265,7 @@ void CADTElemClass::DetermineNearestElement(
             /* Store this bounding box in BBoxTargets and update the currently
                stored value of the distance squared. */
             BBoxTargets.push_back(CBBoxTargetClass(kk, posDist2, guarDist2));
-            dist = std::min(dist, guarDist2);
+            dist = min(dist, guarDist2);
           }
         }
         else {
@@ -1300,12 +1300,12 @@ void CADTElemClass::DetermineNearestElement(
             for(unsigned short k=0; k<nDim; ++k) {
               const su2double dsMin = fabs(coor[k] - coorBBMin[k]);
               const su2double dsMax = fabs(coor[k] - coorBBMax[k]);
-              const su2double ds    = std::max(dsMin, dsMax);
+              const su2double ds    = max(dsMin, dsMax);
 
               guarDist2 += ds*ds;
             }
 
-            dist = std::min(dist, guarDist2);
+            dist = min(dist, guarDist2);
           }
         }
       }
@@ -1327,7 +1327,7 @@ void CADTElemClass::DetermineNearestElement(
 
   /* Sort the bounding boxes in increasing order, such that the most likely
      candidates are checked first. */
-  std::sort(BBoxTargets.begin(), BBoxTargets.end());
+  sort(BBoxTargets.begin(), BBoxTargets.end());
 
   /* Loop over the candidate bounding boxes. */
   for(unsigned long i=0; i<BBoxTargets.size(); ++i) {
@@ -2906,7 +2906,7 @@ void CADTElemClass::Dist2ToLine(const unsigned long i0,
     dotV1V1 += V1[k]*V1[k];
   }
   su2double r = dotV0V1/dotV1V1;
-  r = std::max(-1.0,std::min(1.0,r));
+  r = max(-1.0,min(1.0,r));
 
   /*--- Determine the minimum distance squared. ---*/
   dist2Line = 0.0;
@@ -3310,11 +3310,11 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
   su2double a5 = t55 * V2V2 - V3V3 * t50;
 
   /* Determine the maximum of these coefficients and scale them. */
-  su2double scaleFact = std::max(fabs(a0),  fabs(a1));
-  scaleFact           = std::max(scaleFact, fabs(a2));
-  scaleFact           = std::max(scaleFact, fabs(a3));
-  scaleFact           = std::max(scaleFact, fabs(a4));
-  scaleFact           = std::max(scaleFact, fabs(a5));
+  su2double scaleFact = max(fabs(a0),  fabs(a1));
+  scaleFact           = max(scaleFact, fabs(a2));
+  scaleFact           = max(scaleFact, fabs(a3));
+  scaleFact           = max(scaleFact, fabs(a4));
+  scaleFact           = max(scaleFact, fabs(a5));
 
   scaleFact = 1.0/scaleFact;
 
@@ -3355,8 +3355,8 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     s -= ds;
 
     /* Clipping, such that s is bounded to a bit outside the quadrilateral. */
-    s = std::max(s, -1.5);
-    s = std::min(s,  1.5);
+    s = max(s, -1.5);
+    s = min(s,  1.5);
 
     /* Set the actual value of ds. */
     ds = sOld - s;

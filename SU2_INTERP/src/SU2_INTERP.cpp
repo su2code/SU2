@@ -289,7 +289,7 @@ int main(int argc, char *argv[]) {
 
   /*--- Determine whether the simulation is a FSI simulation ---*/
 
-  bool fsi = config_container[io][ZONE_0]->GetFSI_Simulation();
+  bool fsi = config_container[0][ZONE_0]->GetFSI_Simulation();
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
@@ -746,24 +746,33 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
+
+  if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
   input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone);
   output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   
-  std::cout << "Reading solution file....." << std::flush;
-  input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],geometry_container[1],solver_container[0],solver_container[1],nZone);
-  std::cout << " Done" << std::endl << std::flush;
+  if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;
+  input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],solver_container[0],nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
-  std::cout << "Determining coordinates for the points to be interpolated....."<< std::flush;
-  std::vector<std::vector<su2double> > coorInterpolation;
+  if (rank == MASTER_NODE) cout << "Determining coordinates for the points to be interpolated....."<< flush;
+  vector<vector<su2double> > coorInterpolation;
   output_grid->DetermineCoorInterpolation(config_container[1], coorInterpolation, VertexCentered);
-  std::cout << " Done" << std::endl << std::flush;
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
+  output_solution = new CFEMInterpolationSol();
   output_solution->InterpolateSolution(config_container[1], coorInterpolation, input_grid, input_solution, output_grid);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+  if (rank == MASTER_NODE) cout << "Copying solution to solver container....." << flush;
   output_solution->CopySolToSU2Solution(config_container[1], geometry_container[1], solver_container[1], nZone);
-
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
   for (iZone = 0; iZone < nZone; iZone++){
     if (rank == MASTER_NODE){
+      cout << " Writing interpolated restart." << endl;
       output->MergeCoordinates(config_container[1][iZone], geometry_container[1][iZone][MESH_0]);
       output->MergeSolution(config_container[1][iZone], geometry_container[1][iZone][INST_0], solver_container[1][iZone][MESH_0], iZone);
       output->SetRestart(config_container[1][iZone], geometry_container[1][iZone][INST_0], solver_container[1][iZone][MESH_0], iZone);

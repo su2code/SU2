@@ -3821,9 +3821,6 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
   VTK_TypeElem      = val_VTK_TypeElem;
   swapFaceInElement = val_swapFaceInElement;
 
-  /*--- Create dummy variable to store inverse of Vandermonde matrix temporarily. ---*/
-  vector<su2double> matVandermondeInvDummy;
-
   /*--- Determine the constant in the penalty parameter in the viscous
         discretization. This constant depends on the element type as
         well as its polynomial degree. ---*/
@@ -3835,7 +3832,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
   switch( VTK_Type ) {
     case LINE:
       LagrangianBasisFunctionAndDerivativesLine(nPolyElem, rIntegration, nDOFsFace,
-                                                rDOFsFace, matVandermondeInvDummy,
+                                                rDOFsFace, matVandermondeFaceInv,
                                                 lagBasisFaceIntegration,
                                                 drLagBasisFaceIntegration);
       SubConnForPlottingLine(nPolyElem, subConnForPlotting);
@@ -3845,7 +3842,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
       LagrangianBasisFunctionAndDerivativesTriangle(nPolyElem,    rIntegration,
                                                     sIntegration, nDOFsFace,
                                                     rDOFsFace,    sDOFsFace,
-                                                    matVandermondeInvDummy,
+                                                    matVandermondeFaceInv,
                                                     lagBasisFaceIntegration,
                                                     drLagBasisFaceIntegration,
                                                     dsLagBasisFaceIntegration);
@@ -3856,7 +3853,7 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
       LagrangianBasisFunctionAndDerivativesQuadrilateral(nPolyElem,    rIntegration,
                                                          sIntegration, nDOFsFace,
                                                          rDOFsFace,    sDOFsFace,
-                                                         matVandermondeInvDummy,
+                                                         matVandermondeFaceInv,
                                                          lagBasisFaceIntegration,
                                                          drLagBasisFaceIntegration,
                                                          dsLagBasisFaceIntegration);
@@ -3943,15 +3940,15 @@ CFEMStandardBoundaryFace::CFEMStandardBoundaryFace(unsigned short val_VTK_TypeFa
 
 void CFEMStandardBoundaryFace::FaceBasisFunctionsAndDerivativesInPoint(
                                     const su2double                      *parCoor,
-                                    std::vector<su2double>               &lagBasis,
-                                    std::vector<std::vector<su2double> > &dLagBasis) {
+                                    vector<su2double>                    &lagBasis,
+                                    vector<vector<su2double> >           &dLagBasis) {
 
-  /* Allocate the memory for the help std::vectors for computing the Vandermonde
+  /* Allocate the memory for the help vectors for computing the Vandermonde
      matrices and its derivatives. */
-  std::vector<std::vector<su2double> > rPoints(dLagBasis.size(), std::vector<su2double>(1));
-  std::vector<std::vector<su2double> > VDr(dLagBasis.size(), std::vector<su2double>(nDOFsFace));
+  vector<vector<su2double> > rPoints(dLagBasis.size(), vector<su2double>(1));
+  vector<vector<su2double> > VDr(dLagBasis.size(), vector<su2double>(nDOFsFace));
 
-  std::vector<su2double> V(nDOFsFace);
+  vector<su2double> V(nDOFsFace);
 
   /* Copy the parametric coordinates in rPoints, such that the functions to
      compute the Vandermonde matrices can be used. */
@@ -3981,8 +3978,9 @@ void CFEMStandardBoundaryFace::FaceBasisFunctionsAndDerivativesInPoint(
      basis functions and its derivatives in the given parametric coordinate. */
   MatMulRowMajor(nDOFsFace, 1, V, matVandermondeFaceInv, lagBasis);
 
-  for(unsigned long i=0; i<dLagBasis.size(); ++i)
+  for(unsigned long i=0; i<dLagBasis.size(); ++i){
     MatMulRowMajor(nDOFsFace, 1, VDr[i], matVandermondeFaceInv, dLagBasis[i]);
+  }
 }
 
 unsigned short CFEMStandardBoundaryFace::GetNDOFsPerSubFace(void) const {
@@ -4042,6 +4040,8 @@ void CFEMStandardBoundaryFace::Copy(const CFEMStandardBoundaryFace &other) {
   lagBasisFaceIntegrationTranspose = other.lagBasisFaceIntegrationTranspose;
   drLagBasisFaceIntegration        = other.drLagBasisFaceIntegration;
   dsLagBasisFaceIntegration        = other.dsLagBasisFaceIntegration;
+
+  matVandermondeFaceInv = other.matVandermondeFaceInv;
 
   drLagBasisElemIntegration = other.drLagBasisElemIntegration;
   dsLagBasisElemIntegration = other.dsLagBasisElemIntegration;

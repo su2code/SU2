@@ -70,7 +70,7 @@ public:
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short mNDOFsSol;              /*!< \brief Number of DOFs for the solution of the element. */
   unsigned long mOffsetSolDOFsDG;        /*!< \brief Offset for the solution DOFs, only for DG formulation. */
-  std::vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
+  vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
   /*!
    * \brief Constructor of the class.
    */
@@ -164,7 +164,7 @@ public:
   /*!
    * \brief Member function, which creates a unique numbering for the corner points. A sort in increasing order is OK for this purpose.
    */
-  void CreateUniqueNumbering(void){std::sort(cornerPoints, cornerPoints+nCornerPoints);}
+  void CreateUniqueNumbering(void){sort(cornerPoints, cornerPoints+nCornerPoints);}
   
 private:
   /*!
@@ -183,7 +183,7 @@ public:
   unsigned short mVTK_TYPE;              /*!< \brief Element type using the VTK convention. */
   unsigned short mNPolyGrid;             /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
-  std::vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
+  vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
   
   /*!
    * \brief Constructor of the class.
@@ -240,10 +240,10 @@ private:
  */
 class CFEMInterpolationGridZone {
 public:
-  std::vector<CFEMInterpolationSurfElem> mSurfElems;  /*!< \brief Vector of the surface elements. */
-  std::vector<CFEMInterpolationVolElem> mVolElems;    /*!< \brief Vector of the volume elements. */
-  std::vector<std::vector<su2double> > mCoor;         /*!< \brief Vector of vector of the coordinates of the DOFs.
-                                                       * The first index is the number of spatial dimensions. */
+  vector<CFEMInterpolationSurfElem> mSurfElems;  /*!< \brief Vector of the surface elements. */
+  vector<CFEMInterpolationVolElem> mVolElems;    /*!< \brief Vector of the volume elements. */
+  vector<vector<su2double> > mCoor;              /*!< \brief Vector of vector of the coordinates of the DOFs.
+                                                  * The first index is the number of spatial dimensions. */
   /*!
    * \brief Constructor of the class.
    */
@@ -274,8 +274,18 @@ public:
    * \brief Function, which determines the coordinates for the points to be interpolated.
    */
   void DetermineCoorInterpolation(CConfig*               config,
-                                  std::vector<su2double> &coorInterpol,
+                                  vector<su2double>      &coorInterpol,
                                   const SolutionFormatT  solFormatWrite);
+
+  /*!
+   * \brief Function, which makes available the number of dimensions.
+   */
+  unsigned short GetnDim(void) const {return nDim;}
+  
+  /*!
+   * \brief Function, which makes available the number of zones.
+   */
+  size_t GetnZones(void) const {return nZone;}
   
   /*!
    * \brief Function, which makes available the number of grid DOFs.
@@ -303,6 +313,9 @@ public:
   bool HighOrderElementsInZone(void) const;
   
 private:
+  unsigned short nDim,                               /*!< \brief Number of spatial dimensions. */
+                 nZone;                              /*!< \brief Number of zones. */
+
   /*!
    * \brief Function, which makes a deep copy.
    */
@@ -345,8 +358,8 @@ public:
    * \param[in] geometry - The grid for interpolation.
    */
   CFEMInterpolationGrid(CConfig**      config,
-                        CGeometry***    geometry,
-                        unsigned short nZone);
+                        CGeometry***   geometry,
+                        unsigned short mnZone);
   
   /*!
    * \brief Destructor of the class.
@@ -357,7 +370,7 @@ public:
    * \brief Function, which determines the coordinates for the points to be interpolated.
    */
   void DetermineCoorInterpolation(CConfig**                            config,
-                                  std::vector<std::vector<su2double> > &coorInterpol,
+                                  vector<vector<su2double> >           &coorInterpol,
                                   const SolutionFormatT                solFormatWrite);
   
   /*!
@@ -368,12 +381,12 @@ public:
   /*!
    * \brief Function, which makes available the number of dimensions.
    */
-  unsigned short GetNDim(void) const {return mNDim;}
+  unsigned short GetnDim(void) const {return nDim;}
   
   /*!
    * \brief Function, which makes available the number of zones.
    */
-  size_t GetNZones(void) const {return mGridZones.size();}
+  size_t GetnZones(void) const {return nZone;}
   
   /*!
    * \brief Make available the given zone as a const pointer.
@@ -386,8 +399,9 @@ public:
   SolutionFormatT GetSolutionFormat(void) const {return mSolutionFormat;}
   
 private:
-  unsigned short mNDim;                               /*!< \brief Number of spatial dimensions. */
-  std::vector<CFEMInterpolationGridZone> mGridZones;  /*!< \brief Vector of grid zones. */
+  unsigned short nDim,                               /*!< \brief Number of spatial dimensions. */
+                 nZone;                              /*!< \brief Number of zones. */
+  vector<CFEMInterpolationGridZone> mGridZones;  /*!< \brief Vector of grid zones. */
   SolutionFormatT mSolutionFormat;                    /*!< \brief The solution format of the corresponding solution. */
 };
 
@@ -406,17 +420,13 @@ public:
   /*!
    * \overload
    * \brief Constructor of the class.
-   * \param[in] config          - Definition of the particular problem.
-   * \param[in] input_geometry  - The source grid for interpolation.
-   * \param[in] output_geometry - The target grid for interpolation.
-   * \param[in] input_solution  - The source solution structure for interpolation.
-   * \param[in] output_solution - The target solution structure for interpolation.
+   * \param[in] config   - Definition of the particular problem.
+   * \param[in] geometry - The grid for interpolation.
+   * \param[in] solution - The solution structure for interpolation.
    */
   CFEMInterpolationSol(CConfig**      config,
-                       CGeometry***   input_geometry,
-                       CGeometry***    output_geometry,
-                       CSolver****      input_solution,
-                       CSolver****     output_solution,
+                       CGeometry***    geometry,
+                       CSolver****     solution,
                        unsigned short nZone);
   
   /*!
@@ -428,13 +438,13 @@ public:
    * \brief Make available the number of variables in the solution file.
    * \return  Number of variables in the solution file.
    */
-  size_t GetNVar(void) const {return mVarNames.size();}
+  size_t GetnVar(void) const {return nVar;}
   
   /*!
    * \brief Main function for the interpolation of the given coordinates in the given grid and solution.
    */
   void InterpolateSolution(CConfig**                                  config,
-                           const std::vector<std::vector<su2double> > &coorInterpol,
+                           const vector<vector<su2double> >           &coorInterpol,
                            const CFEMInterpolationGrid                *inputGrid,
                            const CFEMInterpolationSol                 *inputSol,
                            const CFEMInterpolationGrid                *outputGrid);
@@ -443,7 +453,7 @@ public:
    * \brief Make available the solution DOFs.
    * \return  Number of DOFs in the solution.
    */
-  const std::vector<std::vector<su2double> > &GetSolDOFs(void) const {return mSolDOFs;}
+  const vector<vector<su2double> > &GetSolDOFs(void) const {return mSolDOFs;}
 
   /*!
    * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
@@ -453,11 +463,8 @@ public:
                             CSolver****     solution,
                             unsigned short nZone);    
 private:
-  int mHeaderFile[5];                             /*!< \brief The 5 integers of the header of the solution file. */
-  int mIterNumber;                                /*!< \brief The iteration number stored in the solution file. */
-  double mMetaData[8];                            /*!< \brief The meta data stored in the solution file. */
-  std::vector<std::string> mVarNames;             /*!< \brief The names of the solution variables. */
-  std::vector<std::vector<su2double> > mSolDOFs;  /*!< \brief Double vector, which contains the solution variables in the DOFs. */
+  unsigned short nVar;                  /*!< \brief Number of variables in the solution. */
+  vector<vector<su2double> > mSolDOFs;  /*!< \brief Double vector, which contains the solution variables in the DOFs. */
   
   /*!
    * \brief Function, which applies a curvature correction to the coordinates to obtain a better representation of these coordinates on the target grid.
@@ -467,20 +474,20 @@ private:
                                 const unsigned short             nDim,
                                 const CFEMInterpolationGridZone  *inputGridZone,
                                 const CFEMInterpolationGridZone  *outputGridZone,
-                                const std::vector<su2double>     &coorOriginal,
-                                std::vector<su2double>           &coorCorrected);
+                                const vector<su2double>          &coorOriginal,
+                                vector<su2double>                &coorCorrected);
   
   /*!
    * \brief Function, which builds the ADT of a surface grid.
    */
-  void BuildSurfaceADT(CConfig*                                  config,
-                       const CFEMInterpolationGridZone           *gridZone,
-                       CADTElemClass                             &surfaceADT,
-                       std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesGrid,
-                       std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesSol,
-                       std::vector<unsigned short>               &indInStandardBoundaryFaces,
-                       std::vector<unsigned long>                &adjElemID,
-                       std::vector<unsigned short>               &faceIDInElement);
+  void BuildSurfaceADT(CConfig*                             config,
+                       const CFEMInterpolationGridZone      *gridZone,
+                       CADTElemClass                        &surfaceADT,
+                       vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesGrid,
+                       vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesSol,
+                       vector<unsigned short>               &indInStandardBoundaryFaces,
+                       vector<unsigned long>                &adjElemID,
+                       vector<unsigned short>               &faceIDInElement);
   
   /*!
    * \brief Function, which performs the containment search in a high order element.
@@ -491,7 +498,7 @@ private:
                                   const su2double                            *weightsSubElem,
                                   CFEMStandardElement                        *standardElementGrid,
                                   const CFEMInterpolationVolElem             *volElem,
-                                  const std::vector<std::vector<su2double> > &coorGrid,
+                                  const vector<vector<su2double> >           &coorGrid,
                                   su2double                                  *parCoor);
   
   /*!
@@ -503,7 +510,7 @@ private:
                                   const su2double                            *weightsSubElem,
                                   CFEMStandardBoundaryFace                   *standardBoundaryFaceGrid,
                                   const CFEMInterpolationSurfElem            *surfElem,
-                                  const std::vector<std::vector<su2double> > &coorGrid,
+                                  const vector<vector<su2double> >           &coorGrid,
                                   su2double                                  *parCoor,
                                   su2double                                  *wallCoor);
   
@@ -516,36 +523,36 @@ private:
                       const CFEMInterpolationVolElem  *volElem,
                       const SolutionFormatT           solFormatInput,
                       const su2double                 *parCoor,
-                      std::vector<su2double>          &solDOF);
+                      vector<su2double>               &solDOF);
   
   /*!
    * \brief Function, which carries out the surface minimum distance search for the interpolation.
    */
   void SurfaceInterpolationSolution(CConfig*                             config,
                                     const unsigned short                 zoneID,
-                                    const std::vector<su2double>         &coorInterpol,
+                                    const vector<su2double>              &coorInterpol,
                                     const CFEMInterpolationGridZone      *gridZone,
                                     const CFEMInterpolationSol           *inputSol,
                                     const unsigned long                  zoneOffsetInputSol,
                                     const unsigned long                  zoneOffsetOutputSol,
                                     const SolutionFormatT                solFormatInput,
-                                    const std::vector<unsigned long>     &pointsMinDistSearch,
-                                    std::vector<CFEMStandardElement>     &standardElementsSol,
-                                    const std::vector<unsigned short>    &indInStandardElements);
+                                    const vector<unsigned long>          &pointsMinDistSearch,
+                                    vector<CFEMStandardElement>          &standardElementsSol,
+                                    const vector<unsigned short>         &indInStandardElements);
   
   /*!
    * \brief Function, which carries out the volume containment search for the interpolation.
    */
   void VolumeInterpolationSolution(CConfig*                             config,
                                    const unsigned short                 zoneID,
-                                   const std::vector<su2double>         &coorInterpol,
+                                   const vector<su2double>              &coorInterpol,
                                    const CFEMInterpolationGridZone      *gridZone,
                                    const CFEMInterpolationSol           *inputSol,
                                    const unsigned long                  zoneOffsetInputSol,
                                    const unsigned long                  zoneOffsetOutputSol,
                                    const SolutionFormatT                solFormatInput,
-                                   std::vector<unsigned long>           &pointsSearchFailed,
-                                   std::vector<CFEMStandardElement>     &standardElementsGrid,
-                                   std::vector<CFEMStandardElement>     &standardElementsSol,
-                                   std::vector<unsigned short>          &indInStandardElements);
+                                   vector<unsigned long>                &pointsSearchFailed,
+                                   vector<CFEMStandardElement>          &standardElementsGrid,
+                                   vector<CFEMStandardElement>          &standardElementsSol,
+                                   vector<unsigned short>               &indInStandardElements);
 };

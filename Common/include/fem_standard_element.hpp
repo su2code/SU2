@@ -1599,7 +1599,7 @@ private:
   vector<su2double> dsLagBasisFaceIntegration; /*!< \brief s-derivatives of the face Lagrangian basis functions
                                                            in the integration points. */
 
-  std::vector<su2double> matVandermondeFaceInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the face DOFs
+  vector<su2double> matVandermondeFaceInv;    /*!< \brief Inverse matrix of Vandermonde matrix in the face DOFs
                                                                for this standard element. */
 
   vector<su2double> drLagBasisElemIntegration; /*!< \brief r-derivatives of the Lagrangian basis functions in the
@@ -1673,9 +1673,9 @@ public:
   * \param[out] dLagBasis - The values of the derivatives of the basis functions
                             in parCoor.
   */
-  void FaceBasisFunctionsAndDerivativesInPoint(const su2double                     *parCoor,
-                                               std::vector<su2double>               &lagBasis,
-                                               std::vector<std::vector<su2double> > &dLagBasis);
+  void FaceBasisFunctionsAndDerivativesInPoint(const su2double                 *parCoor,
+                                               vector<su2double>               &lagBasis,
+                                               vector<vector<su2double> >      &dLagBasis);
 
   /*!
   * \brief Function, which makes available the r-derivatives of the element
@@ -1786,14 +1786,14 @@ public:
            const pointer to the std::vector.
   * \return  The address of the std::vector, which stores the r-location of the DOFs.
   */
-  const std::vector<su2double>* GetRDOFsFace(void) const;
+  const vector<su2double>* GetRDOFsFace(void) const;
 
   /*!
   * \brief Function, which makes available the s-location of the DOFs as a
            const pointer to the std::vector.
   * \return  The address of the std::vector, which stores the s-location of the DOFs.
   */
-  const std::vector<su2double>* GetSDOFsFace(void) const;
+  const vector<su2double>* GetSDOFsFace(void) const;
 
   /*!
   * \brief Function, which checks if the function arguments correspond to this standard face.
