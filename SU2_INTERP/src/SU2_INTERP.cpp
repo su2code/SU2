@@ -133,22 +133,26 @@ int main(int argc, char *argv[]) {
 
       if (multizone){
         strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-        config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+        if (io == 0) config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+        else config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
       }
       else{
-        config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+        if (io == 0) config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+        else config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
       }
       config_container[io][iZone]->SetMPICommunicator(MPICommunicator);
-    }
-    /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
-    if (io == 1){
-      config_container[io][iZone]->SetRestart(false);
-      config_container[io][iZone]->SetMesh_FileName(config_container[io][iZone]->GetTarget_Mesh_FileName());
-    }
-    else {
-      config_container[io][iZone]->SetRestart(true);
+      
+      /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
+      if (io == 1){
+        config_container[io][iZone]->SetRestart(false);
+        config_container[io][iZone]->SetMesh_FileName(config_container[io][iZone]->GetTarget_Mesh_FileName());
+      }
+      else {
+        config_container[io][iZone]->SetRestart(true);
+      }
     }
   }
+    /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
 
   /*--- Set the multizone part of the problem. ---*/
   if (driver_config->GetKind_Solver() == MULTIZONE){
@@ -295,7 +299,7 @@ int main(int argc, char *argv[]) {
     cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
   
 	/*--- Definition of the output class (one for all the zones) ---*/
-	output = new COutput(config_container[io][ZONE_0]);
+	output = new COutput(config_container[1][ZONE_0]);
   
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
@@ -728,10 +732,21 @@ int main(int argc, char *argv[]) {
         solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
         solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
       }
+      else{
+        solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+        solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+      }
+
     }
   }
 
-    
+  for (iZone = 0; iZone < nZone; iZone++){
+    if (rank == MASTER_NODE){
+      output->MergeCoordinates(config_container[1][iZone], geometry_container[1][iZone][MESH_0]);
+      output->MergeSolution(config_container[1][iZone], geometry_container[1][iZone][INST_0], solver_container[1][iZone][MESH_0], iZone);
+      output->SetRestart(config_container[1][iZone], geometry_container[1][iZone][INST_0], solver_container[1][iZone][MESH_0], iZone);
+    }
+  }  
   // }
 
 
@@ -750,8 +765,8 @@ int main(int argc, char *argv[]) {
           delete geometry_container[io][iZone];
         }
       }
-      if (geometry_container[iZone] != NULL){
-        delete geometry_container[iZone];
+      if (geometry_container[io] != NULL){
+        delete geometry_container[io];
       }
     }
     delete [] geometry_container;
@@ -776,8 +791,8 @@ int main(int argc, char *argv[]) {
           delete solver_container[io][iZone];
         }
       }
-      if (solver_container[iZone] != NULL){
-        delete solver_container[iZone];
+      if (solver_container[io] != NULL){
+        delete solver_container[io];
       }
     }
     delete [] solver_container;
@@ -792,8 +807,8 @@ int main(int argc, char *argv[]) {
           delete config_container[io][iZone];
         }
       }
-      if (config_container[iZone] != NULL){
-        delete config_container[iZone];
+      if (config_container[io] != NULL){
+        delete config_container[io];
       }
     }
     delete [] config_container;
