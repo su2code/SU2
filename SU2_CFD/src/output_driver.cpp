@@ -39,6 +39,10 @@
 
 CDriverOutput::CDriverOutput(CConfig **config) {
 
+  
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+  
   nZone = config[ZONE_0]->GetnZone();
 
   OuterConvergenceTable = new PrintingToolbox::CTablePrinter(&std::cout);

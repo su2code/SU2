@@ -541,9 +541,8 @@ void CMultizoneDriver::Output(unsigned long TimeIter) {
         
         /*--- General if statements to print output statements ---*/
         
-        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter() && config_container[iZone]->GetTime_Domain()) || (StopCalc) ||
+        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
         
-        (config_container[iZone]->GetOuterIter() % config_container[iZone]->GetWrt_Sol_Freq() == 0) ||
         /*--- Unsteady problems ---*/
         
         (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||

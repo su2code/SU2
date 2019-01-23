@@ -464,32 +464,29 @@ void CIteration::Output(COutput *output,
     unsigned short val_iZone,
     unsigned short val_iInst)      {
 
+  
   bool output_files = false;
 
   /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
 
-  if (
-
-      /*--- General if statements to print output statements ---*/
-
-//      (ExtIter+1 >= nExtIter) || (StopCalc) ||
+  if ( 
 
       /*--- Fixed CL problem ---*/
 
-      ((config_container[ZONE_0]->GetFixed_CL_Mode()) &&
-       (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
+      ((config_container[val_iZone]->GetFixed_CL_Mode()) &&
+       (config_container[val_iZone]->GetnExtIter()-config_container[val_iZone]->GetIter_dCL_dAlpha() - 1 == Iter)) ||
 
       /*--- Steady problems ---*/
 
-      ((Iter % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0) && (Iter != 0) &&
-       ((config_container[ZONE_0]->GetUnsteady_Simulation() == STEADY) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
+      ((Iter % config_container[val_iZone]->GetWrt_Sol_Freq() == 0) && (Iter != 0) &&
+       ((config_container[val_iZone]->GetUnsteady_Simulation() == STEADY) ||
+        (config_container[val_iZone]->GetUnsteady_Simulation() == HARMONIC_BALANCE) ||
+        (config_container[val_iZone]->GetUnsteady_Simulation() == ROTATIONAL_FRAME))) ||
 
       /*--- No inlet profile file found. Print template. ---*/
 
-      (config_container[ZONE_0]->GetWrt_InletFile())
+      (config_container[val_iZone]->GetWrt_InletFile())
 
       ) {
 
@@ -500,9 +497,9 @@ void CIteration::Output(COutput *output,
   /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
 
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == Iter) output_files = true;
+  if (config_container[val_iZone]->GetFixed_CL_Mode()) {
+    if (config_container[val_iZone]->GetnExtIter()-config_container[val_iZone]->GetIter_dCL_dAlpha() - 1 < Iter) output_files = false;
+    if (config_container[val_iZone]->GetnExtIter() - 1 == Iter) output_files = true;
   }
 
   /*--- write the solution ---*/
@@ -514,7 +511,7 @@ void CIteration::Output(COutput *output,
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, ZONE_0, nZone);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, val_iZone, nZone);
 
     /*--- Execute the routine for writing special output. ---*/
     //output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
@@ -792,7 +789,7 @@ void CFluidIteration::Solve(COutput *output,
   bool steady = (config_container[val_iZone]->GetUnsteady_Simulation() == STEADY);
   bool unsteady = ((config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND));
 
-  unsigned short Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter();
+  unsigned short Inner_Iter, nInner_Iter = config_container[val_iZone]->GetnInner_Iter(), Iter;
   bool StopCalc = false;
 
   /*--- Synchronization point before a single solver iteration. Compute the
@@ -846,16 +843,23 @@ void CFluidIteration::Solve(COutput *output,
       /*--- Output files at intermediate time positions if the problem is single zone ---*/
 
       if (singlezone) Output(output, geometry_container, solver_container, config_container,
-                             Inner_Iter, StopCalc, val_iZone, val_iInst);
+                             config_container[val_iZone]->GetInnerIter(), StopCalc, val_iZone, val_iInst);
+      
 
       /*--- If the iteration has converged, break the loop ---*/
       if (StopCalc) break;
 
     }
 
-    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
-    if (multizone) integration_container[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
-
+    if (multizone){
+      
+      Output(output, geometry_container, solver_container, config_container,
+             config_container[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
+      
+      /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+      
+      integration_container[val_iZone][INST_0][FLOW_SOL]->SetConvergence(false);
+    }
 }
 
 void CFluidIteration::SetWind_GustField(CConfig *config_container, CGeometry **geometry_container, CSolver ***solver_container) {
@@ -1369,18 +1373,31 @@ void CHeatIteration::Solve(COutput *output,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
-    /*--- Write the convergence history for the fluid (only screen output) ---*/
-    if (steady) output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, INST_0);
+    if (config_container[val_iZone]->GetMultizone_Problem() || config_container[val_iZone]->GetSinglezone_Driver()){
+      output->SetConvHistory_Body(geometry_container, solver_container, config_container, integration_container, false, 0.0, val_iZone, val_iInst);    
+    }
+    
+    /*--- Output files at intermediate time positions if the problem is single zone ---*/
 
+    if (singlezone) Output(output, geometry_container, solver_container, config_container,
+                           config_container[val_iZone]->GetInnerIter(), StopCalc, val_iZone, val_iInst);
+    
     /*--- If convergence was reached in every zone --*/
     StopCalc = integration_container[val_iZone][INST_0][HEAT_SOL]->GetConvergence();
     if (StopCalc) break;
 
   }
 
-  /*--- Set the heat convergence to false (to make sure outer subiterations converge) ---*/
-  integration_container[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
-
+  if (multizone){
+    
+    Output(output, geometry_container, solver_container, config_container,
+           config_container[val_iZone]->GetOuterIter(), StopCalc, val_iZone, val_iInst);
+    
+    /*--- Set the fluid convergence to false (to make sure outer subiterations converge) ---*/
+    
+    integration_container[val_iZone][INST_0][HEAT_SOL]->SetConvergence(false);
+  }
+  
   //output->SetConvHistory_Body(NULL, geometry_container, solver_container, config_container, integration_container, true, 0.0, val_iZone, INST_0);
 
 }
