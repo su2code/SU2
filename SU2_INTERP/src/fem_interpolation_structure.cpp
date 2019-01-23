@@ -2132,7 +2132,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
   nElem = 0;
   nMarker = config->GetnMarker_All();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
-    for(iElem = 0; iElem = geometry->GetnElem_Bound(iMarker); iElem++, nElem++){
+    for(iElem = 0; iElem < geometry->GetnElem_Bound(iMarker); iElem++, nElem++){
       int VTKType, nPolyGrid, nDOFsGrid;
       
       // Determine the VTK type of the element
