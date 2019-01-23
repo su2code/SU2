@@ -40,10 +40,10 @@
 CFEMInterpolationSol::CFEMInterpolationSol(void){}
 
 CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
-                                           CGeometry**    input_geometry,
-                                           CGeometry**    output_geometry,
-                                           CSolver***     input_solution,
-                                           CSolver***     output_solution,
+                                           CGeometry***    input_geometry,
+                                           CGeometry***    output_geometry,
+                                           CSolver****     input_solution,
+                                           CSolver****     output_solution,
                                            unsigned short nZone)
 {
   // Load geometry data into interpolation grid class.
@@ -87,7 +87,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   // Allocate memory for the solution.
   unsigned long nDOFsTot = 0;
   for(iZone = 0; iZone < nZone; iZone++){
-    nDOFsTot += input_geometry[iZone]->GetnPoint();
+    nDOFsTot += input_geometry[iZone][INST_0]->GetnPoint();
   }
   mSolDOFs.resize(nDOFsTot);
   
@@ -128,28 +128,28 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
     
     // Get number of variables.
     if(template_solver){
-      nVar_Template = input_solution[iZone][TEMPLATE_SOL]->GetnVar();
+      nVar_Template = input_solution[iZone][MESH_0][TEMPLATE_SOL]->GetnVar();
       nVar          = nVar_Template;
     }
     
     if(euler || fem_euler){
-      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = input_solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
       nVar      = nVar_Flow;
     }
     
     if(ns){
-      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = input_solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
       if(turbulent){
-        nVar_Turb = input_solution[iZone][TURB_SOL]->GetnVar();
+        nVar_Turb = input_solution[iZone][MESH_0][TURB_SOL]->GetnVar();
       }
       if(transition){
-        nVar_Trans = input_solution[iZone][TRANS_SOL]->GetnVar();
+        nVar_Trans = input_solution[iZone][MESH_0][TRANS_SOL]->GetnVar();
       }
       nVar = nVar_Flow + nVar_Turb + nVar_Trans;
     }
     
     if(fem_ns){
-      nVar_Flow = input_solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = input_solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
       if(turbulent){
         SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
       }
@@ -160,82 +160,82 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
     }
     
     if(adj_euler){
-      nVar_Adj_Flow = input_solution[iZone][ADJFLOW_SOL]->GetnVar();
+      nVar_Adj_Flow = input_solution[iZone][MESH_0][ADJFLOW_SOL]->GetnVar();
       nVar          = nVar_Adj_Flow;
     }
     
     if(adj_ns){
-      nVar_Adj_Flow = input_solution[iZone][ADJFLOW_SOL]->GetnVar();
+      nVar_Adj_Flow = input_solution[iZone][MESH_0][ADJFLOW_SOL]->GetnVar();
       if(adj_turb){
-        nVar_Adj_Turb = input_solution[iZone][ADJTURB_SOL]->GetnVar();
+        nVar_Adj_Turb = input_solution[iZone][MESH_0][ADJTURB_SOL]->GetnVar();
       }
       nVar = nVar_Adj_Flow + nVar_Adj_Turb;
     }
     
     if(fem){
-      nVar_FEM = input_solution[iZone][FEA_SOL]->GetnVar();
+      nVar_FEM = input_solution[iZone][MESH_0][FEA_SOL]->GetnVar();
       nVar     = nVar_FEM;
     }
     
     if(heat_fvm){
-      nVar_Heat = input_solution[iZone][HEAT_SOL]->GetnVar();
+      nVar_Heat = input_solution[iZone][MESH_0][HEAT_SOL]->GetnVar();
       nVar      = nVar_Heat;
     }
     
     // Copy data.
     unsigned long iDOF, jDOF = 0;
-    nDOFsTot = input_geometry[iZone]->GetnPoint();
+    nDOFsTot = input_geometry[iZone][INST_0]->GetnPoint();
     for(iDOF = offsetDOFs; iDOF < offsetDOFs + nDOFsTot; iDOF++, jDOF++){
       mSolDOFs[iDOF].resize(nVar);
       
       if(template_solver){
         for(iVar = 0; iVar < nVar_Template; iVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][TEMPLATE_SOL]->node[jDOF]->GetSolution(iVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][TEMPLATE_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
       
       if(euler || fem_euler || ns || fem_ns){
         for(iVar = 0; iVar < nVar_Flow; iVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][FLOW_SOL]->node[jDOF]->GetSolution(iVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][FLOW_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
 
       if(turbulent){
         unsigned short jVar = 0;
         for(iVar = nVar_Flow; iVar < nVar_Flow + nVar_Turb; iVar++, jVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][TURB_SOL]->node[jDOF]->GetSolution(jVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][TURB_SOL]->node[jDOF]->GetSolution(jVar);
         }
       }
       
       if(transition){
         unsigned short jVar = 0;
         for(iVar = nVar_Flow + nVar_Turb; iVar < nVar_Flow + nVar_Turb + nVar_Trans; iVar++, jVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][TRANS_SOL]->node[jDOF]->GetSolution(jVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][TRANS_SOL]->node[jDOF]->GetSolution(jVar);
         }
       }
       
       if(adj_euler || adj_ns){
         for(iVar = 0; iVar < nVar_Adj_Flow; iVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][ADJFLOW_SOL]->node[jDOF]->GetSolution(iVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][ADJFLOW_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
       
       if(adj_turb){
         unsigned short jVar = 0;
         for(iVar = nVar_Adj_Flow; iVar < nVar_Adj_Flow + nVar_Adj_Turb; iVar++, jVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][ADJTURB_SOL]->node[jDOF]->GetSolution(jVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][ADJTURB_SOL]->node[jDOF]->GetSolution(jVar);
         }
       }
       
       if(fem){
         for(iVar = 0; iVar < nVar_FEM; iVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][FEA_SOL]->node[jDOF]->GetSolution(iVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][FEA_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
       
       if(heat_fvm){
         for(iVar = 0; iVar < nVar_Heat; iVar++){
-          mSolDOFs[iDOF][iVar] = input_solution[iZone][HEAT_SOL]->node[jDOF]->GetSolution(iVar);
+          mSolDOFs[iDOF][iVar] = input_solution[iZone][MESH_0][HEAT_SOL]->node[jDOF]->GetSolution(iVar);
         }
       }
     }
@@ -1361,8 +1361,8 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
 }
 
 void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
-                                                CGeometry**    geometry,
-                                                CSolver***     solution,
+                                                CGeometry***    geometry,
+                                                CSolver****     solution,
                                                 unsigned short nZone)
 {
   
@@ -1436,25 +1436,25 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
     
     // Get number of variables.
     if(template_solver){
-      nVar_Template = solution[iZone][TEMPLATE_SOL]->GetnVar();
+      nVar_Template = solution[iZone][MESH_0][TEMPLATE_SOL]->GetnVar();
     }
     
     if(euler || fem_euler){
-      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
     }
     
     if(ns){
-      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
       if(turbulent){
-        nVar_Turb = solution[iZone][TURB_SOL]->GetnVar();
+        nVar_Turb = solution[iZone][MESH_0][TURB_SOL]->GetnVar();
       }
       if(transition){
-        nVar_Trans = solution[iZone][TRANS_SOL]->GetnVar();
+        nVar_Trans = solution[iZone][MESH_0][TRANS_SOL]->GetnVar();
       }
     }
     
     if(fem_ns){
-      nVar_Flow = solution[iZone][FLOW_SOL]->GetnVar();
+      nVar_Flow = solution[iZone][MESH_0][FLOW_SOL]->GetnVar();
       if(turbulent){
         SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
       }
@@ -1464,77 +1464,77 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
     }
     
     if(adj_euler){
-      nVar_Adj_Flow = solution[iZone][ADJFLOW_SOL]->GetnVar();
+      nVar_Adj_Flow = solution[iZone][MESH_0][ADJFLOW_SOL]->GetnVar();
     }
     
     if(adj_ns){
-      nVar_Adj_Flow = solution[iZone][ADJFLOW_SOL]->GetnVar();
+      nVar_Adj_Flow = solution[iZone][MESH_0][ADJFLOW_SOL]->GetnVar();
       if(adj_turb){
-        nVar_Adj_Turb = solution[iZone][ADJTURB_SOL]->GetnVar();
+        nVar_Adj_Turb = solution[iZone][MESH_0][ADJTURB_SOL]->GetnVar();
       }
     }
     
     if(fem){
-      nVar_FEM = solution[iZone][FEA_SOL]->GetnVar();
+      nVar_FEM = solution[iZone][MESH_0][FEA_SOL]->GetnVar();
     }
     
     if(heat_fvm){
-      nVar_Heat = solution[iZone][HEAT_SOL]->GetnVar();
+      nVar_Heat = solution[iZone][MESH_0][HEAT_SOL]->GetnVar();
     }
     
     // Copy data.
     unsigned long iDOF, jDOF = 0;
-    unsigned long nDOFsTot = geometry[iZone]->GetnPoint();
+    unsigned long nDOFsTot = geometry[iZone][INST_0]->GetnPoint();
     for(iDOF = offsetDOFs; iDOF < offsetDOFs + nDOFsTot; iDOF++, jDOF++){
       
       if(template_solver){
         for(iVar = 0; iVar < nVar_Template; iVar++){
-           solution[iZone][TEMPLATE_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+           solution[iZone][MESH_0][TEMPLATE_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(euler || fem_euler || ns || fem_ns){
         for(iVar = 0; iVar < nVar_Flow; iVar++){
-           solution[iZone][FLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+           solution[iZone][MESH_0][FLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(turbulent){
         unsigned short jVar = 0;
         for(iVar = nVar_Flow; iVar < nVar_Flow + nVar_Turb; iVar++, jVar++){
-          solution[iZone][TURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][TURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(transition){
         unsigned short jVar = 0;
         for(iVar = nVar_Flow + nVar_Turb; iVar < nVar_Flow + nVar_Turb + nVar_Trans; iVar++, jVar++){
-          solution[iZone][TRANS_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][TRANS_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(adj_euler || adj_ns){
         for(iVar = 0; iVar < nVar_Adj_Flow; iVar++){
-          solution[iZone][ADJFLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][ADJFLOW_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(adj_turb){
         unsigned short jVar = 0;
         for(iVar = nVar_Adj_Flow; iVar < nVar_Adj_Flow + nVar_Adj_Turb; iVar++, jVar++){
-          solution[iZone][ADJTURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][ADJTURB_SOL]->node[jDOF]->SetSolution(jVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(fem){
         for(iVar = 0; iVar < nVar_FEM; iVar++){
-          solution[iZone][FEA_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][FEA_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(heat_fvm){
         for(iVar = 0; iVar < nVar_Heat; iVar++){
-          solution[iZone][HEAT_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][MESH_0][HEAT_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
     }
@@ -2420,7 +2420,7 @@ int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
 CFEMInterpolationGrid::CFEMInterpolationGrid(void){}
 
 CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
-                                             CGeometry**    geometry,
+                                             CGeometry***    geometry,
                                              unsigned short nZone)
 {
   unsigned short iZone;
@@ -2428,7 +2428,7 @@ CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
   // Loop over the number of zones to copy the data from geometry to grid class.
   mGridZones.resize(nZone);
   for(iZone = 0; iZone < nZone; iZone++)
-    mGridZones[iZone].CopySU2GeometryToGrid(config[iZone], geometry[iZone]);
+    mGridZones[iZone].CopySU2GeometryToGrid(config[iZone], geometry[iZone][INST_0]);
 }
 
 CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}

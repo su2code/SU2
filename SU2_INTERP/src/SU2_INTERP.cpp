@@ -50,6 +50,10 @@ int main(int argc, char *argv[]) {
   bool fem_solver = false;
   bool periodic = false;
   bool multizone = false;
+  CFEMInterpolationGrid* input_grid;
+  CFEMInterpolationGrid* output_grid;
+  CFEMInterpolationSol* input_solution;
+  CFEMInterpolationSol* output_solution;
 
   /*--- MPI initialization ---*/
 
@@ -712,6 +716,7 @@ int main(int argc, char *argv[]) {
 		// }
   bool update_geo = true;
   int val_iter = 0;
+
   for (io = 0; io < max_io; io++){
     for (iZone = 0; iZone < nZone; iZone++){
       config_container[io][iZone]->SetiInst(INST_0);
@@ -733,12 +738,29 @@ int main(int argc, char *argv[]) {
         solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
       }
       else{
-        solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
-        solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+        //solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+        //solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+        
       }
 
     }
   }
+
+  input_grid = new CFEMInterpolationGrid(config[0],geometry_container[0],nZone);
+  output_grid = new CFEMInterpolationGrid(config[1],geometry_container[1],nZone);
+  
+  std::cout << "Reading solution file....." << std::flush;
+  input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],geometry_container[1],solver_container[0],solver_container[1],nZone);
+  std::cout << " Done" << std::endl << std::flush;
+
+  std::cout << "Determining coordinates for the points to be interpolated....."<< std::flush;
+  std::vector<std::vector<su2double> > coorInterpolation;
+  outout_grid.DetermineCoorInterpolation(config_container[1],coorInterpolation, VertexCentered);
+  std::cout << " Done" << std::endl << std::flush;
+
+  output_solution->InterpolateSolution(config_container[1], &coorInterpol, input_grid, input_solution, output_grid)
+  output_solution->CopySolToSU2Solution(config[1], geometry_container[1], solver_container[1], nZone);
+
 
   for (iZone = 0; iZone < nZone; iZone++){
     if (rank == MASTER_NODE){
