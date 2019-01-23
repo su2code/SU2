@@ -91,7 +91,9 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   Cauchy_Serie = NULL;
   
   FluidModel = NULL;
- 
+
+  SlidingState     = NULL;
+  SlidingStateNodes = NULL;
 }
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -516,6 +518,31 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
   
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
+  }
+
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -671,6 +698,29 @@ CIncEulerSolver::~CIncEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
+  }
+
+  if (SlidingState != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
   }
 
   if (Inlet_Ttotal != NULL) {
@@ -6060,6 +6110,154 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   
 }
 
+void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                         CConfig *config) {
+  
+  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
+  unsigned short iDim, iVar, iMarker, nDonorVertex;
+  
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
+  
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nVar];
+  
+  su2double weight;
+  su2double P_static, rho_static;
+   
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
+          
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
+
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = 0.0;
+
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            }
+            
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+            weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+            /*--- Set primitive variables ---*/
+
+            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          
+            /*--- Set the normal vector ---*/
+ 
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) 
+              Normal[iDim] = -Normal[iDim];
+
+            conv_numerics->SetNormal(Normal);
+
+            if (grid_movement)
+              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+
+            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+            /*--- Accumulate the residuals to compute the average ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] += weight*tmp_residual[iVar];
+
+          }
+
+          /*--- Add Residuals and Jacobians ---*/
+  
+          LinSysRes.AddBlock(iPoint, Residual);
+          if (implicit) 
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          if (viscous) {
+            
+            /*--- Initialize Residual, this will serve to accumulate the average ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] = 0.0;
+              
+            /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+            
+            for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+              PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex); 
+              PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex); 
+
+              /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+              
+              weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+              
+              /*--- Set the normal vector and the coordinates ---*/
+
+              visc_numerics->SetNormal(Normal);
+              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+              /*--- Primitive variables, and gradient ---*/
+
+              visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+              visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+              /*--- Turbulent kinetic energy ---*/
+
+              if (config->GetKind_Turb_Model() == SST)
+                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+              /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+              
+              visc_numerics->SetTauWall(-1.0, -1.0);
+
+              /*--- Compute and update residual ---*/
+
+              visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+              
+              /*--- Accumulate the residuals to compute the average ---*/
+              
+              for (iVar = 0; iVar < nVar; iVar++)
+                Residual[iVar] += weight*tmp_residual[iVar];
+            }
+          
+            LinSysRes.SubtractBlock(iPoint, Residual);
+ 
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] tmp_residual;
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+}
+
 void CIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -6920,6 +7118,9 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+  SlidingState      = NULL;
+  SlidingStateNodes = NULL;
+  
 }
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
@@ -7404,6 +7605,32 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       break;
     default:
       break;
+  }
+
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+    
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
