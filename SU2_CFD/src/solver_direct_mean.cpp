@@ -12005,6 +12005,12 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						//Based on the marker name determine which velocity polynomial to use - 3D
           
 						if (Marker_Tag == "jet_top") {
+              // Full scale
+              y_max = 0.97917194;
+              y_min = -0.97917206;
+              z_max = 3.6205;
+              z_min = 3.6084606;
+              
               // 1/8th scale
               //y_max = 0.12194458;
               //y_min = -0.12194458;
@@ -12012,16 +12018,22 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.44939214;
               
               //6.5% scale
-							y_max = 0.06342022;
-							y_min = -0.06342022;
-							z_max = 0.234497;
-							z_min = 0.23371722;
+							//y_max = 0.06342022;
+							//y_min = -0.06342022;
+							//z_max = 0.234497;
+							//z_min = 0.23371722;
 							
 							z = ScaleCoordinate(z_max, z_min, Coord[2]);
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_bottom") {
+              // Full scale
+              y_max = 0.97917194;
+              y_min = -0.97917206;
+              z_max = 0.012039528;
+              z_min = 0.00000000;
+              
               // 1/8th scale
               //y_max = 0.12194458;
               //y_min = -0.12194458;
@@ -12029,16 +12041,22 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.00000000;
               
               //6.5% scale
-							y_max = 0.06342022;
-							y_min = -0.06342022;
-							z_max = 0.00077978;
-							z_min = 0.0;
+							//y_max = 0.06342022;
+							//y_min = -0.06342022;
+							//z_max = 0.00077978;
+							//z_min = 0.0;
 							
 							z = ScaleCoordinate(z_max, z_min, Coord[2]);
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
 						else if (Marker_Tag == "jet_starboard") {
+              // Full scale
+              y_max = 1.3;
+              y_min = 1.2879605;
+              z_max = 3.2996721;
+              z_min = 0.32082811;
+              
               // 1/8th scale
               //y_max = 0.16190000;
               //y_min = 0.16040064;
@@ -12046,16 +12064,22 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.03995542;
               
               //6.5% scale
-              y_max = 0.0842;
-							y_min = 0.08342022;
-							z_max = 0.21371559;
-							z_min = 0.02077978;
+              //y_max = 0.0842;
+							//y_min = 0.08342022;
+							//z_max = 0.21371559;
+							//z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440, -0.2913746290723793 , -0.0082599222660065 , 0.9999361038208008, y);
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
 						else if (Marker_Tag == "jet_port") {
+              // Full scale
+              y_max = -1.2879606;
+              y_min = -1.3;
+              z_max = 3.2996721;
+              z_min = 0.32082811;
+              
               // 1/8th scale
               //y_max = -0.16040064;
               //y_min = -0.16190000;
@@ -12063,10 +12087,10 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
               //z_min = 0.03995542;
               
               //6.5% scale
-              y_max = -0.08342022;
-							y_min = -0.0842;
-							z_max = 0.21371559;
-							z_min = 0.02077978;
+              //y_max = -0.08342022;
+							//y_min = -0.0842;
+							//z_max = 0.21371559;
+							//z_min = 0.02077978;
 							
 							y = ScaleCoordinate(y_max, y_min, Coord[1]);
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, y);
