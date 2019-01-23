@@ -361,6 +361,12 @@ private:
                                                     box candidates during the nearest element
                                                     search. */
 public:
+
+  /*!
+   * \brief Default constructor.
+   */
+  CADTElemClass();
+  
   /*!
    * \brief Default constructor of the class.
    */
