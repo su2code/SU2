@@ -362,6 +362,11 @@ private:
                                                     search. */
 public:
   /*!
+   * \brief Default constructor of the class.
+   */
+  CADTElemClass();
+
+  /*!
    * \brief Constructor of the class.
    * \param[in]     val_nDim     Number of spatial dimensions of the problem.
    * \param[in]     val_coor     Coordinates of the local points to be stored in the ADT.
@@ -383,9 +388,45 @@ public:
                 const bool             globalTree);
 
   /*!
+   * \brief Constructor of the class.
+   * \param[in]     val_nDim     Number of spatial dimensions of the problem.
+   * \param[in]     val_coor     Coordinates of the local points to be stored in the ADT.
+   * \param[in,out] val_connElem Local connectivity of the elements to be stored in the ADT.
+                                 In parallel mode the connectivities are corrected for the
+                                 offset in node numbers of the rank.
+   * \param[in]     val_VTKElem  Type of the elements using the VTK convention.
+   * \param[in]     val_markerID Markers of the local elements.
+   * \param[in]     val_elemID   Local element IDs of the elements.
+   */
+  CADTElemClass(unsigned short         val_nDim,
+                std::vector<su2double>      &val_coor,
+                std::vector<unsigned long>  &val_connElem,
+                std::vector<unsigned short> &val_VTKElem,
+                std::vector<unsigned short> &val_markerID,
+                std::vector<unsigned long>  &val_elemID);
+
+  /*!
    * \brief Destructor of the class. Nothing to be done.
    */
   ~CADTElemClass();
+
+  /*!
+   * \brief Function, which creates the ADT of elements.
+   * \param[in]     val_nDim     Number of spatial dimensions of the problem.
+   * \param[in]     val_coor     Coordinates of the local points to be stored in the ADT.
+   * \param[in,out] val_connElem Local connectivity of the elements to be stored in the ADT.
+                                 In parallel mode the connectivities are corrected for the
+                                 offset in node numbers of the rank.
+   * \param[in]     val_VTKElem  Type of the elements using the VTK convention.
+   * \param[in]     val_markerID Markers of the local elements.
+   * \param[in]     val_elemID   Local element IDs of the elements.
+   */
+  void CreateADT(unsigned short              val_nDim,
+                 std::vector<su2double>      &val_coor,
+                 std::vector<unsigned long>  &val_connElem,
+                 std::vector<unsigned short> &val_VTKElem,
+                 std::vector<unsigned short> &val_markerID,
+                 std::vector<unsigned long>  &val_elemID);
 
   /*!
    * \brief Function, which determines the element that contains the given
@@ -408,6 +449,30 @@ public:
                                   su2double       *weightsInterpol);
 
   /*!
+   * \brief Function, which determines the element that contains the given
+            coordinate.
+   * \param[in]     coor             Coordinate which the element must contain.
+   * \param[out]    markerID         Local marker ID of the element containing the coordinate.
+   * \param[out]    elemID           Local element ID of the element containing the coordinate.
+   * \param[out]    rankID           Rank on which element containing the coordinate is stored.
+   * \param[out]    parCoor          Parametric coordinates of coor inside the element,
+                                     which contains the coordinate.
+   * \param[out]    weightsInterpol  Interpolation weigts of of coor inside the element,
+                                     which contains the coordinate.
+   * \param[in,out] frontleaves      Work vector used in the tree traversal.
+   * \param[in,out] frontLeavesNew   Work vector used in the tree traversal.
+   * \return                         True if an element is found, false if not.
+   */
+  bool DetermineContainingElement(const su2double            *coor,
+                                  unsigned short             &markerID,
+                                  unsigned long              &elemID,
+                                  int                        &rankID,
+                                  su2double                  *parCoor,
+                                  su2double                  *weightsInterpol,
+                                  std::vector<unsigned long> &frontLeaves,
+                                  std::vector<unsigned long> &frontLeavesNew);
+
+  /*!
    * \brief Function, which determines the nearest element in the ADT for the
             given coordinate.
    * \param[in]  coor     Coordinate for which the nearest element in the ADT must be determined.
@@ -421,6 +486,30 @@ public:
                                unsigned short  &markerID,
                                unsigned long   &elemID,
                                int             &rankID);
+
+  /*!
+   * \brief Function, which determines the nearest element in the ADT for the
+            given coordinate.
+   * \param[in]     coor             Coordinate for which the nearest element in the ADT must be determined.
+   * \param[out]    dist             Distance to the nearest element in the ADT.
+   * \param[out]    markerID         Local marker ID of the nearest element in the ADT.
+   * \param[out]    elemID           Local element ID of the nearest element in the ADT.
+   * \param[out]    rankID           Rank on which the nearest element in the ADT is stored.
+   * \param[out]    weightsInterpol  Interpolation weigts of coor.
+   * \param[in,out] BBoxTargets      Work vector to store the target bounding boxes.
+   * \param[in,out] frontleaves      Work vector used in the tree traversal.
+   * \param[in,out] frontLeavesNew   Work vector used in the tree traversal.
+   */
+  void DetermineNearestElement(const su2double                  *coor,
+                               su2double                        &dist,
+                               unsigned short                   &markerID,
+                               unsigned long                    &elemID,
+                               int                              &rankID,
+                               su2double                        *weightsInterpol,
+                               std::vector<CBBoxTargetClass>    &BBoxTargets,
+                               std::vector<unsigned long>       &frontLeaves,
+                               std::vector<unsigned long>       &frontLeavesNew);
+
 private:
 
   /*!
@@ -597,6 +686,23 @@ private:
   void Dist2ToElement(const unsigned long elemID,
                       const su2double     *coor,
                       su2double           &dist2Elem);
+
+  /*!
+   * \brief Function, which computes the distance squared of the given coordinate
+            to the given element.
+   * \param[in]  elemID           ID of the element to which the distance must be determined.
+   * \param[in]  coor             Coordinate for which the distance to the element must be determined.
+   * \param[out] dist2Elem        Distance squared from the coordinate to the element.
+   * \param[out] nInterpol        Number of points involved in the interpolation.
+   * \param[out] weightsInterpol  Interpolation weights of the projection of coor
+                                  onto the element.
+   */
+  void Dist2ToElement(const unsigned long elemID,
+                      const su2double     *coor,
+                      su2double           &dist2Elem,
+                      unsigned short      &nInterpol,
+                      su2double           *weightsInterpol);
+
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear line element.
@@ -611,6 +717,25 @@ private:
                    const unsigned long i1,
                    const su2double     *coor,
                    su2double           &dist2Line);
+
+  /*!
+   * \brief Function, which computes the distance squared of the given coordinate
+            to a linear line element.
+   * \param[in]  i0               Starting index in coorPoints, where the coordinates of the
+                                  first point of the line are stored.
+   * \param[in]  i1               Starting index in coorPoints, where the coordinates of the
+                                  second point of the line are stored.
+   * \param[in]  coor             Coordinate for which the distance to the line must be determined.
+   * \param[out] dist2Line        Distance squared from the coordinate to the line.
+   * \param[out] weightsInterpol  Interpolation weights of the projection of coor
+                                  onto the line.
+   */
+  void Dist2ToLine(const unsigned long i0,
+                   const unsigned long i1,
+                   const su2double     *coor,
+                   su2double           &dist2Line,
+                   su2double           *weightsInterpol);
+
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear quadrilateral element if the projection is inside the quad.
@@ -637,6 +762,39 @@ private:
                             su2double           &r,
                             su2double           &s,
                             su2double           &dist2Quad);
+
+  /*!
+   * \brief Function, which computes the distance squared of the given coordinate
+            to a linear quadrilateral element if the projection is inside the quad.
+   * \param[in]     i0               Starting index in coorPoints, where the coordinates of the
+                                     first point of the quadrilateral are stored.
+   * \param[in]     i1               Starting index in coorPoints, where the coordinates of the
+                                     second point of the quadrilateral are stored.
+   * \param[in]     i2               Starting index in coorPoints, where the coordinates of the
+                                     third point of the quadrilateral are stored.
+   * \param[in]     i3               Starting index in coorPoints, where the coordinates of the
+                                     fourth point of the quadrilateral are stored.
+   * \param[in]     coor             Coordinate for which the distance to the quadrilateral
+                                     must be determined.
+   * \param[in,out] r                Parametric coordinate of the projection. On input it contains
+                                     an initial guess.
+   * \param[in,out] r                Parametric coordinate of the projection. On input it contains
+                                     an initial guess.
+   * \param[out]    dist2Quad        Distance squared from the coordinate to the quadrilateral.
+   * \param[out]    weightsInterpol  Interpolation weights of the projection of coor
+                                     onto the quadrilatral.
+   * \return     True if the projection is inside the quadrilateral and false otherwise.
+   */
+  bool Dist2ToQuadrilateral(const unsigned long i0,
+                            const unsigned long i1,
+                            const unsigned long i2,
+                            const unsigned long i3,
+                            const su2double     *coor,
+                            su2double           &r,
+                            su2double           &s,
+                            su2double           &dist2Quad,
+                            su2double           *weightsInterpol);
+
   /*!
    * \brief Function, which computes the distance squared of the given coordinate
             to a linear triangular element if the projection is inside the triangle.
@@ -659,10 +817,32 @@ private:
                        su2double           &dist2Tria,
                        su2double           &r,
                        su2double           &s);
+
   /*!
-   * \brief Default constructor of the class, disabled.
+   * \brief Function, which computes the distance squared of the given coordinate
+            to a linear triangular element if the projection is inside the triangle.
+   * \param[in]  i0              Starting index in coorPoints, where the coordinates of the
+                                 first point of the triangle are stored.
+   * \param[in]  i1              Starting index in coorPoints, where the coordinates of the
+                                 second point of the triangle are stored.
+   * \param[in]  i2              Starting index in coorPoints, where the coordinates of the
+                                 third point of the triangle are stored.
+   * \param[in]  coor            Coordinate for which the distance to the triangle must be determined.
+   * \param[out] dist2Tria       Distance squared from the coordinate to the triangle.
+   * \param[out] r               Parametric coordinate of the projection.
+   * \param[out] s               Parametric coordinate of the projection.
+   * \param[out] weightsInterpol Interpolation weights of the projection of coor
+                                 onto the triangle.
+   * \return     True if the projection is inside the triangle and false otherwise.
    */
-  CADTElemClass();
+  bool Dist2ToTriangle(const unsigned long i0,
+                       const unsigned long i1,
+                       const unsigned long i2,
+                       const su2double     *coor,
+                       su2double           &dist2Tria,
+                       su2double           &r,
+                       su2double           &s,
+                       su2double           *weightsInterpol);
 
   /*!
    * \brief Copy constructor of the class, disabled.

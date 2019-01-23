@@ -248,6 +248,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
 CFEMInterpolationSol::~CFEMInterpolationSol(void){}
 
 void CFEMInterpolationSol::InterpolateSolution(
+                                   CConfig**                                  config,
                                    const std::vector<std::vector<su2double> > &coorInterpol,
                                    const CFEMInterpolationGrid                *inputGrid,
                                    const CFEMInterpolationSol                 *inputSol,
@@ -296,7 +297,7 @@ void CFEMInterpolationSol::InterpolateSolution(
     // Apply a correction to the coordinates when curved boundaries
     // are present.
     std::vector<su2double> coorInterpolZone;
-    ApplyCurvatureCorrection(zone, nDim, inputGridZone, outputGridZone,
+    ApplyCurvatureCorrection(config[zone], zone, nDim, inputGridZone, outputGridZone,
                              coorInterpol[zone], coorInterpolZone);
     
     // Define the vectors of the standard elements and the vector to store the
@@ -309,7 +310,7 @@ void CFEMInterpolationSol::InterpolateSolution(
     // do not fall within the grid (typically due to a different discrete
     // representation of the boundary of the domain).
     std::vector<unsigned long> pointsForMinDistance;
-    VolumeInterpolationSolution(zone, coorInterpolZone, inputGridZone, inputSol,
+    VolumeInterpolationSolution(config[zone], zone, coorInterpolZone, inputGridZone, inputSol,
                                 zoneOffsetInputSol, zoneOffsetOutputSol,
                                 solFormatInput, pointsForMinDistance,
                                 standardElementsGrid, standardElementsSol,
@@ -325,7 +326,7 @@ void CFEMInterpolationSol::InterpolateSolution(
       std::cout << "A minimum distance search to the boundary of the "
       << "domain is used for these points. " << std::endl;
       
-      SurfaceInterpolationSolution(zone, coorInterpolZone, inputGridZone, inputSol,
+      SurfaceInterpolationSolution(config[zone], zone, coorInterpolZone, inputGridZone, inputSol,
                                    zoneOffsetInputSol, zoneOffsetOutputSol,
                                    solFormatInput, pointsForMinDistance,
                                    standardElementsSol, indInStandardElements);
@@ -338,6 +339,7 @@ void CFEMInterpolationSol::InterpolateSolution(
 }
 
 void CFEMInterpolationSol::ApplyCurvatureCorrection(
+                                        CConfig*                                 config,
                                         const unsigned short                     zoneID,
                                         const unsigned short                     nDim,
                                         const CFEMInterpolationGridZone          *inputGridZone,
@@ -371,14 +373,14 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
   
   // Build the surface ADT for the input grid.
   CADTElemClass inputGridADT;
-  BuildSurfaceADT(inputGridZone, inputGridADT, standardBoundaryFacesGrid,
+  BuildSurfaceADT(config, inputGridZone, inputGridADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, inputGridIndInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
   
   // Build the surface ADT for the output grid.
   std::vector<unsigned short> outputGridIndInStandardBoundaryFaces;
   CADTElemClass outputGridADT;
-  BuildSurfaceADT(outputGridZone, outputGridADT, standardBoundaryFacesGrid,
+  BuildSurfaceADT(config, outputGridZone, outputGridADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, outputGridIndInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
   
@@ -406,7 +408,7 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
-    std::vector<su2_BBoxTargetClass> BBoxTargets(200);
+    std::vector<CBBoxTargetClass> BBoxTargets(200);
     std::vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
     
     // Loop over the DOFs to be corrected.
@@ -468,8 +470,9 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
 }
 
 void CFEMInterpolationSol::BuildSurfaceADT(
+                               CConfig*                                  config,
                                const CFEMInterpolationGridZone           *gridZone,
-                               CADTElemClass                          &surfaceADT,
+                               CADTElemClass                             &surfaceADT,
                                std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesGrid,
                                std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesSol,
                                std::vector<unsigned short>               &indInStandardBoundaryFaces,
@@ -609,11 +612,11 @@ void CFEMInterpolationSol::BuildSurfaceADT(
       standardBoundaryFacesSol.push_back(CFEMStandardBoundaryFace(surfElems[l].mVTK_TYPE,
                                                                       volElems[elemID].mVTK_TYPE,
                                                                       volElems[elemID].mNPolySol,
-                                                                      false, false) );
+                                                                      false, false, config) );
       standardBoundaryFacesGrid.push_back(CFEMStandardBoundaryFace(surfElems[l].mVTK_TYPE,
                                                                        volElems[elemID].mVTK_TYPE,
                                                                        volElems[elemID].mNPolyGrid,
-                                                                       false, false) );
+                                                                       false, false, config) );
     }
     
     indInStandardBoundaryFaces[l] = ind;
@@ -669,6 +672,7 @@ void CFEMInterpolationSol::BuildSurfaceADT(
 }
 
 void CFEMInterpolationSol::VolumeInterpolationSolution(
+                                           CConfig*                             config,
                                            const unsigned short                 zoneID,
                                            const std::vector<su2double>         &coorInterpol,
                                            const CFEMInterpolationGridZone      *gridZone,
@@ -730,10 +734,12 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
     {
       standardElementsSol.push_back(CFEMStandardElement(volElems[l].mVTK_TYPE,
                                                             volElems[l].mNPolySol,
-                                                            false));
+                                                            false,
+                                                            config));
       standardElementsGrid.push_back(CFEMStandardElement(volElems[l].mVTK_TYPE,
                                                              volElems[l].mNPolyGrid,
                                                              false,
+                                                             config,
                                                              standardElementsSol[ind].GetOrderExact(),
                                                              standardElementsSol[ind].GetRDOFs(),
                                                              standardElementsSol[ind].GetSDOFs(),
@@ -1063,6 +1069,7 @@ void CFEMInterpolationSol::HighOrderContainmentSearch(
 }
 
 void CFEMInterpolationSol::SurfaceInterpolationSolution(
+                                            CConfig*                             config,
                                             const unsigned short                 zoneID,
                                             const std::vector<su2double>         &coorInterpol,
                                             const CFEMInterpolationGridZone      *gridZone,
@@ -1105,7 +1112,7 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
   
   // Build the surface ADT.
   CADTElemClass surfaceADT;
-  BuildSurfaceADT(gridZone, surfaceADT, standardBoundaryFacesGrid,
+  BuildSurfaceADT(config, gridZone, surfaceADT, standardBoundaryFacesGrid,
                   standardBoundaryFacesSol, indInStandardBoundaryFaces,
                   adjElemID, faceIDInElement);
   
@@ -1127,7 +1134,7 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
-    std::vector<su2_BBoxTargetClass> BBoxTargets(200);
+    std::vector<CBBoxTargetClass> BBoxTargets(200);
     std::vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
     
     // Loop over the points for which a minimum distance search must be carried out.
@@ -1353,10 +1360,10 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
   }
 }
 
-CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
-                                           CGeometry**    geometry,
-                                           CSolver***     solution,
-                                           unsigned short nZone)
+void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
+                                                CGeometry**    geometry,
+                                                CSolver***     solution,
+                                                unsigned short nZone)
 {
   
   unsigned short iZone, iVar, nVar;
@@ -1477,7 +1484,7 @@ CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
     
     // Copy data.
     unsigned long iDOF, jDOF = 0;
-    nDOFsTot = geometry[iZone]->GetnPoint();
+    unsigned long nDOFsTot = geometry[iZone]->GetnPoint();
     for(iDOF = offsetDOFs; iDOF < offsetDOFs + nDOFsTot; iDOF++, jDOF++){
       
       if(template_solver){
@@ -1521,13 +1528,13 @@ CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       
       if(fem){
         for(iVar = 0; iVar < nVar_FEM; iVar++){
-          solution[iZone][FEA_SOL]->node[jDOF]->GetSolution(iVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][FEA_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
       
       if(heat_fvm){
         for(iVar = 0; iVar < nVar_Heat; iVar++){
-          solution[iZone][HEAT_SOL]->node[jDOF]->GetSolution(iVar, mSolDOFs[iDOF][iVar]);
+          solution[iZone][HEAT_SOL]->node[jDOF]->SetSolution(iVar, mSolDOFs[iDOF][iVar]);
         }
       }
     }
@@ -2059,7 +2066,8 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   }
 }
 
-void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CGeometry* geometry)
+void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
+                                                      CGeometry* geometry)
 {
   unsigned long iElem, nElem, iPoint, nPoint;
   unsigned short iNode, iDim, nDim, iMarker, nMarker;
@@ -2115,7 +2123,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CGeometry* geometry)
   }
   
   // Allocate the memory for the surface elements.
-  nElem = geometry->nLocal_Bound_Elem;
+  nElem = geometry->GetnElem_Local_Bound();
   mSurfElems.resize(nElem);
   
   // Loop over the boundary markers to store the surface connectivity.
@@ -2124,7 +2132,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CGeometry* geometry)
   nElem = 0;
   nMarker = config->GetnMarker_All();
   for(iMarker = 0; iMarker < nMarker; iMarker++){
-    for(iElem = 0 iElem = geometry->GetnElem_Bound(iMarker); iElem++, nElem++){
+    for(iElem = 0; iElem = geometry->GetnElem_Bound(iMarker); iElem++, nElem++){
       int VTKType, nPolyGrid, nDOFsGrid;
       
       // Determine the VTK type of the element
@@ -2152,7 +2160,8 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CGeometry* geometry)
   
 }
 
-void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
+void CFEMInterpolationGridZone::DetermineCoorInterpolation(CConfig*               config,
+                                                           std::vector<su2double> &coorInterpol,
                                                            const SolutionFormatT  solFormatWrite)
 {
   // Determine the number of dimensions.
@@ -2264,10 +2273,12 @@ void CFEMInterpolationGridZone::DetermineCoorInterpolation(std::vector<su2double
           {
             standardElementsSol.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
                                                               mVolElems[i].mNPolySol,
-                                                              false));
+                                                              false,
+                                                              config));
             standardElementsGrid.push_back(CFEMStandardElement(mVolElems[i].mVTK_TYPE,
                                                                mVolElems[i].mNPolyGrid,
                                                                false,
+                                                               config,
                                                                standardElementsSol[j].GetOrderExact(),
                                                                standardElementsSol[j].GetRDOFs(),
                                                                standardElementsSol[j].GetSDOFs(),
@@ -2328,156 +2339,6 @@ bool CFEMInterpolationGridZone::HighOrderElementsInZone(void) const
   
   // Return highOrder.
   return highOrder;
-}
-
-int CFEMInterpolationGridZone::ReadSU2ZoneData(std::ifstream &su2File,
-                                               const int     zoneID,
-                                               const bool    multipleZones)
-{
-  std::ostringstream message;
-  
-  // Read the spatial dimension for this zone. If no information is found about
-  // the number of dimensions, set it to its default value of 3.
-  int nDim;
-  ResetPositionIfstream(su2File, zoneID, multipleZones);
-  if( !FindIntValueFromKeyword(su2File, "ndime", nDim) ) nDim = 3;
-  
-  // Determine the number of volume elements in this zone.
-  int nElem;
-  if( !FindIntValueFromKeyword(su2File, "nelem", nElem) )
-    SU2_MPI::Error("No volume elements found.", CURRENT_FUNCTION);
-  
-  // Allocate the memory for volume elements.
-  mVolElems.resize(nElem);
-  
-  // Loop over the elements.
-  unsigned long nSolDOFs = 0;
-  for(int i=0; i<nElem; ++i)
-  {
-    // Read the entire line as a string and make it ready for reading.
-    std::string lineBuf;
-    std::getline(su2File, lineBuf);
-    std::istringstream istr(lineBuf);
-    
-    // Read the su2 element type and determine the polynomial degree and
-    // DOFs for both the grid and solution.
-    int su2ElemType, VTKType, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol;
-    istr >> su2ElemType;
-    
-    DetermineElementInfo(su2ElemType, VTKType, nPolyGrid, nPolySol,
-                         nDOFsGrid, nDOFsSol);
-    
-    // Allocate the memory for the connectivity and read it.
-    std::vector<unsigned long> connSU2(nDOFsGrid);
-    for(int j=0; j<nDOFsGrid; ++j)
-      istr >> connSU2[j];
-    
-    // Store the data for this element.
-    mVolElems[i].StoreElemData(i, VTKType, nPolyGrid, nPolySol, nDOFsGrid,
-                               nDOFsSol, nSolDOFs, connSU2.data());
-    
-    // Update nSolDOFs.
-    nSolDOFs += nDOFsSol;
-  }
-  
-  // Determine the number of grid points in this zone.
-  ResetPositionIfstream(su2File, zoneID, multipleZones);
-  int nPoints;
-  if( !FindIntValueFromKeyword(su2File, "npoin", nPoints) )
-  {
-    message << "No points for zone " << zoneID
-    << " found in the su2 file.";
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-  
-  // Allocate the memory for the coordinates.
-  mCoor.resize(nDim);
-  for(int iDim=0; iDim<nDim; ++iDim)
-    mCoor[iDim].resize(nPoints);
-  
-  // Read the coordinates.
-  for(int i=0; i<nPoints; ++i)
-  {
-    std::string lineBuf;
-    std::getline(su2File, lineBuf);
-    std::istringstream istr(lineBuf);
-    
-    for(int iDim=0; iDim<nDim; ++iDim)
-      istr >> mCoor[iDim][i];
-  }
-  
-  // Set the position in ifstream to the beginning of this zone and
-  // determine the number of boundary markers.
-  ResetPositionIfstream(su2File, zoneID, multipleZones);
-  
-  int nMarkers;
-  if( !FindIntValueFromKeyword(su2File, "nmark", nMarkers) )
-  {
-    message << "No boundary markers for zone " << zoneID
-    << " found in the su2 file.";
-    SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-  }
-  
-  // Loop over the boundary markers to determine the total number of surface elements.
-  nElem = 0;
-  for(int iMarker=0; iMarker<nMarkers; ++iMarker)
-  {
-    // Read the number of surface elements for this marker and update nElem.
-    int nSurfElem;
-    if( !FindIntValueFromKeyword(su2File, "marker_elems", nSurfElem) )
-      SU2_MPI::Error("String \"MARKER_ELEMS\" not found.", CURRENT_FUNCTION);
-    nElem += nSurfElem;
-  }
-  
-  // Allocate the memory for the surface elements.
-  mSurfElems.resize(nElem);
-  
-  // Reset the position in ifstream to the location where the marker
-  // information for this zone starts.
-  ResetPositionIfstream(su2File, zoneID, multipleZones);
-  FindIntValueFromKeyword(su2File, "nmark", nMarkers);
-  
-  // Loop over the boundary markers to store the surface connectivity.
-  // Note that the surface connectivity is stored as one entity. The
-  // information of the boundary markers is not kept.
-  nElem = 0;
-  for(int iMarker=0; iMarker<nMarkers; ++iMarker)
-  {
-    // Read the number of surface elements for this marker.
-    int nSurfElem;
-    FindIntValueFromKeyword(su2File, "marker_elems", nSurfElem);
-    
-    // Loop over the surface elements.
-    for(int i=0; i<nSurfElem; ++i, ++nElem)
-    {
-      // Read the entire line as a string and make it ready for reading.
-      std::string lineBuf;
-      std::getline(su2File, lineBuf);
-      std::istringstream istr(lineBuf);
-      
-      // Read the su2 element type and determine the polynomial degree and
-      // DOFs for both the grid and solution. For surface elements the
-      // grid and solution information is always the same and therefore
-      // nPolySol and nDOFsSol are not used afterwards.
-      int su2ElemType, VTKType, nPolyGrid, nPolySol, nDOFsGrid, nDOFsSol;
-      istr >> su2ElemType;
-      
-      DetermineElementInfo(su2ElemType, VTKType, nPolyGrid, nPolySol,
-                           nDOFsGrid, nDOFsSol);
-      
-      // Allocate the memory for the connectivity and read it.
-      std::vector<unsigned long> connSU2(nDOFsGrid);
-      for(int j=0; j<nDOFsGrid; ++j)
-        istr >> connSU2[j];
-      
-      // Store the data for this surface element.
-      mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data());
-    }
-  }
-  
-  // Return the dimension for this zone.
-  return nDim;
 }
 
 void CFEMInterpolationGridZone::DetermineElementInfo(int su2ElemType,
@@ -2556,31 +2417,6 @@ int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
   return nDOFs;
 }
 
-void CFEMInterpolationGridZone::ResetPositionIfstream(std::ifstream &su2File,
-                                                      const int     zoneID,
-                                                      const bool    multipleZones)
-{
-  // Reset the position to the beginning of the file.
-  su2File.clear();
-  su2File.seekg(0);
-  
-  // When multiple zones are present, search the correct zone.
-  if( multipleZones )
-  {
-    int zoneNumber = -1;
-    while(zoneNumber != zoneID)
-    {
-      if( !FindIntValueFromKeyword(su2File, "izone", zoneNumber) )
-      {
-        std::ostringstream message;
-        message << "No information for zone " << zoneID
-        << " found in the su2 file.";
-        SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
-      }
-    }
-  }
-}
-
 CFEMInterpolationGrid::CFEMInterpolationGrid(void){}
 
 CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
@@ -2590,14 +2426,15 @@ CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
   unsigned short iZone;
   
   // Loop over the number of zones to copy the data from geometry to grid class.
-  mGridZones.resize(nZones);
+  mGridZones.resize(nZone);
   for(iZone = 0; iZone < nZone; iZone++)
-    mGridZones[iZone].CopySU2GeometryToGrid(geometry[iZone]);
+    mGridZones[iZone].CopySU2GeometryToGrid(config[iZone], geometry[iZone]);
 }
 
 CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}
 
-void CFEMInterpolationGrid::DetermineCoorInterpolation(std::vector<std::vector<su2double> > &coorInterpol,
+void CFEMInterpolationGrid::DetermineCoorInterpolation(CConfig**                            config,
+                                                       std::vector<std::vector<su2double> > &coorInterpol,
                                                        const SolutionFormatT                solFormatWrite)
 {
   // Allocate the first index for coorInterpol.
@@ -2606,7 +2443,7 @@ void CFEMInterpolationGrid::DetermineCoorInterpolation(std::vector<std::vector<s
   // Loop over the zones and determine the coordinates for which the
   // interpolation must be carried out.
   for(unsigned long i=0; i<mGridZones.size(); ++i)
-    mGridZones[i].DetermineCoorInterpolation(coorInterpol[i], solFormatWrite);
+    mGridZones[i].DetermineCoorInterpolation(config[i], coorInterpol[i], solFormatWrite);
 }
 
 void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
@@ -2651,4 +2488,45 @@ void CFEMInterpolationGrid::DetermineSolutionFormat(const int nSolDOFs)
     }
   }
 }
+
+void CFEMInterpolationFaceOfElem::Copy(const CFEMInterpolationFaceOfElem &other)
+{
+  nCornerPoints = other.nCornerPoints;
+  for(unsigned short i=0; i<nCornerPoints; ++i) cornerPoints[i] = other.cornerPoints[i];
+  for(unsigned short i=nCornerPoints; i<4; ++i) cornerPoints[i] = ULONG_MAX;
+
+  elemID = other.elemID;
+  faceID = other.faceID;
+}
+
+void CFEMInterpolationSurfElem::Copy(const CFEMInterpolationSurfElem &other)
+{
+  mVTK_TYPE  = other.mVTK_TYPE;
+  mNPolyGrid = other.mNPolyGrid;
+  mNDOFsGrid = other.mNDOFsGrid;
+  mConnGrid  = other.mConnGrid;
+}
+
+//------------------------------------------------------------------------------
+
+void CFEMInterpolationVolElem::Copy(const CFEMInterpolationVolElem &other)
+{
+  mVTK_TYPE        = other.mVTK_TYPE;
+  mNPolyGrid       = other.mNPolyGrid;
+  mNPolySol        = other.mNPolySol;
+  mNDOFsGrid       = other.mNDOFsGrid;
+  mNDOFsSol        = other.mNDOFsSol;
+  mOffsetSolDOFsDG = other.mOffsetSolDOFsDG;
+  mConnGrid        = other.mConnGrid;
+}
+
+//------------------------------------------------------------------------------
+
+void CFEMInterpolationGridZone::Copy(const CFEMInterpolationGridZone &other)
+{
+  mSurfElems = other.mSurfElems;
+  mVolElems  = other.mVolElems;
+  mCoor      = other.mCoor;
+}
+
 

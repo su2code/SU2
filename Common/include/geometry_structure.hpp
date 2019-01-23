@@ -1170,6 +1170,12 @@ public:
 	 * \returns Total number of pyramid elements in a simulation across all processors.
 	 */
 	virtual unsigned long GetGlobal_nElemPyra();
+
+  /*!
+   * \brief A virtual member.
+   * \returns Number of boundary elements.
+   */
+  virtual unsigned long GetnElem_Local_Bound();
   
   /*!
 	 * \brief A virtual member.
@@ -2265,6 +2271,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	 * \returns Total number of pyramid elements in a simulation across all processors.
 	 */
 	unsigned long GetGlobal_nElemPyra();
+
+  /*!
+   * \brief Retrieve number of boundary elements.
+   * \returns Number of boundary elements.
+   */
+  unsigned long GetnElem_Local_Bound();
   
   /*!
 	 * \brief Get number of triangular elements.

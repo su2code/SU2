@@ -139,7 +139,7 @@ public:
   /*!
    * \brief Constructor of the class.
    */
-  CFEMInterpolationFaceOfElem(void){}
+  CFEMInterpolationFaceOfElem(void);
   
   /*!
    * \brief Destructor of the class.
@@ -267,12 +267,14 @@ public:
   /*!
    * \brief Function, which copies data from the SU2 geometry structure to the interpolation zone data structure for a single zone.
    */
-  void CopySU2GeometryToGrid(CGeometry* geometry);
+  void CopySU2GeometryToGrid(CConfig*   config,
+                             CGeometry* geometry);
   
   /*!
    * \brief Function, which determines the coordinates for the points to be interpolated.
    */
-  void DetermineCoorInterpolation(std::vector<su2double> &coorInterpol,
+  void DetermineCoorInterpolation(CConfig*               config,
+                                  std::vector<su2double> &coorInterpol,
                                   const SolutionFormatT  solFormatWrite);
   
   /*!
@@ -300,13 +302,6 @@ public:
    */
   bool HighOrderElementsInZone(void) const;
   
-  /*!
-   * \brief Function, which reads the grid data for the given zone.
-   */
-  int ReadSU2ZoneData(std::ifstream &su2File,
-                      const int     zoneID,
-                      const bool    multipleZones);
-  
 private:
   /*!
    * \brief Function, which makes a deep copy.
@@ -329,12 +324,6 @@ private:
   int DetermineNDOFs(const int VTKType,
                      const int nPoly);
   
-  /*!
-   * \brief Function, which resets the position of the given ifstream to the location where the information of the given zone starts.
-   */
-  void ResetPositionIfstream(std::ifstream &su2File,
-                             const int     zoneID,
-                             const bool    multipleZones);
 };
 
 /*!
@@ -367,7 +356,8 @@ public:
   /*!
    * \brief Function, which determines the coordinates for the points to be interpolated.
    */
-  void DetermineCoorInterpolation(std::vector<std::vector<su2double> > &coorInterpol,
+  void DetermineCoorInterpolation(CConfig**                            config,
+                                  std::vector<std::vector<su2double> > &coorInterpol,
                                   const SolutionFormatT                solFormatWrite);
   
   /*!
@@ -443,10 +433,11 @@ public:
   /*!
    * \brief Main function for the interpolation of the given coordinates in the given grid and solution.
    */
-  void InterpolateSolution(const std::vector<std::vector<su2double> > &coorInterpol,
-                           const CFEMInterpolationGrid               *inputGrid,
-                           const CFEMInterpolationSol                *inputSol,
-                           const CFEMInterpolationGrid               *outputGrid);
+  void InterpolateSolution(CConfig**                                  config,
+                           const std::vector<std::vector<su2double> > &coorInterpol,
+                           const CFEMInterpolationGrid                *inputGrid,
+                           const CFEMInterpolationSol                 *inputSol,
+                           const CFEMInterpolationGrid                *outputGrid);
   
   /*!
    * \brief Make available the solution DOFs.
@@ -464,7 +455,8 @@ private:
   /*!
    * \brief Function, which applies a curvature correction to the coordinates to obtain a better representation of these coordinates on the target grid.
    */
-  void ApplyCurvatureCorrection(const unsigned short             zoneID,
+  void ApplyCurvatureCorrection(CConfig*                         config,
+                                const unsigned short             zoneID,
                                 const unsigned short             nDim,
                                 const CFEMInterpolationGridZone  *inputGridZone,
                                 const CFEMInterpolationGridZone  *outputGridZone,
@@ -474,7 +466,8 @@ private:
   /*!
    * \brief Function, which builds the ADT of a surface grid.
    */
-  void BuildSurfaceADT(const CFEMInterpolationGridZone           *gridZone,
+  void BuildSurfaceADT(CConfig*                                  config,
+                       const CFEMInterpolationGridZone           *gridZone,
                        CADTElemClass                             &surfaceADT,
                        std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesGrid,
                        std::vector<CFEMStandardBoundaryFace>     &standardBoundaryFacesSol,
@@ -521,7 +514,8 @@ private:
   /*!
    * \brief Function, which carries out the surface minimum distance search for the interpolation.
    */
-  void SurfaceInterpolationSolution(const unsigned short                 zoneID,
+  void SurfaceInterpolationSolution(CConfig*                             config,
+                                    const unsigned short                 zoneID,
                                     const std::vector<su2double>         &coorInterpol,
                                     const CFEMInterpolationGridZone      *gridZone,
                                     const CFEMInterpolationSol           *inputSol,
@@ -535,7 +529,8 @@ private:
   /*!
    * \brief Function, which carries out the volume containment search for the interpolation.
    */
-  void VolumeInterpolationSolution(const unsigned short                 zoneID,
+  void VolumeInterpolationSolution(CConfig*                             config,
+                                   const unsigned short                 zoneID,
                                    const std::vector<su2double>         &coorInterpol,
                                    const CFEMInterpolationGridZone      *gridZone,
                                    const CFEMInterpolationSol           *inputSol,
@@ -551,7 +546,7 @@ private:
    * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
    */
   void CopySolToSU2Solution(CConfig**      config,
-                            CGeometry***   geometry,
-                            CSolver**      solution,
+                            CGeometry**    geometry,
+                            CSolver***     solution,
                             unsigned short nZone);
 };

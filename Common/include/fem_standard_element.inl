@@ -198,3 +198,7 @@ inline unsigned short CFEMStandardBoundaryFace::GetNSubFaces(void) const {return
 inline su2double CFEMStandardBoundaryFace::GetPenaltyConstant(void) const {return penaltyConstantFace;}
 
 inline const unsigned short* CFEMStandardBoundaryFace::GetSubFaceConn(void) const {return subConnForPlotting.data();}
+
+inline const std::vector<su2double>* CFEMStandardBoundaryFace::GetRDOFsFace(void) const {return &rDOFsFace;}
+
+inline const std::vector<su2double>* CFEMStandardBoundaryFace::GetSDOFsFace(void) const {return &sDOFsFace;}
