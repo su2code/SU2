@@ -366,11 +366,6 @@ public:
    * \brief Default constructor.
    */
   CADTElemClass();
-  
-  /*!
-   * \brief Default constructor of the class.
-   */
-  CADTElemClass();
 
   /*!
    * \brief Constructor of the class.
