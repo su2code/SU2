@@ -444,7 +444,14 @@ public:
    * \return  Number of DOFs in the solution.
    */
   const std::vector<std::vector<su2double> > &GetSolDOFs(void) const {return mSolDOFs;}
-    
+
+  /*!
+   * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
+   */
+  void CopySolToSU2Solution(CConfig**      config,
+                            CGeometry***    geometry,
+                            CSolver****     solution,
+                            unsigned short nZone);    
 private:
   int mHeaderFile[5];                             /*!< \brief The 5 integers of the header of the solution file. */
   int mIterNumber;                                /*!< \brief The iteration number stored in the solution file. */
@@ -541,12 +548,4 @@ private:
                                    std::vector<CFEMStandardElement>     &standardElementsGrid,
                                    std::vector<CFEMStandardElement>     &standardElementsSol,
                                    std::vector<unsigned short>          &indInStandardElements);
-  
-  /*!
-   * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
-   */
-  void CopySolToSU2Solution(CConfig**      config,
-                            CGeometry***    geometry,
-                            CSolver****     solution,
-                            unsigned short nZone);
 };

@@ -746,8 +746,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  input_grid = new CFEMInterpolationGrid(config[0],geometry_container[0],nZone);
-  output_grid = new CFEMInterpolationGrid(config[1],geometry_container[1],nZone);
+  input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone);
+  output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone);
   
   std::cout << "Reading solution file....." << std::flush;
   input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],geometry_container[1],solver_container[0],solver_container[1],nZone);
@@ -755,11 +755,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Determining coordinates for the points to be interpolated....."<< std::flush;
   std::vector<std::vector<su2double> > coorInterpolation;
-  outout_grid.DetermineCoorInterpolation(config_container[1],coorInterpolation, VertexCentered);
+  output_grid->DetermineCoorInterpolation(config_container[1], coorInterpolation, VertexCentered);
   std::cout << " Done" << std::endl << std::flush;
 
-  output_solution->InterpolateSolution(config_container[1], &coorInterpol, input_grid, input_solution, output_grid)
-  output_solution->CopySolToSU2Solution(config[1], geometry_container[1], solver_container[1], nZone);
+  output_solution->InterpolateSolution(config_container[1], coorInterpolation, input_grid, input_solution, output_grid);
+  output_solution->CopySolToSU2Solution(config_container[1], geometry_container[1], solver_container[1], nZone);
 
 
   for (iZone = 0; iZone < nZone; iZone++){
