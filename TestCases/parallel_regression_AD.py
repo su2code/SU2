@@ -77,10 +77,10 @@ def main():
     # Arina nozzle 2D
     discadj_arina2k              = TestCase('discadj_arina2k’)
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k”
-    discadj_arina2k.cfg_file     = “Arina2K.cfg"
-    discadj_arina2k.test_iter    = 3000
-    discadj_arina2k.test_vals    = [-3.576977, -4.165617, 4.7303e+04, 0.0000e+0] #last 4 columns
-    discadj_arina2k.su2_exec     = "SU2_CFD_AD"
+    discadj_arina2k.cfg_file     = “Arina2KRS.cfg"
+    discadj_arina2k.test_iter    = 2500
+    discadj_arina2k.test_vals    = [-3.583132, -4.177936, 4.7262e+04, 0.0000e+00] #last 4 columns
+    discadj_arina2k.su2_exec     = "parallel_computation.py -f"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
     test_list.append(discadj_arina2k)
