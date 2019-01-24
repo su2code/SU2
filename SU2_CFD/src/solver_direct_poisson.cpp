@@ -1262,7 +1262,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 1.0e-4*config->GetCFL(iMesh);
+		Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
@@ -1569,6 +1569,16 @@ su2double *Normal = new su2double[nDim];
       
      }
    } 
+  
+}
+
+
+void CPoissonSolverFVM::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                CConfig *config, unsigned short val_marker) {
+  
+  /*--- Call the Euler wall residual method. ---*/
+  
+  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
   
 }
 

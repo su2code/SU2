@@ -3587,7 +3587,7 @@ void CPBIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **s
   if (!adjoint) {
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       for (iVar = 0; iVar < nVar; iVar++) {
-        node[iPoint]->AddSolution(iVar, LinSysSol[iPoint*nVar+iVar]);
+        node[iPoint]->AddSolution(iVar, 0.5*LinSysSol[iPoint*nVar+iVar]);
         Mom_Coeff[iVar] = Jacobian.GetBlock(iPoint,iPoint,iVar,iVar);
       }
       node[iPoint]->Set_Mom_Coeff(Mom_Coeff);
@@ -3728,7 +3728,7 @@ void CPBIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
       Max_Delta_Time    = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-        Local_Delta_Time = 2.0e-4*config->GetCFL(iMesh);
+        Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
         node[iPoint]->SetDelta_Time(Local_Delta_Time);
       }
       else {
@@ -3915,7 +3915,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
     switch (KindBC) {
 		
 		/*--- Wall boundaries have zero mass flux (irrespective of grid movement) ---*/
-		case EULER_WALL: case ISOTHERMAL: case HEAT_FLUX:
+		case EULER_WALL: case ISOTHERMAL: case HEAT_FLUX: case SYMMETRY_PLANE:
 		  MassFlux_Part = 0.0 ;
 		 
 		break;
