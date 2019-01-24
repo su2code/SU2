@@ -358,7 +358,7 @@ public:
    * \param[in] geometry - The grid for interpolation.
    */
   CFEMInterpolationGrid(CConfig**      config,
-                        CGeometry***   geometry,
+                        CGeometry****  geometry,
                         unsigned short mnZone);
   
   /*!
@@ -425,8 +425,8 @@ public:
    * \param[in] solution - The solution structure for interpolation.
    */
   CFEMInterpolationSol(CConfig**      config,
-                       CGeometry***    geometry,
-                       CSolver****     solution,
+                       CGeometry****   geometry,
+                       CSolver*****    solution,
                        unsigned short nZone);
   
   /*!
@@ -459,8 +459,8 @@ public:
    * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
    */
   void CopySolToSU2Solution(CConfig**      config,
-                            CGeometry***    geometry,
-                            CSolver****     solution,
+                            CGeometry****  geometry,
+                            CSolver*****   solution,
                             unsigned short nZone);    
 private:
   unsigned short nVar;                  /*!< \brief Number of variables in the solution. */
