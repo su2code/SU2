@@ -67,6 +67,7 @@
 		3599C5D32121FAC9003AAF05 /* wall_model.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3599C5D12121FAC9003AAF05 /* wall_model.cpp */; };
 		400CEC2B21FA80180019B790 /* driver_direct_multizone.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2921FA80180019B790 /* driver_direct_multizone.cpp */; };
 		400CEC2C21FA80180019B790 /* driver_direct_singlezone.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2A21FA80180019B790 /* driver_direct_singlezone.cpp */; };
+		400CEC2E21FA81A10019B790 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */; };
 		E90D35F7203F9C5800A3290D /* fluid_model_inc.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */; };
 		E9225F761FCBC36D002F3682 /* solver_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F741FCBC36D002F3682 /* solver_adjoint_elasticity.cpp */; };
 		E9225F771FCBC36D002F3682 /* variable_adjoint_elasticity.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9225F751FCBC36D002F3682 /* variable_adjoint_elasticity.cpp */; };
@@ -213,6 +214,8 @@
 		3599C5D62121FAF4003AAF05 /* wall_model.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = wall_model.inl; path = ../../Common/include/wall_model.inl; sourceTree = "<group>"; };
 		400CEC2921FA80180019B790 /* driver_direct_multizone.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = driver_direct_multizone.cpp; path = ../../SU2_CFD/src/driver_direct_multizone.cpp; sourceTree = "<group>"; };
 		400CEC2A21FA80180019B790 /* driver_direct_singlezone.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = driver_direct_singlezone.cpp; path = ../../SU2_CFD/src/driver_direct_singlezone.cpp; sourceTree = "<group>"; };
+		400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
+		400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
 		E90D35F6203F9C5800A3290D /* fluid_model_inc.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fluid_model_inc.cpp; path = ../../SU2_CFD/src/fluid_model_inc.cpp; sourceTree = "<group>"; };
 		E91CAD081B8C117A00EE3FCC /* inv_NACA0012.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = inv_NACA0012.cfg; sourceTree = "<group>"; };
 		E91CAD091B8C117A00EE3FCC /* mesh_NACA0012_inv.su2 */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mesh_NACA0012_inv.su2; sourceTree = "<group>"; };
@@ -349,6 +352,7 @@
 				05E6DBD817EB62A100FA1F7E /* output_tecplot.cpp */,
 				050698091AA6179100FF4F07 /* output_fieldview.cpp */,
 				05755F091A54AC4500600019 /* output_su2.cpp */,
+				400CEC2D21FA81A10019B790 /* printing_toolbox.cpp */,
 			);
 			name = Output;
 			sourceTree = "<group>";
@@ -454,6 +458,7 @@
 				05E6DACC17EB608000FA1F7E /* option_structure.hpp */,
 				05E6DBB817EB627400FA1F7E /* output_structure.hpp */,
 				05E6DACD17EB608000FA1F7E /* primal_grid_structure.hpp */,
+				400CEC2F21FA81B60019B790 /* printing_toolbox.hpp */,
 				355D2C9E2172BDE100C10535 /* sgs_model.hpp */,
 				05E6DBB917EB627400FA1F7E /* solver_structure.hpp */,
 				05E6DBBA17EB627400FA1F7E /* SU2_CFD.hpp */,
@@ -740,6 +745,7 @@
 				05E6DC3017EB62A100FA1F7E /* solver_template.cpp in Sources */,
 				05E6DC3117EB62A100FA1F7E /* SU2_CFD.cpp in Sources */,
 				05E6DC3417EB62A100FA1F7E /* variable_adjoint_mean.cpp in Sources */,
+				400CEC2E21FA81A10019B790 /* printing_toolbox.cpp in Sources */,
 				05E6DC3717EB62A100FA1F7E /* variable_adjoint_turbulent.cpp in Sources */,
 				05E6DC3A17EB62A100FA1F7E /* variable_direct_heat.cpp in Sources */,
 				05E6DC3C17EB62A100FA1F7E /* variable_direct_mean.cpp in Sources */,
