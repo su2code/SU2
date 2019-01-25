@@ -58,6 +58,8 @@
 #include "../../Common/include/fem_standard_element.hpp"
 #include "../../Common/include/config_structure.hpp"
 
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+
 using namespace std;
 
 /*! 
@@ -781,7 +783,7 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] val_nZone - Number of Zones.
    */
-  void SetSensitivity_Files(CGeometry **geometry, CConfig **config, unsigned short val_nZone);
+  void SetSensitivity_Files(CGeometry ***geometry, CConfig **config, unsigned short val_nZone);
 
   /*!
    * \brief Compute .
@@ -849,8 +851,20 @@ public:
    * \param[in] val_nZone - Total number of domains in the grid file.
    */
   void SetResult_Files_Parallel(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
-                                unsigned long iExtIter, unsigned short val_nZone, unsigned short *nInst);
+                                unsigned long iExtIter, unsigned short val_nZone);
   
+  /*!
+   * \brief Writes the special output files.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] iExtIter - Current external (time) iteration.
+   * \param[in] val_iZone - Total number of domains in the grid file.
+   * \param[in] val_nZone - Total number of domains in the grid file.
+   */
+  void SetSpecial_Output(CSolver *****solver_container, CGeometry ****geometry, CConfig **config,
+                         unsigned long iExtIter, unsigned short val_nZone);
+
   /*!
    * \brief Load the desired solution data into a structure used for parallel reordering and output file writing for flow problems.
    * \param[in] config - Definition of the particular problem.

@@ -88,7 +88,7 @@ inline void CSolver::LoadRestart_FSI(CGeometry *geometry, CConfig *config, int v
 
 inline void CSolver::PredictStruct_Displacement(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
-inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iFSIIter) { }
+inline void CSolver::ComputeAitken_Coefficient(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution, unsigned long iOuterIter) { }
 
 inline void CSolver::SetAitken_Relaxation(CGeometry **fea_geometry, CConfig *fea_config, CSolver ***fea_solution) { }
 
@@ -97,6 +97,8 @@ inline void CSolver::Update_StructSolution(CGeometry **fea_geometry, CConfig *fe
 inline void CSolver::Compute_OFRefGeom(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Compute_OFRefNode(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
+
+inline void CSolver::Compute_OFVolFrac(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::SetForceCoeff(su2double val_forcecoeff_history) { }
 
@@ -206,6 +208,8 @@ inline su2double CSolver::GetSurface_CMy_Visc(unsigned short val_marker) { retur
 
 inline su2double CSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return 0; }
 
+inline su2double CSolver::GetSurface_Buffet_Metric(unsigned short val_marker) { return 0; }
+
 inline su2double CSolver::GetSurface_CL_Mnt(unsigned short val_marker) { return 0; }
 
 inline su2double CSolver::GetSurface_CD_Mnt(unsigned short val_marker) { return 0; }
@@ -313,6 +317,8 @@ inline su2double CSolver::GetAllBound_CMx_Visc() { return 0; }
 inline su2double CSolver::GetAllBound_CMy_Visc() { return 0; }
 
 inline su2double CSolver::GetAllBound_CMz_Visc() { return 0; }
+
+inline su2double CSolver::GetTotal_Buffet_Metric() { return 0; }
 
 inline su2double CSolver::GetAllBound_CoPx_Visc() { return 0; }
 
@@ -423,6 +429,8 @@ inline su2double CSolver::GetTotal_CNearFieldOF() { return 0; }
 inline su2double CSolver::GetTotal_OFRefGeom() { return 0; }
 
 inline su2double CSolver::GetTotal_OFRefNode() { return 0; }
+
+inline su2double CSolver::GetTotal_OFVolFrac() { return 0; }
 
 inline bool CSolver::IsElementBased(void){ return false; }
 
@@ -561,6 +569,8 @@ inline su2double CSolver::GetCSkinFriction(unsigned short val_marker, unsigned l
 inline su2double CSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline su2double CSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return 0; }
+
+inline su2double CSolver::GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
 inline su2double CSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return 0; }
 
@@ -817,6 +827,8 @@ inline void CSolver::BC_ConjugateHeat_Interface(CGeometry *geometry, CSolver **s
 
 inline void CSolver::GetPower_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
 
+inline void CSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) { }
+
 inline void CSolver::GetEllipticSpanLoad_Diff(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::SetFarfield_AoA(CGeometry *geometry, CSolver **solver_container,
@@ -890,6 +902,8 @@ inline void CSolver::Momentum_Forces(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::Friction_Forces(CGeometry *geometry, CConfig *config) { }
 
+inline void CSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) { }
+
 inline void CSolver::Heat_Fluxes(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
 
 inline void CSolver::Inviscid_DeltaForces(CGeometry *geometry, CSolver **solver_container, CConfig *config) { }
@@ -953,7 +967,7 @@ inline void CSolver::AddRes_Max(unsigned short val_var, su2double val_residual, 
 
 inline su2double CSolver::GetRes_Max(unsigned short val_var) { return Residual_Max[val_var]; }
 
-inline void CSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config) { }
+inline void CSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config) { }
 
 inline void CSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config) { }
 
@@ -1730,6 +1744,8 @@ inline su2double CNSSolver::GetAllBound_CFy_Visc() { return AllBound_CFy_Visc; }
 
 inline su2double CNSSolver::GetAllBound_CFz_Visc() { return AllBound_CFz_Visc; }
 
+inline su2double CNSSolver::GetTotal_Buffet_Metric() { return Total_Buffet_Metric; }
+
 inline su2double CNSSolver::GetSurface_CL_Visc(unsigned short val_marker) { return Surface_CL_Visc[val_marker]; }
 
 inline su2double CNSSolver::GetSurface_CD_Visc(unsigned short val_marker) { return Surface_CD_Visc[val_marker]; }
@@ -1750,6 +1766,8 @@ inline su2double CNSSolver::GetSurface_CMy_Visc(unsigned short val_marker) { ret
 
 inline su2double CNSSolver::GetSurface_CMz_Visc(unsigned short val_marker) { return Surface_CMz_Visc[val_marker]; }
 
+inline su2double CNSSolver::GetSurface_Buffet_Metric(unsigned short val_marker) { return Surface_Buffet_Metric[val_marker]; }
+
 inline su2double CNSSolver::GetCSkinFriction(unsigned short val_marker, unsigned long val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
 inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long val_vertex) { return HeatFlux[val_marker][val_vertex]; }
@@ -1757,6 +1775,8 @@ inline su2double CNSSolver::GetHeatFlux(unsigned short val_marker, unsigned long
 inline su2double CNSSolver::GetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex) { return HeatFluxTarget[val_marker][val_vertex]; }
 
 inline void CNSSolver::SetHeatFluxTarget(unsigned short val_marker, unsigned long val_vertex, su2double val_heat) { HeatFluxTarget[val_marker][val_vertex] = val_heat; }
+
+inline su2double CNSSolver::GetBuffetSensor(unsigned short val_marker, unsigned long val_vertex) { return Buffet_Sensor[val_marker][val_vertex]; }
 
 inline su2double CNSSolver::GetYPlus(unsigned short val_marker, unsigned long val_vertex) { return YPlus[val_marker][val_vertex]; }
 
@@ -2353,6 +2373,8 @@ inline su2double CFEASolver::GetFSI_ConvValue(unsigned short val_index){ return 
 inline su2double CFEASolver::GetTotal_OFRefGeom(void){ return Total_OFRefGeom; }
 
 inline su2double CFEASolver::GetTotal_OFRefNode(void){ return Total_OFRefNode; }
+
+inline su2double CFEASolver::GetTotal_OFVolFrac(void){ return Total_OFVolFrac; }
 
 inline bool CFEASolver::IsElementBased(void){ return element_based; }
 
