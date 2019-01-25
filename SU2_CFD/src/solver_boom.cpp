@@ -608,15 +608,9 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     jElem = pointID_original[iPhi][i];
     addNode = InsideElem(geometry, ray_r0, ray_phi[iPhi], jElem, pp0, pp1);
     Coord_original[iPhi][i][0] = (pp0[0] + pp1[0])/2.0;
-    if(nDim == 2){
-      Coord_original[iPhi][i][1] = -ray_r0;
-    }
-      
-    else{
-      Coord_original[iPhi][i][1] = ray_r0*sin(ray_phi[iPhi]);
-      Coord_original[iPhi][i][2] = -ray_r0*cos(ray_phi[iPhi]);
-    }
-      
+    Coord_original[iPhi][i][1] = (pp0[1] + pp1[1])/2.0;
+    if(nDim == 3) Coord_original[iPhi][i][2] = (pp0[2] + pp1[0])/2.0;
+    
     /*--- Get info needed for isoparameter computation ---*/
     nNode = geometry->elem[jElem]->GetnNodes();
     X_donor = new su2double[nDim*nNode];
@@ -857,64 +851,127 @@ int CBoom_AugBurgers::Intersect3D(su2double r0, su2double phi, int nCoord, su2do
   if(y0 < ymin || y0 > ymax || z0 < zmin || z0 > zmax){
     return 0;
   }
-
-  /*--- If inside bounding box, check sum of angles ---*/
-  su2double d0, d1, d2;
-  su2double a_x, a_y, b_x, b_y;
-  su2double c;
-  su2double deg = 0.0;
-  bool cw;
-
+  
+  /*--- If inside bounding box, compute barycentric coordinates for triangle ---*/
+  su2double y1, z1, y2, z2, y3, z3, s, t, A;
+  int i1, i2, i3;
   for(int iCoord = 0; iCoord < nCoord; iCoord++){
-    int i = iCoord, ip = iCoord+1;
-    if(i == nCoord-1) ip = 0;
-    /*--- Vector magnitudes ---*/
-    d0 = sqrt((Coord_i[i][1]-Coord_i[ip][1])*(Coord_i[i][1]-Coord_i[ip][1]) + (Coord_i[i][2]-Coord_i[ip][2])*(Coord_i[i][2]-Coord_i[ip][2]));
-    d1 = sqrt((y0-Coord_i[ip][1])*(y0-Coord_i[ip][1]) + (z0-Coord_i[ip][2])*(z0-Coord_i[ip][2]));
-    d2 = sqrt((Coord_i[i][1]-y0)*(Coord_i[i][1]-y0) + (Coord_i[i][2]-z0)*(Coord_i[i][2]-z0));
-    /*--- Vector directions ---*/
-    a_x = Coord_i[i][1] - y0;
-    a_y = Coord_i[i][2] - z0;
-    b_x = Coord_i[ip][1] - y0;
-    b_y = Coord_i[ip][2] - z0;
-    /*--- Clockwise or counterclockwise ---*/
-    c = b_y*a_x - b_x*a_y;
-    cw = (c < 0);
-    deg += acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
-  }
-
-  if(abs(deg - 360.) <= 3.){
-    /*--- Get info needed for isoparameter computation ---*/
-    su2double *Coord = new su2double[2];
-    Coord[0] = y0; Coord[1] = z0;
-    su2double *X_donor = new su2double[2*nCoord];
-    for(int iCoord = 0; iCoord < nCoord; iCoord++){
-      for(int iDim = 0; iDim < 2; iDim++){  
-        X_donor[iDim*nCoord + iCoord] = Coord_i[iCoord][iDim+1];
+    /*--- Get coordinates of 3 adjacent points ---*/
+    if(iCoord == nCoord-1){
+      i1 = nCoord-1;
+      i2 = 0;
+      i3 = 1;
+    }
+    else if(iCoord == nCoord-2){
+      i1 = nCoord-2;
+      i2 = nCoord-1;
+      i3 = 0;
+    }
+    else{
+      i1 = iCoord;
+      i2 = iCoord+1;
+      i3 = iCoord+2;
+    }
+    y1 = Coord_i[i1][1]; z1 = Coord_i[i1][2];
+    y2 = Coord_i[i2][1]; z2 = Coord_i[i2][2];
+    y3 = Coord_i[i3][1]; z3 = Coord_i[i3][2];
+    
+    /*--- Compute barycentric coordinates ---*/
+    A = 0.5*(-z2*y3 + z1*(-y2 + y3) + y1*(z2 - z3) + y2*z3);
+    s = 1/(2.*A)*(z1*y3 - y1*z3 + (z3 - z1)*y0 + (y1 - y3)*z0);
+    t = 1/(2.*A)*(y1*z2 - y1*y2 + (z1 - z2)*y0 + (y2 - y1)*z0);
+    
+    /*--- Check if point is in triangle ---*/
+    if(s > 0 && t > 0 && (1-s-t) > 0){
+      /*--- Get info needed for isoparameter computation ---*/
+      su2double *Coord = new su2double[2];
+      Coord[0] = y0; Coord[1] = z0;
+      su2double *X_donor = new su2double[2*nCoord];
+      for(int iCoord = 0; iCoord < nCoord; iCoord++){
+        for(int iDim = 0; iDim < 2; iDim++){
+          X_donor[iDim*nCoord + iCoord] = Coord_i[iCoord][iDim+1];
+        }
       }
-    }
-
-    /*--- Compute isoparameters ---*/
-    su2double *isoparams = new su2double[nCoord];
-    Isoparameters(2, nCoord, X_donor, Coord, isoparams);
-
-    /*--- Interpolate x-coord ---*/
-    pp1[0] = 0.0;
-    pp1[1] = y0;
-    pp1[2] = z0;
-    for(int iCoord = 0; iCoord < nCoord; iCoord++){
-      pp1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
-    }
-
-    if(isoparams != NULL) delete [] isoparams;
-    if(Coord != NULL) delete [] Coord;
-    if(X_donor != NULL) delete [] X_donor;
       
-    return 1;
+      /*--- Compute isoparameters ---*/
+      su2double *isoparams = new su2double[nCoord];
+      Isoparameters(2, nCoord, X_donor, Coord, isoparams);
+      
+      /*--- Interpolate x-coord ---*/
+      pp1[0] = 0.0;
+      pp1[1] = y0;
+      pp1[2] = z0;
+      for(int iCoord = 0; iCoord < nCoord; iCoord++){
+        pp1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
+      }
+      
+      if(isoparams != NULL) delete [] isoparams;
+      if(Coord != NULL) delete [] Coord;
+      if(X_donor != NULL) delete [] X_donor;
+      
+      return 1;
+    }
   }
-  else{
-    return 0;
-  }
+  
+  return 0;
+
+//  /*--- If inside bounding box, check sum of angles ---*/
+//  su2double d0, d1, d2;
+//  su2double a_x, a_y, b_x, b_y;
+//  su2double c;
+//  su2double deg = 0.0;
+//  bool cw;
+//
+//  for(int iCoord = 0; iCoord < nCoord; iCoord++){
+//    int i = iCoord, ip = iCoord+1;
+//    if(i == nCoord-1) ip = 0;
+//    /*--- Vector magnitudes ---*/
+//    d0 = sqrt((Coord_i[i][1]-Coord_i[ip][1])*(Coord_i[i][1]-Coord_i[ip][1]) + (Coord_i[i][2]-Coord_i[ip][2])*(Coord_i[i][2]-Coord_i[ip][2]));
+//    d1 = sqrt((y0-Coord_i[ip][1])*(y0-Coord_i[ip][1]) + (z0-Coord_i[ip][2])*(z0-Coord_i[ip][2]));
+//    d2 = sqrt((Coord_i[i][1]-y0)*(Coord_i[i][1]-y0) + (Coord_i[i][2]-z0)*(Coord_i[i][2]-z0));
+//    /*--- Vector directions ---*/
+//    a_x = Coord_i[i][1] - y0;
+//    a_y = Coord_i[i][2] - z0;
+//    b_x = Coord_i[ip][1] - y0;
+//    b_y = Coord_i[ip][2] - z0;
+//    /*--- Clockwise or counterclockwise ---*/
+//    c = b_y*a_x - b_x*a_y;
+//    cw = (c < 0);
+//    deg += acos((d1*d1+d2*d2-d0*d0)/(2.0*d1*d2))*180./M_PI;
+//  }
+//
+//  if(abs(deg - 360.) <= 3.){
+//    /*--- Get info needed for isoparameter computation ---*/
+//    su2double *Coord = new su2double[2];
+//    Coord[0] = y0; Coord[1] = z0;
+//    su2double *X_donor = new su2double[2*nCoord];
+//    for(int iCoord = 0; iCoord < nCoord; iCoord++){
+//      for(int iDim = 0; iDim < 2; iDim++){  
+//        X_donor[iDim*nCoord + iCoord] = Coord_i[iCoord][iDim+1];
+//      }
+//    }
+//
+//    /*--- Compute isoparameters ---*/
+//    su2double *isoparams = new su2double[nCoord];
+//    Isoparameters(2, nCoord, X_donor, Coord, isoparams);
+//
+//    /*--- Interpolate x-coord ---*/
+//    pp1[0] = 0.0;
+//    pp1[1] = y0;
+//    pp1[2] = z0;
+//    for(int iCoord = 0; iCoord < nCoord; iCoord++){
+//      pp1[0] += isoparams[iCoord]*Coord_i[iCoord][0];
+//    }
+//
+//    if(isoparams != NULL) delete [] isoparams;
+//    if(Coord != NULL) delete [] Coord;
+//    if(X_donor != NULL) delete [] X_donor;
+//
+//    return 1;
+//  }
+//  else{
+//    return 0;
+//  }
 
 }
 
