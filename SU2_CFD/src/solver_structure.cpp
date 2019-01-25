@@ -221,17 +221,19 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   
   /*--- Local variables ---*/
   
-  unsigned short iVar, jVar, iDim, jDim;
+  unsigned short iVar, jVar, iDim;
   unsigned short COUNT_PER_POINT = 0;
   unsigned short MPI_TYPE        = 0;
 
   unsigned short nNeighbor = 0;
   unsigned long Neighbor_Point;
   
-  unsigned long iPoint, jPoint, offset, buf_offset;
+  unsigned long iPoint, jPoint, offset, buf_offset, iMarker, iPeriodic;
   
   bool boundary_i, boundary_j;
   su2double Sensor_i = 0.0, Sensor_j = 0.0, Pressure_i, Pressure_j;
+  
+  su2double sign = 1.0;
   
   su2double *Diff = new su2double[nVar];
   su2double *Und_Lapl = new su2double[nVar];
@@ -239,12 +241,20 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double *Solution_i, *Solution_j, *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12,
   r13, r22, r23, r23_a, r23_b, r33, weight;
   
+  su2double *center, *angles, rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}},
+  translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
+  
+  su2double jacMatrix[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}},
+  rotJacob[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}};
+  
   int iMessage, iSend, nSend;
   
   // Need to generalize this check
   bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
 
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  unsigned short nPeriodic = config->GetnMarker_Periodic();
 
   
   /*--- Set the size of the data packet and type depending on quantity. ---*/
@@ -351,8 +361,10 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
         
         /*--- Get the local index for this communicated data. ---*/
         
-        iPoint = geometry->Local_Point_PeriodicSend[offset + iSend];
+        iPoint    = geometry->Local_Point_PeriodicSend[offset + iSend];
         
+        iPeriodic = geometry->Local_Marker_PeriodicSend[offset + iSend];
+
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
         buf_offset = (offset + iSend)*geometry->countPerPeriodicPoint;
@@ -379,17 +391,101 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
           case PERIODIC_RESIDUAL:
 
+            /*--- Retrieve the supplied periodic information. ---*/
+            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
+            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
+            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
+            
+            /*--- Store (center+trans) as it is constant and will be added on. ---*/
+            translation[0] = center[0] + trans[0];
+            translation[1] = center[1] + trans[1];
+            translation[2] = center[2] + trans[2];
+            
+            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+            theta = sign*angles[0];
+            phi   = sign*angles[1];
+            psi   = sign*angles[2];
+              
+            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+            
+            /*--- Compute the rotation matrix. Note that the implicit
+             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            rotMatrix[0][0] = cosPhi*cosPsi;
+            rotMatrix[1][0] = cosPhi*sinPsi;
+            rotMatrix[2][0] = -sinPhi;
+
+            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+            rotMatrix[2][1] = sinTheta*cosPhi;
+
+            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+            rotMatrix[2][2] = cosTheta*cosPhi;
+            
             for (iVar = 0; iVar < nVar; iVar++) {
-              bufDSend[buf_offset] = LinSysRes.GetBlock(iPoint, iVar); buf_offset++;
+              bufDSend[buf_offset+iVar] = LinSysRes.GetBlock(iPoint, iVar);
             }
             
+            /*--- Rotate the momentum components. ---*/
+            if (nDim == 2) {
+              bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
+                                        rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
+              bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
+                                        rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2));
+            }
+            else {
+              bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
+                                        rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2) +
+                                        rotMatrix[0][2]*LinSysRes.GetBlock(iPoint, 3));
+              bufDSend[buf_offset+2] = (rotMatrix[1][0]*LinSysRes.GetBlock(iPoint, 1) +
+                                        rotMatrix[1][1]*LinSysRes.GetBlock(iPoint, 2) +
+                                        rotMatrix[1][2]*LinSysRes.GetBlock(iPoint, 3));
+              bufDSend[buf_offset+3] = (rotMatrix[2][0]*LinSysRes.GetBlock(iPoint, 1) +
+                                        rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, 2) +
+                                        rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, 3));
+            }
+            
+            buf_offset += nVar;
            bufDSend[buf_offset] = geometry->node[iPoint]->GetVolume(); buf_offset++;
            bufDSend[buf_offset] = node[iPoint]->GetDelta_Time(); buf_offset++;
             
             if (implicit) {
+              
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
-                  bufDSend[buf_offset] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar); buf_offset++;
+                  jacMatrix[iVar][jVar] = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  rotJacob[iVar][jVar]  = Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                }
+              }
+              
+//              //Rotate the Jacobian momentum components
+//              for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
+//              //  for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+//
+//                if (nDim == 2) {
+//                  rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
+//                                       rotMatrix[0][1]*jacMatrix[2][jVar]);
+//                  rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
+//                                       rotMatrix[1][1]*jacMatrix[2][jVar]);
+//                } else {
+//
+//                rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
+//                                     rotMatrix[0][1]*jacMatrix[2][jVar] +
+//                                     rotMatrix[0][2]*jacMatrix[3][jVar]);
+//                rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
+//                                     rotMatrix[1][1]*jacMatrix[2][jVar] +
+//                                     rotMatrix[1][2]*jacMatrix[3][jVar]);
+//                rotJacob[3][jVar] = (rotMatrix[2][0]*jacMatrix[1][jVar] +
+//                                     rotMatrix[2][1]*jacMatrix[2][jVar] +
+//                                     rotMatrix[2][2]*jacMatrix[3][jVar]);
+//              }
+//              }
+              
+              for (iVar = 0; iVar < nVar; iVar++) {
+                for (jVar = 0; jVar < nVar; jVar++) {
+                  bufDSend[buf_offset] = rotJacob[iVar][jVar];  //Jacobian.GetBlock(iPoint, iPoint, iVar, jVar);
+                  buf_offset++;
                 }
               }
             }
@@ -397,6 +493,38 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
             
           case PERIODIC_LAPLACIAN:
+            
+            /*--- Retrieve the supplied periodic information. ---*/
+            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
+            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
+            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
+            
+            /*--- Store (center+trans) as it is constant and will be added on. ---*/
+            translation[0] = center[0] + trans[0];
+            translation[1] = center[1] + trans[1];
+            translation[2] = center[2] + trans[2];
+            
+            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+            theta = sign*angles[0];
+            phi   = sign*angles[1];
+            psi   = sign*angles[2];
+            
+            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+            
+            /*--- Compute the rotation matrix. Note that the implicit
+             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            rotMatrix[0][0] = cosPhi*cosPsi;
+            rotMatrix[1][0] = cosPhi*sinPsi;
+            rotMatrix[2][0] = -sinPhi;
+            
+            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+            rotMatrix[2][1] = sinTheta*cosPhi;
+            
+            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+            rotMatrix[2][2] = cosTheta*cosPhi;
             
             for (iVar = 0; iVar< nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
@@ -446,6 +574,25 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             for (iVar = 0; iVar < nVar; iVar++)
               bufDSend[buf_offset+iVar] = Und_Lapl[iVar];
+            
+            /*--- Rotate the momentum components. ---*/
+            if (nDim == 2) {
+              bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
+                                        rotMatrix[0][1]*Und_Lapl[2]);
+              bufDSend[buf_offset+2] = (rotMatrix[1][0]*Und_Lapl[1] +
+                                        rotMatrix[1][1]*Und_Lapl[2]);
+            }
+            else {
+              bufDSend[buf_offset+1] = (rotMatrix[0][0]*Und_Lapl[1] +
+                                        rotMatrix[0][1]*Und_Lapl[2] +
+                                        rotMatrix[0][2]*Und_Lapl[3]);
+              bufDSend[buf_offset+2] = (rotMatrix[1][0]*Und_Lapl[1] +
+                                        rotMatrix[1][1]*Und_Lapl[2] +
+                                        rotMatrix[1][2]*Und_Lapl[3]);
+              bufDSend[buf_offset+3] = (rotMatrix[2][0]*Und_Lapl[1] +
+                                        rotMatrix[2][1]*Und_Lapl[2] +
+                                        rotMatrix[2][2]*Und_Lapl[3]);
+            }
             
             break;
             
@@ -498,14 +645,147 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
             
           case PERIODIC_SOL_GG:
+            
+            
+            /*--- Retrieve the supplied periodic information. ---*/
+            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
+            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
+            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
+            
+            /*--- Store (center+trans) as it is constant and will be added on. ---*/
+            translation[0] = center[0] + trans[0];
+            translation[1] = center[1] + trans[1];
+            translation[2] = center[2] + trans[2];
+            
+            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+            theta = sign*angles[0];
+            phi   = sign*angles[1];
+            psi   = sign*angles[2];
+            
+            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+            
+            /*--- Compute the rotation matrix. Note that the implicit
+             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            rotMatrix[0][0] = cosPhi*cosPsi;
+            rotMatrix[1][0] = cosPhi*sinPsi;
+            rotMatrix[2][0] = -sinPhi;
+            
+            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+            rotMatrix[2][1] = sinTheta*cosPhi;
+            
+            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+            rotMatrix[2][2] = cosTheta*cosPhi;
+            
+            for (iVar = 0; iVar < nVar; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++){
+                jacMatrix[iVar][iDim] =  node[iPoint]->GetGradient(iVar, iDim);
+                rotJacob[iVar][iDim]  =  node[iPoint]->GetGradient(iVar, iDim);
+              }
+            }
+            
+            //Rotate the gradient momentum components
+            for (unsigned short iVar = 0; iVar < nVar; iVar++) {
+              
+              if (nDim == 2) {
+                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[0][1]*jacMatrix[iVar][1]);
+                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[1][1]*jacMatrix[iVar][1]);
+              } else {
+                
+                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[0][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[0][2]*jacMatrix[iVar][2]);
+                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[1][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[1][2]*jacMatrix[iVar][2]);
+                rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[2][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[2][2]*jacMatrix[iVar][2]);
+              }
+            }
+            
             for (iVar = 0; iVar < nVar; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = rotJacob[iVar][iDim];
+            
+//            
+//            for (iVar = 0; iVar < nVar; iVar++)
+//              for (iDim = 0; iDim < nDim; iDim++)
+//                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
             break;
+            
+            
           case PERIODIC_PRIM_GG:
+            
+            /*--- Retrieve the supplied periodic information. ---*/
+            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
+            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
+            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
+            
+            /*--- Store (center+trans) as it is constant and will be added on. ---*/
+            translation[0] = center[0] + trans[0];
+            translation[1] = center[1] + trans[1];
+            translation[2] = center[2] + trans[2];
+            
+            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+            theta = sign*angles[0];
+            phi   = sign*angles[1];
+            psi   = sign*angles[2];
+            
+            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+            
+            /*--- Compute the rotation matrix. Note that the implicit
+             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+            rotMatrix[0][0] = cosPhi*cosPsi;
+            rotMatrix[1][0] = cosPhi*sinPsi;
+            rotMatrix[2][0] = -sinPhi;
+            
+            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+            rotMatrix[2][1] = sinTheta*cosPhi;
+            
+            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+            rotMatrix[2][2] = cosTheta*cosPhi;
+            
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              for (iDim = 0; iDim < nDim; iDim++){
+                jacMatrix[iVar][iDim] =  node[iPoint]->GetGradient_Primitive(iVar, iDim);
+                rotJacob[iVar][iDim]  =  node[iPoint]->GetGradient_Primitive(iVar, iDim);
+              }
+            }
+            
+            //Rotate the gradient momentum components
+            for (unsigned short iVar = 0; iVar < nPrimVarGrad; iVar++) {
+              
+              if (nDim == 2) {
+                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[0][1]*jacMatrix[iVar][1]);
+                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[1][1]*jacMatrix[iVar][1]);
+              } else {
+                
+                rotJacob[iVar][0] = (rotMatrix[0][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[0][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[0][2]*jacMatrix[iVar][2]);
+                rotJacob[iVar][1] = (rotMatrix[1][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[1][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[1][2]*jacMatrix[iVar][2]);
+                rotJacob[iVar][2] = (rotMatrix[2][0]*jacMatrix[iVar][0] +
+                                     rotMatrix[2][1]*jacMatrix[iVar][1] +
+                                     rotMatrix[2][2]*jacMatrix[iVar][2]);
+              }
+            }
+            
             for (iVar = 0; iVar < nPrimVarGrad; iVar++)
               for (iDim = 0; iDim < nDim; iDim++)
-                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+                bufDSend[buf_offset+iVar*nDim+iDim] = rotJacob[iVar][iDim];
+
             break;
 
           case PERIODIC_SOL_LS:
@@ -759,7 +1039,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
 
   su2double *Diff = new su2double[nVar];
   
-  su2double Volume, Time_Step;
+  su2double Time_Step;
   
   /*--- Set some local pointers to make access simpler. ---*/
   
@@ -777,12 +1057,16 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
       /*--- For efficiency, recv the messages dynamically based on
        the order they arrive. ---*/
       
+#ifdef HAVE_MPI
       SU2_MPI::Waitany(geometry->nPeriodicRecv, geometry->req_PeriodicRecv,
                        &ind, &status);
       
       /*--- Once we have recv'd a message, get the source rank. ---*/
       
       source = status.MPI_SOURCE;
+#else
+      source = rank;
+#endif
       
       /*--- We know the offsets based on the source rank. ---*/
       
@@ -1024,9 +1308,10 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
     /*--- Verify that all non-blocking point-to-point sends have finished.
      Note that this should be satisfied, as we have received all of the
      data in the loop above at this point. ---*/
-    
+#ifdef HAVE_MPI
+
     SU2_MPI::Waitall(geometry->nPeriodicSend, geometry->req_PeriodicSend, MPI_STATUS_IGNORE);
-    
+#endif
   }
   
   delete [] Diff;
@@ -1600,7 +1885,7 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
 void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   unsigned long Point = 0, iPoint = 0, jPoint = 0, iEdge, iVertex;
   unsigned short iVar, iDim, iMarker;
-  su2double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient, DualArea,
+  su2double *Solution_Vertex, *Solution_i, *Solution_j, Solution_Average, **Gradient,
   Partial_Res, Grad_Val, *Normal, Vol;
   
   /*--- Set Gradient to Zero ---*/
