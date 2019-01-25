@@ -12586,7 +12586,7 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
 
   /*--- Build the ADT of the boundary nodes. ---*/
 
-  su2_adtPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
+  CADTPointsOnlyClass WallADT(nDim, nVertex_SolidWall, Coord_bound.data(), PointIDs.data());
 
   /*--- Loop over all interior mesh nodes and compute the distances to each
    of the no-slip boundary nodes. Store the minimum distance to the wall

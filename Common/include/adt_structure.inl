@@ -37,25 +37,25 @@
  
 #pragma once
 
-inline su2_adtComparePointClass::~su2_adtComparePointClass() {}
+inline CADTComparePointClass::~CADTComparePointClass() {}
 
-inline bool su2_adtComparePointClass::operator()(const unsigned long p0,
+inline bool CADTComparePointClass::operator()(const unsigned long p0,
                                                  const unsigned long p1) const {
   return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
 }
 
-inline su2_adtNodeClass::su2_adtNodeClass() {}
+inline CADTNodeClass::CADTNodeClass() {}
 
-inline su2_adtNodeClass::~su2_adtNodeClass() {}
+inline CADTNodeClass::~CADTNodeClass() {}
 
-inline su2_adtNodeClass::su2_adtNodeClass(const su2_adtNodeClass &other) {Copy(other);}
+inline CADTNodeClass::CADTNodeClass(const CADTNodeClass &other) {Copy(other);}
 
-inline su2_adtNodeClass& su2_adtNodeClass::operator=(const su2_adtNodeClass &other) {Copy(other); return (*this);}
+inline CADTNodeClass& CADTNodeClass::operator=(const CADTNodeClass &other) {Copy(other); return (*this);}
 
-inline su2_adtBaseClass::su2_adtBaseClass() {}
+inline CADTBaseClass::CADTBaseClass() {}
 
-inline su2_adtBaseClass::~su2_adtBaseClass() {}
+inline CADTBaseClass::~CADTBaseClass() {}
 
-inline bool su2_adtBaseClass::IsEmpty(void) const { return isEmpty;}
+inline bool CADTBaseClass::IsEmpty(void) const { return isEmpty;}
 
-inline su2_adtPointsOnlyClass::~su2_adtPointsOnlyClass() {}
+inline CADTPointsOnlyClass::~CADTPointsOnlyClass() {}

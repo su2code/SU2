@@ -690,6 +690,101 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   
 }
 
+void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry){
+  
+  unsigned long iPoint, iElem;
+  unsigned long nPoint = geometry->GetnPoint(), nElem = geometry->GetnElem();
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
+  /*---         subelements of the local elements that must be taken       ---*/
+  /*---         into account in the containment search.                    ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /* Define the vectors for the connectivity of the local linear subelements,
+   the element ID's, the element type and marker ID's. */
+  vector<unsigned long> volumeConn;
+  vector<unsigned long> elemIDs;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned short> markerIDs;
+  
+  /* Loop over the elements. */
+  for(unsigned long iElem=0; iElem < nElem; iElem++) {
+    
+    /* Determine the necessary data from the corresponding standard face,
+     such as the number of linear subfaces, the number of DOFs per
+     linear subface and the corresponding local connectivity. */
+    const unsigned short VTK_Type      = geometry->elem[iElem]->GetVTK_Type();
+    const unsigned short nDOFsPerElem  = geometry->elem[iElem]->GetnNodes();
+        
+    /* Loop over the nodes of element and store the required data. */
+        
+    VTK_TypeElem.push_back(VTK_Type);
+    elemIDs.push_back(iElem);
+        
+    for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
+      volumeConn.push_back(geometry->elem[iElem]->GetNode(iNode));
+  }
+  
+  
+  /*--- Create the coordinates of the local points. ---*/
+  vector<su2double> volumeCoor;
+  
+  for(unsigned long i=0; i<nPoint; ++i) {
+    for(unsigned short k=0; k<nDim; ++k)
+      volumeCoor.push_back(geometry->node[i]->GetCoord(k));
+  }
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
+  /*---         volume elements.                                           ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /* Build the ADT. */
+  CADTElemClass WallADT(nDim, volumeCoor, volumeConn, VTK_TypeElem,
+                        markerIDs, elemIDs, true);
+  
+  /* Release the memory of the vectors used to build the ADT. To make sure
+   that all the memory is deleted, the swap function is used. */
+  vector<unsigned short>().swap(markerIDs);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(elemIDs);
+  vector<unsigned long>().swap(surfaceConn);
+  vector<su2double>().swap(surfaceCoor);
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
+  /*---         distance to a solid wall element                           ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  
+  if ( WallADT.IsEmpty() ) {
+    
+    /*--- No solid wall boundary nodes in the entire mesh.
+     Set the wall distance to zero for all nodes. ---*/
+    
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
+      node[iPoint]->SetWall_Distance(0.0);
+  }
+  else {
+    
+    /*--- Solid wall boundary nodes are present. Compute the wall
+     distance for all nodes. ---*/
+    
+    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
+      unsigned short markerID;
+      unsigned long  elemID;
+      int            rankID;
+      su2double      dist;
+      
+      WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
+                                      elemID, rankID);
+      node[iPoint]->SetWall_Distance(dist);
+    }
+  }
+  
+}
+
 bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *pp0, su2double *pp1){
   bool inside = false;
   unsigned long iPoint, jNode;

@@ -40,14 +40,14 @@
 
 #include <iomanip>
 
-su2_adtComparePointClass::su2_adtComparePointClass(const su2double      *coor,
+CADTComparePointClass::CADTComparePointClass(const su2double      *coor,
                                                    const unsigned short splitDir,
                                                    const unsigned short nDimADT)
   : pointCoor(coor),
     splitDirection(splitDir),
     nDim(nDimADT) {}
 
-void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
+void CADTNodeClass::Copy(const CADTNodeClass &other) {
 
   childrenAreTerminal[0] = other.childrenAreTerminal[0];
   childrenAreTerminal[1] = other.childrenAreTerminal[1];
@@ -61,7 +61,7 @@ void su2_adtNodeClass::Copy(const su2_adtNodeClass &other) {
   xMax = other.xMax;
 }
 
-void su2_adtBaseClass::BuildADT(unsigned short  nDim,
+void CADTBaseClass::BuildADT(unsigned short  nDim,
                                 unsigned long   nPoints,
                                 const su2double *coor) {
 
@@ -152,9 +152,9 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
 
       /* Sort the points of the current leaf in increasing order. The sorting
          is based on the coordinate in the split direction, for which the
-         functor su2_adtComparePointClass is used. */
+         functor CADTComparePointClass is used. */
       sort(pointIDs.data() + nPointIDs[i], pointIDs.data() + nPointIDs[i+1],
-           su2_adtComparePointClass(coor, splitDir, nDim));
+           CADTComparePointClass(coor, splitDir, nDim));
 
       /* Determine the index of the node, which is approximately central
          in this leave. */
@@ -242,7 +242,7 @@ void su2_adtBaseClass::BuildADT(unsigned short  nDim,
   }
 }
 
-su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short nDim,
+CADTPointsOnlyClass::CADTPointsOnlyClass(unsigned short nDim,
                                                unsigned long  nPoints,
                                                su2double      *coor,
                                                unsigned long  *pointID) {
@@ -304,7 +304,7 @@ su2_adtPointsOnlyClass::su2_adtPointsOnlyClass(unsigned short nDim,
   frontLeavesNew.reserve(200);
 }
 
-void su2_adtPointsOnlyClass::DetermineNearestNode(const su2double *coor,
+void CADTPointsOnlyClass::DetermineNearestNode(const su2double *coor,
                                                   su2double       &dist,
                                                   unsigned long   &pointID,
                                                   int             &rankID) {

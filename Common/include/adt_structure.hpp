@@ -52,11 +52,11 @@
 using namespace std;
 
 /*! 
- * \class su2_adtComparePointClass
+ * \class CADTComparePointClass
  * \brief  Functor, used for the sorting of the points when building an ADT.
  * \author E. van der Weide
  */
-class su2_adtComparePointClass {
+class CADTComparePointClass {
 private:
   const su2double      *pointCoor;      /*!< \brief Pointer to the coordinates of the points. */
   const unsigned short splitDirection;  /*!< \brief Split direction used in the sorting. */
@@ -69,13 +69,13 @@ public:
    * \param[in] splitDir  Direction that must be used to sort the coordinates.
    * \param[in] nDimADT   Number of spatial dimensions of the ADT and coordinates.
    */
-  su2_adtComparePointClass(const su2double      *coor,
+  CADTComparePointClass(const su2double      *coor,
                            const unsigned short splitDir,
                            const unsigned short nDimADT);
   /*!
    * \brief Destructor, nothing to be done.
    */
-  ~su2_adtComparePointClass();
+  ~CADTComparePointClass();
 
   /*!
    * \brief Operator used for the sorting of the points.
@@ -88,15 +88,15 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  su2_adtComparePointClass();
+  CADTComparePointClass();
 };
 
 /*! 
- * \class su2_adtNodeClass
+ * \class CADTNodeClass
  * \brief  Class for storing the information needed in a node of an ADT.
  * \author E. van der Weide
  */
-class su2_adtNodeClass {
+class CADTNodeClass {
 public:
   bool          childrenAreTerminal[2];  /*!< \brief Whether or not the child leaves are terminal. */
   unsigned long children[2];             /*!< \brief Child leaves. If childrenAreTerminal is true the children
@@ -112,24 +112,24 @@ public:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  su2_adtNodeClass();
+  CADTNodeClass();
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_adtNodeClass();
+  ~CADTNodeClass();
 
   /*!
    * \brief Copy constructor of the class.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_adtNodeClass(const su2_adtNodeClass &other);
+  CADTNodeClass(const CADTNodeClass &other);
 
   /*!
    * \brief Assignment operator.
    * \param[in] other  Object from which the data must be copied.
    */
-  su2_adtNodeClass& operator=(const su2_adtNodeClass &other);
+  CADTNodeClass& operator=(const CADTNodeClass &other);
 
 private:
 
@@ -137,21 +137,21 @@ private:
    * \brief Copy function, which copies the data from the given object.
    * \param[in] other  Object from which the data must be copied.
    */
-  void Copy(const su2_adtNodeClass &other);
+  void Copy(const CADTNodeClass &other);
 };
 
 /*! 
- * \class su2_adtBaseClass
+ * \class CADTBaseClass
  * \brief  Base class for storing an ADT in an arbitrary number of dimensions.
  * \author E. van der Weide
  */
-class su2_adtBaseClass {
+class CADTBaseClass {
 protected:
   unsigned long nLeaves;    /*!< \brief Number of leaves in the ADT. */
   unsigned short nDimADT;   /*!< \brief Number of dimensions of the ADT. */
   bool           isEmpty;   /*!< \brief Whether or not the ADT is empty. */
 
-  vector<su2_adtNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
+  vector<CADTNodeClass> leaves; /*!< \brief Vector, which contains all the leaves of the ADT. */
 
 private:
   vector<su2double> coorMinLeaves; /*!< \brief Vector, which contains all the minimum coordinates
@@ -162,12 +162,12 @@ protected:
   /*!
    * \brief Constructor of the class. Nothing to be done.
    */
-  su2_adtBaseClass();
+  CADTBaseClass();
 
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  virtual ~su2_adtBaseClass();  
+  virtual ~CADTBaseClass();  
 
   /*!
    * \brief Function, which builds the ADT of the given coordinates.
@@ -190,20 +190,20 @@ private:
   /*!
    * \brief Copy constructor of the class, disabled.
    */
-  su2_adtBaseClass(const su2_adtBaseClass &);
+  CADTBaseClass(const CADTBaseClass &);
 
   /*!
    * \brief Assignment operator, disabled.
    */
-  su2_adtBaseClass& operator=(const su2_adtBaseClass &);
+  CADTBaseClass& operator=(const CADTBaseClass &);
 };
 
 /*! 
- * \class su2_adtPointsOnlyClass
+ * \class CADTPointsOnlyClass
  * \brief  Class for storing an ADT of only points in an arbitrary number of dimensions.
  * \author E. van der Weide
  */
-class su2_adtPointsOnlyClass : public su2_adtBaseClass {
+class CADTPointsOnlyClass : public CADTBaseClass {
 private:
   vector<unsigned long> frontLeaves;    /*!< \brief Vector used in the tree traversal. */
   vector<unsigned long> frontLeavesNew; /*!< \brief Vector used in the tree traversal. */
@@ -222,7 +222,7 @@ public:
    * \param[in] coor    Coordinates of the local points.
    * \param[in] pointID Local point IDs of the local points. 
    */
-  su2_adtPointsOnlyClass(unsigned short nDim,
+  CADTPointsOnlyClass(unsigned short nDim,
                          unsigned long  nPoints,
                          su2double      *coor,
                          unsigned long  *pointID);
@@ -230,7 +230,7 @@ public:
   /*!
    * \brief Destructor of the class. Nothing to be done.
    */
-  ~su2_adtPointsOnlyClass();
+  ~CADTPointsOnlyClass();
 
   /*!
    * \brief Function, which determines the nearest node in the ADT for the
@@ -248,17 +248,17 @@ private:
   /*!
    * \brief Default constructor of the class, disabled.
    */
-  su2_adtPointsOnlyClass();
+  CADTPointsOnlyClass();
 
   /*!
    * \brief Copy constructor of the class, disabled.
    */
-  su2_adtPointsOnlyClass(const su2_adtPointsOnlyClass &);
+  CADTPointsOnlyClass(const CADTPointsOnlyClass &);
 
   /*!
    * \brief Assignment operator, disabled.
    */
-  su2_adtPointsOnlyClass& operator=(const su2_adtPointsOnlyClass &);
+  CADTPointsOnlyClass& operator=(const CADTPointsOnlyClass &);
 };
 
 #include "adt_structure.inl"
