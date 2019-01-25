@@ -58,6 +58,8 @@
 #include "../../Common/include/fem_standard_element.hpp"
 #include "../../Common/include/config_structure.hpp"
 
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
+
 using namespace std;
 
 /*! 
