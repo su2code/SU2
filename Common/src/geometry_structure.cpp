@@ -132,6 +132,7 @@ CGeometry::CGeometry(void) {
   Local_Point_PeriodicSend = NULL;
   Local_Point_PeriodicRecv = NULL;
   
+  Local_Marker_PeriodicSend = NULL;
   Local_Marker_PeriodicRecv = NULL;
   
 }
@@ -241,6 +242,7 @@ CGeometry::~CGeometry(void) {
   if (Local_Point_PeriodicSend != NULL) delete [] Local_Point_PeriodicSend;
   if (Local_Point_PeriodicRecv != NULL) delete [] Local_Point_PeriodicRecv;
   
+  if (Local_Marker_PeriodicSend != NULL) delete [] Local_Marker_PeriodicSend;
   if (Local_Marker_PeriodicRecv != NULL) delete [] Local_Marker_PeriodicRecv;
 
 }
@@ -380,6 +382,11 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
     Local_Point_PeriodicSend[iSend] = 0;
   
+  Local_Marker_PeriodicSend = NULL;
+  Local_Marker_PeriodicSend = new unsigned long[nPoint_PeriodicSend[nPeriodicSend]];
+  for (iSend = 0; iSend < nPoint_PeriodicSend[nPeriodicSend]; iSend++)
+    Local_Marker_PeriodicSend[iSend] = 0;
+  
   Local_Point_PeriodicRecv = NULL;
   Local_Point_PeriodicRecv = new unsigned long[nPoint_PeriodicRecv[nPeriodicRecv]];
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
@@ -447,7 +454,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
              index to be communicated to the recv rank. ---*/
             
             if (iRank == Neighbors_PeriodicSend[iSend]) {
-              Local_Point_PeriodicSend[ii] = iPoint;
+              Local_Point_PeriodicSend[ii]  = iPoint;
+              Local_Marker_PeriodicSend[ii] = (unsigned long)iMarker;
               jj = ii*nPackets;
               idSend[jj] = geometry->vertex[iMarker][iVertex]->GetDonorPoint();
               jj++;
@@ -467,6 +475,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   for (iRecv = 0; iRecv < nPoint_PeriodicRecv[nPeriodicRecv]*nPackets; iRecv++)
     idRecv[iRecv] = 0;
   
+#ifdef HAVE_MPI
+
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
    the data and send from the periodically matching ranks. ---*/
@@ -535,6 +545,24 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
   SU2_MPI::Waitall(nPeriodicRecv, req_PeriodicRecv, MPI_STATUS_IGNORE);
+
+#else
+
+  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
+  
+  int myStart, myFinal;
+  for (int val_iSend = 0; val_iSend < nPeriodicSend; val_iSend++) {
+    iRank   = geometry->PeriodicRecv2Neighbor[rank];
+    iRecv   = geometry->nPoint_PeriodicRecv[iRank]*nPackets;
+    myStart = nPoint_PeriodicSend[val_iSend]*nPackets;
+    myFinal = nPoint_PeriodicSend[val_iSend+1]*nPackets;
+    for (iSend = myStart; iSend < myFinal; iSend++) {
+      idRecv[iRecv] = idSend[iSend];
+      iRecv++;
+    }
+  }
+
+#endif
   
   /*--- Store the local periodic point and marker index values in our
    data structures so we can quickly unpack data during the iterations. ---*/
@@ -553,7 +581,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
 void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) {
   
   /*--- This routine is activated whenever we attempt to perform
-   a point-to-point MPI communication with our neighbors but the
+   a periodic MPI communication with our neighbors but the
    memory buffer allocated is not large enough for the packet size.
    Therefore, we deallocate the previously allocated space and
    reallocate a large enough array. Note that after the first set
@@ -596,7 +624,8 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
                                   CConfig *config,
                                   unsigned short commType) {
-  
+#ifdef HAVE_MPI
+
   /*--- Local variables ---*/
   
   int iMessage, iRecv, offset, nPointPeriodic, count, source, tag;
@@ -650,7 +679,8 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
     iMessage++;
     
   }
-  
+#endif
+
 }
 
 void CGeometry::PostPeriodicSends(CGeometry *geometry,
@@ -658,6 +688,8 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                                   unsigned short commType,
                                   int val_iSend) {
   
+#ifdef HAVE_MPI
+
   /*--- Local variables ---*/
   
   int iMessage, offset, nPointPeriodic, count, dest, tag;
@@ -702,6 +734,33 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                      CURRENT_FUNCTION);
       break;
   }
+  
+#else
+  
+  /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
+  
+  int iSend, myStart, myFinal, iRecv, iRank;
+  iRank   = geometry->PeriodicRecv2Neighbor[rank];
+  iRecv   = geometry->nPoint_PeriodicRecv[iRank]*countPerPeriodicPoint;
+  myStart = nPoint_PeriodicSend[val_iSend]*countPerPeriodicPoint;
+  myFinal = nPoint_PeriodicSend[val_iSend+1]*countPerPeriodicPoint;
+  for (iSend = myStart; iSend < myFinal; iSend++) {
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        bufD_PeriodicRecv[iRecv] =  bufD_PeriodicSend[iSend];
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        bufS_PeriodicRecv[iRecv] =  bufS_PeriodicSend[iSend];
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    iRecv++;
+  }
+
+#endif
   
 }
 
@@ -19545,28 +19604,10 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
 void CPhysicalGeometry::Check_Periodicity(CConfig *config) {
   
-  bool isPeriodic = false;
-  unsigned long iVertex;
-  unsigned short iMarker, RotationKind, nPeriodicR = 0, nPeriodicS = 0;
-  
-  /*--- Check for the presence of any periodic BCs ---*/
-  
-  for (iMarker = 0; iMarker < nMarker; iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == SEND_RECEIVE) {
-      for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-        RotationKind = vertex[iMarker][iVertex]->GetRotation_Type();
-        if (RotationKind > 0) nPeriodicS++;
-      }
-    }
-  }
-#ifndef HAVE_MPI
-  nPeriodicR = nPeriodicS;
-#else
-  SU2_MPI::Allreduce(&nPeriodicS, &nPeriodicR, 1, MPI_UNSIGNED_SHORT, MPI_SUM, MPI_COMM_WORLD);
-#endif
-  if (nPeriodicR != 0) isPeriodic = true;
-  
-  if (isPeriodic && (config->GetnMGLevels() > 0)) {
+  /*--- Check for the presence of any periodic BCs and disable multigrid
+   for now if found. ---*/
+
+  if ((config->GetnMarker_Periodic() != 0) && (config->GetnMGLevels() > 0)) {
     if (rank == MASTER_NODE)
       cout << "WARNING: Periodicity has been detected. Disabling multigrid. "<< endl;
     config->SetMGLevels(0);
