@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -109,6 +110,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   bool fsi     = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
   string filename_ = config->GetSolution_FlowFileName();
 
   unsigned short direct_diff = config->GetDirectDiff();
@@ -230,7 +232,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   
@@ -526,7 +528,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
     node[iPoint] = new CIncEulerVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (fsi || multizone){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
@@ -1717,7 +1719,7 @@ void CIncEulerSolver::Set_MPI_Primitive_Limiter(CGeometry *geometry, CConfig *co
   
 }
 
-void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *config, unsigned short iMesh) {
+void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMesh) {
   
   su2double Temperature_FreeStream = 0.0,  ModVel_FreeStream = 0.0,Energy_FreeStream = 0.0,
   ModVel_FreeStreamND = 0.0, Omega_FreeStream = 0.0, Omega_FreeStreamND = 0.0, Viscosity_FreeStream = 0.0,
@@ -1729,7 +1731,7 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
   Tke_FreeStreamND = 0.0, Energy_FreeStreamND = 0.0,
   Total_UnstTimeND = 0.0, Delta_UnstTimeND = 0.0;
   
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   
   /*--- Local variables ---*/
   
@@ -1777,6 +1779,22 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
       Pressure_Thermodynamic = FluidModel->GetPressure();
       config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
       break;
+      
+    case INC_IDEAL_GAS_POLY:
+      
+      config->SetGas_Constant(UNIVERSAL_GAS_CONSTANT/(config->GetMolecular_Weight()/1000.0));
+      Pressure_Thermodynamic = Density_FreeStream*Temperature_FreeStream*config->GetGas_Constant();
+      FluidModel = new CIncIdealGasPolynomial(config->GetGas_Constant(), Pressure_Thermodynamic);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar), iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStream);
+      Pressure_Thermodynamic = FluidModel->GetPressure();
+      config->SetPressure_Thermodynamic(Pressure_Thermodynamic);
+      break;
 
     default:
 
@@ -1794,6 +1812,9 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref());
     config->SetMu_SND(config->GetMu_S());
     config->SetMu_ConstantND(config->GetMu_Constant());
+    
+    for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar), iVar);
 
     /*--- Use the fluid model to compute the dimensional viscosity/conductivity. ---*/
 
@@ -1921,6 +1942,18 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
       FluidModel->SetTDState_T(Temperature_FreeStreamND);
       break;
       
+    case INC_IDEAL_GAS_POLY:
+      FluidModel = new CIncIdealGasPolynomial(Gas_ConstantND, Pressure_ThermodynamicND);
+      if (viscous) {
+        /*--- Variable Cp model via polynomial. ---*/
+        config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(0)/Gas_Constant_Ref, 0);
+        for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+          config->SetCp_PolyCoeffND(config->GetCp_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Gas_Constant_Ref, iVar);
+        FluidModel->SetCpModel(config);
+      }
+      FluidModel->SetTDState_T(Temperature_FreeStreamND);
+      break;
+      
   }
   
   Energy_FreeStreamND = FluidModel->GetStaticEnergy() + 0.5*ModVel_FreeStreamND*ModVel_FreeStreamND;
@@ -1931,14 +1964,27 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
 
     config->SetMu_ConstantND(config->GetMu_Constant()/Viscosity_Ref);
     
-    /*--- Sutherland's model ---*/    
+    /*--- Sutherland's model ---*/
+    
     config->SetMu_RefND(config->GetMu_Ref()/Viscosity_Ref);
     config->SetMu_SND(config->GetMu_S()/config->GetTemperature_Ref());
     config->SetMu_Temperature_RefND(config->GetMu_Temperature_Ref()/config->GetTemperature_Ref());
     
+    /*--- Viscosity model via polynomial. ---*/
+
+    config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(0)/Viscosity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetMu_PolyCoeffND(config->GetMu_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Viscosity_Ref, iVar);
+    
     /*--- Constant thermal conductivity model ---*/
 
     config->SetKt_ConstantND(config->GetKt_Constant()/Conductivity_Ref);
+    
+    /*--- Conductivity model via polynomial. ---*/
+
+    config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(0)/Conductivity_Ref, 0);
+    for (iVar = 1; iVar < config->GetnPolyCoeffs(); iVar++)
+      config->SetKt_PolyCoeffND(config->GetKt_PolyCoeff(iVar)*pow(Temperature_Ref,iVar)/Conductivity_Ref, iVar);
     
     /*--- Set up the transport property models. ---*/
 
@@ -2017,230 +2063,246 @@ void CIncEulerSolver::SetNondimensionalization(CGeometry *geometry, CConfig *con
         break;
 
     }
-
-    cout <<"-- Input conditions:"<< endl;
     
-    switch (config->GetKind_FluidModel()) {
-      
-      case CONSTANT_DENSITY:
-        cout << "Fluid Model: CONSTANT_DENSITY "<< endl;
-        if (energy) {
-          cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-        }
-        if (boussinesq) cout << "Thermal expansion coefficient: " << config->GetThermal_Expansion_Coeff() << " K^-1." << endl;
-        cout << "Thermodynamic pressure not required." << endl;
-        break;
-        
-      case INC_IDEAL_GAS:
-        cout << "Fluid Model: INC_IDEAL_GAS "<< endl;
-        cout << "Variable density incompressible flow using ideal gas law." << endl;
-        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-        cout << "Molecular weight : "<< config->GetMolecular_Weight() << " g/mol" << endl;
-        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-        break;
-      
-    }
-    if (viscous) {
-      switch (config->GetKind_ViscosityModel()) {
-
-        case CONSTANT_VISCOSITY:
-          cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-          cout << "Constant Laminar Viscosity: " << config->GetMu_Constant();
-          if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
-          break;
-
-        case SUTHERLAND:
-          cout << "Viscosity Model: SUTHERLAND "<< endl;
-          cout << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
-          if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
-          if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Sutherland Constant: "<< config->GetMu_S();
-          if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
-          cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
-          cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
-          break;
-
-      }
-
-      if (energy) {
-        switch (config->GetKind_ConductivityModel()) {
-
-          case CONSTANT_PRANDTL:
-            cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
-            cout << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< endl;
-            cout << "Prandtl (Turbulent): " << config->GetPrandtl_Turb()<< endl;
-            break;
-
-          case CONSTANT_CONDUCTIVITY:
-            cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-            cout << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << endl;
-            cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
-            break;
-
-        }
-      }
-
-    }
-    
-    if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
-      cout << "Bulk modulus: " << config->GetBulk_Modulus();
-      if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    }
-
-    cout << "Initial dynamic pressure: " << config->GetPressure_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
-    cout << "Initial total pressure: " << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
-    if (energy) {
-      cout << "Initial temperature: " << config->GetTemperature_FreeStream();
-      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    }
-
-    cout << "Initial density: " << config->GetDensity_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
-    if (nDim == 2) {
-      cout << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ")";
-    }
-    if (nDim == 3) {
-      cout << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
-    }
-    if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
-    
-    cout << "Magnitude: "  << config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
-    if (viscous) {
-      cout << "Initial laminar viscosity: " << config->GetViscosity_FreeStream();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-      if (turbulent) {
-        cout << "Initial turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-        cout << "Initial specific dissipation: " << config->GetOmega_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " 1/s." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
-      }
-    }
-    
-    if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
-    
-    /*--- Print out reference values. ---*/
-    
-    cout <<"-- Reference values:"<< endl;
-
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-      cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-    } else {
-      if (energy) {
-        cout << "Reference specific heat: " << config->GetGas_Constant_Ref();
-        if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-      }
-    }
-
-    cout << "Reference pressure: " << config->GetPressure_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
-    if (energy) {
-      cout << "Reference temperature: " << config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    }
-
-    cout << "Reference density: " << config->GetDensity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
-    cout << "Reference velocity: " << config->GetVelocity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
-    cout << "Reference length: " << config->GetLength_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
-
-    if (viscous) {
-      cout << "Reference viscosity: " << config->GetViscosity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-    }
-    
-    if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
-    
-    /*--- Print out resulting non-dim values here. ---*/
-    
-    cout << "-- Resulting non-dimensional state:" << endl;
-    cout << "Mach number (non-dim): " << config->GetMach() << endl;
-    if (viscous) {
-      cout << "Reynolds number (per m): " << config->GetReynolds() << endl;
-    }
-    
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
-      cout << "Initial thermodynamic pressure (non-dim): " << config->GetPressure_ThermodynamicND() << endl;
-    } else {
-      if (energy) {
-        cout << "Specific heat at constant pressure (non-dim): " << config->GetSpecific_Heat_CpND() << endl;
-        if (boussinesq) cout << "Thermal expansion coefficient (non-dim.): " << config->GetThermal_Expansion_CoeffND() << " K^-1." << endl;
-      }
-    }
-    
-    if (energy) cout << "Initial temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
-    cout << "Initial pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
-    cout << "Initial density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
-    
-    if (nDim == 2) {
-      cout << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << "). ";
-    } else {
-      cout << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
-    }
-    cout << "Magnitude: "   << config->GetModVel_FreeStreamND() << endl;
-    
-    if (viscous) {
-      cout << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
-      if (turbulent) {
-        cout << "Initial turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
-        cout << "Initial specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
-      }
-    }
-    
-    if (unsteady) {
-      cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
-      cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
-    }
+    stringstream NonDimTableOut, ModelTableOut;
+    stringstream Unit;  
     
     cout << endl;
+    PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
+    ModelTableOut <<"-- Models:"<< endl;
+
+    ModelTable.AddColumn("Viscosity Model", 25);
+    ModelTable.AddColumn("Conductivity Model", 26);
+    ModelTable.AddColumn("Fluid Model", 25);
+    ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    ModelTable.PrintHeader();
     
+    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);    
+    NonDimTable.AddColumn("Name", 22);
+    NonDimTable.AddColumn("Dim. value", 14);
+    NonDimTable.AddColumn("Ref. value", 14);
+    NonDimTable.AddColumn("Unit", 10);
+    NonDimTable.AddColumn("Non-dim. value", 14);
+    NonDimTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    
+    NonDimTableOut <<"-- Fluid properties:"<< endl;
+    
+    NonDimTable.PrintHeader();
+    
+    if (viscous){
+      
+      switch(config->GetKind_ViscosityModel()){
+      case CONSTANT_VISCOSITY:
+        ModelTable << "CONSTANT_VISCOSITY";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case SUTHERLAND:
+        ModelTable << "SUTHERLAND";        
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "K";
+        else if (config->GetSystemMeasurements() == US) Unit << "R";
+        NonDimTable << "Sutherland Temp." << config->GetMu_Temperature_Ref() <<  config->GetTemperature_Ref() << Unit.str() << config->GetMu_Temperature_RefND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "K";
+        else if (config->GetSystemMeasurements() == US) Unit << "R";
+        NonDimTable << "Sutherland Const." << config->GetMu_S() << config->GetTemperature_Ref() << Unit.str() << config->GetMu_SND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case POLYNOMIAL_VISCOSITY:
+        ModelTable << "POLYNOMIAL_VISCOSITY";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          stringstream ss;
+          ss << iVar;
+          if (config->GetMu_PolyCoeff(iVar) != 0.0)
+            NonDimTable << "Mu(T) Poly. Coeff. " + ss.str()  << config->GetMu_PolyCoeff(iVar) << config->GetMu_PolyCoeff(iVar)/config->GetMu_PolyCoeffND(iVar) << "-" << config->GetMu_PolyCoeffND(iVar);
+        }
+        Unit.str("");
+        NonDimTable.PrintFooter();        
+        break;
+      }
+
+      switch(config->GetKind_ConductivityModel()){
+      case CONSTANT_PRANDTL:
+        ModelTable << "CONSTANT_PRANDTL";
+        NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();         
+        Unit.str("");
+        NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case CONSTANT_CONDUCTIVITY:
+        ModelTable << "CONSTANT_CONDUCTIVITY";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case POLYNOMIAL_CONDUCTIVITY:
+        ModelTable << "POLYNOMIAL_CONDUCTIVITY";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          stringstream ss;
+          ss << iVar;
+          if (config->GetKt_PolyCoeff(iVar) != 0.0)
+            NonDimTable << "Kt(T) Poly. Coeff. " + ss.str()  << config->GetKt_PolyCoeff(iVar) << config->GetKt_PolyCoeff(iVar)/config->GetKt_PolyCoeffND(iVar) << "-" << config->GetKt_PolyCoeffND(iVar);
+        }
+        Unit.str("");
+        NonDimTable.PrintFooter();  
+        break;
+      }
+    }
+    
+    switch (config->GetKind_FluidModel()){
+    case CONSTANT_DENSITY:
+      ModelTable << "CONSTANT_DENSITY";
+      if (energy){
+        Unit << "N.m/kg.K";
+        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
+        Unit.str("");
+      }
+      if (boussinesq){
+        Unit << "K^-1";
+        NonDimTable << "Thermal Exp." << config->GetThermal_Expansion_Coeff() << config->GetThermal_Expansion_Coeff()/config->GetThermal_Expansion_CoeffND() << Unit.str() <<  config->GetThermal_Expansion_CoeffND();         
+        Unit.str("");
+      }
+      Unit << "Pa";
+      NonDimTable << "Bulk Modulus" << config->GetBulk_Modulus() << 1.0 << Unit.str() <<  config->GetBulk_Modulus();         
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    case INC_IDEAL_GAS:
+      ModelTable << "INC_IDEAL_GAS";      
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight()<< 1.0 << Unit.str() << config->GetMolecular_Weight();         
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();         
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();         
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    case INC_IDEAL_GAS_POLY:
+      ModelTable << "INC_IDEAL_GAS_POLY";             
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight()<< 1.0 << Unit.str() << config->GetMolecular_Weight();         
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();         
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();         
+      Unit.str("");
+      for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+        stringstream ss;
+        ss << iVar;
+        if (config->GetCp_PolyCoeff(iVar) != 0.0)
+          NonDimTable << "Cp(T) Poly. Coeff. " + ss.str()  << config->GetCp_PolyCoeff(iVar) << config->GetCp_PolyCoeff(iVar)/config->GetCp_PolyCoeffND(iVar) << "-" << config->GetCp_PolyCoeffND(iVar);
+      }
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    }
+
+    
+    NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
+    NonDimTable.PrintHeader();
+
+    if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
+    else if (config->GetSystemMeasurements() == US) Unit << "psf";
+    NonDimTable << "Dynamic Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
+    else if (config->GetSystemMeasurements() == US) Unit << "psf";
+    NonDimTable << "Total Pressure" << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream() 
+                << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND() + 0.5*config->GetDensity_FreeStreamND()*config->GetModVel_FreeStreamND()*config->GetModVel_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "kg/m^3";
+    else if (config->GetSystemMeasurements() == US) Unit << "slug/ft^3";
+    NonDimTable << "Density" << config->GetDensity_FreeStream() << config->GetDensity_Ref() << Unit.str() << config->GetDensity_FreeStreamND();
+    Unit.str("");
+    if (energy){
+      if      (config->GetSystemMeasurements() == SI) Unit << "K";
+      else if (config->GetSystemMeasurements() == US) Unit << "R";
+      NonDimTable << "Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
+      Unit.str("");
+    }
+    if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
+    else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
+    NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
+    NonDimTable << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
+    if (nDim == 3){
+      NonDimTable << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
+    }
+    NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
+    Unit.str("");
+
+    if (viscous){
+      NonDimTable.PrintFooter();
+      if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+      NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
+      Unit.str("");
+      if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
+      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      Unit.str("");
+      if (turbulent){
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+        NonDimTable << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "1/s";
+        NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+    }
+    
+    NonDimTable.PrintFooter();
+    NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
+    if (viscous){
+      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
+    }
+    
+    NonDimTable.PrintFooter();
+    ModelTable.PrintFooter();
+
+    if (unsteady){
+      NonDimTable.PrintHeader();
+      NonDimTableOut << "-- Unsteady conditions" << endl;
+      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      Unit.str("");
+      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+    }
+    
+
+    cout << ModelTableOut.str();
+    cout << NonDimTableOut.str();
   }
+  
+  
   
 }
 
@@ -2366,6 +2428,7 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   bool center_jst       = center && (config->GetKind_Centered_Flow() == JST);
   bool fixed_cl         = config->GetFixed_CL_Mode();
   bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool outlet           = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -2409,6 +2472,10 @@ void CIncEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contai
   /*--- Update the beta value based on the maximum velocity. ---*/
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
+  
+  /*--- Compute properties needed for mass flow BCs. ---*/
+  
+  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
 
   /*--- Initialize the Jacobian matrices ---*/
   
@@ -5047,56 +5114,65 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       case MAXIMUM_HEATFLUX:
         Total_ComboObj+=Weight_ObjFunc*Surface_MaxHF_Visc[iMarker_Monitoring];
         break;
-
-        /*--- The following are not per-surface, and as a result will be
-          double-counted iff multiple surfaces are specified as well as multi-objective ---*/
-
-      case INVERSE_DESIGN_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
-        break;
-      case INVERSE_DESIGN_HEATFLUX:
-        Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
-        break;
-      case THRUST_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CT;
-        break;
-      case TORQUE_COEFFICIENT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CQ;
-        break;
-      case FIGURE_OF_MERIT:
-        Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
-        break;
-      case SURFACE_TOTAL_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
-        break;
-      case SURFACE_STATIC_PRESSURE:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
-        break;
-      case SURFACE_MASSFLOW:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
-        break;
-      case SURFACE_UNIFORMITY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
-        break;
-      case SURFACE_SECONDARY:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
-        break;
-      case SURFACE_MOM_DISTORTION:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
-        break;
-      case SURFACE_SECOND_OVER_UNIFORM:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
-        break;
-      case SURFACE_PRESSURE_DROP:
-        Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
-        break;
-      case CUSTOM_OBJFUNC:
-        Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
-        break;
       default:
         break;
 
     }
+  }
+  
+  /*--- The following are not per-surface, and so to avoid that they are
+   double-counted when multiple surfaces are specified, they have been
+   placed outside of the loop above. In addition, multi-objective mode is
+   also disabled for these objective functions (error thrown at start). ---*/
+  
+  Weight_ObjFunc = config->GetWeight_ObjFunc(0);
+  Kind_ObjFunc   = config->GetKind_ObjFunc(0);
+  
+  switch(Kind_ObjFunc) {
+    case INVERSE_DESIGN_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*Total_CpDiff;
+      break;
+    case INVERSE_DESIGN_HEATFLUX:
+      Total_ComboObj+=Weight_ObjFunc*Total_HeatFluxDiff;
+      break;
+    case THRUST_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CT;
+      break;
+    case TORQUE_COEFFICIENT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CQ;
+      break;
+    case FIGURE_OF_MERIT:
+      Total_ComboObj+=Weight_ObjFunc*Total_CMerit;
+      break;
+    case SURFACE_TOTAL_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_TotalPressure(0);
+      break;
+    case SURFACE_STATIC_PRESSURE:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Pressure(0);
+      break;
+    case SURFACE_MASSFLOW:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MassFlow(0);
+      break;
+    case SURFACE_UNIFORMITY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_Uniformity(0);
+      break;
+    case SURFACE_SECONDARY:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondaryStrength(0);
+      break;
+    case SURFACE_MOM_DISTORTION:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_MomentumDistortion(0);
+      break;
+    case SURFACE_SECOND_OVER_UNIFORM:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_SecondOverUniform(0);
+      break;
+    case SURFACE_PRESSURE_DROP:
+      Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
+      break;
+    case CUSTOM_OBJFUNC:
+      Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
+      break;
+    default:
+      break;
   }
   
 }
@@ -5467,10 +5543,12 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint;
   unsigned long Point_Normal;
-  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area;
+  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Area, P_total, P_domain, Vn;
   su2double *V_inlet, *V_domain;
   su2double UnitFlowDir[3] = {0.0,0.0,0.0};
-  
+  su2double dV[3] = {0.0,0.0,0.0};
+  su2double Damping = config->GetInc_Inlet_Damping();
+
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool viscous       = config->GetViscous();
@@ -5527,34 +5605,107 @@ void CIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
       
       V_domain = node[iPoint]->GetPrimitive();
 
+      /*--- Neumann condition for dynamic pressure ---*/
+      
+      V_inlet[0] = node[iPoint]->GetPressure();
+      
       /*--- The velocity is either prescribed or computed from total pressure. ---*/
 
       switch (Kind_Inlet) {
-
-        /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
-
-        case VELOCITY_INLET:
-
-        /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
           
-        Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
-
-        /*--- Store the velocity in the primitive variable vector. ---*/
-
-        for (iDim = 0; iDim < nDim; iDim++)
-          V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
-
-        break;
-
+          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+          
+        case VELOCITY_INLET:
+          
+          /*--- Retrieve the specified velocity and temperature for the inlet. ---*/
+          
+          Vel_Mag  = Inlet_Ptotal[val_marker][iVertex]/config->GetVelocity_Ref();
+          
+          /*--- Store the velocity in the primitive variable vector. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            V_inlet[iDim+1] = Vel_Mag*UnitFlowDir[iDim];
+          
+          /*--- Dirichlet condition for temperature (if energy is active) ---*/
+          
+          V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+          
+          break;
+          
+          /*--- Stagnation pressure has been specified at the inlet. ---*/
+          
+        case PRESSURE_INLET:
+          
+          /*--- Retrieve the specified total pressure for the inlet. ---*/
+          
+          P_total = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+          
+          /*--- Store the current static pressure for clarity. ---*/
+          
+          P_domain = node[iPoint]->GetPressure();
+          
+          /*--- Check for back flow through the inlet. ---*/
+          
+          Vn = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Vn += V_domain[iDim+1]*(-1.0*Normal[iDim]/Area);
+          }
+          
+          /*--- If the local static pressure is larger than the specified
+           total pressure or the velocity is directed upstream, we have a
+           back flow situation. The specified total pressure should be used
+           as a static pressure condition and the velocity from the domain
+           is used for the BC. ---*/
+          
+          if ((P_domain > P_total) || (Vn < 0.0)) {
+            
+            /*--- Back flow: use the prescribed P_total as static pressure. ---*/
+            
+            V_inlet[0] = Inlet_Ptotal[val_marker][iVertex]/config->GetPressure_Ref();
+            
+            /*--- Neumann condition for velocity. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_inlet[iDim+1] = V_domain[iDim+1];
+            
+            /*--- Neumann condition for the temperature. ---*/
+            
+            V_inlet[nDim+1] = node[iPoint]->GetTemperature();
+            
+          } else {
+            
+            /*--- Update the velocity magnitude using the total pressure. ---*/
+            
+            Vel_Mag = sqrt((P_total - P_domain)/(0.5*node[iPoint]->GetDensity()));
+            
+            /*--- If requested, use the local boundary normal (negative),
+             instead of the prescribed flow direction in the config. ---*/
+            
+            if (config->GetInc_Inlet_UseNormal()) {
+              for (iDim = 0; iDim < nDim; iDim++)
+                UnitFlowDir[iDim] = -Normal[iDim]/Area;
+            }
+            
+            /*--- Compute the delta change in velocity in each direction. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              dV[iDim] = Vel_Mag*UnitFlowDir[iDim] - V_domain[iDim+1];
+            
+            /*--- Update the velocity in the primitive variable vector.
+             Note we use damping here to improve stability/convergence. ---*/
+            
+            for (iDim = 0; iDim < nDim; iDim++)
+              V_inlet[iDim+1] = V_domain[iDim+1] + Damping*dV[iDim];
+            
+            /*--- Dirichlet condition for temperature (if energy is active) ---*/
+            
+            V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
+            
+          }
+          
+          break;
+          
       }
-      
-      /*--- Neumann condition for dynamic pressure ---*/
-
-      V_inlet[0] = node[iPoint]->GetPressure();
-
-      /*--- Dirichlet condition for temperature (if energy is active) ---*/
-      
-      V_inlet[nDim+1] = Inlet_Ttotal[val_marker][iVertex]/config->GetTemperature_Ref();
 
       /*--- Access density at the node. This is either constant by
         construction, or will be set fixed implicitly by the temperature
@@ -5646,14 +5797,18 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
   su2double Area;
-  su2double *V_outlet, *V_domain, P_Outlet;
-  
+  su2double *V_outlet, *V_domain, P_Outlet = 0.0, P_domain;
+  su2double mDot_Target, mDot_Old, dP, Density_Avg, Area_Outlet;
+  su2double Damping = config->GetInc_Outlet_Damping();
+
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
   bool viscous       = config->GetViscous();
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
 
   su2double *Normal = new su2double[nDim];
+  
+  unsigned short Kind_Outlet = config->GetKind_Inc_Outlet(Marker_Tag);
   
   /*--- Loop over all the vertices on this boundary marker ---*/
   
@@ -5686,21 +5841,77 @@ void CIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
       /*--- Current solution at this boundary node ---*/
       
       V_domain = node[iPoint]->GetPrimitive();
-
-      /*--- Retrieve the specified back pressure for this outlet. ---*/
-
-      P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
-
-      /*--- The pressure is prescribed at the outlet. ---*/
       
-      V_outlet[0] = P_Outlet;
-
-      /*--- Neumann condition for the velocity ---*/
+      /*--- Store the current static pressure for clarity. ---*/
       
-      for (iDim = 0; iDim < nDim; iDim++) {
-        V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+      P_domain = node[iPoint]->GetPressure();
+      
+      /*--- Compute a boundary value for the pressure depending on whether
+       we are prescribing a back pressure or a mass flow target. ---*/
+      
+      switch (Kind_Outlet) {
+          
+          /*--- Velocity and temperature (if required) been specified at the inlet. ---*/
+          
+        case PRESSURE_OUTLET:
+          
+          /*--- Retrieve the specified back pressure for this outlet. ---*/
+          
+          P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+          
+          /*--- The pressure is prescribed at the outlet. ---*/
+          
+          V_outlet[0] = P_Outlet;
+          
+          /*--- Neumann condition for the velocity. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+          }
+          
+          break;
+          
+          /*--- A mass flow target has been specified for the outlet. ---*/
+          
+        case MASS_FLOW_OUTLET:
+          
+          /*--- Retrieve the specified target mass flow at the outlet. ---*/
+          
+          mDot_Target = config->GetOutlet_Pressure(Marker_Tag)/(config->GetDensity_Ref() * config->GetVelocity_Ref());
+
+          /*--- Retrieve the old mass flow, density, and area of the outlet,
+           which has been computed in a preprocessing step. These values
+           were stored in non-dim. form in the config container. ---*/
+          
+          mDot_Old    = config->GetOutlet_MassFlow(Marker_Tag);
+          Density_Avg = config->GetOutlet_Density(Marker_Tag);
+          Area_Outlet = config->GetOutlet_Area(Marker_Tag);
+
+          /*--- Compute the pressure increment based on the difference
+           between the current and target mass flow. Note that increasing
+           pressure decreases flow speed. ---*/
+          
+          dP = 0.5*Density_Avg*(mDot_Old*mDot_Old - mDot_Target*mDot_Target)/((Density_Avg*Area_Outlet)*(Density_Avg*Area_Outlet));
+          
+          /*--- Update the new outlet pressure. Note that we use damping
+           here to improve stability/convergence. ---*/
+          
+          P_Outlet = P_domain + Damping*dP;
+
+          /*--- The pressure is prescribed at the outlet. ---*/
+          
+          V_outlet[0] = P_Outlet;
+          
+          /*--- Neumann condition for the velocity ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++) {
+            V_outlet[iDim+1] = node[iPoint]->GetPrimitive(iDim+1);
+          }
+          
+          break;
+          
       }
-
+      
       /*--- Neumann condition for the temperature. ---*/
 
       V_outlet[nDim+1] = node[iPoint]->GetTemperature();
@@ -6111,415 +6322,223 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
 }
 
-void CIncEulerSolver::SetFlow_Displacement(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
-                                        CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-    unsigned short iDim;
-    unsigned long iVertex;
-    su2double *Coord, VarCoord[3] = {0,0,0};
-
-  #ifndef HAVE_MPI
-    unsigned long iPoint_Donor, iPoint;
-    unsigned short iMarker;
-    su2double *CoordDonor, *DisplacementDonor;
-
-    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-
-      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
-
-        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-
-          iPoint = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetNode();
-
-          iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorPoint();
-
-          Coord = flow_geometry[MESH_0]->node[iPoint]->GetCoord();
-
-          CoordDonor = fea_geometry[MESH_0]->node[iPoint_Donor]->GetCoord();
-
-          /*--- The displacements come from the predicted solution ---*/
-          
-          DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
-
-          for (iDim = 0; iDim < nDim; iDim++)
-
-            VarCoord[iDim] = (CoordDonor[iDim]+DisplacementDonor[iDim])-Coord[iDim];
-
-          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
-        }
-      }
-    }
-
-  #else
-  unsigned long nLocalVertexStruct = 0, nLocalVertexFlow = 0;
-
-  unsigned short nMarkerFSI, nMarkerStruct, nMarkerFlow;    // Number of markers on FSI problem, FEA and Flow side
-  unsigned short iMarkerFSI, iMarkerStruct, iMarkerFlow;    // Variables for iteration over markers
-
-  unsigned long MaxLocalVertexStruct = 0, MaxLocalVertexFlow = 0;
-
-  unsigned long nBuffer_StructCoord = 0, nBuffer_FlowNewCoord = 0;
-  unsigned long nBuffer_DonorIndices = 0, nBuffer_SetIndex = 0;
-
-  unsigned long Point_Flow, Point_Struct;
-  long Point_Flow_Rcv, Processor_Flow_Rcv;
-  unsigned long Processor_Flow;
-
-  int Marker_Flow = -1, Marker_Struct = -1;
-
-  int iProcessor, nProcessor = 0;
-
-
-  su2double *Coord_Struct, *Displacement_Struct;
-
-  /*--- Number of markers on the FSI interface ---*/
-
-  nMarkerFSI     = (flow_config->GetMarker_n_ZoneInterface())/2;
-  nMarkerStruct  = fea_geometry[MESH_0]->GetnMarker();
-  nMarkerFlow    = flow_geometry[MESH_0]->GetnMarker();
-
-  nProcessor = size;
-
-  /*--- Outer loop over the markers on the FSI interface: compute one by one ---*/
-  /*--- The tags are always an integer greater than 1: loop from 1 to nMarkerFSI ---*/
-
-  for (iMarkerFSI = 1; iMarkerFSI <= nMarkerFSI; iMarkerFSI++){
-
-    Marker_Struct = -1;
-    Marker_Flow = -1;
-
-    /*--- Initialize pointer buffers inside the loop, so we can delete for each marker. ---*/
-    unsigned long Buffer_Send_nVertexStruct[1], *Buffer_Recv_nVertexStruct = NULL;
-    unsigned long Buffer_Send_nVertexFlow[1], *Buffer_Recv_nVertexFlow = NULL;
-
-    /*--- The markers on the fluid and structural side are tagged with the same index.
-     *--- This is independent of the MPI domain decomposition.
-     *--- We need to loop over all markers on structural side and get the number of nodes
-     *--- that belong to each FSI marker for each processor ---*/
-
-    /*--- On the structural side ---*/
-
-    for (iMarkerStruct = 0; iMarkerStruct < nMarkerStruct; iMarkerStruct++){
-      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFEA) equals the index we are looping at ---*/
-      if ( fea_config->GetMarker_All_ZoneInterface(iMarkerStruct) == iMarkerFSI ){
-        /*--- We have identified the local index of the FEA marker ---*/
-        /*--- Store the number of local points that belong to markFEA on each processor ---*/
-        /*--- This includes the halo nodes ---*/
-        nLocalVertexStruct = fea_geometry[MESH_0]->GetnVertex(iMarkerStruct);
-        /*--- Store the identifier for the structural marker ---*/
-        Marker_Struct = iMarkerStruct;
-        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the FEA markers ---*/
-        nLocalVertexStruct = 0;
-        Marker_Struct = -1;
-      }
-    }
-
-    /*--- On the fluid side ---*/
-
-    for (iMarkerFlow = 0; iMarkerFlow < nMarkerFlow; iMarkerFlow++){
-      /*--- If the tag GetMarker_All_ZoneInterface(iMarkerFlow) equals the index we are looping at ---*/
-      if ( flow_config->GetMarker_All_ZoneInterface(iMarkerFlow) == iMarkerFSI ){
-        /*--- We have identified the local index of the Flow marker ---*/
-        /*--- Store the number of local points that belong to markFlow on each processor ---*/
-        /*--- This includes the halo nodes ---*/
-        nLocalVertexFlow = flow_geometry[MESH_0]->GetnVertex(iMarkerFlow);
-        /*--- Store the identifier for the fluid marker ---*/
-        Marker_Flow = iMarkerFlow;
-        /*--- Exit the for loop: we have found the local index for iMarkerFSI on the FEA side ---*/
-        break;
-      }
-      else {
-        /*--- If the tag hasn't matched any tag within the Flow markers ---*/
-        nLocalVertexFlow = 0;
-        Marker_Flow = -1;
-      }
-    }
-
-    Buffer_Send_nVertexStruct[0] = nLocalVertexStruct;                 // Retrieve total number of vertices on FEA marker
-    Buffer_Send_nVertexFlow[0] = nLocalVertexFlow;                 // Retrieve total number of vertices on Flow marker
-    if (rank == MASTER_NODE) Buffer_Recv_nVertexStruct = new unsigned long[size];   // Allocate memory to receive how many vertices are on each rank on the structural side
-    if (rank == MASTER_NODE) Buffer_Recv_nVertexFlow = new unsigned long[size];  // Allocate memory to receive how many vertices are on each rank on the fluid side
-
-    /*--- We receive MaxLocalVertexFEA as the maximum number of vertices in one single processor on the structural side---*/
-    SU2_MPI::Allreduce(&nLocalVertexStruct, &MaxLocalVertexStruct, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-    /*--- We receive MaxLocalVertexFlow as the maximum number of vertices in one single processor on the fluid side ---*/
-    SU2_MPI::Allreduce(&nLocalVertexFlow, &MaxLocalVertexFlow, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-
-    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the structural side ---*/
-    SU2_MPI::Gather(&Buffer_Send_nVertexStruct, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexStruct, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-    /*--- We gather a vector in MASTER_NODE that determines how many elements are there on each processor on the fluid side ---*/
-    SU2_MPI::Gather(&Buffer_Send_nVertexFlow, 1, MPI_UNSIGNED_LONG, Buffer_Recv_nVertexFlow, 1, MPI_UNSIGNED_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- We will be gathering the structural coordinates into the master node ---*/
-    /*--- Then we will distribute them using a scatter operation into the appropriate fluid processor ---*/
-    nBuffer_StructCoord = MaxLocalVertexStruct * nDim;
-    nBuffer_FlowNewCoord = MaxLocalVertexFlow * nDim;
-
-    /*--- We will be gathering donor index and donor processor (for structure -> donor = flow) ---*/
-    /*--- Then we will pass on to the fluid side the index (flow point) to the appropriate processor ---*/
-    nBuffer_DonorIndices = 2 * MaxLocalVertexStruct;
-    nBuffer_SetIndex = MaxLocalVertexFlow;
-
-    /*--- Send and Recv buffers ---*/
-
-    /*--- Buffers to send and receive the structural coordinates ---*/
-    su2double *Buffer_Send_StructCoord = new su2double[nBuffer_StructCoord];
-    su2double *Buffer_Recv_StructCoord = NULL;
-
-    /*--- Buffers to send and receive the donor index and processor ---*/
-    long *Buffer_Send_DonorIndices = new long[nBuffer_DonorIndices];
-    long *Buffer_Recv_DonorIndices = NULL;
-
-    /*--- Buffers to send and receive the new fluid coordinates ---*/
-    su2double *Buffer_Send_FlowNewCoord = NULL;
-    su2double *Buffer_Recv_FlowNewCoord = new su2double[nBuffer_FlowNewCoord];
-
-    /*--- Buffers to send and receive the fluid index ---*/
-    long *Buffer_Send_SetIndex = NULL;
-    long *Buffer_Recv_SetIndex = new long[nBuffer_SetIndex];
-
-    /*--- Prepare the receive buffers (1st step) and send buffers (2nd step) on the master node only. ---*/
-
-    if (rank == MASTER_NODE) {
-      Buffer_Recv_StructCoord  = new su2double[size*nBuffer_StructCoord];
-      Buffer_Recv_DonorIndices = new long[size*nBuffer_DonorIndices];
-      Buffer_Send_FlowNewCoord = new su2double[size*nBuffer_FlowNewCoord];
-      Buffer_Send_SetIndex     = new long[size*nBuffer_SetIndex];
-    }
-
-    /*--- On the structural side ---*/
-
-    /*--- If this processor owns the marker we are looping at on the structural side ---*/
-
-    /*--- First we initialize all of the indices and processors to -1 ---*/
-    /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
-    for (iVertex = 0; iVertex < nBuffer_DonorIndices; iVertex++)
-      Buffer_Send_DonorIndices[iVertex] = -1;
-
-    if (Marker_Struct >= 0){
-
-      /*--- We have identified the local index of the FEA marker ---*/
-      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
-
-      for (iVertex = 0; iVertex < nLocalVertexStruct; iVertex++){
-
-            Point_Struct = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetNode();
-
-            Point_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorPoint();
-
-            Processor_Flow = fea_geometry[MESH_0]->vertex[Marker_Struct][iVertex]->GetDonorProcessor();
-
-            Coord_Struct = fea_geometry[MESH_0]->node[Point_Struct]->GetCoord();
-
-            /*--- The displacements come from the predicted solution ---*/
-            Displacement_Struct = fea_solution[MESH_0][FEA_SOL]->node[Point_Struct]->GetSolution_Pred();
-
-        for (iDim = 0; iDim < nDim; iDim++){
-          Buffer_Send_StructCoord[iVertex*nDim+iDim] = Coord_Struct[iDim] + Displacement_Struct[iDim];
-        }
-        /*--- If this processor owns the node ---*/
-        if (fea_geometry[MESH_0]->node[Point_Struct]->GetDomain()){
-          Buffer_Send_DonorIndices[2*iVertex]     = Point_Flow;
-          Buffer_Send_DonorIndices[2*iVertex + 1] = Processor_Flow;
-        }
-        else{
-          /*--- We set the values to be -1 to be able to identify them later as halo nodes ---*/
-          Buffer_Send_DonorIndices[2*iVertex]     = -1;
-          Buffer_Send_DonorIndices[2*iVertex + 1] = -1;
-        }
-
-      }
-    }
-
-    /*--- Once all the messages have been sent, we gather them all into the MASTER_NODE ---*/
-    SU2_MPI::Gather(Buffer_Send_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, Buffer_Recv_StructCoord, nBuffer_StructCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Gather(Buffer_Send_DonorIndices, nBuffer_DonorIndices, MPI_LONG, Buffer_Recv_DonorIndices, nBuffer_DonorIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    /*--- Counter to determine where in the array we have to set the information ---*/
-    long *Counter_Processor_Flow = NULL;
-    long iProcessor_Struct = 0, iIndex_Struct = 0;
-    long iProcessor_Flow = 0, iPoint_Flow = 0, iIndex_Flow = 0;
-
-    /*--- Now we pack the information to send it over to the different processors ---*/
-
-    if (rank == MASTER_NODE){
-
-      /*--- We set the counter to 0 ---*/
-      Counter_Processor_Flow = new long[nProcessor];
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-        Counter_Processor_Flow[iProcessor] = 0;
-      }
-
-      /*--- First we initialize the index vector to -1 ---*/
-      /*--- This helps on identifying halo nodes and avoids setting wrong values ---*/
-      for (iVertex = 0; iVertex < nProcessor*nBuffer_SetIndex; iVertex++)
-        Buffer_Send_SetIndex[iVertex] = -2;
-
-      /*--- As of now we do the loop over the structural points ---*/
-      /*--- The number of points for flow and structure does not necessarily have to match ---*/
-      /*--- In fact, it's possible that a processor asks for nFlow nodes and there are only ---*/
-      /*--- nStruc < nFlow available; this is due to halo nodes ---*/
-
-      /*--- For every processor from which we have received information ---*/
-      /*--- (This is, for every processor on the structural side) ---*/
-      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++){
-
-        /*--- This is the initial index on the coordinates buffer for that particular processor on the structural side ---*/
-        iProcessor_Struct = iProcessor*nBuffer_StructCoord;
-        /*--- This is the initial index on the donor index/processor buffer for that particular processor on the structural side ---*/
-        iIndex_Struct = iProcessor*nBuffer_DonorIndices;
-
-        /*--- For every vertex in the information retreived from iProcessor ---*/
-        for (iVertex = 0; iVertex < Buffer_Recv_nVertexStruct[iProcessor]; iVertex++) {
-
-          /*--- The processor and index for the flow are: ---*/
-          Processor_Flow_Rcv = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2+1];
-          Point_Flow_Rcv     = Buffer_Recv_DonorIndices[iIndex_Struct+iVertex*2];
-
-          /*--- Load the buffer at the appropriate position ---*/
-          /*--- This is determined on the fluid side by:
-           *--- Processor_Flow*nBuffer_FlowNewCoord -> Initial position of the processor array (fluid side)
-           *--- +
-           *--- Counter_Processor_Flow*nDim -> Initial position of the nDim array for the particular point on the fluid side
-           *--- +
-           *--- iDim -> Position within the nDim array that corresponds to a point
-           *---
-           *--- While on the structural side is:
-           *--- iProcessor*nBuffer_StructCoord -> Initial position on the processor array (structural side)
-           *--- +
-           *--- iVertex*nDim -> Initial position of the nDim array for the particular point on the structural side
-           */
-
-          /*--- We check that we are not setting the value for a halo node ---*/
-          if (Point_Flow_Rcv != -1){
-            iProcessor_Flow = Processor_Flow_Rcv*nBuffer_FlowNewCoord;
-            iIndex_Flow = Processor_Flow_Rcv*nBuffer_SetIndex;
-            iPoint_Flow = Counter_Processor_Flow[Processor_Flow_Rcv]*nDim;
-
-            for (iDim = 0; iDim < nDim; iDim++)
-              Buffer_Send_FlowNewCoord[iProcessor_Flow + iPoint_Flow + iDim] = Buffer_Recv_StructCoord[iProcessor_Struct + iVertex*nDim + iDim];
-
-            /*--- We set the fluid index at an appropriate position matching the coordinates ---*/
-            Buffer_Send_SetIndex[iIndex_Flow + Counter_Processor_Flow[Processor_Flow_Rcv]] = Point_Flow_Rcv;
-
-            Counter_Processor_Flow[Processor_Flow_Rcv]++;
-          }
-
-        }
-
-      }
-
-    }
-
-    /*--- Once all the messages have been prepared, we scatter them all from the MASTER_NODE ---*/
-    SU2_MPI::Scatter(Buffer_Send_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, Buffer_Recv_FlowNewCoord, nBuffer_FlowNewCoord, MPI_DOUBLE, MASTER_NODE, MPI_COMM_WORLD);
-    SU2_MPI::Scatter(Buffer_Send_SetIndex, nBuffer_SetIndex, MPI_LONG, Buffer_Recv_SetIndex, nBuffer_SetIndex, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
-
-    long indexPoint_iVertex, Point_Flow_Check;
-
-    /*--- For the flow marker we are studying ---*/
-    if (Marker_Flow >= 0){
-
-      /*--- We have identified the local index of the Flow marker ---*/
-      /*--- We loop over all the vertices in that marker and in that particular processor ---*/
-
-      for (iVertex = 0; iVertex < nLocalVertexFlow; iVertex++){
-
-        Point_Flow = flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->GetNode();
-
-        if (flow_geometry[MESH_0]->node[Point_Flow]->GetDomain()){
-          /*--- Find the index of the point Point_Flow in the buffer Buffer_Recv_SetIndex ---*/
-          indexPoint_iVertex = std::distance(Buffer_Recv_SetIndex, std::find(Buffer_Recv_SetIndex, Buffer_Recv_SetIndex + MaxLocalVertexFlow, Point_Flow));
-
-          Point_Flow_Check = Buffer_Recv_SetIndex[indexPoint_iVertex];
-
-          if (Point_Flow_Check < 0) {
-            SU2_MPI::Error("A nonphysical point is being considered for mesh deformation.", CURRENT_FUNCTION);
-          }
-
-          Coord = flow_geometry[MESH_0]->node[Point_Flow]->GetCoord();
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            VarCoord[iDim] = (Buffer_Recv_FlowNewCoord[indexPoint_iVertex*nDim+iDim])-Coord[iDim];
-
-          flow_geometry[MESH_0]->vertex[Marker_Flow][iVertex]->SetVarCoord(VarCoord);
-
-        }
-
-      }
-
-    }
-
-    delete [] Buffer_Send_StructCoord;
-    delete [] Buffer_Send_DonorIndices;
-    delete [] Buffer_Recv_FlowNewCoord;
-    delete [] Buffer_Recv_SetIndex;
-
-    if (rank == MASTER_NODE) {
-      delete [] Buffer_Recv_nVertexStruct;
-      delete [] Buffer_Recv_nVertexFlow;
-      delete [] Buffer_Recv_StructCoord;
-      delete [] Buffer_Recv_DonorIndices;
-      delete [] Buffer_Send_FlowNewCoord;
-      delete [] Buffer_Send_SetIndex;
-      delete [] Counter_Processor_Flow;
-    }
-
-
+void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output) {
+  
+  unsigned short iDim, iMarker;
+  unsigned long iVertex, iPoint;
+  su2double *V_outlet = NULL, Pressure, Temperature, Velocity[3], MassFlow,
+  Velocity2, Density, Area, Vel_Infty2, AxiFactor;
+  unsigned short iMarker_Outlet, nMarker_Outlet;
+  string Inlet_TagBound, Outlet_TagBound;
+  
+  bool axisymmetric = config->GetAxisymmetric();
+
+  bool write_heads = ((((config->GetExtIter() % (config->GetWrt_Con_Freq()*40)) == 0)
+                       && (config->GetExtIter()!= 0))
+                      || (config->GetExtIter() == 1));
+  
+  /*--- Get the number of outlet markers and check for any mass flow BCs. ---*/
+  
+  nMarker_Outlet = config->GetnMarker_Outlet();
+  bool Evaluate_BC = false;
+  for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+    Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+    if (config->GetKind_Inc_Outlet(Outlet_TagBound) == MASS_FLOW_OUTLET)
+      Evaluate_BC = true;
   }
-
-  #endif
-
-    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
-
-}
-
-void CIncEulerSolver::SetFlow_Displacement_Int(CGeometry **flow_geometry, CVolumetricMovement *flow_grid_movement,
-                                        CConfig *flow_config, CConfig *fea_config, CGeometry **fea_geometry, CSolver ***fea_solution) {
-    unsigned short iMarker, iDim, iDonor, nDonor;
-    unsigned long iVertex;
-    su2double VarCoord[3];
-
-    unsigned long iPoint_Donor;
-    su2double *DisplacementDonor, *DisplacementDonor_Prev, coeff;
-
-    for (iMarker = 0; iMarker < flow_config->GetnMarker_All(); iMarker++) {
-
-      if (flow_config->GetMarker_All_ZoneInterface(iMarker) != 0) {
-
-        for(iVertex = 0; iVertex < flow_geometry[MESH_0]->nVertex[iMarker]; iVertex++) {
-
-          for (iDim = 0; iDim < nDim; iDim++)
-            VarCoord[iDim]=0.0;
-
-          nDonor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetnDonorPoints();
-
-          for (iDonor = 0; iDonor < nDonor; iDonor++){
-            iPoint_Donor = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetInterpDonorPoint(iDonor);
-            coeff = flow_geometry[MESH_0]->vertex[iMarker][iVertex]->GetDonorCoeff(iDonor);
-
-            /*--- The displacements come from the predicted solution ---*/
-            DisplacementDonor = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred();
-
-            DisplacementDonor_Prev = fea_solution[MESH_0][FEA_SOL]->node[iPoint_Donor]->GetSolution_Pred_Old();
-
-            for (iDim = 0; iDim < nDim; iDim++)
-
-              VarCoord[iDim] += (DisplacementDonor[iDim] - DisplacementDonor_Prev[iDim])*coeff;
+  
+  /*--- If we have a massflow outlet BC, then we need to compute and
+   communicate the total massflow, density, and area through each outlet
+   boundary, so that it can be used in the iterative procedure to update
+   the back pressure until we converge to the desired mass flow. This
+   routine is called only once per iteration as a preprocessing and the
+   values for all outlets are stored and retrieved later in the BC_Outlet
+   routines. ---*/
+  
+  if (Evaluate_BC) {
+    
+    su2double *Outlet_MassFlow = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Density  = new su2double[config->GetnMarker_All()];
+    su2double *Outlet_Area     = new su2double[config->GetnMarker_All()];
+    
+    /*--- Comute MassFlow, average temp, press, etc. ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      
+      Outlet_MassFlow[iMarker] = 0.0;
+      Outlet_Density[iMarker]  = 0.0;
+      Outlet_Area[iMarker]     = 0.0;
+      
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW) ) {
+        
+        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+          
+          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+          
+          if (geometry->node[iPoint]->GetDomain()) {
+            
+            V_outlet = node[iPoint]->GetPrimitive();
+            
+            geometry->vertex[iMarker][iVertex]->GetNormal(Vector);
+            
+            if (axisymmetric) {
+              if (geometry->node[iPoint]->GetCoord(1) != 0.0)
+                AxiFactor = 2.0*PI_NUMBER*geometry->node[iPoint]->GetCoord(1);
+              else
+                AxiFactor = 1.0;
+            } else {
+              AxiFactor = 1.0;
+            }
+            
+            Temperature  = V_outlet[nDim+1];
+            Pressure     = V_outlet[0];
+            Density      = V_outlet[nDim+2];
+            
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            
+            for (iDim = 0; iDim < nDim; iDim++) {
+              Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
+              Velocity[iDim] = V_outlet[iDim+1];
+              Velocity2 += Velocity[iDim] * Velocity[iDim];
+              MassFlow += Vector[iDim] * AxiFactor * Density * Velocity[iDim];
+            }
+            Area = sqrt (Area);
+            
+            Outlet_MassFlow[iMarker] += MassFlow;
+            Outlet_Density[iMarker]  += Density*Area;
+            Outlet_Area[iMarker]     += Area;
+            
           }
-
-          flow_geometry[MESH_0]->vertex[iMarker][iVertex]->SetVarCoord(VarCoord);
         }
       }
     }
-    flow_grid_movement->SetVolume_Deformation(flow_geometry[MESH_0], flow_config, true);
-
+    
+    /*--- Copy to the appropriate structure ---*/
+    
+    su2double *Outlet_MassFlow_Local = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Local  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Local     = new su2double[nMarker_Outlet];
+    
+    su2double *Outlet_MassFlow_Total = new su2double[nMarker_Outlet];
+    su2double *Outlet_Density_Total  = new su2double[nMarker_Outlet];
+    su2double *Outlet_Area_Total     = new su2double[nMarker_Outlet];
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Local[iMarker_Outlet] = 0.0;
+      Outlet_Density_Local[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Local[iMarker_Outlet]     = 0.0;
+      
+      Outlet_MassFlow_Total[iMarker_Outlet] = 0.0;
+      Outlet_Density_Total[iMarker_Outlet]  = 0.0;
+      Outlet_Area_Total[iMarker_Outlet]     = 0.0;
+    }
+    
+    /*--- Copy the values to the local array for MPI ---*/
+    
+    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) == OUTLET_FLOW)) {
+        for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+          Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+          if (config->GetMarker_All_TagBound(iMarker) == Outlet_TagBound) {
+            Outlet_MassFlow_Local[iMarker_Outlet] += Outlet_MassFlow[iMarker];
+            Outlet_Density_Local[iMarker_Outlet]  += Outlet_Density[iMarker];
+            Outlet_Area_Local[iMarker_Outlet]     += Outlet_Area[iMarker];
+          }
+        }
+      }
+    }
+    
+    /*--- All the ranks to compute the total value ---*/
+    
+#ifdef HAVE_MPI
+    
+    SU2_MPI::Allreduce(Outlet_MassFlow_Local, Outlet_MassFlow_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Density_Local, Outlet_Density_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    SU2_MPI::Allreduce(Outlet_Area_Local, Outlet_Area_Total, nMarker_Outlet, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    
+#else
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      Outlet_MassFlow_Total[iMarker_Outlet] = Outlet_MassFlow_Local[iMarker_Outlet];
+      Outlet_Density_Total[iMarker_Outlet]  = Outlet_Density_Local[iMarker_Outlet];
+      Outlet_Area_Total[iMarker_Outlet]     = Outlet_Area_Local[iMarker_Outlet];
+    }
+    
+#endif
+    
+    for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+      if (Outlet_Area_Total[iMarker_Outlet] != 0.0) {
+        Outlet_Density_Total[iMarker_Outlet] /= Outlet_Area_Total[iMarker_Outlet];
+      }
+      else {
+        Outlet_Density_Total[iMarker_Outlet] = 0.0;
+      }
+      
+      if (iMesh == MESH_0) {
+        config->SetOutlet_MassFlow(iMarker_Outlet, Outlet_MassFlow_Total[iMarker_Outlet]);
+        config->SetOutlet_Density(iMarker_Outlet, Outlet_Density_Total[iMarker_Outlet]);
+        config->SetOutlet_Area(iMarker_Outlet, Outlet_Area_Total[iMarker_Outlet]);
+      }
+    }
+    
+    /*--- Screen output using the values already stored in the config container ---*/
+    
+    if ((rank == MASTER_NODE) && (iMesh == MESH_0) ) {
+      
+      cout.precision(5);
+      cout.setf(ios::fixed, ios::floatfield);
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+        cout << endl   << "---------------------------- Outlet properties --------------------------" << endl;
+      }
+      
+      for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
+        Outlet_TagBound = config->GetMarker_Outlet_TagBound(iMarker_Outlet);
+        if (write_heads && Output && !config->GetDiscrete_Adjoint()) {
+          
+          /*--- Geometry defintion ---*/
+          
+          cout <<"Outlet surface: " << Outlet_TagBound << "." << endl;
+          
+          if ((nDim ==3) || axisymmetric) {
+            cout <<"Area (m^2): " << config->GetOutlet_Area(Outlet_TagBound) << endl;
+          }
+          if (nDim == 2) {
+            cout <<"Length (m): " << config->GetOutlet_Area(Outlet_TagBound) << "." << endl;
+          }
+          
+          cout << setprecision(5) << "Outlet Avg. Density (kg/m^3): " <<  config->GetOutlet_Density(Outlet_TagBound) * config->GetDensity_Ref() << endl;
+          su2double Outlet_mDot = fabs(config->GetOutlet_MassFlow(Outlet_TagBound)) * config->GetDensity_Ref() * config->GetVelocity_Ref();
+          cout << "Outlet mass flow (kg/s): "; cout << setprecision(5) << Outlet_mDot;
+          
+        }
+      }
+      
+      if (write_heads && Output && !config->GetDiscrete_Adjoint()) {cout << endl;
+        cout << "-------------------------------------------------------------------------" << endl << endl;
+      }
+      
+      cout.unsetf(ios_base::floatfield);
+      
+    }
+    
+    delete [] Outlet_MassFlow_Local;
+    delete [] Outlet_Density_Local;
+    delete [] Outlet_Area_Local;
+    
+    delete [] Outlet_MassFlow_Total;
+    delete [] Outlet_Density_Total;
+    delete [] Outlet_Area_Total;
+    
+    delete [] Outlet_MassFlow;
+    delete [] Outlet_Density;
+    delete [] Outlet_Area;
+    
+  }
+  
 }
 
-void CIncEulerSolver::ComputeResidual_BGS(CGeometry *geometry, CConfig *config){
+void CIncEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
 
   unsigned short iVar;
   unsigned long iPoint;
@@ -6573,6 +6592,8 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
+  
   string UnstExt, text_line;
   ifstream restart_file;
   
@@ -6594,6 +6615,26 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   unsigned short skipVars = geometry[MESH_0]->GetnDim();
 
+  /*--- Store the number of variables for the turbulence model
+   (that could appear in the restart file before the grid velocities). ---*/
+  unsigned short turbVars = 0;
+  if (turbulent){
+    if (turb_model == SST) turbVars = 2;
+    else turbVars = 1;
+  }
+  
+  /*--- Adjust the number of solution variables in the restart. We always
+   carry a space in nVar for the energy equation in the solver, but we only
+   write it to the restart if it is active. Therefore, we must reduce nVar
+   here if energy is inactive so that the restart is read correctly. ---*/
+  
+  bool energy               = config->GetEnergy_Equation();
+  bool weakly_coupled_heat  = config->GetWeakly_Coupled_Heat();
+  
+  unsigned short nVar_Restart = nVar;
+  if ((!energy) && (!weakly_coupled_heat)) nVar_Restart--;
+  Solution[nVar-1] = GetTemperature_Inf();
+  
   /*--- Multizone problems require the number of the zone to be appended. ---*/
 
   if (nZone > 1)
@@ -6628,7 +6669,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
        offset in the buffer of data from the restart file and load it. ---*/
 
       index = counter*Restart_Vars[1] + skipVars;
-      for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
+      for (iVar = 0; iVar < nVar_Restart; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
       iPoint_Global_Local++;
 
@@ -6636,15 +6677,6 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
        grid coordinates and grid velocities for each node. ---*/
 
       if (grid_movement && val_update_geo) {
-
-        /*--- First, remove any variables for the turbulence model that
-         appear in the restart file before the grid velocities. ---*/
-
-        if (turb_model == SA || turb_model == SA_NEG) {
-          index++;
-        } else if (turb_model == SST) {
-          index+=2;
-        }
 
         /*--- Read in the next 2 or 3 variables which are the grid velocities ---*/
         /*--- If we are restarting the solution from a previously computed static calculation (no grid movement) ---*/
@@ -6658,7 +6690,7 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
           for (iDim = 0; iDim < nDim; iDim++) { Coord[iDim] = Restart_Data[index+iDim]; }
 
           /*--- Move the index forward to get the grid velocities. ---*/
-          index = counter*Restart_Vars[1] + skipVars + nVar;
+          index = counter*Restart_Vars[1] + skipVars + nVar_Restart + turbVars;
           for (iDim = 0; iDim < nDim; iDim++) { GridVel[iDim] = Restart_Data[index+iDim]; }
         }
 
@@ -6787,6 +6819,10 @@ void CIncEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
     }
   }
   
+  /*--- Update the old geometry (coordinates n and n-1) in dual time-stepping strategy ---*/
+  if (dual_time && grid_movement)
+    Restart_OldGeometry(geometry[MESH_0], config);
+
   delete [] Coord;
 
   /*--- Delete the class memory that is used to load the restart. ---*/
@@ -6850,6 +6886,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FlowFileName();
   bool fsi     = config->GetFSI_Simulation();
+  bool multizone = config->GetMultizone_Problem();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
@@ -6935,7 +6972,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   /*--- Perform the non-dimensionalization for the flow equations using the
    specified reference values. ---*/
   
-  SetNondimensionalization(geometry, config, iMesh);
+  SetNondimensionalization(config, iMesh);
   
   /*--- Allocate the node variables ---*/
   node = new CVariable*[nPoint];
@@ -7329,7 +7366,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
     node[iPoint] = new CIncNSVariable(Pressure_Inf, Velocity_Inf, Temperature_Inf, nDim, nVar, config);
 
   /*--- Initialize the BGS residuals in FSI problems. ---*/
-  if (fsi){
+  if (config->GetMultizone_Residual()){
     Residual_BGS      = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_RMS[iVar]  = 0.0;
     Residual_Max_BGS  = new su2double[nVar];         for (iVar = 0; iVar < nVar; iVar++) Residual_Max_BGS[iVar]  = 0.0;
 
@@ -7439,7 +7476,8 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   bool limiter_turb         = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_adjflow      = (cont_adjoint && (config->GetKind_SlopeLimit_AdjFlow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()));
   bool fixed_cl             = config->GetFixed_CL_Mode();
-  bool van_albada       = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool van_albada           = config->GetKind_SlopeLimit_Flow() == VAN_ALBADA_EDGE;
+  bool outlet               = ((config->GetnMarker_Outlet() != 0));
 
   /*--- Update the angle of attack at the far-field for fixed CL calculations (only direct problem). ---*/
   
@@ -7478,6 +7516,10 @@ void CIncNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
 
   SetBeta_Parameter(geometry, solver_container, config, iMesh);
 
+  /*--- Compute properties needed for mass flow BCs. ---*/
+  
+  if (outlet) GetOutlet_Properties(geometry, config, iMesh, Output);
+  
   /*--- Evaluate the vorticity and strain rate magnitude ---*/
   
   StrainMag_Max = 0.0; Omega_Max = 0.0;

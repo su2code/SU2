@@ -40,9 +40,17 @@
 inline CADTComparePointClass::~CADTComparePointClass() {}
 
 inline bool CADTComparePointClass::operator()(const unsigned long p0,
-                                                 const unsigned long p1) const {
+                                              const unsigned long p1) const {
   return pointCoor[nDim*p0+splitDirection] < pointCoor[nDim*p1+splitDirection];
 }
+
+inline CBBoxTargetClass::CBBoxTargetClass() {}
+
+inline CBBoxTargetClass::~CBBoxTargetClass() {}
+
+inline CBBoxTargetClass::CBBoxTargetClass(const CBBoxTargetClass &other) {Copy(other);}
+
+inline CBBoxTargetClass& CBBoxTargetClass::operator=(const CBBoxTargetClass &other) {Copy(other); return (*this);}
 
 inline CADTNodeClass::CADTNodeClass() {}
 
@@ -59,3 +67,6 @@ inline CADTBaseClass::~CADTBaseClass() {}
 inline bool CADTBaseClass::IsEmpty(void) const { return isEmpty;}
 
 inline CADTPointsOnlyClass::~CADTPointsOnlyClass() {}
+
+inline CADTElemClass::~CADTElemClass() {}
+

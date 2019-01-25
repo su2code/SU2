@@ -205,6 +205,7 @@ def get_headerMap(nZones = 1):
                  "AoA"             : "AOA"                     ,
                  "Custom_ObjFunc"  : "CUSTOM_OBJFUNC"          ,
                  "CMerit"          : "FIGURE_OF_MERIT"         ,
+                 "Buffet_Metric"   : "BUFFET"                  ,
                  "CQ"              : "TORQUE"                  ,
                  "CT"              : "THRUST"                  ,
                  "CEquivArea"      : "EQUIVALENT_AREA"         ,
@@ -293,6 +294,7 @@ optnames_aero = [ "LIFT"                        ,
                   "FORCE_Z"                     ,
                   "EFFICIENCY"                  ,
                   "FIGURE_OF_MERIT"             ,
+                  "BUFFET"                      ,
                   "TORQUE"                      ,
                   "THRUST"                      ,
                   "SURFACE_TOTAL_PRESSURE"      ,
@@ -631,6 +633,7 @@ def get_adjointSuffix(objective_function=None):
                  "THRUST"                      : "ct"        ,
                  "TORQUE"                      : "cq"        ,
                  "FIGURE_OF_MERIT"             : "merit"     ,
+                 "BUFFET"                      : "buffet"    ,
                  "SURFACE_TOTAL_PRESSURE"      : "pt"        ,
                  "SURFACE_STATIC_PRESSURE"     : "pe"        ,
                  "SURFACE_MASSFLOW"            : "mfr"       ,
@@ -771,7 +774,7 @@ def get_gradFileFormat(grad_type,plot_format,kindID,special_cases=[]):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header.append('VARIABLES=')
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
     
@@ -897,7 +900,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
     # handle plot formating
     if (plot_format == 'TECPLOT') or (plot_format == 'TECPLOT_BINARY'): 
         header_format = header_format + 'VARIABLES='
-    elif plot_format == 'PARAVIEW':
+    elif (plot_format == 'PARAVIEW') or (plot_format == 'PARAVIEW_BINARY'):
         pass
     else: raise Exception('output plot format not recognized')
 
@@ -951,6 +954,7 @@ def get_optFileFormat(plot_format,special_cases=None, nZones = 1):
 def get_extension(output_format):
   
     if (output_format == "PARAVIEW")        : return ".csv"
+    if (output_format == "PARAVIEW_BINARY") : return ".csv"
     if (output_format == "TECPLOT")         : return ".dat"
     if (output_format == "TECPLOT_BINARY")  : return ".plt"
     if (output_format == "SOLUTION")        : return ".dat"  

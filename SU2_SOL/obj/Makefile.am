@@ -36,6 +36,7 @@
 # License along with SU2. If not, see <http://www.gnu.org/licenses/>.
 #
 ################################################################################
+
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
@@ -49,14 +50,17 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_SOL_AD
 endif
 
-su2_sol_sources = ../include/SU2_SOL.hpp \
-		../src/SU2_SOL.cpp
+___bin_SU2_SOL_SOURCES = \
+  ../include/SU2_SOL.hpp \
+  ../src/SU2_SOL.cpp
 
-su2_sol_ldadd =
-su2_sol_cxx_flags =
+___bin_SU2_SOL_CXXFLAGS =
+___bin_SU2_SOL_AD_CXXFLAGS =
+___bin_SU2_SOL_LDADD =
+___bin_SU2_SOL_AD_LDADD =
 
 if BUILD_NORMAL
-su2_sol_ldadd += \
+___bin_SU2_SOL_LDADD += \
   ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
@@ -70,7 +74,7 @@ su2_sol_ldadd += \
 endif
 
 if BUILD_REVERSE
-su2_sol_ldadd += \
+___bin_SU2_SOL_AD_LDADD += \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
@@ -84,43 +88,16 @@ su2_sol_ldadd += \
 endif
 
 # always link to built dependencies from ./externals
-su2_sol_cxx_flags += @su2_externals_INCLUDES@
-su2_sol_ldadd += @su2_externals_LIBS@
+___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
+___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
+___bin_SU2_SOL_LDADD += @su2_externals_LIBPTHREAD@
 
 # if BUILD_MUTATIONPP
-su2_sol_cxx_flags += @MUTATIONPP_CXX@
-su2_sol_ldadd += @MUTATIONPP_LD@
+___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
+___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
 # endif
-
-# if BUILD_JSONCPP
-su2_sol_cxx_flags += @JSONCPP_CXX@
-su2_sol_ldadd += @JSONCPP_LD@
-# endif
-
-# if BUILD_HDF5
-su2_sol_cxx_flags += @HDF5_CXX@
-su2_sol_ldadd += @HDF5_LD@
-# endif
-
-# if BUILD_SZIP
-su2_sol_cxx_flags += @SZIP_CXX@
-su2_sol_ldadd += @SZIP_LD@
-# endif
-
-# if BUILD_ZLIB
-su2_sol_cxx_flags += @ZLIB_CXX@
-su2_sol_ldadd += @ZLIB_LD@
-# endif
-
-if BUILD_NORMAL
-___bin_SU2_SOL_SOURCES = ${su2_sol_sources}
-___bin_SU2_SOL_CXXFLAGS = ${su2_sol_cxx_flags}
-___bin_SU2_SOL_LDADD =  ${su2_sol_ldadd}
-endif
 
 if BUILD_REVERSE
-___bin_SU2_SOL_AD_SOURCES = ${su2_sol_sources}
-___bin_SU2_SOL_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_sol_cxx_flags} 
-___bin_SU2_SOL_AD_LDADD = @REVERSE_LIBS@ ${su2_sol_ldadd}
+___bin_SU2_SOL_AD_CXXFLAGS += @REVERSE_CXX@
+___bin_SU2_SOL_AD_LDADD += @REVERSE_LIBS@
 endif
-
