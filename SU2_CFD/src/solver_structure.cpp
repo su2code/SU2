@@ -244,6 +244,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double *center, *angles, rotMatrix[3][3] = {{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}},
   translation[3], *trans, theta, phi, psi, cosTheta, sinTheta, cosPhi, sinPhi, cosPsi, sinPsi;
   
+  su2double dx, dy, dz, rotCoord_i[3] = {0.0, 0.0, 0.0}, rotCoord_j[3] = {0.0, 0.0, 0.0};
   su2double jacMatrix[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}},
   rotJacob[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}};
   
@@ -365,6 +366,38 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
         
         iPeriodic = geometry->Local_Marker_PeriodicSend[offset + iSend];
 
+        /*--- Retrieve the supplied periodic information. ---*/
+        center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
+        angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
+        trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
+        
+        /*--- Store (center+trans) as it is constant and will be added on. ---*/
+        translation[0] = center[0] + trans[0];
+        translation[1] = center[1] + trans[1];
+        translation[2] = center[2] + trans[2];
+        
+        /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
+        theta = sign*angles[0];
+        phi   = sign*angles[1];
+        psi   = sign*angles[2];
+        
+        cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
+        sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
+        
+        /*--- Compute the rotation matrix. Note that the implicit
+         ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
+        rotMatrix[0][0] = cosPhi*cosPsi;
+        rotMatrix[1][0] = cosPhi*sinPsi;
+        rotMatrix[2][0] = -sinPhi;
+        
+        rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
+        rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
+        rotMatrix[2][1] = sinTheta*cosPhi;
+        
+        rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
+        rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
+        rotMatrix[2][2] = cosTheta*cosPhi;
+        
         /*--- Compute the offset in the recv buffer for this point. ---*/
         
         buf_offset = (offset + iSend)*geometry->countPerPeriodicPoint;
@@ -390,38 +423,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             break;
           case PERIODIC_RESIDUAL:
-
-            /*--- Retrieve the supplied periodic information. ---*/
-            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
-            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
-            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
-            
-            /*--- Store (center+trans) as it is constant and will be added on. ---*/
-            translation[0] = center[0] + trans[0];
-            translation[1] = center[1] + trans[1];
-            translation[2] = center[2] + trans[2];
-            
-            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-            theta = sign*angles[0];
-            phi   = sign*angles[1];
-            psi   = sign*angles[2];
-              
-            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-            
-            /*--- Compute the rotation matrix. Note that the implicit
-             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-            rotMatrix[0][0] = cosPhi*cosPsi;
-            rotMatrix[1][0] = cosPhi*sinPsi;
-            rotMatrix[2][0] = -sinPhi;
-
-            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-            rotMatrix[2][1] = sinTheta*cosPhi;
-
-            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-            rotMatrix[2][2] = cosTheta*cosPhi;
             
             for (iVar = 0; iVar < nVar; iVar++) {
               bufDSend[buf_offset+iVar] = LinSysRes.GetBlock(iPoint, iVar);
@@ -493,38 +494,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             break;
             
           case PERIODIC_LAPLACIAN:
-            
-            /*--- Retrieve the supplied periodic information. ---*/
-            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
-            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
-            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
-            
-            /*--- Store (center+trans) as it is constant and will be added on. ---*/
-            translation[0] = center[0] + trans[0];
-            translation[1] = center[1] + trans[1];
-            translation[2] = center[2] + trans[2];
-            
-            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-            theta = sign*angles[0];
-            phi   = sign*angles[1];
-            psi   = sign*angles[2];
-            
-            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-            
-            /*--- Compute the rotation matrix. Note that the implicit
-             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-            rotMatrix[0][0] = cosPhi*cosPsi;
-            rotMatrix[1][0] = cosPhi*sinPsi;
-            rotMatrix[2][0] = -sinPhi;
-            
-            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-            rotMatrix[2][1] = sinTheta*cosPhi;
-            
-            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-            rotMatrix[2][2] = cosTheta*cosPhi;
+          
             
             for (iVar = 0; iVar< nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
@@ -646,39 +616,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
           case PERIODIC_SOL_GG:
             
-            
-            /*--- Retrieve the supplied periodic information. ---*/
-            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
-            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
-            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
-            
-            /*--- Store (center+trans) as it is constant and will be added on. ---*/
-            translation[0] = center[0] + trans[0];
-            translation[1] = center[1] + trans[1];
-            translation[2] = center[2] + trans[2];
-            
-            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-            theta = sign*angles[0];
-            phi   = sign*angles[1];
-            psi   = sign*angles[2];
-            
-            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-            
-            /*--- Compute the rotation matrix. Note that the implicit
-             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-            rotMatrix[0][0] = cosPhi*cosPsi;
-            rotMatrix[1][0] = cosPhi*sinPsi;
-            rotMatrix[2][0] = -sinPhi;
-            
-            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-            rotMatrix[2][1] = sinTheta*cosPhi;
-            
-            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-            rotMatrix[2][2] = cosTheta*cosPhi;
-            
             for (iVar = 0; iVar < nVar; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++){
                 jacMatrix[iVar][iDim] =  node[iPoint]->GetGradient(iVar, iDim);
@@ -721,38 +658,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
           case PERIODIC_PRIM_GG:
             
-            /*--- Retrieve the supplied periodic information. ---*/
-            center = config->GetPeriodicRotCenter(config->GetMarker_All_TagBound(iPeriodic));
-            angles = config->GetPeriodicRotAngles(config->GetMarker_All_TagBound(iPeriodic));
-            trans  = config->GetPeriodicTranslation(config->GetMarker_All_TagBound(iPeriodic));
-            
-            /*--- Store (center+trans) as it is constant and will be added on. ---*/
-            translation[0] = center[0] + trans[0];
-            translation[1] = center[1] + trans[1];
-            translation[2] = center[2] + trans[2];
-            
-            /*--- Store angles separately for clarity. Compute sines/cosines. ---*/
-            theta = sign*angles[0];
-            phi   = sign*angles[1];
-            psi   = sign*angles[2];
-            
-            cosTheta = cos(theta);  cosPhi = cos(phi);  cosPsi = cos(psi);
-            sinTheta = sin(theta);  sinPhi = sin(phi);  sinPsi = sin(psi);
-            
-            /*--- Compute the rotation matrix. Note that the implicit
-             ordering is rotation about the x-axis, y-axis, then z-axis. ---*/
-            rotMatrix[0][0] = cosPhi*cosPsi;
-            rotMatrix[1][0] = cosPhi*sinPsi;
-            rotMatrix[2][0] = -sinPhi;
-            
-            rotMatrix[0][1] = sinTheta*sinPhi*cosPsi - cosTheta*sinPsi;
-            rotMatrix[1][1] = sinTheta*sinPhi*sinPsi + cosTheta*cosPsi;
-            rotMatrix[2][1] = sinTheta*cosPhi;
-            
-            rotMatrix[0][2] = cosTheta*sinPhi*cosPsi + sinTheta*sinPsi;
-            rotMatrix[1][2] = cosTheta*sinPhi*sinPsi - sinTheta*cosPsi;
-            rotMatrix[2][2] = cosTheta*cosPhi;
-            
             for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
               for (iDim = 0; iDim < nDim; iDim++){
                 jacMatrix[iVar][iDim] =  node[iPoint]->GetGradient_Primitive(iVar, iDim);
@@ -794,6 +699,28 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             Coord_i = geometry->node[iPoint]->GetCoord();
             
+            /*--- Get the position vector from rot center to point. ---*/
+            dx = Coord_i[0] - center[0];
+            dy = Coord_i[1] - center[1];
+            if (nDim == 3) {
+              dz = Coord_i[2] - center[2];
+            } else {
+              dz = 0.0;
+            }
+            
+            /*--- Compute transformed point coordinates. ---*/
+            rotCoord_i[0] = (rotMatrix[0][0]*dx +
+                             rotMatrix[0][1]*dy +
+                             rotMatrix[0][2]*dz + translation[0]);
+            
+            rotCoord_i[1] = (rotMatrix[1][0]*dx +
+                             rotMatrix[1][1]*dy +
+                             rotMatrix[1][2]*dz + translation[1]);
+            
+            rotCoord_i[2] = (rotMatrix[2][0]*dx +
+                             rotMatrix[2][1]*dy +
+                             rotMatrix[2][2]*dz + translation[2]);
+            
             /*--- Get consevative solution ---*/
             
             Solution_i = node[iPoint]->GetSolution();
@@ -816,32 +743,54 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 Coord_j = geometry->node[jPoint]->GetCoord();
                 
+                /*--- Get the position vector from rot center to point. ---*/
+                dx = Coord_j[0] - center[0];
+                dy = Coord_j[1] - center[1];
+                if (nDim == 3) {
+                  dz = Coord_j[2] - center[2];
+                } else {
+                  dz = 0.0;
+                }
+                
+                /*--- Compute transformed point coordinates. ---*/
+                rotCoord_j[0] = (rotMatrix[0][0]*dx +
+                                 rotMatrix[0][1]*dy +
+                                 rotMatrix[0][2]*dz + translation[0]);
+                
+                rotCoord_j[1] = (rotMatrix[1][0]*dx +
+                                 rotMatrix[1][1]*dy +
+                                 rotMatrix[1][2]*dz + translation[1]);
+                
+                rotCoord_j[2] = (rotMatrix[2][0]*dx +
+                                 rotMatrix[2][1]*dy +
+                                 rotMatrix[2][2]*dz + translation[2]);
+                
                 Solution_j = node[jPoint]->GetSolution();
 
                 weight = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++)
-                  weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+                  weight += (rotCoord_j[iDim]-rotCoord_i[iDim])*(rotCoord_j[iDim]-rotCoord_i[iDim]);
                 
                 /*--- Sumations for entries of upper triangular matrix R ---*/
                 
                 if (weight != 0.0) {
                   
-                  r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-                  r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-                  r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+                  r11 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[0]-rotCoord_i[0])/weight;
+                  r12 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[1]-rotCoord_i[1])/weight;
+                  r22 += (rotCoord_j[1]-rotCoord_i[1])*(rotCoord_j[1]-rotCoord_i[1])/weight;
                   
                   if (nDim == 3) {
-                    r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                    r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-                    r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                    r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+                    r13 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r23_a += (rotCoord_j[1]-rotCoord_i[1])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r23_b += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r33 += (rotCoord_j[2]-rotCoord_i[2])*(rotCoord_j[2]-rotCoord_i[2])/weight;
                   }
                   
                   /*--- Entries of c:= transpose(A)*b ---*/
                   
                   for (iVar = 0; iVar < nVar; iVar++)
                     for (iDim = 0; iDim < nDim; iDim++)
-                      Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
+                      Cvector[iVar][iDim] += (rotCoord_j[iDim]-rotCoord_i[iDim])*(Solution_j[iVar]-Solution_i[iVar])/weight;
                   
                 }
               }
@@ -883,6 +832,28 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             Coord_i = geometry->node[iPoint]->GetCoord();
             
+            /*--- Get the position vector from rot center to point. ---*/
+            dx = Coord_i[0] - center[0];
+            dy = Coord_i[1] - center[1];
+            if (nDim == 3) {
+              dz = Coord_i[2] - center[2];
+            } else {
+              dz = 0.0;
+            }
+            
+            /*--- Compute transformed point coordinates. ---*/
+            rotCoord_i[0] = (rotMatrix[0][0]*dx +
+                             rotMatrix[0][1]*dy +
+                             rotMatrix[0][2]*dz + translation[0]);
+            
+            rotCoord_i[1] = (rotMatrix[1][0]*dx +
+                             rotMatrix[1][1]*dy +
+                             rotMatrix[1][2]*dz + translation[1]);
+            
+            rotCoord_i[2] = (rotMatrix[2][0]*dx +
+                             rotMatrix[2][1]*dy +
+                             rotMatrix[2][2]*dz + translation[2]);
+            
             /*--- Get primitives from CVariable ---*/
             
             PrimVar_i = node[iPoint]->GetPrimitive();
@@ -905,32 +876,54 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                 
                 Coord_j = geometry->node[jPoint]->GetCoord();
                 
+                /*--- Get the position vector from rot center to point. ---*/
+                dx = Coord_j[0] - center[0];
+                dy = Coord_j[1] - center[1];
+                if (nDim == 3) {
+                  dz = Coord_j[2] - center[2];
+                } else {
+                  dz = 0.0;
+                }
+                
+                /*--- Compute transformed point coordinates. ---*/
+                rotCoord_j[0] = (rotMatrix[0][0]*dx +
+                                 rotMatrix[0][1]*dy +
+                                 rotMatrix[0][2]*dz + translation[0]);
+                
+                rotCoord_j[1] = (rotMatrix[1][0]*dx +
+                                 rotMatrix[1][1]*dy +
+                                 rotMatrix[1][2]*dz + translation[1]);
+                
+                rotCoord_j[2] = (rotMatrix[2][0]*dx +
+                                 rotMatrix[2][1]*dy +
+                                 rotMatrix[2][2]*dz + translation[2]);
+                
                 PrimVar_j = node[jPoint]->GetPrimitive();
                 
                 weight = 0.0;
                 for (iDim = 0; iDim < nDim; iDim++)
-                  weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
+                  weight += (rotCoord_j[iDim]-rotCoord_i[iDim])*(rotCoord_j[iDim]-rotCoord_i[iDim]);
                 
                 /*--- Sumations for entries of upper triangular matrix R ---*/
                 
                 if (weight != 0.0) {
                   
-                  r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-                  r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-                  r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+                  r11 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[0]-rotCoord_i[0])/weight;
+                  r12 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[1]-rotCoord_i[1])/weight;
+                  r22 += (rotCoord_j[1]-rotCoord_i[1])*(rotCoord_j[1]-rotCoord_i[1])/weight;
                   
                   if (nDim == 3) {
-                    r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                    r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-                    r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-                    r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+                    r13 += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r23_a += (rotCoord_j[1]-rotCoord_i[1])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r23_b += (rotCoord_j[0]-rotCoord_i[0])*(rotCoord_j[2]-rotCoord_i[2])/weight;
+                    r33 += (rotCoord_j[2]-rotCoord_i[2])*(rotCoord_j[2]-rotCoord_i[2])/weight;
                   }
                   
                   /*--- Entries of c:= transpose(A)*b ---*/
                   
                   for (iVar = 0; iVar < nPrimVarGrad; iVar++)
                     for (iDim = 0; iDim < nDim; iDim++)
-                      Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+                      Cvector[iVar][iDim] += (rotCoord_j[iDim]-rotCoord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
                   
                 }
               }
