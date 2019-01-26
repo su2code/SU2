@@ -13600,7 +13600,14 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
   bool steady_restart = config->GetSteadyRestart();
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool turbulent     = (config->GetKind_Solver() == RANS) || (config->GetKind_Solver() == DISC_ADJ_RANS);
-
+  
+  bool compute_average = (config->GetCompute_Average() && config->GetRestart_Average());
+  bool isAverageRestartFile = false;
+  string averageField = "DensityMean";
+  string primeField = "UUPrimeMean";
+  unsigned short averageIndex = 0, averageVars = 0;
+  unsigned short primeIndex = 0, primeVars = 4;
+  
   string UnstExt, text_line;
   ifstream restart_file;
 
@@ -13648,6 +13655,22 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
     Read_SU2_Restart_ASCII(geometry[MESH_0], config, restart_filename);
   }
 
+  /*--- Check if the restart file contains average data ---*/
+  
+  if (compute_average){
+    if(std::find(config->fields.begin(), config->fields.end(), averageField) != config->fields.end()) {
+      isAverageRestartFile = true;
+      averageIndex = std::find(config->fields.begin(), config->fields.end(), averageField) - config->fields.begin();
+      primeIndex   = std::find(config->fields.begin(), config->fields.end(), primeField) - config->fields.begin();
+      averageVars = primeIndex - averageIndex;
+      
+      /*--- The number of variables of the prime average is 4 for 2D (3 Stresses + Pressure)
+       and 7 for 3D (6 Stresses + Pressure)---*/
+      
+      if (geometry[MESH_0]->GetnDim() == 3) primeVars = 7;
+    }
+  }
+
   /*--- Load data from the restart into correct containers. ---*/
 
   counter = 0;
@@ -13666,6 +13689,17 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
       index = counter*Restart_Vars[1] + skipVars;
       for (iVar = 0; iVar < nVar; iVar++) Solution[iVar] = Restart_Data[index+iVar];
       node[iPoint_Local]->SetSolution(Solution);
+
+      /*--- If compute average is true and it is an averaged restart file,
+       load the data from restart file. ---*/
+      
+      if ( compute_average && isAverageRestartFile ){
+        for(iVar = 0; iVar < averageVars; iVar++){
+          node[iPoint_Local]->AddSolution_Avg(iVar, Restart_Data[index + averageIndex - skipVars + iVar]);
+        }
+        // todo: Add the prime vars for restart average
+      }
+
       iPoint_Global_Local++;
 
       /*--- For dynamic meshes, read in and store the
@@ -13704,7 +13738,7 @@ void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig 
           geometry[MESH_0]->node[iPoint_Local]->SetCoord(iDim, Coord[iDim]);
         }
       }
-
+      
       /*--- Increment the overall counter for how many points have been loaded. ---*/
       counter++;
     }
