@@ -1329,7 +1329,7 @@ public:
    * \brief A virtual member.
    * \param config - Config
    */
-  virtual void ReadExternalSensitivity(CConfig *config);
+  virtual void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -2473,10 +2473,10 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
   void SetSensitivity(CConfig *config);
 
   /*!
-   * \brief Read the sensitivity from adjoint solution file and store it.
+   * \brief Read the sensitivity from unordered ASCII adjoint solution file and store it.
    * \param[in] config - Definition of the particular problem.
    */
-  void ReadExternalSensitivity(CConfig *config);
+  void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief Get the Sensitivity at a specific point.

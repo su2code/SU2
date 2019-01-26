@@ -312,10 +312,10 @@ void COutput::WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsi
   
 }
 
-void COutput::WriteExternalSensitivity(CConfig *config,
-                                       CGeometry *geometry,
-                                       unsigned short val_iZone,
-                                       unsigned short val_nZone) {
+void COutput::WriteProjectedSensitivity(CConfig *config,
+                                        CGeometry *geometry,
+                                        unsigned short val_iZone,
+                                        unsigned short val_nZone) {
   
   unsigned short iVar;
   unsigned long iPoint, iElem, iNode;
@@ -325,9 +325,9 @@ void COutput::WriteExternalSensitivity(CConfig *config,
   
   filename = config->GetDV_Sens_Filename();
   
-  /*--- Open external sensitivity file. Note that we are overwriting the
+  /*--- Open projected sensitivity file. Note that we are overwriting the
    volume sensitivity file that was the original input for projection,
-   if this is executed in EXTERNAL_SENSITIVITY mode. ---*/
+   if DV_SENSITIVITY_FORMAT= UNORDERED_ASCII. ---*/
   
   ofstream Sens_File;
   Sens_File.open(filename.c_str(), ios::out);
