@@ -55,7 +55,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 //#pragma omp threadprivate(Profile_Function_tp, Profile_Time_tp, Profile_ID_tp, Profile_Map_tp)
 
 #include "../include/ad_structure.hpp"
-
+#include "../include/toolboxes/printing_toolbox.hpp"
 
 CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
   
@@ -5999,11 +5999,18 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         <<",\n                lower limit: "<< CFL_AdaptParam[2] <<", upper limit: " << CFL_AdaptParam[3] <<"."<< endl;
 
       if (nMGLevels !=0) {
-        cout << "Multigrid Level:                  ";
+        PrintingToolbox::CTablePrinter MGTable(&std::cout);
+        
+        MGTable.AddColumn("MG Level",         10);
+        MGTable.AddColumn("Presmooth",     10);
+        MGTable.AddColumn("PostSmooth",    10);
+        MGTable.AddColumn("CorrectSmooth", 10);
+        MGTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+        MGTable.PrintHeader();
         for (unsigned short iLevel = 0; iLevel < nMGLevels+1; iLevel++) {
-          cout.width(6); cout << iLevel;
+          MGTable << iLevel << MG_PreSmooth[iLevel] << MG_PostSmooth[iLevel] << MG_CorrecSmooth[iLevel];
         }
-        cout << endl;
+        MGTable.PrintFooter();
       }
 
 			if (Unsteady_Simulation != TIME_STEPPING) {
@@ -6013,33 +6020,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << endl;
 			}
 			
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PreSmooth coefficients:        ";
-        for (unsigned short iMG_PreSmooth = 0; iMG_PreSmooth < nMGLevels+1; iMG_PreSmooth++) {
-          cout.width(6); cout << MG_PreSmooth[iMG_PreSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG PostSmooth coefficients:       ";
-        for (unsigned short iMG_PostSmooth = 0; iMG_PostSmooth < nMGLevels+1; iMG_PostSmooth++) {
-          cout.width(6); cout << MG_PostSmooth[iMG_PostSmooth];
-        }
-        cout << endl;
-      }
-
-      if (nMGLevels !=0) {
-        cout.precision(3);
-        cout << "MG CorrecSmooth coefficients:     ";
-        for (unsigned short iMG_CorrecSmooth = 0; iMG_CorrecSmooth < nMGLevels+1; iMG_CorrecSmooth++) {
-          cout.width(6); cout << MG_CorrecSmooth[iMG_CorrecSmooth];
-        }
-        cout << endl;
-      }
 
     }
 
@@ -6272,293 +6252,298 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
   cout << endl <<"------------------- Config File Boundary Information --------------------" << endl;
 
-  if (nMarker_Euler != 0) {
-    cout << "Euler wall boundary marker(s): ";
+  PrintingToolbox::CTablePrinter BoundaryTable(&std::cout);
+  BoundaryTable.AddColumn("Marker Type", 20);
+  BoundaryTable.AddColumn("Marker Name", 20);
+  
+  BoundaryTable.PrintHeader();
+  
+  if (nMarker_Euler != 0) {   
+    BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-      cout << Marker_Euler[iMarker_Euler];
-      if (iMarker_Euler < nMarker_Euler-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Euler[iMarker_Euler] << " ";
+      if (iMarker_Euler < nMarker_Euler-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_FarField != 0) {
-    cout << "Far-field boundary marker(s): ";
+    BoundaryTable << "Far-field";
     for (iMarker_FarField = 0; iMarker_FarField < nMarker_FarField; iMarker_FarField++) {
-      cout << Marker_FarField[iMarker_FarField];
-      if (iMarker_FarField < nMarker_FarField-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_FarField[iMarker_FarField];
+      if (iMarker_FarField < nMarker_FarField-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_SymWall != 0) {
-    cout << "Symmetry plane boundary marker(s): ";
+    BoundaryTable << "Symmetry plane";
     for (iMarker_SymWall = 0; iMarker_SymWall < nMarker_SymWall; iMarker_SymWall++) {
-      cout << Marker_SymWall[iMarker_SymWall];
-      if (iMarker_SymWall < nMarker_SymWall-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_SymWall[iMarker_SymWall];
+      if (iMarker_SymWall < nMarker_SymWall-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_PerBound != 0) {
-    cout << "Periodic boundary marker(s): ";
+    BoundaryTable << "Periodic boundary";
     for (iMarker_PerBound = 0; iMarker_PerBound < nMarker_PerBound; iMarker_PerBound++) {
-      cout << Marker_PerBound[iMarker_PerBound];
-      if (iMarker_PerBound < nMarker_PerBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_PerBound[iMarker_PerBound];
+      if (iMarker_PerBound < nMarker_PerBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
   if (nMarker_NearFieldBound != 0) {
-    cout << "Near-field boundary marker(s): ";
+    BoundaryTable << "Near-field boundary";
     for (iMarker_NearFieldBound = 0; iMarker_NearFieldBound < nMarker_NearFieldBound; iMarker_NearFieldBound++) {
-      cout << Marker_NearFieldBound[iMarker_NearFieldBound];
-      if (iMarker_NearFieldBound < nMarker_NearFieldBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_NearFieldBound[iMarker_NearFieldBound];
+      if (iMarker_NearFieldBound < nMarker_NearFieldBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_InterfaceBound != 0) {
-    cout << "Interface boundary marker(s): ";
+    BoundaryTable << "Interface boundary";
     for (iMarker_InterfaceBound = 0; iMarker_InterfaceBound < nMarker_InterfaceBound; iMarker_InterfaceBound++) {
-      cout << Marker_InterfaceBound[iMarker_InterfaceBound];
-      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_InterfaceBound[iMarker_InterfaceBound];
+      if (iMarker_InterfaceBound < nMarker_InterfaceBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
   
   if (nMarker_Fluid_InterfaceBound != 0) {
-    cout << "Fluid interface boundary marker(s): ";
+    BoundaryTable << "Fluid interface boundary";
     for (iMarker_Fluid_InterfaceBound = 0; iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound; iMarker_Fluid_InterfaceBound++) {
-      cout << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
-      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Fluid_InterfaceBound[iMarker_Fluid_InterfaceBound];
+      if (iMarker_Fluid_InterfaceBound < nMarker_Fluid_InterfaceBound-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_Dirichlet != 0) {
-    cout << "Dirichlet boundary marker(s): ";
+    BoundaryTable << "Dirichlet boundary";
     for (iMarker_Dirichlet = 0; iMarker_Dirichlet < nMarker_Dirichlet; iMarker_Dirichlet++) {
-      cout << Marker_Dirichlet[iMarker_Dirichlet];
-      if (iMarker_Dirichlet < nMarker_Dirichlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Dirichlet[iMarker_Dirichlet];
+      if (iMarker_Dirichlet < nMarker_Dirichlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_FlowLoad != 0) {
-    cout << "Flow Load boundary marker(s): ";
+    BoundaryTable << "Flow load boundary";
     for (iMarker_FlowLoad = 0; iMarker_FlowLoad < nMarker_FlowLoad; iMarker_FlowLoad++) {
-      cout << Marker_FlowLoad[iMarker_FlowLoad];
-      if (iMarker_FlowLoad < nMarker_FlowLoad-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_FlowLoad[iMarker_FlowLoad];
+      if (iMarker_FlowLoad < nMarker_FlowLoad-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
   
   if (nMarker_Internal != 0) {
-    cout << "Internal boundary marker(s): ";
+    BoundaryTable << "Internal boundary";
     for (iMarker_Internal = 0; iMarker_Internal < nMarker_Internal; iMarker_Internal++) {
-      cout << Marker_Internal[iMarker_Internal];
-      if (iMarker_Internal < nMarker_Internal-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Internal[iMarker_Internal];
+      if (iMarker_Internal < nMarker_Internal-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
+  
   if (nMarker_Inlet != 0) {
-    cout << "Inlet boundary marker(s): ";
+    BoundaryTable << "Inlet boundary";
     for (iMarker_Inlet = 0; iMarker_Inlet < nMarker_Inlet; iMarker_Inlet++) {
-      cout << Marker_Inlet[iMarker_Inlet];
-      if (iMarker_Inlet < nMarker_Inlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Inlet[iMarker_Inlet];
+      if (iMarker_Inlet < nMarker_Inlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Riemann != 0) {
-      cout << "Riemann boundary marker(s): ";
-      for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
-        cout << Marker_Riemann[iMarker_Riemann];
-        if (iMarker_Riemann < nMarker_Riemann-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "Riemann boundary";
+    for (iMarker_Riemann = 0; iMarker_Riemann < nMarker_Riemann; iMarker_Riemann++) {
+      BoundaryTable << Marker_Riemann[iMarker_Riemann];
+      if (iMarker_Riemann < nMarker_Riemann-1)  BoundaryTable << " ";
     }
-  }
+    BoundaryTable.PrintFooter();
+  } 
   
   if (nMarker_Giles != 0) {
-      cout << "Giles boundary marker(s): ";
-      for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
-        cout << Marker_Giles[iMarker_Giles];
-        if (iMarker_Giles < nMarker_Giles-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "Giles boundary";
+    for (iMarker_Giles = 0; iMarker_Giles < nMarker_Giles; iMarker_Giles++) {
+      BoundaryTable << Marker_Giles[iMarker_Giles];
+      if (iMarker_Giles < nMarker_Giles-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_MixingPlaneInterface != 0) {
-      cout << "MixingPlane boundary marker(s): ";
-      for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
-        cout << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
-        if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1) cout << ", ";
-        else cout <<"."<< endl;
+    BoundaryTable << "MixingPlane boundary";
+    for (iMarker_MixingPlaneInterface = 0; iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface; iMarker_MixingPlaneInterface++) {
+      BoundaryTable << Marker_MixingPlaneInterface[iMarker_MixingPlaneInterface];
+      if (iMarker_MixingPlaneInterface < nMarker_MixingPlaneInterface-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_EngineInflow != 0) {
-    cout << "Engine inflow boundary marker(s): ";
+    BoundaryTable << "Engine inflow boundary";
     for (iMarker_EngineInflow = 0; iMarker_EngineInflow < nMarker_EngineInflow; iMarker_EngineInflow++) {
-      cout << Marker_EngineInflow[iMarker_EngineInflow];
-      if (iMarker_EngineInflow < nMarker_EngineInflow-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_EngineInflow[iMarker_EngineInflow];
+      if (iMarker_EngineInflow < nMarker_EngineInflow-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_EngineExhaust != 0) {
-    cout << "Engine exhaust boundary marker(s): ";
+    BoundaryTable << "Engine exhaust boundary";
     for (iMarker_EngineExhaust = 0; iMarker_EngineExhaust < nMarker_EngineExhaust; iMarker_EngineExhaust++) {
-      cout << Marker_EngineExhaust[iMarker_EngineExhaust];
-      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_EngineExhaust[iMarker_EngineExhaust];
+      if (iMarker_EngineExhaust < nMarker_EngineExhaust-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Supersonic_Inlet != 0) {
-    cout << "Supersonic inlet boundary marker(s): ";
+    BoundaryTable << "Supersonic inlet boundary";
     for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++) {
-      cout << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
-      if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet];
+      if (iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet-1)  BoundaryTable << " ";
     }
-  }
+    BoundaryTable.PrintFooter();
+  } 
   
   if (nMarker_Supersonic_Outlet != 0) {
-    cout << "Supersonic outlet boundary marker(s): ";
+    BoundaryTable << "Supersonic outlet boundary";
     for (iMarker_Supersonic_Outlet = 0; iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet; iMarker_Supersonic_Outlet++) {
-      cout << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
-      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Supersonic_Outlet[iMarker_Supersonic_Outlet];
+      if (iMarker_Supersonic_Outlet < nMarker_Supersonic_Outlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Outlet != 0) {
-    cout << "Outlet boundary marker(s): ";
+    BoundaryTable << "Outlet boundary";
     for (iMarker_Outlet = 0; iMarker_Outlet < nMarker_Outlet; iMarker_Outlet++) {
-      cout << Marker_Outlet[iMarker_Outlet];
-      if (iMarker_Outlet < nMarker_Outlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Outlet[iMarker_Outlet];
+      if (iMarker_Outlet < nMarker_Outlet-1)  BoundaryTable << " ";
     }
-  }
-
+    BoundaryTable.PrintFooter();
+  } 
+  
   if (nMarker_Isothermal != 0) {
-    cout << "Isothermal wall boundary marker(s): ";
+    BoundaryTable << "Isothermal wall";
     for (iMarker_Isothermal = 0; iMarker_Isothermal < nMarker_Isothermal; iMarker_Isothermal++) {
-      cout << Marker_Isothermal[iMarker_Isothermal];
-      if (iMarker_Isothermal < nMarker_Isothermal-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Isothermal[iMarker_Isothermal];
+      if (iMarker_Isothermal < nMarker_Isothermal-1)  BoundaryTable << " ";
     }
-  }
-
-  if (nMarker_HeatFlux != 0) {
-    cout << "Constant heat flux wall boundary marker(s): ";
+    BoundaryTable.PrintFooter();
+  } 
+ 
+  if (nMarker_HeatFlux != 0) {  
+    BoundaryTable << "Heat flux wall";
     for (iMarker_HeatFlux = 0; iMarker_HeatFlux < nMarker_HeatFlux; iMarker_HeatFlux++) {
-      cout << Marker_HeatFlux[iMarker_HeatFlux];
-      if (iMarker_HeatFlux < nMarker_HeatFlux-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_HeatFlux[iMarker_HeatFlux];
+      if (iMarker_HeatFlux < nMarker_HeatFlux-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Clamped != 0) {
-    cout << "Clamped boundary marker(s): ";
+  
+  if (nMarker_Clamped != 0) {  
+    BoundaryTable << "Clamped boundary";
     for (iMarker_Clamped = 0; iMarker_Clamped < nMarker_Clamped; iMarker_Clamped++) {
-      cout << Marker_Clamped[iMarker_Clamped];
-      if (iMarker_Clamped < nMarker_Clamped-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Clamped[iMarker_Clamped];
+      if (iMarker_Clamped < nMarker_Clamped-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Displacement != 0) {
-    cout << "Displacement boundary marker(s): ";
+  if (nMarker_Displacement != 0) {  
+    BoundaryTable << "Displacement boundary";
     for (iMarker_Displacement = 0; iMarker_Displacement < nMarker_Displacement; iMarker_Displacement++) {
-      cout << Marker_Displacement[iMarker_Displacement];
-      if (iMarker_Displacement < nMarker_Displacement-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Displacement[iMarker_Displacement];
+      if (iMarker_Displacement < nMarker_Displacement-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
-  if (nMarker_Load != 0) {
-    cout << "Normal load boundary marker(s): ";
+  if (nMarker_Load != 0) {  
+    BoundaryTable << "Normal load boundary";
     for (iMarker_Load = 0; iMarker_Load < nMarker_Load; iMarker_Load++) {
-      cout << Marker_Load[iMarker_Load];
-      if (iMarker_Load < nMarker_Load-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Load[iMarker_Load];
+      if (iMarker_Load < nMarker_Load-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Damper != 0) {
-    cout << "Damper boundary marker(s): ";
+  
+  if (nMarker_Damper != 0) {  
+    BoundaryTable << "Damper boundary";
     for (iMarker_Damper = 0; iMarker_Damper < nMarker_Damper; iMarker_Damper++) {
-      cout << Marker_Damper[iMarker_Damper];
-      if (iMarker_Damper < nMarker_Damper-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Damper[iMarker_Damper];
+      if (iMarker_Damper < nMarker_Damper-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-
-  if (nMarker_Load_Dir != 0) {
-    cout << "Load boundary marker(s) in cartesian coordinates: ";
+  
+  if (nMarker_Load_Dir != 0) {  
+    BoundaryTable << "Load boundary";
     for (iMarker_Load_Dir = 0; iMarker_Load_Dir < nMarker_Load_Dir; iMarker_Load_Dir++) {
-      cout << Marker_Load_Dir[iMarker_Load_Dir];
-      if (iMarker_Load_Dir < nMarker_Load_Dir-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Load_Dir[iMarker_Load_Dir];
+      if (iMarker_Load_Dir < nMarker_Load_Dir-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Disp_Dir != 0) {
-    cout << "Disp boundary marker(s) in cartesian coordinates: ";
+  
+  if (nMarker_Disp_Dir != 0) {  
+    BoundaryTable << "Disp boundary";
     for (iMarker_Disp_Dir = 0; iMarker_Disp_Dir < nMarker_Disp_Dir; iMarker_Disp_Dir++) {
-      cout << Marker_Disp_Dir[iMarker_Disp_Dir];
-      if (iMarker_Disp_Dir < nMarker_Disp_Dir-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Disp_Dir[iMarker_Disp_Dir];
+      if (iMarker_Disp_Dir < nMarker_Disp_Dir-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Load_Sine != 0) {
-    cout << "Sine-Wave Load boundary marker(s): ";
+  
+  if (nMarker_Load_Sine != 0) {  
+    BoundaryTable << "Sine-Wave boundary";
     for (iMarker_Load_Sine = 0; iMarker_Load_Sine < nMarker_Load_Sine; iMarker_Load_Sine++) {
-      cout << Marker_Load_Sine[iMarker_Load_Sine];
-      if (iMarker_Load_Sine < nMarker_Load_Sine-1) cout << ", ";
-      else cout <<"."<<endl;
+      BoundaryTable << Marker_Load_Sine[iMarker_Load_Sine];
+      if (iMarker_Load_Sine < nMarker_Load_Sine-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Neumann != 0) {
-    cout << "Neumann boundary marker(s): ";
+  
+  if (nMarker_Neumann != 0) {  
+    BoundaryTable << "Neumann boundary";
     for (iMarker_Neumann = 0; iMarker_Neumann < nMarker_Neumann; iMarker_Neumann++) {
-      cout << Marker_Neumann[iMarker_Neumann];
-      if (iMarker_Neumann < nMarker_Neumann-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Neumann[iMarker_Neumann];
+      if (iMarker_Neumann < nMarker_Neumann-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_Custom != 0) {
-    cout << "Custom boundary marker(s): ";
+  
+  if (nMarker_Custom != 0) {  
+    BoundaryTable << "Custom boundary";
     for (iMarker_Custom = 0; iMarker_Custom < nMarker_Custom; iMarker_Custom++) {
-      cout << Marker_Custom[iMarker_Custom];
-      if (iMarker_Custom < nMarker_Custom-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_Custom[iMarker_Custom];
+      if (iMarker_Custom < nMarker_Custom-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_ActDiskInlet != 0) {
-    cout << "Actuator disk (inlet) boundary marker(s): ";
+  
+  if (nMarker_ActDiskInlet != 0) {  
+    BoundaryTable << "Actuator disk (inlet) boundary";
     for (iMarker_ActDiskInlet = 0; iMarker_ActDiskInlet < nMarker_ActDiskInlet; iMarker_ActDiskInlet++) {
-      cout << Marker_ActDiskInlet[iMarker_ActDiskInlet];
-      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_ActDiskInlet[iMarker_ActDiskInlet];
+      if (iMarker_ActDiskInlet < nMarker_ActDiskInlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
-
-  if (nMarker_ActDiskOutlet != 0) {
-    cout << "Actuator disk (outlet) boundary marker(s): ";
+  
+  if (nMarker_ActDiskOutlet != 0) {  
+    BoundaryTable << "Actuator disk (outlet) boundary";
     for (iMarker_ActDiskOutlet = 0; iMarker_ActDiskOutlet < nMarker_ActDiskOutlet; iMarker_ActDiskOutlet++) {
-      cout << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
-      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1) cout << ", ";
-      else cout <<"."<< endl;
+      BoundaryTable << Marker_ActDiskOutlet[iMarker_ActDiskOutlet];
+      if (iMarker_ActDiskOutlet < nMarker_ActDiskOutlet-1)  BoundaryTable << " ";
     }
+    BoundaryTable.PrintFooter();
   }
 
 }
