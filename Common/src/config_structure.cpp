@@ -1688,8 +1688,6 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("WRT_PERFORMANCE", Wrt_Performance, false);
     /* DESCRIPTION: Output a 1D slice of a 2D cartesian solution \ingroup Config*/
   addBoolOption("WRT_SLICE", Wrt_Slice, false);
-  /* DESCRIPTION: Write raw sensitivities (dJ/dx) on surfaces to ASCII file. \ingroup Config*/
-  addBoolOption("WRT_EXTERNAL_SENSITIVITY", Wrt_External_Sensitivity, false);
   /*!\brief MARKER_ANALYZE_AVERAGE
    *  \n DESCRIPTION: Output averaged flow values on specified analyze marker.
    *  Options: AREA, MASSFLUX
@@ -1871,8 +1869,10 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
   addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
-  /* DESCRIPTION: Provide a file of sensitivities from an external adjoint as an ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each grid point. */
-  addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("external_sens.dat"));
+  /* DESCRIPTION: File of sensitivities as an ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each grid point (can be volume or surface). */
+  addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("surface_sens.dat"));
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  addEnumOption("DV_SENSITIVITY_FORMAT", Sensitivity_FileFormat, Sensitivity_Map, NATIVE_BINARY);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -4291,11 +4291,12 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     }
   }
   
-  /*--- If we are executing SU2_DOT in external sensitivity mode, then
-   force the external sensitivity file to be written. ---*/
+  /*--- If we are executing SU2_DOT in surface file mode, then
+   force the projected surface sensitivity file to be written. ---*/
   
-  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == EXTERNAL_SENSITIVITY)) {
-    Wrt_External_Sensitivity = true;
+  Wrt_Projected_Sensitivity = false;
+  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == SURFACE_FILE)) {
+    Wrt_Projected_Sensitivity = true;
   }
 
   /*--- Check the conductivity model. Deactivate the turbulent component
@@ -5311,7 +5312,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
           (Design_Variable[iDV] != SCALE_GRID) &&
           (Design_Variable[iDV] != TRANSLATE_GRID) &&
           (Design_Variable[iDV] != ROTATE_GRID) &&
-          (Design_Variable[iDV] != EXTERNAL_SENSITIVITY) &&
           (Design_Variable[iDV] != SURFACE_FILE)) {
         
         if (iDV == 0)

@@ -654,7 +654,7 @@ public:
    * \param[in] val_iZone - Current zone.
    * \param[in] val_nZone - Total number of zones.
    */
-  void WriteExternalSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  void WriteProjectedSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
