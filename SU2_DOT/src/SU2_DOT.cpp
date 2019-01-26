@@ -273,8 +273,8 @@ int main(int argc, char *argv[]) {
       grid_movement[iZone] = new CVolumetricMovement(geometry_container[iZone][INST_0], config_container[iZone]);
 
       /*--- Read in sensitivities from file. ---*/
-      if (config_container[ZONE_0]->GetDesign_Variable(0) == EXTERNAL_SENSITIVITY)
-        geometry_container[iZone][INST_0]->ReadExternalSensitivity(config_container[iZone]);
+      if (config_container[ZONE_0]->GetSensitivity_Format() == UNORDERED_ASCII)
+        geometry_container[iZone][INST_0]->ReadUnorderedSensitivity(config_container[iZone]);
       else
         geometry_container[iZone][INST_0]->SetSensitivity(config_container[iZone]);
 
@@ -292,7 +292,8 @@ int main(int argc, char *argv[]) {
      output->SetSensitivity_Files(geometry_container, config_container, nZone);
    }
 
-   if (config_container[ZONE_0]->GetDesign_Variable(0) != NONE){
+   if ((config_container[ZONE_0]->GetDesign_Variable(0) != NONE) &&
+       (config_container[ZONE_0]->GetDesign_Variable(0) != SURFACE_FILE)){
 
      /*--- Initialize structure to store the gradient ---*/
 

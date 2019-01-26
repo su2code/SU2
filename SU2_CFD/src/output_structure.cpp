@@ -8633,8 +8633,8 @@ void COutput::SetBaselineResult_Files(CSolver ***solver, CGeometry ***geometry, 
           
         }
         
-        if (config[iZone]->GetWrt_External_Sensitivity()) {
-          WriteExternalSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
+        if (config[iZone]->GetWrt_Projected_Sensitivity()) {
+          WriteProjectedSensitivity(config[iZone], geometry[iZone][iInst], iZone, val_nZone);
         }
         
         if (FileFormat == TECPLOT_BINARY) {

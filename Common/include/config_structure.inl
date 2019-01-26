@@ -1714,7 +1714,9 @@ inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = 
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
 
-inline bool CConfig::GetWrt_External_Sensitivity(void) { return Wrt_External_Sensitivity; }
+inline bool CConfig::GetWrt_Projected_Sensitivity(void) { return Wrt_Projected_Sensitivity; }
+
+inline unsigned short CConfig::GetSensitivity_Format(void) { return Sensitivity_FileFormat; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 

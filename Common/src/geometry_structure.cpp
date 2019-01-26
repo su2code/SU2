@@ -19114,7 +19114,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
+void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
   
   /*--- This routine makes SU2_DOT more interoperable with other
    packages so that folks can customize their workflows. For example, one
@@ -19143,7 +19143,8 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   ifstream external_file;
   ofstream sens_file;
   
-  if (rank == MASTER_NODE) cout << "Reading in external sensitivity."<< endl;
+  if (rank == MASTER_NODE)
+    cout << "Parsing unordered ASCII volume sensitivity file."<< endl;
   
   /*--- Allocate space for the sensitivity and initialize. ---*/
   
@@ -19154,12 +19155,12 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
     }
   }
   
-  /*--- Get the filename for the external sensitivity file input. ---*/
+  /*--- Get the filename for the unordered ASCII sensitivity file input. ---*/
   
   filename = config->GetDV_Sens_Filename();
   external_file.open(filename.data(), ios::in);
   if (external_file.fail()) {
-    SU2_MPI::Error(string("There is no external sensitivity file ") +
+    SU2_MPI::Error(string("There is no unordered ASCII sensitivity file ") +
                    filename, CURRENT_FUNCTION);
   }
   
@@ -19185,7 +19186,7 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
   
   /*--- Loop over all interior mesh nodes owned by this rank and find the
    matching point with minimum distance. Once we have the match, store the
-   external sensitivity from the file for that node. ---*/
+   sensitivities from the file for that node. ---*/
   
   if (VertexADT.IsEmpty()) {
     
@@ -19222,7 +19223,7 @@ void CPhysicalGeometry::ReadExternalSensitivity(CConfig *config) {
         
         if (rankID == rank) {
           
-          /*--- Store external sensitivity at the matched local node. ---*/
+          /*--- Store the sensitivities at the matched local node. ---*/
           
           for (iDim = 0; iDim < nDim; iDim++)
             Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
