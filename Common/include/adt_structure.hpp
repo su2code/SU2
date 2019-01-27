@@ -362,6 +362,11 @@ private:
                                                     search. */
 public:
   /*!
+   * \brief Default constructor of the class.
+   */
+  CADTElemClass(){}
+  
+  /*!
    * \brief Constructor of the class.
    * \param[in]     val_nDim     Number of spatial dimensions of the problem.
    * \param[in]     val_coor     Coordinates of the local points to be stored in the ADT.
@@ -659,10 +664,6 @@ private:
                        su2double           &dist2Tria,
                        su2double           &r,
                        su2double           &s);
-  /*!
-   * \brief Default constructor of the class, disabled.
-   */
-  CADTElemClass();
 
   /*!
    * \brief Copy constructor of the class, disabled.

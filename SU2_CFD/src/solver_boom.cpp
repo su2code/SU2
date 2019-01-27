@@ -610,26 +610,14 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     Coord_original[iPhi][i][0] = (pp0[0] + pp1[0])/2.0;
     Coord_original[iPhi][i][1] = (pp0[1] + pp1[1])/2.0;
     if(nDim == 3) Coord_original[iPhi][i][2] = (pp0[2] + pp1[0])/2.0;
-    
-    /*--- Get info needed for isoparameter computation ---*/
-    nNode = geometry->elem[jElem]->GetnNodes();
-    X_donor = new su2double[nDim*nNode];
-    for(iNode = 0; iNode < nNode; iNode++){
-      jNode = geometry->elem[jElem]->GetNode(iNode);
-      for(iDim = 0; iDim < nDim; iDim++){
-        X_donor[iDim*nNode + iNode] = geometry->node[jNode]->GetCoord()[iDim];
-      }
-    }
-      
-    /*--- Compute isoparameters ---*/
-    isoparams[i] = new su2double[nNode];
-    Isoparameters(nDim, nNode, X_donor, Coord_original[iPhi][i], isoparams[i]);
       
     /*--- x-locations of nearfield signal ---*/
     signal.x[iPhi][i] = Coord_original[iPhi][i][0];
     signal.p_prime[iPhi][i] = 0.0;
   }
-
+  
+  /*--- Build an ADT that will be used to get interpolation weights ---*/
+  BuildADT(config, geometry, Coord_original[iPhi], pointID_original[iPhi], isoparams, nPanel[iPhi]);
     
   /*--- Now interpolate pressure ---*/
   for(iPoint = 0; iPoint < nNode_list; iPoint++){
@@ -690,9 +678,9 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
   
 }
 
-void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry){
+void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double** coor, unsigned long* elems, su2double** wInterp, unsigned long nCoor){
   
-  unsigned long iPoint, iElem;
+  unsigned long iPoint;
   unsigned long nPoint = geometry->GetnPoint(), nElem = geometry->GetnElem();
   
   /*--------------------------------------------------------------------------*/
@@ -741,45 +729,45 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry){
   /*--------------------------------------------------------------------------*/
   
   /* Build the ADT. */
-  CADTElemClass WallADT(nDim, volumeCoor, volumeConn, VTK_TypeElem,
-                        markerIDs, elemIDs, true);
+  CADTElemClass VolumeADT(nDim, volumeCoor, volumeConn, VTK_TypeElem,
+                             markerIDs, elemIDs, true);
   
   /* Release the memory of the vectors used to build the ADT. To make sure
    that all the memory is deleted, the swap function is used. */
   vector<unsigned short>().swap(markerIDs);
   vector<unsigned short>().swap(VTK_TypeElem);
   vector<unsigned long>().swap(elemIDs);
-  vector<unsigned long>().swap(surfaceConn);
-  vector<su2double>().swap(surfaceCoor);
+  vector<unsigned long>().swap(volumeConn);
+  vector<su2double>().swap(volumeCoor);
   
   /*--------------------------------------------------------------------------*/
-  /*--- Step 3: Loop over all interior mesh nodes and compute minimum      ---*/
-  /*---         distance to a solid wall element                           ---*/
+  /*--- Step 3: Use the ADT to obtain the interpolation weights.           ---*/
   /*--------------------------------------------------------------------------*/
   
-  
-  if ( WallADT.IsEmpty() ) {
+  for(unsigned long iElem = 0; iElem < nCoor; iElem++){
     
-    /*--- No solid wall boundary nodes in the entire mesh.
-     Set the wall distance to zero for all nodes. ---*/
-    
-    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint)
-      node[iPoint]->SetWall_Distance(0.0);
-  }
-  else {
-    
-    /*--- Solid wall boundary nodes are present. Compute the wall
-     distance for all nodes. ---*/
-    
-    for (unsigned long iPoint=0; iPoint<GetnPoint(); ++iPoint) {
-      unsigned short markerID;
-      unsigned long  elemID;
-      int            rankID;
-      su2double      dist;
+    // Carry out the containment search and check if it was successful.
+    unsigned short subElem;
+    unsigned long  parElem;
+    int              rank;
+    su2double       parCoor[3], weightsInterpol[8];
+    if( VolumeADT.DetermineContainingElement(coor[iElem], subElem, parElem, rank,
+                                             parCoor, weightsInterpol) )
+    {
       
-      WallADT.DetermineNearestElement(node[iPoint]->GetCoord(), dist, markerID,
-                                      elemID, rankID);
-      node[iPoint]->SetWall_Distance(dist);
+      // Compute the actual interpolation weights.
+      const unsigned short nDOFs = geometry->elem[elems[iElem]]->GetnNodes();
+      vector<su2double> wSol(nDOFs);
+      
+      CFEMStandardElement *standardElement = new CFEMStandardElement(geometry->elem[elems[iElem]]->GetVTK_Type(),
+                                                                     geometry->elem[elems[iElem]]->GetNPolySol(),
+                                                                     false,
+                                                                     config);
+      standardElement->BasisFunctionsInPoint(parCoor, wSol);
+      
+      for(unsigned short k=0; k<nDOFs; k++)
+        wInterp[iElem][k] = wSol[k];
+      
     }
   }
   

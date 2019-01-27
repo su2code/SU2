@@ -132,7 +132,7 @@ public:
                     const su2double r0, const su2double *phi);
   void ExtractLine(CGeometry *geometry, const su2double r0, unsigned short iPhi);
   void ExtractPressure(CSolver *solver, CConfig *config, CGeometry *geometry, unsigned short iPhi);
-  void BuildADT(CConfig* config, CGeometry* geometry);
+  void BuildADT(CConfig* config, CGeometry* geometry, su2double** coor, unsigned long* elems, su2double** wInterp, unsigned long nCoor);
   bool InsideElem(CGeometry *geometry, su2double r0, su2double phi, unsigned long jElem, su2double *p0, su2double *p1);
   int Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *p0, su2double *p1);
   int Intersect3D(su2double r0, su2double phi, int nCoord, su2double **Coord_i, su2double *p1);
