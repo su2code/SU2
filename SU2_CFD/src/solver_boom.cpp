@@ -554,7 +554,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     jElem = pointID_original[iPhi][i];
     nNode = geometry->elem[jElem]->GetnNodes();
     nPointID[iPhi] += nNode;
-    isoparams[i] = NULL;
+    isoparams[i] = new su2double[nNode];
   }
   PointID[iPhi] = new unsigned long[nPointID[iPhi]];
   jNode_list = new unsigned long[nPointID[iPhi]];
@@ -688,6 +688,11 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   /*---         into account in the containment search.                    ---*/
   /*--------------------------------------------------------------------------*/
   
+  /* Initialize an array for the mesh points, which eventually contains the
+   mapping from the local nodes to the number used in the connectivity of the
+   local volumes. */
+  vector<unsigned long> meshToVolume(nPoint, 0);
+  
   /* Define the vectors for the connectivity of the local linear subelements,
    the element ID's, the element type and marker ID's. */
   vector<unsigned long> volumeConn;
@@ -708,7 +713,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
         
     VTK_TypeElem.push_back(VTK_Type);
     elemIDs.push_back(iElem);
-    dummymarkerIDs.push_back(iElem);
+    dummymarkerIDs.push_back(0);
         
     for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
       volumeConn.push_back(geometry->elem[iElem]->GetNode(iNode));
@@ -717,11 +722,18 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   
   /*--- Create the coordinates of the local points. ---*/
   vector<su2double> volumeCoor;
+  unsigned long nVertex = 0;
   
   for(unsigned long i=0; i<nPoint; ++i) {
+    meshToVolume[i] = nVertex++;
     for(unsigned short k=0; k<nDim; ++k)
       volumeCoor.push_back(geometry->node[i]->GetCoord(k));
   }
+  
+  /*--- Change the volume connectivity, such that it corresponds to
+   the entries in volumeCoor rather than in meshPoints. ---*/
+  for(unsigned long i=0; i<volumeConn.size(); ++i)
+    volumeConn[i] = meshToVolume[volumeConn[i]];
   
   /*--------------------------------------------------------------------------*/
   /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
@@ -757,13 +769,13 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
     {
       
       /* Compute the actual interpolation weights. */
-      const unsigned short nDOFs = geometry->elem[elems[iElem]]->GetnNodes();
-      vector<su2double> wSol(nDOFs);
-      
       CFEMStandardElement *standardElement = new CFEMStandardElement(geometry->elem[elems[iElem]]->GetVTK_Type(),
                                                                      geometry->elem[elems[iElem]]->GetNPolySol(),
                                                                      false,
                                                                      config);
+      const unsigned short nDOFs = standardElement->GetNDOFs();
+      vector<su2double> wSol(nDOFs);
+      
       standardElement->BasisFunctionsInPoint(parCoor, wSol);
       
       for(unsigned short k=0; k<nDOFs; k++)
