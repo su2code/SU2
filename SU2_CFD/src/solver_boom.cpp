@@ -680,7 +680,6 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
 
 void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double** coor, unsigned long* elems, su2double** wInterp, unsigned long nCoor){
   
-  unsigned long iPoint;
   unsigned long nPoint = geometry->GetnPoint(), nElem = geometry->GetnElem();
   
   /*--------------------------------------------------------------------------*/
@@ -694,7 +693,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   vector<unsigned long> volumeConn;
   vector<unsigned long> elemIDs;
   vector<unsigned short> VTK_TypeElem;
-  vector<unsigned short> markerIDs;
+  vector<unsigned short> dummymarkerIDs;
   
   /* Loop over the elements. */
   for(unsigned long iElem=0; iElem < nElem; iElem++) {
@@ -709,6 +708,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
         
     VTK_TypeElem.push_back(VTK_Type);
     elemIDs.push_back(iElem);
+    dummymarkerIDs.push_back(iElem);
         
     for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
       volumeConn.push_back(geometry->elem[iElem]->GetNode(iNode));
@@ -728,13 +728,14 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   /*---         volume elements.                                           ---*/
   /*--------------------------------------------------------------------------*/
   
-  /* Build the ADT. */
+  /* Build the ADT. Note that not all processors are used in the search so
+   build a local tree. */
   CADTElemClass VolumeADT(nDim, volumeCoor, volumeConn, VTK_TypeElem,
-                             markerIDs, elemIDs, true);
+                             dummymarkerIDs, elemIDs, false);
   
   /* Release the memory of the vectors used to build the ADT. To make sure
    that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(markerIDs);
+  vector<unsigned short>().swap(dummymarkerIDs);
   vector<unsigned short>().swap(VTK_TypeElem);
   vector<unsigned long>().swap(elemIDs);
   vector<unsigned long>().swap(volumeConn);
@@ -746,7 +747,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   
   for(unsigned long iElem = 0; iElem < nCoor; iElem++){
     
-    // Carry out the containment search and check if it was successful.
+    /* Carry out the containment search and check if it was successful. */
     unsigned short subElem;
     unsigned long  parElem;
     int              rank;
@@ -755,7 +756,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
                                              parCoor, weightsInterpol) )
     {
       
-      // Compute the actual interpolation weights.
+      /* Compute the actual interpolation weights. */
       const unsigned short nDOFs = geometry->elem[elems[iElem]]->GetnNodes();
       vector<su2double> wSol(nDOFs);
       
