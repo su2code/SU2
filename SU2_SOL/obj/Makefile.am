@@ -50,17 +50,14 @@ if BUILD_REVERSE
 bin_PROGRAMS += ../bin/SU2_SOL_AD
 endif
 
-___bin_SU2_SOL_SOURCES = \
-  ../include/SU2_SOL.hpp \
-  ../src/SU2_SOL.cpp
+su2_sol_sources = ../include/SU2_SOL.hpp \
+		../src/SU2_SOL.cpp
 
-___bin_SU2_SOL_CXXFLAGS =
-___bin_SU2_SOL_AD_CXXFLAGS =
-___bin_SU2_SOL_LDADD =
-___bin_SU2_SOL_AD_LDADD =
+su2_sol_ldadd =
+su2_sol_cxx_flags =
 
 if BUILD_NORMAL
-___bin_SU2_SOL_LDADD += \
+su2_sol_ldadd += \
   ../../SU2_CFD/src/libSU2Core_a-solver_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_structure.$(OBJEXT) \
   ../../SU2_CFD/src/libSU2Core_a-output_cgns.$(OBJEXT) \
@@ -74,7 +71,7 @@ ___bin_SU2_SOL_LDADD += \
 endif
 
 if BUILD_REVERSE
-___bin_SU2_SOL_AD_LDADD += \
+su2_sol_ldadd += \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
   ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
@@ -88,16 +85,22 @@ ___bin_SU2_SOL_AD_LDADD += \
 endif
 
 # always link to built dependencies from ./externals
-___bin_SU2_SOL_CXXFLAGS += @su2_externals_INCLUDES@
-___bin_SU2_SOL_LDADD += @su2_externals_LIBS@
-___bin_SU2_SOL_LDADD += @su2_externals_LIBPTHREAD@
+su2_sol_cxx_flags += @su2_externals_INCLUDES@
+su2_sol_ldadd += @su2_externals_LIBS@
 
 # if BUILD_MUTATIONPP
-___bin_SU2_SOL_CXXFLAGS += @MUTATIONPP_CXX@
-___bin_SU2_SOL_LDADD += @MUTATIONPP_LD@
+su2_sol_cxx_flags += @MUTATIONPP_CXX@
+su2_sol_ldadd += @MUTATIONPP_LD@
 # endif
 
+if BUILD_NORMAL
+___bin_SU2_SOL_SOURCES = ${su2_sol_sources}
+___bin_SU2_SOL_CXXFLAGS = ${su2_sol_cxx_flags}
+___bin_SU2_SOL_LDADD =  ${su2_sol_ldadd}
+endif
+
 if BUILD_REVERSE
-___bin_SU2_SOL_AD_CXXFLAGS += @REVERSE_CXX@
-___bin_SU2_SOL_AD_LDADD += @REVERSE_LIBS@
+___bin_SU2_SOL_AD_SOURCES = ${su2_sol_sources}
+___bin_SU2_SOL_AD_CXXFLAGS = @REVERSE_CXX@ ${su2_sol_cxx_flags} 
+___bin_SU2_SOL_AD_LDADD = @REVERSE_LIBS@ ${su2_sol_ldadd}
 endif
