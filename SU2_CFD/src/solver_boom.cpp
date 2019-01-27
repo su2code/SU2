@@ -609,7 +609,7 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
     addNode = InsideElem(geometry, ray_r0, ray_phi[iPhi], jElem, pp0, pp1);
     Coord_original[iPhi][i][0] = (pp0[0] + pp1[0])/2.0;
     Coord_original[iPhi][i][1] = (pp0[1] + pp1[1])/2.0;
-    if(nDim == 3) Coord_original[iPhi][i][2] = (pp0[2] + pp1[0])/2.0;
+    if(nDim == 3) Coord_original[iPhi][i][2] = (pp0[2] + pp1[2])/2.0;
       
     /*--- x-locations of nearfield signal ---*/
     signal.x[iPhi][i] = Coord_original[iPhi][i][0];
