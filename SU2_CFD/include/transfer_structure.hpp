@@ -174,6 +174,16 @@ public:
                    unsigned long Vertex_Donor, unsigned long Point_Donor);
 
   /*!
+   * \brief A virtual member, initializes the target variable.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] nDonorPoints - Number of donor points.
+   */
+  virtual void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                         unsigned long Vertex_Target, unsigned short nDonorPoints);
+
+  /*!
    * \brief A virtual member.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] target_geometry - Geometry of the target mesh.
@@ -740,6 +750,16 @@ public:
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+  /*!
+   * \brief A virtual member, initializes the target variable for sliding mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] nDonorPoints - Number of donor points.
+   */
+  void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                 unsigned long Vertex_Target, unsigned short nDonorPoints);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
