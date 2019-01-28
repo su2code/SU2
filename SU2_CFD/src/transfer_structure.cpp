@@ -65,11 +65,7 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   
   Physical_Constants = new su2double[val_nConst];
   Donor_Variable     = new su2double[val_nVar];
-  
-  if( config->GetFSI_Simulation() )
-    Target_Variable = new su2double[val_nVar];
-  else
-    Target_Variable = new su2double[val_nVar+1];
+  Target_Variable    = new su2double[val_nVar];
     
   nVar = val_nVar;
   
