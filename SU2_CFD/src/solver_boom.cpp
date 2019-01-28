@@ -682,17 +682,6 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   
   unsigned long nPoint = geometry->GetnPoint(), nElem = geometry->GetnElem();
   
-//  /* Carry out a dynamic cast to CMeshFEM_DG. */
-//  cout << "Dynamic cast DGMesh..." << endl;
-//  CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry);
-//
-//  cout << "Get VolElems..." << endl;
-//  unsigned long nElem = DGMesh->GetNVolElemOwned();
-//  CVolumeElementFEM *volElem = DGMesh->GetVolElem();
-//
-//  cout << "GetStandardElementsSol..." << endl;
-//  CFEMStandardElement *standardElementsSol   = DGMesh->GetStandardElementsSol();
-  
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
   /*---         subelements of the local elements that must be taken       ---*/
@@ -776,7 +765,6 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
     unsigned long  parElem;
     int              rank;
     su2double       parCoor[3], weightsInterpol[8];
-    cout << "Determine Containing Element..." << endl;
     if( VolumeADT.DetermineContainingElement(coor[iElem], subElem, parElem, rank,
                                              parCoor, weightsInterpol) )
     {
