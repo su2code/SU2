@@ -1844,8 +1844,6 @@ inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetPseudoStatic(void) { return PseudoStatic; }
 
-inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
-
 inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
 
 inline unsigned short CConfig::GetDynamic_Analysis(void) { return Dynamic_Analysis; }

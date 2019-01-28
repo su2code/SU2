@@ -3413,72 +3413,65 @@ void CDriver::Interface_Preprocessing() {
         /*--- Match Zones ---*/
       if (rank == MASTER_NODE) cout << "Setting coupling ";
 
-        /*--- If the mesh is matching: match points ---*/
-      if ( config_container[donorZone]->GetMatchingMesh() ) {
-        if (rank == MASTER_NODE) 
-            cout << "between matching meshes. " << endl;
-        geometry_container[donorZone][INST_0][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], donorZone, nZone);
-        }
-        /*--- Else: interpolate ---*/
-        else {
-        switch (config_container[donorZone]->GetKindInterpolation()) {
+      /*--- Interpolate ---*/
+      switch (config_container[donorZone]->GetKindInterpolation()) {
+        /*--- Nearest neighbor is the default for matching meshes ---*/
+        case NEAREST_NEIGHBOR:
+          interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
+          if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
 
-          case NEAREST_NEIGHBOR:
-            interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+          break;
 
-            break;
+        case ISOPARAMETRIC:
+          interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+          if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
 
-          case ISOPARAMETRIC:
-            interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+          break;
 
-            break;
+        case WEIGHTED_AVERAGE:
+          interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
+          if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
 
-          case WEIGHTED_AVERAGE:
-            interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
-
-            break;
+          break;
             
-          case RADIAL_BASIS_FUNCTION:
-            if ( config_container[donorZone]->GetConservativeInterpolation() ) {
-              if( targetZone > 0 && structural_target ) {
-                interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
-              }
-              else {
-                interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
-              }
-              if ( targetZone == 0 && structural_target && rank == MASTER_NODE)
-                cout << "Conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The RBF coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
+        case RADIAL_BASIS_FUNCTION:
+          if ( config_container[donorZone]->GetConservativeInterpolation() ) {
+            if( targetZone > 0 && structural_target ) {
+              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
             }
             else {
               interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
               if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
             }
-            
-            break;
-
-          case CONSISTCONSERVE:
-            if ( targetZone > 0 && structural_target ) {
-              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
-            }
-            else{
-              interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-            }
-            if ( targetZone == 0 && structural_target ) {
-              if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
-            }
-
-
-            break;
-
+            if ( targetZone == 0 && structural_target && rank == MASTER_NODE)
+              cout << "Conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The RBF coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
           }
+          else {
+            interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
+          }
+            
+          break;
+
+        case CONSISTCONSERVE:
+          if ( targetZone > 0 && structural_target ) {
+            interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+          }
+          else{
+            interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+          }
+          if ( targetZone == 0 && structural_target ) {
+            if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
+          }
+
+
+          break;
+
         }
+
 
         /*--- Initialize the appropriate transfer strategy ---*/
       if (rank == MASTER_NODE) cout << "Transferring ";
