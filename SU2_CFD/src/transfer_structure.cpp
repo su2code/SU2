@@ -1083,17 +1083,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
           Point_Target_Check = -1;
           
-          if(!fsi){
-                target_solution->SetnSlidingStates(Marker_Target, iVertex, nDonorPoints); // This is to allocate
-                target_solution->SetSlidingStateStructure(Marker_Target, iVertex);
-                target_solution->SetnSlidingStates(Marker_Target, iVertex, 0); // Reset counter to 0
-          }
-          else{
-                /*--- As we will be adding data, we need to set the variable to 0 ---*/
-                for (iVar = 0; iVar < nVar; iVar++) 
-                    Target_Variable[iVar] = 0.0;
-          }
-          
+          InitializeTarget_Variable(target_solution, Marker_Target, iVertex, nDonorPoints);
           
           /*--- For the number of donor points ---*/
           for (iDonorPoint = 0; iDonorPoint < nDonorPoints; iDonorPoint++) {
