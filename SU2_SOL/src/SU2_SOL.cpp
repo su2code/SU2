@@ -579,7 +579,7 @@ int main(int argc, char *argv[]) {
     for (iZone = 0; iZone < nZone; iZone++) {
       /*--- Definition of the solution class ---*/
 
-      solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
+      solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
       solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
     }
 
