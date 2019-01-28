@@ -731,11 +731,6 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
       volumeCoor.push_back(geometry->node[i]->GetCoord(k));
   }
   
-  /*--- Change the volume connectivity, such that it corresponds to
-   the entries in volumeCoor rather than in meshPoints. ---*/
-  for(unsigned long i=0; i<volumeConn.size(); ++i)
-    volumeConn[i] = meshToVolume[volumeConn[i]];
-  
   /*--------------------------------------------------------------------------*/
   /*--- Step 2: Build the ADT, which is an ADT of bounding boxes of the    ---*/
   /*---         volume elements.                                           ---*/
@@ -770,7 +765,8 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
     {
       
       /* Subelement found that contains the exchange location. For now, assume
-       linear elements and use the interpolation weights. */
+       linear elements and use the interpolation weights provided by
+       DetermineContainintElement. */
       
       const unsigned short nDOFs = geometry->elem[elems[iElem]]->GetnNodes();
       
@@ -868,9 +864,9 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
           pp0[2] = ppp0[2];
         }
         else{
-          pp1[0] = pp0[0];
-          pp1[1] = pp0[1];
-          pp1[2] = pp0[2];
+          pp1[0] = ppp0[0];
+          pp1[1] = ppp0[1];
+          pp1[2] = ppp0[2];
         }
         count++;
         if(count > 1){
@@ -1214,25 +1210,6 @@ void CBoom_AugBurgers::SolverPreprocessing(CSolver *solver, CConfig *config, CGe
     }
     
     if(AD_Mode) AD::StartRecording();
-  
-//    /*---Instantiate a DG mesh for pressure extraction---*/
-//    if (rank == MASTER_NODE) cout << "Instantiate DG mesh." << endl;
-//    geometry->SetColorFEMGrid_Parallel(config);
-//    CGeometry *geometry_aux = new CMeshFEM_DG(geometry, config);
-//
-//    /* Carry out a dynamic cast to CMeshFEM_DG. */
-//    if(rank == MASTER_NODE) cout << "Dynamic cast to DGMesh." << endl;
-//    CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry);
-//
-//    /*--- Determine the standard elements for the volume elements. ---*/
-//    if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
-//    DGMesh->CreateStandardVolumeElements(config);
-//
-//    /*--- Create the face information needed to compute the contour integral
-//     for the elements in the Discontinuous Galerkin formulation. ---*/
-//    if (rank == MASTER_NODE) cout << "Creating face information." << endl;
-//    DGMesh->CreateFaces(config);
-  
     
     /*---Interpolate pressures along line---*/
     if(rank == MASTER_NODE)
@@ -1692,7 +1669,7 @@ void CBoom_AugBurgers::CreateUniformGridSignal(unsigned short iPhi){
   /*---Recompress aft of signal---*/
   for(unsigned long i = i1; i < i2; i++){
     signal.x[iPhi][i] = signal.x[iPhi][i1-1]+dx_avg*su2double(i+1-i1);
-    if((signal.p_prime[iPhi][i-1]+dp_dx_end*dx_avg) / signal.p_prime[iPhi][i-1] > 0.){ // If no sign change
+    if((signal.p_prime[iPhi][i-1]+dp_dx_end*dx_avg) * signal.p_prime[iPhi][i-1] > 0.){ // If no sign change
       signal.p_prime[iPhi][i] = signal.p_prime[iPhi][i-1]+dp_dx_end*dx_avg;
     }
     else{
