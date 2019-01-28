@@ -50,8 +50,7 @@ int main(int argc, char *argv[]) {
   bool fem_solver = false;
   bool periodic = false;
   bool multizone = false;
-  bool boom = false;
-
+  
   /*--- MPI initialization ---*/
 
 #ifdef HAVE_MPI
@@ -151,12 +150,6 @@ int main(int argc, char *argv[]) {
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
-    
-    /*--- Determine whether or not the sonic boom solver is used, which decides the
-     type of geometry classes that are instantiated. ---*/
-    boom = (config_container[ZONE_0]->GetBoom_flag() != NONE ||
-            config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
-            config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY);
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -257,11 +250,11 @@ int main(int argc, char *argv[]) {
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
   
-  /*--- Determine whether or not the sonic boom solver is used, which decides the
-   type of geometry classes that are instantiated. ---*/
-//  bool boom = (config_container[ZONE_0]->GetBoom_flag() != NONE ||
-//                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
-//                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY);
+  /*--- Determine whether or not the sonic boom solver is used ---*/
+  
+  bool boom = (config_container[ZONE_0]->GetBoom_flag() != NONE ||
+                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY);
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
@@ -577,6 +570,17 @@ int main(int argc, char *argv[]) {
     }
 
     output->SetBaselineResult_Files_FEM(solver_container, geometry_container, config_container, 0, nZone);
+    }
+    
+  } else if (boom) {
+
+    /*--- Steady simulation: merge the single solution file. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Definition of the solution class ---*/
+
+      solver_container[iZone][INST_0] = new CBaselineSolver_FEM(geometry_container[iZone][INST_0], config_container[iZone]);
+      solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
     }
 
   }
