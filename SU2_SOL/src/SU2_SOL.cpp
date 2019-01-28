@@ -582,6 +582,7 @@ int main(int argc, char *argv[]) {
       solver_container[iZone][INST_0] = new CBaselineSolver(geometry_container[iZone][INST_0], config_container[iZone]);
       solver_container[iZone][INST_0]->LoadRestart(&geometry_container[iZone][INST_0], &solver_container[iZone], config_container[iZone], SU2_TYPE::Int(MESH_0), true);
     }
+    if(config_container[ZONE_0]->GetWrt_Output()) output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
 
   }
   else {
