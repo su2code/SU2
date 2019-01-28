@@ -227,14 +227,26 @@ def SOL(config):
     """
   
     konfig = copy.deepcopy(config)
-    
-    tempname = 'config_SOL.cfg'
-    konfig.dump(tempname)
-  
-    # must run with rank 1
-    processes = konfig['NUMBER_PART']
-    
-    the_Command = 'SU2_SOL%s %s' % (quote, tempname)
+
+    auto_diff = konfig.MATH_PROBLEM == 'DISCRETE_ADJOINT' or konfig.get('AUTO_DIFF','NO') == 'YES'
+
+    if auto_diff:
+
+        tempname = 'config_SOL_AD.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_SOL_AD ' + tempname
+    else:
+
+        tempname = 'config_SOL.cfg'
+        konfig.dump(tempname)
+
+        processes = konfig['NUMBER_PART']
+
+        the_Command = 'SU2_SOL ' + tempname
+        
     the_Command = build_command( the_Command , processes )
     run_command( the_Command )
     
