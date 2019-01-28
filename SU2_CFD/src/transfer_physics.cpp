@@ -53,8 +53,7 @@ void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
 
   /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
         and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = !flow_config->GetMatchingMesh() && (
-                             !flow_config->GetConservativeInterpolation() ||
+  consistent_interpolation = (!flow_config->GetConservativeInterpolation() ||
                              (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
