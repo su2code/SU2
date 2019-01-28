@@ -956,7 +956,6 @@ private:
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
   su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
@@ -8555,13 +8554,6 @@ public:
    */
   
   bool GetPseudoStatic(void);
-  
-  /*!
-    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
-    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
-    */
-  
-  bool GetMatchingMesh(void);
   
   /*!
    * \brief Identifies if we want to restart from a steady or an unsteady solution.
