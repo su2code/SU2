@@ -6523,7 +6523,7 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet = NULL, Pressure, Velocity[3], MassFlow,
+  su2double *V_outlet = NULL, Velocity[3], MassFlow,
   Velocity2, Density, Area, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
@@ -6587,7 +6587,6 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
               AxiFactor = 1.0;
             }
             
-            Pressure     = V_outlet[0];
             Density      = V_outlet[nDim+2];
             
             Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;

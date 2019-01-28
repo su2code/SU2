@@ -66,6 +66,9 @@ CTransfer::CTransfer(unsigned short val_nVar, unsigned short val_nConst, CConfig
   Physical_Constants = new su2double[val_nConst];
   Donor_Variable     = new su2double[val_nVar];
   Target_Variable    = new su2double[val_nVar];
+
+  /*--- By default, the value is aggregated in the transfer routine ---*/
+  valAggregated      = true;
     
   nVar = val_nVar;
   
@@ -1096,27 +1099,16 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
            
             Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
 
-            if (Point_Target_Check < 0 && fsi) {
-              SU2_MPI::Error("A nonphysical point is being considered for traction transfer.", CURRENT_FUNCTION);
-            }
-            else if (fsi){
-              for (iVar = 0; iVar < nVar; iVar++)
-                Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
-            }
-            else{
-                for (iVar = 0; iVar < nVar; iVar++)
-                    Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
-                    
-                Target_Variable[nVar] = donorCoeff;
-                
-                //for (iVar = 0; iVar < nVar+1; iVar++) cout << Target_Variable[iVar] << "  "; cout << endl; getchar();
-                 
-                SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);  
-            }
+            /*--- Recover the Target_Variable from the buffer of variables ---*/
+            RecoverTarget_Variable(indexPoint_iVertex, Buffer_Bcast_Variables, donorCoeff);
+
+            /*--- If the value is not directly aggregated in the previous function ---*/
+            if (!valAggregated) SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+
           }
 
-          if (fsi)
-            SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
+          /*--- If we have aggregated the values in the function RecoverTarget_Variable, the set is outside the loop ---*/
+          if (valAggregated) SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
       }

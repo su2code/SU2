@@ -72,6 +72,7 @@ protected:
   su2double *Physical_Constants;
   su2double *Donor_Variable;
   su2double *Target_Variable;
+  bool valAggregated;
 
   /*--- Mixing Plane interface variable ---*/
   su2double 	  *SpanValueCoeffTarget;
@@ -174,7 +175,7 @@ public:
                    unsigned long Vertex_Donor, unsigned long Point_Donor);
 
   /*!
-   * \brief A virtual member, initializes the target variable.
+   * \brief Initializes the target variable.
    * \param[in] target_solution - Solution from the target mesh.
    * \param[in] Marker_Target - Index of the target marker.
    * \param[in] Vertex_Target - Index of the target vertex.
@@ -182,6 +183,15 @@ public:
    */
   virtual void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
                                          unsigned long Vertex_Target, unsigned short nDonorPoints);
+
+  /*!
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
+   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
+   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
+  virtual void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                      su2double donorCoeff);
 
   /*!
    * \brief A virtual member.
@@ -760,6 +770,15 @@ public:
    */
   void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
                                  unsigned long Vertex_Target, unsigned short nDonorPoints);
+
+  /*!
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
+   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
+   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
+  void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                              su2double donorCoeff);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
