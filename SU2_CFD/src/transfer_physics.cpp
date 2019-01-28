@@ -613,7 +613,32 @@ CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
 
 }
 
-CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer() {
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  Physical_Constants = NULL;
+  Donor_Variable     = NULL;
+  Target_Variable    = NULL;
+
+  unsigned short iVar;
+
+  Physical_Constants = new su2double[val_nConst];
+  Donor_Variable     = new su2double[val_nVar];
+
+  Target_Variable    = new su2double[val_nVar+1];
+
+  nVar = val_nVar;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Donor_Variable[iVar]  = 0.0;
+    Target_Variable[iVar] = 0.0;
+  }
+
+  for (iVar = 0; iVar < val_nConst; iVar++) {
+    Physical_Constants[iVar] = 0.0;
+  }
 
 }
 
