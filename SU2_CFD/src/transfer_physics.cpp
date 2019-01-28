@@ -652,6 +652,15 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
   }
 }
 
+void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned short nDonorPoints) {
+
+  target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, nDonorPoints); // This is to allocate
+  target_solution->SetSlidingStateStructure(Marker_Target, Vertex_Target);
+  target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, 0); // Reset counter to 0
+
+}
+
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
                           CConfig *target_config, unsigned long Marker_Target,
                           unsigned long Vertex_Target, unsigned long Point_Target) {
