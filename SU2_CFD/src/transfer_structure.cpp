@@ -1115,7 +1115,7 @@ void CTransfer::Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSo
             }
           }
 
-          if (Point_Target_Check >= 0 && fsi)
+          if (fsi)
             SetTarget_Variable(target_solution, target_geometry, target_config, Marker_Target, iVertex, Point_Target);
         }
         
