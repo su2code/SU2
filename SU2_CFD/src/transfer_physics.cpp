@@ -629,6 +629,8 @@ CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, 
 
   Target_Variable    = new su2double[val_nVar+1];
 
+  valAggregated      = false;
+
   nVar = val_nVar;
 
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -684,6 +686,14 @@ void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solut
   target_solution->SetSlidingStateStructure(Marker_Target, Vertex_Target);
   target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, 0); // Reset counter to 0
 
+}
+
+void CTransfer_SlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                                        su2double donorCoeff){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+
+  Target_Variable[nVar] = donorCoeff;
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
