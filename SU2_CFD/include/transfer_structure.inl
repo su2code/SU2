@@ -50,6 +50,12 @@ inline void CTransfer::InitializeTarget_Variable(CSolver *target_solution, unsig
   for (unsigned short iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
 }
 
+inline void CTransfer::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                              su2double donorCoeff){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+
+}
+
 inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 										  CConfig *target_config, unsigned long Marker_Target,
 										  unsigned long Vertex_Target, unsigned long Point_Target) { }
