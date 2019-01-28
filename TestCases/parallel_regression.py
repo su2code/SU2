@@ -933,16 +933,16 @@ def main():
     test_list.append(slinc_steady)
     
     # Sliding mesh with incompressible flows (unsteady)
-    slinc_unsteady           = TestCase('slinc_unsteady')
-    slinc_unsteady.cfg_dir   = "sliding_interface/incompressible_unsteady"
-    slinc_unsteady.cfg_file  = "config.cfg"
-    slinc_unsteady.test_iter = 19
-    slinc_unsteady.test_vals = [-3.513701,1.931626,0.000000,0.000000] #last 4 columns
-    slinc_unsteady.su2_exec  = "SU2_CFD"
-    slinc_unsteady.timeout   = 100
-    slinc_unsteady.tol       = 0.00001
-    slinc_unsteady.unsteady  = True
-    test_list.append(slinc_unsteady)    
+    # slinc_unsteady           = TestCase('slinc_unsteady')
+    # slinc_unsteady.cfg_dir   = "sliding_interface/incompressible_unsteady"
+    # slinc_unsteady.cfg_file  = "config.cfg"
+    # slinc_unsteady.test_iter = 19
+    # slinc_unsteady.test_vals = [-3.513701,1.931626,0.000000,0.000000] #last 4 columns
+    # slinc_unsteady.su2_exec  = "SU2_CFD"
+    # slinc_unsteady.timeout   = 100
+    # slinc_unsteady.tol       = 0.00001
+    # slinc_unsteady.unsteady  = True
+    # test_list.append(slinc_unsteady)    
 
     ##########################
     ### FEA - FSI          ###
