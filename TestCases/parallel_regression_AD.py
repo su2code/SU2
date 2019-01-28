@@ -270,6 +270,21 @@ def main():
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
 
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 0
+    discadj_fsi2.su2_exec  = "parallel_computation.py"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.reference_file = "grad_young.opt.ref"
+    discadj_fsi2.test_file = "grad_young.opt"
+    pass_list.append(discadj_fsi2.run_filediff())
+    test_list.append(discadj_fsi2)
+
     # Tests summary
     print('==================================================================')
     print('Summary of the parallel tests')
