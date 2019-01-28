@@ -6075,7 +6075,6 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
   su2double *tmp_residual = new su2double[nVar];
   
   su2double weight;
-  su2double P_static, rho_static;
    
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
 
@@ -6524,8 +6523,8 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
   
   unsigned short iDim, iMarker;
   unsigned long iVertex, iPoint;
-  su2double *V_outlet = NULL, Pressure, Temperature, Velocity[3], MassFlow,
-  Velocity2, Density, Area, Vel_Infty2, AxiFactor;
+  su2double *V_outlet = NULL, Pressure, Velocity[3], MassFlow,
+  Velocity2, Density, Area, AxiFactor;
   unsigned short iMarker_Outlet, nMarker_Outlet;
   string Inlet_TagBound, Outlet_TagBound;
   
@@ -6588,11 +6587,10 @@ void CIncEulerSolver::GetOutlet_Properties(CGeometry *geometry, CConfig *config,
               AxiFactor = 1.0;
             }
             
-            Temperature  = V_outlet[nDim+1];
             Pressure     = V_outlet[0];
             Density      = V_outlet[nDim+2];
             
-            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0; Vel_Infty2 = 0.0;
+            Velocity2 = 0.0; Area = 0.0; MassFlow = 0.0;
             
             for (iDim = 0; iDim < nDim; iDim++) {
               Area += (Vector[iDim] * AxiFactor) * (Vector[iDim] * AxiFactor);
@@ -7086,8 +7084,6 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
   bool adjoint = (config->GetContinuous_Adjoint()) || (config->GetDiscrete_Adjoint());
   string filename_ = config->GetSolution_FlowFileName();
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   unsigned short direct_diff = config->GetDirectDiff();
 
