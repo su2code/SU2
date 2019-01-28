@@ -680,7 +680,18 @@ void CBoom_AugBurgers::ExtractPressure(CSolver *solver, CConfig *config, CGeomet
 
 void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double** coor, unsigned long* elems, su2double** wInterp, unsigned long nCoor){
   
-  unsigned long nPoint = geometry->GetnPoint(), nElem = geometry->GetnElem();
+  unsigned long nPoint = geometry->GetnPoint();
+  
+  /* Carry out a dynamic cast to CMeshFEM_DG. */
+  cout << "Dynamic cast DGMesh..." << endl;
+  CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry);
+  
+  cout << "Get VolElems..." << endl;
+  unsigned long nElem = DGMesh->GetNVolElemOwned();
+  CVolumeElementFEM *volElem = DGMesh->GetVolElem();
+  
+  cout << "GetStandardElementsSol..." << endl;
+  CFEMStandardElement *standardElementsSol   = DGMesh->GetStandardElementsSol();
   
   /*--------------------------------------------------------------------------*/
   /*--- Step 1: Create the coordinates and connectivity of the linear      ---*/
@@ -698,7 +709,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   vector<unsigned long> volumeConn;
   vector<unsigned long> elemIDs;
   vector<unsigned short> VTK_TypeElem;
-  vector<unsigned short> dummymarkerIDs;
+  vector<unsigned short> subElemIDs;
   
   /* Loop over the elements. */
   for(unsigned long iElem=0; iElem < nElem; iElem++) {
@@ -710,13 +721,52 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
     const unsigned short nDOFsPerElem  = geometry->elem[iElem]->GetnNodes();
         
     /* Loop over the nodes of element and store the required data. */
-        
-    VTK_TypeElem.push_back(VTK_Type);
-    elemIDs.push_back(iElem);
-    dummymarkerIDs.push_back(0);
-        
+    
     for (unsigned short iNode = 0; iNode < nDOFsPerElem; iNode++)
       volumeConn.push_back(geometry->elem[iElem]->GetNode(iNode));
+    
+    const unsigned short ind       = volElem[iElem].indStandardElement;
+    const unsigned short VTK_Type1 = standardElementsSol[ind].GetVTK_Type1();
+    const unsigned short VTK_Type2 = standardElementsSol[ind].GetVTK_Type2();
+    
+    if (VTK_Type == VTK_Type1){
+      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType1();
+      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type1);
+      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType1();
+      /* Abbreviate the grid DOFs of this element a bit easier. */
+      const unsigned long *DOFs = volElem[iElem].nodeIDsGrid.data();
+      
+      /* Loop over the number of subelements and store the required data. */
+      unsigned short jj = 0, kk = 0;
+      for(unsigned short j=0; j<nSubElems; ++j, ++jj) {
+        VTK_TypeElem.push_back(VTK_Type);
+        elemIDs.push_back(iElem);
+        subElemIDs.push_back(jj);
+        
+        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
+          volumeConn.push_back(DOFs[connSubElems[kk]]);
+      }
+    }
+    else if (VTK_Type == VTK_Type2){
+      const unsigned short nSubElems       = standardElementsSol[ind].GetNSubElemsType2();
+      const unsigned short nDOFsPerSubElem = standardElementsSol[ind].GetNDOFsPerSubElem(VTK_Type2);
+      const unsigned short *connSubElems   = standardElementsSol[ind].GetSubConnType2();
+      /* Abbreviate the grid DOFs of this element a bit easier. */
+      const unsigned long *DOFs = volElem[iElem].nodeIDsGrid.data();
+      
+      /* Loop over the number of subelements and store the required data. */
+      cout << "iElem = " << iElem << ", nSubElems = " << nSubElems << endl;
+      unsigned short jj = 0, kk = 0;
+      for(unsigned short j=0; j<nSubElems; ++j, ++jj) {
+        VTK_TypeElem.push_back(VTK_Type);
+        elemIDs.push_back(iElem);
+        subElemIDs.push_back(jj);
+        
+        for(unsigned short k=0; k<nDOFsPerSubElem; ++k, ++kk)
+          volumeConn.push_back(DOFs[connSubElems[kk]]);
+      }
+    }
+    
   }
   
   
@@ -726,7 +776,7 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   
   for(unsigned long i=0; i<nPoint; ++i) {
     meshToVolume[i] = nVertex++;
-    for(unsigned short k=0; k<nDim; ++k)
+  for(unsigned short k=0; k<nDim; ++k)
       volumeCoor.push_back(geometry->node[i]->GetCoord(k));
   }
   
@@ -743,11 +793,11 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
   /* Build the ADT. Note that not all processors are used in the search so
    build a local tree. */
   CADTElemClass VolumeADT(nDim, volumeCoor, volumeConn, VTK_TypeElem,
-                             dummymarkerIDs, elemIDs, false);
+                             subElemIDs, elemIDs, false);
   
   /* Release the memory of the vectors used to build the ADT. To make sure
    that all the memory is deleted, the swap function is used. */
-  vector<unsigned short>().swap(dummymarkerIDs);
+  vector<unsigned short>().swap(subElemIDs);
   vector<unsigned short>().swap(VTK_TypeElem);
   vector<unsigned long>().swap(elemIDs);
   vector<unsigned long>().swap(volumeConn);
@@ -764,19 +814,24 @@ void CBoom_AugBurgers::BuildADT(CConfig* config, CGeometry* geometry, su2double*
     unsigned long  parElem;
     int              rank;
     su2double       parCoor[3], weightsInterpol[8];
+    cout << "Determine Containing Element..." << endl;
     if( VolumeADT.DetermineContainingElement(coor[iElem], subElem, parElem, rank,
                                              parCoor, weightsInterpol) )
     {
       
-      /* Compute the actual interpolation weights. */
-      CFEMStandardElement *standardElement = new CFEMStandardElement(geometry->elem[elems[iElem]]->GetVTK_Type(),
-                                                                     geometry->elem[elems[iElem]]->GetNPolySol(),
-                                                                     false,
-                                                                     config);
-      const unsigned short nDOFs = standardElement->GetNDOFs();
-      vector<su2double> wSol(nDOFs);
+      /* Subelement found that contains the exchange location. However,
+      what is needed is the location in the high order parent element.
+      Determine this. */
+      cout << "High Order Containment Search..." << endl;
+      DGMesh->HighOrderContainmentSearch(coor[iElem], parElem, subElem,
+                                              weightsInterpol, parCoor);
       
-      standardElement->BasisFunctionsInPoint(parCoor, wSol);
+      const unsigned short nDOFs = geometry->elem[elems[iElem]]->GetNDOFsSol();
+      cout << "nDOFs = " << nDOFs << endl;
+      vector<su2double> wSol(nDOFs);
+      const unsigned short ind   = volElem[elems[iElem]].indStandardElement;
+
+      standardElementsSol[ind].BasisFunctionsInPoint(parCoor, wSol);
       
       for(unsigned short k=0; k<nDOFs; k++)
         wInterp[iElem][k] = wSol[k];
@@ -1218,6 +1273,24 @@ void CBoom_AugBurgers::SolverPreprocessing(CSolver *solver, CConfig *config, CGe
     }
     
     if(AD_Mode) AD::StartRecording();
+  
+    /*---Instantiate a DG mesh for pressure extraction---*/
+    if (rank == MASTER_NODE) cout << "Instantiate DG mesh." << endl;
+    CGeometry *geometry_aux = new CMeshFEM_DG(geometry, config);
+  
+    /* Carry out a dynamic cast to CMeshFEM_DG. */
+    if(rank == MASTER_NODE) cout << "Dynamic cast to DGMesh." << endl;
+    CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_aux);
+  
+    /*--- Determine the standard elements for the volume elements. ---*/
+    if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+    DGMesh->CreateStandardVolumeElements(config);
+  
+    /*--- Create the face information needed to compute the contour integral
+     for the elements in the Discontinuous Galerkin formulation. ---*/
+    if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+    DGMesh->CreateFaces(config);
+  
     
     /*---Interpolate pressures along line---*/
     if(rank == MASTER_NODE)

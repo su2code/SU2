@@ -50,6 +50,7 @@ int main(int argc, char *argv[]) {
   bool fem_solver = false;
   bool periodic = false;
   bool multizone = false;
+  bool boom = false;
 
   /*--- MPI initialization ---*/
 
@@ -150,6 +151,12 @@ int main(int argc, char *argv[]) {
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
                   (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+    
+    /*--- Determine whether or not the sonic boom solver is used, which decides the
+     type of geometry classes that are instantiated. ---*/
+    boom = (config_container[ZONE_0]->GetBoom_flag() != NONE ||
+            config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+            config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY);
 
     /*--- Read the number of instances for each zone ---*/
 
@@ -249,6 +256,12 @@ int main(int argc, char *argv[]) {
   /*--- Determine whether the simulation is a FSI simulation ---*/
 
   bool fsi = config_container[ZONE_0]->GetFSI_Simulation();
+  
+  /*--- Determine whether or not the sonic boom solver is used, which decides the
+   type of geometry classes that are instantiated. ---*/
+//  bool boom = (config_container[ZONE_0]->GetBoom_flag() != NONE ||
+//                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
+//                config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY);
 
   /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
 
@@ -258,55 +271,64 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
   
-  if ((config_container[ZONE_0]->GetBoom_flag() != NONE) ||
-      config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
-      config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
+  if (boom){
     
     if (rank == MASTER_NODE) cout << endl <<"----------------------- Sonic Boom Preprocessing Computations ----------------------" << endl;
     
     /*--- Compute elements surrounding points, points surrounding points ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Setting local point connectivity." <<endl;
     geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
-    
+
     if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
     geometry_container[ZONE_0][INST_0]->SetRCM_Ordering(config_container[ZONE_0]);
-    
+
     /*--- recompute elements surrounding points, points surrounding points ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
     geometry_container[ZONE_0][INST_0]->SetPoint_Connectivity();
-    
+
     /*--- Compute elements surrounding elements ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
     geometry_container[ZONE_0][INST_0]->SetElement_Connectivity();
-    
+
     /*--- Check the orientation before computing geometrical quantities ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation of the interior elements." <<endl;
     geometry_container[ZONE_0][INST_0]->SetBoundVolume();
     geometry_container[ZONE_0][INST_0]->Check_IntElem_Orientation(config_container[ZONE_0]);
     geometry_container[ZONE_0][INST_0]->Check_BoundElem_Orientation(config_container[ZONE_0]);
-    
+
     /*--- Create the edge structure ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Identify edges and vertices." <<endl;
     geometry_container[ZONE_0][INST_0]->SetEdges();
     geometry_container[ZONE_0][INST_0]->SetVertex(config_container[ZONE_0]);
-    
+
     /*--- Compute center of gravity ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Computing centers of gravity." << endl;
     geometry_container[ZONE_0][INST_0]->SetCoord_CG();
-    
+
     /*--- Create the dual control volume structures ---*/
-    
-    if (rank == MASTER_NODE) cout << "Setting the bound control volume structure." << endl;
+
+    if (rank == MASTER_NODE) cout << "Setting the control volume structure." << endl;
+    geometry_container[ZONE_0][INST_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE);
     geometry_container[ZONE_0][INST_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
-    
+
+    /*--- Identify closest normal neighbor ---*/
+
+    if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+    geometry_container[ZONE_0][INST_0]->FindNormal_Neighbor(config_container[ZONE_0]);
+
+    /*--- Compute the surface curvature ---*/
+
+    if (rank == MASTER_NODE) cout << "Compute the surface curvature." << endl;
+    geometry_container[ZONE_0][INST_0]->ComputeSurf_Curvature(config_container[ZONE_0]);
+
     /*--- Store the global to local mapping after preprocessing. ---*/
-    
+
     if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
     geometry_container[ZONE_0][INST_0]->SetGlobal_to_Local_Point();
     
@@ -728,9 +750,7 @@ int main(int argc, char *argv[]) {
     
   }
 
-  if ((config_container[ZONE_0]->GetBoom_flag() != NONE) ||
-       config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_LOUD ||
-       config_container[ZONE_0]->GetKind_ObjFunc()==BOOM_ENERGY){
+  if (boom){
             
     /*---Boom primal and discrete adjoint---*/
     if (config_container[ZONE_0]->GetAD_Mode()){
