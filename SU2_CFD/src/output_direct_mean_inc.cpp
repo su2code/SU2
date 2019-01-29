@@ -490,6 +490,15 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   case NONE:
     break;
   }
+
+  // Radiation variables
+  switch(config->GetKind_RadiationModel()){
+  case P1_MODEL:
+    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "CONSERVATIVE");
+    break;
+  case NONE:
+    break;
+  }
   
   // Grid velocity
   if (config->GetGrid_Movement()){
@@ -591,6 +600,7 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
 
   CVariable* Node_Flow = solver[FLOW_SOL]->node[iPoint]; 
   CVariable* Node_Turb = NULL;
+  CVariable* Node_Rad = NULL;
   
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->node[iPoint]; 
@@ -621,6 +631,18 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
     SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(0));
+    break;
+  case NONE:
+    break;
+  }
+
+  // Radiation solver
+  if (config->GetKind_RadiationModel() != NONE)
+    Node_Rad = solver[RAD_SOL]->node[iPoint];
+
+  switch(config->GetKind_RadiationModel()){
+  case P1_MODEL:
+    SetVolumeOutputValue("P1-RAD", iPoint, Node_Rad->GetSolution(0));
     break;
   case NONE:
     break;
