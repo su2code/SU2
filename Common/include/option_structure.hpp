@@ -343,8 +343,7 @@ static const map<string, ENUM_MAT_COMPRESS> MatComp_Map = CCreateMap<string, ENU
  */
 enum ENUM_INTERPOLATOR {
   NEAREST_NEIGHBOR 	= 0,   	/*!< \brief Nearest Neigbhor interpolation */
-  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation */
-  CONSISTCONSERVE 	= 2,	/*!< \brief Consistent & Conservative interpolation (S.A. Brown 1997). Utilizes Isoparametric interpolation. */
+  ISOPARAMETRIC 	= 1,	/*!< \brief Isoparametric interpolation, use CONSERVATIVE_INTERPOLATION=YES for conservative interpolation (S.A. Brown 1997).*/
   WEIGHTED_AVERAGE  = 3, 	/*!< \brief Sliding Mesh Approach E. Rinaldi 2015 */
   RADIAL_BASIS_FUNCTION= 4, /*!< \brief Radial basis function interpolation. */
 };
@@ -352,7 +351,6 @@ enum ENUM_INTERPOLATOR {
 static const map<string, ENUM_INTERPOLATOR> Interpolator_Map = CCreateMap<string, ENUM_INTERPOLATOR>
 ("NEAREST_NEIGHBOR", NEAREST_NEIGHBOR)
 ("ISOPARAMETRIC",    ISOPARAMETRIC)
-("CONSISTCONSERVE",  CONSISTCONSERVE)
 ("WEIGHTED_AVERAGE", WEIGHTED_AVERAGE)
 ("RADIAL_BASIS_FUNCTION", RADIAL_BASIS_FUNCTION);
 
@@ -1004,19 +1002,6 @@ enum ENUM_SPACE_ITE_FEA {
 static const map<string, ENUM_SPACE_ITE_FEA> Space_Ite_Map_FEA = CCreateMap<string, ENUM_SPACE_ITE_FEA>
 ("NEWTON_RAPHSON", NEWTON_RAPHSON)
 ("MODIFIED_NEWTON_RAPHSON", MODIFIED_NEWTON_RAPHSON);
-
-/*!
- * \brief types of transfer methods
- */
-enum ENUM_TRANSFER_METHOD {
-  BROADCAST_DATA = 1,	/*!< \brief Gather data on one processor and broadcast it into all of them, relating to global nodes. */
-  SCATTER_DATA = 2,   	/*!< \brief Gather data on one processor and scatter it into the one that needs it. */
-  ALLGATHER_DATA = 3,   /*!< \brief All processors gather data (this will be useful for operations over a group of data - averaging) */
-};
-static const map<string, ENUM_TRANSFER_METHOD> Transfer_Method_Map = CCreateMap<string, ENUM_TRANSFER_METHOD>
-("BROADCAST_DATA", BROADCAST_DATA)
-("SCATTER_DATA", SCATTER_DATA)
-("ALLGATHER_DATA", ALLGATHER_DATA);
 
 /*!
  * \brief types of schemes to compute the flow gradient

@@ -519,8 +519,7 @@ private:
   Kind_Matrix_Coloring,   /*!< \brief Type of matrix coloring for sparse Jacobian computation. */
   Kind_Solver_Fluid_FSI,		/*!< \brief Kind of solver for the fluid in FSI applications. */
   Kind_Solver_Struc_FSI,		/*!< \brief Kind of solver for the structure in FSI applications. */
-  Kind_BGS_RelaxMethod,				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
-  Kind_TransferMethod;	/*!< \brief Iterative scheme for nonlinear structural analysis. */
+  Kind_BGS_RelaxMethod;				/*!< \brief Kind of relaxation method for Block Gauss Seidel method in FSI problems. */
   bool Energy_Equation;         /*!< \brief Solve the energy equation for incompressible flows. */
   bool MUSCL,		/*!< \brief MUSCL scheme .*/
   MUSCL_Flow,		/*!< \brief MUSCL scheme for the flow equations.*/
@@ -957,7 +956,6 @@ private:
   long ExtraHeatOutputZone;   /*!< \brief Heat solver zone with extra screen output */
   bool DeadLoad; 	          	/*!< Application of dead loads to the FE analysis */
   bool PseudoStatic;    /*!< Application of dead loads to the FE analysis */
-  bool MatchingMesh; 	        /*!< Matching mesh (while implementing interpolation procedures). */
   bool SteadyRestart; 	      /*!< Restart from a steady state for FSI problems. */
   su2double Newmark_beta,		/*!< \brief Parameter alpha for Newmark method. */
   Newmark_gamma;				      /*!< \brief Parameter delta for Newmark method. */
@@ -4397,14 +4395,6 @@ public:
    * \return Kind of integration scheme for the plasma equations.
    */
   unsigned short GetKind_SpaceIteScheme_FEA(void);
-  
-  /*!
-   * \brief Get the kind of transfer method we want to use for multiphysics problems
-   * \note This value is obtained from the config file, and it is constant
-   *       during the computation.
-   * \return Kind of transfer method for multiphysics problems
-   */
-  unsigned short GetKind_TransferMethod(void);
   
   /*!
    * \brief Get the kind of convective numerical scheme for the flow
@@ -8575,13 +8565,6 @@ public:
    */
   
   bool GetPseudoStatic(void);
-  
-  /*!
-    * \brief Identifies if the mesh is matching or not (temporary, while implementing interpolation procedures).
-    * \return <code>TRUE</code> if the mesh is matching, <code>FALSE</code> otherwise.
-    */
-  
-  bool GetMatchingMesh(void);
   
   /*!
    * \brief Identifies if we want to restart from a steady or an unsteady solution.

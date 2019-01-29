@@ -1125,8 +1125,6 @@ inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_Sp
 
 inline unsigned short CConfig::GetKind_TimeIntScheme_Radiation(void) { return Kind_TimeIntScheme_Radiation; }
 
-inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_TransferMethod; }
-
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_FEM_Flow(void) { return Kind_ConvNumScheme_FEM_Flow; }
@@ -1845,8 +1843,6 @@ inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetPseudoStatic(void) { return PseudoStatic; }
-
-inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
 
 inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
 

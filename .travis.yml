@@ -12,14 +12,14 @@ compiler:
 notifications:
     email:
         recipients:
-            - ruben.sanchez@scicomp.uni-kl.de
+            - su2code-dev@lists.stanford.edu
   
 branches:
     only:
-        - feature_sliding_incompressible
+        - develop
 
 python:
-    #- 2.7
+    - 2.7
     - 3.6
 
 env:
