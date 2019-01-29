@@ -805,30 +805,30 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
     for(unsigned short iEdge = 0; iEdge < nNode; iEdge++){
       unsigned short iEdge_p1 = iEdge + 1;
       if(iEdge == nNode-1) iEdge_p1 = 0;
-        intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], ppp0, ppp1);
-        if(intersect == 1){
-          if(count == 0){
-            pp0[0] = ppp0[0];
-            pp0[1] = ppp0[1];
-          }
-          else{
-            pp1[0] = ppp0[0];
-            pp1[1] = ppp0[1];
-          }
-        }
-        else if(intersect == 2){
+      intersect = Intersect2D(r0, Coord_elem[iEdge], Coord_elem[iEdge_p1], ppp0, ppp1);
+      if(intersect == 1){
+        if(count == 0){
           pp0[0] = ppp0[0];
           pp0[1] = ppp0[1];
-          pp1[0] = ppp1[0];
-          pp1[1] = ppp1[1];
-          inside = true;
-          break;
         }
-        count += intersect;
-        if(count > 1){
-          inside = true;
-          break;
+        else{
+          pp1[0] = ppp0[0];
+          pp1[1] = ppp0[1];
         }
+      }
+      else if(intersect == 2){
+        pp0[0] = ppp0[0];
+        pp0[1] = ppp0[1];
+        pp1[0] = ppp1[0];
+        pp1[1] = ppp1[1];
+        inside = true;
+        break;
+      }
+      count += intersect;
+      if(count > 0){
+        inside = true;
+        if(count > 1) break;
+      }
     }
 
     if(Coord_elem != NULL){
@@ -895,18 +895,20 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
 
 int CBoom_AugBurgers::Intersect2D(su2double r0, su2double *Coord_i, su2double *Coord_ip1, su2double *pp0, su2double *pp1){
 
+  su2double y0 = -r0;
   /*--- Interpolate if point between yi and yi+1 ---*/
-  if((Coord_i[1] > -r0 && Coord_ip1[1] < -r0) || (Coord_i[1] < -r0 && Coord_ip1[1] > -r0)){
-    su2double t = (-r0-Coord_i[1])/(Coord_ip1[1]-Coord_i[1]);
+  if((Coord_i[1] > y0 && Coord_ip1[1] < y0) || (Coord_i[1] < y0 && Coord_ip1[1] > y0)){
+    su2double t = (y0-Coord_i[1])/(Coord_ip1[1]-Coord_i[1]);
     pp0[0] = Coord_i[0] + t*(Coord_ip1[0]-Coord_i[0]);
+    pp0[1] = y0;
     return 1;
   }
   /*--- Colinear segments at r0 ---*/
-  else if(abs(Coord_i[1] + r0) < 1.0E-8 && abs(Coord_ip1[1] + r0) < 1.0E-8){
+  else if(abs(Coord_i[1] - y0) < 1.0E-8 && abs(Coord_ip1[1] - y0) < 1.0E-8){
     pp0[0] = Coord_i[0];
-    pp0[1] = -r0;
+    pp0[1] = y0;
     pp1[0] = Coord_ip1[0];
-    pp1[1] = -r0;
+    pp1[1] = y0;
     return 2;
   }
   else{
