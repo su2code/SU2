@@ -2968,6 +2968,7 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
   bool boussinesq     = (config->GetKind_DensityModel() == BOUSSINESQ);
   bool viscous        = config->GetViscous();
   bool radiation      = config->AddRadiation();
+  bool vol_heat       = config->GetHeatSource();
 
 
   /*--- Initialize the source residual to zero ---*/
@@ -3173,6 +3174,32 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Store the radiation source term ---*/
 
       second_numerics->SetRadVarSource(solver_container[RAD_SOL]->node[iPoint]->GetRadiative_SourceTerm());
+
+      /*--- Set control volume ---*/
+
+      second_numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+
+      /*--- Compute the residual ---*/
+
+      second_numerics->ComputeResidual(Residual, Jacobian_i, config);
+
+      /*--- Add Residual ---*/
+
+      LinSysRes.AddBlock(iPoint, Residual);
+
+      /*--- Add the implicit Jacobian contribution ---*/
+
+      if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+    }
+
+  }
+
+  if (vol_heat){
+
+    /*--- loop over points ---*/
+
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
 
       /*--- Set control volume ---*/
 

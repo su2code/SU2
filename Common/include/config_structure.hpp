@@ -1049,6 +1049,8 @@ private:
   su2double *ExtraRelFacGiles; /*!< \brief coefficient for extra relaxation factor for Giles BC*/
   bool Body_Force;            /*!< \brief Flag to know if a body force is included in the formulation. */
   su2double *Body_Force_Vector;  /*!< \brief Values of the prescribed body force vector. */
+  bool HeatSource;              /*!< \brief Flag to know if there is a volumetric heat source on the flow. */
+  su2double ValHeatSource;      /*!< \brief Value of the volumetric heat source on the flow (W/m3). */
   su2double *FreeStreamTurboNormal; /*!< \brief Direction to initialize the flow in turbomachinery computation */
   su2double Restart_Bandwidth_Agg; /*!< \brief The aggregate of the bandwidth for writing binary restarts (to be averaged later). */
   su2double Max_Vel2; /*!< \brief The maximum velocity^2 in the domain for the incompressible preconditioner. */
@@ -6016,6 +6018,19 @@ public:
    * \return A pointer to the body force vector.
    */
   su2double* GetBody_Force_Vector(void);
+
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
+   */
+  bool GetHeatSource(void);
+
+  /*!
+   * \brief Get information about the volumetric heat source.
+   * \return <code>TRUE</code> if it uses a volumetric heat source; otherwise <code>FALSE</code>.
+   */
+  su2double GetValHeatSource(void);
 
   /*!
    * \brief Get information about the rotational frame.

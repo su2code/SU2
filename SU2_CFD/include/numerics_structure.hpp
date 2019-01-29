@@ -4735,6 +4735,42 @@ public:
 
 };
 
+/*!
+ * \class CSourceRadiation
+ * \brief Class for the volumetric heat source term integration.
+ * \ingroup SourceDiscr
+ * \author R. Sanchez
+ */
+class CSourceVolumetricHeat : public CNumerics {
+
+private:
+
+  bool implicit;
+
+public:
+
+  /*!
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceVolumetricHeat(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceVolumetricHeat(void);
+
+  /*!
+   * \brief Source term integration for a body force.
+   * \param[out] val_residual - Pointer to the residual vector.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config);
+
+};
+
 
 /*!
  * \class CSourceNothing

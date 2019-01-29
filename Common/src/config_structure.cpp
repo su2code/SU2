@@ -2186,6 +2186,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Refractive index */
   addDoubleOption("REFRACTIVE_INDEX", Refractive_Index, 1.0);
 
+  /* DESCRIPTION: Apply a volumetric heat source as a source term (NO, YES) */
+  addBoolOption("HEAT_SOURCE", HeatSource, false);
+  /* DESCRIPTION: Value of the volumetric heat source */
+  addDoubleOption("VAL_HEAT_SOURCE", ValHeatSource, 0.0);
+
   /*!\brief MARKER_EMISSIVITY DESCRIPTION: Wall emissivity of the marker for radiation purposes \n
    * Format: ( marker, emissivity of the marker, ... ) \ingroup Config  */
   addStringDoubleListOption("MARKER_EMISSIVITY", nMarker_Emissivity, Marker_Emissivity, Wall_Emissivity);
