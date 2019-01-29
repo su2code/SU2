@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.cpp
  * \brief Main file for managing the config file
  * \author F. Palacios, T. Economon, B. Tracey, H. Kline
@@ -3613,6 +3613,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
       (Kind_Turb_Model != NONE))
     Kind_Solver = RANS;
   
+  if ((Kind_Solver == TNE2_NAVIER_STOKES) &&
+      (Kind_Turb_Model != NONE))
+    Kind_Solver = RANS;
+
   if (Kind_Solver == EULER) Kind_Turb_Model = NONE;
   if (Kind_Solver == TNE2_EULER) Kind_Turb_Model = NONE;
 

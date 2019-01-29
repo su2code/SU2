@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file solver_structure.inl
  * \brief In-Line subroutines of the <i>solver_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
@@ -2288,11 +2288,11 @@ inline su2double CIncNSSolver::GetConjugateHeatVariable(unsigned short val_marke
 inline void CIncNSSolver::SetConjugateHeatVariable(unsigned short val_marker, unsigned long val_vertex, unsigned short pos_var, su2double relaxation_factor, su2double val_var) {
   HeatConjugateVar[val_marker][val_vertex][pos_var] = relaxation_factor*val_var + (1.0-relaxation_factor)*HeatConjugateVar[val_marker][val_vertex][pos_var]; }
 
-inline su2double CTNE2EulerSolver::GetDensity_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+inline su2double CTNE2EulerSolver::GetDensity_Inf(void) { cout << "CTNE2EulerSolver::GetDensity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return Density_Inf; }
 
 inline su2double CTNE2EulerSolver::GetVelocity_Inf(unsigned short val_dim) { return Velocity_Inf[val_dim]; }
 
-inline su2double CTNE2EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return 0.0; }
+inline su2double CTNE2EulerSolver::GetDensity_Velocity_Inf(unsigned short val_dim) { cout << "CTNE2EulerSolver::GetDensity_Velocity_Inf NOT RETURNING THE CORRECT VALUE!!!" << endl; return Density_Inf; }
 
 inline su2double CTNE2EulerSolver::GetPressure_Inf(void) { return Pressure_Inf; }
 
@@ -2359,7 +2359,7 @@ inline su2double CTNE2NSSolver::GetCD_Visc(unsigned short val_marker) { return C
 
 inline su2double CTNE2NSSolver::GetCL_Visc(unsigned short val_marker) { return CL_Visc[val_marker]; }
 
-inline su2double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex) { return CSkinFriction[val_marker][val_vertex]; }
+inline su2double CTNE2NSSolver::GetCSkinFriction(unsigned short val_marker, unsigned short val_vertex, unsigned short val_dim) { return CSkinFriction[val_marker][val_dim][val_vertex]; }
 
 inline su2double CTNE2NSSolver::GetViscosity_Inf(void) { return Viscosity_Inf; }
 

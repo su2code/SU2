@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
@@ -7458,6 +7458,9 @@ void COutput::SpecialOutput_ForcesBreakdown(CSolver *****solver, CGeometry ****g
       case NAVIER_STOKES:
         if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Laminar Navier-Stokes' equations." << "\n";
         if (Kind_Regime == INCOMPRESSIBLE) Breakdown_file << "Incompressible Laminar Navier-Stokes' equations." << "\n";
+        break;
+      case TNE2_NAVIER_STOKES:
+        if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible Laminar TNE2 Navier-Stokes' equations." << "\n";
         break;
       case RANS:
         if (Kind_Regime == COMPRESSIBLE) Breakdown_file << "Compressible RANS equations." << "\n";
@@ -15159,13 +15162,13 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
     Variable_Names.push_back("Temperature");
     Variable_Names.push_back("Mach");
 
-    //nVar_Par += 1;
-    //if ((config->GetOutput_FileFormat() == PARAVIEW) ||
-    //    (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
-    //  Variable_Names.push_back("Pressure_Coefficient");
-    //} else {
-    //  Variable_Names.push_back("C<sub>p</sub>");
-    //}
+    nVar_Par += 1;
+    if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+        (config->GetOutput_FileFormat() == PARAVIEW_BINARY)){
+      Variable_Names.push_back("Pressure_Coefficient");
+    } else {
+      Variable_Names.push_back("C<sub>p</sub>");
+    }
 
     /*--- Add Laminar Viscosity, Skin Friction, Heat Flux, & yPlus to the restart file ---*/
 
@@ -15423,7 +15426,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetPressure(); iVar++;
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetTemperature(); iVar++;
         Local_Data[jPoint][iVar] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())/solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;
-       // Local_Data[jPoint][iVar] = (solver[TNE2_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
+        Local_Data[jPoint][iVar] = (solver[TNE2_SOL]->node[iPoint]->GetPressure() - RefPressure)*factor*RefArea; iVar++;
 
         if ((Kind_Solver == TNE2_NAVIER_STOKES) || (Kind_Solver == RANS)) {
 

@@ -9126,10 +9126,10 @@ void CEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container
 
 void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics,
                                 CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
-  
+
   unsigned short iDim;
   unsigned long iVertex, iPoint, Point_Normal;
-  
+
   su2double *GridVel;
   su2double Area, UnitNormal[3] = {0.0,0.0,0.0};
   su2double Density, Pressure, Energy,  Velocity[3] = {0.0,0.0,0.0};
@@ -9140,40 +9140,40 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
   su2double SoundSpeed_Infty, Entropy_Infty, Vel2_Infty, Vn_Infty, Qn_Infty;
   su2double RiemannPlus, RiemannMinus;
   su2double *V_infty, *V_domain;
-  
+
   su2double Gas_Constant     = config->GetGas_ConstantND();
-  
+
   bool implicit       = config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT;
   bool grid_movement  = config->GetGrid_Movement();
   bool viscous        = config->GetViscous();
   bool tkeNeeded = (((config->GetKind_Solver() == RANS ) ||
                      (config->GetKind_Solver() == DISC_ADJ_RANS))
                     && (config->GetKind_Turb_Model() == SST));
-    
+
   su2double *Normal = new su2double[nDim];
-  
+
   /*--- Loop over all the vertices on this boundary marker ---*/
-  
+
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
-    
+
     /*--- Allocate the value at the infinity ---*/
     V_infty = GetCharacPrimVar(val_marker, iVertex);
-    
+
     /*--- Check if the node belongs to the domain (i.e, not a halo node) ---*/
-    
+
     if (geometry->node[iPoint]->GetDomain()) {
-      
+
       /*--- Index of the closest interior node ---*/
-      
+
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
-      
+
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
-      
+
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
-      
+
       /*--- Retrieve solution at the farfield boundary node ---*/
       V_domain = node[iPoint]->GetPrimitive();
 
@@ -9312,31 +9312,31 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       V_infty[nDim+3] = Energy + Pressure/Density;
 
 
-      
+
       /*--- Set various quantities in the numerics class ---*/
-      
+
       conv_numerics->SetPrimitive(V_domain, V_infty);
-      
+
       if (grid_movement) {
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
       }
-      
+
       /*--- Compute the convective residual using an upwind scheme ---*/
 
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
-      
+
       /*--- Update residual value ---*/
-      
+
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Convective Jacobian contribution for implicit integration ---*/
-      
+
       if (implicit)
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
-      
+
       /*--- Roe Turkel preconditioning, set the value of beta ---*/
-      
+
       if (config->GetKind_Upwind() == TURKEL)
         node[iPoint]->SetPreconditioner_Beta(conv_numerics->GetPrecond_Beta());
 
@@ -9345,50 +9345,50 @@ void CEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_container,
       if (viscous) {
 
         /*--- Set laminar and eddy viscosity at the infinity ---*/
-        
+
         V_infty[nDim+5] = node[iPoint]->GetLaminarViscosity();
         V_infty[nDim+6] = node[iPoint]->GetEddyViscosity();
-        
+
         /*--- Set the normal vector and the coordinates ---*/
-        
+
         visc_numerics->SetNormal(Normal);
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(),
                                 geometry->node[Point_Normal]->GetCoord());
-        
+
         /*--- Primitive variables, and gradient ---*/
-        
+
         visc_numerics->SetPrimitive(V_domain, V_infty);
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
                                           node[iPoint]->GetGradient_Primitive());
-        
+
         /*--- Turbulent kinetic energy ---*/
-        
+
         if (config->GetKind_Turb_Model() == SST)
           visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
                                               solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
-        
+
         /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
-        
+
         visc_numerics->SetTauWall(-1.0, -1.0);
 
         /*--- Compute and update viscous residual ---*/
-        
+
         visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
         LinSysRes.SubtractBlock(iPoint, Residual);
-        
+
         /*--- Viscous Jacobian contribution for implicit integration ---*/
-        
+
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
+
       }
-      
+
     }
   }
-  
+
   /*--- Free locally allocated memory ---*/
   delete [] Normal;
-  
+
 }
 
 void CEulerSolver::BC_Riemann(CGeometry *geometry, CSolver **solver_container,
