@@ -36,6 +36,7 @@
  */
 
 #include "../include/solver_structure.hpp"
+#include "../../Common/include/toolboxes/printing_toolbox.hpp"
 
 CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   /*--- Basic array initialization ---*/
@@ -91,7 +92,9 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
   Cauchy_Serie = NULL;
   
   FluidModel = NULL;
- 
+
+  SlidingState     = NULL;
+  SlidingStateNodes = NULL;
 }
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -516,6 +519,31 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       break;
   }
   
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
+  }
+
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
 
   if (config->GetFixed_CL_Mode())
@@ -671,6 +699,29 @@ CIncEulerSolver::~CIncEulerSolver(void) {
       delete [] CharacPrimVar[iMarker];
     }
     delete [] CharacPrimVar;
+  }
+
+  if (SlidingState != NULL) {
+    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+      if ( SlidingState[iMarker] != NULL ) {
+        for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++)
+          if ( SlidingState[iMarker][iVertex] != NULL ){
+            for (iVar = 0; iVar < nPrimVar+1; iVar++)
+              delete [] SlidingState[iMarker][iVertex][iVar];
+            delete [] SlidingState[iMarker][iVertex];
+          }
+        delete [] SlidingState[iMarker];
+      }
+    }
+    delete [] SlidingState;
+  }
+  
+  if ( SlidingStateNodes != NULL ){
+    for (iMarker = 0; iMarker < nMarker; iMarker++){
+        if (SlidingStateNodes[iMarker] != NULL)
+            delete [] SlidingStateNodes[iMarker];  
+    }
+    delete [] SlidingStateNodes;
   }
 
   if (Inlet_Ttotal != NULL) {
@@ -2062,298 +2113,246 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         break;
 
     }
-
-    cout <<"-- Input conditions:"<< endl;
     
-    switch (config->GetKind_FluidModel()) {
-      
-      case CONSTANT_DENSITY:
-        cout << "Fluid Model: CONSTANT_DENSITY "<< endl;
-        if (energy) {
-          cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-        }
-        if (boussinesq) cout << "Thermal expansion coefficient: " << config->GetThermal_Expansion_Coeff() << " K^-1." << endl;
-        cout << "Thermodynamic pressure not required." << endl;
-        break;
-        
-      case INC_IDEAL_GAS:
-        cout << "Fluid Model: INC_IDEAL_GAS "<< endl;
-        cout << "Variable density incompressible flow using ideal gas law." << endl;
-        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        cout << "Specific heat at constant pressure (Cp): " << config->GetSpecific_Heat_Cp() << " N.m/kg.K." << endl;
-        cout << "Molecular weight : "<< config->GetMolecular_Weight() << " g/mol" << endl;
-        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-        break;
-        
-      case INC_IDEAL_GAS_POLY:
-        cout << "Fluid Model: INC_IDEAL_GAS_POLY "<< endl;
-        cout << "Variable density incompressible flow using ideal gas law." << endl;
-        cout << "Density is a function of temperature (constant thermodynamic pressure)." << endl;
-        cout << "Molecular weight: " << config->GetMolecular_Weight() << " g/mol." << endl;
-        cout << "Specific gas constant: " << config->GetGas_Constant() << " N.m/kg.K." << endl;
-        cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
-        cout << "Thermodynamic pressure: " << config->GetPressure_Thermodynamic();
-        if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-        cout << "Cp(T) polynomial coefficients: \n  (";
-        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-          cout << config->GetCp_PolyCoeff(iVar);
-          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-        }
-        cout << ")." << endl;
-        cout << "Cp(T) polynomial coefficients (non-dim.): \n  (";
-        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-          cout << config->GetCp_PolyCoeffND(iVar);
-          if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-        }
-        cout << ")." << endl;
-        break;
-      
-    }
-    if (viscous) {
-      switch (config->GetKind_ViscosityModel()) {
-
-        case CONSTANT_VISCOSITY:
-          cout << "Viscosity Model: CONSTANT_VISCOSITY  "<< endl;
-          cout << "Constant Laminar Viscosity: " << config->GetMu_Constant();
-          if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
-          break;
-
-        case SUTHERLAND:
-          cout << "Viscosity Model: SUTHERLAND "<< endl;
-          cout << "Ref. Laminar Viscosity: " << config->GetMu_Ref();
-          if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-          cout << "Ref. Temperature: " << config->GetMu_Temperature_Ref();
-          if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Sutherland Constant: "<< config->GetMu_S();
-          if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-          else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-          cout << "Laminar Viscosity (non-dim): " << config->GetMu_ConstantND()<< endl;
-          cout << "Ref. Temperature (non-dim): " << config->GetMu_Temperature_RefND()<< endl;
-          cout << "Sutherland constant (non-dim): "<< config->GetMu_SND()<< endl;
-          break;
-          
-        case POLYNOMIAL_VISCOSITY:
-          cout << "Viscosity Model: POLYNOMIAL_VISCOSITY  "<< endl;
-          cout << "Mu(T) polynomial coefficients: \n  (";
-          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-            cout << config->GetMu_PolyCoeff(iVar);
-            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-          }
-          cout << ")." << endl;
-          cout << "Mu(T) polynomial coefficients (non-dim.): \n  (";
-          for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-            cout << config->GetMu_PolyCoeffND(iVar);
-            if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-          }
-          cout << ")." << endl;
-          break;
-      }
-
-      if (energy) {
-        switch (config->GetKind_ConductivityModel()) {
-
-          case CONSTANT_PRANDTL:
-            cout << "Conductivity Model: CONSTANT_PRANDTL  "<< endl;
-            cout << "Prandtl (Laminar): " << config->GetPrandtl_Lam()<< endl;
-            cout << "Prandtl (Turbulent): " << config->GetPrandtl_Turb()<< endl;
-            break;
-
-          case CONSTANT_CONDUCTIVITY:
-            cout << "Conductivity Model: CONSTANT_CONDUCTIVITY "<< endl;
-            cout << "Molecular Conductivity: " << config->GetKt_Constant()<< " W/m^2.K." << endl;
-            cout << "Molecular Conductivity (non-dim): " << config->GetKt_ConstantND()<< endl;
-            break;
-
-          case POLYNOMIAL_CONDUCTIVITY:
-            cout << "Viscosity Model: POLYNOMIAL_CONDUCTIVITY "<< endl;
-            cout << "Kt(T) polynomial coefficients: \n  (";
-            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-              cout << config->GetKt_PolyCoeff(iVar);
-              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-            }
-            cout << ")." << endl;
-            cout << "Kt(T) polynomial coefficients (non-dim.): \n  (";
-            for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
-              cout << config->GetKt_PolyCoeffND(iVar);
-              if (iVar < config->GetnPolyCoeffs()-1) cout << ", ";
-            }
-            cout << ")." << endl;
-            break;
-        }
-        
-        if (turbulent) {
-          switch (config->GetKind_ConductivityModel_Turb()) {
-            case CONSTANT_PRANDTL_TURB:
-              cout << "Turbulent Conductivity Model: CONSTANT_PRANDTL_TURB  "<< "\n";
-              cout << "Turbulent Prandtl: " << config->GetPrandtl_Turb()<< "\n";
-              break;
-            case NO_CONDUCTIVITY_TURB:
-              cout << "Turbulent Conductivity Model: NO_CONDUCTIVITY_TURB "<< "\n";
-              cout << "No turbulent component in effective thermal conductivity." << "\n";
-              break;
-          }
-        }
-        
-      }
-
-    }
-    
-    if (config->GetKind_FluidModel() == CONSTANT_DENSITY) {
-      cout << "Bulk modulus: " << config->GetBulk_Modulus();
-      if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    }
-
-    cout << "Initial dynamic pressure: " << config->GetPressure_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
-    cout << "Initial total pressure: " << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-
-    if (energy) {
-      cout << "Initial temperature: " << config->GetTemperature_FreeStream();
-      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    }
-
-    cout << "Initial density: " << config->GetDensity_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
-    if (nDim == 2) {
-      cout << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ")";
-    }
-    if (nDim == 3) {
-      cout << "Initial velocity: (" << config->GetVelocity_FreeStream()[0] << ", ";
-      cout << config->GetVelocity_FreeStream()[1] << ", " << config->GetVelocity_FreeStream()[2] << ")";
-    }
-    if (config->GetSystemMeasurements() == SI) cout << " m/s. ";
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s. ";
-    
-    cout << "Magnitude: "  << config->GetModVel_FreeStream();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
-    if (viscous) {
-      cout << "Initial laminar viscosity: " << config->GetViscosity_FreeStream();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-      if (turbulent) {
-        cout << "Initial turb. kinetic energy per unit mass: " << config->GetTke_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " m^2/s^2." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " ft^2/s^2." << endl;
-        cout << "Initial specific dissipation: " << config->GetOmega_FreeStream();
-        if (config->GetSystemMeasurements() == SI) cout << " 1/s." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " 1/s." << endl;
-      }
-    }
-    
-    if (unsteady) { cout << "Total time: " << config->GetTotal_UnstTime() << " s. Time step: " << config->GetDelta_UnstTime() << " s." << endl; }
-    
-    /*--- Print out reference values. ---*/
-    
-    cout <<"-- Reference values:"<< endl;
-
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-      cout << "Reference specific gas constant: " << config->GetGas_Constant_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-    } else {
-      if (energy) {
-        cout << "Reference specific heat: " << config->GetGas_Constant_Ref();
-        if (config->GetSystemMeasurements() == SI) cout << " N.m/kg.K." << endl;
-        else if (config->GetSystemMeasurements() == US) cout << " lbf.ft/slug.R." << endl;
-      }
-    }
-
-    cout << "Reference pressure: " << config->GetPressure_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " Pa." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " psf." << endl;
-    
-    if (energy) {
-      cout << "Reference temperature: " << config->GetTemperature_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " K." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " R." << endl;
-    }
-
-    cout << "Reference density: " << config->GetDensity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " kg/m^3." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " slug/ft^3." << endl;
-    
-    cout << "Reference velocity: " << config->GetVelocity_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m/s." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " ft/s." << endl;
-
-    cout << "Reference length: " << config->GetLength_Ref();
-    if (config->GetSystemMeasurements() == SI) cout << " m." << endl;
-    else if (config->GetSystemMeasurements() == US) cout << " in." << endl;
-
-    if (viscous) {
-      cout << "Reference viscosity: " << config->GetViscosity_Ref();
-      if (config->GetSystemMeasurements() == SI) cout << " N.s/m^2." << endl;
-      else if (config->GetSystemMeasurements() == US) cout << " lbf.s/ft^2." << endl;
-    }
-    
-    if (unsteady) cout << "Reference time: " << config->GetTime_Ref() <<" s." << endl;
-    
-    /*--- Print out resulting non-dim values here. ---*/
-    
-    cout << "-- Resulting non-dimensional state:" << endl;
-    cout << "Mach number (non-dim): " << config->GetMach() << endl;
-    if (viscous) {
-      cout << "Reynolds number (per m): " << config->GetReynolds() << endl;
-    }
-    
-    if (config->GetKind_FluidModel() != CONSTANT_DENSITY) {
-      cout << "Specific gas constant (non-dim): " << config->GetGas_ConstantND() << endl;
-      cout << "Initial thermodynamic pressure (non-dim): " << config->GetPressure_ThermodynamicND() << endl;
-    } else {
-      if (energy) {
-        cout << "Specific heat at constant pressure (non-dim): " << config->GetSpecific_Heat_CpND() << endl;
-        if (boussinesq) cout << "Thermal expansion coefficient (non-dim.): " << config->GetThermal_Expansion_CoeffND() << " K^-1." << endl;
-      }
-    }
-    
-    if (energy) cout << "Initial temperature (non-dim): " << config->GetTemperature_FreeStreamND() << endl;
-    cout << "Initial pressure (non-dim): " << config->GetPressure_FreeStreamND() << endl;
-    cout << "Initial density (non-dim): " << config->GetDensity_FreeStreamND() << endl;
-    
-    if (nDim == 2) {
-      cout << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << "). ";
-    } else {
-      cout << "Initial velocity (non-dim): (" << config->GetVelocity_FreeStreamND()[0] << ", ";
-      cout << config->GetVelocity_FreeStreamND()[1] << ", " << config->GetVelocity_FreeStreamND()[2] << "). ";
-    }
-    cout << "Magnitude: "   << config->GetModVel_FreeStreamND() << endl;
-    
-    if (viscous) {
-      cout << "Initial viscosity (non-dim): " << config->GetViscosity_FreeStreamND() << endl;
-      if (turbulent) {
-        cout << "Initial turb. kinetic energy (non-dim): " << config->GetTke_FreeStreamND() << endl;
-        cout << "Initial specific dissipation (non-dim): " << config->GetOmega_FreeStreamND() << endl;
-      }
-    }
-    
-    if (unsteady) {
-      cout << "Total time (non-dim): " << config->GetTotal_UnstTimeND() << endl;
-      cout << "Time step (non-dim): " << config->GetDelta_UnstTimeND() << endl;
-    }
+    stringstream NonDimTableOut, ModelTableOut;
+    stringstream Unit;  
     
     cout << endl;
+    PrintingToolbox::CTablePrinter ModelTable(&ModelTableOut);
+    ModelTableOut <<"-- Models:"<< endl;
+
+    ModelTable.AddColumn("Viscosity Model", 25);
+    ModelTable.AddColumn("Conductivity Model", 26);
+    ModelTable.AddColumn("Fluid Model", 25);
+    ModelTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    ModelTable.PrintHeader();
     
+    PrintingToolbox::CTablePrinter NonDimTable(&NonDimTableOut);    
+    NonDimTable.AddColumn("Name", 22);
+    NonDimTable.AddColumn("Dim. value", 14);
+    NonDimTable.AddColumn("Ref. value", 14);
+    NonDimTable.AddColumn("Unit", 10);
+    NonDimTable.AddColumn("Non-dim. value", 14);
+    NonDimTable.SetAlign(PrintingToolbox::CTablePrinter::RIGHT);
+    
+    NonDimTableOut <<"-- Fluid properties:"<< endl;
+    
+    NonDimTable.PrintHeader();
+    
+    if (viscous){
+      
+      switch(config->GetKind_ViscosityModel()){
+      case CONSTANT_VISCOSITY:
+        ModelTable << "CONSTANT_VISCOSITY";
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Viscosity" << config->GetMu_Constant() << config->GetMu_Constant()/config->GetMu_ConstantND() << Unit.str() << config->GetMu_ConstantND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+
+      case SUTHERLAND:
+        ModelTable << "SUTHERLAND";        
+        if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+        NonDimTable << "Ref. Viscosity" <<  config->GetMu_Ref() <<  config->GetViscosity_Ref() << Unit.str() << config->GetMu_RefND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "K";
+        else if (config->GetSystemMeasurements() == US) Unit << "R";
+        NonDimTable << "Sutherland Temp." << config->GetMu_Temperature_Ref() <<  config->GetTemperature_Ref() << Unit.str() << config->GetMu_Temperature_RefND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "K";
+        else if (config->GetSystemMeasurements() == US) Unit << "R";
+        NonDimTable << "Sutherland Const." << config->GetMu_S() << config->GetTemperature_Ref() << Unit.str() << config->GetMu_SND();
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case POLYNOMIAL_VISCOSITY:
+        ModelTable << "POLYNOMIAL_VISCOSITY";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          stringstream ss;
+          ss << iVar;
+          if (config->GetMu_PolyCoeff(iVar) != 0.0)
+            NonDimTable << "Mu(T) Poly. Coeff. " + ss.str()  << config->GetMu_PolyCoeff(iVar) << config->GetMu_PolyCoeff(iVar)/config->GetMu_PolyCoeffND(iVar) << "-" << config->GetMu_PolyCoeffND(iVar);
+        }
+        Unit.str("");
+        NonDimTable.PrintFooter();        
+        break;
+      }
+
+      switch(config->GetKind_ConductivityModel()){
+      case CONSTANT_PRANDTL:
+        ModelTable << "CONSTANT_PRANDTL";
+        NonDimTable << "Prandtl (Lam.)"  << "-" << "-" << "-" << config->GetPrandtl_Lam();         
+        Unit.str("");
+        NonDimTable << "Prandtl (Turb.)" << "-" << "-" << "-" << config->GetPrandtl_Turb();         
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case CONSTANT_CONDUCTIVITY:
+        ModelTable << "CONSTANT_CONDUCTIVITY";
+        Unit << "W/m^2.K";
+        NonDimTable << "Molecular Cond." << config->GetKt_Constant() << config->GetKt_Constant()/config->GetKt_ConstantND() << Unit.str() << config->GetKt_ConstantND();         
+        Unit.str("");
+        NonDimTable.PrintFooter();
+        break;
+        
+      case POLYNOMIAL_CONDUCTIVITY:
+        ModelTable << "POLYNOMIAL_CONDUCTIVITY";
+        for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+          stringstream ss;
+          ss << iVar;
+          if (config->GetKt_PolyCoeff(iVar) != 0.0)
+            NonDimTable << "Kt(T) Poly. Coeff. " + ss.str()  << config->GetKt_PolyCoeff(iVar) << config->GetKt_PolyCoeff(iVar)/config->GetKt_PolyCoeffND(iVar) << "-" << config->GetKt_PolyCoeffND(iVar);
+        }
+        Unit.str("");
+        NonDimTable.PrintFooter();  
+        break;
+      }
+    }
+    
+    switch (config->GetKind_FluidModel()){
+    case CONSTANT_DENSITY:
+      ModelTable << "CONSTANT_DENSITY";
+      if (energy){
+        Unit << "N.m/kg.K";
+        NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
+        Unit.str("");
+      }
+      if (boussinesq){
+        Unit << "K^-1";
+        NonDimTable << "Thermal Exp." << config->GetThermal_Expansion_Coeff() << config->GetThermal_Expansion_Coeff()/config->GetThermal_Expansion_CoeffND() << Unit.str() <<  config->GetThermal_Expansion_CoeffND();         
+        Unit.str("");
+      }
+      Unit << "Pa";
+      NonDimTable << "Bulk Modulus" << config->GetBulk_Modulus() << 1.0 << Unit.str() <<  config->GetBulk_Modulus();         
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    case INC_IDEAL_GAS:
+      ModelTable << "INC_IDEAL_GAS";      
+      Unit << "N.m/kg.K";
+      NonDimTable << "Spec. Heat (Cp)" << config->GetSpecific_Heat_Cp() << config->GetSpecific_Heat_Cp()/config->GetSpecific_Heat_CpND() << Unit.str() << config->GetSpecific_Heat_CpND();         
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight()<< 1.0 << Unit.str() << config->GetMolecular_Weight();         
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();         
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();         
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    case INC_IDEAL_GAS_POLY:
+      ModelTable << "INC_IDEAL_GAS_POLY";             
+      Unit.str("");
+      Unit << "g/mol";
+      NonDimTable << "Molecular weight" << config->GetMolecular_Weight()<< 1.0 << Unit.str() << config->GetMolecular_Weight();         
+      Unit.str("");
+      Unit << "N.m/kg.K";
+      NonDimTable << "Gas Constant" << config->GetGas_Constant() << config->GetGas_Constant_Ref() << Unit.str() << config->GetGas_ConstantND();         
+      Unit.str("");
+      Unit << "Pa";
+      NonDimTable << "Therm. Pressure" << config->GetPressure_Thermodynamic() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_ThermodynamicND();         
+      Unit.str("");
+      for (iVar = 0; iVar < config->GetnPolyCoeffs(); iVar++) {
+        stringstream ss;
+        ss << iVar;
+        if (config->GetCp_PolyCoeff(iVar) != 0.0)
+          NonDimTable << "Cp(T) Poly. Coeff. " + ss.str()  << config->GetCp_PolyCoeff(iVar) << config->GetCp_PolyCoeff(iVar)/config->GetCp_PolyCoeffND(iVar) << "-" << config->GetCp_PolyCoeffND(iVar);
+      }
+      Unit.str("");
+      NonDimTable.PrintFooter();
+      break;
+      
+    }
+
+    
+    NonDimTableOut <<"-- Initial and free-stream conditions:"<< endl;
+    NonDimTable.PrintHeader();
+
+    if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
+    else if (config->GetSystemMeasurements() == US) Unit << "psf";
+    NonDimTable << "Dynamic Pressure" << config->GetPressure_FreeStream() << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "Pa";
+    else if (config->GetSystemMeasurements() == US) Unit << "psf";
+    NonDimTable << "Total Pressure" << config->GetPressure_FreeStream() + 0.5*config->GetDensity_FreeStream()*config->GetModVel_FreeStream()*config->GetModVel_FreeStream() 
+                << config->GetPressure_Ref() << Unit.str() << config->GetPressure_FreeStreamND() + 0.5*config->GetDensity_FreeStreamND()*config->GetModVel_FreeStreamND()*config->GetModVel_FreeStreamND();
+    Unit.str("");
+    if      (config->GetSystemMeasurements() == SI) Unit << "kg/m^3";
+    else if (config->GetSystemMeasurements() == US) Unit << "slug/ft^3";
+    NonDimTable << "Density" << config->GetDensity_FreeStream() << config->GetDensity_Ref() << Unit.str() << config->GetDensity_FreeStreamND();
+    Unit.str("");
+    if (energy){
+      if      (config->GetSystemMeasurements() == SI) Unit << "K";
+      else if (config->GetSystemMeasurements() == US) Unit << "R";
+      NonDimTable << "Temperature" << config->GetTemperature_FreeStream() << config->GetTemperature_Ref() << Unit.str() << config->GetTemperature_FreeStreamND();
+      Unit.str("");
+    }
+    if      (config->GetSystemMeasurements() == SI) Unit << "m/s";
+    else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
+    NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
+    NonDimTable << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
+    if (nDim == 3){
+      NonDimTable << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
+    }
+    NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
+    Unit.str("");
+
+    if (viscous){
+      NonDimTable.PrintFooter();
+      if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
+      NonDimTable << "Viscosity" << config->GetViscosity_FreeStream() << config->GetViscosity_Ref() << Unit.str() << config->GetViscosity_FreeStreamND();
+      Unit.str("");
+      if      (config->GetSystemMeasurements() == SI) Unit << "W/m^2.K";
+      else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
+      NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
+      Unit.str("");
+      if (turbulent){
+        if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
+        else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
+        NonDimTable << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
+        Unit.str("");
+        if      (config->GetSystemMeasurements() == SI) Unit << "1/s";
+        else if (config->GetSystemMeasurements() == US) Unit << "1/s";
+        NonDimTable << "Spec. Dissipation" << config->GetOmega_FreeStream() << config->GetOmega_FreeStream()/config->GetOmega_FreeStreamND() << Unit.str() << config->GetOmega_FreeStreamND();
+        Unit.str("");
+      }
+    }
+    
+    NonDimTable.PrintFooter();
+    NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
+    if (viscous){
+      NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
+    }
+    
+    NonDimTable.PrintFooter();
+    ModelTable.PrintFooter();
+
+    if (unsteady){
+      NonDimTable.PrintHeader();
+      NonDimTableOut << "-- Unsteady conditions" << endl;
+      NonDimTable << "Total Time" << config->GetTotal_UnstTime() << config->GetTime_Ref() << "s" << config->GetTotal_UnstTimeND();
+      Unit.str("");
+      NonDimTable << "Time Step" << config->GetDelta_UnstTime() << config->GetTime_Ref() << "s" << config->GetDelta_UnstTimeND();
+      Unit.str("");
+      NonDimTable.PrintFooter();
+    }
+    
+
+    cout << ModelTableOut.str();
+    cout << NonDimTableOut.str();
   }
+  
+  
   
 }
 
@@ -6092,6 +6091,154 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_contain
   
 }
 
+void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
+                                         CConfig *config) {
+  
+  unsigned long iVertex, jVertex, iPoint, Point_Normal = 0;
+  unsigned short iDim, iVar, iMarker, nDonorVertex;
+  
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool grid_movement = config->GetGrid_Movement();
+  bool viscous       = config->GetViscous();
+  
+  su2double *Normal = new su2double[nDim];
+  su2double *PrimVar_i = new su2double[nPrimVar];
+  su2double *PrimVar_j = new su2double[nPrimVar];
+  su2double *tmp_residual = new su2double[nVar];
+  
+  su2double weight;
+  su2double P_static, rho_static;
+   
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE) {
+
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+
+        if (geometry->node[iPoint]->GetDomain()) {
+
+          nDonorVertex = GetnSlidingStates(iMarker, iVertex);
+          
+          /*--- Initialize Residual, this will serve to accumulate the average ---*/
+
+          for (iVar = 0; iVar < nVar; iVar++)
+            Residual[iVar] = 0.0;
+
+          /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+
+          for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+
+            Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+
+            for (iVar = 0; iVar < nPrimVar; iVar++) {
+              PrimVar_i[iVar] = node[iPoint]->GetPrimitive(iVar);
+              PrimVar_j[iVar] = GetSlidingState(iMarker, iVertex, iVar, jVertex);
+            }
+            
+            /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+
+            weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+
+            /*--- Set primitive variables ---*/
+
+            conv_numerics->SetPrimitive( PrimVar_i, PrimVar_j );
+          
+            /*--- Set the normal vector ---*/
+ 
+            geometry->vertex[iMarker][iVertex]->GetNormal(Normal);
+            for (iDim = 0; iDim < nDim; iDim++) 
+              Normal[iDim] = -Normal[iDim];
+
+            conv_numerics->SetNormal(Normal);
+
+            if (grid_movement)
+              conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
+            
+            /*--- Compute the convective residual using an upwind scheme ---*/
+
+            conv_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+
+            /*--- Accumulate the residuals to compute the average ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] += weight*tmp_residual[iVar];
+
+          }
+
+          /*--- Add Residuals and Jacobians ---*/
+  
+          LinSysRes.AddBlock(iPoint, Residual);
+          if (implicit) 
+            Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+
+          if (viscous) {
+            
+            /*--- Initialize Residual, this will serve to accumulate the average ---*/
+            
+            for (iVar = 0; iVar < nVar; iVar++)
+              Residual[iVar] = 0.0;
+              
+            /*--- Loop over the nDonorVertexes and compute the averaged flux ---*/
+            
+            for (jVertex = 0; jVertex < nDonorVertex; jVertex++){
+              PrimVar_j[nDim+5] = GetSlidingState(iMarker, iVertex, nDim+5, jVertex); 
+              PrimVar_j[nDim+6] = GetSlidingState(iMarker, iVertex, nDim+6, jVertex); 
+
+              /*--- Get the weight computed in the interpolator class for the j-th donor vertex ---*/
+              
+              weight = GetSlidingState(iMarker, iVertex, nPrimVar, jVertex);
+              
+              /*--- Set the normal vector and the coordinates ---*/
+
+              visc_numerics->SetNormal(Normal);
+              visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[Point_Normal]->GetCoord());
+
+              /*--- Primitive variables, and gradient ---*/
+
+              visc_numerics->SetPrimitive(PrimVar_i, PrimVar_j);
+              visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), node[iPoint]->GetGradient_Primitive());
+
+              /*--- Turbulent kinetic energy ---*/
+
+              if (config->GetKind_Turb_Model() == SST)
+                visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0), solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+
+              /*--- Set the wall shear stress values (wall functions) to -1 (no evaluation using wall functions) ---*/
+              
+              visc_numerics->SetTauWall(-1.0, -1.0);
+
+              /*--- Compute and update residual ---*/
+
+              visc_numerics->ComputeResidual(tmp_residual, Jacobian_i, Jacobian_j, config);
+              
+              /*--- Accumulate the residuals to compute the average ---*/
+              
+              for (iVar = 0; iVar < nVar; iVar++)
+                Residual[iVar] += weight*tmp_residual[iVar];
+            }
+          
+            LinSysRes.SubtractBlock(iPoint, Residual);
+ 
+            /*--- Jacobian contribution for implicit integration ---*/
+
+            if (implicit)
+              Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+            
+          }
+        }
+      }
+    }
+  }
+
+  /*--- Free locally allocated memory ---*/
+
+  delete [] tmp_residual;
+  delete [] Normal;
+  delete [] PrimVar_i;
+  delete [] PrimVar_j;
+}
+
 void CIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
 
 void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_container, CConfig *config,
@@ -6952,6 +7099,9 @@ CIncNSSolver::CIncNSSolver(void) : CIncEulerSolver() {
   
   CMerit_Visc = NULL; CT_Visc = NULL; CQ_Visc = NULL;
   
+  SlidingState      = NULL;
+  SlidingStateNodes = NULL;
+  
 }
 
 CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CIncEulerSolver() {
@@ -7436,6 +7586,32 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       break;
     default:
       break;
+  }
+
+  /*--- Initializate quantities for SlidingMesh Interface ---*/
+  
+  SlidingState       = new su2double*** [nMarker];
+  SlidingStateNodes  = new int*         [nMarker];
+  
+  for (iMarker = 0; iMarker < nMarker; iMarker++){
+
+    SlidingState[iMarker]      = NULL;
+    SlidingStateNodes[iMarker] = NULL;
+    
+    if (config->GetMarker_All_KindBC(iMarker) == FLUID_INTERFACE){
+
+      SlidingState[iMarker]       = new su2double**[geometry->GetnVertex(iMarker)];
+      SlidingStateNodes[iMarker]  = new int        [geometry->GetnVertex(iMarker)];
+
+      for (iPoint = 0; iPoint < geometry->GetnVertex(iMarker); iPoint++){
+        SlidingState[iMarker][iPoint] = new su2double*[nPrimVar+1];
+
+        SlidingStateNodes[iMarker][iPoint] = 0;
+        for (iVar = 0; iVar < nPrimVar+1; iVar++)
+          SlidingState[iMarker][iPoint][iVar] = NULL;
+      }
+
+    }
   }
 
   /*--- Initialize the cauchy critera array for fixed CL mode ---*/
