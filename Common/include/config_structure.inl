@@ -309,6 +309,10 @@ inline void CConfig::SetExtIter_OffSet(unsigned long val_iter) { ExtIter_OffSet 
 
 inline void CConfig::SetOuterIter(unsigned long val_iter) { OuterIter = val_iter; }
 
+inline void CConfig::SetInnerIter(unsigned long val_iter) { InnerIter = val_iter; }
+
+inline void CConfig::SetTimeIter(unsigned long val_iter) { TimeIter = val_iter; }
+
 inline void CConfig::SetIntIter(unsigned long val_iter) { IntIter = val_iter; }
 
 inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
@@ -316,6 +320,10 @@ inline unsigned long CConfig::GetExtIter(void) { return ExtIter; }
 inline unsigned long CConfig::GetExtIter_OffSet(void) { return ExtIter_OffSet; }
 
 inline unsigned long CConfig::GetOuterIter(void) { return OuterIter; }
+
+inline unsigned long CConfig::GetInnerIter(void) { return InnerIter; }
+
+inline unsigned long CConfig::GetTimeIter(void) { return TimeIter; }
 
 inline unsigned long CConfig::GetIntIter(void) { return IntIter; }
 
@@ -2061,9 +2069,25 @@ inline bool CConfig::GetMultizone_Residual(void) { return Multizone_Residual; }
 
 inline bool CConfig::GetSinglezone_Driver(void) { return SinglezoneDriver; }
 
+inline bool CConfig::GetWrt_ZoneConv(void) { return Wrt_ZoneConv; }
+
+inline bool CConfig::GetWrt_ZoneHist(void) { return Wrt_ZoneHist; }
+
 inline bool CConfig::GetSpecial_Output(void) { return SpecialOutput; }
 
 inline bool CConfig::GetWrt_ForcesBreakdown(void) { return Wrt_ForcesBreakdown; }
+
+inline unsigned short CConfig::GetnScreenOutput(void) { return nScreenOutput; }
+
+inline string CConfig::GetScreenOutput_Field(unsigned short iField) { return ScreenOutput[iField]; }
+
+inline unsigned short CConfig::GetnHistoryOutput(void) { return nHistoryOutput; }
+
+inline string CConfig::GetHistoryOutput_Field(unsigned short iField) { return HistoryOutput[iField]; }
+
+inline unsigned short CConfig::GetnVolumeOutput(void) { return nVolumeOutput; }
+
+inline string CConfig::GetVolumeOutput_Field(unsigned short iField) { return VolumeOutput[iField]; }
 
 inline unsigned short CConfig::GetKind_RadiationModel(void) { return Kind_Radiation; }
 
@@ -2088,3 +2112,4 @@ inline unsigned short CConfig::GetEig_Val_Comp(void) {return eig_val_comp; }
 inline su2double CConfig::GetUQ_URLX(void) {return uq_urlx; }
 
 inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
+

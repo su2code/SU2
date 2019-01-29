@@ -54,8 +54,6 @@ CIncEulerVariable::CIncEulerVariable(void) : CVariable() {
   nSecondaryVarGrad = 0;
  
   Undivided_Laplacian = NULL;
-
-  Solution_BGS_k = NULL;
  
 }
 
@@ -175,16 +173,6 @@ CIncEulerVariable::CIncEulerVariable(su2double val_pressure, su2double *val_velo
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-    Solution_BGS_k  = new su2double [nVar];
-    Solution_BGS_k[0] = val_pressure;
-    for (iDim = 0; iDim < nDim; iDim++) {
-      Solution_BGS_k[iDim+1] = val_velocity[iDim]*config->GetDensity_FreeStreamND();
-    }
-    Solution_BGS_k[nDim+1] = val_temperature;
-  }
 
 }
 
@@ -321,8 +309,6 @@ CIncEulerVariable::~CIncEulerVariable(void) {
 
   if (Undivided_Laplacian != NULL) delete [] Undivided_Laplacian;
   
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
-
 }
 
 void CIncEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {

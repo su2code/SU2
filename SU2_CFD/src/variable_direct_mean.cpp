@@ -64,7 +64,6 @@ CEulerVariable::CEulerVariable(void) : CVariable() {
   
   Solution_New = NULL;
 
-  Solution_BGS_k = NULL;
 }
 
 CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, su2double val_energy, unsigned short val_nDim,
@@ -229,16 +228,6 @@ CEulerVariable::CEulerVariable(su2double val_density, su2double *val_velocity, s
     Gradient_Secondary[iVar] = new su2double [nDim];
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Secondary[iVar][iDim] = 0.0;
-  }
-
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-      Solution_BGS_k  = new su2double [nVar];
-      Solution[0] = val_density;
-      for (iDim = 0; iDim < nDim; iDim++) {
-        Solution_BGS_k[iDim+1] = val_density*val_velocity[iDim];
-      }
-      Solution_BGS_k[nVar-1] = val_density*val_energy;
   }
 
 }
@@ -435,8 +424,6 @@ CEulerVariable::~CEulerVariable(void) {
 
   if (Solution_New != NULL) delete [] Solution_New;
   
-  if (Solution_BGS_k  != NULL) delete [] Solution_BGS_k;
-
 }
 
 void CEulerVariable::SetGradient_PrimitiveZero(unsigned short val_primvar) {

@@ -1882,7 +1882,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Visualize the deformation (volume grid) */
   addBoolOption("VISUALIZE_VOLUME_DEF", Visualize_Volume_Def, false);
   /* DESCRIPTION: Print the residuals during mesh deformation to the console */
-  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, true);
+  addBoolOption("DEFORM_CONSOLE_OUTPUT", Deform_Output, false);
   /* DESCRIPTION: Number of nonlinear deformation iterations (surface deformation increments) */
   addUnsignedLongOption("DEFORM_NONLINEAR_ITER", GridDef_Nonlinear_Iter, 1);
   /* DESCRIPTION: Number of smoothing iterations for FEA mesh deformation */
@@ -2120,9 +2120,18 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addBoolOption("SINGLEZONE_DRIVER", SinglezoneDriver, false);
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("SPECIAL_OUTPUT", SpecialOutput, false);
+
+  /* DESCRIPTION: Determines if the convergence history of each individual zone is written to screen */
+  addBoolOption("WRT_ZONE_CONV", Wrt_ZoneConv, false);
+  /* DESCRIPTION: Determines if the convergence history of each individual zone is written to file */
+  addBoolOption("WRT_ZONE_HIST", Wrt_ZoneHist, true);
+
+
   /* DESCRIPTION: Determines if the special output is written out */
   addBoolOption("WRT_FORCES_BREAKDOWN", Wrt_ForcesBreakdown, false);
-  
+
+
+
   /*  DESCRIPTION: Use conservative approach for interpolating between meshes.
   *  Options: NO, YES \ingroup Config */
   addBoolOption("CONSERVATIVE_INTERPOLATION", ConservativeInterpolation, true);
@@ -2381,6 +2390,16 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   
   /* DESCRIPTION: Multipoint design for outlet quantities (varying back pressure or mass flow operating points). */
   addPythonOption("MULTIPOINT_OUTLET_VALUE");
+
+  /*--- options that are used for the output ---*/
+  /*!\par CONFIG_CATEGORY:Output Options\ingroup Config*/
+
+  /* DESCRIPTION: Type of screen output */
+  addStringListOption("SCREEN_OUTPUT", nScreenOutput, ScreenOutput);
+  /* DESCRIPTION: Type of output printed to the history file */
+  addStringListOption("HISTORY_OUTPUT", nHistoryOutput, HistoryOutput);
+  /* DESCRIPTION: Type of output printed to the volume solution file */
+  addStringListOption("VOLUME_OUTPUT", nVolumeOutput, VolumeOutput);
   
   /* DESCRIPTION: Using Uncertainty Quantification with SST Turbulence Model */
   addBoolOption("USING_UQ", using_uq, false);
@@ -2853,7 +2872,7 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   }
 
   /*--- Initialize the ofstream ConvHistFile. ---*/
-  ofstream ConvHistFile;
+//  ofstream ConvHistFile;
 
   /*--- Decide whether we should be writing unsteady solution files. ---*/
   
@@ -6033,7 +6052,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
         }
         MGTable.PrintFooter();
       }
-
 			if (Unsteady_Simulation != TIME_STEPPING) {
 				cout << "Courant-Friedrichs-Lewy number:   ";
 				cout.precision(3);
@@ -6041,7 +6059,6 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 				cout << endl;
 			}
 			
-
     }
 
     if ((Kind_Solver == RANS) || (Kind_Solver == DISC_ADJ_RANS))
@@ -6282,7 +6299,7 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
   if (nMarker_Euler != 0) {   
     BoundaryTable << "Euler wall";
     for (iMarker_Euler = 0; iMarker_Euler < nMarker_Euler; iMarker_Euler++) {
-      BoundaryTable << Marker_Euler[iMarker_Euler] << " ";
+      BoundaryTable << Marker_Euler[iMarker_Euler];
       if (iMarker_Euler < nMarker_Euler-1)  BoundaryTable << " ";
     }
     BoundaryTable.PrintFooter();

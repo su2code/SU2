@@ -905,7 +905,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
         
         if (surf_sol) {
             for (iPoint = 0; iPoint < nSurf_Poin_Par; iPoint++) {
-        for (iVar = 0; iVar < nVar_Par; iVar++)
+        for (iVar = 0; iVar < GlobalField_Counter; iVar++)
           Tecplot_File << scientific << Parallel_Surf_Data[iVar][iPoint] << "\t";
         Tecplot_File << endl;
             
@@ -913,7 +913,7 @@ void COutput::WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, C
         } else {
           
            for (iPoint = 0; iPoint < nParallel_Poin; iPoint++) {
-          for (iVar = 0; iVar < nVar_Par; iVar++)
+          for (iVar = 0; iVar < GlobalField_Counter; iVar++)
             Tecplot_File << scientific << Parallel_Data[iVar][iPoint] << "\t";
           Tecplot_File << endl;
         }

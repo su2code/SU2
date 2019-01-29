@@ -122,7 +122,8 @@ lib_sources = \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
   ../src/wall_model.cpp \
-  ../src/toolboxes/printing_toolbox.cpp 
+  ../src/toolboxes/printing_toolbox.cpp \
+  ../src/toolboxes/signal_processing_toolbox.cpp
 
 lib_cxxflags = -fPIC
 lib_ldadd =

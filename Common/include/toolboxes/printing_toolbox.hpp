@@ -61,7 +61,7 @@ public:
    * \return Total width of the table.
    */
   int GetTableWidth() const;
-  
+
   /*!
    * \brief Set the separator between columns (outer decoration)
    * \param[in] separator - The separation character.
@@ -85,7 +85,7 @@ public:
    * \param[in] print - If TRUE, the top line is printed.
    */
   void SetPrintHeaderTopLine(bool print);
-
+  
   
   /*!
    * \brief Add a column to the table by specifiying the header name and the width.
@@ -103,11 +103,11 @@ public:
    * \brief Print the footer.
    */
   void PrintFooter();
-
+  
   template<typename T> CTablePrinter& operator<<(T input){
-    
+
     int indent = 0;
-   
+
     /* --- Set the left separator --- */
     if (j_ == 0)
       *out_stream_ << "|";

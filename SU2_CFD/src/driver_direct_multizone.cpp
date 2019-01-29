@@ -201,24 +201,31 @@ void CMultizoneDriver::StartSolver() {
 void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 
   bool unsteady = driver_config->GetTime_Domain();
+  
+  
+  /*--- Set the current time iteration in the config ---*/
+  
+  driver_config->SetTimeIter(TimeIter);
 
   for (iZone = 0; iZone < nZone; iZone++){
 
     /*--- Set the value of the external iteration to TimeIter. -------------------------------------*/
     /*--- TODO: This should be generalised for an homogeneous criteria throughout the code. --------*/
     config_container[iZone]->SetExtIter(TimeIter);
+    config_container[iZone]->SetTimeIter(TimeIter);
+    
 
     /*--- Read the target pressure for inverse design. ---------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-    if (config_container[iZone]->GetInvDesign_Cp() == YES)
-      output->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+//    if (config_container[iZone]->GetInvDesign_Cp() == YES)
+//      output[iZone]->SetCp_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
 
     /*--- Read the target heat flux ----------------------------------------------------------------*/
     /*--- TODO: This routine should be taken out of output, and made general for multiple zones. ---*/
-    if (config_container[iZone]->GetInvDesign_HeatFlux() == YES)
-      output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
+//    if (config_container[iZone]->GetInvDesign_HeatFlux() == YES)
+//      output->SetHeatFlux_InverseDesign(solver_container[iZone][INST_0][MESH_0][FLOW_SOL],
+//          geometry_container[iZone][INST_0][MESH_0], config_container[iZone], TimeIter);
 
     /*--- Set the initial condition for EULER/N-S/RANS ---------------------------------------------*/
     /*--- For FSI, this is set after the mesh has been moved. --------------------------------------*/
@@ -237,7 +244,7 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
   /*--- Run a predictor step ---*/
   for (iZone = 0; iZone < nZone; iZone++){
     if (config_container[iZone]->GetPredictor())
-      iteration_container[iZone][INST_0]->Predictor(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Predictor(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
@@ -278,6 +285,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
@@ -291,7 +299,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
       if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[iZone], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -331,6 +339,7 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Transfer from all the remaining zones ---*/
       for (jZone = 0; jZone < nZone; jZone++){
@@ -350,9 +359,10 @@ void CMultizoneDriver::Run_Jacobi() {
 
       /*--- Set the OuterIter ---*/
       config_container[iZone]->SetOuterIter(iOuter_Iter);
+      driver_config->SetOuterIter(iOuter_Iter);
 
       /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
+      iteration_container[iZone][INST_0]->Solve(output[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
       /*--- A corrector step can help preventing numerical instabilities ---*/
@@ -371,7 +381,7 @@ void CMultizoneDriver::Run_Jacobi() {
 void CMultizoneDriver::Corrector(unsigned short val_iZone) {
 
     if (config_container[val_iZone]->GetRelaxation())
-      iteration_container[val_iZone][INST_0]->Relaxation(output, integration_container, geometry_container, solver_container,
+      iteration_container[val_iZone][INST_0]->Relaxation(output[ZONE_0], integration_container, geometry_container, solver_container,
           numerics_container, config_container, surface_movement, grid_movement, FFDBox, val_iZone, INST_0);
 
 }
@@ -419,33 +429,33 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
   }
 
   /*--- This still has to be generalised ---*/
-  if (fsi){
+//  if (fsi){
 
-    /*--- This should be possible to change dinamically in the config ---*/
-    if (rank == MASTER_NODE){
+//    /*--- This should be possible to change dinamically in the config ---*/
+//    if (rank == MASTER_NODE){
 
-      cout << endl << "-------------------------------------------------------------------------" << endl;
-      cout << endl;
-      cout << "Convergence summary for BGS iteration ";
-      cout << OuterIter << endl;
-      cout << endl;
-      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
-      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
-      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
-      cout.width(8); cout << OuterIter*1000;
-      cout.width(15); cout << residual[ZONE_0][0];
-      cout.width(15); cout << residual[ZONE_0][3];
-      cout.width(15); cout << residual[ZONE_1][0];
-      cout.width(15); cout << residual[ZONE_1][1];
-      cout << endl;
-    }
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
-        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
-        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
-      }
-    }
-  }
+//      cout << endl << "-------------------------------------------------------------------------" << endl;
+//      cout << endl;
+//      cout << "Convergence summary for BGS iteration ";
+//      cout << OuterIter << endl;
+//      cout << endl;
+//      /*--- TODO: This is a workaround until the TestCases.py script incorporates new classes for nested loops. ---*/
+//      cout << "Iter[ID]" << "    BGSRes[Rho]" << "   BGSRes[RhoE]" << "     BGSRes[Ux]" << "     BGSRes[Uy]" << endl;
+//      cout.precision(6); cout.setf(ios::fixed, ios::floatfield);
+//      cout.width(8); cout << OuterIter*1000;
+//      cout.width(15); cout << residual[ZONE_0][0];
+//      cout.width(15); cout << residual[ZONE_0][3];
+//      cout.width(15); cout << residual[ZONE_1][0];
+//      cout.width(15); cout << residual[ZONE_1][1];
+//      cout << endl;
+//    }
+//    for (iZone = 0; iZone < nZone; iZone++){
+//      if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY){
+//        integration_container[iZone][INST_0][FEA_SOL]->Convergence_Monitoring_FSI(geometry_container[iZone][INST_0][MESH_0], config_container[iZone], solver_container[iZone][INST_0][MESH_0][FEA_SOL], OuterIter);
+//        Convergence = integration_container[iZone][INST_0][FEA_SOL]->GetConvergence_FSI();
+//      }
+//    }
+//  }
 
   /*--- Update the residual for the all the zones ---*/
   for (iZone = 0; iZone < nZone; iZone++){
@@ -457,6 +467,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
             config_container[iZone]);}
     }
   }
+
+  /*--- Print out the convergence data to screen and history file ---*/
+  driver_output->SetBody(output, solver_container, driver_config, config_container);
 
   if (rank == MASTER_NODE) cout.setf(ios::scientific, ios::floatfield);
 
@@ -470,9 +483,9 @@ bool CMultizoneDriver::OuterConvergence(unsigned long OuterIter) {
       if (config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ZONE_FEA = iZone;
       if (config_container[iZone]->GetKind_Solver() == NAVIER_STOKES) ZONE_FLOW = iZone;
     }
-    output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
-        config_container, integration_container, 0,
-        ZONE_FLOW, ZONE_FEA, false);
+ //   output->SpecialOutput_FSI(&FSIHist_file, geometry_container, solver_container,
+ //       config_container, integration_container, 0,
+ //       ZONE_FLOW, ZONE_FEA, false);
   }
 
   return Convergence;
@@ -501,7 +514,7 @@ void CMultizoneDriver::Update() {
     /*--- If a mesh update is required due to the transfer of data ---*/
     if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
 
-    iteration_container[iZone][INST_0]->Update(output, integration_container, geometry_container,
+    iteration_container[iZone][INST_0]->Update(output[iZone], integration_container, geometry_container,
         solver_container, numerics_container, config_container,
         surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
@@ -516,82 +529,86 @@ void CMultizoneDriver::Update() {
 
 void CMultizoneDriver::Output(unsigned long TimeIter) {
 
-  bool output_files = false;
-
-  /*--- Determine whether a solution needs to be written
+  
+  for (iZone = 0; iZone < nZone; iZone++){
+    
+    bool output_files = false;
+    
+    /*--- Determine whether a solution needs to be written
    after the current iteration ---*/
-
-  if (
-
-      /*--- General if statements to print output statements ---*/
-
-      (TimeIter+1 >= config_container[ZONE_0]->GetnTime_Iter()) || (StopCalc) ||
-
-      /*--- Unsteady problems ---*/
-
-      (((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
-        (config_container[ZONE_0]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
-       ((TimeIter == 0) || (ExtIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0) ||
-                           ((TimeIter-1) % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
-       ((TimeIter == 0) || ((TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
-
-      ((config_container[ZONE_0]->GetDynamic_Analysis() == DYNAMIC) &&
-       ((TimeIter == 0) || (TimeIter % config_container[ZONE_0]->GetWrt_Sol_Freq_DualTime() == 0))) ||
-
-      /*--- No inlet profile file found. Print template. ---*/
-
-      (config_container[ZONE_0]->GetWrt_InletFile())
-
-      ) {
-
-    output_files = true;
-
-  }
-
-  /*--- Determine whether a solution doesn't need to be written
+    
+    if (
+        
+        /*--- General if statements to print output statements ---*/
+        
+        (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
+        
+        /*--- Unsteady problems ---*/
+        
+        (((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+          (config_container[iZone]->GetUnsteady_Simulation() == TIME_STEPPING)) &&
+         ((TimeIter == 0) || (ExtIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0) ||
+                              ((TimeIter-1) % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+        
+        ((config_container[iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND) &&
+         ((TimeIter == 0) || ((TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0)))) ||
+        
+        ((config_container[iZone]->GetDynamic_Analysis() == DYNAMIC) &&
+         ((TimeIter == 0) || (TimeIter % config_container[iZone]->GetWrt_Sol_Freq_DualTime() == 0))) ||
+        
+        /*--- No inlet profile file found. Print template. ---*/
+        
+        (config_container[iZone]->GetWrt_InletFile())
+        
+        ) {
+      
+      output_files = true;
+      
+    }
+    
+    /*--- Determine whether a solution doesn't need to be written
    after the current iteration ---*/
-
-  if (config_container[ZONE_0]->GetFixed_CL_Mode()) {
-    if (config_container[ZONE_0]->GetnExtIter()-config_container[ZONE_0]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
-    if (config_container[ZONE_0]->GetnExtIter() - 1 == ExtIter) output_files = true;
-  }
-
-  /*--- write the solution ---*/
-
-  if (output_files) {
-
-    /*--- Time the output for performance benchmarking. ---*/
+    
+    if (config_container[iZone]->GetFixed_CL_Mode()) {
+      if (config_container[iZone]->GetnExtIter()-config_container[iZone]->GetIter_dCL_dAlpha() - 1 < ExtIter) output_files = false;
+      if (config_container[iZone]->GetnExtIter() - 1 == ExtIter) output_files = true;
+    }
+    
+    /*--- write the solution ---*/
+    
+    if (output_files) {
+      
+      /*--- Time the output for performance benchmarking. ---*/
 #ifndef HAVE_MPI
-    StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StopTime = MPI_Wtime();
+      StopTime = MPI_Wtime();
 #endif
-    UsedTimeCompute += StopTime-StartTime;
+      UsedTimeCompute += StopTime-StartTime;
 #ifndef HAVE_MPI
-    StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+      StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #else
-    StartTime = MPI_Wtime();
+      StartTime = MPI_Wtime();
 #endif
-
-    if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
-
-    /*--- Execute the routine for writing restart, volume solution,
+      
+      if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+      
+      /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
-
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, nZone);
-
-
-    /*--- Execute the routine for writing special output. ---*/
-    output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
-
-
-    if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
-
+      
+      output[iZone]->SetResult_Files_Parallel(solver_container, geometry_container, config_container, TimeIter, iZone, nZone);
+      
+      
+      /*--- Execute the routine for writing special output. ---*/
+      // output->SetSpecial_Output(solver_container, geometry_container, config_container, TimeIter, nZone);
+      
+      
+      if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+      
+    }
     /*--- Store output time and restart the timer for the compute phase. ---*/
 #ifndef HAVE_MPI
     StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
