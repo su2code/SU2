@@ -869,9 +869,9 @@ bool CBoom_AugBurgers::InsideElem(CGeometry *geometry, su2double r0, su2double p
           pp1[2] = ppp0[2];
         }
         count++;
-        if(count > 1){
+        if(count > 0){
           inside = true;
-          break;
+          if(count > 1) break;
         }
       }
     }
