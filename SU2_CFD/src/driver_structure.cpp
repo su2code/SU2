@@ -2048,7 +2048,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   adj_euler        = false;   adj_ns           = false;   adj_turb         = false;
   heat_fvm         = false;
   fem              = false;
-  radiation        = false;   p1_rad           = false;
+  radiation        = false; p1_rad           = false;
   spalart_allmaras = false; neg_spalart_allmaras = false;	menter_sst       = false;
   transition       = false;
   template_solver  = false;
@@ -2387,8 +2387,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
       else
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_FIRST_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
       
+      // At this moment it is incompatible to have a volumetric heat source and the RTE equation simultaneously
       if (radiation)
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceRadiation(nDim, nVar_Flow, config);
+      else if (incompressible && config->GetHeatSource())
+        numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceVolumetricHeat(nDim, nVar_Flow, config);
       else
         numerics_container[val_iInst][iMGlevel][FLOW_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
     }
