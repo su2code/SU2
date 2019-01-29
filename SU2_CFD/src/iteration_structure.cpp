@@ -1128,15 +1128,16 @@ CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
 CFEMFluidIteration::~CFEMFluidIteration(void) { }
 
 void CFEMFluidIteration::Preprocess(COutput *output,
-                                    CIntegration ***integration_container,
-                                    CGeometry ***geometry_container,
-                                    CSolver ****solver_container,
-                                    CNumerics *****numerics_container,
+                                    CIntegration ****integration_container,
+                                    CGeometry ****geometry_container,
+                                    CSolver *****solver_container,
+                                    CNumerics ******numerics_container,
                                     CConfig **config_container,
                                     CSurfaceMovement **surface_movement,
-                                    CVolumetricMovement **grid_movement,
+                                    CVolumetricMovement ***grid_movement,
                                     CFreeFormDefBox*** FFDBox,
-                                    unsigned short val_iZone) {
+                                    unsigned short val_iZone,
+                                    unsigned short val_iInst) {
   
   unsigned long IntIter = 0; config_container[ZONE_0]->SetIntIter(IntIter);
   unsigned long ExtIter = config_container[ZONE_0]->GetExtIter();
@@ -1145,8 +1146,8 @@ void CFEMFluidIteration::Preprocess(COutput *output,
   
   /*--- Set the initial condition if this is not a restart. ---*/
   if (ExtIter == 0 && !restart)
-    solver_container[val_iZone][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone],
-                                                                       solver_container[val_iZone],
+    solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->SetInitialCondition(geometry_container[val_iZone][val_iInst],
+                                                                       solver_container[val_iZone][val_iInst],
                                                                        config_container[val_iZone],
                                                                        ExtIter);
   
@@ -1193,18 +1194,38 @@ void CFEMFluidIteration::Iterate(COutput *output,
 }
 
 void CFEMFluidIteration::Update(COutput *output,
-                                CIntegration ***integration_container,
-                                CGeometry ***geometry_container,
-                                CSolver ****solver_container,
-                                CNumerics *****numerics_container,
+                                CIntegration ****integration_container,
+                                CGeometry ****geometry_container,
+                                CSolver *****solver_container,
+                                CNumerics ******numerics_container,
                                 CConfig **config_container,
                                 CSurfaceMovement **surface_movement,
-                                CVolumetricMovement **grid_movement,
+                                CVolumetricMovement ***grid_movement,
                                 CFreeFormDefBox*** FFDBox,
-                                unsigned short val_iZone)      { }
-void CFEMFluidIteration::Monitor()     { }
-void CFEMFluidIteration::Output()      { }
-void CFEMFluidIteration::Postprocess() { }
+                                unsigned short val_iZone,
+                                unsigned short val_iInst)      { }
+bool CFEMFluidIteration::Monitor(COutput *output,
+                             CIntegration ****integration_container,
+                             CGeometry ****geometry_container,
+                             CSolver *****solver_container,
+                             CNumerics ******numerics_container,
+                             CConfig **config_container,
+                             CSurfaceMovement **surface_movement,
+                             CVolumetricMovement ***grid_movement,
+                             CFreeFormDefBox*** FFDBox,
+                             unsigned short val_iZone,
+                             unsigned short val_iInst)     { return false; }
+void CFEMFluidIteration::Postprocess(COutput *output,
+                                 CIntegration ****integration_container,
+                                 CGeometry ****geometry_container,
+                                 CSolver *****solver_container,
+                                 CNumerics ******numerics_container,
+                                 CConfig **config_container,
+                                 CSurfaceMovement **surface_movement,
+                                 CVolumetricMovement ***grid_movement,
+                                 CFreeFormDefBox*** FFDBox,
+                                 unsigned short val_iZone,
+                                 unsigned short val_iInst) { }
 
 CHeatIteration::CHeatIteration(CConfig *config) : CIteration(config) { }
 
@@ -3547,8 +3568,29 @@ void CDiscAdjHeatIteration::Update(COutput *output,
     }
   }
 }
-void CDiscAdjHeatIteration::Monitor()     { }
-void CDiscAdjHeatIteration::Output()      { }
+
+bool CDiscAdjHeatIteration::Monitor(COutput *output,
+                                    CIntegration ****integration_container,
+                                    CGeometry ****geometry_container,
+                                    CSolver *****solver_container,
+                                    CNumerics ******numerics_container,
+                                    CConfig **config_container,
+                                    CSurfaceMovement **surface_movement,
+                                    CVolumetricMovement ***grid_movement,
+                                    CFreeFormDefBox*** FFDBox,
+                                    unsigned short val_iZone,
+                                    unsigned short val_iInst) { return false; }
+
+
+void  CDiscAdjHeatIteration::Output(COutput *output,
+                                    CGeometry ****geometry_container,
+                                    CSolver *****solver_container,
+                                    CConfig **config_container,
+                                    unsigned long ExtIter,
+                                    bool StopCalc,
+                                    unsigned short val_iZone,
+                                    unsigned short val_iInst) { }
+
 void CDiscAdjHeatIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,

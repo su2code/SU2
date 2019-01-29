@@ -811,7 +811,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   unsigned long kk = leaves[0].centralNodeID;
   const su2double *coorBBMin = BBoxCoor.data() + nDimADT*kk;
   const su2double *coorBBMax = coorBBMin + nDim;
-  unsigned long jj;
+  unsigned long jj = 0;
 
   dist = 0.0;
   for(unsigned short k=0; k<nDim; ++k) {

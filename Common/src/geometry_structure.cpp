@@ -1980,7 +1980,7 @@ void CGeometry::FilterValuesAtElementCG(const vector<su2double> filter_radius,
                              neighbour_start, neighbour_idx, cg_elem, neighbours);
     
       /*--- Apply the kernel ---*/
-      su2double weight, numerator = 0.0, denominator = 0.0;
+      su2double weight = 0.0, numerator = 0.0, denominator = 0.0;
     
       switch ( kernel_type ) {
         /*--- distance-based kernels (weighted averages) ---*/

@@ -241,7 +241,7 @@ void CGraphColoringStructure::GraphVertexColoring(
       colorLocalVertices.resize(nLocalVert);
 
       for(unsigned long i=0; i<nLocalVert; ++i)
-        colorLocalVertices[i] = i + nVerticesPerRank[myRank];
+        colorLocalVertices[i] = (int)(i + nVerticesPerRank[myRank]);
 
       break;
     }
