@@ -57,7 +57,7 @@ def main():
     statbeam3d.new_output= True
     statbeam3d.test_iter = 0
     statbeam3d.test_vals = [-8.498274, -8.230638, -8.123824, 6.4095e+04] #last 4 columns
-    statbeam3d.su2_exec  = "SU2_DEV_CFD"
+    statbeam3d.su2_exec  = "SU2_RAD"
     statbeam3d.timeout   = 1600
     statbeam3d.tol       = 0.00001
     test_list.append(statbeam3d)
@@ -70,7 +70,7 @@ def main():
     dynbeam2d.new_output= True  
     dynbeam2d.test_iter = 6 
     dynbeam2d.test_vals = [-9.420640, -5.365872, -12.430382, 6.5210e+04] #last 4 columns
-    dynbeam2d.su2_exec  = "SU2_DEV_CFD"
+    dynbeam2d.su2_exec  = "SU2_RAD"
     dynbeam2d.timeout   = 1600
     dynbeam2d.tol       = 0.00001
     test_list.append(dynbeam2d)
@@ -79,9 +79,11 @@ def main():
     fsi2d           = TestCase('fsi2d')
     fsi2d.cfg_dir   = "fea_fsi/WallChannel_2d"
     fsi2d.cfg_file  = "configFSI.cfg"
+    fsi2d.unsteady  = True
+    fsi2d.new_output= True     
     fsi2d.test_iter = 4
-    fsi2d.test_vals = [2.000000, 0.500000, -7.780236, -1.142100] #last 4 columns
-    fsi2d.su2_exec  = "SU2_DEV_CFD"
+    fsi2d.test_vals = [2.000000, 4.000000, -4.017814, -9.089686] #last 4 columns
+    fsi2d.su2_exec  = "SU2_RAD"
     fsi2d.timeout   = 1600
     fsi2d.tol       = 0.00001
     test_list.append(fsi2d)    
@@ -111,6 +113,22 @@ def main():
     # cht_incompressible.timeout   = 1600
     # cht_incompressible.tol       = 0.00001
     # test_list.append(cht_incompressible)
+
+    # ###############################
+    # ### Radiative Heat Transfer ###
+    # ###############################    
+
+    # # FSI, 2d
+    p1rad           = TestCase('p1rad')
+    p1rad.cfg_dir   = "radiation/p1model"
+    p1rad.cfg_file  = "config.cfg"
+    p1rad.new_output= True     
+    p1rad.test_iter = 100
+    p1rad.test_vals = [-7.750053, -7.917666, -2.118093, 0.092236] #last 4 columns
+    p1rad.su2_exec  = "SU2_RAD"
+    p1rad.timeout   = 1600
+    p1rad.tol       = 0.00001
+    test_list.append(p1rad)       
 
     ######################################
     ### RUN TESTS                      ###
