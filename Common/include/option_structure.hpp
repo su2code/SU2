@@ -227,7 +227,7 @@ enum ENUM_SOLVER {
   FEM_EULER = 50,                       /*!< \brief Definition of the finite element Euler's solver. */
   FEM_NAVIER_STOKES = 51,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
   FEM_RANS = 52,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES = 53,                         /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  FEM_LES = 53,                          /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIZONE = 99
 };
 /* BEGIN_CONFIG_ENUMS */
@@ -1962,6 +1962,114 @@ enum ENUM_INPUT_REF {
 static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM_INPUT_REF>
 ("SU2", SU2_REF)
 ("CUSTOM", CUSTOM_REF);
+
+///*!
+// * \brief types of screen output fields
+// */
+//enum ENUM_SCREEN_OUTPUT {
+//  SOUT_INTITER,    /*!< \brief Internal iteration. */
+//  SOUT_EXTITER,    /*!< \brief External iteration. */
+//  SOUT_TIME,       /*!< \brief Time taken by the iteration. */
+//  SOUT_PHYSTIME,   /*!< \brief Physical time of the iteration. */
+//  SOUT_RHO,       /*!< \brief Density output. */
+//  SOUT_RHOU1,     /*!< \brief Momentum-x output. */
+//  SOUT_RHOU2,     /*!< \brief Momentum-y output. */
+//  SOUT_RHOU3,     /*!< \brief Momentum-z output. */
+//  SOUT_RHOE,      /*!< \brief Rho-E output. */
+//  SOUT_PRESS,     /*!< \brief Pressure output. */
+//  SOUT_CL,        /*!< \brief Lift coefficient output. */
+//  SOUT_CD,        /*!< \brief Drag coefficient output. */
+//  SOUT_CMX,       /*!< \brief Moment X coefficient output. */
+//  SOUT_CMY,       /*!< \brief Moment Y coefficient output. */
+//  SOUT_CMZ,        /*!< \brief Moment Z coefficient output. */
+//  SOUT_CFX,        /*!< \brief Force X coefficient output. */
+//  SOUT_CFY,        /*!< \brief Force Y coefficient output. */
+//  SOUT_CFZ,        /*!< \brief Force Z coefficient output. */
+//  SOUT_CEFF,       /*!< \brief Efficiency coefficient output. */
+//  SOUT_AOA,       /*!< \brief Angle of attack output. */
+//  SOUT_SA,        /*!< \brief Spalart-Allmaras Nu. */
+//  SOUT_K,         /*!< \brief k-w Kinetic energy. */
+//  SOUT_W,         /*!< \brief k-w Rate of dissipation. */
+//  SOUT_TEMP,      /*!< \brief Temperature. */
+//  SOUT_UTOL,       /*!< \brief Elasticity displacement norm. */
+//  SOUT_RTOL,       /*!< \brief Elasticity residual norm. */
+//  SOUT_ETOL,       /*!< \brief Elasticity energy norm. */
+//  SOUT_VMS,        /*!< \brief Elasticity Maximum Von Mises stress. */
+//  SOUT_DISPX,        /*!< \brief Norm of the displacement vector - x component. */
+//  SOUT_DISPY,       /*!< \brief Norm of the displacement vector - y component. */
+//  SOUT_DISPZ        /*!< \brief Norm of the displacement vector - z component. */
+//};
+
+//static const map<string, ENUM_SCREEN_OUTPUT> Screen_Output_Map = CCreateMap<string, ENUM_SCREEN_OUTPUT>
+//("INT_ITER", SOUT_INTITER)
+//("EXT_ITER", SOUT_EXTITER)
+//("TIME", SOUT_TIME)
+//("PHYSICAL_TIME", SOUT_PHYSTIME)
+//("DENSITY", SOUT_RHO)
+//("MOMENTUM-X", SOUT_RHOU1)
+//("MOMENTUM-Y", SOUT_RHOU2)
+//("MOMENTUM-Z", SOUT_RHOU3)
+//("RHO-E", SOUT_RHOE)
+//("PRESSURE", SOUT_PRESS)
+//("LIFT", SOUT_CL)
+//("DRAG", SOUT_CD)
+//("MOMENT-X", SOUT_CMX)
+//("MOMENT-Y", SOUT_CMY)
+//("MOMENT-Z", SOUT_CMZ)
+//("FORCE-X", SOUT_CFX)
+//("FORCE-Y", SOUT_CFY)
+//("FORCE-Z", SOUT_CFZ)
+//("AOA", SOUT_AOA)
+//("EFFICIENCY", SOUT_CEFF)
+//("SA-NU", SOUT_SA)
+//("K-W_KINETIC", SOUT_K)
+//("K-W_DISSIPATION", SOUT_W)
+//("TEMPERATURE", SOUT_TEMP)
+//("UTOL", SOUT_UTOL)
+//("RTOL", SOUT_RTOL)
+//("ETOL", SOUT_ETOL)
+//("DISPX", SOUT_DISPX)
+//("DISPY", SOUT_DISPY)
+//("DISPZ", SOUT_DISPZ)
+//("VON_MISES_STRESS", SOUT_VMS);
+
+///*!
+// * \brief types of screen output fields
+// */
+//enum ENUM_HISTFILE_OUTPUT {
+//  HOUT_INTITER = 0,    /*!< \brief Internal iteration. */
+//  HOUT_EXTITER = 1,    /*!< \brief External iteration. */
+//  HOUT_TIME = 2,       /*!< \brief Time taken by the iteration. */
+//  HOUT_PHYSTIME = 3,   /*!< \brief Physical time of the iteration. */
+//  HOUT_RESIDUALS = 4,       /*!< \brief Residuals output. */
+//  HOUT_LINSOL_ITER = 5,     /*!< \brief Linear solver iteration. */
+//  HOUT_CUSTOM_OF = 6,       /*!< \brief Custom objective function. */
+//  HOUT_AEROCOEFF = 10,      /*!< \brief Aerodynamic coefficients. */
+//  HOUT_FORCECOEFF = 11,     /*!< \brief Force coefficients(projection in X, Y, Z) . */
+//  HOUT_AOA = 12,            /*!< \brief Angle of attack. */
+//  HOUT_EFF = 13,            /*!< \brief Efficiency. */
+//  HOUT_CFL = 14,            /*!< \brief CFL Number. */
+//  HOUT_LOAD_RAMP = 50,      /*!< \brief Load coefficient transfered as a ramp. */
+//  HOUT_LOAD_INCREMENT = 51,       /*!< \brief Load increment (non-linear elasticity). */
+//  HOUT_VMS = 53        /*!< \brief Elasticity Maximum Von Mises stress. */
+//};
+
+//static const map<string, ENUM_HISTFILE_OUTPUT> HistFile_Output_Map = CCreateMap<string, ENUM_HISTFILE_OUTPUT>
+//("INT_ITER", HOUT_INTITER)
+//("EXT_ITER", HOUT_EXTITER)
+//("TIME", HOUT_TIME)
+//("PHYSICAL_TIME", HOUT_PHYSTIME)
+//("RESIDUALS", HOUT_RESIDUALS)
+//("LINEAR_SOLVER_ITER", HOUT_LINSOL_ITER)
+//("CUSTOM_OF", HOUT_CUSTOM_OF)
+//("AEROCOEFF", HOUT_AEROCOEFF)
+//("FORCECOEFF", HOUT_FORCECOEFF)
+//("AOA", HOUT_AOA)
+//("EFFICIENCY", HOUT_EFF)
+//("CFL_NUMBER", HOUT_CFL)
+//("LOAD_RAMP", HOUT_LOAD_RAMP)
+//("LOAD_INCREMENT", HOUT_LOAD_INCREMENT)
+//("VON_MISES_STRESS", HOUT_VMS);
 
 /*!
  * \brief types of filter kernels, initially intended for structural topology optimization applications

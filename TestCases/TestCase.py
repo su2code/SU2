@@ -64,6 +64,9 @@ class TestCase:
         # Indicate whether to disable restart
         self.no_restart = False
 
+        # Indicate whether the new output is used
+        self.new_output = False        
+
         # The test condition. These must be set after initialization
         self.test_iter = 1
         self.ntest_vals = 4
@@ -138,7 +141,11 @@ class TestCase:
                     if line.find('Begin Solver') > -1:
                         start_solver=True
                 else:   # Found the --Begin solver --- line; parse the input
-                    raw_data = line.split()
+                    if self.new_output:
+                        raw_data = line.strip() # Strip removes whitespaces head-tail
+                        raw_data = raw_data[1:-1].split('|') # Remove heat-tail bars before splitting 
+                    else:
+                        raw_data = line.split()
                     try:
                         iter_number = int(raw_data[0])
                         if self.unsteady:

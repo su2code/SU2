@@ -864,6 +864,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -3979,13 +3981,13 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     else if (config->GetSystemMeasurements() == US) Unit << "ft/s";
     NonDimTable << "Velocity-X" << config->GetVelocity_FreeStream()[0] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[0];
     NonDimTable << "Velocity-Y" << config->GetVelocity_FreeStream()[1] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[1];
-    if (nDim == 3) {
+    if (nDim == 3){
       NonDimTable << "Velocity-Z" << config->GetVelocity_FreeStream()[2] << config->GetVelocity_Ref() << Unit.str() << config->GetVelocity_FreeStreamND()[2];
     }
     NonDimTable << "Velocity Magnitude" << config->GetModVel_FreeStream() << config->GetVelocity_Ref() << Unit.str() << config->GetModVel_FreeStreamND();
     Unit.str("");
-    
-    if (viscous) {
+
+    if (viscous){
       NonDimTable.PrintFooter();
       if      (config->GetSystemMeasurements() == SI) Unit << "N.s/m^2";
       else if (config->GetSystemMeasurements() == US) Unit << "lbf.s/ft^2";
@@ -3995,7 +3997,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
       else if (config->GetSystemMeasurements() == US) Unit << "lbf/ft.s.R";
       NonDimTable << "Conductivity" << "-" << config->GetConductivity_Ref() << Unit.str() << "-";
       Unit.str("");
-      if (turbulent) {
+      if (turbulent){
         if      (config->GetSystemMeasurements() == SI) Unit << "m^2/s^2";
         else if (config->GetSystemMeasurements() == US) Unit << "ft^2/s^2";
         NonDimTable << "Turb. Kin. Energy" << config->GetTke_FreeStream() << config->GetTke_FreeStream()/config->GetTke_FreeStreamND() << Unit.str() << config->GetTke_FreeStreamND();
@@ -4009,7 +4011,7 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
     
     NonDimTable.PrintFooter();
     NonDimTable << "Mach Number" << "-" << "-" << "-" << config->GetMach();
-    if (viscous) {
+    if (viscous){
       NonDimTable << "Reynolds Number" << "-" << "-" << "-" << config->GetReynolds();      
     }
     if (gravity) {
@@ -13397,45 +13399,6 @@ void CEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_co
   
 }
 
-void CEulerSolver::ComputeResidual_Multizone(CGeometry *geometry, CConfig *config){
-
-  unsigned short iVar;
-  unsigned long iPoint;
-  su2double residual;
-
-  /*--- Set Residuals to zero ---*/
-
-  for (iVar = 0; iVar < nVar; iVar++){
-      SetRes_BGS(iVar,0.0);
-      SetRes_Max_BGS(iVar,0.0,0);
-  }
-
-  /*--- Set the residuals ---*/
-  for (iPoint = 0; iPoint < nPointDomain; iPoint++){
-      for (iVar = 0; iVar < nVar; iVar++){
-          residual = node[iPoint]->GetSolution(iVar) - node[iPoint]->Get_BGSSolution_k(iVar);
-          AddRes_BGS(iVar,residual*residual);
-          AddRes_Max_BGS(iVar,fabs(residual),geometry->node[iPoint]->GetGlobalIndex(),geometry->node[iPoint]->GetCoord());
-      }
-  }
-
-  SetResidual_BGS(geometry, config);
-
-}
-
-
-void CEulerSolver::UpdateSolution_BGS(CGeometry *geometry, CConfig *config){
-
-  unsigned long iPoint;
-
-  /*--- To nPoint: The solution must be communicated beforehand ---*/
-  for (iPoint = 0; iPoint < nPoint; iPoint++){
-
-    node[iPoint]->Set_BGSSolution_k();
-
-  }
-
-}
 
 void CEulerSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConfig *config, int val_iter, bool val_update_geo) {
 
@@ -15593,6 +15556,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -16356,7 +16321,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
         }
         
       }
-      
+       
       /*--- Project forces and store the non-dimensional coefficients ---*/
       
       if (Monitoring == YES) {

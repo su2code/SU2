@@ -328,13 +328,13 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
     
     /*--- Check for failed deformation (negative volumes). ---*/
     
-    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
+    ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
     
     /*--- Set number of iterations in the mesh update. ---*/
 
     Set_nIterMesh(Tot_Iter);
 
-    if (rank == MASTER_NODE) {
+    if (rank == MASTER_NODE && Screen_Output) {
       cout << "Non-linear iter.: " << iNonlinear_Iter+1 << "/" << Nonlinear_Iter  << ". Linear iter.: " << Tot_Iter << ". ";
       if (nDim == 2) cout << "Min. area: " << MinVolume << ". Error: " << Residual << "." << endl;
       else cout << "Min. volume: " << MinVolume << ". Error: " << Residual << "." << endl;
@@ -345,14 +345,14 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
 
 }
 
-void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume) {
+void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output) {
   
   unsigned long iElem, ElemCounter = 0, PointCorners[8];
   su2double Volume = 0.0, CoordCorners[8][3];
   unsigned short nNodes = 0, iNodes, iDim;
   bool RightVol = true;
-  
-  if (rank == MASTER_NODE)
+
+  if (rank == MASTER_NODE && Screen_Output)
     cout << "Computing volumes of the grid elements." << endl;
   
   MaxVolume = -1E22; MinVolume = 1E22;
@@ -418,7 +418,7 @@ void CVolumetricMovement::ComputeDeforming_Element_Volume(CGeometry *geometry, s
     geometry->elem[iElem]->SetVolume(Volume);
   }
   
-  if ((ElemCounter != 0) && (rank == MASTER_NODE))
+  if ((ElemCounter != 0) && (rank == MASTER_NODE) && (Screen_Output))
     cout <<"There are " << ElemCounter << " elements with negative volume.\n" << endl;
   
 }
@@ -528,6 +528,8 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   su2double **StiffMatrix_Elem = NULL, CoordCorners[8][3];
   su2double MinVolume = 0.0, MaxVolume = 0.0, MinDistance = 0.0, MaxDistance = 0.0, ElemVolume = 0.0, ElemDistance = 0.0;
   
+  bool Screen_Output  = config->GetDeform_Output();
+
   /*--- Allocate maximum size (quadrilateral and hexahedron) ---*/
   
   if (nDim == 2) StiffMatrix_nElem = 8;
@@ -539,8 +541,8 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   
   /*--- Compute min volume in the entire mesh. ---*/
   
-  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume);
-  if (rank == MASTER_NODE) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
+  ComputeDeforming_Element_Volume(geometry, MinVolume, MaxVolume, Screen_Output);
+  if (rank == MASTER_NODE && Screen_Output) cout <<"Min. volume: "<< MinVolume <<", max. volume: "<< MaxVolume <<"." << endl;
   
   /*--- Compute the distance to the nearest surface if needed
    as part of the stiffness calculation.. ---*/
@@ -548,7 +550,7 @@ su2double CVolumetricMovement::SetFEAMethodContributions_Elem(CGeometry *geometr
   if ((config->GetDeform_Stiffness_Type() == SOLID_WALL_DISTANCE) ||
       (config->GetDeform_Limit() < 1E6)) {
     ComputeSolid_Wall_Distance(geometry, config, MinDistance, MaxDistance);
-    if (rank == MASTER_NODE) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
+    if (rank == MASTER_NODE && Screen_Output) cout <<"Min. distance: "<< MinDistance <<", max. distance: "<< MaxDistance <<"." << endl;
   }
   
 	/*--- Compute contributions from each element by forming the stiffness matrix (FEA) ---*/

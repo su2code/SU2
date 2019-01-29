@@ -399,6 +399,8 @@ private:
   unsigned long ExtIter_OffSet;			/*!< \brief External iteration number offset. */
   unsigned long IntIter;			/*!< \brief Current internal iteration number. */
   unsigned long OuterIter;			/*!< \brief Current Outer Iteration for multizone problems. */
+  unsigned long InnerIter;			/*!< \brief Current Outer Iteration for multizone problems. */
+  unsigned long TimeIter;			/*!< \brief Current Outer Iteration for multizone problems. */
   unsigned long Unst_nIntIter;			/*!< \brief Number of internal iterations (Dual time Method). */
   unsigned long Dyn_nIntIter;			/*!< \brief Number of internal iterations (Newton-Raphson Method for nonlinear structural analysis). */
   long Unst_RestartIter;			/*!< \brief Iteration number to restart an unsteady simulation (Dual time Method). */
@@ -1097,8 +1099,14 @@ private:
   su2double Max_Time;           /*!< \brief Determines the maximum time for the time-domain problems */
   bool Multizone_Mesh;          /*!< \brief Determines if the mesh contains multiple zones. */
   bool SinglezoneDriver;        /*!< \brief Determines if the single-zone driver is used. (TEMPORARY) */
+  bool Wrt_ZoneConv;            /*!< \brief Write the convergence history of each individual zone to screen. */
+  bool Wrt_ZoneHist;            /*!< \brief Write the convergence history of each individual zone to file. */
   bool SpecialOutput,           /*!< \brief Determines if the special output is written. */
   Wrt_ForcesBreakdown;          /*!< \brief Determines if the forces breakdown file is written. */
+  string *ScreenOutput,    /*!< \brief Kind of the screen output. */
+  *HistoryOutput, *VolumeOutput;                  /*!< \brief Kind of the output printed to the history file. */
+  unsigned short nScreenOutput,         /*!< \brief Number of screen output variables (max: 6). */
+  nHistoryOutput, nVolumeOutput;                       /*!< \brief Number of variables printed to the history file. */
   bool Multizone_Residual;      /*!< \brief Determines if memory should be allocated for the multizone residual. */
   
   bool using_uq;                /*!< \brief Using uncertainty quantification with SST model */
@@ -3115,6 +3123,24 @@ public:
   void SetOuterIter(unsigned long val_iter);
   
   /*!
+   * \brief Set the current FSI iteration number.
+   * \param[in] val_iter - Current FSI iteration number.
+   */
+  void SetInnerIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Set the current time iteration number.
+   * \param[in] val_iter - Current FSI iteration number.
+   */
+  void SetTimeIter(unsigned long val_iter);
+  
+  /*!
+   * \brief Get the current time iteration number.
+   * \param[in] val_iter - Current time iterationnumber.
+   */
+  unsigned long GetTimeIter();
+  
+  /*!
    * \brief Set the current internal iteration number.
    * \param[in] val_iter - Current external iteration number.
    */
@@ -3137,6 +3163,13 @@ public:
    * \return Current FSI iteration.
    */
   unsigned long GetOuterIter(void);
+  
+  /*!
+   * \brief Get the current FSI iteration number.
+   * \return Current FSI iteration.
+   */
+  unsigned long GetInnerIter(void);
+  
   
   /*!
    * \brief Get the current internal iteration number.
@@ -9156,18 +9189,6 @@ public:
   bool GetSinglezone_Driver(void);
 
   /*!
-   * \brief Check if the special output is written
-   * \return YES if the special output is written.
-   */
-  bool GetSpecial_Output(void);
-
-  /*!
-   * \brief Check if the forces breakdown file is written
-   * \return YES if the forces breakdown file is written.
-   */
-  bool GetWrt_ForcesBreakdown(void);
-
-  /*!
    * \brief Get the Kind of Radiation model applied.
    * \return Kind of radiation model used.
    */
@@ -9215,6 +9236,62 @@ public:
    * \return Radiation boolean
    */
   bool AddRadiation(void);
+
+  /*!
+   * \brief Check if the convergence history of each individual zone is written to screen
+   * \return YES if the zone convergence history of each individual zone must be written to screen
+   */
+  bool GetWrt_ZoneConv(void);
+
+  /*!
+   * \brief Check if the convergence history of each individual zone is written to file
+   * \return YES if the zone convergence history of each individual zone must be written to file
+   */
+  bool GetWrt_ZoneHist(void);
+
+
+  /*!
+   * \brief Check if the special output is written
+   * \return YES if the special output is written.
+   */
+  bool GetSpecial_Output(void);
+
+  /*!
+   * \brief Check if the forces breakdown file is written
+   * \return YES if the forces breakdown file is written.
+   */
+  bool GetWrt_ForcesBreakdown(void);
+
+  /*!
+   * \brief Get the number of screen output variables requested (maximum 6)
+   */
+  unsigned short GetnScreenOutput(void);
+
+  /*
+  * \brief Get the screen output field iField
+  */
+  string GetScreenOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnHistoryOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetHistoryOutput_Field(unsigned short iField);
+
+  /*!
+   * \brief Get the number of history output variables requested
+   */
+  unsigned short GetnVolumeOutput(void);
+
+  /*
+  * \brief Get the history output field iField
+  */
+  string GetVolumeOutput_Field(unsigned short iField);
+
 };
 
 #include "config_structure.inl"
