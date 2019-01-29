@@ -13208,11 +13208,11 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           const su2double pmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_Avg(nVar_First) / Avg_Iter;
           
           /* u'u' = umean * umean - uumean */
-          Local_Data[jPoint][iVar] = umean * umean - uumean;
+          Local_Data[jPoint][iVar] = -(umean * umean - uumean);
           iVar++;
           
           /* v'v' = vmean * vmean - vvmean */
-          Local_Data[jPoint][iVar] = vmean * vmean - vvmean;
+          Local_Data[jPoint][iVar] = -(vmean * vmean - vvmean);
           iVar++;
           
           if (geometry->GetnDim() == 2){
@@ -13220,7 +13220,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             const su2double ppmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(3) / Avg_Iter;
             
             /* u'v' = umean * vmean - uvmean */
-            Local_Data[jPoint][iVar] = umean * vmean - uvmean;
+            Local_Data[jPoint][iVar] = -(umean * vmean - uvmean);
             iVar++;
             
             /* p'p' = pmean * pmean - ppmean */
@@ -13237,19 +13237,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
             const su2double ppmean = solver[FLOW_SOL]->node[iPoint]->GetSolution_RMS(6) / Avg_Iter;
             
             /* u'v' = umean * vmean - uvmean */
-            Local_Data[jPoint][iVar] = umean * vmean - uvmean;
+            Local_Data[jPoint][iVar] = -(umean * vmean - uvmean);
             iVar++;
             
             /* w'w' = wmean * wmean - wwmean */
-            Local_Data[jPoint][iVar] = wmean * wmean - wwmean;
+            Local_Data[jPoint][iVar] = -(wmean * wmean - wwmean);
             iVar++;
             
             /* u'w' = umean * wmean - uwmean */
-            Local_Data[jPoint][iVar] = umean * wmean - uwmean;
+            Local_Data[jPoint][iVar] = -(umean * wmean - uwmean);
             iVar++;
             
             /* v'w' = vmean * wmean - vwmean */
-            Local_Data[jPoint][iVar] = vmean * wmean - vwmean;
+            Local_Data[jPoint][iVar] = -(vmean * wmean - vwmean);
             iVar++;
             
             /* p'p' = pmean * pmean - ppmean */
