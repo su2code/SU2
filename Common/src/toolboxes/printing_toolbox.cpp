@@ -19,7 +19,7 @@ PrintingToolbox::CTablePrinter::~CTablePrinter(){
 }
 
 int PrintingToolbox::CTablePrinter::GetNumColumns() const {
-  return column_headers_.size();
+  return (int)column_headers_.size();
 }
 
 int PrintingToolbox::CTablePrinter::GetTableWidth() const {
@@ -83,7 +83,7 @@ void PrintingToolbox::CTablePrinter::PrintHeader(){
       *out_stream_ << std::right; 
     else if (align_ == CENTER) {
       *out_stream_ << std::right; 
-      indent = (column_widths_.at(i) - ss.str().size()) / 2;
+      indent = (int)(column_widths_.at(i) - ss.str().size()) / 2;
     }
 
     *out_stream_ << std::setw(column_widths_.at(i) - indent) << column_headers_.at(i).substr(0, column_widths_.at(i));
