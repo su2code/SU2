@@ -12,14 +12,14 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - ruben.sanchez@scicomp.uni-kl.de
   
 branches:
     only:
-        - develop
+        - feature_fix_enumerators
 
 python:
-    - 2.7
+    #- 2.7
     - 3.6
 
 env:
