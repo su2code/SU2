@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.cpp
  * \brief The main subroutines for driving single or multi-zone problems.
  * \author T. Economon, H. Kline, R. Sanchez, F. Palacios
@@ -1219,7 +1219,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
     case EULER : euler = true; break;
     case TNE2_EULER: tne2_euler =true; break;
     case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
-    case TNE2_NAVIER_STOKES: tne2_ns = true;
+    case TNE2_NAVIER_STOKES: tne2_ns = true; break;
     case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
     case FEM_EULER : fem_euler = true; break;
     case FEM_NAVIER_STOKES: fem_ns = true; break;
@@ -2102,6 +2102,11 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   if (adj_euler)        nVar_Adj_Flow = solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_ns)           nVar_Adj_Flow = solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
   if (adj_turb)         nVar_Adj_Turb = solver_container[val_iInst][MESH_0][ADJTURB_SOL]->GetnVar();
+
+  /*--- Additional Variables required for TNE2 ---*/
+  if (tne2_euler || tne2_ns) nPrimVar_TNE2     = solver_container[val_iInst][MESH_0][TNE2_SOL]->GetnPrimVar();
+  if (tne2_euler || tne2_ns) nPrimVarGrad_TNE2 = solver_container[val_iInst][MESH_0][TNE2_SOL]->GetnPrimVarGrad();
+
 
   /*--- Number of dimensions ---*/
   

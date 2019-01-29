@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.cpp
  * \brief This file contains all the numerical methods.
  * \author F. Palacios, T. Economon
@@ -2579,8 +2579,8 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
 
   bool ionization;
-	unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
-	su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
+  unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
+  su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
   su2double Ru;
   su2double rho, T, Tve;
 
@@ -2604,7 +2604,7 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
   rho = val_primvar[RHO_INDEX];
   T   = val_primvar[T_INDEX];
   Tve = val_primvar[TVE_INDEX];
-  Ru  = UNIVERSAL_GAS_CONSTANT;
+  //Ru  = UNIVERSAL_GAS_CONSTANT;
   V   = val_primvar;
   GV  = val_gradprimvar;
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)

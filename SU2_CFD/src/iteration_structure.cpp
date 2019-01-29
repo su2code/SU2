@@ -626,7 +626,7 @@ void CFluidIteration::Iterate(COutput *output,
 
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations (one iteration) ---*/
   
-  if (config_container[val_iZone]->GetKind_Solver() != TNE2_EULER){
+  if ((config_container[val_iZone]->GetKind_Solver() != TNE2_EULER) && (config_container[val_iZone]->GetKind_Solver() != TNE2_NAVIER_STOKES)) {
     integration_container[val_iZone][val_iInst][FLOW_SOL]->MultiGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, IntIter, val_iZone, val_iInst);
   }else{
