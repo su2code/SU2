@@ -346,6 +346,19 @@ public:
                                         unsigned short val_iInst,
                                         int val_DirectIter){}
 
+  virtual void GetInterfaceValues(CGeometry ****geometry_container,
+                                  CSolver *****solver_container,
+                                  CConfig **config_container,
+                                  unsigned short val_iZone,
+                                  unsigned short val_iInst,
+                                  vector<su2double> &values) {}
+
+  virtual void SetInterfaceValues(CGeometry ****geometry_container,
+                                  CSolver *****solver_container,
+                                  CConfig **config_container,
+                                  unsigned short val_iZone,
+                                  unsigned short val_iInst,
+                                  vector<su2double> &values) {}
 };
 
 
@@ -984,6 +997,19 @@ public:
                    unsigned short val_iInst);
 
 
+  void GetInterfaceValues(CGeometry ****geometry_container,
+                          CSolver *****solver_container,
+                          CConfig **config_container,
+                          unsigned short val_iZone,
+                          unsigned short val_iInst,
+                          vector<su2double> &values);
+
+  void SetInterfaceValues(CGeometry ****geometry_container,
+                          CSolver *****solver_container,
+                          CConfig **config_container,
+                          unsigned short val_iZone,
+                          unsigned short val_iInst,
+                          vector<su2double> &values);
 };
 
 /*!

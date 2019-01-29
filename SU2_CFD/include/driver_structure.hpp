@@ -1667,11 +1667,21 @@ public:
    * \brief Run a Block Gauss-Seidel iteration in all physical zones.
    */
   void Run_GaussSeidel();
+  
+  /*!
+   * \brief Run a single Block Gauss-Seidel step.
+   */
+  void StepGaussSeidel(unsigned long iOuter_Iter);
 
   /*!
    * \brief Run a Block-Jacobi iteration in all physical zones.
    */
   void Run_Jacobi();
+
+  /*!
+   * \brief Run a IQN-ILS iteration.
+   */
+  void Run_InterfaceQuasiNewtonInvLeastSquares();
 
   /*!
    * \brief Update the dual-time solution within multiple zones.

@@ -38,6 +38,9 @@
 #include "../include/driver_structure.hpp"
 #include "../include/definition_structure.hpp"
 
+#include <Eigen/Dense>
+using namespace Eigen;
+
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
                        unsigned short val_nZone,
@@ -171,7 +174,7 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case MZ_BLOCK_GAUSS_SEIDEL: Run_InterfaceQuasiNewtonInvLeastSquares(); break;  // Block Gauss-Seidel iteration
       case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
       default: Run_GaussSeidel(); break;
     }
@@ -260,9 +263,6 @@ void CMultizoneDriver::Preprocess(unsigned long TimeIter) {
 void CMultizoneDriver::Run_GaussSeidel() {
 
   unsigned long iOuter_Iter;
-  unsigned short jZone, UpdateMesh;
-  bool DeformMesh = false;
-  unsigned long ExtIter = 0;
   bool Convergence = false;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
@@ -270,34 +270,7 @@ void CMultizoneDriver::Run_GaussSeidel() {
   /*--- Loop over the number of outer iterations ---*/
   for (iOuter_Iter = 0; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
-    /*--- Loop over the number of zones (IZONE) ---*/
-    for (iZone = 0; iZone < nZone; iZone++){
-
-      /*--- In principle, the mesh does not need to be updated ---*/
-      UpdateMesh = 0;
-
-      /*--- Set the OuterIter ---*/
-      config_container[iZone]->SetOuterIter(iOuter_Iter);
-
-      /*--- Transfer from all the remaining zones ---*/
-      for (jZone = 0; jZone < nZone; jZone++){
-        /*--- The target zone is iZone ---*/
-        if (jZone != iZone){
-          DeformMesh = Transfer_Data(jZone, iZone);
-          if (DeformMesh) UpdateMesh+=1;
-        }
-      }
-      /*--- If a mesh update is required due to the transfer of data ---*/
-      if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
-
-      /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
-      iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
-          numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-      /*--- A corrector step can help preventing numerical instabilities ---*/
-      Corrector(iZone);
-
-    }
+    StepGaussSeidel(iOuter_Iter);
 
     /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
     Monitor(iOuter_Iter);
@@ -308,6 +281,42 @@ void CMultizoneDriver::Run_GaussSeidel() {
 
   }
 
+}
+
+void CMultizoneDriver::StepGaussSeidel(unsigned long iOuter_Iter) {
+
+  unsigned short jZone, UpdateMesh;
+  bool DeformMesh = false;
+  unsigned long ExtIter = 0;
+
+  /*--- Loop over the number of zones (IZONE) ---*/
+  for (iZone = 0; iZone < nZone; iZone++){
+
+    /*--- In principle, the mesh does not need to be updated ---*/
+    UpdateMesh = 0;
+
+    /*--- Set the OuterIter ---*/
+    config_container[iZone]->SetOuterIter(iOuter_Iter);
+
+    /*--- Transfer from all the remaining zones ---*/
+    for (jZone = 0; jZone < nZone; jZone++){
+      /*--- The target zone is iZone ---*/
+      if (jZone != iZone){
+        DeformMesh = Transfer_Data(jZone, iZone);
+        if (DeformMesh) UpdateMesh+=1;
+      }
+    }
+    /*--- If a mesh update is required due to the transfer of data ---*/
+    if (UpdateMesh > 0) DynamicMeshUpdate(iZone, ExtIter);
+
+    /*--- Iterate the zone as a block, either to convergence or to a max number of iterations ---*/
+    iteration_container[iZone][INST_0]->Solve(output, integration_container, geometry_container, solver_container,
+        numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+    /*--- A corrector step can help preventing numerical instabilities ---*/
+    Corrector(iZone);
+
+  }
 }
 
 void CMultizoneDriver::Run_Jacobi() {
@@ -359,6 +368,80 @@ void CMultizoneDriver::Run_Jacobi() {
       Corrector(iZone);
 
     }
+
+    Convergence = OuterConvergence(iOuter_Iter);
+
+    if (Convergence) break;
+
+  }
+
+}
+
+void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
+
+  unsigned long iOuter_Iter, M, N = 20;
+  bool Convergence = false;
+
+  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
+
+  // determine size of the interface problem
+  cout << 1 << endl;
+  vector<su2double> vec;
+  iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+  
+  // variables to store the history
+  M = vec.size();
+  MatrixXd X(M,N), Y(M,N);
+  for(unsigned long i=0; i<M; ++i) X(i,0) = vec[i];
+  
+  // initial residual
+  cout << 2 << endl;
+  StepGaussSeidel(0);
+  iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+  for(unsigned long i=0; i<M; ++i) Y(i,0) = vec[i];
+  
+  /*--- Loop over the number of outer iterations ---*/
+  for (iOuter_Iter = 1; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+
+    unsigned long cols = min<unsigned long>(iOuter_Iter-1,N-1);
+
+    if (iOuter_Iter == 1) {
+      // no history yet, simple BGS update
+      VectorXd r = Y.col(0)-X.col(0);
+      X.col(1) = X.col(0)+0.5*r;
+      for(unsigned long i=0; i<M; ++i) vec[i] = X(i,1);
+    }
+    else {
+      // build the LS approximation and set the "predicted" values for this outer iteration
+      MatrixXd V(M,cols), W(M,cols);
+
+      W = Y.block(0,1,M,cols)-Y.leftCols(cols);
+      V = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
+
+      VectorXd r = Y.col(cols)-X.col(cols);
+      VectorXd c = V.householderQr().solve(-r);
+
+      // check if we need to discard data
+      if(iOuter_Iter>=(N-1)) {
+        X.leftCols(N-1) = X.rightCols(N-1);
+        Y.leftCols(N-1) = Y.rightCols(N-1);
+        cols--;
+      }
+
+      X.col(cols+1) = X.col(cols)+W*c+r;
+      for(unsigned long i=0; i<M; ++i) vec[i] = X(i,cols+1);
+    }
+
+    iteration_container[nZone-1][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+
+    // evaluate the residual
+    StepGaussSeidel(iOuter_Iter);
+
+    iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+    for(unsigned long i=0; i<M; ++i) Y(i,cols+1) = vec[i];
+
+    /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
+    Monitor(iOuter_Iter);
 
     Convergence = OuterConvergence(iOuter_Iter);
 

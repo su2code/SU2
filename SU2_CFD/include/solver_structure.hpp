@@ -4366,6 +4366,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
+  
+  virtual void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {}
+  virtual void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {}
 
 };
 
@@ -12379,6 +12382,8 @@ public:
    */
   void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
+  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values);
+  void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values);
 };
 
 /*!
