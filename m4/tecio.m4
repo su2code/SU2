@@ -14,13 +14,6 @@ AC_DEFUN([CONFIGURE_TECIO],
 		 [enabletecio=yes])
 
 
-  # The TECIO APU requires some header files...
-  if (test $enabletecio = yes); then
-    AC_CHECK_HEADER([X11/Intrinsic.h],
-                    [],
-		    [enabletecio=no])
-  fi
-
   # The TECIO API is distributed with libmesh, so we don't have to guess
   # where it might be installed...
   if (test $enabletecio = yes); then
