@@ -367,14 +367,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   map<int,int> rankToIndCommBuf;
   for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /*--- Definition of the communication buffers, used to send the element data
         to the correct ranks.                ---*/
-  int nRankSend = rankToIndCommBuf.size();
+  int nRankSend = (int)rankToIndCommBuf.size();
   vector<vector<short> >     shortSendBuf(nRankSend,  vector<short>(0));
   vector<vector<long>  >     longSendBuf(nRankSend,   vector<long>(0));
   vector<vector<su2double> > doubleSendBuf(nRankSend, vector<su2double>(0));
@@ -395,7 +395,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
 
   /*--- Loop over the local elements to fill the communication buffers with element data. ---*/
   for(unsigned long i=0; i<geometry->GetnElem(); ++i) {
-    int ind = geometry->elem[i]->GetColor();
+    int ind = (int)geometry->elem[i]->GetColor();
     map<int,int>::const_iterator MI = rankToIndCommBuf.find(ind);
     ind = MI->second;
 
@@ -492,7 +492,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
       /* Determine to which rank this boundary element must be sent.
          That is the same as its corresponding domain element.
          Update the corresponding index in longSendBuf. */
-      int ind = geometry->elem[elemID]->GetColor();
+      int ind = (int)geometry->elem[elemID]->GetColor();
       map<int,int>::const_iterator MI = rankToIndCommBuf.find(ind);
       ind = MI->second;
 
@@ -819,14 +819,14 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   rankToIndCommBuf.clear();
   for(int i=0; i<size; ++i) {
     if( sendToRank[i] ) {
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
   /* Resize the first index of the long send buffers for the communication of
      the halo data.        */
-  nRankSend = rankToIndCommBuf.size();
+  nRankSend = (int)rankToIndCommBuf.size();
   longSendBuf.resize(nRankSend);
 
   /* Determine the number of ranks, from which this rank will receive elements. */
@@ -848,7 +848,7 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
     if(*low > haloElements[i].long0) --ind;
 
     /* Convert this rank to the index in the send buffer. */
-    MI = rankToIndCommBuf.find(ind);
+    MI = rankToIndCommBuf.find((int)ind);
     ind = MI->second;
 
     /* Store the global element ID and the periodic index in the long buffer.
@@ -1056,12 +1056,12 @@ CMeshFEM::CMeshFEM(CGeometry *geometry, CConfig *config) {
   for(int i=0; i<size; ++i) {
     if(nHaloElemPerRank[i+1] > nHaloElemPerRank[i]) {
       sendToRank[i] = 1;
-      int ind = rankToIndCommBuf.size();
+      int ind = (int)rankToIndCommBuf.size();
       rankToIndCommBuf[i] = ind;
     }
   }
 
-  nRankSend = rankToIndCommBuf.size();
+  nRankSend = (int)rankToIndCommBuf.size();
 
   /* Store the value of nRankSend for later use. */
   const int nRankSendHaloInfo = nRankSend;
@@ -3523,7 +3523,7 @@ void CMeshFEM_DG::SetSendReceive(CConfig *config) {
   map<int,int> rankToIndRecvBuf;
   for(int i=0; i<size; ++i) {
     if( recvFromRank[i] ) {
-      int ind = rankToIndRecvBuf.size();
+      int ind = (int)rankToIndRecvBuf.size();
       rankToIndRecvBuf[i] = ind;
     }
   }
@@ -5259,7 +5259,7 @@ void CMeshFEM_DG::LengthScaleVolumeElements(void) {
         is outside the MPI part. First determine if self communication
         takes place at all. ---*/
   bool selfComm = false;
-  unsigned long selfRecvInd, selfSendInd;
+  unsigned long selfRecvInd, selfSendInd = 0;
   for(selfRecvInd=0; selfRecvInd<ranksRecv.size(); ++selfRecvInd) {
     if(ranksRecv[selfRecvInd] == rank) {
       selfComm = true;

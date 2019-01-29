@@ -4115,7 +4115,7 @@ void CPhysicalGeometry::DetermineTimeLevelElements(
             const unsigned long *low;
             low = lower_bound(starting_node, starting_node+size, donors[i]);
 
-            rankDonor = low - starting_node;
+            rankDonor = (int)(low - starting_node);
             if(*low > donors[i]) --rankDonor;
           }
 
