@@ -174,8 +174,8 @@ void CMultizoneDriver::StartSolver() {
     /*--- Run a block iteration of the multizone problem. ---*/
 
     switch (driver_config->GetKind_MZSolver()){
-      case MZ_BLOCK_GAUSS_SEIDEL: Run_InterfaceQuasiNewtonInvLeastSquares(); break;  // Block Gauss-Seidel iteration
-      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
+      case MZ_BLOCK_JACOBI: Run_InterfaceQuasiNewtonInvLeastSquares(); break;             // Block-Jacobi iteration
       default: Run_GaussSeidel(); break;
     }
 
@@ -379,37 +379,41 @@ void CMultizoneDriver::Run_Jacobi() {
 
 void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
 
-  unsigned long iOuter_Iter, M, N = 20;
+  unsigned long iOuter_Iter=0, M, N = config_container[nZone-1]->GetnIterFSI_Ramp();
   bool Convergence = false;
+  su2double alpha = config_container[nZone-1]->GetAitkenStatRelax();
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
   // determine size of the interface problem
-  cout << 1 << endl;
   vector<su2double> vec;
   iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
-  
+
   // variables to store the history
   M = vec.size();
   MatrixXd X(M,N), Y(M,N);
   for(unsigned long i=0; i<M; ++i) X(i,0) = vec[i];
-  
+
   // initial residual
-  cout << 2 << endl;
-  StepGaussSeidel(0);
+  StepGaussSeidel(iOuter_Iter);
+  vec.clear();
   iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
   for(unsigned long i=0; i<M; ++i) Y(i,0) = vec[i];
-  
+  su2double res0 = (Y.col(0)-X.col(0)).norm();
+
+  Monitor(iOuter_Iter);
+
   /*--- Loop over the number of outer iterations ---*/
   for (iOuter_Iter = 1; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
     unsigned long cols = min<unsigned long>(iOuter_Iter-1,N-1);
 
+    // old residual
+    VectorXd r = Y.col(cols)-X.col(cols);
+
     if (iOuter_Iter == 1) {
       // no history yet, simple BGS update
-      VectorXd r = Y.col(0)-X.col(0);
-      X.col(1) = X.col(0)+0.5*r;
-      for(unsigned long i=0; i<M; ++i) vec[i] = X(i,1);
+      r *= alpha;
     }
     else {
       // build the LS approximation and set the "predicted" values for this outer iteration
@@ -418,27 +422,32 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
       W = Y.block(0,1,M,cols)-Y.leftCols(cols);
       V = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
-      VectorXd r = Y.col(cols)-X.col(cols);
       VectorXd c = V.householderQr().solve(-r);
+      cout << endl << c.transpose() << endl << endl;
+      r += W*c;
 
       // check if we need to discard data
-      if(iOuter_Iter>=(N-1)) {
+      if(cols == N-1) {
         X.leftCols(N-1) = X.rightCols(N-1);
         Y.leftCols(N-1) = Y.rightCols(N-1);
         cols--;
       }
-
-      X.col(cols+1) = X.col(cols)+W*c+r;
-      for(unsigned long i=0; i<M; ++i) vec[i] = X(i,cols+1);
     }
 
+    // new values
+    X.col(cols+1) = X.col(cols)+r;
+    for(unsigned long i=0; i<M; ++i) vec[i] = X(i,cols+1);
     iteration_container[nZone-1][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
 
     // evaluate the residual
     StepGaussSeidel(iOuter_Iter);
 
+    vec.clear();
     iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
     for(unsigned long i=0; i<M; ++i) Y(i,cols+1) = vec[i];
+    
+    // print residual
+    cout << endl << (Y.col(cols+1)-X.col(cols+1)).norm()/res0 << endl << endl;
 
     /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
     Monitor(iOuter_Iter);
