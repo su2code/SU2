@@ -43,6 +43,8 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   nDim = geometry->GetnDim();
   
   turb_model = config->GetKind_Turb_Model();
+
+  rad_model = config->GetKind_RadiationModel();
   
   heat = config->GetEnergy_Equation();
   
@@ -142,6 +144,8 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
   AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  /// DESCRIPTION: Root-mean square residual of the radiative energy (P1 model).
+  AddHistoryOutput("RMS_RAD_ENERGY", "rms[E_Rad]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
   /// END_GROUP
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
@@ -333,6 +337,7 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   CSolver* flow_solver = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL];
   CSolver* turb_solver = solver_container[val_iZone][val_iInst][MESH_0][TURB_SOL];  
   CSolver* heat_solver = solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL];
+  CSolver* rad_solver = solver_container[val_iZone][val_iInst][MESH_0][RAD_SOL];
   
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
   SetHistoryOutputValue("OUTER_ITER", config[val_iZone]->GetOuterIter());    
@@ -350,6 +355,14 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   case SST:
     SetHistoryOutputValue("RMS_KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
+    break;
+  }
+
+  switch(rad_model){
+  case P1_MODEL:
+    SetHistoryOutputValue("RMS_RAD_ENERGY", log10(rad_solver->GetRes_RMS(0)));
+    break;
+  case NONE:
     break;
   }
   
@@ -492,7 +505,7 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   }
 
   // Radiation variables
-  switch(config->GetKind_RadiationModel()){
+  switch(rad_model){
   case P1_MODEL:
     AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "CONSERVATIVE");
     break;
