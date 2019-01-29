@@ -14,6 +14,7 @@
 *.vtk
 *.csv
 *.plt
+*.szplt
 *.pw
 *.IGS
 *.cgns
