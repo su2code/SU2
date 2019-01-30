@@ -3407,10 +3407,10 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry ****geometry_contain
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading heat solution from direct iteration " << val_DirectIter  << "." << endl;
 
-      solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry_container[val_iZone][val_iInst],
-                                                                            solver_container[val_iZone][val_iInst],
-                                                                            config_container[val_iZone],
-                                                                            val_DirectIter, false);
+    solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry_container[val_iZone][val_iInst],
+                                                                          solver_container[val_iZone][val_iInst],
+                                                                          config_container[val_iZone],
+                                                                          val_DirectIter, false);
   }
 
   else {
@@ -3441,6 +3441,7 @@ void CDiscAdjHeatIteration::Iterate(COutput *output,
                                         unsigned short val_iZone,
                                         unsigned short val_iInst) {
 
+  /* The commented part below can be removed entirely.
   unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned long IntIter = 0;
   bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
@@ -3449,7 +3450,7 @@ void CDiscAdjHeatIteration::Iterate(COutput *output,
     IntIter = ExtIter;
   else {
     IntIter = config_container[val_iZone]->GetIntIter();
-  }
+  }  */
 
   solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
                                                                                        config_container[val_iZone]);
