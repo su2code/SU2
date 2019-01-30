@@ -864,7 +864,6 @@ private:
   bool RefGeom; 						/*!< Read a reference geometry for optimization purposes. */
   unsigned long refNodeID;     /*!< \brief Global ID for the reference node (optimization). */
   string RefGeom_FEMFileName;    			/*!< \brief File name for reference geometry. */
-  unsigned short RefGeom_FileFormat;	/*!< \brief Mesh input format. */
   unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
@@ -2193,12 +2192,6 @@ public:
    * \return Name of the file with the reference geometry of the structural problem.
    */
   string GetRefGeom_FEMFileName(void);
-
-  /*!
-   * \brief Get the format of the reference geometry file.
-   * \return Format of the reference geometry file.
-   */
-  unsigned short GetRefGeom_FileFormat(void);
 
     /*!
    * \brief Formulation for 2D elasticity (plane stress - strain)

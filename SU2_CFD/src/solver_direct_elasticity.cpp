@@ -1289,7 +1289,6 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   unsigned short iZone = config->GetiZone();
   unsigned short nZone = geometry->GetnZone();
-  unsigned short file_format = config->GetRefGeom_FileFormat();
 
   string filename;
   su2double dull_val;
@@ -1312,7 +1311,7 @@ void CFEASolver::Set_ReferenceGeometry(CGeometry *geometry, CConfig *config) {
     SU2_MPI::Error( "There is no FEM reference geometry file!!", CURRENT_FUNCTION);
   }
 
-  if (rank == MASTER_NODE) cout << "Filename: " << filename << " and format " << file_format << "." << endl;
+  if (rank == MASTER_NODE) cout << "Filename: " << filename << "." << endl;
 
   /*--- In case this is a parallel simulation, we need to perform the
    Global2Local index transformation first. ---*/

@@ -1924,17 +1924,6 @@ static const map<string, ENUM_DYNAMIC> Dynamic_Map = CCreateMap<string, ENUM_DYN
 ("YES", DYNAMIC);
 
 /*!
- * \brief types of input file formats
- */
-enum ENUM_INPUT_REF {
-  SU2_REF = 1,                     /*!< \brief SU2 input format (from a restart). */
-  CUSTOM_REF                   /*!< \brief CGNS input format for the computational grid. */
-};
-static const map<string, ENUM_INPUT_REF> Input_Ref_Map = CCreateMap<string, ENUM_INPUT_REF>
-("SU2", SU2_REF)
-("CUSTOM", CUSTOM_REF);
-
-/*!
  * \brief types of filter kernels, initially intended for structural topology optimization applications
  */
 enum ENUM_FILTER_KERNEL {
