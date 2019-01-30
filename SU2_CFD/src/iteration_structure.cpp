@@ -3407,10 +3407,10 @@ void CDiscAdjHeatIteration::LoadUnsteady_Solution(CGeometry ****geometry_contain
     if (rank == MASTER_NODE && val_iZone == ZONE_0)
       cout << " Loading heat solution from direct iteration " << val_DirectIter  << "." << endl;
 
-      solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry_container[val_iZone][val_iInst],
-                                                                            solver_container[val_iZone][val_iInst],
-                                                                            config_container[val_iZone],
-                                                                            val_DirectIter, false);
+    solver_container[val_iZone][val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry_container[val_iZone][val_iInst],
+                                                                          solver_container[val_iZone][val_iInst],
+                                                                          config_container[val_iZone],
+                                                                          val_DirectIter, false);
   }
 
   else {
