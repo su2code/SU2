@@ -16626,7 +16626,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
       /*--- Loop over the vertices to compute the buffet sensor ---*/
             
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-                          
+                
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
         SkinFrictionMag = 0.0;
