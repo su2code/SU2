@@ -1,5 +1,5 @@
 -----------------------------------------------------------
-  SU2 (ver. 6.1.0 "Falcon"): The Open-Source CFD Code
+  SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
 -----------------------------------------------------------
 
 Computational analysis tools have revolutionized the way we design aerospace systems, but most established codes are proprietary, unavailable, or prohibitively expensive for many users. The SU2 team is changing this, making computational analysis and design freely available as open-source software and involving everyone in its creation and development. 
@@ -73,5 +73,5 @@ The main research teams contributing to the current release are:
 - Prof. Edwin van der Weide's group at the University of Twente.
 - Lab. of New Concepts in Aeronautics at Tech. Inst. of Aeronautics.
 
-Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
+Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon, Tim Albring, and the SU2 contributors.
 

@@ -4,7 +4,7 @@
  *        with high order elements.
  *        The functions are in the <i>cgns_elements.cpp</i> file.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Original Developers: Dr. Francisco D. Palacios.
  *                          Dr. Thomas D. Economon.
@@ -53,7 +53,7 @@ class CBoundaryFace;
  * \class CCGNSElementType
  * \brief Class which stores the CGNS element type info for a connectivity
           section.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 
 class CCGNSElementType {
