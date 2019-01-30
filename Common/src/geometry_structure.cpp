@@ -14578,7 +14578,6 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
   if (rank == MASTER_NODE){
     if (marker_flag == INFLOW && val_iZone ==0){
       std::string sPath = "TURBOMACHINERY";
-      mode_t nMode = 0733; // UNIX style permissions
       int nError = 0;
 #if defined(_WIN32)
 #ifdef __MINGW32__
@@ -14587,6 +14586,7 @@ void CPhysicalGeometry::SetTurboVertex(CConfig *config, unsigned short val_iZone
       nError = _mkdir(sPath.c_str()); // can be used on Windows
 #endif
 #else
+      mode_t nMode = 0733; // UNIX style permissions
       nError = mkdir(sPath.c_str(),nMode); // can be used on non-Windows
 #endif
       if (nError != 0) {
@@ -18764,7 +18764,8 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-    fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
+    ret = sizeof(int) + 8*sizeof(passivedouble);
+    fseek(fhw,-ret, SEEK_END);
 
     /*--- Read the external iteration. ---*/
 
