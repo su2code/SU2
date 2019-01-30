@@ -357,9 +357,10 @@ public:
    * \param[in] config   - Definition of the particular problem.
    * \param[in] geometry - The grid for interpolation.
    */
-  CFEMInterpolationGrid(CConfig**      config,
-                        CGeometry****  geometry,
-                        unsigned short mnZone);
+  CFEMInterpolationGrid(CConfig**             config,
+                        CGeometry****         geometry,
+                        unsigned short        mnZone,
+                        const SolutionFormatT mnSolutionFormat);
   
   /*!
    * \brief Destructor of the class.

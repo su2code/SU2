@@ -747,8 +747,8 @@ int main(int argc, char *argv[]) {
     cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
 
   if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
-  input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone);
-  output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone);
+  input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone,VertexCentered);
+  output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone,VertexCentered);
   if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   
   if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;

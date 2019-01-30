@@ -2404,9 +2404,10 @@ int CFEMInterpolationGridZone::DetermineNDOFs(const int VTKType,
 
 CFEMInterpolationGrid::CFEMInterpolationGrid(void){}
 
-CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
-                                             CGeometry****  geometry,
-                                             unsigned short mnZone)
+CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**             config,
+                                             CGeometry****         geometry,
+                                             unsigned short        mnZone,
+                                             const SolutionFormatT mnSolutionFormat)
 {
   unsigned short iZone;
 
@@ -2417,6 +2418,9 @@ CFEMInterpolationGrid::CFEMInterpolationGrid(CConfig**      config,
   mGridZones.resize(nZone);
   for(iZone = 0; iZone < nZone; iZone++)
     mGridZones[iZone].CopySU2GeometryToGrid(config[iZone], geometry[iZone][INST_0][MESH_0]);
+
+  // Store the solution format
+  mSolutionFormat = mnSolutionFormat;
 }
 
 CFEMInterpolationGrid::~CFEMInterpolationGrid(void){}
