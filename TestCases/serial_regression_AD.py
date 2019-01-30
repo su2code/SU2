@@ -78,8 +78,8 @@ def main():
     discadj_arina2k              = TestCase('discadj_arina2k')
     discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
     discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
-    discadj_arina2k.test_iter    = 2500
-    discadj_arina2k.test_vals    = [-3.583132, -4.177936, 4.7262e+04, 0.0000e+00] #last 4 columns
+    discadj_arina2k.test_iter    = 20
+    discadj_arina2k.test_vals    = [-0.774805, -0.801209, 3.1979e+02, 0.0000e+00] #last 4 columns
     discadj_arina2k.su2_exec     = "SU2_CFD_AD"
     discadj_arina2k.timeout      = 8400
     discadj_arina2k.tol          = 0.00001
