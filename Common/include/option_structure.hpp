@@ -594,9 +594,8 @@ static const map<string, ENUM_INIT_OPTION> InitOption_Map = CCreateMap<string, E
  */
 
 enum ENUM_FREESTREAM_OPTION {
-	TEMPERATURE_FS = 0, /*!< \brief _____. */
-	DENSITY_FS = 1
-
+  TEMPERATURE_FS, /*!< \brief _____. */
+  DENSITY_FS
 };
 
 static const map<string, ENUM_FREESTREAM_OPTION> FreeStreamOption_Map = CCreateMap<string, ENUM_FREESTREAM_OPTION>
