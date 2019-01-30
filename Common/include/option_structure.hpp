@@ -171,7 +171,7 @@ const unsigned short N_POINTS_PRISM = 6;         /*!< \brief General output & CG
 enum ANSWER {
   NONE = 0,
   NO = 0,    /*!< \brief Boolean definition of no. */
-  YES = 1	/*!< \brief Boolean definition of yes. */
+  YES = 1    /*!< \brief Boolean definition of yes. */
 };
 
 /*!
@@ -192,7 +192,7 @@ static const map<string, VERB_LEVEL> Verb_Map = CCreateMap<string, VERB_LEVEL>
  */
 enum AVERAGE_TYPE {
   AVERAGE_AREA = 1, /*!< \brief Area-weighted average. */
-  AVERAGE_MASSFLUX = 2 /*!< \brief Mass-flux weighted average. */
+  AVERAGE_MASSFLUX  /*!< \brief Mass-flux weighted average. */
 };
 static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_TYPE>
 ("AREA", AVERAGE_AREA)
@@ -202,18 +202,18 @@ static const map<string, AVERAGE_TYPE> Average_Map = CCreateMap<string, AVERAGE_
  * \brief different solver types for the CFD component
  */
 enum ENUM_SOLVER {
-  NO_SOLVER = 0,						/*!< \brief Definition of no solver. */
-  EULER = 1,							/*!< \brief Definition of the Euler's solver. */
-  NAVIER_STOKES = 2,					/*!< \brief Definition of the Navier-Stokes' solver. */
-  RANS = 3,								/*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_ELASTICITY = 4,					/*!< \brief Definition of a FEM solver. */
-  HEAT_EQUATION_FVM,     /*!< \brief Definition of the finite volume heat solver. */
-  FLUID_STRUCTURE_INTERACTION,		/*!< \brief Definition of a FSI solver. */
-  ADJ_EULER,						/*!< \brief Definition of the continuous adjoint Euler's solver. */
-  ADJ_NAVIER_STOKES,				/*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
-  ADJ_RANS,						/*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  TEMPLATE_SOLVER,                 /*!< \brief Definition of template solver. */
-  ZONE_SPECIFIC,          /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
+  NO_SOLVER = 0,                /*!< \brief Definition of no solver. */
+  EULER = 1,                    /*!< \brief Definition of the Euler's solver. */
+  NAVIER_STOKES = 2,            /*!< \brief Definition of the Navier-Stokes' solver. */
+  RANS = 3,                     /*!< \brief Definition of the Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_ELASTICITY = 4,           /*!< \brief Definition of a FEM solver. */
+  HEAT_EQUATION_FVM,            /*!< \brief Definition of the finite volume heat solver. */
+  FLUID_STRUCTURE_INTERACTION,  /*!< \brief Definition of a FSI solver. */
+  ADJ_EULER,                    /*!< \brief Definition of the continuous adjoint Euler's solver. */
+  ADJ_NAVIER_STOKES,            /*!< \brief Definition of the continuous adjoint Navier-Stokes' solver. */
+  ADJ_RANS,                     /*!< \brief Definition of the continuous adjoint Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  TEMPLATE_SOLVER,              /*!< \brief Definition of template solver. */
+  ZONE_SPECIFIC,                /*!< \brief Definition of a solver option that will induce a zone-wise definition once the driver is created. Not a reference to an own solver. */
   DISC_ADJ_EULER,
   DISC_ADJ_RANS,
   DISC_ADJ_NAVIER_STOKES,
@@ -222,10 +222,10 @@ enum ENUM_SOLVER {
   DISC_ADJ_FEM_RANS,
   DISC_ADJ_FEM_NS,
   DISC_ADJ_FEM,
-  FEM_EULER,                       /*!< \brief Definition of the finite element Euler's solver. */
-  FEM_NAVIER_STOKES,               /*!< \brief Definition of the finite element Navier-Stokes' solver. */
-  FEM_RANS,                        /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
-  FEM_LES,                          /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
+  FEM_EULER,                     /*!< \brief Definition of the finite element Euler's solver. */
+  FEM_NAVIER_STOKES,             /*!< \brief Definition of the finite element Navier-Stokes' solver. */
+  FEM_RANS,                      /*!< \brief Definition of the finite element Reynolds-averaged Navier-Stokes' (RANS) solver. */
+  FEM_LES,                       /*!< \brief Definition of the finite element Large Eddy Simulation Navier-Stokes' (LES) solver. */
   MULTIZONE
 };
 /* BEGIN_CONFIG_ENUMS */
@@ -1521,8 +1521,8 @@ static const map<string, ENUM_ADAPT> Adapt_Map = CCreateMap<string, ENUM_ADAPT>
  * \brief types of input file formats
  */
 enum ENUM_INPUT {
-  SU2 = 1,                       /*!< \brief SU2 input format. */
-  CGNS = 2                     /*!< \brief CGNS input format for the computational grid. */
+  SU2 = 1,                 /*!< \brief SU2 input format. */
+  CGNS                     /*!< \brief CGNS input format for the computational grid. */
 };
 static const map<string, ENUM_INPUT> Input_Map = CCreateMap<string, ENUM_INPUT>
 ("SU2", SU2)
