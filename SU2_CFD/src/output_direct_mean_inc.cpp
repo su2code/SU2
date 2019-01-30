@@ -488,7 +488,7 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("VELOCITY-Y", "Velocity_y", "CONSERVATIVE");
   if (nDim == 3)
     AddVolumeOutput("VELOCITY-Z", "Velocity_z", "CONSERVATIVE");
-  if (config->GetEnergy_Equation())
+  if (heat)
     AddVolumeOutput("TEMPERATURE",  "Temperature","CONSERVATIVE");  
   
   switch(config->GetKind_Turb_Model()){
@@ -631,9 +631,9 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(2));
   if (nDim == 3){
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(3));
-    SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(4));
+    if (heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(4));
   } else {
-    SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(3));    
+    if (heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(3));
   }
   
   switch(config->GetKind_Turb_Model()){
