@@ -777,6 +777,7 @@ int main(int argc, char *argv[]) {
       if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
         solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
         solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
       }
       else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
         solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
