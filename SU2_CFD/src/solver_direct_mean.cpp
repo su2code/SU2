@@ -16643,8 +16643,6 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
             
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 
-        //iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
         SkinFrictionMag = 0.0;

@@ -12038,7 +12038,13 @@ public:
   void BC_Damper(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config,
                  unsigned short val_marker);
 
-  
+  /*!
+   * \brief Required step for non conservative interpolation schemes where stresses are transferred instead of forces.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Integrate_FSI_Loads(CGeometry *geometry, CConfig *config);
+
   /*!
    * \brief Update the solution using an implicit solver.
    * \param[in] geometry - Geometrical definition of the problem.

@@ -3441,7 +3441,8 @@ void CDiscAdjHeatIteration::Iterate(COutput *output,
                                         unsigned short val_iZone,
                                         unsigned short val_iInst) {
 
-/*unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
+  /* The commented part below can be removed entirely.
+  unsigned long ExtIter = config_container[val_iZone]->GetExtIter();
   unsigned long IntIter = 0;
   bool unsteady = config_container[val_iZone]->GetUnsteady_Simulation() != STEADY;
 
@@ -3449,7 +3450,7 @@ void CDiscAdjHeatIteration::Iterate(COutput *output,
     IntIter = ExtIter;
   else {
     IntIter = config_container[val_iZone]->GetIntIter();
-  } */
+  }  */
 
   solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL]->ExtractAdjoint_Solution(geometry_container[val_iZone][val_iInst][MESH_0],
                                                                                        config_container[val_iZone]);
