@@ -1684,6 +1684,8 @@ inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
 inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
 
+inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
+
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
