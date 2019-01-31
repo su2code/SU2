@@ -16591,7 +16591,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
   su2double *Vel_FS = config->GetVelocity_FreeStream();
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
@@ -16627,8 +16627,6 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
             
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
         SkinFrictionMag = 0.0;
