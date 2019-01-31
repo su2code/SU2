@@ -433,7 +433,8 @@ private:
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
-  string DV_Sens_Filename;      /*!< \brief Provide a file of sensitivities from an external adjoint. */
+  string DV_Unordered_Sens_Filename;      /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
+  string DV_Sens_Filename;      /*!< \brief Filename of surface sensitivities written to an unordered ASCII format. */
   unsigned short Sensitivity_FileFormat; /*!< \brief Format of the input volume sensitivity files (SU2_DOT). */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
@@ -8082,8 +8083,14 @@ public:
   string GetDV_Filename(void);
   
   /*!
-   * \brief Get name of the external sensitivities file.
-   * \return File name of the external sensitivities file.
+   * \brief Get name of the unordered ASCII volume sensitivity file.
+   * \return File name of the unordered ASCII volume sensitivity file.
+   */
+  string GetDV_Unordered_Sens_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII surface sensitivity file.
+   * \return File name of the unordered ASCII surface sensitivity file.
    */
   string GetDV_Sens_Filename(void);
   

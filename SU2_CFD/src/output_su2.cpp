@@ -325,10 +325,6 @@ void COutput::WriteProjectedSensitivity(CConfig *config,
   
   filename = config->GetDV_Sens_Filename();
   
-  /*--- Open projected sensitivity file. Note that we are overwriting the
-   volume sensitivity file that was the original input for projection,
-   if DV_SENSITIVITY_FORMAT= UNORDERED_ASCII. ---*/
-  
   ofstream Sens_File;
   Sens_File.open(filename.c_str(), ios::out);
   Sens_File.precision(15);
