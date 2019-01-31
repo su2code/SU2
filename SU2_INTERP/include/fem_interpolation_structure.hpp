@@ -184,6 +184,7 @@ public:
   unsigned short mNPolyGrid;             /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
   vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
+  vector<su2double> mCurvature;     /*!< \brief The surface curvature for the grid DOFs. */
   
   /*!
    * \brief Constructor of the class.
@@ -224,7 +225,8 @@ public:
   void StoreElemData(const unsigned short VTK_Type,
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
-                     const unsigned long  *connGrid);
+                     const unsigned long  *connGrid
+                     const su2double      curvature);
   
 private:
   /*!

@@ -1944,12 +1944,16 @@ void CFEMInterpolationSurfElem::GetCornerPoints(unsigned short &nCornerPoints,
 void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
                                               const unsigned short nPolyGrid,
                                               const unsigned short nDOFsGrid,
-                                              const unsigned long  *connGrid)
+                                              const unsigned long  *connGrid,
+                                              const su2double      curvature)
 {
   // Copy the scalar integer data.
   mVTK_TYPE  = VTK_Type;
   mNPolyGrid = nPolyGrid;
   mNDOFsGrid = nDOFsGrid;
+
+  // Copy the scalar double data.
+  mCurvature = curvature;
   
   // Allocate the memory for the connectivity of the grid.
   mConnGrid.resize(mNDOFsGrid);
@@ -2112,6 +2116,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
 {
   unsigned long iElem, nElem, iPoint, nPoint;
   unsigned short iNode, iDim, iMarker, nMarker;
+  su2double curvature;
   
   // Allocate the memory for volume elements.
   nElem = geometry->GetnElem();
@@ -2192,10 +2197,14 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       vector<unsigned long> connSU2(nDOFsGrid);
       for(iNode = 0; iNode < nDOFsGrid; iNode++)
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
+
+      // Get the curvature of the surface node.
+      iPoint    = vertex[iMarker][iVertex]->GetNode();
+      curvature = geometry->node[iPoint]->GetCurvature();
       
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data());
+                                      connSU2.data(), curvature);
     }
   }
   
