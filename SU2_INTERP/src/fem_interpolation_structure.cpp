@@ -295,7 +295,8 @@ void CFEMInterpolationSol::InterpolateSolution(
     // do not fall within the grid (typically due to a different discrete
     // representation of the boundary of the domain).
     vector<unsigned long> pointsForMinDistance;
-    VolumeInterpolationSolution(config[zone], zone, coorInterpolZone, inputGridZone, inputSol,
+    VolumeInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
+                                inputGridZone, inputSol,
                                 zoneOffsetInputSol, zoneOffsetOutputSol,
                                 solFormatInput, pointsForMinDistance,
                                 standardElementsGrid, standardElementsSol,
@@ -311,7 +312,8 @@ void CFEMInterpolationSol::InterpolateSolution(
       cout << "A minimum distance search to the boundary of the "
       << "domain is used for these points. " << endl;
       
-      SurfaceInterpolationSolution(config[zone], zone, coorInterpolZone, inputGridZone, inputSol,
+      SurfaceInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
+                                   inputGridZone, inputSol,
                                    zoneOffsetInputSol, zoneOffsetOutputSol,
                                    solFormatInput, pointsForMinDistance,
                                    standardElementsSol, indInStandardElements);
@@ -660,6 +662,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
                                            CConfig*                        config,
                                            const unsigned short            zoneID,
                                            const vector<su2double>         &coorInterpol,
+                                           const vector<su2double>         &coorCorrected,
                                            const CFEMInterpolationGridZone *gridZone,
                                            const CFEMInterpolationSol      *inputSol,
                                            const unsigned long             zoneOffsetInputSol,
@@ -852,8 +855,37 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
       }
       else
       {
-        // Containment search was not successful. Store the ID in localPointsFailed.
-        localPointsFailed.push_back(l);
+        // Carry out the containment search on the corrected coordinate.
+        // Set a pointer to the coordinates to be searched.
+        const su2double *coor = coorCorrected.data() + l*nDim;
+      
+        // Carry out the containment search and check if it was successful.
+        unsigned short subElem;
+        unsigned long  parElem;
+        int            rank;
+        su2double      parCoor[3], weightsInterpol[8];
+        if( volumeADT.DetermineContainingElement(coor, subElem, parElem, rank,
+                                                 parCoor, weightsInterpol,
+                                                 frontLeaves, frontLeavesNew) )
+        {
+          // Subelement found that contains the exchange location. However,
+          // what is needed is the location in the high order parent element.
+          // Determine this.
+          HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
+                                     &standardElementsGrid[indInStandardElements[parElem]],
+                                     &volElems[parElem], coorGrid, parCoor);
+        
+          // Carry out the actual interpolation.
+          const unsigned short ind = indInStandardElements[parElem];
+          const unsigned long  ll  = l + zoneOffsetOutputSol;
+        
+          SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
+                         &volElems[parElem], solFormatInput, parCoor, mSolDOFs[ll]);
+        }
+        else{
+          // Containment search was not successful. Store the ID in localPointsFailed.
+          localPointsFailed.push_back(l);
+        }
       }
     }
     
@@ -1057,6 +1089,7 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
                                             CConfig*                             config,
                                             const unsigned short                 zoneID,
                                             const vector<su2double>              &coorInterpol,
+                                            const vector<su2double>              &coorCorrected,
                                             const CFEMInterpolationGridZone      *gridZone,
                                             const CFEMInterpolationSol           *inputSol,
                                             const unsigned long                  zoneOffsetInputSol,
@@ -1134,26 +1167,49 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
         << endl << flush;
       
       // Set a pointer to the coordinates to be searched.
-      const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
+      const su2double *coorInt = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
       
-      // Carry out the minimum distance search,
+      // Carry out the minimum distance search for the original coordinate
       unsigned short subElem;
       unsigned long  parElem;
       int            rank;
       su2double      dist;
       su2double      weightsInterpol[4];
-      surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+      su2double      distInterpol;
+      surfaceADT.DetermineNearestElement(coorInt, distInterpol, subElem, parElem, rank,
                                          weightsInterpol, BBoxTargets,
                                          frontLeaves, frontLeavesNew);
+
+      // Set a pointer to the coordinates to be searched.
+      const su2double *coorCor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
       
-      // Subelement found that minimizes the distance to the given coordinate.
-      // However, what is needed is the location in the high order parent element.
-      // Determine this.
+      // Carry out the minimum distance search for the corrected coordinate
+      su2double      distCorrected;
+      surfaceADT.DetermineNearestElement(coorCor, distCorrected, subElem, parElem, rank,
+                                         weightsInterpol, BBoxTargets,
+                                         frontLeaves, frontLeavesNew);
+
+      // Use the corrected wall coordinate if its wall distance is strictly less.
       su2double parCoor[3], wallCoor[3];
-      HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-                                 &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-                                 &surfElems[parElem], coorGrid, parCoor, wallCoor);
-      
+      if(distCorrected < distInterpol){
+        const su2double *coor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
+        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+                                           weightsInterpol, BBoxTargets,
+                                           frontLeaves, frontLeavesNew);
+        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
+                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
+      }
+      else{
+        const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
+        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+                                           weightsInterpol, BBoxTargets,
+                                           frontLeaves, frontLeavesNew);
+        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
+                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
+      }
+            
       // Convert the parametric coordinates of the surface element to
       // parametric weights of the corresponding volume element.
       surfElems[parElem].ConvertParCoorToVolume(&volElems[adjElemID[parElem]],
