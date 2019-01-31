@@ -379,9 +379,10 @@ void CMultizoneDriver::Run_Jacobi() {
 
 void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
 
-  unsigned long iOuter_Iter=0, M, N = config_container[nZone-1]->GetnIterFSI_Ramp();
+  unsigned long iOuter_Iter=0, M, N = max<unsigned long>(1,config_container[nZone-1]->GetnIterFSI_Ramp());
   bool Convergence = false;
   su2double alpha = config_container[nZone-1]->GetAitkenStatRelax();
+  su2double tol = pow(10.0,config_container[nZone-1]->GetMinLogResidualFSI()+1.0), res, res0;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
@@ -399,7 +400,7 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   vec.clear();
   iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
   for(unsigned long i=0; i<M; ++i) Y(i,0) = vec[i];
-  su2double res0 = (Y.col(0)-X.col(0)).norm();
+  res0 = (Y.col(0)-X.col(0)).norm();
 
   Monitor(iOuter_Iter);
 
@@ -407,11 +408,12 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   for (iOuter_Iter = 1; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
 
     unsigned long cols = min<unsigned long>(iOuter_Iter-1,N-1);
+    unsigned long targ = min<unsigned long>(cols+1,N-1); // for when N=1 and we recover BGS
 
     // old residual
     VectorXd r = Y.col(cols)-X.col(cols);
 
-    if (iOuter_Iter == 1) {
+    if (cols == 0) {
       // no history yet, simple BGS update
       r *= alpha;
     }
@@ -435,8 +437,8 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
     }
 
     // new values
-    X.col(cols+1) = X.col(cols)+r;
-    for(unsigned long i=0; i<M; ++i) vec[i] = X(i,cols+1);
+    X.col(targ) = X.col(cols)+r;
+    for(unsigned long i=0; i<M; ++i) vec[i] = X(i,targ);
     iteration_container[nZone-1][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
 
     // evaluate the residual
@@ -444,18 +446,18 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
 
     vec.clear();
     iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
-    for(unsigned long i=0; i<M; ++i) Y(i,cols+1) = vec[i];
+    for(unsigned long i=0; i<M; ++i) Y(i,targ) = vec[i];
     
     // print residual
-    cout << endl << (Y.col(cols+1)-X.col(cols+1)).norm()/res0 << endl << endl;
+    res = (Y.col(targ)-X.col(targ)).norm();
+    cout << endl << res/res0 << endl << endl;
 
     /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
     Monitor(iOuter_Iter);
 
-    Convergence = OuterConvergence(iOuter_Iter);
+    Convergence = OuterConvergence(iOuter_Iter) || (res/res0 < tol);
 
     if (Convergence) break;
-
   }
 
 }
