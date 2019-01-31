@@ -351,14 +351,14 @@ public:
                                   CConfig **config_container,
                                   unsigned short val_iZone,
                                   unsigned short val_iInst,
-                                  vector<su2double> &values) {}
+                                  vector<passivedouble> &values) {}
 
   virtual void SetInterfaceValues(CGeometry ****geometry_container,
                                   CSolver *****solver_container,
                                   CConfig **config_container,
                                   unsigned short val_iZone,
                                   unsigned short val_iInst,
-                                  vector<su2double> &values) {}
+                                  vector<passivedouble> &values) {}
 };
 
 
@@ -1002,14 +1002,14 @@ public:
                           CConfig **config_container,
                           unsigned short val_iZone,
                           unsigned short val_iInst,
-                          vector<su2double> &values);
+                          vector<passivedouble> &values);
 
   void SetInterfaceValues(CGeometry ****geometry_container,
                           CSolver *****solver_container,
                           CConfig **config_container,
                           unsigned short val_iZone,
                           unsigned short val_iInst,
-                          vector<su2double> &values);
+                          vector<passivedouble> &values);
 };
 
 /*!

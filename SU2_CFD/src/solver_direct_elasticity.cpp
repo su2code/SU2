@@ -3552,16 +3552,17 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
 #endif
 }
 
-void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {
+void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
 
-  unsigned short iDim, iNode, nNode;
-  unsigned long iPoint, iElem, nElem;
+  unsigned short iDim;
+  unsigned long iPoint, iVertex, nVertex;
 
   unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
                  iMarker, nMarker = config->GetnMarker_All();
 
   /*--- Loop through the FSI interface pairs ---*/
-  /*--- 1st pass to compute forces ---*/
+  vector<passivedouble> interfaceValues;
+
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
     /*--- Find the marker index associated with the pair ---*/
     for (iMarker = 0; iMarker < nMarker; ++iMarker)
@@ -3570,31 +3571,60 @@ void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector
     /*--- The current mpi rank may not have this marker ---*/
     if (iMarker == nMarker) continue;
 
-    nElem = geometry->GetnElem_Bound(iMarker);
-    
-    for (iElem = 0; iElem < nElem; ++iElem) {
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      nNode = quad? 4 : nDim;
+    nVertex = geometry->GetnVertex(iMarker);
 
-      for (iNode = 0; iNode < nNode; ++iNode) {
-        iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (iDim = 0; iDim < nDim; ++iDim)
-          values.push_back(node[iPoint]->GetSolution(iDim));
-      }
+    for (iVertex = 0; iVertex < nVertex; ++iVertex) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      for (iDim = 0; iDim < nDim; ++iDim)
+        interfaceValues.push_back(SU2_TYPE::GetValue(node[iPoint]->GetSolution(iDim)));
     }
   }
+
+#ifdef HAVE_MPI
+  int sendcount = int(interfaceValues.size());
+  if (sendcount == 0) interfaceValues.resize(1);
+
+  int *recvcounts = NULL, *displs = NULL;
+
+  if (rank == MASTER_NODE) recvcounts = new int [size];
+
+  MPI_Gather(&sendcount,1,MPI_INT,recvcounts,1,MPI_INT,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE) {
+    int totalcount = 0;
+    for (int i=0; i<size; ++i) totalcount += recvcounts[i];
+    values.resize(totalcount);
+
+    displs = new int [size];
+    displs[0] = 0;
+    for (int i=1; i<size; ++i) displs[i] = displs[i-1]+recvcounts[i-1];
+  }
+  else {
+    values.resize(1.0);
+  }
+
+  MPI_Gatherv(&interfaceValues[0],sendcount,MPI_DOUBLE,&values[0],
+              recvcounts,displs,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (recvcounts) delete [] recvcounts;
+  if (displs) delete [] displs;
+#else
+  values = interfaceValues;
+#endif
 }
 
-void CFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {
+void CFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
 
-  unsigned short iDim, iNode, nNode;
-  unsigned long iPoint, iElem, nElem, cursor=0;
+  unsigned short iDim;
+  unsigned long iPoint, iVertex, nVertex;
 
   unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
                  iMarker, nMarker = config->GetnMarker_All();
 
   /*--- Loop through the FSI interface pairs ---*/
-  /*--- 1st pass to compute forces ---*/
+  vector<passivedouble> interfaceValues;
+  vector<unsigned long> interfacePoints;
+
   for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
     /*--- Find the marker index associated with the pair ---*/
     for (iMarker = 0; iMarker < nMarker; ++iMarker)
@@ -3603,18 +3633,48 @@ void CFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector
     /*--- The current mpi rank may not have this marker ---*/
     if (iMarker == nMarker) continue;
 
-    nElem = geometry->GetnElem_Bound(iMarker);
-    
-    for (iElem = 0; iElem < nElem; ++iElem) {
-      bool quad = geometry->bound[iMarker][iElem]->GetVTK_Type() == QUADRILATERAL;
-      nNode = quad? 4 : nDim;
+    nVertex = geometry->GetnVertex(iMarker);
 
-      for (iNode = 0; iNode < nNode; ++iNode) {
-        iPoint = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        for (iDim = 0; iDim < nDim; ++iDim)
-          node[iPoint]->GetSolution_Pred()[iDim] = values[cursor++];
-      }
+    for (iVertex = 0; iVertex < nVertex; ++iVertex) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      interfacePoints.push_back(iPoint);
     }
+  }
+  nVertex = interfacePoints.size();
+  
+#ifdef HAVE_MPI
+  int recvcount = int(nVertex*nDim);
+  if (recvcount == 0) interfaceValues.resize(1);
+  else interfaceValues.resize(recvcount);
+
+  int *sendcounts = NULL, *displs = NULL;
+
+  if (rank == MASTER_NODE) sendcounts = new int [size];
+
+  MPI_Gather(&recvcount,1,MPI_INT,sendcounts,1,MPI_INT,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE) {
+    displs = new int [size];
+    displs[0] = 0;
+    for (int i=1; i<size; ++i) displs[i] = displs[i-1]+sendcounts[i-1];
+  }
+  else {
+    values.resize(1,1.0);
+  }
+
+  MPI_Scatterv(&values[0],sendcounts,displs,MPI_DOUBLE,&interfaceValues[0],
+              recvcount,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (sendcounts) delete [] sendcounts;
+  if (displs) delete [] displs;
+#else
+  interfaceValues = values;
+#endif
+
+  for (iVertex=0; iVertex<nVertex; ++iVertex) {
+    iPoint = interfacePoints[iVertex];
+    for (iDim = 0; iDim < nDim; ++iDim)
+      node[iPoint]->GetSolution_Pred()[iDim] = interfaceValues[iVertex*nDim+iDim];
   }
 }
 

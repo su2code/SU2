@@ -4367,8 +4367,8 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
   
-  virtual void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {}
-  virtual void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values) {}
+  virtual void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {}
+  virtual void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {}
 
 };
 
@@ -12382,8 +12382,8 @@ public:
    */
   void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
-  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values);
-  void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<su2double> &values);
+  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+  void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
 };
 
 /*!

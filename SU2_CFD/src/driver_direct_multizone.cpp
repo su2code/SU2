@@ -425,7 +425,8 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
       V = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
       VectorXd c = V.householderQr().solve(-r);
-      cout << endl << c.transpose() << endl << endl;
+      if (rank == MASTER_NODE)
+        cout << endl << c.transpose() << endl << endl;
       r += W*c;
 
       // check if we need to discard data
@@ -450,12 +451,13 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
     
     // print residual
     res = (Y.col(targ)-X.col(targ)).norm();
-    cout << endl << res/res0 << endl << endl;
+    if (rank == MASTER_NODE)
+      cout << endl << res/res0 << endl << endl;
 
     /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
     Monitor(iOuter_Iter);
 
-    Convergence = OuterConvergence(iOuter_Iter) || (res/res0 < tol);
+    Convergence = OuterConvergence(iOuter_Iter);// || (res/res0 < tol);
 
     if (Convergence) break;
   }
