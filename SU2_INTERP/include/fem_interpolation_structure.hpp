@@ -226,7 +226,7 @@ public:
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
                      const unsigned long  *connGrid
-                     const su2double      curvature);
+                     const su2double      *curvature);
   
 private:
   /*!

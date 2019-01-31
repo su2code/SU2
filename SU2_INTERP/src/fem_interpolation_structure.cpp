@@ -1951,9 +1951,6 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   mVTK_TYPE  = VTK_Type;
   mNPolyGrid = nPolyGrid;
   mNDOFsGrid = nDOFsGrid;
-
-  // Copy the scalar double data.
-  mCurvature = curvature;
   
   // Allocate the memory for the connectivity of the grid.
   mConnGrid.resize(mNDOFsGrid);
@@ -1961,6 +1958,13 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   // Copy the connectivity data.
   for(unsigned short i=0; i<mNDOFsGrid; ++i)
     mConnGrid[i] = connGrid[i];
+
+  // Allocate the memory for the curvature.
+  mConnGrid.resize(mNDOFsGrid);
+
+  // Copy the curvature data.
+  for(unsigned short i=0; i<mNDOFsGrid; ++i)
+    mCurvature[i] = curvature[i];
   
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original
@@ -2116,7 +2120,6 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
 {
   unsigned long iElem, nElem, iPoint, nPoint;
   unsigned short iNode, iDim, iMarker, nMarker;
-  su2double curvature;
   
   // Allocate the memory for volume elements.
   nElem = geometry->GetnElem();
@@ -2199,9 +2202,12 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
       // Get the curvature of the surface node.
-      iPoint    = vertex[iMarker][iVertex]->GetNode();
-      curvature = geometry->node[iPoint]->GetCurvature();
-      
+      vector<su2double> curvature;
+      for(iNode = 0; iNode < nDOFsGrid; iNode++){
+        iPoint           = geoemtry->bound[iMarker][iElem]->GetNode(iNode);
+        curvature[iNode] = geometry->node[iPoint]->GetCurvature();
+      }
+
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
                                       connSU2.data(), curvature);
