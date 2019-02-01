@@ -1359,9 +1359,8 @@ void CGeometry::RegisterCoordinates(CConfig *config) {
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
     if(config->GetMultizone_Problem()) {
       for (iDim = 0; iDim < nDim; iDim++) {
-//        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
-//        node[iPoint]->Set_AdjIndices(input);
-        AD::RegisterInput(node[iPoint]->GetCoord()[iDim]);
+        AD::RegisterInput_intIndexBased(node[iPoint]->GetCoord()[iDim]);
+        node[iPoint]->Set_AdjIndices(input);
       }
     }
     else {
