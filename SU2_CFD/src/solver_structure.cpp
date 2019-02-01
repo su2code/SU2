@@ -41,6 +41,8 @@ CSolver::CSolver(void) {
 
   rank = SU2_MPI::GetRank();
   size = SU2_MPI::GetSize();
+
+  adjoint = false;
   
   /*--- Array initialization ---*/
   

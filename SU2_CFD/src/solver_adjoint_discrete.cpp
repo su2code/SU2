@@ -53,6 +53,8 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
   ifstream restart_file;
   string filename, AdjExt;
 
+  adjoint = true;
+
   bool fsi = config->GetFSI_Simulation();
 
   nVar = direct_solver->GetnVar();
