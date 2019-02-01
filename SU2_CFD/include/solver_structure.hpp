@@ -4367,8 +4367,21 @@ public:
    */
   virtual void SetDES_LengthScale(CSolver** solver, CGeometry *geometry, CConfig *config);
   
-  virtual void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {}
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] values - The interface values.
+   */
   virtual void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {}
+
+  /*!
+   * \brief A virtual member.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] values - The interface values.
+   */
+  virtual void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {}
 
 };
 
@@ -12382,8 +12395,22 @@ public:
    */
   void FilterElementDensities(CGeometry *geometry, CConfig *config);
 
-  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+  /*!
+   * \brief Get (gather onto master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] values - The interface values.
+   */
   void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+
+   /*!
+   * \brief Set (scatter from master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] values - The interface values.
+   */
+  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+
 };
 
 /*!

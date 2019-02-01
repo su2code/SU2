@@ -261,12 +261,14 @@ static const map<string, ENUM_SOLVER> Solver_Map = CCreateMap<string, ENUM_SOLVE
  */
 enum ENUM_MULTIZONE {
   MZ_BLOCK_GAUSS_SEIDEL = 0,   /*!< \brief Definition of a Block-Gauss-Seidel multizone solver. */
-  MZ_BLOCK_JACOBI = 1          /*!< \brief Definition of a Block-Jacobi solver. */
+  MZ_BLOCK_JACOBI = 1,         /*!< \brief Definition of a Block-Jacobi solver. */
+  MZ_IQN_ILS = 2               /*!< \brief Definition of an interface quasi-Newton solver. */
 };
 /* BEGIN_CONFIG_ENUMS */
 static const map<string, ENUM_MULTIZONE> Multizone_Map = CCreateMap<string, ENUM_MULTIZONE>
 ("BLOCK_GAUSS_SEIDEL", MZ_BLOCK_GAUSS_SEIDEL)
-("BLOCK_JACOBI", MZ_BLOCK_JACOBI);
+("BLOCK_JACOBI", MZ_BLOCK_JACOBI)
+("IQN_ILS", MZ_IQN_ILS);
 
 /*!
  * \brief types of fluid solvers

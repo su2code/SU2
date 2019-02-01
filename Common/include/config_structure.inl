@@ -1834,6 +1834,8 @@ inline unsigned short CConfig::GetnIterFSI(void) { return nIterFSI; }
 
 inline unsigned short CConfig::GetnIterFSI_Ramp(void) { return nIterFSI_Ramp; }
 
+inline unsigned short CConfig::GetnIterIQN_HistorySize(void) { return nIterIQN_HistorySize; }
+
 inline su2double CConfig::GetAitkenStatRelax(void) { return AitkenStatRelax; }
 
 inline su2double CConfig::GetAitkenDynMaxInit(void) { return AitkenDynMaxInit; }

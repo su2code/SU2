@@ -868,6 +868,7 @@ private:
   unsigned short Kind_2DElasForm;			/*!< \brief Kind of bidimensional elasticity solver. */
   unsigned short nIterFSI;	  /*!< \brief Number of maximum number of subiterations in a FSI problem. */
   unsigned short nIterFSI_Ramp;  /*!< \brief Number of FSI subiterations during which a ramp is applied. */
+  unsigned short nIterIQN_HistorySize; /*!< \brief Number of previous steps used in Interface Quasi Newton methods. */
   unsigned short iInst;       /*!< \brief Current instance value */
   su2double AitkenStatRelax;	/*!< \brief Aitken's relaxation factor (if set as static) */
   su2double AitkenDynMaxInit;	/*!< \brief Aitken's maximum dynamic relaxation factor for the first iteration */
@@ -8541,6 +8542,11 @@ public:
    */
   su2double GetAitkenDynMinInit(void);
   
+  /*!
+   * \brief Get the number of iterations used in Interface Quasi Newton methods.
+   * \return Number of iterations that form the history.
+   */
+  unsigned short GetnIterIQN_HistorySize(void);
   
   /*!
    * \brief Decide whether to apply dead loads to the model.

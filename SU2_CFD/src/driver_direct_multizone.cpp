@@ -175,7 +175,8 @@ void CMultizoneDriver::StartSolver() {
 
     switch (driver_config->GetKind_MZSolver()){
       case MZ_BLOCK_GAUSS_SEIDEL: Run_GaussSeidel(); break;  // Block Gauss-Seidel iteration
-      case MZ_BLOCK_JACOBI: Run_InterfaceQuasiNewtonInvLeastSquares(); break;             // Block-Jacobi iteration
+      case MZ_BLOCK_JACOBI: Run_Jacobi(); break;             // Block-Jacobi iteration
+      case MZ_IQN_ILS: Run_InterfaceQuasiNewtonInvLeastSquares(); break;
       default: Run_GaussSeidel(); break;
     }
 
@@ -379,57 +380,75 @@ void CMultizoneDriver::Run_Jacobi() {
 
 void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
 
-  unsigned long iOuter_Iter=0, M, N = max<unsigned long>(1,config_container[nZone-1]->GetnIterFSI_Ramp());
+  /*--- Parallelization notes: ---*/
+  /*--- Computations are done in the master node, the functions GetInterfaceValues and SetInterfaceValues
+        Gather and Scatter interface values, nevertheless there are no "if (rank = MASTER)" sections here
+        because the code is safe to be executed by all ranks, that is not to say all ranks do the same!
+        Slave nodes solve a 1 by 1 problem, and store virtually no data. ---*/
+
+  unsigned long iOuter_Iter=0;
   bool Convergence = false;
-  su2double alpha = config_container[nZone-1]->GetAitkenStatRelax();
-  su2double tol = pow(10.0,config_container[nZone-1]->GetMinLogResidualFSI()+1.0), res, res0;
+
+  /*--- It only makes sense to apply this version of the method to the interface values of the last zone ---*/
+  unsigned short lastZone = nZone-1;
+
+  /*--- Method parameters, size of history matrix, initial relaxation, residual norm, and tolerance ---*/
+  unsigned long M = 0, N = max<unsigned long>(1,config_container[lastZone]->GetnIterIQN_HistorySize());
+  su2double alpha = config_container[lastZone]->GetAitkenStatRelax(), resNorm = 1.0,
+            tol = pow(10.0,config_container[lastZone]->GetMinLogResidualFSI());
+
+  /*--- This vector is used to get and set interface values ---*/
+  vector<passivedouble> interfaceValues;
 
   unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
 
-  // determine size of the interface problem
-  vector<su2double> vec;
-  iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+  /*--- Initial values ---*/
+  iteration_container[lastZone][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,lastZone,INST_0,interfaceValues);
 
-  // variables to store the history
-  M = vec.size();
+  /*--- Variables to store the history of values at start and end of each outer iteration ---*/
+  M = interfaceValues.size();
   MatrixXd X(M,N), Y(M,N);
-  for(unsigned long i=0; i<M; ++i) X(i,0) = vec[i];
+  for(unsigned long i=0; i<M; ++i) X(i,0) = interfaceValues[i];
 
-  // initial residual
+  /*--- Initial interface residual ---*/
   StepGaussSeidel(iOuter_Iter);
-  vec.clear();
-  iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
-  for(unsigned long i=0; i<M; ++i) Y(i,0) = vec[i];
-  res0 = (Y.col(0)-X.col(0)).norm();
 
   Monitor(iOuter_Iter);
 
+  iteration_container[lastZone][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,lastZone,INST_0,interfaceValues);
+  for(unsigned long i=0; i<M; ++i) Y(i,0) = interfaceValues[i];
+
+  VectorXd R = Y.col(0)-X.col(0);
+  resNorm = R.norm();
+  interface_res = 1.0; // by definition
+
+  Convergence = OuterConvergence(iOuter_Iter);
+
   /*--- Loop over the number of outer iterations ---*/
-  for (iOuter_Iter = 1; iOuter_Iter < driver_config->GetnOuter_Iter(); iOuter_Iter++){
+  for (iOuter_Iter = 1; iOuter_Iter < driver_config->GetnOuter_Iter() && !Convergence; iOuter_Iter++){
 
     unsigned long cols = min<unsigned long>(iOuter_Iter-1,N-1);
     unsigned long targ = min<unsigned long>(cols+1,N-1); // for when N=1 and we recover BGS
 
-    // old residual
-    VectorXd r = Y.col(cols)-X.col(cols);
-
     if (cols == 0) {
-      // no history yet, simple BGS update
-      r *= alpha;
+      /*--- No history yet, simple relaxed BGS update ---*/
+      R *= SU2_TYPE::GetValue(alpha);
     }
     else {
-      // build the LS approximation and set the "predicted" values for this outer iteration
-      MatrixXd V(M,cols), W(M,cols);
+      /*--- Use history to "predicted" the interface values ---*/
+      /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1) ---*/
+      MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
-      W = Y.block(0,1,M,cols)-Y.leftCols(cols);
-      V = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
+      /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration ---*/
+      VectorXd C = H.householderQr().solve(-R);
 
-      VectorXd c = V.householderQr().solve(-r);
-      if (rank == MASTER_NODE)
-        cout << endl << c.transpose() << endl << endl;
-      r += W*c;
+      /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1) ---*/
+      H = Y.block(0,1,M,cols)-Y.leftCols(cols);
 
-      // check if we need to discard data
+      /*--- Correct the BGS solution, delta Y's correspond 1:1 with delta R's ---*/
+      R += H*C;
+
+      /*--- Check if we need to discard data (shift left to delete oldest data) ---*/
       if(cols == N-1) {
         X.leftCols(N-1) = X.rightCols(N-1);
         Y.leftCols(N-1) = Y.rightCols(N-1);
@@ -437,29 +456,30 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
       }
     }
 
-    // new values
-    X.col(targ) = X.col(cols)+r;
-    for(unsigned long i=0; i<M; ++i) vec[i] = X(i,targ);
-    iteration_container[nZone-1][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
+    /*--- Set values ---*/
+    X.col(targ) = X.col(cols)+R;
+    for(unsigned long i=0; i<M; ++i) interfaceValues[i] = X(i,targ);
+    iteration_container[lastZone][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,lastZone,INST_0,interfaceValues);
 
-    // evaluate the residual
+    /*--- Evaluate the residual ---*/
     StepGaussSeidel(iOuter_Iter);
-
-    vec.clear();
-    iteration_container[nZone-1][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,nZone-1,INST_0,vec);
-    for(unsigned long i=0; i<M; ++i) Y(i,targ) = vec[i];
-    
-    // print residual
-    res = (Y.col(targ)-X.col(targ)).norm();
-    if (rank == MASTER_NODE)
-      cout << endl << res/res0 << endl << endl;
 
     /*--- This is temporary. Each zone has to be monitored independently. Right now, fixes CHT output. ---*/
     Monitor(iOuter_Iter);
 
-    Convergence = OuterConvergence(iOuter_Iter);// || (res/res0 < tol);
+    /*--- Get values ---*/
+    iteration_container[lastZone][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,lastZone,INST_0,interfaceValues);
+    for(unsigned long i=0; i<M; ++i) Y(i,targ) = interfaceValues[i];
 
-    if (Convergence) break;
+    /*--- Compute residual and check convergence ---*/
+    R = Y.col(targ)-X.col(targ);
+    interface_res = R.norm()/resNorm;
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(&interface_res,1,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+
+    Convergence = OuterConvergence(iOuter_Iter) || interface_res<tol;
+
   }
 
 }

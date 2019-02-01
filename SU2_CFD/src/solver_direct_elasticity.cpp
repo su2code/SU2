@@ -3554,9 +3554,16 @@ void CFEASolver::Integrate_FSI_Loads(CGeometry *geometry, CConfig *config) {
 
 void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
 
+  /*--- General comments: ---*/
+  /*--- The purpose of this method is to be used by multi-physics coupling methods that collapse the
+        problem onto the interface, therefore these values do not require differentiation (passivedouble).
+      - It is assumed that the duplication of values, induced by vertices that appear in multiple markers,
+        and by halo nodes is of no consequence.
+      - On entry, "values" may be empty, on exit the master node has all interface values and other nodes
+        have a {1.0}. ---*/
+
   unsigned short iDim;
   unsigned long iPoint, iVertex, nVertex;
-
   unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
                  iMarker, nMarker = config->GetnMarker_All();
 
@@ -3600,7 +3607,7 @@ void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector
     for (int i=1; i<size; ++i) displs[i] = displs[i-1]+recvcounts[i-1];
   }
   else {
-    values.resize(1.0);
+    values.resize(1,1.0);
   }
 
   MPI_Gatherv(&interfaceValues[0],sendcount,MPI_DOUBLE,&values[0],
@@ -3615,9 +3622,15 @@ void CFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector
 
 void CFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
 
+  /*--- General comments: ---*/
+  /*--- This does the opposite of "GetInterfaceValues", see also the comments therein.
+      - On entry the master node needs to pass the values it wants to scatter, so the expected size of
+        "values" is that returned by the Get method. On exit "values" is {1.0} for other nodes.
+      - This method will set values for halo nodes (if the partitioning cut an interface), if there is a
+        change that values between domains are not compatible, synchronization should be performed. ---*/
+
   unsigned short iDim;
   unsigned long iPoint, iVertex, nVertex;
-
   unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
                  iMarker, nMarker = config->GetnMarker_All();
 
@@ -3641,7 +3654,7 @@ void CFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector
     }
   }
   nVertex = interfacePoints.size();
-  
+
 #ifdef HAVE_MPI
   int recvcount = int(nVertex*nDim);
   if (recvcount == 0) interfaceValues.resize(1);

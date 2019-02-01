@@ -2165,6 +2165,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addEnumOption("BGS_RELAXATION", Kind_BGS_RelaxMethod, AitkenForm_Map, NO_RELAXATION);
   /* DESCRIPTION: Relaxation required */
   addBoolOption("RELAXATION", Relaxation, false);
+  /* DESCRIPTION: Number of previous steps used in Interface Quasi Newton methods */
+  addUnsignedShortOption("IQN_HISTORY_SIZE", nIterIQN_HistorySize, 9);
 
   /*!\par CONFIG_CATEGORY: Heat solver \ingroup Config*/
   /*--- options related to the heat solver ---*/
