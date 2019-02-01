@@ -834,9 +834,7 @@ void CDiscAdjSolver::SetSensitivity(CGeometry *geometry, CConfig *config) {
 
     for (iDim = 0; iDim < nDim; iDim++) {
 
-      Sensitivity = SU2_TYPE::GetDerivative(Coord[iDim]);
-
-//      geometry->node[iPoint]->GetAdjointSolution(Sensitivity, iDim);
+      geometry->node[iPoint]->GetAdjointSolution(&Sensitivity, iDim);
 
       /*--- Set the index manually to zero. ---*/
 
