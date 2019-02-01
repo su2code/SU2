@@ -406,16 +406,20 @@ void CDiscAdjMultizoneDriver::Run() {
       /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
 
       AD::ClearAdjoints();
+
+      for (iZone = 0; iZone < nZone; iZone++) {
+
+        iteration_container[iZone][INST_0]->Output(output[iZone], geometry_container, solver_container, config_container, iOuter_Iter, StopCalc, iZone, INST_0);
+      }
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
-  unsigned short jZone, iMesh, UpdateMesh;
+  unsigned short jZone, iSol, iMesh, UpdateMesh;
   unsigned long ExtIter = 0;
   bool DeformMesh       = false;
-  bool heat             = false;
 
   AD::Reset();
 
@@ -423,32 +427,12 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
 
   for(iZone = 0; iZone < nZone; iZone++) {
 
-    heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER: case DISC_ADJ_NAVIER_STOKES:
-        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
-          solver_container[iZone][INST_0][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
         }
-        if (heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        }
-        break;
-      case DISC_ADJ_RANS:
-        for (iMesh = 0; iMesh <= config_container[iZone]->GetnMGLevels(); iMesh++){
-          solver_container[iZone][INST_0][iMesh][ADJFLOW_SOL]->SetRecording(geometry_container[iZone][INST_0][iMesh], config_container[iZone]);
-        }
-        if (!config_container[iZone]->GetFrozen_Visc_Disc()) {
-          solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        }
-        if (heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetRecording(geometry_container[iZone][INST_0][MESH_0],config_container[iZone]);
-        break;
+      }
     }
   }
 
@@ -707,170 +691,80 @@ void CDiscAdjMultizoneDriver::ComputeZonewiseAdjoints(unsigned short iZone) {
 
 void CDiscAdjMultizoneDriver::Set_OldAdjoints(void) {
 
-  unsigned short iZone;
-  bool weakly_coupled_heat;
+  unsigned short iZone, iSol;
 
   for(iZone=0; iZone < nZone; iZone++) {
 
-    weakly_coupled_heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        break;
-      case DISC_ADJ_NAVIER_STOKES:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
         }
-        break;
-      case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_OldSolution(geometry_container[iZone][INST_0][MESH_0]);
-        break;
+      }
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::SetIter_Zero(void) {
 
-  unsigned short iZone;
-  bool weakly_coupled_heat;
+  unsigned short iZone, iSol;
 
   for(iZone=0; iZone < nZone; iZone++) {
 
-    weakly_coupled_heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        break;
-      case DISC_ADJ_NAVIER_STOKES:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
         }
-        break;
-      case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Set_IterSolution_Zero(geometry_container[iZone][INST_0][MESH_0]);
-        break;
+      }
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::Add_IterAdjoints(void) {
 
-  unsigned short iZone;
-  bool weakly_coupled_heat;
+  unsigned short iZone, iSol;
 
   for(iZone=0; iZone < nZone; iZone++) {
 
-    weakly_coupled_heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        break;
-      case DISC_ADJ_NAVIER_STOKES:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
         }
-        break;
-      case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->Add_IterSolution(geometry_container[iZone][INST_0][MESH_0]);
-        break;
+      }
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::SetAdjoints_Iter(void) {
 
-  unsigned short iZone;
-  bool weakly_coupled_heat;
+  unsigned short iZone, iSol;
 
   for(iZone=0; iZone < nZone; iZone++) {
 
-    weakly_coupled_heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        break;
-      case DISC_ADJ_NAVIER_STOKES:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
         }
-        break;
-      case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetSolution_Iter(geometry_container[iZone][INST_0][MESH_0]);
-        break;
+      }
     }
   }
 }
 
 void CDiscAdjMultizoneDriver::SetResidual_RMS(void) {
 
-  unsigned short iZone;
-  bool weakly_coupled_heat;
+  unsigned short iZone, iSol;
 
   for(iZone=0; iZone < nZone; iZone++) {
 
-    weakly_coupled_heat = config_container[iZone]->GetWeakly_Coupled_Heat();
-
-    switch (config_container[iZone]->GetKind_Solver()) {
-
-      case DISC_ADJ_EULER:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        break;
-      case DISC_ADJ_NAVIER_STOKES:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
+    for (iSol=0; iSol < MAX_SOLS; iSol++){
+      if (solver_container[iZone][INST_0][MESH_0][iSol] != NULL) {
+        if (solver_container[iZone][INST_0][MESH_0][iSol]->GetAdjoint()) {
+          solver_container[iZone][INST_0][MESH_0][iSol]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
         }
-        break;
-      case DISC_ADJ_RANS:
-        solver_container[iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        if (weakly_coupled_heat) {
-          solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        }
-        break;
-      case DISC_ADJ_HEAT:
-        solver_container[iZone][INST_0][MESH_0][ADJHEAT_SOL]->SetResidual_Solution(geometry_container[iZone][INST_0][MESH_0], config_container[iZone]);
-        break;
+      }
     }
   }
 }
