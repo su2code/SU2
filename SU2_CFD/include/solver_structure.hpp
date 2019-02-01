@@ -81,6 +81,7 @@ class CSolver {
 protected:
   int rank, 	/*!< \brief MPI Rank. */
   size;       	/*!< \brief MPI Size. */
+  bool adjoint;   /*!< \brief Boolean to determine whether solver is initialized as a direct or an adjoint solver. */
   unsigned short IterLinSolver;  /*!< \brief Linear solver iterations. */
   unsigned short nVar,          /*!< \brief Number of variables of the problem. */
   nPrimVar,                     /*!< \brief Number of primitive variables of the problem. */
@@ -292,6 +293,12 @@ public:
    * \param[in] iMesh - Index of the mesh in multigrid computations.
    */
   virtual void SetNondimensionalization(CConfig *config, unsigned short iMesh);
+
+  /*!
+   * \brief Get information whether the initialization is an adjoint solver or not.
+   * \return <code>TRUE</code> means that it is an adjoint solver.
+   */
+  bool GetAdjoint(void);
 
   /*!
    * \brief Compute the pressure at the infinity.

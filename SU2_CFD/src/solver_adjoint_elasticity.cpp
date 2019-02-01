@@ -79,6 +79,8 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
 
   unsigned short iVar, iMarker, iDim;
 
+  adjoint = true;
+
   bool restart = config->GetRestart();
   bool fsi = config->GetFSI_Simulation();
 
