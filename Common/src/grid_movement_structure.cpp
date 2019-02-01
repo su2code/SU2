@@ -1655,17 +1655,45 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
     }
   }
 
+  /*--- Set the known displacements, note that some points of the moving surfaces
+   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
+        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
+        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
+        for (iDim = 0; iDim < nDim; iDim++) {
+          total_index = iPoint*nDim + iDim;
+          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
+          StiffMatrix.DeleteValsRowi(total_index);
+        }
+      }
+    }
+  }
+  
   /*--- Set to zero displacements of the normal component for the symmetry plane condition ---*/
   
   for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
     if ((config->GetMarker_All_KindBC(iMarker) == SYMMETRY_PLANE) ) {
       
+      su2double *Coord_0 = NULL;
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = 0.0;
+      
+      /*--- Store the coord of the first point to help identify the axis. ---*/
+      
+      iPoint  = geometry->vertex[iMarker][0]->GetNode();
+      Coord_0 = geometry->node[iPoint]->GetCoord();
+      
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         VarCoord = geometry->node[iPoint]->GetCoord();
         for (iDim = 0; iDim < nDim; iDim++)
-          MeanCoord[iDim] += VarCoord[iDim]*VarCoord[iDim];
+          MeanCoord[iDim] += (VarCoord[iDim]-Coord_0[iDim])*(VarCoord[iDim]-Coord_0[iDim]);
       }
       for (iDim = 0; iDim < nDim; iDim++) MeanCoord[iDim] = sqrt(MeanCoord[iDim]);
       if (nDim==3) {
@@ -1684,27 +1712,6 @@ void CVolumetricMovement::SetBoundaryDisplacements(CGeometry *geometry, CConfig 
         LinSysRes[total_index] = 0.0;
         LinSysSol[total_index] = 0.0;
         StiffMatrix.DeleteValsRowi(total_index);
-      }
-    }
-  }
-
-  /*--- Set the known displacements, note that some points of the moving surfaces
-   could be on on the symmetry plane, we should specify DeleteValsRowi again (just in case) ---*/
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (((config->GetMarker_All_Moving(iMarker) == YES) && (Kind_SU2 == SU2_CFD)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DEF)) ||
-        ((config->GetDirectDiff() == D_DESIGN) && (Kind_SU2 == SU2_CFD) && (config->GetMarker_All_DV(iMarker) == YES)) ||
-        ((config->GetMarker_All_DV(iMarker) == YES) && (Kind_SU2 == SU2_DOT))) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        VarCoord = geometry->vertex[iMarker][iVertex]->GetVarCoord();
-        for (iDim = 0; iDim < nDim; iDim++) {
-          total_index = iPoint*nDim + iDim;
-          LinSysRes[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          LinSysSol[total_index] = SU2_TYPE::GetValue(VarCoord[iDim] * VarIncrement);
-          StiffMatrix.DeleteValsRowi(total_index);
-        }
       }
     }
   }
@@ -2729,7 +2736,8 @@ void CSurfaceMovement::SetSurface_Deformation(CGeometry *geometry, CConfig *conf
         /*--- Output original FFD FFDBox ---*/
         
         if (rank == MASTER_NODE) {
-          if ((config->GetOutput_FileFormat() == PARAVIEW) || (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
+          if ((config->GetOutput_FileFormat() == PARAVIEW) ||
+              (config->GetOutput_FileFormat() == PARAVIEW_BINARY)) {
             cout << "Writing a Paraview file of the FFD boxes." << endl;
             FFDBox[iFFDBox]->SetParaview(geometry, iFFDBox, true);
           }
@@ -8500,12 +8508,11 @@ void CFreeFormDefBox::SetParaview(CGeometry *geometry, unsigned short iFFDBox, b
   
   nDim = geometry->GetnDim();
   
-  if ((original) && (iFFDBox == 0)) new_file = true;
+  if (original) new_file = true;
   else new_file = false;
 
-  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes.vtk");
-  else SPRINTF (FFDBox_filename, "ffd_boxes_def.vtk");
-  
+  if (new_file) SPRINTF (FFDBox_filename, "ffd_boxes_%d.vtk", SU2_TYPE::Int(iFFDBox));
+  else SPRINTF (FFDBox_filename, "ffd_boxes_def_%d.vtk", SU2_TYPE::Int(iFFDBox));
   
   FFDBox_file.open(FFDBox_filename, ios::out);
   FFDBox_file << "# vtk DataFile Version 3.0" << endl;

@@ -1115,6 +1115,7 @@ void CSolver::SetAuxVar_Surface_Gradient(CGeometry *geometry, CConfig *config) {
       case EULER_WALL:
       case HEAT_FLUX:
       case ISOTHERMAL:
+      case CHT_WALL_INTERFACE:
         
         /*--- Loop over points on the surface (Least-Squares approximation) ---*/
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
@@ -2609,18 +2610,19 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
 
     /*--- Compute (negative) displacements and grab the metadata. ---*/
 
-		fseek(fhw,-(sizeof(int) + 8*sizeof(passivedouble)), SEEK_END);
+    ret = sizeof(int) + 8*sizeof(passivedouble);
+    fseek(fhw,-ret, SEEK_END);
 
-		/*--- Read the external iteration. ---*/
+    /*--- Read the external iteration. ---*/
 
-		ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
+    ret = fread(&Restart_Iter, sizeof(int), 1, fhw);
     if (ret != 1) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
 
-		/*--- Read the metadata. ---*/
+    /*--- Read the metadata. ---*/
 
-		ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
+    ret = fread(Restart_Meta_Passive, sizeof(passivedouble), 8, fhw);
     if (ret != 8) {
       SU2_MPI::Error("Error reading restart file.", CURRENT_FUNCTION);
     }
@@ -2628,9 +2630,9 @@ void CSolver::Read_SU2_Restart_Metadata(CGeometry *geometry, CConfig *config, bo
     for (unsigned short iVar = 0; iVar < 8; iVar++)
       Restart_Meta[iVar] = Restart_Meta_Passive[iVar];
 
-		/*--- Close the file. ---*/
+    /*--- Close the file. ---*/
 
-		fclose(fhw);
+    fclose(fhw);
 
 #else
 
