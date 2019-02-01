@@ -7580,7 +7580,12 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
     restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
     restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
+    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    }
   }
 
   /*--- All processors close the file. ---*/
@@ -7675,7 +7680,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  }
 
   /*--- Set a timer for the binary file writing. ---*/
   
