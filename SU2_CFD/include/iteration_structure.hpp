@@ -1647,11 +1647,6 @@ public:
   void Monitor();
 
   /*!
-   * \brief Outputs desired files and quantities for the discrete adjoint fluid system.
-   */
-  void Output();
-
-  /*!
    * \brief Perform a single iteration of the adjoint fluid system.
    * \param[in] output - Pointer to the COutput class.
    * \param[in] integration_container - Container vector with all the integration methods.

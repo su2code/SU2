@@ -3550,7 +3550,7 @@ void CDiscAdjHeatIteration::Update(COutput *output,
   }
 }
 void CDiscAdjHeatIteration::Monitor()     { }
-void CDiscAdjHeatIteration::Output()      { }
+
 void CDiscAdjHeatIteration::Postprocess(COutput *output,
                                          CIntegration ****integration_container,
                                          CGeometry ****geometry_container,
