@@ -135,6 +135,7 @@ void CDiscAdjMultizoneDriver::Output(unsigned long TimeIter) {
         /*--- General if statements to print output statements ---*/
         
         (TimeIter+1 >= config_container[iZone]->GetnTime_Iter()) || (StopCalc) ||
+        ((config_container[iZone]->GetOuterIter() % config_container[iZone]->GetWrt_Sol_Freq()) == 0) ||
         
         /*--- Unsteady problems ---*/
         
@@ -229,6 +230,14 @@ void CDiscAdjMultizoneDriver::Run() {
   unsigned long   iOuter_Iter       = 0,
                   OuterIter         = driver_config->GetnOuter_Iter();
 
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone][INST_0]->Preprocess(output[iZone], integration_container, geometry_container,
+                                                     solver_container, numerics_container, config_container,
+                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  }
+
   /*--- Loop over the number of outer iterations ---*/
 
   for (iOuter_Iter = 0; iOuter_Iter < OuterIter; iOuter_Iter++){
@@ -236,10 +245,6 @@ void CDiscAdjMultizoneDriver::Run() {
     for (iZone = 0; iZone < nZone; iZone++) {
 
       config_container[iZone]->SetOuterIter(iOuter_Iter);
-
-      iteration_container[iZone][INST_0]->Preprocess(output[iZone], integration_container, geometry_container,
-                                                       solver_container, numerics_container, config_container,
-                                                       surface_movement, grid_movement, FFDBox, iZone, INST_0);
     }
 
     /*--- For the adjoint iteration we need the derivatives of the iteration function with
@@ -350,7 +355,7 @@ void CDiscAdjMultizoneDriver::Run() {
         break;
     }
 
-    if ((config_container[ZONE_0]->GetOuterIter()+1 >= OuterIter) || checkConvergence == 1 ||
+    if ((config_container[ZONE_0]->GetOuterIter()+1 >= OuterIter) ||
         (config_container[ZONE_0]->GetOuterIter() % config_container[ZONE_0]->GetWrt_Sol_Freq() == 0)){
 
       /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
@@ -516,7 +521,7 @@ void CDiscAdjMultizoneDriver::SetRecording(unsigned short kind_recording) {
     direct_iteration[iZone][INST_0]->Iterate(output[iZone], integration_container, geometry_container, solver_container,
         numerics_container, config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-//    Corrector(iZone);
+    Corrector(iZone);
 
     /*--- Print residuals in the first iteration ---*/
 
