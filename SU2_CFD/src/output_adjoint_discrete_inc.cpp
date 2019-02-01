@@ -257,9 +257,9 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("ADJ_VELOCITY-Y", "Adjoint_Velocity_y", "CONSERVATIVE"); 
   if (nDim == 3)
     /// DESCRIPTION: Adjoint Velocity z-component.
-    AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "CONSERVATIVE"); 
- 
-  AddVolumeOutput("ADJ_HEAT", "Adjoint_Heat", "CONSERVATIVE");
+    AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "CONSERVATIVE");
+  /// DESCRIPTION: Adjoint Temperature.
+  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "CONSERVATIVE");
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Adjoint nu tilde.
@@ -296,9 +296,9 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("RES_ADJ_VELOCITY-Y", "Residual_Adjoint_Velocity_y", "RESIDUAL");  
   if (nDim == 3)
     /// DESCRIPTION: Residual of the adjoint Velocity z-component.
-    AddVolumeOutput("RES_ADJ_Velocity-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL"); 
-  /// DESCRIPTION: Residual of the adjoint energy. 
-  AddVolumeOutput("RES_ADJ_ENERGY", "Residual_Adjoint_Energy", "RESIDUAL");            
+    AddVolumeOutput("RES_ADJ_Velocity-Z", "Residual_Adjoint_Velocity_z", "RESIDUAL");
+  /// DESCRIPTION: Residual of the adjoint temperature.
+  AddVolumeOutput("RES_ADJ_TEMPERATURE", "Residual_Adjoint_Temperature", "RESIDUAL");
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Residual of the nu tilde. 
@@ -348,7 +348,9 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   SetVolumeOutputValue("ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2));
   if (nDim == 3){
     SetVolumeOutputValue("ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3));
-    SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(4));
+    SetVolumeOutputValue("ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(4));
+  } else {
+    SetVolumeOutputValue("ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(3));
   }
   // Turbulent 
   switch(turb_model){
@@ -370,7 +372,10 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   SetVolumeOutputValue("RES_ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2) - Node_AdjFlow->GetSolution_Old(2));
   if (nDim == 3){
     SetVolumeOutputValue("RES_ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3) - Node_AdjFlow->GetSolution_Old(3));
-  } 
+    SetVolumeOutputValue("RES_ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(4) - Node_AdjFlow->GetSolution_Old(4));
+  } else {
+    SetVolumeOutputValue("RES_ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(3) - Node_AdjFlow->GetSolution_Old(3));
+  }
   switch(config->GetKind_Turb_Model()){
   case SST:
     SetVolumeOutputValue("RES_ADJ_KINETIC_ENERGY", iPoint, Node_AdjTurb->GetSolution(0) - Node_AdjTurb->GetSolution_Old(0));
