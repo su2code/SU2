@@ -134,15 +134,15 @@ CDriver::CDriver(char* confFile,
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
 
-    /*--- Determine whether or not the FEM solver is used, which decides the
-     type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
-    fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)         ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)          ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)           ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  /*--- Determine whether or not the FEM solver is used, which decides the
+   type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+  fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
   if( fem_solver ) {
     switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
@@ -3674,18 +3674,35 @@ void CDriver::Interface_Preprocessing() {
         }
         /*--- Else: interpolate ---*/
         else {
-        switch (config_container[donorZone]->GetKindInterpolation()) {
+          bool conservative_interp = config_container[donorZone]->GetConservativeInterpolation();
+          
+          /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
+                because CTransfer_FlowTraction relies on the information in config to be correct. ---*/
+          if ( conservative_interp && targetZone == 0 && structural_target )
+            SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, somehow this has not happened.",CURRENT_FUNCTION);
+        
+          switch (config_container[donorZone]->GetKindInterpolation()) {
 
           case NEAREST_NEIGHBOR:
-            interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
-
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
+              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+            }
+            else {
+              interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+            }
             break;
 
           case ISOPARAMETRIC:
-            interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
+              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+            }
+            else {
+              interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+            }
             break;
 
           case WEIGHTED_AVERAGE:
@@ -3695,41 +3712,15 @@ void CDriver::Interface_Preprocessing() {
             break;
             
           case RADIAL_BASIS_FUNCTION:
-            if ( config_container[donorZone]->GetConservativeInterpolation() ) {
-              if( targetZone > 0 && structural_target ) {
-                interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
-              }
-              else {
-                interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
-                if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
-              }
-              if ( targetZone == 0 && structural_target && rank == MASTER_NODE)
-                cout << "Conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The RBF coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
+            if ( conservative_interp && targetZone > 0 && structural_target ) {
+              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
             }
             else {
               interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
               if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
             }
-            
             break;
-
-          case CONSISTCONSERVE:
-            if ( targetZone > 0 && structural_target ) {
-              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
-            }
-            else{
-              interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
-            }
-            if ( targetZone == 0 && structural_target ) {
-              if (rank == MASTER_NODE) cout << "Consistent and conservative interpolation assumes the structure model mesh is evaluated second. Somehow this has not happened. The isoparametric coefficients will be calculated for both meshes, and are not guaranteed to be consistent." << endl;
-            }
-
-
-            break;
-
           }
         }
 
@@ -4944,6 +4935,18 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Do one iteration of the direct flow solver ---*/
 
   DirectRun();
+
+  /*--- Read the target pressure ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+
+  /*--- Read the target heat flux ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Print residuals in the first iteration ---*/
 
