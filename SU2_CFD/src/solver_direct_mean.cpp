@@ -17091,28 +17091,28 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
                   }
                 }
                 
-                //Rotate the Jacobian momentum components
-                //              for (unsigned short jVar = 1; jVar <= nDim; jVar++) {
-                //              //  for (unsigned short jVar = 0; jVar < nVar; jVar++) {
-                //
-                //                if (nDim == 2) {
-                //                  rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
-                //                                       rotMatrix[0][1]*jacMatrix[2][jVar]);
-                //                  rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
-                //                                       rotMatrix[1][1]*jacMatrix[2][jVar]);
-                //                } else {
-                //
-                //                rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
-                //                                     rotMatrix[0][1]*jacMatrix[2][jVar] +
-                //                                     rotMatrix[0][2]*jacMatrix[3][jVar]);
-                //                rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
-                //                                     rotMatrix[1][1]*jacMatrix[2][jVar] +
-                //                                     rotMatrix[1][2]*jacMatrix[3][jVar]);
-                //                rotJacob[3][jVar] = (rotMatrix[2][0]*jacMatrix[1][jVar] +
-                //                                     rotMatrix[2][1]*jacMatrix[2][jVar] +
-                //                                     rotMatrix[2][2]*jacMatrix[3][jVar]);
-                //              }
-                //              }
+          //Rotate the Jacobian momentum components
+              for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+              //  for (unsigned short jVar = 0; jVar < nVar; jVar++) {
+
+                if (nDim == 2) {
+                  rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
+                                       rotMatrix[0][1]*jacMatrix[2][jVar]);
+                  rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
+                                       rotMatrix[1][1]*jacMatrix[2][jVar]);
+                } else {
+
+                rotJacob[1][jVar] = (rotMatrix[0][0]*jacMatrix[1][jVar] +
+                                     rotMatrix[0][1]*jacMatrix[2][jVar] +
+                                     rotMatrix[0][2]*jacMatrix[3][jVar]);
+                rotJacob[2][jVar] = (rotMatrix[1][0]*jacMatrix[1][jVar] +
+                                     rotMatrix[1][1]*jacMatrix[2][jVar] +
+                                     rotMatrix[1][2]*jacMatrix[3][jVar]);
+                rotJacob[3][jVar] = (rotMatrix[2][0]*jacMatrix[1][jVar] +
+                                     rotMatrix[2][1]*jacMatrix[2][jVar] +
+                                     rotMatrix[2][2]*jacMatrix[3][jVar]);
+              }
+              }
                 
                 int ii = 0;
                 for (iVar = 0; iVar < nVar; iVar++) {
@@ -17351,8 +17351,8 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 //              PrimVar_j[iVar] = GetDonorPrimVar(iMarker, iVertex, iVar);
 //            }
 //
-//            su2double Vol = geometry->node[iPoint]->GetVolume();
-//            geometry->node[iPoint]->SetVolume(Vol + PrimVar_j[nVar+3]);
+////            su2double Vol = geometry->node[iPoint]->GetVolume();
+////            geometry->node[iPoint]->SetVolume(Vol + PrimVar_j[nVar+3]);
 //
 //            su2double dt = node[iPoint]->GetDelta_Time();
 //            if (PrimVar_j[nVar+4] < dt)
@@ -17386,23 +17386,11 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 //      }
 //    }
 //  }
-//
+
   InitiatePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
   CompletePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
-  
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-        if (implicit) {
-          for (iVar = 0; iVar < nVar; iVar++) {
-            unsigned long total_index = iPoint*nVar+iVar;
-            Jacobian.SetPointImplicit(total_index);
-          }
-        }
-      }
-    }
-  }
+
+
   
   /*--- Free locally allocated memory ---*/
   

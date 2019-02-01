@@ -247,6 +247,8 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
   su2double jacMatrix[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}},
   rotJacob[10][10] = {{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0},{0.0, 0.0, 0.0, 0.0, 0.0}};
   
+  // TDE: need to generalize these checks
+  bool rotate         = (nVar > 2); // some rotations are only needed for mean flow
   bool implicit       = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
 
@@ -430,6 +432,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
             /*--- Rotate the momentum components of the residual array. ---*/
             
+            if (rotate) {
             if (nDim == 2) {
               bufDSend[buf_offset+1] = (rotMatrix[0][0]*LinSysRes.GetBlock(iPoint, 1) +
                                         rotMatrix[0][1]*LinSysRes.GetBlock(iPoint, 2));
@@ -446,6 +449,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                         rotMatrix[2][1]*LinSysRes.GetBlock(iPoint, 2) +
                                         rotMatrix[2][2]*LinSysRes.GetBlock(iPoint, 3));
             }
+            }
             
             buf_offset += nVar;
             bufDSend[buf_offset] = node[iPoint]->GetDelta_Time(); buf_offset++;
@@ -461,6 +465,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
               
               /*--- Rotate the momentum columns of the Jacobian. ---*/
               
+              if (rotate) {
               for (iVar = 0; iVar < nVar; iVar++) {
                 if (nDim == 2) {
                   rotJacob[1][iVar] = (rotMatrix[0][0]*jacMatrix[1][iVar] +
@@ -480,6 +485,7 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
                                        rotMatrix[2][2]*jacMatrix[3][iVar]);
                 }
               }
+              }
               
               for (iVar = 0; iVar < nVar; iVar++) {
                 for (jVar = 0; jVar < nVar; jVar++) {
@@ -493,7 +499,6 @@ void CSolver::InitiatePeriodicComms(CGeometry *geometry,
             
           case PERIODIC_LAPLACIAN:
           
-            
             for (iVar = 0; iVar< nVar; iVar++)
               Und_Lapl[iVar] = 0.0;
             
