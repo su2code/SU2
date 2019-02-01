@@ -12641,6 +12641,7 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
   
   bool transition           = (config->GetKind_Trans_Model() == BC);
   bool grid_movement        = (config->GetGrid_Movement());
+  bool rotating_frame       = config->GetRotating_Frame();
   bool Wrt_Halo             = config->GetWrt_Halo(), isPeriodic;
   
   int *Local_Halo = NULL;
@@ -12882,6 +12883,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       
       nVar_Par +=1;
       Variable_Names.push_back("Q_Criterion");
+    }
+    
+    if (rotating_frame) {
+      nVar_Par += 2;
+      Variable_Names.push_back("Relative_Velocity_x");
+      Variable_Names.push_back("Relative_Velocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
+      }
     }
     
   }
@@ -13148,6 +13158,19 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           su2double Q = 0.5*(OmegaMag - StrainMag);
           Local_Data[jPoint][iVar] = Q; iVar++;
           
+        }
+        
+        /*--- For rotating frame problems, compute the relative velocity. ---*/
+        
+        if (rotating_frame) {
+          Grid_Vel = geometry->node[iPoint]->GetGridVel();
+          su2double *Solution = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+          Local_Data[jPoint][iVar] = Solution[1]/Solution[0] - Grid_Vel[0]; iVar++;
+          Local_Data[jPoint][iVar] = Solution[2]/Solution[0] - Grid_Vel[1]; iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[jPoint][iVar] = Solution[3]/Solution[0] - Grid_Vel[2];
+            iVar++;
+          }
         }
         
       }

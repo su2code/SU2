@@ -529,11 +529,11 @@ public:
   su2double* GetPoint_Max_Coord_BGS(unsigned short val_var);
   
   /*!
-   * \brief Set Value of the residual if there is a grid movement.
+   * \brief Set Value of the residual due to the Geometric Conservation Law (GCL) for steady rotating frame problems.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SetGrid_Movement_Residual(CGeometry *geometry, CConfig *config);
+  void SetRotatingFrame_GCL(CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Impose the send-receive boundary condition.
