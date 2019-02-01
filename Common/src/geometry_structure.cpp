@@ -13339,8 +13339,7 @@ void CPhysicalGeometry::Check_BoundElem_Orientation(CConfig *config) {
 
   for (iMarker = 0; iMarker < nMarker; iMarker++) {
     
-    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
-        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
+    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) {
       
       for (iElem_Surface = 0; iElem_Surface < nElem_Bound[iMarker]; iElem_Surface++) {
         

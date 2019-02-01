@@ -4408,7 +4408,7 @@ void CEulerSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container
   /*--- Initialize the Jacobian matrices ---*/
   
   if (implicit && !disc_adjoint) Jacobian.SetValZero();
-
+  
   /*--- Error message ---*/
   
   if (config->GetConsole_Output_Verb() == VERB_HIGH) {
@@ -5022,6 +5022,11 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
 
   if (rotating_frame) {
 
+    /*--- Include the residual contribution from GCL due to the static
+     mesh movement that is set for rotating frame. ---*/
+    
+    SetRotatingFrame_GCL(geometry, config);
+
     /*--- Loop over all points ---*/
     for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
       
@@ -5037,7 +5042,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
       /*--- Add the source residual to the total ---*/
       LinSysRes.AddBlock(iPoint, Residual);
-      
+
       /*--- Add the implicit Jacobian contribution ---*/
       if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       
@@ -17384,6 +17389,20 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 //
   InitiatePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
   CompletePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
+  
+  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+    if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+      for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+        if (implicit) {
+          for (iVar = 0; iVar < nVar; iVar++) {
+            unsigned long total_index = iPoint*nVar+iVar;
+            Jacobian.SetPointImplicit(total_index);
+          }
+        }
+      }
+    }
+  }
   
   /*--- Free locally allocated memory ---*/
   
