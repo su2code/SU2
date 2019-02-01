@@ -511,7 +511,7 @@ void CIteration::Output(COutput *output,
     /*--- Execute the routine for writing restart, volume solution,
      surface solution, and surface comma-separated value files. ---*/
 
-    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, nZone);
+    output->SetResult_Files_Parallel(solver_container, geometry_container, config_container, Iter, val_iZone, nZone);
 
     /*--- Execute the routine for writing special output. ---*/
     output->SetSpecial_Output(solver_container, geometry_container, config_container, Iter, nZone);
