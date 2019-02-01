@@ -51,8 +51,6 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  unsigned short iVar, iDim;
-
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
