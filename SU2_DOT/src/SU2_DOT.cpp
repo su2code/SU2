@@ -105,6 +105,15 @@ int main(int argc, char *argv[]) {
     nInst[iZone]                  = 1;
   }
   
+  /*--- Initialize the configuration of the driver ---*/
+  driver_config = new CConfig(config_file_name, SU2_DOT, ZONE_0, nZone, 0, VERB_NONE);
+
+  /*--- Initialize a char to store the zone filename ---*/
+  char zone_file_name[MAX_STRING_SIZE];
+
+  /*--- Store a boolean for multizone problems ---*/
+  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
    differential equation on a single block, unstructured mesh. ---*/
@@ -115,9 +124,13 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
-
-    /*--- Set the MPI communicator ---*/
+    if (multizone){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    }
+    else{
+      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
     /*--- Determine whether or not the FEM solver is used, which decides the
