@@ -1115,7 +1115,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   /*--- Local variables ---*/
   
   unsigned short nPeriodic = config->GetnMarker_Periodic();
-  unsigned short iDim, jDim, iVar, jVar, iPeriodic;
+  unsigned short iDim, jDim, iVar, jVar, iPeriodic, nNeighbor;
   
   unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
   
@@ -1127,7 +1127,7 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   
   su2double *Diff = new su2double[nVar];
   
-  su2double Time_Step;
+  su2double Time_Step, Volume, Solution_Min, Solution_Max, Limiter_Min;
   
   /*--- Set some local pointers to make access simpler. ---*/
   
@@ -1177,6 +1177,11 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
         iPoint    = geometry->Local_Point_PeriodicRecv[offset + iRecv];
         iPeriodic = geometry->Local_Marker_PeriodicRecv[offset + iRecv];
         
+        /*--- While all periodic face data was accumulated, we only store
+         the values for the current pair of periodic faces. This is slightly
+         inefficient when we have multiple pairs of periodic faces, but
+         it simplifies the communications. ---*/
+        
         if ((iPeriodic == val_periodic_index) ||
             (iPeriodic == val_periodic_index + nPeriodic/2)) {
           
@@ -1187,13 +1192,25 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
           /*--- Store the data correctly depending on the quantity. ---*/
           
           switch (commType) {
+              
             case PERIODIC_VOLUME:
-              geometry->node[iPoint]->SetPeriodicVolume(bufDRecv[buf_offset]+geometry->node[iPoint]->GetPeriodicVolume());
+              
+              /*--- The periodic points need to keep track of their
+               total volume spread across the periodic faces. ---*/
+              
+              Volume = (bufDRecv[buf_offset] +
+                                  geometry->node[iPoint]->GetPeriodicVolume());
+              geometry->node[iPoint]->SetPeriodicVolume(Volume);
               
               break;
               
             case PERIODIC_NEIGHBORS:
-              geometry->node[iPoint]->SetnNeighbor(geometry->node[iPoint]->GetnNeighbor() + bufSRecv[buf_offset]);
+              
+              /*--- Store the extra neighbors on the periodic face. ---*/
+              
+              nNeighbor = (geometry->node[iPoint]->GetnNeighbor() +
+                                       bufSRecv[buf_offset]);
+              geometry->node[iPoint]->SetnNeighbor(nNeighbor);
               
               break;
               
@@ -1234,19 +1251,22 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               
             case PERIODIC_LAPLACIAN:
               
-              // adjust undivided Laplacian
+              /*--- Adjust the undivided Laplacian. The accumulation was
+               with a subtraction before communicating, so no just add. ---*/
               
               for (iVar = 0; iVar < nVar; iVar++)
                 Diff[iVar] = bufDRecv[buf_offset+iVar];
-              
-              // they were subtracted during accumulation, so now just add
               
               node[iPoint]->AddUnd_Lapl(Diff);
               
               break;
               
             case PERIODIC_MAX_EIG:
+               
+               /*--- Simple accumulation of the eig on periodic faces. ---*/
+              
               node[iPoint]->AddLambda(bufDRecv[buf_offset]);
+              
               break;
               
             case PERIODIC_SENSOR:
@@ -1332,7 +1352,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
                perioic faces for the solution, and store the proper min
                and max for this point.  ---*/
               
-              su2double Solution_Min, Solution_Max;
               for (iVar = 0; iVar < nVar; iVar++) {
                 
                 /*--- Solution minimum. ---*/
@@ -1356,7 +1375,6 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
               /*--- Check the min values found on the matching periodic
                faces for the limiter, and store the proper min value. ---*/
               
-              su2double Limiter_Min;
               for (iVar = 0; iVar < nVar; iVar++) {
                 Limiter_Min = min(node[iPoint]->GetLimiter_Primitive(iVar),
                                   bufDRecv[buf_offset+iVar]);
