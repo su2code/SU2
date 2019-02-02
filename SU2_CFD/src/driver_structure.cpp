@@ -3978,6 +3978,15 @@ void CDriver::Output(unsigned long ExtIter) {
     StartTime = MPI_Wtime();
 #endif
     
+    /*--- Add a statement about the type of solver exit. ---*/
+    
+    if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (ExtIter+1 >= nExtIter) cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
+      if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- Execute the routine for writing restart, volume solution,
@@ -4614,6 +4623,18 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Do one iteration of the direct flow solver ---*/
 
   DirectRun();
+
+  /*--- Read the target pressure ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+
+  /*--- Read the target heat flux ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Print residuals in the first iteration ---*/
 
