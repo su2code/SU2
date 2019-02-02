@@ -1869,6 +1869,12 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDVValueOption("DV_VALUE", nDV_Value, DV_Value, nDV, ParamDV, Design_Variable);
   /* DESCRIPTION: Provide a file of surface positions from an external parameterization. */
   addStringOption("DV_FILENAME", DV_Filename, string("surface_positions.dat"));
+  /* DESCRIPTION: File of sensitivities as an unordered ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each volume grid point. */
+  addStringOption("DV_UNORDERED_SENS_FILENAME", DV_Unordered_Sens_Filename, string("unordered_sensitivity.dat"));
+  /* DESCRIPTION: File of sensitivities as an ASCII file with rows of x, y, z, dJ/dx, dJ/dy, dJ/dz for each surface grid point. */
+  addStringOption("DV_SENS_FILENAME", DV_Sens_Filename, string("surface_sensitivity.dat"));
+  /*!\brief OUTPUT_FORMAT \n DESCRIPTION: I/O format for output plots. \n OPTIONS: see \link Output_Map \endlink \n DEFAULT: TECPLOT \ingroup Config */
+  addEnumOption("DV_SENSITIVITY_FORMAT", Sensitivity_FileFormat, Sensitivity_Map, SU2_NATIVE);
 	/* DESCRIPTION: Hold the grid fixed in a region */
   addBoolOption("HOLD_GRID_FIXED", Hold_GridFixed, false);
 	default_grid_fix[0] = -1E15; default_grid_fix[1] = -1E15; default_grid_fix[2] = -1E15;
@@ -4285,6 +4291,14 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     else if (top_optim_nRadius != top_optim_nKernel) {
       SU2_MPI::Error("Different number of topology filter kernels and respective radii.", CURRENT_FUNCTION);
     }
+  }
+  
+  /*--- If we are executing SU2_DOT in surface file mode, then
+   force the projected surface sensitivity file to be written. ---*/
+  
+  Wrt_Projected_Sensitivity = false;
+  if ((Kind_SU2 == SU2_DOT) && (Design_Variable[0] == SURFACE_FILE)) {
+    Wrt_Projected_Sensitivity = true;
   }
 
   /*--- Check the conductivity model. Deactivate the turbulent component
@@ -8759,8 +8773,8 @@ void CConfig::SetProfilingCSV(void) {
 
   /*--- Allocate and initialize memory ---*/
 
-  double *l_min_red, *l_max_red, *l_tot_red, *l_avg_red;
-  int *n_calls_red;
+  double *l_min_red = NULL, *l_max_red = NULL, *l_tot_red = NULL, *l_avg_red = NULL;
+  int *n_calls_red = NULL;
   double* l_min = new double[map_size];
   double* l_max = new double[map_size];
   double* l_tot = new double[map_size];
