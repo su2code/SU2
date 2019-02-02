@@ -575,9 +575,9 @@ void CIntegration::Convergence_Monitoring(CGeometry *geometry, CConfig *config, 
 void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CConfig *config, unsigned short iMesh) {
   unsigned long iPoint;
   
-  unsigned short iDim;
+  unsigned short iDim, iVar;
   bool calculate_average = config->GetCompute_Average();
-  su2double *Solution_Avg_Aux;
+  su2double *Solution_Avg_Aux = NULL;
   su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
   unsigned long iMarker, iVertex;
   
@@ -605,7 +605,6 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           Aux_Frict_x[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 0);
-          //Aux_Frict_y[iPoint] = solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1);
           Aux_Frict_y[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 1);
           if (geometry->GetnDim() == 3) Aux_Frict_z[iPoint] = solver->GetCSkinFriction(iMarker, iVertex, 2);
         }
@@ -617,8 +616,14 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
   
   //if (SolContainer_Position == FLOW_SOL && calculate_average) {
   if (calculate_average) {
+    
+    Solution_Avg_Aux = new su2double[solver->GetnVar()];
+    
     for (iPoint = 0; iPoint < geometry->GetnPoint(); iPoint++) {
-      Solution_Avg_Aux = solver->node[iPoint]->GetSolution();
+      
+      for (iVar = 0; iVar < solver->GetnVar(); iVar++)
+        Solution_Avg_Aux[iVar] = solver->node[iPoint]->GetSolution(iVar);
+      
       solver->node[iPoint]->AddSolution_Avg(0, Solution_Avg_Aux[0]);
       for ( iDim = 0; iDim < geometry->GetnDim(); iDim++)
         solver->node[iPoint]->AddSolution_Avg(iDim+1, Solution_Avg_Aux[iDim+1]/Solution_Avg_Aux[0]);
@@ -639,7 +644,6 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
           solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+3, solver->node[iPoint]->GetEddyViscosity()/solver->node[iPoint]->GetLaminarViscosity());
           if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
             solver->node[iPoint]->AddSolution_Avg(solver->GetnVar()+4, solver->node[iPoint]->GetRoe_Dissipation());
-            //cout << solver->node[iPoint]->GetRoe_Dissipation() << endl;
           }
         }
       }
@@ -744,6 +748,10 @@ void CIntegration::SetDualTime_Solver(CGeometry *geometry, CSolver *solver, CCon
     }
 #endif
   }
+  if (Solution_Avg_Aux != NULL) delete [] Solution_Avg_Aux;
+  if (Aux_Frict_x != NULL) delete [] Aux_Frict_x;
+  if (Aux_Frict_y != NULL) delete [] Aux_Frict_y;
+  if (Aux_Frict_z != NULL) delete [] Aux_Frict_z;
   
 }
 

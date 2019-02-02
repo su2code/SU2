@@ -4054,7 +4054,6 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   bool SubsonicEngine = config->GetSubsonicEngine();
   
   bool calculate_average = config->GetCompute_Average();
-  su2double *Solution_Avg_Aux;
 
   /*--- Set subsonic initial condition for engine intakes ---*/
   
@@ -4228,8 +4227,9 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
   
   if (calculate_average && (ExtIter == 0 || (restart && (long)ExtIter == config->GetUnst_RestartIter()))){
     
-    su2double *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
+    su2double *Solution_Avg_Aux= NULL, *Aux_Frict_x = NULL, *Aux_Frict_y = NULL, *Aux_Frict_z = NULL;
     unsigned long iMarker, iVertex;
+    unsigned short iVar;
     
     if (config->GetKind_Solver() == RANS){
       
@@ -4263,9 +4263,13 @@ void CEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solver_c
       }
     }
     
+    Solution_Avg_Aux = new su2double[solver_container[MESH_0][FLOW_SOL]->GetnVar()];
+    
     for (iPoint = 0; iPoint < geometry[MESH_0]->GetnPoint(); iPoint++) {
       
-      Solution_Avg_Aux = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution();
+      for (iVar = 0; iVar < nVar; iVar++)
+        Solution_Avg_Aux[iVar] = solver_container[MESH_0][FLOW_SOL]->node[iPoint]->GetSolution(iVar);
+      
       solver_container[MESH_0][FLOW_SOL]->node[iPoint]->AddSolution_Avg(0, Solution_Avg_Aux[0]);
       
       for ( iDim = 0; iDim < nDim; iDim++)

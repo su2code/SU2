@@ -737,7 +737,7 @@ void CNSVariable::SetRoe_Dissipation_NTS(su2double val_delta,
    * https://doi.org/10.2514/1.J051299
    * ---*/
 
-  for (iDim = 0; iDim < 3; iDim++){
+  for (iDim = 0; iDim < nDim; iDim++){
     Omega_2 += Vorticity[iDim]*Vorticity[iDim];
   }
   Omega = sqrt(Omega_2);

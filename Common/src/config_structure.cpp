@@ -2874,6 +2874,10 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     SU2_MPI::Error("Buffet monitoring incompatible with Euler Solver", CURRENT_FUNCTION);
   }
   
+  if ((Kind_Turb_Model == NONE) && (Kind_RoeLowDiss != NO_ROELOWDISS) && (Unsteady_Simulation == DT_STEPPING_2ND)){
+    SU2_MPI::Error("Low dissipation convective schemes are only available for Unsteady Dual Time-Step RANS simulations.", CURRENT_FUNCTION);
+  }
+  
   /*--- Check for Fluid model consistency ---*/
 
   if (standard_air) {
