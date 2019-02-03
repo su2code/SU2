@@ -16,7 +16,7 @@ notifications:
   
 branches:
     only:
-        - AUSMPLUSUP2
+        - develop
 
 python:
     - 2.7
