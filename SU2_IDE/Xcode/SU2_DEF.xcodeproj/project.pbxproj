@@ -27,6 +27,7 @@
 		05F9A5BF1F1C40EA00BE6BB4 /* variable_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 05F9A5BE1F1C40EA00BE6BB4 /* variable_structure.cpp */; };
 		E941BBAB1B71D476005C6C06 /* linear_solvers_structure_b.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBA81B71D476005C6C06 /* linear_solvers_structure_b.cpp */; };
 		E941BBAC1B71D476005C6C06 /* mpi_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E941BBA91B71D476005C6C06 /* mpi_structure.cpp */; };
+		E9611EF821FBEF5500663714 /* printing_toolbox.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E9611EF721FBEF5500663714 /* printing_toolbox.cpp */; };
 		E96FAF3D218A03160046BF5D /* fem_cgns_elements.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF32218A03140046BF5D /* fem_cgns_elements.cpp */; };
 		E96FAF3E218A03160046BF5D /* fem_wall_distance.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF33218A03140046BF5D /* fem_wall_distance.cpp */; };
 		E96FAF3F218A03160046BF5D /* graph_coloring_structure.cpp in Sources */ = {isa = PBXBuildFile; fileRef = E96FAF34218A03150046BF5D /* graph_coloring_structure.cpp */; };
@@ -123,6 +124,8 @@
 		E941BBBE1B71D5F5005C6C06 /* linear_solvers_structure_b.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = linear_solvers_structure_b.hpp; path = ../../Common/include/linear_solvers_structure_b.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBBF1B71D5F5005C6C06 /* mpi_structure.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; lineEnding = 0; name = mpi_structure.hpp; path = ../../Common/include/mpi_structure.hpp; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
 		E941BBC01B71D5F5005C6C06 /* mpi_structure.inl */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; lineEnding = 0; name = mpi_structure.inl; path = ../../Common/include/mpi_structure.inl; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.cpp; };
+		E9611EF721FBEF5500663714 /* printing_toolbox.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = printing_toolbox.cpp; path = ../../Common/src/toolboxes/printing_toolbox.cpp; sourceTree = "<group>"; };
+		E9611EF921FBEF7100663714 /* printing_toolbox.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = printing_toolbox.hpp; path = ../../Common/include/toolboxes/printing_toolbox.hpp; sourceTree = "<group>"; };
 		E96FAF32218A03140046BF5D /* fem_cgns_elements.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_cgns_elements.cpp; path = ../../Common/src/fem_cgns_elements.cpp; sourceTree = "<group>"; };
 		E96FAF33218A03140046BF5D /* fem_wall_distance.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = fem_wall_distance.cpp; path = ../../Common/src/fem_wall_distance.cpp; sourceTree = "<group>"; };
 		E96FAF34218A03150046BF5D /* graph_coloring_structure.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = graph_coloring_structure.cpp; path = ../../Common/src/graph_coloring_structure.cpp; sourceTree = "<group>"; };
@@ -229,6 +232,7 @@
 				05E6DAEA17EB609400FA1F7E /* option_structure.hpp */,
 				05D56A5F1A0C958A008B5E95 /* output_structure.hpp */,
 				05E6DAEB17EB609400FA1F7E /* primal_grid_structure.hpp */,
+				E9611EF921FBEF7100663714 /* printing_toolbox.hpp */,
 				05F9A5BA1F1C40AA00BE6BB4 /* solver_structure.hpp */,
 				05E6DC4C17EB635800FA1F7E /* SU2_DEF.hpp */,
 				05F9A5C01F1C40F100BE6BB4 /* variable_structure.hpp */,
@@ -285,6 +289,7 @@
 				05755F0D1A54B52400600019 /* output_su2.cpp */,
 				05AF5D011A0D5A16004E14F6 /* output_tecplot.cpp */,
 				05E6DB5A17EB61D100FA1F7E /* primal_grid_structure.cpp */,
+				E9611EF721FBEF5500663714 /* printing_toolbox.cpp */,
 				05F9A5BC1F1C40BF00BE6BB4 /* solver_structure.cpp */,
 				05E6DC4D17EB635D00FA1F7E /* SU2_DEF.cpp */,
 				05F9A5BE1F1C40EA00BE6BB4 /* variable_structure.cpp */,
@@ -385,6 +390,7 @@
 				05E6DB5D17EB61D100FA1F7E /* dual_grid_structure.cpp in Sources */,
 				05E6DB5E17EB61D100FA1F7E /* geometry_structure.cpp in Sources */,
 				05E6DB6017EB61D100FA1F7E /* grid_movement_structure.cpp in Sources */,
+				E9611EF821FBEF5500663714 /* printing_toolbox.cpp in Sources */,
 				053306F51AAAD5F00049E156 /* output_fieldview.cpp in Sources */,
 				05D56A611A0C959F008B5E95 /* output_structure.cpp in Sources */,
 				E96FAF58218A03FD0046BF5D /* interpolation_structure.cpp in Sources */,

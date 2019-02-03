@@ -1568,6 +1568,18 @@ static const map<string, ENUM_OUTPUT> Output_Map = CCreateMap<string, ENUM_OUTPU
 ("PARAVIEW_BINARY", PARAVIEW_BINARY);
 
 /*!
+ * \brief type of volume sensitivity file formats (inout to SU2_DOT)
+ */
+enum ENUM_SENSITIVITY {
+  SU2_NATIVE = 1,           /*!< \brief SU2 native binary format for the volume sensitivity input. */
+  UNORDERED_ASCII = 2           /*!< \brief Unordered ASCII list (x,y,z,dJ/dx,dJ/dy/dJ/dz) format for the volume sensitivity input. */
+};
+
+static const map<string, ENUM_SENSITIVITY> Sensitivity_Map = CCreateMap<string, ENUM_SENSITIVITY>
+("SU2_NATIVE", SU2_NATIVE)
+("UNORDERED_ASCII", UNORDERED_ASCII);
+
+/*!
  * \brief type of jump definition
  */
 enum JUMP_DEFINITION {
