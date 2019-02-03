@@ -3987,6 +3987,15 @@ void CDriver::Output(unsigned long ExtIter) {
     StartTime = MPI_Wtime();
 #endif
     
+    /*--- Add a statement about the type of solver exit. ---*/
+    
+    if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (ExtIter+1 >= nExtIter) cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
+      if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- Execute the routine for writing restart, volume solution,
