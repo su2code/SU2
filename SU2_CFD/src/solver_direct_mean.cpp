@@ -15861,15 +15861,6 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
     }
   }
   
-  /*--- Roe Low Dissipation Sensor ---*/
-  
-  if (roe_low_dissipation){
-    SetRoe_Dissipation(geometry, config);
-    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
-      SetUpwind_Ducros_Sensor(geometry, config);
-    }
-  }
-  
   /*--- Compute gradient of the primitive variables ---*/
   
   if (config->GetKind_Gradient_Method() == GREEN_GAUSS) {
@@ -15906,6 +15897,15 @@ void CNSSolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, C
   
   if (wall_functions)
     SetTauWall_WF(geometry, solver_container, config);
+  
+  /*--- Roe Low Dissipation Sensor ---*/
+  
+  if (roe_low_dissipation){
+    SetRoe_Dissipation(geometry, config);
+    if (kind_row_dissipation == FD_DUCROS || kind_row_dissipation == NTS_DUCROS){
+      SetUpwind_Ducros_Sensor(geometry, config);
+    }
+  }
 
   /*--- Initialize the Jacobian matrices ---*/
   
