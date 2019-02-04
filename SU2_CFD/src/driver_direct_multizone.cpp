@@ -39,7 +39,6 @@
 #include "../include/definition_structure.hpp"
 
 #include <Eigen/Dense>
-using namespace Eigen;
 
 
 CMultizoneDriver::CMultizoneDriver(char* confFile,
@@ -385,8 +384,9 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
         Gather and Scatter interface values, nevertheless there are no "if (rank = MASTER)" sections here
         because the code is safe to be executed by all ranks, that is not to say all ranks do the same!
         Slave nodes solve a 1 by 1 problem, and store virtually no data. ---*/
+  using namespace Eigen;
 
-  unsigned long iOuter_Iter=0;
+  unsigned long iOuter_Iter = 0;
   bool Convergence = false;
 
   /*--- It only makes sense to apply this version of the method to the interface values of the last zone ---*/
@@ -400,7 +400,7 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   /*--- This vector is used to get and set interface values ---*/
   vector<passivedouble> interfaceValues;
 
-  unsigned long OuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(OuterIter);
+  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuter_Iter);
 
   /*--- Initial values ---*/
   iteration_container[lastZone][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,lastZone,INST_0,interfaceValues);

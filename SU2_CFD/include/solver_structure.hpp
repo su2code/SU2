@@ -12897,6 +12897,23 @@ public:
    * \param[in] val_iterlinsolver - Number of linear iterations.
    */
   void UpdateSolution_BGS(CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Get (gather onto master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[out] values - The interface values.
+   */
+  void GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+
+   /*!
+   * \brief Set (scatter from master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] values - The interface values.
+   */
+  void SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values);
+
 };
 
 /*!

@@ -42,6 +42,8 @@
 #include <ittnotify.h>
 #endif
 
+#include <Eigen/Dense>
+
 CDriver::CDriver(char* confFile,
                  unsigned short val_nZone,
                  unsigned short val_nDim,
@@ -6266,64 +6268,163 @@ void CDiscAdjFSIDriver::DynamicMeshUpdate(unsigned long ExtIter){
 
 }
 
-void CDiscAdjFSIDriver::Run( ) {
+void CDiscAdjFSIDriver::Run() {
+
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+  unsigned short iZone;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    config_container[iZone]->SetIntIter(0);
+    config_container[iZone]->SetOuterIter(0);
+  }
+
+  Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+  if (config_container[ZONE_STRUCT]->GetKind_MZSolver() == MZ_IQN_ILS)
+    Run_InterfaceQuasiNewtonInvLeastSquares();
+  else
+    Run_GaussSeidel();
+
+  Postprocess(ZONE_FLOW, ZONE_STRUCT);
+}
+
+void CDiscAdjFSIDriver::Run_GaussSeidel() {
 
   /*--- As of now, we are coding it for just 2 zones. ---*/
   /*--- This will become more general, but we need to modify the configuration for that ---*/
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
-  unsigned short iZone;
+  unsigned long iOuterIter;
   bool BGS_Converged = false;
 
-  unsigned long IntIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetIntIter(IntIter);
-  unsigned long iOuterIter = 0; for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
-  unsigned long nOuterIter = config_container[ZONE_FLOW]->GetnIterFSI();
+  for (iOuterIter = 0; iOuterIter < config_container[ZONE_FLOW]->GetnIterFSI() && !BGS_Converged; iOuterIter++){
 
-  ofstream myfile_struc, myfile_flow, myfile_geo;
-
-  Preprocess(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-
-
-  for (iOuterIter = 0; iOuterIter < nOuterIter && !BGS_Converged; iOuterIter++){
-
-    if (rank == MASTER_NODE){
-      cout << endl << "                    ****** BGS ITERATION ";
-      cout << iOuterIter;
-      cout << " ******" << endl;
-    }
-
-    for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
-    
-    /*--- Start with structural terms if OF is based on displacements ---*/
-
-    if (Kind_Objective_Function == FEM_OBJECTIVE_FUNCTION)
-      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
-
-    /*--- Iterate fluid (including cross term) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
-
-    /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
-
-    /*--- Compute mesh cross term (dM / dSv) ---*/
-
-    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
-    
-    /*--- End with structural terms if OF is based on fluid variables ---*/
-    
-    if (Kind_Objective_Function == FLOW_OBJECTIVE_FUNCTION)
-      Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+    /*--- Perform a BGS step ---*/
+    StepGaussSeidel(Kind_Objective_Function, "BGS", iOuterIter);
 
     /*--- Check convergence of the BGS method ---*/
     BGS_Converged = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
   }
 
+}
 
-  Postprocess(ZONE_FLOW, ZONE_STRUCT);
+void CDiscAdjFSIDriver::StepGaussSeidel(unsigned short kind_of, const string &method, unsigned long iOuterIter) {
+
+  unsigned short iZone, ZONE_FLOW = 0, ZONE_STRUCT = 1;
+
+  if (rank == MASTER_NODE) {
+    cout << endl << "                    ";
+    cout << "****** " << method << " ITERATION " << iOuterIter << " ******" << endl;
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+
+  /*--- Start with structural terms if OF is based on displacements ---*/
+  if (kind_of == FEM_OBJECTIVE_FUNCTION)
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
+
+  /*--- Iterate fluid (including cross term) ---*/
+  Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FLOW_CONS_VARS);
+
+  /*--- Compute mesh (it is a cross term dF / dMv ) ---*/
+  Iterate_Block(ZONE_FLOW, ZONE_STRUCT, MESH_COORDS);
+
+  /*--- Compute mesh cross term (dM / dSv) ---*/
+  Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEM_CROSS_TERM_GEOMETRY);
+
+  /*--- End with structural terms if OF is based on fluid variables ---*/
+  if (kind_of == FLOW_OBJECTIVE_FUNCTION)
+    Iterate_Block(ZONE_FLOW, ZONE_STRUCT, FEA_DISP_VARS);
 
 }
 
+void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
+
+  using namespace Eigen;
+
+  unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
+  /*--- It is more practical to consider the structure to always be iterated last ---*/
+  unsigned short kind_of = FLOW_OBJECTIVE_FUNCTION;
+  unsigned long iOuterIter = 0;
+  bool Convergence = false;
+
+  /*--- Method parameters, size of history matrix, residual norm, and tolerance ---*/
+  unsigned long M = 0, N = max<unsigned long>(1,config_container[ZONE_STRUCT]->GetnIterIQN_HistorySize());
+  su2double resNorm = 1.0, tol = pow(10.0,config_container[ZONE_STRUCT]->GetMinLogResidualFSI());
+
+  /*--- This vector is used to get and set interface values ---*/
+  vector<passivedouble> interfaceValues;
+
+  for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
+
+  /*--- Initial values ---*/
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+
+  /*--- Variables to store the history of values at start and end of each outer iteration ---*/
+  M = interfaceValues.size();
+  MatrixXd X(M,N), Y(M,N);
+  for(unsigned long i=0; i<M; ++i) X(i,0) = interfaceValues[i];
+
+  /*--- Initial interface residual ---*/
+  StepGaussSeidel(kind_of, "IQN", iOuterIter);
+
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+  for(unsigned long i=0; i<M; ++i) Y(i,0) = interfaceValues[i];
+
+  VectorXd R = Y.col(0)-X.col(0);
+  resNorm = R.norm();
+  interface_res = 1.0; // by definition
+
+  Convergence = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT);
+
+  for (iOuterIter = 1; iOuterIter < config_container[ZONE_STRUCT]->GetnIterFSI() && !Convergence; iOuterIter++) {
+
+    unsigned long cols = min<unsigned long>(iOuterIter-1,N-1);
+    unsigned long targ = min<unsigned long>(cols+1,N-1); // for when N=1 and we recover BGS
+
+    if (cols != 0) {
+      /*--- Use history to "predict" the interface values ---*/
+      /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1) ---*/
+      MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
+
+      /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration ---*/
+      VectorXd C = H.householderQr().solve(-R);
+
+      /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1) ---*/
+      H = Y.block(0,1,M,cols)-Y.leftCols(cols);
+
+      /*--- Correct the BGS solution, delta Y's correspond 1:1 with delta R's ---*/
+      R += H*C;
+
+      /*--- Check if we need to discard data (shift left to delete oldest data) ---*/
+      if(cols == N-1) {
+        X.leftCols(N-1) = X.rightCols(N-1);
+        Y.leftCols(N-1) = Y.rightCols(N-1);
+        cols--;
+      }
+    }
+
+    /*--- Set values ---*/
+    X.col(targ) = X.col(cols)+R;
+    for(unsigned long i=0; i<M; ++i) interfaceValues[i] = X(i,targ);
+    iteration_container[ZONE_STRUCT][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+
+    /*--- Perform a BGS step ---*/
+    StepGaussSeidel(kind_of, "IQN", iOuterIter);
+
+    /*--- Get values ---*/
+    iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+    for(unsigned long i=0; i<M; ++i) Y(i,targ) = interfaceValues[i];
+
+    /*--- Compute residual and check convergence ---*/
+    R = Y.col(targ)-X.col(targ);
+    interface_res = R.norm()/resNorm;
+#ifdef HAVE_MPI
+    SU2_MPI::Bcast(&interface_res,1,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+#endif
+
+    Convergence = BGSConvergence(iOuterIter, ZONE_FLOW, ZONE_STRUCT) || interface_res<tol;
+  }
+}
 
 void CDiscAdjFSIDriver::Preprocess(unsigned short ZONE_FLOW,
                   unsigned short ZONE_STRUCT,

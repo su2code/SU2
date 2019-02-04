@@ -1211,7 +1211,8 @@ class CDiscAdjFSIDriver : public CDriver {
             *residual_flow,     /*!< \brief Stores the current residual for the flow. */
             *residual_struct,   /*!< \brief Stores the current residual for the structure. */
             *residual_flow_rel,
-            *residual_struct_rel;
+            *residual_struct_rel,
+             interface_res;     /*!< \brief Interface residual for interface solution methods. */
 
   su2double flow_criteria,
             flow_criteria_rel,
@@ -1251,19 +1252,26 @@ public:
 
   /*!
    * \brief Run a Discrete Adjoint iteration for the FSI problem.
-   * \param[in] iteration_container - Container vector with all the iteration methods.
-   * \param[in] output - Pointer to the COutput class.
-   * \param[in] integration_container - Container vector with all the integration methods.
-   * \param[in] geometry_container - Geometrical definition of the problem.
-   * \param[in] solver_container - Container vector with all the solutions.
-   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
-   * \param[in] config_container - Definition of the particular problem.
-   * \param[in] surface_movement - Surface movement classes of the problem.
-   * \param[in] grid_movement - Volume grid movement classes of the problem.
-   * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-
   void Run();
+
+   /*!
+   * \brief Perform a Block Gauss Seidel step.
+   * \param[in] kind_of - Type of objective function.
+   * \param[in] method - Name of the outer method performing the step to display on screen.
+   * \param[in] iOuterIter - Outer iteration.
+   */
+  void StepGaussSeidel(unsigned short kind_of, const string &method, unsigned long iOuterIter);
+
+   /*!
+   * \brief Solve the adjoint problem using the BGS coupling method.
+   */
+  void Run_GaussSeidel();
+
+   /*!
+   * \brief Solve the adjoint problem using the IQN-ILS coupling method.
+   */
+  void Run_InterfaceQuasiNewtonInvLeastSquares();
 
   /*!
    * \brief Iterate the direct solver for recording.
@@ -1271,7 +1279,6 @@ public:
    * \param[in] ZONE_STRUCT - zone of the structural solver.
    * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
    */
-
   void Iterate_Direct(unsigned short ZONE_FLOW, unsigned short ZONE_STRUCT, unsigned short kind_recording);
 
   /*!
