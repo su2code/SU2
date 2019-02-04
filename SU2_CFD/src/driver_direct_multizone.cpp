@@ -435,7 +435,7 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
       R *= SU2_TYPE::GetValue(alpha);
     }
     else {
-      /*--- Use history to "predicted" the interface values ---*/
+      /*--- Use history to "predict" the interface values ---*/
       /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1) ---*/
       MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
