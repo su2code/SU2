@@ -1128,7 +1128,7 @@ void CTurboIteration::Postprocess( COutput *output,
 
 }
 
-CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CIteration(config) { }
+CFEMFluidIteration::CFEMFluidIteration(CConfig *config) : CFluidIteration(config) { }
 CFEMFluidIteration::~CFEMFluidIteration(void) { }
 
 void CFEMFluidIteration::Preprocess(COutput *output,
@@ -1206,7 +1206,7 @@ void CFEMFluidIteration::Update(COutput *output,
                                 CVolumetricMovement **grid_movement,
                                 CFreeFormDefBox*** FFDBox,
                                 unsigned short val_iZone)      { }
-void CFEMFluidIteration::Monitor()     { }
+//void CFEMFluidIteration::Monitor()     { }
 void CFEMFluidIteration::Output()      { }
 void CFEMFluidIteration::Postprocess() { }
 
