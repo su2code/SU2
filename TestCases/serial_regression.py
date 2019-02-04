@@ -122,7 +122,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.571704, 6.958347, -0.000000, 1.658687] #last 4 columns
+    bluntbody.test_vals = [0.626808, 7.014695, -0.000000, 1.648024] #last 4 columns
     bluntbody.su2_exec  = "SU2_CFD"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
