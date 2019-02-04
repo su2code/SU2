@@ -718,15 +718,6 @@ public:
 	/*! 
 	 * \brief A virtual member.
 	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry_donor - Geometry of the donor zone.
-	 * \param[in] config_donor - Definition of the donor problem.
-	 */
-	virtual void MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
-			unsigned short val_iZone, unsigned short val_nZone);
-
-	/*! 
-	 * \brief A virtual member.
-	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] action - Allocate or not the new elements.		 
 	 */
 	virtual void SetBoundControlVolume(CConfig *config, unsigned short action);
@@ -1324,6 +1315,12 @@ public:
    * \param config - Config
    */
   virtual void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief A virtual member.
+   * \param config - Config
+   */
+  virtual void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief A virtual member.
@@ -1991,15 +1988,6 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
 	void MatchInterface(CConfig *config);
 
 	/*! 
-	 * \brief Mach the interface boundary condition.
-	 * \param[in] config - Definition of the particular problem.
-	 * \param[in] geometry_donor - Geometry of the donor zone.
-	 * \param[in] config_donor - Definition of the donor problem.
-	 */
-	void MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, 
-			unsigned short val_iZone, unsigned short val_nZone);
-
-	/*! 
 	 * \brief Set boundary vertex structure of the control volume.
 	 * \param[in] config - Definition of the particular problem.
 	 * \param[in] action - Allocate or not the new elements.
@@ -2465,6 +2453,12 @@ void UpdateTurboVertex(CConfig *config,unsigned short val_iZone, unsigned short 
    * \param[in] config - Definition of the particular problem.
    */
   void SetSensitivity(CConfig *config);
+
+  /*!
+   * \brief Read the sensitivity from unordered ASCII adjoint solution file and store it.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ReadUnorderedSensitivity(CConfig *config);
 
   /*!
    * \brief Get the Sensitivity at a specific point.

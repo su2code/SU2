@@ -42,6 +42,8 @@
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <iterator>
+
 /*--- Epsilon definition ---*/
 
 #define EPSILON 0.000001
@@ -16060,160 +16062,6 @@ void CPhysicalGeometry::MatchActuator_Disk(CConfig *config) {
   
 }
 
-void CPhysicalGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor,
-                                  unsigned short val_iZone, unsigned short val_nZone) {
-  
-#ifndef HAVE_MPI
-  
-  unsigned short iMarker, jMarker;
-  unsigned long iVertex, iPoint, jVertex, jPoint = 0, pPoint = 0, pGlobalPoint = 0;
-  su2double *Coord_i, *Coord_j, dist = 0.0, mindist, maxdist;
-  
-//  if (val_iZone == ZONE_0) cout << "Set zone boundary conditions (if any)." << endl;
-  
-  maxdist = 0.0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      iPoint = vertex[iMarker][iVertex]->GetNode();
-      Coord_i = node[iPoint]->GetCoord();
-      
-      mindist = 1E6;
-      for (jMarker = 0; jMarker < config_donor->GetnMarker_All(); jMarker++)
-        for (jVertex = 0; jVertex < geometry_donor->GetnVertex(jMarker); jVertex++) {
-          jPoint = geometry_donor->vertex[jMarker][jVertex]->GetNode();
-          Coord_j = geometry_donor->node[jPoint]->GetCoord();
-          if (nDim == 2) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0));
-          if (nDim == 3) dist = sqrt(pow(Coord_j[0]-Coord_i[0],2.0) + pow(Coord_j[1]-Coord_i[1],2.0) + pow(Coord_j[2]-Coord_i[2],2.0));
-//          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = node[jPoint]->GetGlobalIndex();}
-          if (dist < mindist) { mindist = dist; pPoint = jPoint; pGlobalPoint = geometry_donor->node[jPoint]->GetGlobalIndex();}
-        }
-      
-      maxdist = max(maxdist, mindist);
-      vertex[iMarker][iVertex]->SetDonorPoint(pPoint, MASTER_NODE, pGlobalPoint);
-      
-    }
-  }
-  
-#else
-  
-  unsigned short iMarker, iDim;
-  unsigned long iVertex, iPoint, pPoint = 0, jVertex, jPoint, jGlobalPoint = 0, pGlobalPoint = 0;
-  su2double *Coord_i, Coord_j[3], dist = 0.0, mindist, maxdist;
-  int iProcessor, pProcessor = 0;
-  unsigned long nLocalVertex_Zone = 0, nGlobalVertex_Zone = 0, MaxLocalVertex_Zone = 0;
-  int nProcessor = size;
-  
-  unsigned long *Buffer_Send_nVertex = new unsigned long [1];
-  unsigned long *Buffer_Receive_nVertex = new unsigned long [nProcessor];
-  
-//  if (val_iZone == ZONE_0 && rank == MASTER_NODE) cout << "Set zone boundary conditions (if any)." << endl;
-  
-  nLocalVertex_Zone = 0;
-  for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
-    for (iVertex = 0; iVertex < geometry_donor->GetnVertex(iMarker); iVertex++) {
-      iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
-      if (geometry_donor->node[iPoint]->GetDomain()) nLocalVertex_Zone ++;
-    }
-  
-  Buffer_Send_nVertex[0] = nLocalVertex_Zone;
-  
-  /*--- Send Interface vertex information --*/
-  
-  SU2_MPI::Allreduce(&nLocalVertex_Zone, &nGlobalVertex_Zone, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&nLocalVertex_Zone, &MaxLocalVertex_Zone, 1, MPI_UNSIGNED_LONG, MPI_MAX, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_nVertex, 1, MPI_UNSIGNED_LONG, Buffer_Receive_nVertex, 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  
-  su2double *Buffer_Send_Coord = new su2double [MaxLocalVertex_Zone*nDim];
-  unsigned long *Buffer_Send_Point = new unsigned long [MaxLocalVertex_Zone];
-  unsigned long *Buffer_Send_GlobalPoint = new unsigned long [MaxLocalVertex_Zone];
-  
-  su2double *Buffer_Receive_Coord = new su2double [nProcessor*MaxLocalVertex_Zone*nDim];
-  unsigned long *Buffer_Receive_Point = new unsigned long [nProcessor*MaxLocalVertex_Zone];
-  unsigned long *Buffer_Receive_GlobalPoint = new unsigned long [nProcessor*MaxLocalVertex_Zone];
-  
-  unsigned long nBuffer_Coord = MaxLocalVertex_Zone*nDim;
-  unsigned long nBuffer_Point = MaxLocalVertex_Zone;
-  
-
-  for (iVertex = 0; iVertex < MaxLocalVertex_Zone; iVertex++) {
-    Buffer_Send_Point[iVertex] = 0;
-    Buffer_Send_GlobalPoint[iVertex] = 0;
-    for (iDim = 0; iDim < nDim; iDim++)
-      Buffer_Send_Coord[iVertex*nDim+iDim] = 0.0;
-  }
-  
-  /*--- Copy coordinates and point to the auxiliar vector --*/
-  nLocalVertex_Zone = 0;
-  for (iMarker = 0; iMarker < config_donor->GetnMarker_All(); iMarker++)
-    for (iVertex = 0; iVertex < geometry_donor->GetnVertex(iMarker); iVertex++) {
-      iPoint = geometry_donor->vertex[iMarker][iVertex]->GetNode();
-      if (geometry_donor->node[iPoint]->GetDomain()) {
-        Buffer_Send_Point[nLocalVertex_Zone] = iPoint;
-        Buffer_Send_GlobalPoint[nLocalVertex_Zone] = geometry_donor->node[iPoint]->GetGlobalIndex();
-        for (iDim = 0; iDim < nDim; iDim++)
-          Buffer_Send_Coord[nLocalVertex_Zone*nDim+iDim] = geometry_donor->node[iPoint]->GetCoord(iDim);
-        nLocalVertex_Zone++;
-      }
-    }
-  
-  SU2_MPI::Allgather(Buffer_Send_Coord, nBuffer_Coord, MPI_DOUBLE, Buffer_Receive_Coord, nBuffer_Coord, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_Point, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_Point, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(Buffer_Send_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, Buffer_Receive_GlobalPoint, nBuffer_Point, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-
-  /*--- Compute the closest point to a Near-Field boundary point ---*/
-  maxdist = 0.0;
-  for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-    for (iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
-      iPoint = vertex[iMarker][iVertex]->GetNode();
-      
-      if (node[iPoint]->GetDomain()) {
-        
-        /*--- Coordinates of the boundary point ---*/
-        Coord_i = node[iPoint]->GetCoord(); mindist = 1E6; pProcessor = 0; pPoint = 0;
-        
-        /*--- Loop over all the boundaries to find the pair ---*/
-        for (iProcessor = 0; iProcessor < nProcessor; iProcessor++)
-          for (jVertex = 0; jVertex < Buffer_Receive_nVertex[iProcessor]; jVertex++) {
-            jPoint = Buffer_Receive_Point[iProcessor*MaxLocalVertex_Zone+jVertex];
-            jGlobalPoint = Buffer_Receive_GlobalPoint[iProcessor*MaxLocalVertex_Zone+jVertex];
-
-            /*--- Compute the distance ---*/
-            dist = 0.0; for (iDim = 0; iDim < nDim; iDim++) {
-              Coord_j[iDim] = Buffer_Receive_Coord[(iProcessor*MaxLocalVertex_Zone+jVertex)*nDim+iDim];
-              dist += pow(Coord_j[iDim]-Coord_i[iDim],2.0);
-            } dist = sqrt(dist);
-            
-            if (((dist < mindist) && (iProcessor != rank)) ||
-                ((dist < mindist) && (iProcessor == rank) && (jPoint != iPoint))) {
-              mindist = dist; pProcessor = iProcessor; pPoint = jPoint;
-              pGlobalPoint = jGlobalPoint;
-            }
-          }
-        
-        /*--- Store the value of the pair ---*/
-        maxdist = max(maxdist, mindist);
-        vertex[iMarker][iVertex]->SetDonorPoint(pPoint, pProcessor, pGlobalPoint);
-        
-        
-      }
-    }
-  }
-  
-  delete[] Buffer_Send_Coord;
-  delete[] Buffer_Send_Point;
-  delete[] Buffer_Send_GlobalPoint;
-  
-  delete[] Buffer_Receive_Coord;
-  delete[] Buffer_Receive_Point;
-  delete[] Buffer_Receive_GlobalPoint;
-  
-  delete[] Buffer_Send_nVertex;
-  delete[] Buffer_Receive_nVertex;
-  
-#endif
-  
-}
-
 
 void CPhysicalGeometry::SetControlVolume(CConfig *config, unsigned short action) {
   unsigned long face_iPoint = 0, face_jPoint = 0, iPoint, iElem;
@@ -19109,6 +18957,164 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   restart_file.close();
 
+  }
+  
+}
+
+void CPhysicalGeometry::ReadUnorderedSensitivity(CConfig *config) {
+  
+  /*--- This routine makes SU2_DOT more interoperable with other
+   packages so that folks can customize their workflows. For example, one
+   may want to compute flow and adjoint with package A, deform the mesh
+   and project the sensitivities with SU2, and control the actual shape
+   parameterization with package C. This routine allows SU2_DOT to read
+   in an additional format for volume sensitivities that looks like:
+    
+    x0, y0, z0, dj/dx, dj/dy, dj/dz
+    x1, y1, z1, dj/dx, dj/dy, dj/dz
+    ...
+    xN, yN, zN, dj/dx, dj/dy, dj/dz
+    
+   with N being the number of grid points. This is a format already used
+   in other packages. Note that the nodes can be in any order in the file. ---*/
+  
+  unsigned short iDim;
+  unsigned long iPoint, pointID;
+  unsigned long unmatched = 0, iPoint_Found = 0, iPoint_Ext = 0;
+
+  su2double Coor_External[3] = {0.0,0.0,0.0}, Sens_External[3] = {0.0,0.0,0.0};
+  su2double dist;
+  int rankID;
+  
+  string filename, text_line;
+  ifstream external_file;
+  ofstream sens_file;
+  
+  if (rank == MASTER_NODE)
+    cout << "Parsing unordered ASCII volume sensitivity file."<< endl;
+  
+  /*--- Allocate space for the sensitivity and initialize. ---*/
+  
+  Sensitivity = new su2double[nPoint*nDim];
+  for (iPoint = 0; iPoint < nPoint; iPoint++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Sensitivity[iPoint*nDim+iDim] = 0.0;
+    }
+  }
+  
+  /*--- Get the filename for the unordered ASCII sensitivity file input. ---*/
+  
+  filename = config->GetDV_Unordered_Sens_Filename();
+  external_file.open(filename.data(), ios::in);
+  if (external_file.fail()) {
+    SU2_MPI::Error(string("There is no unordered ASCII sensitivity file ") +
+                   filename, CURRENT_FUNCTION);
+  }
+  
+  /*--- Allocate the vectors to hold boundary node coordinates
+   and its local ID. ---*/
+  
+  vector<su2double>     Coords(nDim*nPointDomain);
+  vector<unsigned long> PointIDs(nPointDomain);
+  
+  /*--- Retrieve and store the coordinates of owned interior nodes
+   and their local point IDs. ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    PointIDs[iPoint] = iPoint;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Coords[iPoint*nDim + iDim] = node[iPoint]->GetCoord(iDim);
+  }
+  
+  /*--- Build the ADT of all interior nodes. ---*/
+  
+  CADTPointsOnlyClass VertexADT(nDim, nPointDomain,
+                                Coords.data(), PointIDs.data(), true);
+  
+  /*--- Loop over all interior mesh nodes owned by this rank and find the
+   matching point with minimum distance. Once we have the match, store the
+   sensitivities from the file for that node. ---*/
+  
+  if (VertexADT.IsEmpty()) {
+    
+    SU2_MPI::Error("No external points given to ADT.", CURRENT_FUNCTION);
+  
+  } else {
+    
+    /*--- Read the input sensitivity file and locate the point matches
+     using the ADT search, on a line-by-line basis. ---*/
+    
+    iPoint_Found = 0; iPoint_Ext  = 0;
+    while (getline (external_file, text_line)) {
+      
+      /*--- First, check that the line has 6 entries, otherwise throw out. ---*/
+      
+      istringstream point_line(text_line);
+      vector<string> tokens((istream_iterator<string>(point_line)),
+                             istream_iterator<string>());
+      
+      if (tokens.size() == 6) {
+        
+        istringstream point_line(text_line);
+        
+        /*--- Get the coordinates and sensitivity for this line. ---*/
+        
+        for (iDim = 0; iDim < nDim; iDim++) point_line >> Coor_External[iDim];
+        for (iDim = 0; iDim < nDim; iDim++) point_line >> Sens_External[iDim];
+        
+        /*--- Locate the nearest node to this external point. If it is on
+         our rank, then store the sensitivity value. ---*/
+        
+        VertexADT.DetermineNearestNode(&Coor_External[0], dist,
+                                       pointID, rankID);
+        
+        if (rankID == rank) {
+          
+          /*--- Store the sensitivities at the matched local node. ---*/
+          
+          for (iDim = 0; iDim < nDim; iDim++)
+            Sensitivity[pointID*nDim+iDim] = Sens_External[iDim];
+          
+          /*--- Keep track of how many points we match. ---*/
+          
+          iPoint_Found++;
+          
+          /*--- Keep track of points with poor matches for reporting. ---*/
+          
+          if (dist > 1e-10) unmatched++;
+          
+        }
+        
+        /*--- Increment counter for total points in the external file. ---*/
+        
+        iPoint_Ext++;
+        
+      }
+    }
+    
+    /*--- Close the external file. ---*/
+    
+    external_file.close();
+    
+    /*--- We have not received all nodes in the input file. Throw an error. ---*/
+    
+    if ((iPoint_Ext < GetGlobal_nPointDomain()) && (rank == MASTER_NODE)) {
+      sens_file.open(config->GetDV_Unordered_Sens_Filename().data(), ios::out);
+      sens_file.close();
+      SU2_MPI::Error("Not enough points in the input sensitivity file.",
+                     CURRENT_FUNCTION);
+    }
+    
+    /*--- Check for points with a poor match and report the count. ---*/
+    
+    unsigned long myUnmatched = unmatched; unmatched = 0;
+    SU2_MPI::Allreduce(&myUnmatched, &unmatched, 1,
+                       MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+    if ((unmatched > 0) && (rank == MASTER_NODE)) {
+      cout << " Warning: there are " << unmatched;
+      cout << " points with a match distance > 1e-10." << endl;
+    }
+    
   }
   
 }

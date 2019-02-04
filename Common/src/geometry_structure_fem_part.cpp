@@ -510,10 +510,9 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel_FEM(CConfig        *config,
       unsigned long nCores = size;   // Correct for the number of cores per rank.
       if(nCores > Global_nElem) {
         ostringstream message;
-        message << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
         message << "The number of cores, " << nCores;
         message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-        message << "This is not exactly an efficient use of the resources and therefore "
+        message << "This is not an efficient use of the resources and therefore "
                 << "SU2 will terminate.";
 
         SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
@@ -996,10 +995,9 @@ void CPhysicalGeometry::Read_CGNS_Format_Parallel_FEM(CConfig        *config,
   unsigned long nCores = size;   // Correct for the number of cores per rank.
   if(nCores > Global_nElem) {
     ostringstream message;
-    message << "Congratulations. You just qualified for the title \"Idiot user\"." << endl;
     message << "The number of cores, " << nCores;
     message << ", is larger than the number of elements, " << Global_nElem << "." << endl;
-    message << "This is not exactly an efficient use of the resources and therefore "
+    message << "This is not an efficient use of the resources and therefore "
             << "SU2 will terminate.";
 
     SU2_MPI::Error(message.str(), CURRENT_FUNCTION);
