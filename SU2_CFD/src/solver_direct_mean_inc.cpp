@@ -2161,6 +2161,8 @@ void CIncEulerSolver::SetNondimensionalization(CConfig *config, unsigned short i
         NonDimTable.PrintFooter();  
         break;
       }
+    } else {
+      ModelTable << "-" << "-";
     }
     
     switch (config->GetKind_FluidModel()){

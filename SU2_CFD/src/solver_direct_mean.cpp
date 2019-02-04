@@ -3919,7 +3919,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
         
       }
-      
+    } else {
+      ModelTable << "-" << "-";
     }
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
