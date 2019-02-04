@@ -120,9 +120,9 @@ CPoissonSolverFVM::CPoissonSolverFVM(CGeometry *geometry, CConfig *config) : CSo
   
   for (iPoint = 0; iPoint < nPoint; iPoint++)
     if (config->GetKind_Incomp_System()==PRESSURE_BASED) 
-        node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+        node[iPoint] = new CPoissonVariable(0.0, nDim, nVar, config);
     else 
-        node[iPoint] = new CPotentialVariable(0.0, nDim, nVar, config);
+        node[iPoint] = new CPoissonVariable(0.0, nDim, nVar, config);
 }
 
 CPoissonSolverFVM::~CPoissonSolverFVM(void) {
@@ -823,14 +823,11 @@ void CPoissonSolverFVM::Source_Residual(CGeometry *geometry, CSolver **solver_co
     numerics->SetVolume(geometry->node[iPoint]->GetVolume());
 
     /*--- Compute the source term ---*/
-    
-    Src_Term = -2.0*sin(geometry->node[iPoint]->GetCoord(0))*cos(geometry->node[iPoint]->GetCoord(1));;
         
-    if (config->GetKind_Incomp_System() == PRESSURE_BASED) {
-		Src_Term = solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux();
+    if ((config->GetKind_Incomp_System() == PRESSURE_BASED)&&(iMesh == MESH_0)) {
+		node[iPoint]->SetSourceTerm(solver_container[FLOW_SOL]->node[iPoint]->GetMassFlux());
     }
-
-    numerics->SetSourcePoisson(Src_Term);
+    numerics->SetSourcePoisson(node[iPoint]->GetSourceTerm());
     
     /*--- Compute the source residual ---*/
    

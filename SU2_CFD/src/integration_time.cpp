@@ -930,6 +930,40 @@ void CSingleGridIntegration::SetRestricted_EddyVisc(unsigned short RunTime_EqSys
 }
 
 
+
+void CSingleGridIntegration::SetRestricted_PoissonSource(unsigned short RunTime_EqSystem, CSolver *sol_fine, CSolver *sol_coarse, CGeometry *geo_fine, CGeometry *geo_coarse, CConfig *config) {
+  
+  unsigned long iVertex, Point_Fine, Point_Coarse;
+  unsigned short iMarker, iChildren;
+  su2double Area_Parent, Area_Children, PoissonSource_Fine, PoissonSource;
+  
+  /*--- Compute coarse Source term from fine solution ---*/
+  
+  for (Point_Coarse = 0; Point_Coarse < geo_coarse->GetnPointDomain(); Point_Coarse++) {
+    Area_Parent = geo_coarse->node[Point_Coarse]->GetVolume();
+    
+    PoissonSource = 0.0;
+    
+    for (iChildren = 0; iChildren < geo_coarse->node[Point_Coarse]->GetnChildren_CV(); iChildren++) {
+      Point_Fine = geo_coarse->node[Point_Coarse]->GetChildren_CV(iChildren);
+      Area_Children = geo_fine->node[Point_Fine]->GetVolume();
+      PoissonSource_Fine = sol_fine->node[Point_Fine]->GetSourceTerm();
+      PoissonSource += PoissonSource_Fine*Area_Children/Area_Parent;
+    }
+    
+    sol_coarse->node[Point_Coarse]->SetSourceTerm(PoissonSource);
+    
+  }
+  
+  
+
+  /*--- MPI the new interpolated solution (this also includes the eddy viscosity) ---*/
+  
+  sol_coarse->Set_MPI_Solution(geo_coarse, config);
+  
+}
+
+
 CStructuralIntegration::CStructuralIntegration(CConfig *config) : CIntegration(config) { }
 
 CStructuralIntegration::~CStructuralIntegration(void) { }

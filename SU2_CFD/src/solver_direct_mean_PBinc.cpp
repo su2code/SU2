@@ -3829,21 +3829,21 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	
   unsigned short iVar, jVar, iDim, jDim, nGradVar,KindBC;
   unsigned long iPoint, jPoint, iEdge, iMarker, iVertex;
-  su2double Edge_Vector[3], UnitNormal[3],proj_vector_ij,dist_ij,dist_ij_2;
+  su2double Edge_Vector[3], UnitNormal[3], proj_vector_ij, dist_ij, dist_ij_2;
   su2double *Coord_i, *Coord_j;
   su2double MassFlux_Part, Mom_Coeff[3], *Vel_i, *Vel_j,*Normal;
-  su2double Criteria,Area,Vol;
-  su2double Mom_Coeff_i[3],Mom_Coeff_j[3];
-  su2double GradP_f[3],GradP_in[3],GradP_proj;
-  su2double *Flow_Dir,Flow_Dir_Mag,Vel_Mag,Net_Mass,alfa;
+  su2double Criteria, Area, Vol;
+  su2double Mom_Coeff_i[3], Mom_Coeff_j[3];
+  su2double GradP_f[3], GradP_in[3], GradP_proj;
+  su2double *Flow_Dir, Flow_Dir_Mag, Vel_Mag, Net_Mass, alfa, Mass_In, Mass_Out;
   string Marker_Tag;
-  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   
   
-  
+  /*--- Initialize mass flux to zero ---*/
   for (iPoint = 0; iPoint < nPoint; iPoint++) node[iPoint]->SetMassFluxZero();
   
-     /*--- Loop interior edges ---*/
+  /*--- Loop interior edges ---*/
   for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
     iPoint = geometry->edge[iEdge]->GetNode(0);
     jPoint = geometry->edge[iEdge]->GetNode(1);
@@ -3906,18 +3906,21 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	if (geometry->node[jPoint]->GetDomain())
 	  node[jPoint]->SubtractMassFlux(MassFlux_Part);
   }
-    /*--- Loop boundary edges ---*/
+    
+  /*--- Mass flux correction for outflow ---*/
+  Mass_In = 0.0; Mass_Out = 0.0;  
+  
+  /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 	
-	  KindBC = config->GetMarker_All_KindBC(iMarker);
-	  Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+	KindBC = config->GetMarker_All_KindBC(iMarker);
+	Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
     
     switch (KindBC) {
 		
-		/*--- Wall boundaries have zero mass flux (irrespective of grid movement) ---*/
 		case EULER_WALL: case ISOTHERMAL: case HEAT_FLUX: case SYMMETRY_PLANE:
-		  MassFlux_Part = 0.0 ;
-		 
+		/*--- Wall boundaries have zero mass flux (irrespective of grid movement) ---*/
+		  MassFlux_Part = 0.0 ;	 
 		break;
 		
 		case INLET_FLOW:
@@ -3948,6 +3951,9 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
                MassFlux_Part += GetDensity_Inf()*Vel_Mag*Flow_Dir[iDim]*Area;
 
              node[iPoint]->SubtractMassFlux(MassFlux_Part);
+             
+             /*--- Sum up the mass flux entering to be used for mass flow correction at outflow ---*/
+             Mass_In += fabs(MassFlux_Part);
 		   }
          }
 		
@@ -3977,14 +3983,15 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
            if (geometry->node[iPoint]->GetDomain()) {		
 		     Normal = geometry->vertex[iMarker][iVertex]->GetNormal(); 
 		     
-		   MassFlux_Part = 0.0;
-           for (iDim = 0; iDim < nDim; iDim++) 
-              MassFlux_Part -= GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
+		     MassFlux_Part = 0.0;
+             for (iDim = 0; iDim < nDim; iDim++) 
+                MassFlux_Part -= GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
              
-             node[iPoint]->AddMassFlux(MassFlux_Part); 
+              /*--- Sum up the mass flux leaving to be used for mass flow correction at outflow ---*/
+              Mass_Out += fabs(MassFlux_Part);
 		   }
          }
-		
+         
 		break;
 		
 		default:
@@ -3995,11 +4002,35 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 	}
   }
   
+  /*--- Mass flux correction for outflow ---*/
+  /*--- Works only when outflow is fully developed ---*/
+  for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+	
+	KindBC = config->GetMarker_All_KindBC(iMarker);
+	Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
+    
+    if (KindBC == OUTLET_FLOW) {
+		for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           if (geometry->node[iPoint]->GetDomain()) {		
+		     Normal = geometry->vertex[iMarker][iVertex]->GetNormal(); 
+		     
+		     MassFlux_Part = 0.0;
+             for (iDim = 0; iDim < nDim; iDim++) 
+                MassFlux_Part -= GetDensity_Inf()*node[iPoint]->GetVelocity(iDim)*Normal[iDim];
+            
+             MassFlux_Part = MassFlux_Part*(Mass_In/Mass_Out);
+             
+             node[iPoint]->AddMassFlux(MassFlux_Part);
+		   }
+        }
+	}
+  }
+  
   ResMassFlux = 0.0;
   Net_Mass = 0.0;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  ResMassFlux += node[iPoint]->GetMassFlux()*node[iPoint]->GetMassFlux();
-	  Net_Mass += node[iPoint]->GetMassFlux();
   }
   
   
@@ -4246,9 +4277,10 @@ void CPBIncEulerSolver::BC_Far_Field(CGeometry *geometry, CSolver **solver_conta
 void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
                             CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim,iVar;
-  unsigned long iVertex, iPoint,total_index;
+  unsigned long iVertex, iPoint,total_index, Point_Normal;
   su2double *Flow_Dir, Vel_Mag, Area;
   su2double *V_inlet = new su2double[nDim];
+  su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -4292,7 +4324,26 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
           Jacobian.DeleteValsRowi(total_index);
         }
       }
+      
+      /*--- Compute closest normal neighbor ---*/
         
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[Point_Normal]->GetCoord();
+      delP = 0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+        delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+	  }
+     
+      Pressure_i = Pressure_j + delP;
+      
+      node[iPoint]->SetPressure_val(Pressure_i);
     }
   }
   
@@ -4306,9 +4357,10 @@ void CPBIncEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_container,
                              CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker) {
   unsigned short iDim,iVar,jDim;
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex, iPoint, Point_Normal;
   su2double Area, yCoordRef, yCoord,proj_vel;
   su2double *V_outlet, *V_domain, P_Outlet, Face_Flux, Flux0;
+  su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -4342,10 +4394,30 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Retrieve the specified back pressure for this outlet. ---*/
 
-      P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+      //P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
       /*--- The pressure is prescribed at the outlet. ---*/
-	   node[iPoint]->SetPressure_val(P_Outlet);
+	  //node[iPoint]->SetPressure_val(P_Outlet);
+	  
+	  /*--- Compute closest normal neighbor ---*/
+        
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[Point_Normal]->GetCoord();
+      delP = 0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+        delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+	  }
+     
+      Pressure_i = Pressure_j + delP;
+      
+      node[iPoint]->SetPressure_val(Pressure_i);
       
       for (iVar = 0; iVar < nVar; iVar++)   
          Residual[iVar] = 0.0;
@@ -5400,9 +5472,10 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 
 void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
 unsigned short iDim, iVar, jVar;// Wall_Function;
-  unsigned long iVertex, iPoint, total_index;
+  unsigned long iVertex, iPoint, total_index, Point_Normal;
   
   su2double *GridVel, *Normal, Area, Wall_HeatFlux;
+  su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
 
   bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement = config->GetGrid_Movement();
@@ -5469,6 +5542,26 @@ unsigned short iDim, iVar, jVar;// Wall_Function;
           Jacobian.DeleteValsRowi(total_index);
         }
       }
+      
+      /*--- Compute closest normal neighbor ---*/
+        
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+      /*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+      Coord_i = geometry->node[iPoint]->GetCoord();
+      Coord_j = geometry->node[Point_Normal]->GetCoord();
+      delP = 0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+        delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+	  }
+     
+      Pressure_i = Pressure_j + delP;
+      
+      node[iPoint]->SetPressure_val(Pressure_i);
       
     }
   }

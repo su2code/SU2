@@ -2412,6 +2412,8 @@ public:
   
   virtual void SetMassFluxZero();
   
+  virtual void SetMassFlux(su2double val_MassFlux);
+  
   virtual void AddMassFlux(su2double val_MassFlux);
   
   virtual void SubtractMassFlux(su2double val_MassFlux);
@@ -2425,6 +2427,10 @@ public:
   virtual su2double GetPoisson_Coeff();
   
   virtual void SetPoisson_Coeff(su2double val_Poisson_Coeff);
+  
+  virtual void SetSourceTerm(su2double val_SourceTerm);
+  
+  virtual su2double GetSourceTerm();
 
 };
 
@@ -2457,20 +2463,20 @@ public:
 };
 
 /*!
- * \class CPotentialVariable
+ * \class CPoissonVariable
  * \brief Main class for defining the variables of the potential solver.
  * \ingroup Potential_Flow_Equation
  * \author F. Palacios
  */
-class CPotentialVariable : public CVariable {
-  su2double *Charge_Density;
+class CPoissonVariable : public CVariable {
+  su2double SourceTerm;
   su2double Poisson_Coeff;
 public:
   
   /*!
    * \brief Constructor of the class.
    */
-  CPotentialVariable(void);
+  CPoissonVariable(void);
   
   /*!
    * \overload
@@ -2479,28 +2485,20 @@ public:
    * \param[in] val_nvar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CPotentialVariable(su2double val_potential, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
+  CPoissonVariable(su2double val_SourceTerm, unsigned short val_nDim, unsigned short val_nvar, CConfig *config);
   
   /*!
    * \brief Destructor of the class.
    */
-  ~CPotentialVariable(void);
-  
-  /*!
-   * \brief A virtual member.
-   */
-  su2double* GetChargeDensity();
-  
-  /*!
-   * \brief A virtual member.
-   * \param[in] positive_charge - Mass density of positive charge.
-   * \param[in] negative_charge - Mass density of negative charge.
-   */
-  void SetChargeDensity(su2double positive_charge, su2double negative_charge);
+  ~CPoissonVariable(void);
   
   su2double GetPoisson_Coeff();
   
   void SetPoisson_Coeff(su2double val_Poisson_Coeff);
+  
+  void SetSourceTerm(su2double val_SourceTerm);
+  
+  su2double GetSourceTerm();
   
 };
 
@@ -4090,6 +4088,14 @@ public:
    * \return Value of the projected velocity.
    */  
   void AddMassFlux(su2double val_flux);
+  
+  /*!
+   * \brief Get the mass flux 
+   * \param[in] val_density - Direction of projection.
+   * \return Value of the projected velocity.
+   */  
+  void SetMassFlux(su2double val_flux);
+  
   
   /*!
    * \brief Get the mass flux 

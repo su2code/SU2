@@ -705,6 +705,8 @@ inline void CVariable::SetMassFluxZero(){  }
 
 inline void CVariable::AddMassFlux(su2double val_MassFlux){  }
 
+inline void CVariable::SetMassFlux(su2double val_MassFlux){  }
+
 inline void CVariable::SubtractMassFlux(su2double val_MassFlux){  }
 
 inline su2double CVariable::GetMassFlux() {}
@@ -716,6 +718,10 @@ inline su2double CVariable::GetPoisson_Coeff() { }
 inline void CVariable::SetPoisson_Coeff(su2double val_Poisson_Coeff){ }
 
 inline void CVariable::Set_Mom_Coeff(su2double *val_Mom_Coeff) {  }
+
+inline void CVariable::SetSourceTerm(su2double val_SourceTerm) {  }
+  
+inline su2double CVariable::GetSourceTerm() {  }
 
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
@@ -1119,6 +1125,8 @@ inline void CPBIncEulerVariable::SetMassFluxZero(){ MassFlux = 0.0 ; }
 
 inline void CPBIncEulerVariable::AddMassFlux(su2double val_MassFlux){ MassFlux += val_MassFlux ; }
 
+inline void CPBIncEulerVariable::SetMassFlux(su2double val_MassFlux){ MassFlux = val_MassFlux ; }
+
 inline void CPBIncEulerVariable::SubtractMassFlux(su2double val_MassFlux){ MassFlux -= val_MassFlux ; }
 
 inline su2double CPBIncEulerVariable::GetMassFlux() {return MassFlux;}
@@ -1391,13 +1399,13 @@ inline su2double* CWaveVariable::GetSolution_Direct() { return Solution_Direct;}
 
 inline void CWaveVariable::SetSolution_Direct(su2double *val_solution_direct) { for (unsigned short iVar = 0; iVar < nVar; iVar++) Solution_Direct[iVar] += val_solution_direct[iVar];}
 
-inline su2double* CPotentialVariable::GetChargeDensity() { return Charge_Density;}
+inline void CPoissonVariable :: SetPoisson_Coeff(su2double val_Poisson_Coeff) { Poisson_Coeff = val_Poisson_Coeff ; }
 
-inline void CPotentialVariable::SetChargeDensity(su2double positive_charge, su2double negative_charge) {Charge_Density[0] = positive_charge; Charge_Density[1] = negative_charge;}
+inline su2double CPoissonVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
 
-inline void CPotentialVariable :: SetPoisson_Coeff(su2double val_Poisson_Coeff) { Poisson_Coeff = val_Poisson_Coeff ; }
+inline void CPoissonVariable::SetSourceTerm(su2double val_SourceTerm) { SourceTerm = val_SourceTerm ; }
 
-inline su2double CPotentialVariable :: GetPoisson_Coeff() { return Poisson_Coeff;}
+inline su2double CPoissonVariable::GetSourceTerm() { return SourceTerm;}
 
 inline void CTurbSAVariable::SetHarmonicBalance_Source(unsigned short val_var, su2double val_source) { HB_Source[val_var] = val_source; }
 

@@ -37,15 +37,9 @@
 
 #include "../include/variable_structure.hpp"
 
-CPotentialVariable::CPotentialVariable(void) : CVariable() {
-  
-  /*--- Array initialization ---*/
-  Charge_Density = NULL;
-  
-}
+CPoissonVariable::CPoissonVariable(void) : CVariable() { }
 
-CPotentialVariable::CPotentialVariable(su2double val_potential,
-                                       unsigned short val_nDim,
+CPoissonVariable::CPoissonVariable(su2double val_SourceTerm, unsigned short val_nDim,
                                        unsigned short val_nvar,
                                        CConfig *config) : CVariable(val_nDim,
                                                                     val_nvar,
@@ -54,6 +48,8 @@ CPotentialVariable::CPotentialVariable(su2double val_potential,
   
   Residual_Old = new su2double [nVar];
   Residual_Sum = new su2double [nVar];
+  
+  SourceTerm = 0.0;
   
   /*--- Allocate residual structures ---*/
   
@@ -75,15 +71,12 @@ CPotentialVariable::CPotentialVariable(su2double val_potential,
   
   /*--- Initialization of variables ---*/
   for (iVar = 0; iVar< nVar; iVar++) {
-    Solution[iVar] = val_potential;
-    Solution_Old[iVar] = val_potential;
+    Solution[iVar] = 0.0;
+    Solution_Old[iVar] = 0.0;
   }
-  Charge_Density = new su2double [2];
-  
 }
 
-CPotentialVariable::~CPotentialVariable(void) {
-  
-  if (Charge_Density != NULL) delete [] Charge_Density;
-  
+CPoissonVariable::~CPoissonVariable(void) {
+	
+	int   iDim;
 }
