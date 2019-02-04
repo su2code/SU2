@@ -63,7 +63,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");    
+    RequestedVolumeFields.push_back("SOLUTION");    
     RequestedVolumeFields.push_back("SENSITIVITIES");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
@@ -93,7 +93,7 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
   /// END_GROUP
   
-  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint density.
   AddHistoryOutput("RMS_ADJ_DENSITY",    "rms[A_Rho]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
   /// DESCRIPTION: Root-mean square residual of the adjoint momentum x-component.
@@ -119,7 +119,7 @@ void CDiscAdjFlowOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the adjoint density.
   AddHistoryOutput("MAX_ADJ_DENSITY",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint momentum x-component
@@ -231,28 +231,28 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
   /// END_GROUP
   
-  /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
+  /// BEGIN_GROUP: SOLUTION, DESCRIPTION: The SOLUTION variables of the adjoint solver.
   /// DESCRIPTION: Adjoint density.
-  AddVolumeOutput("ADJ_DENSITY",    "Adjoint_Density",    "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_DENSITY",    "Adjoint_Density",    "SOLUTION"); 
   /// DESCRIPTION: Adjoint momentum x-component.
-  AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_MOMENTUM-X", "Adjoint_Momentum_x", "SOLUTION"); 
   /// DESCRIPTION: Adjoint momentum y-component.
-  AddVolumeOutput("ADJ_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_MOMENTUM-Y", "Adjoint_Momentum_y", "SOLUTION"); 
   if (nDim == 3)
     /// DESCRIPTION: Adjoint momentum z-component.
-    AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE"); 
+    AddVolumeOutput("ADJ_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION"); 
   /// DESCRIPTION: Adjoint energy.
-  AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "CONSERVATIVE");           
+  AddVolumeOutput("ADJ_ENERGY", "Adjoint_Energy", "SOLUTION");           
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Adjoint nu tilde.
-    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE"); 
+    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION"); 
     break;  
   case SST:
     /// DESCRIPTION: Adjoint kinetic energy.
-    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "CONSERVATIVE"); 
+    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "SOLUTION"); 
     /// DESCRIPTION: Adjoint dissipation.
-    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "CONSERVATIVE");  
+    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION");  
     break;
   default: break;
   }
@@ -270,7 +270,7 @@ void CDiscAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the conservative variables. 
+  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables. 
   /// DESCRIPTION: Residual of the adjoint density.
   AddVolumeOutput("RES_ADJ_DENSITY",    "Residual_Adjoint_Density",    "RESIDUAL");  
   /// DESCRIPTION: Residual of the adjoint momentum x-component.
