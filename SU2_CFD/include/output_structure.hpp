@@ -421,15 +421,6 @@ public:
    * \param[in] Elem_Type - VTK index of the element type being merged.
    */
   void MergeSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
-  
-  /*!
-   * \brief Merge the solution into a data structure used for output file writing.
-   * \param[in] config - Definition of the particular problem.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] solution - Flow, adjoint or linearized solution.
-   * \param[in] val_nZone - iZone index.
-   */
-  void MergeSolution(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone);
 
   /*!
    * \brief Merge the FEM solution into a data structure used for output file writing.
