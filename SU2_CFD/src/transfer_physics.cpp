@@ -53,8 +53,7 @@ void CTransfer_FlowTraction::Preprocess(CConfig *flow_config) {
 
   /*--- Store if consistent interpolation is in use, in which case we need to transfer stresses
         and integrate on the structural side rather than directly transferring forces. ---*/
-  consistent_interpolation = !flow_config->GetMatchingMesh() && (
-                             !flow_config->GetConservativeInterpolation() ||
+  consistent_interpolation = (!flow_config->GetConservativeInterpolation() ||
                              (flow_config->GetKindInterpolation() == WEIGHTED_AVERAGE));
 
   /*--- Compute the constant factor to dimensionalize pressure and shear stress. ---*/
@@ -514,7 +513,34 @@ CTransfer_SlidingInterface::CTransfer_SlidingInterface(void) : CTransfer() {
 
 }
 
-CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer(val_nVar, val_nConst, config) {
+CTransfer_SlidingInterface::CTransfer_SlidingInterface(unsigned short val_nVar, unsigned short val_nConst, CConfig *config) : CTransfer() {
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  Physical_Constants = NULL;
+  Donor_Variable     = NULL;
+  Target_Variable    = NULL;
+
+  unsigned short iVar;
+
+  Physical_Constants = new su2double[val_nConst];
+  Donor_Variable     = new su2double[val_nVar];
+
+  Target_Variable    = new su2double[val_nVar+1];
+
+  valAggregated      = false;
+
+  nVar = val_nVar;
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Donor_Variable[iVar]  = 0.0;
+    Target_Variable[iVar] = 0.0;
+  }
+
+  for (iVar = 0; iVar < val_nConst; iVar++) {
+    Physical_Constants[iVar] = 0.0;
+  }
 
 }
 
@@ -551,6 +577,23 @@ void CTransfer_SlidingInterface::GetDonor_Variable(CSolver *donor_solution, CGeo
     Donor_Variable[iVar] = donor_solution->node[Point_Donor]->GetPrimitive(iVar);
 
   }
+}
+
+void CTransfer_SlidingInterface::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                          unsigned long Vertex_Target, unsigned short nDonorPoints) {
+
+  target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, nDonorPoints); // This is to allocate
+  target_solution->SetSlidingStateStructure(Marker_Target, Vertex_Target);
+  target_solution->SetnSlidingStates(Marker_Target, Vertex_Target, 0); // Reset counter to 0
+
+}
+
+void CTransfer_SlidingInterface::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                                        su2double donorCoeff){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+      Target_Variable[iVar] = Buffer_Bcast_Variables[ indexPoint_iVertex*nVar + iVar ];
+
+  Target_Variable[nVar] = donorCoeff;
 }
 
 void CTransfer_SlidingInterface::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
