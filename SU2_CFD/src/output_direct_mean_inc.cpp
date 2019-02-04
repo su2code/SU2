@@ -90,7 +90,7 @@ CIncFlowOutput::CIncFlowOutput(CConfig *config, CGeometry *geometry, CSolver **s
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");
+    RequestedVolumeFields.push_back("SOLUTION");
     RequestedVolumeFields.push_back("PRIMITIVE");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
@@ -125,7 +125,7 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Currently used wall-clock time.
   AddHistoryOutput("PHYS_TIME",   "Time(min)", FORMAT_SCIENTIFIC, "PHYS_TIME"); 
   
-  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the pressure.
   AddHistoryOutput("RMS_PRESSURE",   "rms[P]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity x-component.  
@@ -133,18 +133,26 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Root-mean square residual of the velocity y-component.  
   AddHistoryOutput("RMS_VELOCITY-Y", "rms[V]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the velocity z-component.  
-  AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("RMS_VELOCITY-Z", "rms[W]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
-  AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-  AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
-  AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  if (heat || weakly_coupled_heat) AddHistoryOutput("RMS_HEAT", "rms[T]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+  
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
+    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    break;  
+  case SST:
+    /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
+    AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
+    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    break;
+  default: break;
+  }
   /// END_GROUP
   
-  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the pressure.
   AddHistoryOutput("MAX_PRESSURE",   "max[P]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity x-component.   
@@ -152,57 +160,46 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Maximum residual of the velocity y-component.   
   AddHistoryOutput("MAX_VELOCITY-Y", "max[V]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the velocity z-component.   
-  AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
+  if (nDim == 3) AddHistoryOutput("MAX_VELOCITY-Z", "max[W]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-  AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-  AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-  AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);  
-  /// END_GROUP
+  if (heat || weakly_coupled_heat) AddHistoryOutput("MAX_HEAT", "max[T]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
   
-  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
-  /// DESCRIPTION: BGS residual of the pressure.
-  AddHistoryOutput("BGS_PRESSURE",   "bgs[P]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of the momentum x-component.  
-  AddHistoryOutput("BGS_VELOCITY-X", "bgs[U]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of the momentum x-component.  
-  AddHistoryOutput("BGS_VELOCITY-Y", "bgs[V]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of the momentum x-component.  
-  AddHistoryOutput("BGS_VELOCITY-Z", "bgs[W]", FORMAT_FIXED,   "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: Maximum residual of the temperature.
-  AddHistoryOutput("BGS_HEAT", "bgs[T]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of nu tilde (SA model).  
-  AddHistoryOutput("BGS_NU_TILDE",       "bgs[nu]", FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of kinetic energy (SST model).    
-  AddHistoryOutput("BGS_KINETIC_ENERGY", "bgs[k]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
-  /// DESCRIPTION: BGS residual of the dissipation (SST model).    
-  AddHistoryOutput("BGS_DISSIPATION",    "bgs[w]",  FORMAT_FIXED, "BGS_RES", TYPE_RESIDUAL);
+  switch(turb_model){
+  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
+    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
+    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    break;  
+  case SST:
+    /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
+    AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
+    /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
+    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
+    break;
+  default: break;
+  }
   /// END_GROUP
 
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
   /// DESCRIPTION: Drag coefficient 
-  AddHistoryOutput("DRAG",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("DRAG",       "CD",   FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Lift coefficient 
-  AddHistoryOutput("LIFT",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("LIFT",       "CL",   FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient   
-  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("SIDEFORCE",  "CSF",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis    
-  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-X",   "CMx",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis    
-  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Y",   "CMy",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis      
-  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("MOMENT-Z",   "CMz",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in x direction    
-  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-X",    "CFx",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in y direction    
-  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Y",    "CFy",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in z direction      
-  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("FORCE-Z",    "CFz",  FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio
-  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF", TYPE_COEFFICIENT);
+  AddHistoryOutput("EFFICIENCY", "CEff", FORMAT_FIXED, "AERO_COEFF", TYPE_COEFFICIENT);
   /// END_GROUP
  
   /// BEGIN_GROUP: HEAT_COEFF, DESCRIPTION: Heat coefficients on all surfaces set with MARKER_MONITORING.
@@ -222,25 +219,25 @@ void CIncFlowOutput::SetHistoryOutputFields(CConfig *config){
   }  
   
   /// DESCRIPTION: Drag coefficient   
-  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("DRAG_ON_SURFACE",       "CD",   FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Lift coefficient   
-  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("LIFT_ON_SURFACE",       "CL",   FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Sideforce coefficient     
-  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("SIDEFORCE_ON_SURFACE",  "CSF",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the x-axis      
-  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-X_ON_SURFACE",   "CMx",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the y-axis      
-  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Y_ON_SURFACE",   "CMy",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Moment around the z-axis        
-  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("MOMENT-Z_ON_SURFACE",   "CMz",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in x direction      
-  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-X_ON_SURFACE",    "CFx",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in y direction      
-  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Y_ON_SURFACE",    "CFy",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Force in z direction        
-  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("FORCE-Z_ON_SURFACE",    "CFz",  FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// DESCRIPTION: Lift-to-drag ratio  
-  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_SCIENTIFIC, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
+  AddHistoryOutputPerSurface("EFFICIENCY_ON_SURFACE", "CEff", FORMAT_FIXED, "AERO_COEFF_SURF", Marker_Monitoring, TYPE_COEFFICIENT);
   /// END_GROUP 
   
   /// DESCRIPTION: Angle of attack  
@@ -368,30 +365,12 @@ inline void CIncFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
     break;
   }
   
-  if (config[val_iZone]->GetMultizone_Problem()){
-    SetHistoryOutputValue("BGS_PRESSURE", log10(flow_solver->GetRes_BGS(0)));
-    SetHistoryOutputValue("BGS_VELOCITY-X", log10(flow_solver->GetRes_BGS(1)));
-    SetHistoryOutputValue("BGS_VELOCITY-Y", log10(flow_solver->GetRes_BGS(2)));
-    if (nDim == 3) SetHistoryOutputValue("BGS_VELOCITY-Z", log10(flow_solver->GetRes_BGS(3)));
-    
-    switch(turb_model){
-    case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-      SetHistoryOutputValue("BGS_NU_TILDE", log10(turb_solver->GetRes_BGS(0)));
-      break;  
-    case SST:
-      SetHistoryOutputValue("BGS_KINETIC_ENERGY", log10(turb_solver->GetRes_BGS(0)));
-      SetHistoryOutputValue("BGS_DISSIPATION",    log10(turb_solver->GetRes_BGS(1)));
-      break;
-    }
-  }
-  
   if (weakly_coupled_heat){
     SetHistoryOutputValue("HEATFLUX",     heat_solver->GetTotal_HeatFlux());
     SetHistoryOutputValue("HEATFLUX_MAX", heat_solver->GetTotal_MaxHeatFlux());
     SetHistoryOutputValue("TEMPERATURE",  heat_solver->GetTotal_AvgTemperature());
     SetHistoryOutputValue("RMS_HEAT",         log10(heat_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("MAX_HEAT",         log10(heat_solver->GetRes_Max(0)));
-    if (config[val_iZone]->GetMultizone_Problem()) {SetHistoryOutputValue("BGS_HEAT", log10(heat_solver->GetRes_BGS(0)));}
   }
   if (heat){
     SetHistoryOutputValue("HEATFLUX",     flow_solver->GetTotal_HeatFlux());
@@ -469,23 +448,23 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
   
-  // Conservative variables
-  AddVolumeOutput("PRESSURE",   "Pressure",   "CONSERVATIVE");
-  AddVolumeOutput("VELOCITY-X", "Velocity_x", "CONSERVATIVE");
-  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "CONSERVATIVE");
-  if (nDim == 3)
-    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "CONSERVATIVE");
-  if (config->GetEnergy_Equation())
-    AddVolumeOutput("TEMPERATURE",  "Temperature","CONSERVATIVE");  
+  // SOLUTION variables
+  AddVolumeOutput("PRESSURE",   "Pressure",   "SOLUTION");
+  AddVolumeOutput("VELOCITY-X", "Velocity_x", "SOLUTION");
+  AddVolumeOutput("VELOCITY-Y", "Velocity_y", "SOLUTION");
+  if (nDim == 3) 
+    AddVolumeOutput("VELOCITY-Z", "Velocity_z", "SOLUTION");
+  if (heat || weakly_coupled_heat) 
+    AddVolumeOutput("TEMPERATURE",  "Temperature","SOLUTION");  
   
   switch(config->GetKind_Turb_Model()){
   case SST:
-    AddVolumeOutput("TKE", "TKE", "CONSERVATIVE");
-    AddVolumeOutput("OMEGA", "Omega", "CONSERVATIVE");
+    AddVolumeOutput("TKE", "TKE", "SOLUTION");
+    AddVolumeOutput("OMEGA", "Omega", "SOLUTION");
     break;
   case SA: case SA_COMP: case SA_E: 
   case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "CONSERVATIVE");
+    AddVolumeOutput("NU_TILDE", "Nu_Tilde", "SOLUTION");
     break;
   case NONE:
     break;
@@ -590,10 +569,14 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
 void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
 
   CVariable* Node_Flow = solver[FLOW_SOL]->node[iPoint]; 
+  CVariable* Node_Heat = NULL; 
   CVariable* Node_Turb = NULL;
   
   if (config->GetKind_Turb_Model() != NONE){
     Node_Turb = solver[TURB_SOL]->node[iPoint]; 
+  }
+  if (weakly_coupled_heat){
+    Node_Heat = solver[HEAT_SOL]->node[iPoint];
   }
   
   CPoint*    Node_Geo  = geometry->node[iPoint];
@@ -608,10 +591,11 @@ void CIncFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolve
   SetVolumeOutputValue("VELOCITY-Y", iPoint, Node_Flow->GetSolution(2));
   if (nDim == 3){
     SetVolumeOutputValue("VELOCITY-Z", iPoint, Node_Flow->GetSolution(3));
-    SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(4));
+    if (heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(4));
   } else {
-    SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(3));    
+    if (heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Flow->GetSolution(3));
   }
+  if (weakly_coupled_heat) SetVolumeOutputValue("TEMPERATURE",     iPoint, Node_Heat->GetSolution(0));
   
   switch(config->GetKind_Turb_Model()){
   case SST:
