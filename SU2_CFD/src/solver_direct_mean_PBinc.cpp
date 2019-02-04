@@ -4043,7 +4043,7 @@ void CPBIncEulerSolver::SetPoissonSourceTerm(CGeometry *geometry, CSolver **solv
 
 void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_container, CConfig *config){
 	
-  unsigned long iEdge, iPoint, jPoint, iMarker, iVertex;
+  unsigned long iEdge, iPoint, jPoint, iMarker, iVertex, Point_Normal;
   unsigned short iDim, iVar, KindBC;
   su2double **vel_corr, vel_corr_i, vel_corr_j, vel_corr_avg;
   su2double Edge_Vec[3], alpha_vel,dist_ij_2;
@@ -4051,6 +4051,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   su2double Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
   su2double alpha_p;//This should be config->getrelaxation (like)
   string Marker_Tag;
+  su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
 	
   
   /*--- Pressure Corrections ---*/
@@ -4088,13 +4089,36 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
     switch (KindBC) {
 		
 		case OUTLET_FLOW:
-		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+		 /*for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
            if (geometry->node[iPoint]->GetDomain()) {
 			   Current_Pressure = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 		       node[iPoint]->SetPressure_val(Current_Pressure);
 		   }
+         }*/
+         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
+           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+           /*--- Compute closest normal neighbor ---*/
+        
+			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+			Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+			/*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+			Coord_i = geometry->node[iPoint]->GetCoord();
+			Coord_j = geometry->node[Point_Normal]->GetCoord();
+			delP = 0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+			}
+     
+			Pressure_i = Pressure_j + delP;
+      
+			node[iPoint]->SetPressure_val(Pressure_i);
          }
+         
 		break;
 		
 		case INLET_FLOW:
@@ -4106,6 +4130,25 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 		     for (iDim = 0; iDim < nDim; iDim++) 
                  vel_corr[iPoint][iDim] = 0.0;
 		   }
+		   /*--- Compute closest normal neighbor ---*/
+        
+			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+			Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+			/*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+			Coord_i = geometry->node[iPoint]->GetCoord();
+			Coord_j = geometry->node[Point_Normal]->GetCoord();
+			delP = 0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+			}
+     
+			Pressure_i = Pressure_j + delP;
+      
+			node[iPoint]->SetPressure_val(Pressure_i);
          }
 		break;
 		
@@ -4118,6 +4161,26 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
                  vel_corr[iPoint][iDim] = 0.0;
 		      }
 	       }
+	       
+	       /*--- Compute closest normal neighbor ---*/
+        
+			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
+			Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+			/*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+			Coord_i = geometry->node[iPoint]->GetCoord();
+			Coord_j = geometry->node[Point_Normal]->GetCoord();
+			delP = 0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+			}
+     
+			Pressure_i = Pressure_j + delP;
+      
+			node[iPoint]->SetPressure_val(Pressure_i);
 	      }
 		break;
 		
