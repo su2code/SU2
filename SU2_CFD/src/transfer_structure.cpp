@@ -361,7 +361,7 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
 
@@ -379,7 +379,6 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
         if (target_geometry->node[Point_Target]->GetDomain()) {
           TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
-          Point_Target_Check = -1;
           
           InitializeTarget_Variable(target_solution, Marker_Target, iVertex, nDonorPoints);
           
@@ -396,8 +395,6 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
            
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
            
-            Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
-
             /*--- Recover the Target_Variable from the buffer of variables ---*/
             RecoverTarget_Variable(indexPoint_iVertex, Buffer_Bcast_Variables, donorCoeff);
 
