@@ -124,7 +124,7 @@ def main():
     bluntbody.cfg_dir   = "euler/bluntbody"
     bluntbody.cfg_file  = "blunt.cfg"
     bluntbody.test_iter = 20
-    bluntbody.test_vals = [0.571704, 6.958348, -0.000000, 1.658689] #last 4 columns
+    bluntbody.test_vals = [0.626808, 7.014695, -0.000000, 1.648026] #last 4 columns
     bluntbody.su2_exec  = "parallel_computation.py -f"
     bluntbody.timeout   = 1600
     bluntbody.tol       = 0.00001
