@@ -134,15 +134,15 @@ CDriver::CDriver(char* confFile,
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------- Geometry Preprocessing ------------------------" << endl;
 
-    /*--- Determine whether or not the FEM solver is used, which decides the
-     type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
-    fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)         ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)          ||
-                  (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)           ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-                  (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+  /*--- Determine whether or not the FEM solver is used, which decides the
+   type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+  fem_solver = ((config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
+                (config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                (config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
 
   if( fem_solver ) {
     switch( config_container[ZONE_0]->GetKind_FEM_Flow() ) {
@@ -3413,14 +3413,6 @@ void CDriver::Interface_Preprocessing() {
         /*--- Match Zones ---*/
       if (rank == MASTER_NODE) cout << "Setting coupling ";
 
-        /*--- If the mesh is matching: match points ---*/
-      if ( config_container[donorZone]->GetMatchingMesh() ) {
-        if (rank == MASTER_NODE) 
-            cout << "between matching meshes. " << endl;
-        geometry_container[donorZone][INST_0][MESH_0]->MatchZone(config_container[donorZone], geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], donorZone, nZone);
-        }
-        /*--- Else: interpolate ---*/
-        else {
           bool conservative_interp = config_container[donorZone]->GetConservativeInterpolation();
           
           /*--- Conditions for conservative interpolation are not met, we cannot fallback on the consistent approach
@@ -3428,7 +3420,7 @@ void CDriver::Interface_Preprocessing() {
           if ( conservative_interp && targetZone == 0 && structural_target )
             SU2_MPI::Error("Conservative interpolation assumes the structural model mesh is evaluated second, somehow this has not happened.",CURRENT_FUNCTION);
         
-          switch (config_container[donorZone]->GetKindInterpolation()) {
+        switch (config_container[donorZone]->GetKindInterpolation()) {
 
           case NEAREST_NEIGHBOR:
             if ( conservative_interp && targetZone > 0 && structural_target ) {
@@ -3436,8 +3428,8 @@ void CDriver::Interface_Preprocessing() {
               if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
             }
             else {
-              interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
+            interpolator_container[donorZone][targetZone] = new CNearestNeighbor(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using a nearest-neighbor approach." << endl;
             }
             break;
 
@@ -3447,29 +3439,28 @@ void CDriver::Interface_Preprocessing() {
               if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
             }
             else {
-              interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
+            interpolator_container[donorZone][targetZone] = new CIsoparametric(geometry_container, config_container, donorZone, targetZone);
+            if (rank == MASTER_NODE) cout << "using an isoparametric approach." << endl;
             }
             break;
 
-          case WEIGHTED_AVERAGE:
-            interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
-            if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
+        case WEIGHTED_AVERAGE:
+          interpolator_container[donorZone][targetZone] = new CSlidingMesh(geometry_container, config_container, donorZone, targetZone);
+          if (rank == MASTER_NODE) cout << "using an sliding mesh approach." << endl;
 
-            break;
+          break;
             
           case RADIAL_BASIS_FUNCTION:
             if ( conservative_interp && targetZone > 0 && structural_target ) {
-              interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
-            }
-            else {
-              interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
-              if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
-            }
+                interpolator_container[donorZone][targetZone] = new CMirror(geometry_container, config_container, donorZone, targetZone);
+                if (rank == MASTER_NODE) cout << "using a mirror approach: matching coefficients from opposite mesh." << endl;
+              }
+              else {
+                interpolator_container[donorZone][targetZone] = new CRadialBasisFunction(geometry_container, config_container, donorZone, targetZone);
+                if (rank == MASTER_NODE) cout << "using a radial basis function approach." << endl;
+              }
             break;
-          }
-        }
+            }
 
         /*--- Initialize the appropriate transfer strategy ---*/
       if (rank == MASTER_NODE) cout << "Transferring ";
@@ -3987,6 +3978,15 @@ void CDriver::Output(unsigned long ExtIter) {
     StartTime = MPI_Wtime();
 #endif
     
+    /*--- Add a statement about the type of solver exit. ---*/
+    
+    if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
+      cout << endl << "----------------------------- Solver Exit -------------------------------";
+      if (ExtIter+1 >= nExtIter) cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
+      if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      cout << "-------------------------------------------------------------------------" << endl;
+    }
+
     if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
     
     /*--- Execute the routine for writing restart, volume solution,
@@ -4153,63 +4153,13 @@ void CFluidDriver::Run() {
 
 void CFluidDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
-
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[targetZone]->GetKind_TransferMethod()) {
-
-  case BROADCAST_DATA:
-      if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-      transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-          config_container[donorZone], config_container[targetZone]);
-      if (config_container[targetZone]->GetKind_Solver() == RANS)
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-    }
-    else {
-      SU2_MPI::Error("Scatter method not implemented for non-matching meshes. ", CURRENT_FUNCTION);
-    }
-    break;
-
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-      SU2_MPI::Error("Allgather method not implemented for matching meshes. ", CURRENT_FUNCTION);
-    }
-    else {
-      transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-          geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-          config_container[donorZone], config_container[targetZone]);
-      if (config_container[targetZone]->GetKind_Solver() == RANS)
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  }
+  transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+      geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+      config_container[donorZone], config_container[targetZone]);
+  if (config_container[targetZone]->GetKind_Solver() == RANS)
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+        geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+        config_container[donorZone], config_container[targetZone]);
 
 }
 
@@ -4673,6 +4623,18 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Do one iteration of the direct flow solver ---*/
 
   DirectRun();
+
+  /*--- Read the target pressure ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
+
+  /*--- Read the target heat flux ---*/
+
+  if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Print residuals in the first iteration ---*/
 
@@ -5732,100 +5694,18 @@ void CFSIDriver::Predict_Tractions(unsigned short donorZone, unsigned short targ
 
 void CFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
-
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[targetZone]->GetKind_TransferMethod()) {
-  case BROADCAST_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                    config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-        
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                       config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-    }
-    break;
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-      }
-      else {
-        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
-    }
-    break;
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                           config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-    }
-    break;
-  }
+  transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                     geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone]);
 
 }
 
 void CFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
 
-  /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
-  unsigned long ExtIter = config_container[targetZone]->GetExtIter();
-  config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[donorZone]->GetKind_TransferMethod()) {
-  case BROADCAST_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                    config_container[donorZone], config_container[targetZone]);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                       config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
-      }
-      else {
-        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
-    }
-    break;
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                           config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  }
+  transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
+                                                                     geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone]);
 
 }
 
@@ -7734,101 +7614,18 @@ void CDiscAdjFSIDriver::Postprocess(unsigned short ZONE_FLOW,
 
 void CDiscAdjFSIDriver::Transfer_Displacements(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
 
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[targetZone]->GetKind_TransferMethod()) {
-  case BROADCAST_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                    config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                       config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-    }
-    break;
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-      }
-      else {
-        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
-    }
-    break;
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                           config_container[donorZone], config_container[targetZone]);
-      /*--- Set the volume deformation for the fluid zone ---*/
-      //      grid_movement[targetZone]->SetVolume_Deformation(geometry_container[targetZone][INST_0][MESH_0], config_container[targetZone], true);
-    }
-    break;
-  }
+  transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                     geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone]);
 
 }
 
 void CDiscAdjFSIDriver::Transfer_Tractions(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[donorZone]->GetMatchingMesh();
-
-  /*--- FEA equations -- Necessary as the SetFEA_Load routine is as of now contained in the structural solver ---*/
-  unsigned long ExtIter = config_container[targetZone]->GetExtIter();
-  config_container[targetZone]->SetGlobalParam(FEM_ELASTICITY, RUNTIME_FEA_SYS, ExtIter);
-
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[donorZone]->GetKind_TransferMethod()) {
-  case BROADCAST_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                                    geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                    config_container[donorZone], config_container[targetZone]);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                                       config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                         config_container[donorZone], config_container[targetZone]);
-      }
-      else {
-        SU2_MPI::Error("Scatter method not implemented for non-matching meshes.", CURRENT_FUNCTION);
-    }
-    break;
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-        SU2_MPI::Error("Allgather method not yet implemented for matching meshes.", CURRENT_FUNCTION);
-      }
-      else {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FEA_SOL],
-                                                                           geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                                                                           config_container[donorZone], config_container[targetZone]);
-    }
-    break;
-  }
-
+  transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FEA_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                     geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                     config_container[donorZone], config_container[targetZone]);
 }
 
 
@@ -7975,173 +7772,40 @@ void CMultiphysicsZonalDriver::DynamicMeshUpdate(unsigned long ExtIter) {
 
 void CMultiphysicsZonalDriver::Transfer_Data(unsigned short donorZone, unsigned short targetZone) {
 
-  bool MatchingMesh = config_container[targetZone]->GetMatchingMesh();
-
-  /*--- Select the transfer method and the appropriate mesh properties (matching or nonmatching mesh) ---*/
-
-  switch (config_container[targetZone]->GetKind_TransferMethod()) {
-
-  case BROADCAST_DATA:
-      if (MatchingMesh) {
-        if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-          if (config_container[targetZone]->GetKind_Solver() == RANS)
-            transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Matching(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-                 || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-                 || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
-        else {
-          cout << "WARNING: One of the specified interface transfer routines is not known to the chosen driver and has not been executed." << endl;
-        }
-      }
-      else {
-        if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-          if (config_container[targetZone]->GetKind_Solver() == RANS)
-            transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-                geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-                config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-          transfer_container[donorZone][targetZone]->Broadcast_InterfaceData_Interpolate(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-        }
-        else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-                 || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-                 || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
-        else {
-          cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
-        }
-      }
-      break;
-
-  case SCATTER_DATA:
-    if (MatchingMesh) {
-      if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
-          transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-        transfer_container[donorZone][targetZone]->Scatter_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-               || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-               || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
-      else {
-        cout << "WARNING: One of the specified interface transfer routines is not known to the chosen driver and has not been executed." << endl;
-      }
-    }
-    else {
-      SU2_MPI::Error("Scatter method not implemented for non-matching meshes. ", CURRENT_FUNCTION);
-    }
-    break;
-
-  case ALLGATHER_DATA:
-    if (MatchingMesh) {
-      SU2_MPI::Error("Allgather method not implemented for matching meshes. ", CURRENT_FUNCTION);
-    }
-    else {
-      if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-        if (config_container[targetZone]->GetKind_Solver() == RANS)
-          transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
-              geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-              config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
-        transfer_container[donorZone][targetZone]->Allgather_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
-            geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
-            config_container[donorZone], config_container[targetZone]);
-      }
-      else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
-               || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
-               || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
-      else {
-        cout << "WARNING: One of the specified interface transfer routines is not known to the chosen driver and can't be executed." << endl;
-      }
-    }
-    break;
+  if (transfer_types[donorZone][targetZone] == SLIDING_INTERFACE) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+    if (config_container[targetZone]->GetKind_Solver() == RANS)
+      transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][TURB_SOL],solver_container[targetZone][INST_0][MESH_0][TURB_SOL],
+                                                                         geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                         config_container[donorZone], config_container[targetZone]);
   }
+  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_FS) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][FLOW_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+  }
+  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_FS) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+  }
+  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_SF) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][FLOW_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+  }
+  else if (transfer_types[donorZone][targetZone] == CONJUGATE_HEAT_WEAKLY_SF) {
+    transfer_container[donorZone][targetZone]->Broadcast_InterfaceData(solver_container[donorZone][INST_0][MESH_0][HEAT_SOL],solver_container[targetZone][INST_0][MESH_0][HEAT_SOL],
+                                                                       geometry_container[donorZone][INST_0][MESH_0],geometry_container[targetZone][INST_0][MESH_0],
+                                                                       config_container[donorZone], config_container[targetZone]);
+  }
+  else if ((transfer_types[donorZone][targetZone] == NO_TRANSFER)
+           || (transfer_types[donorZone][targetZone] == ZONES_ARE_EQUAL)
+           || (transfer_types[donorZone][targetZone] == NO_COMMON_INTERFACE)) { }
+  else {
+    cout << "WARNING: One of the intended interface transfer routines is not known to the chosen driver and has not been executed." << endl;
+  }
+
 }
