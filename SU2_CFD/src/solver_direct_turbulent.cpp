@@ -51,8 +51,6 @@ CTurbSolver::CTurbSolver(void) : CSolver() {
 
 CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 
-  unsigned short iVar, iDim;
-
   Gamma = config->GetGamma();
   Gamma_Minus_One = Gamma - 1.0;
   
@@ -66,7 +64,6 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
   nVertex = new unsigned long[nMarker];
   for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++)
     nVertex[iMarker] = geometry->nVertex[iMarker];
-
 
 }
 
