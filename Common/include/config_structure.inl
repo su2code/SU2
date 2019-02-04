@@ -1682,6 +1682,10 @@ inline su2double CConfig::GetCollective_Pitch(void) { return Collective_Pitch; }
 
 inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
+inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
+
+inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
+
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
@@ -1711,6 +1715,10 @@ inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
+
+inline bool CConfig::GetWrt_Projected_Sensitivity(void) { return Wrt_Projected_Sensitivity; }
+
+inline unsigned short CConfig::GetSensitivity_Format(void) { return Sensitivity_FileFormat; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 

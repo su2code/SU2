@@ -433,6 +433,9 @@ private:
   unsigned short nTurboMachineryKind; 	/*!< \brief Number turbomachinery types specified. */
   unsigned short nParamDV;		/*!< \brief Number of parameters of the design variable. */
   string DV_Filename;      /*!< \brief Filename for providing surface positions from an external parameterization. */
+  string DV_Unordered_Sens_Filename;      /*!< \brief Filename of volume sensitivities in an unordered ASCII format. */
+  string DV_Sens_Filename;      /*!< \brief Filename of surface sensitivities written to an unordered ASCII format. */
+  unsigned short Sensitivity_FileFormat; /*!< \brief Format of the input volume sensitivity files (SU2_DOT). */
   su2double **ParamDV;				/*!< \brief Parameters of the design variable. */
   su2double **CoordFFDBox;				/*!< \brief Coordinates of the FFD boxes. */
   unsigned short **DegreeFFDBox;	/*!< \brief Degree of the FFD boxes. */
@@ -764,6 +767,7 @@ private:
   Wrt_Performance,            /*!< \brief Write the performance summary at the end of a calculation.  */
   Wrt_InletFile,                   /*!< \brief Write a template inlet profile file */
   Wrt_Slice,                   /*!< \brief Write 1D slice of a 2D cartesian solution */
+  Wrt_Projected_Sensitivity,   /*!< \brief Write projected sensitivities (dJ/dx) on surfaces to ASCII file. */
   Plot_Section_Forces;       /*!< \brief Write sectional forces for specified markers. */
   unsigned short Console_Output_Verb,  /*!< \brief Level of verbosity for console output */
   Kind_Average;        /*!< \brief Particular average for the marker analyze. */
@@ -3262,6 +3266,18 @@ public:
    */
   bool GetWrt_Slice(void);
 
+  /*!
+   * \brief Get information about writing projected sensitivities on surfaces to an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex.
+   * \return <code>TRUE</code> means that projected sensitivities on surfaces in an ASCII file with rows as x, y, z, dJ/dx, dJ/dy, dJ/dz for each vertex will be written.
+   */
+  bool GetWrt_Projected_Sensitivity(void);
+  
+  /*!
+   * \brief Get information about the format for the input volume sensitvities.
+   * \return Format of the input volume sensitivities.
+   */
+  unsigned short GetSensitivity_Format(void);
+  
   /*!
    * \brief Get information about writing sectional force files.
    * \return <code>TRUE</code> means that sectional force files will be written for specified markers.
@@ -8066,6 +8082,18 @@ public:
    * \return File name of the arbitrary mesh motion input file.
    */
   string GetDV_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII volume sensitivity file.
+   * \return File name of the unordered ASCII volume sensitivity file.
+   */
+  string GetDV_Unordered_Sens_Filename(void);
+  
+  /*!
+   * \brief Get name of the unordered ASCII surface sensitivity file.
+   * \return File name of the unordered ASCII surface sensitivity file.
+   */
+  string GetDV_Sens_Filename(void);
   
   /*!
    * \brief Set the config options.
