@@ -295,7 +295,7 @@ protected:
   
   map<string, Signal_Processing::RunningAverage> RunningAverages;
   
-  bool multizone, grid_movement;
+  bool multizone, grid_movement, fem_output;
   
 public:
 
@@ -1022,7 +1022,9 @@ public:
   
   void AddVolumeOutput(string name, string field_name, string groupname);
   
-  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);   
+  virtual void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  
+  virtual void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
   
   void SetVolumeOutputValue(string name, unsigned long iPoint, su2double value);
   
@@ -1082,7 +1084,7 @@ public:
   
   void SetVolumeOutputFields(CConfig *config);
   
-  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint);
+  void LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint); 
   
   void SetHistoryOutputFields(CConfig *config);
   
@@ -1175,6 +1177,77 @@ public:
   
   su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
 
+  bool SetInit_Residuals(CConfig *config);
+  
+  bool SetUpdate_Averages(CConfig *config, bool dualtime);
+  
+};
+
+
+/*! \class CFlowFEMOutput
+ *  \brief Output class for compressible Flow problems.
+ *  \author R. Sanchez, T. Albring.
+ *  \date May 30, 2018.
+ */
+class CFlowFEMOutput : public COutput {
+private:
+  
+  unsigned short nVar;
+
+  unsigned short turb_model;
+  
+  bool grid_movement;
+  
+  su2double RefDensity, RefPressure, RefVel2, factor, RefArea;
+
+public:
+
+  /*!
+   * \brief Constructor of the class
+   * \param[in] config - Definition of the particular problem.
+   */
+  CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver** solver, unsigned short iZone);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  virtual ~CFlowFEMOutput(void);
+
+  /*!
+   * \brief Set the history file header
+   * \param[in] config - Definition of the particular problem.
+   */
+  void LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+      CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst);
+  
+  void LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex);  
+  
+  void SetVolumeOutputFields(CConfig *config);
+  
+  void LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof);
+  
+  void SetHistoryOutputFields(CConfig *config);
+  
+  /*!
+   * \brief Determines if the history file output.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteHistoryFile_Output(CConfig *config, bool write_dualtime);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Header(CConfig *config);
+  
+  /*!
+   * \brief Determines if the screen header should be written.
+   * \param[in] config - Definition of the particular problem.
+   */
+  bool WriteScreen_Output(CConfig *config, bool write_dualtime);
+  
+  su2double GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable *node_flow);
+  
   bool SetInit_Residuals(CConfig *config);
   
   bool SetUpdate_Averages(CConfig *config, bool dualtime);
