@@ -71,15 +71,15 @@ endif
 
 if BUILD_REVERSE
 su2_dot_ldadd += \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
-  ../../SU2_CFD/src/___bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
-   ../../Common/lib/libSU2_AD.a
+  ../../SU2_CFD/src/libSU2Core_AD_a-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/libSU2Core_AD_a-variable_structure.$(OBJEXT) \
+  ../../Common/lib/libSU2_AD.a
 endif
 
 # always link to built dependencies from ./externals
