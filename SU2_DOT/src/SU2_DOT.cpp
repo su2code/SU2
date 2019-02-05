@@ -47,6 +47,7 @@ int main(int argc, char *argv[]) {
   ofstream Gradient_file;
   bool fem_solver = false;
   bool periodic   = false;
+  bool multizone  = false;
 
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
@@ -67,6 +68,7 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config_container            = NULL;
+  CConfig *driver_config                = NULL;
   CGeometry ***geometry_container       = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
@@ -96,6 +98,7 @@ int main(int argc, char *argv[]) {
   surface_movement    = new CSurfaceMovement*[nZone];
   grid_movement       = new CVolumetricMovement*[nZone];
   nInst               = new unsigned short[nZone];
+  driver_config       = NULL;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
