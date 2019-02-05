@@ -64,7 +64,7 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
     RequestedVolumeFields.push_back("CONSERVATIVE");    
-    RequestedVolumeFields.push_back("SENSITIVITIES");
+    RequestedVolumeFields.push_back("SENSITIVITY");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
