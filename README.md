@@ -1,3 +1,7 @@
+<p align="center">
+<img width="250" height="152" src="https://github.com/su2code/SU2/Common/doc/logoSU2_v3.3_small.jpeg">
+</p>
+
 -----------------------------------------------------------
   SU2 (ver. 6.2.0 "Falcon"): The Open-Source CFD Code
 -----------------------------------------------------------
@@ -22,7 +26,6 @@ The primary applications are computational fluid dynamics and aerodynamic shape 
 
 You will find more information and the latest news in:
    - SU2 Home Page: https://su2code.github.io
-   - SU2 International Developers Society Home Page: www.su2devsociety.org
    - GitHub repository: https://github.com/su2code
    - CFD Online: http://www.cfd-online.com/Forums/su2/
    - Twitter: https://twitter.com/su2code
