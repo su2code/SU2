@@ -72,6 +72,7 @@ protected:
   su2double *Physical_Constants;
   su2double *Donor_Variable;
   su2double *Target_Variable;
+  bool valAggregated;
 
   /*--- Mixing Plane interface variable ---*/
   su2double 	  *SpanValueCoeffTarget;
@@ -103,32 +104,6 @@ public:
   virtual ~CTransfer(void);
 
   /*!
-   * \brief Interpolate data and scatter it into different processors, for matching meshes.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void Scatter_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
-                                 CGeometry *donor_geometry, CGeometry *target_geometry,
-                                 CConfig *donor_config, CConfig *target_config);
-
-  /*!
-   * \brief Interpolate data and broadcast it into all processors, for matching meshes.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void Broadcast_InterfaceData_Matching(CSolver *donor_solution, CSolver *target_solution,
-                                                CGeometry *donor_geometry, CGeometry *target_geometry,
-                      CConfig *donor_config, CConfig *target_config);
-
-  /*!
    * \brief Interpolate data and broadcast it into all processors, for nonmatching meshes.
    * \param[in] donor_solution - Solution from the donor mesh.
    * \param[in] target_solution - Solution from the target mesh.
@@ -137,23 +112,9 @@ public:
    * \param[in] donor_config - Definition of the problem at the donor mesh.
    * \param[in] target_config - Definition of the problem at the target mesh.
    */
-  void Broadcast_InterfaceData_Interpolate(CSolver *donor_solution, CSolver *target_solution,
-                                                   CGeometry *donor_geometry, CGeometry *target_geometry,
-                       CConfig *donor_config, CConfig *target_config);
-
-  /*!
-   * \brief Interpolate data, operate over it and broadcast it into all processors, for nonmatching meshes.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   */
-  void Allgather_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
-                                      CGeometry *donor_geometry, CGeometry *target_geometry,
-                   CConfig *donor_config, CConfig *target_config);
-
+  void Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target_solution,
+                               CGeometry *donor_geometry, CGeometry *target_geometry,
+                               CConfig *donor_config, CConfig *target_config);
   /*!
    * \brief A virtual member.
    */
@@ -172,6 +133,25 @@ public:
   virtual void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry,
                    CConfig *donor_config, unsigned long Marker_Donor,
                    unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+  /*!
+   * \brief Initializes the target variable.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] nDonorPoints - Number of donor points.
+   */
+  virtual void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                         unsigned long Vertex_Target, unsigned short nDonorPoints);
+
+  /*!
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
+   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
+   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
+  virtual void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                      su2double donorCoeff);
 
   /*!
    * \brief A virtual member.
@@ -268,6 +248,13 @@ public:
 class CTransfer_FlowTraction : public CTransfer {
 
 protected:
+  bool consistent_interpolation;
+  
+  /*!
+   * \brief Sets the dimensional factor for pressure and the consistent_interpolation flag
+   * \param[in] flow_config - Definition of the fluid (donor) problem.
+   */
+  void Preprocess(CConfig *flow_config);
 
 public:
 
@@ -403,7 +390,7 @@ public:
  * \version 6.1.0 "Falcon"
  */
 
-class CTransfer_FlowTraction_DiscAdj : public CTransfer {
+class CTransfer_FlowTraction_DiscAdj : public CTransfer_FlowTraction {
 
 protected:
 
@@ -438,30 +425,6 @@ public:
   void GetPhysical_Constants(CSolver *donor_solution, CSolver *target_solution,
                  CGeometry *donor_geometry, CGeometry *target_geometry,
                  CConfig *donor_config, CConfig *target_config);
-
-  /*!
-   * \brief Retrieve the variable that will be sent from donor mesh to target mesh.
-   * \param[in] donor_solution - Solution from the donor mesh.
-   * \param[in] donor_geometry - Geometry of the donor mesh.
-   * \param[in] donor_config - Definition of the problem at the donor mesh.
-   * \param[in] Marker_Donor - Index of the donor marker.
-   * \param[in] Vertex_Donor - Index of the donor vertex.
-   */
-  void GetDonor_Variable(CSolver *flow_solution, CGeometry *flow_geometry, CConfig *flow_config,
-               unsigned long Marker_Flow, unsigned long Vertex_Flow, unsigned long Point_Flow);
-
-  /*!
-   * \brief Set the variable that has been received from the target mesh into the target mesh.
-   * \param[in] target_solution - Solution from the target mesh.
-   * \param[in] target_geometry - Geometry of the target mesh.
-   * \param[in] target_config - Definition of the problem at the target mesh.
-   * \param[in] Marker_Target - Index of the target marker.
-   * \param[in] Vertex_Target - Index of the target vertex.
-   * \param[in] Point_Target - Index of the target point.
-   */
-  void SetTarget_Variable(CSolver *fea_solution, CGeometry *fea_geometry,
-              CConfig *fea_config, unsigned long Marker_Struct,
-              unsigned long Vertex_Struct, unsigned long Point_Struct);
 
 };
 
@@ -740,6 +703,25 @@ public:
    */
   void GetDonor_Variable(CSolver *donor_solution, CGeometry *donor_geometry, CConfig *donor_config,
                unsigned long Marker_Donor, unsigned long Vertex_Donor, unsigned long Point_Donor);
+
+  /*!
+   * \brief A virtual member, initializes the target variable for sliding mesh.
+   * \param[in] target_solution - Solution from the target mesh.
+   * \param[in] Marker_Target - Index of the target marker.
+   * \param[in] Vertex_Target - Index of the target vertex.
+   * \param[in] nDonorPoints - Number of donor points.
+   */
+  void InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                 unsigned long Vertex_Target, unsigned short nDonorPoints);
+
+  /*!
+   * \brief Recovers the target variable from the buffer of su2doubles that was broadcasted.
+   * \param[in] indexPoint_iVertex - index of the vertex in the buffer array.
+   * \param[in] Buffer_Bcast_Variables - full broadcasted buffer array of doubles.
+   * \param[in] donorCoeff - value of the donor coefficient.
+   */
+  void RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                              su2double donorCoeff);
 
   /*!
    * \brief Set the variable that has been received from the target mesh into the target mesh.
