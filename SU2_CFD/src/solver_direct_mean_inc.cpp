@@ -3508,6 +3508,7 @@ void CIncEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
 
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {

@@ -5452,6 +5452,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
@@ -16195,7 +16196,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
     
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
       
       /*--- Forces initialization at each Marker ---*/
       
@@ -16622,7 +16623,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
             
       /*--- Loop over the vertices to compute the buffet sensor ---*/
             
