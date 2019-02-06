@@ -78,7 +78,7 @@ CFEAOutput::CFEAOutput(CConfig *config, CGeometry *geometry, unsigned short val_
   /*--- Default fields for volume output ---*/
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("DISPLACEMENT");
+    RequestedVolumeFields.push_back("SOLUTION");
     RequestedVolumeFields.push_back("STRESS");    
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
@@ -221,9 +221,9 @@ void CFEAOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
 
-  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "DISPLACEMENT");
-  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "DISPLACEMENT");
-  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "DISPLACEMENT");
+  AddVolumeOutput("DISPLACEMENT-X",    "Displacement_x", "SOLUTION");
+  AddVolumeOutput("DISPLACEMENT-Y",    "Displacement_y", "SOLUTION");
+  if (nDim == 3) AddVolumeOutput("DISPLACEMENT-Z", "Displacement_z", "SOLUTION");
   
   AddVolumeOutput("VELOCITY-X",    "Velocity_x", "VELOCITY");
   AddVolumeOutput("VELOCITY-Y",    "Velocity_y", "VELOCITY");

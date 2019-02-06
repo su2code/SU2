@@ -3815,6 +3815,12 @@ void CDriver::Output_Preprocessing(){
       output[iZone] = new CDiscAdjFEAOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], iZone);
       break;
       
+    case FEM_EULER: case FEM_LES: case FEM_RANS: case FEM_NAVIER_STOKES:
+      if (rank == MASTER_NODE)
+        cout << ": FEM output structure." << endl;
+      output[iZone] = new CFlowFEMOutput(config_container[iZone], geometry_container[iZone][INST_0][MESH_0], solver_container[iZone][INST_0][MESH_0], iZone);
+      break;
+      
     default:
       if (rank == MASTER_NODE)
         cout << ": default output structure." << endl;
@@ -4847,13 +4853,13 @@ void CDiscAdjFluidDriver::SetRecording(unsigned short kind_recording){
   /*--- Read the target pressure ---*/
 
   if (config_container[ZONE_0]->GetInvDesign_Cp() == YES)
-    output->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+    output[iZone]->GetLegacyOutput()->SetCp_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
         geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Read the target heat flux ---*/
 
   if (config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
-    output->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+    output[iZone]->GetLegacyOutput()->SetHeatFlux_InverseDesign(solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
         geometry_container[ZONE_0][INST_0][MESH_0], config_container[ZONE_0], ExtIter);
 
   /*--- Print residuals in the first iteration ---*/
