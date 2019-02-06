@@ -8805,7 +8805,7 @@ void COutputLegacy::SetMesh_Files(CGeometry **geometry, CConfig **config, unsign
         
         if (rank == MASTER_NODE) cout <<"Writing .su2 file." << endl;
         
-        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
+//        SetSU2_MeshASCII(config[iZone], geometry[iZone], iZone, output_file);
         
         /*--- Write an stl surface file ---*/
         
