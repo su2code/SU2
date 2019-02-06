@@ -358,11 +358,11 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   }
 
   if (weakly_coupled_heat){
-    SetHistoryOutputValue("ADJ_HEAT", Node_AdjHeat->GetSolution(0));
+    SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjHeat->GetSolution(0));
   }
   if (heat){
-    if (nDim == 3) SetHistoryOutputValue("ADJ_HEAT", Node_AdjFlow->GetSolution(4));
-    else           SetHistoryOutputValue("ADJ_HEAT", Node_AdjFlow->GetSolution(3));
+    if (nDim == 3) SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjFlow->GetSolution(4));
+    else           SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjFlow->GetSolution(3));
   }
   // Turbulent 
   switch(turb_model){
