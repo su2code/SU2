@@ -16129,8 +16129,9 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
   
   su2double Alpha           = config->GetAoA()*PI_NUMBER/180.0;
   su2double Beta            = config->GetAoS()*PI_NUMBER/180.0;
-  su2double RefArea    = config->GetRefArea();
-  su2double RefLength = config->GetRefLength();
+  su2double RefArea         = config->GetRefArea();
+  su2double RefLength       = config->GetRefLength();
+  su2double RefHeatFlux     = config->GetHeat_Flux_Ref();
   su2double Gas_Constant    = config->GetGas_ConstantND();
   su2double *Origin = NULL;
   
@@ -16317,7 +16318,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
         Cp = (Gamma / Gamma_Minus_One) * Gas_Constant;
         thermal_conductivity = Cp * Viscosity/Prandtl_Lam;
-        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature;
+        HeatFlux[iMarker][iVertex] = -thermal_conductivity*GradTemperature*RefHeatFlux;
         HF_Visc[iMarker] += HeatFlux[iMarker][iVertex]*Area;
         MaxHF_Visc[iMarker] += pow(HeatFlux[iMarker][iVertex], MaxNorm);
 
