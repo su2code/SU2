@@ -259,7 +259,10 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     /// DESCRIPTION: Adjoint Velocity z-component.
     AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION"); 
  
-  AddVolumeOutput("ADJ_HEAT", "Adjoint_Heat", "SOLUTION");
+  if (weakly_coupled_heat || heat){
+    AddVolumeOutput("ADJ_HEAT", "Adjoint_Heat", "SOLUTION");
+  }
+
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Adjoint nu tilde.
