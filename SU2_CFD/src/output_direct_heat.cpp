@@ -58,7 +58,7 @@ CHeatOutput::CHeatOutput(CConfig *config, CGeometry *geometry, unsigned short va
   }
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");
+    RequestedVolumeFields.push_back("SOLUTION");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
@@ -164,8 +164,8 @@ void CHeatOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
   
-  // Conservative
-  AddVolumeOutput("TEMPERATURE", "Temperature", "CONSERVATIVE");
+  // SOLUTION
+  AddVolumeOutput("TEMPERATURE", "Temperature", "SOLUTION");
 
   // Residuals  
   AddVolumeOutput("RESIDUAL_TEMPERATURE", "Residual_Temperature", "RESIDUAL");
@@ -185,7 +185,7 @@ void CHeatOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver *
   if (nDim == 3)
     SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
  
-  // Conservative
+  // SOLUTION
   SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Heat->GetSolution(0));
   
   // Residuals    

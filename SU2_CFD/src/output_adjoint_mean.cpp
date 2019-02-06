@@ -140,21 +140,21 @@ void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   if (nDim == 3)
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
   
-  // Conservative
-  AddVolumeOutput("ADJOINT_DENSITY",    "Adjoint_Density",    "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_MOMENTUM-X", "Adjoint_Momentum_x", "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_MOMENTUM-Y", "Adjoint_Momentum_y", "CONSERVATIVE");
+  // SOLUTION
+  AddVolumeOutput("ADJOINT_DENSITY",    "Adjoint_Density",    "SOLUTION");
+  AddVolumeOutput("ADJOINT_MOMENTUM-X", "Adjoint_Momentum_x", "SOLUTION");
+  AddVolumeOutput("ADJOINT_MOMENTUM-Y", "Adjoint_Momentum_y", "SOLUTION");
   if (nDim == 3)
-    AddVolumeOutput("ADJOINT_MOMENTUM-Z", "Adjoint_Momentum_z", "CONSERVATIVE");
-  AddVolumeOutput("ADJOINT_ENERGY", "Adjoint_Energy", "CONSERVATIVE");
+    AddVolumeOutput("ADJOINT_MOMENTUM-Z", "Adjoint_Momentum_z", "SOLUTION");
+  AddVolumeOutput("ADJOINT_ENERGY", "Adjoint_Energy", "SOLUTION");
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddVolumeOutput("ADJOINT_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE");
+    AddVolumeOutput("ADJOINT_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION");
     break;  
   case SST:
-    AddVolumeOutput("ADJOINT_KINETIC_ENERGY", "Adjoint_TKE", "CONSERVATIVE");
-    AddVolumeOutput("ADJOINT_DISSIPATION", "Adjoint_Omega", "CONSERVATIVE");
+    AddVolumeOutput("ADJOINT_KINETIC_ENERGY", "Adjoint_TKE", "SOLUTION");
+    AddVolumeOutput("ADJOINT_DISSIPATION", "Adjoint_Omega", "SOLUTION");
     break;
   default: break;
   }
@@ -176,11 +176,11 @@ void CAdjFlowOutput::SetVolumeOutputFields(CConfig *config){
   
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    AddVolumeOutput("LIMITER_ADJOINT_NU_TILDE", "Limiter_Adjoint_Nu_Tilde", "CONSERVATIVE");
+    AddVolumeOutput("LIMITER_ADJOINT_NU_TILDE", "Limiter_Adjoint_Nu_Tilde", "SOLUTION");
     break;  
   case SST:
-    AddVolumeOutput("LIMITER_ADJOINT_KINETIC_ENERGY", "Limiter_Adjoint_TKE", "CONSERVATIVE");
-    AddVolumeOutput("LIMITER_ADJOINT_DISSIPATION",    "Limiter_Adjoint_Omega", "CONSERVATIVE");
+    AddVolumeOutput("LIMITER_ADJOINT_KINETIC_ENERGY", "Limiter_Adjoint_TKE", "SOLUTION");
+    AddVolumeOutput("LIMITER_ADJOINT_DISSIPATION",    "Limiter_Adjoint_Omega", "SOLUTION");
     break;
   default: break;
   }

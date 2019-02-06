@@ -38,9 +38,11 @@
 
 #include "../include/output_structure.hpp"
 
-CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
+CFlowFEMOutput::CFlowFEMOutput(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone) : COutput(config) {
 
   nDim = geometry->GetnDim();  
+  
+  nVar = solver[FLOW_SOL]->GetnVar();
   
   turb_model = config->GetKind_Turb_Model();
   
@@ -97,9 +99,12 @@ CFlowOutput::CFlowOutput(CConfig *config, CGeometry *geometry, CSolver **solver,
   ss << "Zone " << config->GetiZone() << " (Comp. Fluid)";
   MultiZoneHeaderString = ss.str();
   
+  /*--- Use FEM merging routines --- */
+  
+  fem_output = true;
 }
 
-CFlowOutput::~CFlowOutput(void) {
+CFlowFEMOutput::~CFlowFEMOutput(void) {
 
   if (rank == MASTER_NODE){
     HistFile.close();
@@ -111,7 +116,7 @@ CFlowOutput::~CFlowOutput(void) {
 
 
 
-void CFlowOutput::SetHistoryOutputFields(CConfig *config){
+void CFlowFEMOutput::SetHistoryOutputFields(CConfig *config){
   
   /// BEGIN_GROUP: ITERATION, DESCRIPTION: Iteration identifier.
   /// DESCRIPTION: The time iteration index.
@@ -136,20 +141,6 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("RMS_MOMENTUM-Z", "rms[RhoW]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Root-mean square residual of the energy.
   AddHistoryOutput("RMS_ENERGY",     "rms[RhoE]", FORMAT_FIXED,   "RMS_RES", TYPE_RESIDUAL);
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Root-mean square residual of nu tilde (SA model).  
-    AddHistoryOutput("RMS_NU_TILDE",       "rms[nu]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    break;  
-  case SST:
-    /// DESCRIPTION: Root-mean square residual of kinetic energy (SST model).    
-    AddHistoryOutput("RMS_KINETIC_ENERGY", "rms[k]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    /// DESCRIPTION: Root-mean square residual of the dissipation (SST model).    
-    AddHistoryOutput("RMS_DISSIPATION",    "rms[w]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
-    break;
-  default: break;
-  }
   /// END_GROUP
    
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
@@ -163,20 +154,6 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   if (nDim == 3) AddHistoryOutput("MAX_MOMENTUM-Z", "max[RhoW]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the energy.  
   AddHistoryOutput("MAX_ENERGY",     "max[RhoE]", FORMAT_FIXED,   "MAX_RES", TYPE_RESIDUAL);
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    /// DESCRIPTION: Maximum residual of nu tilde (SA model).
-    AddHistoryOutput("MAX_NU_TILDE",       "max[nu]", FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    break;  
-  case SST:
-    /// DESCRIPTION: Maximum residual of kinetic energy (SST model). 
-    AddHistoryOutput("MAX_KINETIC_ENERGY", "max[k]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
-    /// DESCRIPTION: Maximum residual of the dissipation (SST model).   
-    AddHistoryOutput("MAX_DISSIPATION",    "max[w]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL); 
-    break;
-  default: break;
-  }
   /// END_GROUP
   
   /// BEGIN_GROUP: AERO_COEFF, DESCRIPTION: Sum of the aerodynamic coefficients and forces on all surfaces (markers) set with MARKER_MONITORING.
@@ -268,37 +245,10 @@ void CFlowOutput::SetHistoryOutputFields(CConfig *config){
   /// DESCRIPTION: Pressure drop    
   AddHistoryOutputPerSurface("PRESSURE_DROP",            "Pressure_Drop",             FORMAT_SCIENTIFIC, "SURFACE_OUTPUT", Marker_Analyze, TYPE_COEFFICIENT);
   /// END_GROUP
-  
-  /// BEGIN_GROUP: ENGINE_OUTPUT, DESCRIPTION: Engine output
-  /// DESCRIPTION: Aero CD drag
-  AddHistoryOutput("AEROCDRAG",                  "AeroCDrag",                  FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Solid CD drag  
-  AddHistoryOutput("SOLIDCDRAG",                 "SolidCDrag",                 FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Radial distortion 
-  AddHistoryOutput("RADIAL_DISTORTION",          "Radial_Distortion",          FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Circumferential distortion
-  AddHistoryOutput("CIRCUMFERENTIAL_DISTORTION", "Circumferential_Distortion", FORMAT_SCIENTIFIC, "ENGINE_OUTPUT", TYPE_COEFFICIENT);
-  /// END_GROUP
-  
-  /// BEGIN_GROUP: ROTATING_FRAME, DESCRIPTION: Coefficients related to a rotating frame of reference.
-  /// DESCRIPTION: Merit  
-  AddHistoryOutput("MERIT", "CMerit", FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
-  /// DESCRIPTION: CT 
-  AddHistoryOutput("CT",    "CT",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
-  /// DESCRIPTION: CQ  
-  AddHistoryOutput("CQ",    "CQ",     FORMAT_SCIENTIFIC, "ROTATING_FRAME", TYPE_COEFFICIENT);
-  /// END_GROUP
-  
-  /// BEGIN_GROUP: EQUIVALENT_AREA, DESCRIPTION: Equivalent area.  
-  /// DESCRIPTION: Equivalent area    
-  AddHistoryOutput("EQUIV_AREA",   "CEquiv_Area",  FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
-  /// DESCRIPTION: Nearfield obj. function      
-  AddHistoryOutput("NEARFIELD_OF", "CNearFieldOF", FORMAT_SCIENTIFIC, "EQUIVALENT_AREA", TYPE_COEFFICIENT);
-  /// END_GROUP
 
 }
 
-void CFlowOutput::SetVolumeOutputFields(CConfig *config){
+void CFlowFEMOutput::SetVolumeOutputFields(CConfig *config){
   
   // Grid coordinates
   AddVolumeOutput("COORD-X", "x", "COORDINATES");
@@ -334,227 +284,90 @@ void CFlowOutput::SetVolumeOutputFields(CConfig *config){
   AddVolumeOutput("MACH",        "Mach",                    "PRIMITIVE");
   AddVolumeOutput("PRESSURE_COEFF", "Pressure_Coefficient", "PRIMITIVE");
   
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE");
-    
-    AddVolumeOutput("SKIN_FRICTION-X", "Skin_Friction_Coefficient_x", "PRIMITIVE");
-    AddVolumeOutput("SKIN_FRICTION-Y", "Skin_Friction_Coefficient_y", "PRIMITIVE");
-    if (nDim == 3)
-      AddVolumeOutput("SKIN_FRICTION-Z", "Skin_Friction_Coefficient_z", "PRIMITIVE");
-    
-    AddVolumeOutput("HEAT_FLUX", "Heat_Flux", "PRIMITIVE");
-    AddVolumeOutput("Y_PLUS", "Y_Plus", "PRIMITIVE");
-    
+  if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
+    AddVolumeOutput("LAMINAR_VISCOSITY", "Laminar_Viscosity", "PRIMITIVE"); 
   }
   
-  if (config->GetKind_Solver() == RANS) {
+  if (config->GetKind_Solver() == FEM_LES || config->GetKind_SGS_Model() != IMPLICIT_LES) {
     AddVolumeOutput("EDDY_VISCOSITY", "Eddy_Viscosity", "PRIMITIVE");
   }
-  
-  if (config->GetKind_Trans_Model() == BC){
-    AddVolumeOutput("INTERMITTENCY", "gamma_BC", "INTERMITTENCY");
-  }
+}
 
-  //Residuals
-  AddVolumeOutput("RESIDUAL_DENSITY", "Residual_Density", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_MOMENTUM-X", "Residual_Momentum_x", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_MOMENTUM-Y", "Residual_Momentum_y", "RESIDUAL");
-  if (nDim == 3)
-    AddVolumeOutput("RESIDUAL_MOMENTUM-Z", "Residual_Momentum_z", "RESIDUAL");
-  AddVolumeOutput("RESIDUAL_ENERGY", "Residual_Energy", "RESIDUAL");
+void CFlowFEMOutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){
   
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    AddVolumeOutput("RESIDUAL_TKE", "Residual_TKE", "RESIDUAL");
-    AddVolumeOutput("RESIDUAL_OMEGA", "Residual_Omega", "RESIDUAL");
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("RESIDUAL_NU_TILDE", "Residual_Nu_Tilde", "RESIDUAL");
-    break;
-  case NONE:
-    break;
+  unsigned short iDim;
+  
+  /*--- Create an object of the class CMeshFEM_DG and retrieve the necessary
+   geometrical information for the FEM DG solver. ---*/
+
+  CMeshFEM_DG *DGGeometry = dynamic_cast<CMeshFEM_DG *>(geometry);
+
+  CVolumeElementFEM *volElem  = DGGeometry->GetVolElem();
+
+  /*--- Get a pointer to the fluid model class from the DG-FEM solver
+   so that we can access the states below. ---*/
+
+  CFluidModel *DGFluidModel = solver[FLOW_SOL]->GetFluidModel();
+  
+  /* Set the pointers for the solution for this element. */
+
+  const unsigned long offset = nVar*volElem[iElem].offsetDOFsSolLocal;
+  su2double *solDOFs         = solver[FLOW_SOL]->GetVecSolDOFs() + offset;
+  
+  /*--- Get the conservative variables for this particular DOF. ---*/
+
+  const su2double *U = solDOFs+dof*nVar;
+
+  /*--- Load the coordinate values of the solution DOFs. ---*/
+  
+  const su2double *coor = volElem[iElem].coorSolDOFs.data() + dof*nDim;
+  
+  /*--- Prepare the primitive states. ---*/
+
+  const su2double DensityInv = 1.0/U[0];
+  su2double vel[3], Velocity2 = 0.0;
+  for(iDim=0; iDim<nDim; ++iDim) {
+    vel[iDim] = U[iDim+1]*DensityInv;
+    Velocity2 += vel[iDim]*vel[iDim];
+  }
+  su2double StaticEnergy = U[nDim+1]*DensityInv - 0.5*Velocity2;
+  DGFluidModel->SetTDState_rhoe(U[0], StaticEnergy);
+  
+    
+  SetVolumeOutputValue("COORD-X",        index, coor[0]);
+  SetVolumeOutputValue("COORD-Y",        index, coor[1]);
+  if (nDim == 3) 
+    SetVolumeOutputValue("COORD-Z",      index, coor[2]);
+  SetVolumeOutputValue("DENSITY",        index, U[0]);
+  SetVolumeOutputValue("MOMENTUM-X",     index, U[1]);
+  SetVolumeOutputValue("MOMENTUM-Y",     index, U[2]);
+  if (nDim == 3){
+    SetVolumeOutputValue("MOMENTUM-Z",   index,  U[3]);
+    SetVolumeOutputValue("ENERGY",       index,  U[4]);
+  } else {                               
+    SetVolumeOutputValue("ENERGY",       index,  U[3]);    
   }
   
-  // Limiter values
-  AddVolumeOutput("LIMITER_DENSITY", "Limiter_Density", "LIMITER");
-  AddVolumeOutput("LIMITER_MOMENTUM-X", "Limiter_Momentum_x", "LIMITER");
-  AddVolumeOutput("LIMITER_MOMENTUM-Y", "Limiter_Momentum_y", "LIMITER");
-  if (nDim == 3)
-    AddVolumeOutput("LIMITER_MOMENTUM-Z", "Limiter_Momentum_z", "LIMITER");
-  AddVolumeOutput("LIMITER_ENERGY", "Limiter_Energy", "LIMITER");
+  SetVolumeOutputValue("PRESSURE",       index, DGFluidModel->GetPressure());
+  SetVolumeOutputValue("TEMPERATURE",    index, DGFluidModel->GetTemperature());
+  SetVolumeOutputValue("MACH",           index, sqrt(Velocity2)/DGFluidModel->GetSoundSpeed());
+  SetVolumeOutputValue("PRESSURE_COEFF", index, DGFluidModel->GetCp());
   
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    AddVolumeOutput("LIMITER_TKE", "Limiter_TKE", "RESIDUAL");
-    AddVolumeOutput("LIMITER_OMEGA", "Limiter_Omega", "RESIDUAL");
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    AddVolumeOutput("LIMITER_NU_TILDE", "Limiter_Nu_Tilde", "RESIDUAL");
-    break;
-  case NONE:
-    break;
+  if (config->GetKind_Solver() == FEM_NAVIER_STOKES){
+    SetVolumeOutputValue("LAMINAR_VISCOSITY", index, DGFluidModel->GetLaminarViscosity()); 
   }
-  
-  // Hybrid RANS-LES
-  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    AddVolumeOutput("DES_LENGTHSCALE", "DES_LengthScale", "DDES");
-    AddVolumeOutput("WALL_DISTANCE", "Wall_Distance", "DDES");
-  }
-  
-  // Roe Low Dissipation
-  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    AddVolumeOutput("ROE_DISSIPATION", "Roe_Dissipation", "ROE_DISSIPATION");
-  }
-  
-  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    if (nDim == 3){
-      AddVolumeOutput("VORTICITY_X", "Vorticity_x", "VORTEX_IDENTIFICATION");
-      AddVolumeOutput("VORTICITY_Y", "Vorticity_y", "VORTEX_IDENTIFICATION");
-    }
-    AddVolumeOutput("VORTICITY_Z", "Vorticity_z", "VORTEX_IDENTIFICATION");
-    AddVolumeOutput("Q_CRITERION", "Q_Criterion", "VORTEX_IDENTIFICATION");  
+  if ((config->GetKind_Solver()  == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
+    // todo: Export Eddy instead of Laminar viscosity
+    SetVolumeOutputValue("EDDY_VISCOSITY", index, DGFluidModel->GetLaminarViscosity()); 
   }
 }
 
-void CFlowOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
+void CFlowFEMOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
   
-  CVariable* Node_Flow = solver[FLOW_SOL]->node[iPoint]; 
-  CVariable* Node_Turb = NULL;
-  
-  if (config->GetKind_Turb_Model() != NONE){
-    Node_Turb = solver[TURB_SOL]->node[iPoint]; 
-  }
-  
-  CPoint*    Node_Geo  = geometry->node[iPoint];
-          
-  SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
-  SetVolumeOutputValue("COORD-Y", iPoint,  Node_Geo->GetCoord(1));
-  if (nDim == 3)
-    SetVolumeOutputValue("COORD-Z", iPoint, Node_Geo->GetCoord(2));
-  
-  SetVolumeOutputValue("DENSITY",    iPoint, Node_Flow->GetSolution(0));
-  SetVolumeOutputValue("MOMENTUM-X", iPoint, Node_Flow->GetSolution(1));
-  SetVolumeOutputValue("MOMENTUM-Y", iPoint, Node_Flow->GetSolution(2));
-  if (nDim == 3){
-    SetVolumeOutputValue("MOMENTUM-Z", iPoint, Node_Flow->GetSolution(3));
-    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(4));
-  } else {
-    SetVolumeOutputValue("ENERGY",     iPoint, Node_Flow->GetSolution(3));    
-  }
-  
-  // Turbulent Residuals
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    SetVolumeOutputValue("TKE", iPoint, Node_Turb->GetSolution(0));
-    SetVolumeOutputValue("OMEGA", iPoint, Node_Turb->GetSolution(1));
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    SetVolumeOutputValue("NU_TILDE", iPoint, Node_Turb->GetSolution(0));
-    break;
-  case NONE:
-    break;
-  }
-  
-  SetVolumeOutputValue("PRESSURE", iPoint, Node_Flow->GetPressure());
-  SetVolumeOutputValue("TEMPERATURE", iPoint, Node_Flow->GetTemperature());
-  SetVolumeOutputValue("MACH", iPoint, sqrt(Node_Flow->GetVelocity2())/Node_Flow->GetSoundSpeed());
-  SetVolumeOutputValue("PRESSURE_COEFF", iPoint, (Node_Flow->GetPressure() - RefPressure)*factor*RefArea);
-  
-  if (config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    SetVolumeOutputValue("LAMINAR_VISCOSITY", iPoint, Node_Flow->GetLaminarViscosity());
-  }
-  
-  if (config->GetKind_Solver() == RANS) {
-    SetVolumeOutputValue("EDDY_VISCOSITY", iPoint, Node_Flow->GetEddyViscosity());
-  }
-  
-  if (config->GetKind_Trans_Model() == BC){
-    SetVolumeOutputValue("INTERMITTENCY", iPoint, Node_Turb->GetGammaBC());
-  }
-  
-  SetVolumeOutputValue("RESIDUAL_DENSITY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 0));
-  SetVolumeOutputValue("RESIDUAL_MOMENTUM-X", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 1));
-  SetVolumeOutputValue("RESIDUAL_MOMENTUM-Y", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 2));
-  if (nDim == 3){
-    SetVolumeOutputValue("RESIDUAL_MOMENTUM-Z", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));
-    SetVolumeOutputValue("RESIDUAL_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 4));
-  } else {
-    SetVolumeOutputValue("RESIDUAL_ENERGY", iPoint, solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint, 3));   
-  }
-  
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    SetVolumeOutputValue("RESIDUAL_TKE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
-    SetVolumeOutputValue("RESIDUAL_OMEGA", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 1));
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    SetVolumeOutputValue("RESIDUAL_NU_TILDE", iPoint, solver[TURB_SOL]->LinSysRes.GetBlock(iPoint, 0));
-    break;
-  case NONE:
-    break;
-  }
-  
-  SetVolumeOutputValue("LIMITER_DENSITY", iPoint, Node_Flow->GetLimiter_Primitive(0));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-X", iPoint, Node_Flow->GetLimiter_Primitive(1));
-  SetVolumeOutputValue("LIMITER_MOMENTUM-Y", iPoint, Node_Flow->GetLimiter_Primitive(2));
-  if (nDim == 3){
-    SetVolumeOutputValue("LIMITER_MOMENTUM-Z", iPoint, Node_Flow->GetLimiter_Primitive(3));
-    SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(4));
-  } else {
-    SetVolumeOutputValue("LIMITER_ENERGY", iPoint, Node_Flow->GetLimiter_Primitive(3));   
-  }
-  
-  switch(config->GetKind_Turb_Model()){
-  case SST:
-    SetVolumeOutputValue("LIMITER_TKE", iPoint, Node_Turb->GetLimiter_Primitive(0));
-    SetVolumeOutputValue("LIMITER_OMEGA", iPoint, Node_Turb->GetLimiter_Primitive(1));
-    break;
-  case SA: case SA_COMP: case SA_E: 
-  case SA_E_COMP: case SA_NEG: 
-    SetVolumeOutputValue("LIMITER_NU_TILDE", iPoint, Node_Turb->GetLimiter_Primitive(0));
-    break;
-  case NONE:
-    break;
-  }
-  
-  if (config->GetKind_HybridRANSLES() != NO_HYBRIDRANSLES){
-    SetVolumeOutputValue("DES_LENGTHSCALE", iPoint, Node_Flow->GetDES_LengthScale());
-    SetVolumeOutputValue("WALL_DISTANCE", iPoint, Node_Geo->GetWall_Distance());
-  }
-  
-  if (config->GetKind_RoeLowDiss() != NO_ROELOWDISS){
-    SetVolumeOutputValue("ROE_DISSIPATION", iPoint, Node_Flow->GetRoe_Dissipation());
-  }
-  
-  if(config->GetKind_Solver() == RANS || config->GetKind_Solver() == NAVIER_STOKES){
-    if (nDim == 3){
-      SetVolumeOutputValue("VORTICITY_X", iPoint, Node_Flow->GetVorticity()[0]);
-      SetVolumeOutputValue("VORTICITY_Y", iPoint, Node_Flow->GetVorticity()[1]);      
-    } 
-    SetVolumeOutputValue("VORTICITY_Z", iPoint, Node_Flow->GetVorticity()[2]);      
-    SetVolumeOutputValue("Q_CRITERION", iPoint, GetQ_Criterion(config, geometry, Node_Flow));      
-  }
-  
+
 }
 
-void CFlowOutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint, unsigned short iMarker, unsigned long iVertex){
-  
-  if ((config->GetKind_Solver() == NAVIER_STOKES) || (config->GetKind_Solver()  == RANS)) {  
-    SetVolumeOutputValue("SKIN_FRICTION-X", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 0));
-    SetVolumeOutputValue("SKIN_FRICTION-Y", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 1));
-    if (nDim == 3)
-      SetVolumeOutputValue("SKIN_FRICTION-Z", iPoint, solver[FLOW_SOL]->GetCSkinFriction(iMarker, iVertex, 2));
-  
-    SetVolumeOutputValue("HEAT_FLUX", iPoint, solver[FLOW_SOL]->GetHeatFlux(iMarker, iVertex));
-    SetVolumeOutputValue("Y_PLUS", iPoint, solver[FLOW_SOL]->GetYPlus(iMarker, iVertex));
-  }
-}
-
-void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
+void CFlowFEMOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) {
   unsigned short iVar;
   
@@ -576,16 +389,6 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
     SetHistoryOutputValue("RMS_ENERGY", log10(flow_solver->GetRes_RMS(4)));
   }
   
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("RMS_NU_TILDE", log10(turb_solver->GetRes_RMS(0)));
-    break;  
-  case SST:
-    SetHistoryOutputValue("RMS_KINETIC_ENERGY", log10(turb_solver->GetRes_RMS(0)));
-    SetHistoryOutputValue("RMS_DISSIPATION",    log10(turb_solver->GetRes_RMS(1)));
-    break;
-  default: break;
-  }
   
   SetHistoryOutputValue("MAX_DENSITY", log10(flow_solver->GetRes_Max(0)));
   SetHistoryOutputValue("MAX_MOMENTUM-X", log10(flow_solver->GetRes_Max(1)));
@@ -595,17 +398,6 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   else {
     SetHistoryOutputValue("MAX_MOMENTUM-Z", log10(flow_solver->GetRes_Max(3)));
     SetHistoryOutputValue("MAX_ENERGY", log10(flow_solver->GetRes_Max(4)));
-  }
-  
-  switch(turb_model){
-  case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
-    SetHistoryOutputValue("MAX_NU_TILDE", log10(turb_solver->GetRes_Max(0)));
-    break;  
-  case SST:
-    SetHistoryOutputValue("MAX_KINETIC_ENERGY", log10(turb_solver->GetRes_Max(0)));
-    SetHistoryOutputValue("MAX_DISSIPATION",    log10(turb_solver->GetRes_Max(1)));
-    break;
-  default: break;
   }
   
   SetHistoryOutputValue("DRAG", flow_solver->GetTotal_CD());
@@ -644,25 +436,9 @@ void CFlowOutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_co
   SetHistoryOutputValue("AOA", config[val_iZone]->GetAoA());
   SetHistoryOutputValue("LINSOL_ITER", flow_solver->GetIterLinSolver());
   
-  for (unsigned short iMarker_Analyze = 0; iMarker_Analyze < config[val_iZone]->GetnMarker_Analyze(); iMarker_Analyze++) {  
-    SetHistoryOutputPerSurfaceValue("AVG_MASSFLOW",               config[val_iZone]->GetSurface_MassFlow(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_MACH",                   config[val_iZone]->GetSurface_Mach(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TEMP",                   config[val_iZone]->GetSurface_Temperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_PRESS",                  config[val_iZone]->GetSurface_Pressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_DENSITY",                config[val_iZone]->GetSurface_Density(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_ENTHALPY",               config[val_iZone]->GetSurface_Enthalpy(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_NORMALVEL",              config[val_iZone]->GetSurface_NormalVelocity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("UNIFORMITY",                 config[val_iZone]->GetSurface_Uniformity(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_STRENGTH",         config[val_iZone]->GetSurface_SecondaryStrength(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("MOMENTUM_DISTORTION",        config[val_iZone]->GetSurface_MomentumDistortion(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("SECONDARY_OVER_UNIFORMITY",  config[val_iZone]->GetSurface_SecondOverUniform(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALTEMP",              config[val_iZone]->GetSurface_TotalTemperature(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("AVG_TOTALPRESS",             config[val_iZone]->GetSurface_TotalPressure(iMarker_Analyze), iMarker_Analyze);
-    SetHistoryOutputPerSurfaceValue("PRESSURE_DROP",              config[val_iZone]->GetSurface_PressureDrop(iMarker_Analyze), iMarker_Analyze);
-  }
 }
 
-bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
+bool CFlowFEMOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) { 
  if (!write_dualtime){
    return true;
  }
@@ -671,7 +447,7 @@ bool CFlowOutput::WriteHistoryFile_Output(CConfig *config, bool write_dualtime) 
  }
 }
 
-bool CFlowOutput::WriteScreen_Header(CConfig *config) {  
+bool CFlowFEMOutput::WriteScreen_Header(CConfig *config) {  
   bool write_header = false;
   if (config->GetUnsteady_Simulation() == STEADY || config->GetUnsteady_Simulation() == TIME_STEPPING) {
     write_header = ((config->GetInnerIter() % (config->GetWrt_Con_Freq()*40)) == 0) || (config->GetMultizone_Problem() && config->GetInnerIter() == 0);
@@ -685,7 +461,7 @@ bool CFlowOutput::WriteScreen_Header(CConfig *config) {
   return write_header;
 }
 
-bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
+bool CFlowFEMOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   bool write_output = false;
   
   if ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)){
@@ -701,7 +477,7 @@ bool CFlowOutput::WriteScreen_Output(CConfig *config, bool write_dualtime) {
   return write_output;
 }
 
-su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
+su2double CFlowFEMOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVariable* node_flow){
   
   unsigned short iDim, jDim;
   su2double Grad_Vel[3][3] = {{0.0, 0.0, 0.0},{0.0, 0.0, 0.0},{0.0, 0.0, 0.0}};
@@ -730,14 +506,14 @@ su2double CFlowOutput::GetQ_Criterion(CConfig *config, CGeometry *geometry, CVar
 }
 
 
-bool CFlowOutput::SetInit_Residuals(CConfig *config){
+bool CFlowFEMOutput::SetInit_Residuals(CConfig *config){
   
   return (config->GetUnsteady_Simulation() != STEADY && (config->GetIntIter() == 0))|| 
         (config->GetUnsteady_Simulation() == STEADY && (config->GetExtIter() < 2)); 
   
 }
 
-bool CFlowOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
+bool CFlowFEMOutput::SetUpdate_Averages(CConfig *config, bool dualtime){
   
   return (config->GetUnsteady_Simulation() != STEADY && !dualtime);
       
