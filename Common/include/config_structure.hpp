@@ -120,6 +120,7 @@ private:
   su2double Opt_LineSearch_Bound;  	/*!< \brief Bounds for the line search. */
   bool Write_Conv_FSI;			/*!< \brief Write convergence file for FSI problems. */
   bool ContinuousAdjoint,			/*!< \brief Flag to know if the code is solving an adjoint problem. */
+  Reduced_Model,              /*!< \brief Flag to know if code is producing a reduced order model. */
   Viscous,                /*!< \brief Flag to know if the code is solving a viscous problem. */
   EquivArea,				/*!< \brief Flag to know if the code is going to compute and plot the equivalent area. */
   Engine,				/*!< \brief Flag to know if the code is going to compute a problem with engine. */
@@ -1266,10 +1267,12 @@ private:
   
   void addMathProblemOption(const string name, bool & ContinuousAdjoint, const bool & ContinuousAdjoint_default,
                             bool & DiscreteAdjoint, const bool & DiscreteAdjoint_default,
-                            bool & Restart_Flow, const bool & Restart_Flow_default) {
+                            bool & Restart_Flow, const bool & Restart_Flow_default,
+                            bool & Reduced_Model, const bool & Reduced_Model_default) {
     assert(option_map.find(name) == option_map.end());
     all_options.insert(pair<string, bool>(name, true));
-    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default, Restart_Flow, Restart_Flow_default);
+    COptionBase* val = new COptionMathProblem(name, ContinuousAdjoint, ContinuousAdjoint_default, DiscreteAdjoint, DiscreteAdjoint_default,
+                                              Restart_Flow, Restart_Flow_default, Reduced_Model, Reduced_Model_default);
     option_map.insert(pair<string, COptionBase *>(name, val));
   }
   
@@ -6168,6 +6171,12 @@ public:
    * \return true if Adjoint
    */
   bool GetContinuous_Adjoint(void);
+  
+  /*!
+   * \brief Determines if problem is adjoint
+   * \return true if Adjoint
+   */
+  bool GetReduced_Model(void);
   
   /*!
    * \brief Determines if problem is viscous
