@@ -74,6 +74,17 @@ def main():
     discadj_cylinder3D.tol       = 0.00001
     test_list.append(discadj_cylinder3D)
 
+    # Arina nozzle 2D
+    discadj_arina2k              = TestCase('discadj_arina2k')
+    discadj_arina2k.cfg_dir      = "disc_adj_euler/arina2k"
+    discadj_arina2k.cfg_file     = "Arina2KRS.cfg"
+    discadj_arina2k.test_iter    = 20
+    discadj_arina2k.test_vals    = [2.229071, 1.716910, 4.7258e+04, 0.0000e+00] #last 4 columns
+    discadj_arina2k.su2_exec     = "parallel_computation.py -f"
+    discadj_arina2k.timeout      = 8400
+    discadj_arina2k.tol          = 0.00001
+    test_list.append(discadj_arina2k)
+    
     ####################################
     ### Disc. adj. compressible RANS ###
     ####################################
@@ -124,7 +135,7 @@ def main():
     discadj_incomp_cylinder.cfg_dir   = "disc_adj_incomp_navierstokes/cylinder"
     discadj_incomp_cylinder.cfg_file  = "heated_cylinder.cfg"
     discadj_incomp_cylinder.test_iter = 20
-    discadj_incomp_cylinder.test_vals = [-0.023099, 0.076994, 0.000000, 0.000000] #last 4 columns
+    discadj_incomp_cylinder.test_vals = [-2.104640, -2.004547, 0.0000e+00, 0.0000e+00] #last 4 columns
     discadj_incomp_cylinder.su2_exec  = "parallel_computation.py -f"
     discadj_incomp_cylinder.timeout   = 1600
     discadj_incomp_cylinder.tol       = 0.00001
@@ -269,6 +280,21 @@ def main():
     discadj_topol_optim.test_file = "grad_ref_node.dat"
     pass_list.append(discadj_topol_optim.run_filediff())
     test_list.append(discadj_topol_optim)
+
+    ###################################
+    ### Coupled FSI Adjoint         ###
+    ###################################
+
+    discadj_fsi2           = TestCase('discadj_fsi_airfoil')
+    discadj_fsi2.cfg_dir   = "disc_adj_fsi/Airfoil_2d"
+    discadj_fsi2.cfg_file  = "config.cfg"
+    discadj_fsi2.test_iter = 0
+    discadj_fsi2.su2_exec  = "parallel_computation.py"
+    discadj_fsi2.timeout   = 1600
+    discadj_fsi2.reference_file = "grad_young.opt.ref"
+    discadj_fsi2.test_file = "grad_young.opt"
+    pass_list.append(discadj_fsi2.run_filediff())
+    test_list.append(discadj_fsi2)
 
     # Tests summary
     print('==================================================================')
