@@ -331,11 +331,15 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
+  CVariable* Node_AdjHeat = NULL;
   CVariable* Node_AdjTurb = NULL;
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
   if (config->GetKind_Turb_Model() != NONE){
     Node_AdjTurb = solver[ADJTURB_SOL]->node[iPoint]; 
+  }
+  if (weakly_coupled_heat){
+    Node_AdjHeat = solver[ADJHEAT_SOL]->node[iPoint];
   }
   
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
@@ -348,7 +352,14 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   SetVolumeOutputValue("ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2));
   if (nDim == 3){
     SetVolumeOutputValue("ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3));
-    SetVolumeOutputValue("ADJ_ENERGY",     iPoint, Node_AdjFlow->GetSolution(4));
+  }
+
+  if (weakly_coupled_heat){
+    SetHistoryOutputValue("ADJ_HEAT", Node_AdjHeat->GetSolution(0));
+  }
+  if (heat){
+    if (nDim == 3) SetHistoryOutputValue("ADJ_HEAT", Node_AdjFlow->GetSolution(4));
+    else           SetHistoryOutputValue("ADJ_HEAT", Node_AdjFlow->GetSolution(3));
   }
   // Turbulent 
   switch(turb_model){
