@@ -61,6 +61,8 @@ protected:
   
   su2double *Solution,    /*!< \brief Solution of the problem. */
   *Solution_Old;      /*!< \brief Old solution of the problem R-K. */
+  su2double *Solution_Ref;    /*!< \brief Reference solution used for reduced order modeling. */
+  su2double *Solution_Red;    /*!< \brief Solution in reduced coordinates. */
   bool Non_Physical;      /*!< \brief Non-physical points in the solution (force first order). */
   su2double *Solution_time_n,  /*!< \brief Solution of the problem at time n for dual-time stepping technique. */
   *Solution_time_n1;      /*!< \brief Solution of the problem at time n-1 for dual-time stepping technique. */
@@ -199,6 +201,11 @@ public:
    * \brief Set old discrete adjoint variables to the current value of the adjoint variables.
    */
   void Set_OldSolution_Adj(void);
+  
+  /*!
+   * \brief Set reference solution using input file.
+   */
+  void Set_RefSolution(void);
 
   /*!
    * \brief Set the variable solution at time n.
@@ -259,6 +266,13 @@ public:
    */
   void AddSolution(unsigned short val_var, su2double val_solution);
 
+  /*!
+   * \brief Add a value to the reference solution.
+   * \param[in] val_var - Number of the variable.
+   * \param[in] val_solution - Value that we want to add to the solution.
+   */
+  void AddROMSolution(unsigned short val_var, su2double val_solution);
+  
   /*!
    * \brief A virtual member.
    * \param[in] val_var - Index of the variable.

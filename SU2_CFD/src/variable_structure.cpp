@@ -217,10 +217,22 @@ void CVariable::Set_OldSolution_Adj(void) {
 
 }
 
+void CVariable::Set_RefSolution(void) {
+  
+  for (unsigned short iVar = 0; iVar < nVar; iVar++)
+    Solution_Ref[iVar] = Solution[iVar];
+  
+}
 
 void CVariable::AddSolution(unsigned short val_var, su2double val_solution) {
   
   Solution[val_var] = Solution_Old[val_var] + val_solution;
+  
+}
+
+void CVariable::AddROMSolution(unsigned short val_var, su2double val_solution) {
+  // Line 11 of Algorithm 3 in Washabaugh Thesis (or Line 10 of Algorithm 1)
+  Solution[val_var] = Solution_Ref[val_var] + val_solution;
   
 }
 
