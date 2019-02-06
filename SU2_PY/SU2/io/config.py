@@ -391,7 +391,7 @@ def read_config(filename):
                 # remove white space
                 this_value = ''.join(this_value.split())                
                 # split by comma, map to float, store in dictionary
-                data_dict[this_param] = map(float,this_value.split(","))
+                data_dict[this_param] = list(map(float,this_value.split(",")))
                 break              
 
             # float parameters
