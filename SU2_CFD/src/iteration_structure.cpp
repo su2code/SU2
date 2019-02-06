@@ -1225,7 +1225,7 @@ void CFEMFluidIteration::Update(COutput *output,
 //                             CVolumetricMovement ***grid_movement,
 //                             CFreeFormDefBox*** FFDBox,
 //                             unsigned short val_iZone,
-//                             unsigned short val_iInst)     { return false; }
+//                             unsigned short val_iInst)     { }
 void CFEMFluidIteration::Postprocess(COutput *output,
                                  CIntegration ****integration_container,
                                  CGeometry ****geometry_container,
