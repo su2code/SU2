@@ -3223,7 +3223,6 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       conn_buf[iStorage+3] = Conn_Pyra_Par[iNode+2]-1;
       conn_buf[iStorage+4] = Conn_Pyra_Par[iNode+3]-1;
       conn_buf[iStorage+5] = Conn_Pyra_Par[iNode+4]-1;
-      conn_buf[iStorage+6] = Conn_Pyra_Par[iNode+5]-1;
       iStorage += (N_POINTS_PYRAMID+1);
     }
     
