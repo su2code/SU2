@@ -57,6 +57,8 @@ CNumerics::CNumerics(void) {
   Diffusion_Coeff_i = NULL;
   Diffusion_Coeff_j = NULL;
 
+  Vector = NULL;
+
   Enthalpy_formation = NULL;
   Theta_v = NULL;
 
