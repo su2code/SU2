@@ -694,6 +694,16 @@ inline void CVariable::SetVortex_Tilting(su2double **PrimGrad_Flow, su2double* V
 
 inline su2double CVariable::GetVortex_Tilting() { return 0.0; }
 
+inline void CVariable::GetInterfaceValues(vector<passivedouble> &vec)
+{
+  for(unsigned short iVar = 0; iVar < nVar; ++iVar) vec.push_back(SU2_TYPE::GetValue(Solution[iVar]));
+}
+
+inline void CVariable::SetInterfaceValues(vector<passivedouble>::const_iterator &it)
+{
+  for(unsigned short iVar = 0; iVar < nVar; ++iVar) {Solution[iVar] = *it; ++it;}
+}
+
 inline su2double CEulerVariable::GetSolution_New(unsigned short val_var) { return Solution_New[val_var]; }
 
 inline su2double CNSVariable::GetRoe_Dissipation(void) { return Roe_Dissipation; }
@@ -1267,6 +1277,11 @@ inline su2double *CFEAVariable::GetPrestretch(void) { return Prestretch; }
 
 inline su2double CFEAVariable::GetPrestretch(unsigned short iVar) { return Prestretch[iVar]; }
 
+inline void CFEAVariable::SetInterfaceValues(vector<passivedouble>::const_iterator &it)
+{
+  for(unsigned short iVar = 0; iVar < nVar; ++iVar) {Solution_Pred[iVar] = *it; ++it;}
+}
+
 inline void CFEABoundVariable::SetTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] = val_traction; }
 
 inline void CFEABoundVariable::AddTraction(unsigned short iVar, unsigned short jVar, su2double val_traction) { Traction[iVar][jVar] += val_traction; }
@@ -1638,3 +1653,12 @@ inline su2double CDiscAdjFEAVariable::Get_BGSSolution(unsigned short iDim) { ret
 
 inline su2double CDiscAdjFEAVariable::Get_BGSSolution_k(unsigned short iDim) { return Solution_BGS_k[iDim];}
 
+inline void CDiscAdjFEAVariable::GetInterfaceValues(vector<passivedouble> &vec)
+{
+  for (unsigned short iVar=0; iVar < nVar; ++iVar) vec.push_back(SU2_TYPE::GetValue(Geometry_CrossTerm_Derivative[iVar]));
+}
+
+inline void CDiscAdjFEAVariable::SetInterfaceValues(vector<passivedouble>::const_iterator &it)
+{
+  for (unsigned short iVar=0; iVar < nVar; ++iVar) {Geometry_CrossTerm_Derivative[iVar] = *it; ++it;}
+}

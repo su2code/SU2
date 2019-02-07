@@ -1013,7 +1013,7 @@ public:
                    unsigned short val_iInst);
 
   /*!
-   * \brief Get (gather onto master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \brief Get (gather onto master node) displacements at interface nodes, for use in multi-physics coupling methods.
    * \param[in] geometry_container - Geometrical definition of all the problems.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definitions of the problems.
@@ -1029,7 +1029,7 @@ public:
                           vector<passivedouble> &values);
 
   /*!
-   * \brief Set (scatter from master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \brief Set (scatter from master node) displacements at interface nodes, for use in multi-physics coupling methods.
    * \param[in] geometry_container - Geometrical definition of all the problems.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definitions of the problems.
@@ -1597,7 +1597,7 @@ public:
                       int val_DirectIter);
 
   /*!
-   * \brief Get (gather onto master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \brief Get (gather onto master node) adjoint displacements at interface nodes, for use in multi-physics coupling methods.
    * \param[in] geometry_container - Geometrical definition of all the problems.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definitions of the problems.
@@ -1613,7 +1613,7 @@ public:
                           vector<passivedouble> &values);
 
   /*!
-   * \brief Set (scatter from master node) primitive variable values of interface nodes, for use in multi-physics coupling methods.
+   * \brief Set (scatter from master node) adjoint displacements at interface nodes, for use in multi-physics coupling methods.
    * \param[in] geometry_container - Geometrical definition of all the problems.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] config_container - Definitions of the problems.
