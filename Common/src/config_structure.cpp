@@ -390,22 +390,22 @@ void CConfig::SetPointersNull(void) {
 
   /*--- Marker Pointers ---*/
 
-  Marker_Euler                = NULL;    Marker_FarField         			 = NULL;    Marker_Custom         = NULL;
-  Marker_SymWall              = NULL;    Marker_PerBound         			 = NULL;
-  Marker_PerDonor             = NULL;    Marker_NearFieldBound   			 = NULL;    Marker_InterfaceBound = NULL;
-  Marker_Dirichlet            = NULL;    Marker_Inlet            			 = NULL;
-  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           			 = NULL;
+  Marker_Euler                = NULL;    Marker_FarField         	   = NULL; Marker_Custom         = NULL;
+  Marker_SymWall              = NULL;    Marker_PerBound         	   = NULL;
+  Marker_PerDonor             = NULL;    Marker_NearFieldBound         = NULL; Marker_InterfaceBound = NULL;
+  Marker_Dirichlet            = NULL;    Marker_Inlet            	   = NULL;
+  Marker_Supersonic_Inlet     = NULL;    Marker_Outlet           	   = NULL;
   Marker_Isothermal           = NULL;    Marker_HeatFlux               = NULL;
   Marker_IsothermalCatalytic  = NULL;    Marker_IsothermalNonCatalytic = NULL;
-  Marker_HeatFluxNonCatalytic = NULL;    Marker_HeatFluxCatalytic      = NULL;
-  Marker_Supersonic_Outlet    = NULL;    Marker_Load             = NULL;    Marker_Disp_Dir       = NULL;
-  Marker_EngineExhaust        = NULL;    Marker_Displacement     = NULL;    Marker_Load           = NULL;
-  Marker_Load_Dir             = NULL;    Marker_Load_Sine        = NULL;    Marker_Clamped        = NULL;
-  Marker_FlowLoad             = NULL;    Marker_Neumann          = NULL;    Marker_Internal       = NULL;
-  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound = NULL;    Marker_All_KindBC     = NULL;
-  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv     = NULL;    Marker_All_PerBound   = NULL;
-  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface= NULL;    Marker_Riemann        = NULL;
-  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface     = NULL;    Marker_Damper           = NULL;
+  Marker_HeatFluxNonCatalytic = NULL;    Marker_HeatFluxCatalytic      = NULL; Marker_EngineInflow   = NULL;
+  Marker_Supersonic_Outlet    = NULL;    Marker_Load                   = NULL; Marker_Disp_Dir       = NULL;
+  Marker_EngineExhaust        = NULL;    Marker_Displacement           = NULL; Marker_Load           = NULL;
+  Marker_Load_Dir             = NULL;    Marker_Load_Sine              = NULL; Marker_Clamped        = NULL;
+  Marker_FlowLoad             = NULL;    Marker_Neumann                = NULL; Marker_Internal       = NULL;
+  Marker_All_TagBound         = NULL;    Marker_CfgFile_TagBound       = NULL; Marker_All_KindBC     = NULL;
+  Marker_CfgFile_KindBC       = NULL;    Marker_All_SendRecv           = NULL; Marker_All_PerBound   = NULL;
+  Marker_ZoneInterface        = NULL;    Marker_All_ZoneInterface      = NULL; Marker_Riemann        = NULL;
+  Marker_Fluid_InterfaceBound = NULL;    Marker_CHTInterface           = NULL; Marker_Damper         = NULL;
 
   
     /*--- Boundary Condition settings ---*/
@@ -6402,10 +6402,11 @@ void CConfig::SetOutput(unsigned short val_software, unsigned short val_izone) {
 
       if (Kind_ConvNumScheme_TNE2 == SPACE_UPWIND) {
         if (Kind_Upwind_TNE2 == ROE)   cout << "Roe (with entropy fix = "<< EntropyFix_Coeff <<") solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == HLLC)  cout << "HLLC solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
-        if (Kind_Upwind_Flow == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_TNE2 == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_TNE2 == AUSM)  cout << "AUSM solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_TNE2 == AUSMPLUSUP2)  cout << "AUSM+ -Up2 solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_TNE2 == MSW)  cout << "Modified Steger-Warming solver for the flow inviscid terms."<< endl;
+        if (Kind_Upwind_TNE2 == CUSP)  cout << "CUSP solver for the flow inviscid terms."<< endl;
 
         if (Kind_Regime == COMPRESSIBLE) {
           switch (Kind_RoeLowDiss) {
