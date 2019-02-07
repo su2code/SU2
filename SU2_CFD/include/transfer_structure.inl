@@ -45,6 +45,17 @@ inline void CTransfer::GetDonor_Variable(CSolver *donor_solution, CGeometry *don
                           CConfig *donor_config, unsigned long Marker_Donor, 
                      unsigned long Vertex_Donor, unsigned long Point_Donor) { }
 
+inline void CTransfer::InitializeTarget_Variable(CSolver *target_solution, unsigned long Marker_Target,
+                                                 unsigned long Vertex_Target, unsigned short nDonorPoints){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] = 0.0;
+}
+
+inline void CTransfer::RecoverTarget_Variable(long indexPoint_iVertex, su2double *Buffer_Bcast_Variables,
+                                              su2double donorCoeff){
+  for (unsigned short iVar = 0; iVar < nVar; iVar++) Target_Variable[iVar] += donorCoeff * Buffer_Bcast_Variables[indexPoint_iVertex*nVar+iVar];
+
+}
+
 inline void CTransfer::SetTarget_Variable(CSolver *target_solution, CGeometry *target_geometry,
 										  CConfig *target_config, unsigned long Marker_Target,
 										  unsigned long Vertex_Target, unsigned long Point_Target) { }
