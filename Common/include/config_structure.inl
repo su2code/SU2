@@ -2083,6 +2083,8 @@ inline bool CConfig::GetUQ_Permute(void) { return uq_permute; }
 
 inline bool CConfig::GetInterpolate_Solution(void) { return interpolate_solution; }
 
+inline bool CConfig::GetError_Estimate(void) { return error_estimate; }
+
 inline string CConfig::GetTarget_Mesh_FileName(void) { return Target_Mesh_FileName; }
 
 inline string CConfig::GetInterpolated_Restart_FileName(void) { return Interpolated_Restart_FileName; }

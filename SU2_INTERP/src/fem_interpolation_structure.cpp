@@ -1401,6 +1401,152 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
   }
 }
 
+void CFEMInterpolationSol::ApproxVandermonde_2D(
+                                                const unsigned short       nDim,
+                                                const unsigned short       nPoly,
+                                                const vector<su2double>    &coor,
+                                                vector<vector<su2double>>  &vmat)
+{
+
+  unsigned short nPoint = coor[0].size();
+  short iPoint, ix, iy, i, j, m;
+
+  vmat.resize(nPoint);
+  for(i = 0; i < nPoint; i++)
+    vmat[i].resize(2*nPoly+2);
+  
+  j = 0;
+
+  for(m = 0; m <= nPoly; m++){
+    for(ix = m; 0 <= ix; ix--){
+      iy = m-ix;
+      for(i = 0; i < nPoint; i++){
+        vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
+      }
+      j++;
+    }
+  }
+
+}
+
+void CFEMInterpolationSol::Householder(
+                                       const vector<vector<su2double>>  &mat,
+                                       vector<vector<su2double>>        &R,
+                                       vector<vector<su2double>>        &Q)
+{
+  unsigned short m = mat.size(),
+                 n = mat[0].size(),
+                 i, j, k, l;
+  su2double a;
+  vector<su2double> x(m),
+                    e(m);
+  // Temporary arrays
+  vector<vector<su2double>> z = mat,
+                            z1(m, vector<su2double>(n));
+
+  // Array of Q's
+  vector<vector<vector<su2double>>>  Qk(m, vector<vector<su2double>>(m, vector<su2double>(m)));
+
+  for(k = 0; k < n && k < m-1; k++){
+
+    // Minor
+    for(i = 0; i < m; i++)
+      for(j = 0; j < n; j++)
+        z1[i][j] = 0.0;
+
+    for(i = 0; i < k; i++) z1[i][i] = 1.0;
+
+    for(i = k; i < m; i++){
+      for(j = k; j < n; j++) z1[i][j] = z[i][j];
+    }
+
+    // Extract column
+    for(i = 0; i < m; i++) x[i] = z1[i][k];
+
+    // Norm of x
+    a = 0.0;
+    for(i = 0; i < m; i++) a += x[i]*x[i];
+    a = sqrt(a);
+    if(mat[k][k] > 0) a = -a;
+
+    // Fill unit vector e
+    for(i = 0; i < m; i++) e[i] = (i == k) ? 1 : 0;
+    e = x + a*e;
+
+    a = 0.0;  
+    for(i = 0; i < m; i++) a += e[i]*e[i];
+    a = sqrt(a);
+
+    for(i = 0; i < m; i++) e[i] /= a;
+
+    // Compute Householder factor
+    for(i = 0; i < m; i++){
+      for(j = 0; j < m; j++){
+        Qk[k][i][j] = -2.0*e[i]*e[j];
+      }
+    }
+    for(i = 0; i < m; i++) Qk[k][i][i] += 1.0;
+
+    // Qk[k]*z1
+    for(i = 0; i < m; i++)
+      for(j = 0; j < n; j++)
+        z[i][j] = 0.0;
+
+    for(i = 0; i < m; i++){
+      for(j = 0; j < n; j++){
+        for(l = 0; l < m; l++){
+          z[i][j] += Qk[k][i][l] * z1[l][j]
+        }
+      }
+    }
+
+
+  }
+
+  // Compute Q^T
+  Q = qv[0];
+  for(i = 0; i < m; i++) z1[i].resize(m);
+  for(k = 1; k < n && k < m-1; k++){
+    for(i = 0; i < m; i++)
+      for(j = 0; j < m; j++)
+        z1[i][j] = 0.0;
+
+    for(i = 0; i < m; i++){
+      for(j = 0; j < m; j++){
+        for(l = 0; l < m; l++){
+          z1[i][j] += Qk[k][i][l] * Q[l][j]
+        }
+      }
+    }
+
+    Q = z1;
+
+  }
+
+  // Compute R
+  R.resize(m);
+  for(i = 0; i < m; i++){
+    R[i].resize(n);
+    for(j = 0; j < n; j++){
+      for(l = 0; l < m; l++){
+        R[i][j] += Q[i][l] * mat[l][j]
+      }
+    }
+  }
+
+  // Transpose Q
+  for(i = 0; i < m; i++){
+    for(j = 0; j < i; j++){
+      const su2double tmp = Q[i][j];
+      Q[i][j] = Q[j][i];
+      Q[j][i] = tmp;
+    }
+  }
+
+
+
+}
+
 void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
                                                 CGeometry****  geometry,
                                                 CSolver*****   solution,
@@ -2204,13 +2350,13 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       // Get the curvature of the surface node.
       vector<su2double> curvature;
       for(iNode = 0; iNode < nDOFsGrid; iNode++){
-        iPoint           = geoemtry->bound[iMarker][iElem]->GetNode(iNode);
+        iPoint           = geometry->bound[iMarker][iElem]->GetNode(iNode);
         curvature[iNode] = geometry->node[iPoint]->GetCurvature();
       }
 
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data(), curvature);
+                                      connSU2.data(), curvature.data());
     }
   }
   

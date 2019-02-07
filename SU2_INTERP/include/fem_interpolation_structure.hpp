@@ -225,7 +225,7 @@ public:
   void StoreElemData(const unsigned short VTK_Type,
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
-                     const unsigned long  *connGrid
+                     const unsigned long  *connGrid,
                      const su2double      *curvature);
   
 private:
@@ -457,6 +457,21 @@ public:
    * \return  Number of DOFs in the solution.
    */
   const vector<vector<su2double> > &GetSolDOFs(void) const {return mSolDOFs;}
+
+  /*!
+   * \brief Function, which creates an approximate Vandermonde matrix for an overdetermined system on a 2D mesh.
+   */
+  void ApproxVandermonde_2D(const unsigned short       nDim,
+                            const unsigned short       nPoly,
+                            const vector<su2double>    &coor,
+                            vector<vector<su2double>>  &vmat);
+
+  /*!
+   * \brief Function, which performs a QR factorization using the Householder method.
+   */
+  void Householder(const vector<vector<su2double>>  &mat,
+                   vector<vector<su2double>>        &R,
+                   vector<vector<su2double>>        &Q)
 
   /*!
    * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.

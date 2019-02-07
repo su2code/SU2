@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
 
   nInst = new unsigned short[nZone];
 
+  /*--- If error estimation is desired, instantiate a third I/O container ---*/
+  if(config->GetError_Estimate()) max_io = 3;
 
   /*--- Definition of the containers for input and output ---*/
   config_container    = new CConfig**[max_io];
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
       config_container[io][iZone]->SetMPICommunicator(MPICommunicator);
       
       /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
-      if (io == 1){
+      if (io > 0){
         config_container[io][iZone]->SetRestart(false);
         config_container[io][iZone]->SetMesh_FileName(config_container[io][iZone]->GetTarget_Mesh_FileName());
       }
@@ -767,6 +769,11 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   
   // }
+
+  if(config->GetError_Estimate()){
+    if (rank == MASTER_NODE)
+    cout << endl <<"--------------------------- Error Estimation ----------------------------" << endl;
+  }
 
 
   if (rank == MASTER_NODE)

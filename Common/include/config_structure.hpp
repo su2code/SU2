@@ -1102,6 +1102,8 @@ private:
   string Target_Mesh_FileName;            /*!< \brief File name of target mesh for interpolation */
   string Interpolated_Restart_FileName;   /*!< \brief File name of interpolated solution that is ouput */
   bool use_target_mesh;                   /*!< \brief Determines if the target mesh should be used (for geometry initilization) */
+
+  bool error_estmate;              /*!< \brief Determines if error estimation is taking place */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9208,6 +9210,12 @@ public:
    * \return File name of the target grid.
    */
   void SetUsing_Target_Mesh(bool val_using_target_mesh);
+
+  /*!
+   * \brief Check if error estimation is being carried out
+   * \return <code>TRUE<\code> if error estimation is taking place
+  */
+  bool GetError_Estimate(void);
 };
 
 #include "config_structure.inl"
