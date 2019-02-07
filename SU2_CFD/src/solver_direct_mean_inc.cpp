@@ -226,6 +226,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
+  MGLevel = iMesh;
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];
@@ -4482,6 +4484,11 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
         node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
       }
     }
+  }
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
   
   /*--- MPI solution ---*/
@@ -10162,25 +10169,7 @@ void CIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_containe
   su2double *PrimVar_i = new su2double[nPrimVar];
   su2double *PrimVar_j = new su2double[nPrimVar];
   
-  /*--- For the first pass through the periodic BC, make all nodes on
-   the periodic surfaces act as point implicit so that we maintain a
-   consistent implicit solution on both sides of the periodic boundary. ---*/
-  
-  if (val_periodic == 1) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (implicit) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              unsigned long total_index = iPoint*nVar+iVar;
-              Jacobian.SetPointImplicit(total_index);
-            }
-          }
-        }
-      }
-    }
-  }
+
   
 //  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
 //
@@ -10241,6 +10230,28 @@ void CIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_containe
 //      }
 //    }
 //  }
+  
+  
+  /*--- For the first pass through the periodic BC, make all nodes on
+   the periodic surfaces act as point implicit so that we maintain a
+   consistent implicit solution on both sides of the periodic boundary. ---*/
+//
+//  if (val_periodic == 1) {
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          if (implicit) {
+//            for (iVar = 0; iVar < nVar; iVar++) {
+//              unsigned long total_index = iPoint*nVar+iVar;
+//              Jacobian.SetPointImplicit(total_index);
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
+  
   
   InitiatePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
   CompletePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
@@ -11278,6 +11289,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
+  MGLevel = iMesh;
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];

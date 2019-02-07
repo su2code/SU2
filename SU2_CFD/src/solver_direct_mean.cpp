@@ -358,6 +358,7 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPrimVar = nDim+9; nPrimVarGrad = nDim+4;
   nSecondaryVar = 2; nSecondaryVarGrad = 2;
 
+  MGLevel = iMesh;
   
   /*--- Initialize nVarGrad for deallocation ---*/
   
@@ -6503,6 +6504,11 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
         node[iPoint]->AddSolution(iVar, config->GetRelaxation_Factor_Flow()*LinSysSol[iPoint*nVar+iVar]);
       }
     }
+  }
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
   }
   
   /*--- MPI solution ---*/
@@ -17311,21 +17317,7 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    the periodic surfaces act as point implicit so that we maintain a
    consistent implicit solution on both sides of the periodic boundary. ---*/
   
-  if (val_periodic == 1) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (implicit) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              unsigned long total_index = iPoint*nVar+iVar;
-              Jacobian.SetPointImplicit(total_index);
-            }
-          }
-        }
-      }
-    }
-  }
+
   
 //  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
 //
@@ -17387,6 +17379,23 @@ void CEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 //    }
 //  }
 
+
+//  if (val_periodic == 1) {
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          if (implicit) {
+//            for (iVar = 0; iVar < nVar; iVar++) {
+//              unsigned long total_index = iPoint*nVar+iVar;
+//              Jacobian.SetPointImplicit(total_index);
+//            }
+//          }
+//        }
+//      }
+//    }
+//  }
+  
   InitiatePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
   CompletePeriodicComms(geometry, config, val_periodic, PERIODIC_RESIDUAL);
 
@@ -19192,6 +19201,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
+  MGLevel = iMesh;
+  
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];

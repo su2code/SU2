@@ -3200,21 +3200,7 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
    the periodic surfaces act as point implicit so that we maintain a
    consistent implicit solution on both sides of the periodic boundary. ---*/
   
-  if (val_periodic == 1) {
-    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
-        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
-          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          if (implicit) {
-            for (iVar = 0; iVar < nVar; iVar++) {
-              unsigned long total_index = iPoint*nVar+iVar;
-              Jacobian.SetPointImplicit(total_index);
-            }
-          }
-        }
-      }
-    }
-  }
+
   
 //  /*--- Now perform the residual & Jacobian updates with the recv data. ---*/
 //
@@ -3270,6 +3256,22 @@ void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
 //            LinSysRes.AddBlock(iPoint, Residual);
 //            if (implicit) Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
 //
+//          }
+//        }
+//      }
+//    }
+//  }
+  
+//  if (val_periodic == 1) {
+//    for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
+//      if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY) {
+//        for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
+//          iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+//          if (implicit) {
+//            for (iVar = 0; iVar < nVar; iVar++) {
+//              unsigned long total_index = iPoint*nVar+iVar;
+//              Jacobian.SetPointImplicit(total_index);
+//            }
 //          }
 //        }
 //      }
@@ -3392,6 +3394,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
   
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
   
   /*--- MPI solution ---*/
   

@@ -12892,6 +12892,13 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
       if (geometry->GetnDim() == 3) {
         nVar_Par += 1; Variable_Names.push_back("Relative_Velocity_z");
       }
+      
+      nVar_Par += 2;
+      Variable_Names.push_back("XVelocity_x");
+      Variable_Names.push_back("XVelocity_y");
+      if (geometry->GetnDim() == 3) {
+        nVar_Par += 1; Variable_Names.push_back("XVelocity_z");
+      }
     }
     
   }
@@ -13169,6 +13176,15 @@ void COutput::LoadLocalData_Flow(CConfig *config, CGeometry *geometry, CSolver *
           Local_Data[jPoint][iVar] = Solution[2]/Solution[0] - Grid_Vel[1]; iVar++;
           if (geometry->GetnDim() == 3) {
             Local_Data[jPoint][iVar] = Solution[3]/Solution[0] - Grid_Vel[2];
+            iVar++;
+          }
+          
+          //Grid_Vel = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 1);
+          //su2double *Solution = solver[FLOW_SOL]->node[iPoint]->GetSolution();
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 0); iVar++;
+          Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 1); iVar++;
+          if (geometry->GetnDim() == 3) {
+            Local_Data[jPoint][iVar] = solver[FLOW_SOL]->node[iPoint]->GetGradient_Primitive(1, 2);
             iVar++;
           }
         }

@@ -179,15 +179,6 @@ void CIntegration::Space_Integration(CGeometry *geometry,
         break;
     }
   }
-
-  /*--- Complete residuals for periodic boundary conditions. We loop over
-   the periodic BCs in matching pairs so that, in the event that there are
-   adjacent periodic markers, the repeated points will have their residuals
-   accumulated corectly during the communications. ---*/
-
-  for (iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iPeriodic);
-  }
   
   /*--- Strong boundary conditions (Navier-Stokes and Dirichlet type BCs) ---*/
   
@@ -216,7 +207,17 @@ void CIntegration::Space_Integration(CGeometry *geometry,
           solver_container[MainSolver]->BC_HeatFlux_Wall(geometry, solver_container, numerics[CONV_BOUND_TERM], numerics[VISC_BOUND_TERM], config, iMarker);
         }
         break;
-    } 
+    }
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. ---*/
+  
+  for (iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iPeriodic);
+  }
+  
 }
 
 void CIntegration::Space_Integration_FEM(CGeometry *geometry,
