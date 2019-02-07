@@ -7140,6 +7140,11 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   su2double **Preconditioner; /*!< \brief Auxiliary matrix for storing the low speed preconditioner. */
 
+  /* Sliding meshes variables */
+
+  su2double ****SlidingState;
+  int **SlidingStateNodes;
+
 public:
   
   /*!
@@ -7496,6 +7501,16 @@ public:
   void BC_Outlet(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                  CConfig *config, unsigned short val_marker);
   
+  /*!
+   * \brief Impose the interface state across sliding meshes.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] conv_numerics - Description of the numerical method.
+   * \param[in] visc_numerics - Description of the numerical method.
+   * \param[in] config - Definition of the particular problem.
+   */
+   void BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config);
+
    /*!
     * \brief compare to values.
     * \param[in] a - value 1.
@@ -8330,6 +8345,47 @@ public:
    * \brief A virtual member.
    */
   void GetOutlet_Properties(CGeometry *geometry, CConfig *config, unsigned short iMesh, bool Output);
+
+  /*!
+   * \brief Allocates the final pointer of SlidingState depending on how many donor vertex donate to it. That number is stored in SlidingStateNodes[val_marker][val_vertex].
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   */
+  void SetSlidingStateStructure(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Set the outer state for fluid interface nodes.
+   * \param[in] val_marker   - marker index
+   * \param[in] val_vertex   - vertex index
+   * \param[in] val_state    - requested state component
+   * \param[in] donor_index  - index of the donor node to set
+   * \param[in] component    - set value
+   */
+  void SetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index, su2double component);
+
+  /*!
+   * \brief Set the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] value - number of outer states
+   */
+  void SetnSlidingStates(unsigned short val_marker, unsigned long val_vertex, int value);
+
+  /*!
+   * \brief Get the number of outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   */
+  int GetnSlidingStates(unsigned short val_marker, unsigned long val_vertex);
+
+  /*!
+   * \brief Get the outer state for fluid interface nodes.
+   * \param[in] val_marker - marker index
+   * \param[in] val_vertex - vertex index
+   * \param[in] val_state  - requested state component
+   */
+   su2double GetSlidingState(unsigned short val_marker, unsigned long val_vertex, unsigned short val_state, unsigned long donor_index);
+
   
 };
 
@@ -14701,6 +14757,7 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
+  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -15033,6 +15090,7 @@ public:
                              su2double                *resFaces,
                              CNumerics                *conv_numerics,
                              su2double                *workArray);
+  using CSolver::BC_Euler_Wall;
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
@@ -15054,6 +15112,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Far_Field;
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
@@ -15075,6 +15134,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Sym_Plane;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition. It is a virtual
@@ -15096,6 +15156,7 @@ public:
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray);
+  using CSolver::BC_Supersonic_Outlet;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
@@ -15119,6 +15180,7 @@ public:
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
                         su2double                *workArray);
+  using CSolver::BC_Inlet;
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
@@ -15142,6 +15204,7 @@ public:
                          CNumerics                *conv_numerics,
                          unsigned short           val_marker,
                          su2double                *workArray);
+  using CSolver::BC_Outlet;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
@@ -15165,6 +15228,7 @@ public:
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker,
                                 su2double                *workArray);
+  using CSolver::BC_HeatFlux_Wall;
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
@@ -15188,6 +15252,7 @@ public:
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker,
                                   su2double                *workArray);
+  using CSolver::BC_Isothermal_Wall;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
@@ -15211,6 +15276,7 @@ public:
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
                           su2double                *workArray);
+  using CSolver::BC_Riemann;
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
@@ -15232,6 +15298,7 @@ public:
                          su2double                *resFaces,
                          CNumerics                *conv_numerics,
                          su2double                *workArray);
+  using CSolver::BC_Custom;
 
 #ifdef RINGLEB
   /*!

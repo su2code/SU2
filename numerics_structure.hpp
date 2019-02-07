@@ -827,6 +827,7 @@ public:
                                   su2double *val_pressure, su2double *val_betainc2,
                                   su2double *val_enthalpy,
                                   su2double *val_normal, su2double *val_Proj_Flux);
+<<<<<<< HEAD
   
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction.
@@ -901,6 +902,8 @@ public:
                                  su2double val_eddy_viscosity,
                                  su2double val_turb_ke,
                                  su2double val_thermal_conductivity);
+=======
+>>>>>>> develop
 
   /*!
    * \brief Compute the projection of the inviscid Jacobian matrices.
@@ -1010,6 +1013,7 @@ public:
                           su2double **val_Proj_Jac_tensor);
   
   /*!
+<<<<<<< HEAD
    * \brief TSL-Approximation of Viscous NS Jacobians.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
@@ -1092,6 +1096,8 @@ public:
 
 
   /*!
+=======
+>>>>>>> develop
    * \brief Mapping between primitives variables P and conservatives variables C.
    * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
    * \param[in] val_Mean_PrimVar - Mean Value of the secondary variables.
@@ -1100,22 +1106,6 @@ public:
   void GetPrimitive2Conservative (su2double *val_Mean_PrimVar,
                                   su2double *val_Mean_SecVar,
                                   su2double **val_Jac_PC);
-   
-  /*!
-   * \brief Compute the projection of the viscous Jacobian matrices.
-   * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
-   * \param[in] val_eddy_viscosity - Value of the eddy viscosity.
-   * \param[in] val_dist_ij - Distance between the points.
-   * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
-   * \param[in] val_dS - Area of the face between two nodes.
-   * \param[out] val_Proj_Jac_Tensor_i - Pointer to the projected viscous Jacobian at point i.
-   * \param[out] val_Proj_Jac_Tensor_j - Pointer to the projected viscous Jacobian at point j.
-   */
-  void GetViscousIncProjJacs(su2double val_laminar_viscosity,
-                                 su2double val_eddy_viscosity, su2double val_dist_ij,
-                                 su2double *val_normal, su2double val_dS,
-                                 su2double **val_Proj_Jac_Tensor_i,
-                                 su2double **val_Proj_Jac_Tensor_j);
   
   /*!
    * \overload
@@ -2405,6 +2395,7 @@ public:
 };
 
 /*!
+<<<<<<< HEAD
  * \class CUpwAUSM_TNE2
  * \brief Class for solving an approximate Riemann AUSM.
  * \ingroup ConvDiscr
@@ -2498,7 +2489,30 @@ public:
 
 /*!
  * \class CUpwAUSMPLUSUP2_Flow
- * \brief Class for solving an approximate Riemann AUSM+ -up2.
+ * \brief Class for solving an approximate Riemann AUSM+ -up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
+ * \ingroup ConvDiscr
+ * \author Walter Maier, A. Sachedeva
+ */
+class CUpwAUSMPLUSUP2_TNE2 : public CNumerics {
+private:
+  bool implicit, ionization;
+  su2double *FcL, *FcR, *FcLR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
+  su2double *rhos_i, *u_i;
+  su2double *rhos_j, *u_j;
+  su2double a_i, P_i, h_i, ProjVel_i;
+  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
+  su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
+  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+
+public:
+
+=======
+ * \class CUpwAUSMPLUSUP2_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ -up.
  * \ingroup ConvDiscr
  * \author Amit Sachdeva
  */
@@ -2521,12 +2535,22 @@ private:
   
 public:
   
+>>>>>>> develop
   /*!
    * \brief Constructor of the class.
    * \param[in] val_nDim - Number of dimensions of the problem.
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
+<<<<<<< HEAD
+  CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUSUP2_TNE2(void);
+
+=======
   CUpwAUSMPLUSUP2_Flow(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
   
   /*!
@@ -2534,6 +2558,7 @@ public:
    */
   ~CUpwAUSMPLUSUP2_Flow(void);
   
+>>>>>>> develop
   /*!
    * \brief Compute the AUSM+ -up flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
@@ -3547,6 +3572,7 @@ public:
                         CConfig *config);
 };
 
+
 /*!
  * \class CAvgGrad_Base
  * \brief A base class for computing viscous terms using an average of gradients.
@@ -4410,6 +4436,7 @@ public:
 };
 
 /*!
+<<<<<<< HEAD
  * \class CAvgGradCorrected_Flow
  * \brief Class for computing viscous term using the average of gradients with a correction.
  * \ingroup ViscDiscr
@@ -4598,6 +4625,8 @@ public:
 };
 
 /*!
+=======
+>>>>>>> develop
  * \class CAvgGradCorrected_TransLM
  * \brief Class for computing viscous term using average of gradients with correction (Spalart-Allmaras turbulence model).
  * \ingroup ViscDiscr
@@ -5329,7 +5358,7 @@ public:
  * \brief Class for computing the constitutive and stress tensors for a dielectric elastomer.
  * \ingroup FEM_Discr
  * \author R.Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 4.0.0 "Cardinal"
  */
 class CFEM_DielectricElastomer : public CFEANonlinearElasticity {
 
