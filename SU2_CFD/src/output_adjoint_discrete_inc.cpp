@@ -46,6 +46,9 @@ CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometr
   heat = config->GetEnergy_Equation();
   
   weakly_coupled_heat = config->GetWeakly_Coupled_Heat();
+
+  rad_model = config->GetKind_RadiationModel();
+
   
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
@@ -122,6 +125,13 @@ void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
     break;
   default: break;
   }
+  switch(rad_model){
+  case P1_MODEL:
+    /// DESCRIPTION: Root-mean square residual of the adjoint radiative energy tilde.
+    AddHistoryOutput("RMS_ADJ_P1", "rms[A_P1]", FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL);
+    break;
+  default: break;
+  }
   /// END_GROUP
   
   /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
@@ -175,6 +185,7 @@ void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   CSolver* adjflow_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJFLOW_SOL];
   CSolver* adjturb_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJTURB_SOL];  
   CSolver* adjheat_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJHEAT_SOL];
+  CSolver* adjrad_solver = solver_container[val_iZone][val_iInst][MESH_0][ADJRAD_SOL];
   
   SetHistoryOutputValue("TIME_ITER", config[val_iZone]->GetTimeIter());  
   SetHistoryOutputValue("INNER_ITER", config[val_iZone]->GetInnerIter());
@@ -200,6 +211,12 @@ void CDiscAdjFlowIncOutput::LoadHistoryData(CGeometry ****geometry, CSolver ****
   case SST:
     SetHistoryOutputValue("RMS_ADJ_KINETIC_ENERGY", log10(adjturb_solver->GetRes_RMS(0)));
     SetHistoryOutputValue("RMS_ADJ_DISSIPATION",    log10(adjturb_solver->GetRes_RMS(1)));
+    break;
+  default: break;
+  }
+  switch(rad_model){
+  case P1_MODEL:
+    SetHistoryOutputValue("RMS_ADJ_P1", log10(adjrad_solver->GetRes_RMS(0)));
     break;
   default: break;
   }
@@ -276,6 +293,13 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     break;
   default: break;
   }
+
+  switch(rad_model){
+  case P1_MODEL:
+    AddVolumeOutput("ADJ_P1_ENERGY",  "Adjoint_Energy(P1)", "SOLUTION");
+    break;
+  default: break;
+  }
   /// END_GROUP
   
   /// BEGIN_GROUP: GRID_VELOCITY, DESCRIPTION: The grid velocity in case of a moving grid.  
@@ -336,6 +360,7 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
   CVariable* Node_AdjHeat = NULL;
   CVariable* Node_AdjTurb = NULL;
+  CVariable* Node_AdjRad  = NULL;
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
   if (config->GetKind_Turb_Model() != NONE){
@@ -343,6 +368,9 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   }
   if (weakly_coupled_heat){
     Node_AdjHeat = solver[ADJHEAT_SOL]->node[iPoint];
+  }
+  if (config->GetKind_RadiationModel() != NONE){
+    Node_AdjRad = solver[ADJRAD_SOL]->node[iPoint];
   }
   
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
@@ -378,6 +406,13 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
     break;
   }
   
+  // Radiation
+  switch(rad_model){
+  case P1_MODEL:
+    SetVolumeOutputValue("ADJ_P1_ENERGY", iPoint, Node_AdjRad->GetSolution(0));
+    break;
+  default: break;
+  }
   // Residuals
   SetVolumeOutputValue("RES_ADJ_PRESSURE", iPoint, Node_AdjFlow->GetSolution(0) - Node_AdjFlow->GetSolution_Old(0));
   SetVolumeOutputValue("RES_ADJ_VELOCITY-X", iPoint, Node_AdjFlow->GetSolution(1) - Node_AdjFlow->GetSolution_Old(1));
