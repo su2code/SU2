@@ -3270,19 +3270,8 @@ void CDiscAdjFEAIteration::GetInterfaceValues(CGeometry ****geometry_container,
                                        unsigned short val_iInst,
                                        vector<passivedouble> &values) {
 
-  bool turbulent = (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS);
-  bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
-
-  /*--- The interface values computed during the structural adjoint iteration are the cross terms of the fluid adjoint solvers. ---*/
-  /*--- We need to merge the flow and turbulence adjoints. ---*/
-  solver_container[val_iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
-                                                                               config_container[val_iZone], values);
-  if (turbulent && !frozen_visc) {
-    vector<passivedouble> values_turb;
-    solver_container[val_iZone][INST_0][MESH_0][ADJTURB_SOL]->GetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
-                                                                                 config_container[val_iZone], values_turb);
-    values.insert(values.end(), values_turb.begin(), values_turb.end());
-  }
+  solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->GetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
+                                                                              config_container[val_iZone], values);
 }
 
 void CDiscAdjFEAIteration::SetInterfaceValues(CGeometry ****geometry_container,
@@ -3292,23 +3281,8 @@ void CDiscAdjFEAIteration::SetInterfaceValues(CGeometry ****geometry_container,
                                        unsigned short val_iInst,
                                        vector<passivedouble> &values) {
 
-  bool turbulent = (config_container[val_iZone]->GetKind_Solver() == DISC_ADJ_RANS);
-  bool frozen_visc = config_container[val_iZone]->GetFrozen_Visc_Disc();
-
-  /*--- The interface values computed during the structural adjoint iteration are the cross terms of the fluid adjoint solvers. ---*/
-  /*--- We need to merge the flow and turbulence adjoints. ---*/
-  solver_container[val_iZone][INST_0][MESH_0][ADJFLOW_SOL]->SetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
-                                                                               config_container[val_iZone], values);
-  if (turbulent && !frozen_visc) {
-    unsigned short nVarsFlow = solver_container[val_iZone][INST_0][MESH_0][ADJFLOW_SOL]->GetnVar(),
-                   nVarsTurb = solver_container[val_iZone][INST_0][MESH_0][ADJTURB_SOL]->GetnVar();
-    unsigned long offset = values.size()/(nVarsFlow+nVarsTurb)*nVarsFlow;
-    
-    vector<passivedouble> values_turb(values.begin()+offset, values.end());
-
-    solver_container[val_iZone][INST_0][MESH_0][ADJTURB_SOL]->SetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
-                                                                                 config_container[val_iZone], values_turb);
-  }
+  solver_container[val_iZone][INST_0][MESH_0][ADJFEA_SOL]->SetInterfaceValues(geometry_container[val_iZone][INST_0][MESH_0],
+                                                                              config_container[val_iZone], values);
 }
 
 

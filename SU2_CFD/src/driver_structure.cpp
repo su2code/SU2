@@ -6202,7 +6202,7 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
 
   unsigned short ZONE_FLOW = 0, ZONE_STRUCT = 1;
   /*--- It is more practical to consider the structure to always be iterated last ---*/
-  unsigned short kind_of = FLOW_OBJECTIVE_FUNCTION;
+  unsigned short kind_of = FEM_OBJECTIVE_FUNCTION;
   unsigned long iOuterIter = 0;
   bool Convergence = false;
 
@@ -6216,7 +6216,7 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   for (iZone = 0; iZone < nZone; iZone++) config_container[iZone]->SetOuterIter(iOuterIter);
 
   /*--- Initial values ---*/
-  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
 
   /*--- Variables to store the history of values at start and end of each outer iteration ---*/
   M = interfaceValues.size();
@@ -6226,7 +6226,7 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   /*--- Initial interface residual ---*/
   StepGaussSeidel(kind_of, "IQN", iOuterIter);
 
-  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+  iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
   for(unsigned long i=0; i<M; ++i) Y(i,0) = interfaceValues[i];
 
   VectorXd R = Y.col(0)-X.col(0);
@@ -6265,13 +6265,13 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
     /*--- Set values ---*/
     X.col(targ) = X.col(cols)+R;
     for(unsigned long i=0; i<M; ++i) interfaceValues[i] = X(i,targ);
-    iteration_container[ZONE_STRUCT][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+    iteration_container[ZONE_STRUCT][INST_0]->SetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
 
     /*--- Perform a BGS step ---*/
     StepGaussSeidel(kind_of, "IQN", iOuterIter);
 
     /*--- Get values ---*/
-    iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_FLOW,INST_0,interfaceValues);
+    iteration_container[ZONE_STRUCT][INST_0]->GetInterfaceValues(geometry_container,solver_container,config_container,ZONE_STRUCT,INST_0,interfaceValues);
     for(unsigned long i=0; i<M; ++i) Y(i,targ) = interfaceValues[i];
 
     /*--- Compute residual and check convergence ---*/

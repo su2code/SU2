@@ -1344,3 +1344,142 @@ void CDiscAdjFEASolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CCo
 
 }
 
+void CDiscAdjFEASolver::GetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
+
+  /*--- General comments: ---*/
+  /*--- The purpose of this method is to be used by multi-physics coupling methods that collapse the
+        problem onto the interface, therefore these values do not require differentiation (passivedouble).
+      - It is assumed that the duplication of values, induced by vertices that appear in multiple markers,
+        and by halo nodes is of no consequence.
+      - On entry, "values" may be empty, on exit the master node has all interface values and other nodes
+        have a {1.0}. ---*/
+
+  unsigned short iVar;
+  unsigned long iPoint, iVertex, nVertex;
+  unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
+                 iMarker, nMarker = config->GetnMarker_All();
+
+  /*--- Loop through the FSI interface pairs ---*/
+  vector<passivedouble> interfaceValues;
+
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nVertex = geometry->GetnVertex(iMarker);
+
+    for (iVertex = 0; iVertex < nVertex; ++iVertex) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      for (iVar = 0; iVar < nVar; ++iVar)
+        interfaceValues.push_back(SU2_TYPE::GetValue(node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar)));
+    }
+  }
+
+#ifdef HAVE_MPI
+  int sendcount = int(interfaceValues.size());
+  if (sendcount == 0) interfaceValues.resize(1);
+
+  int *recvcounts = NULL, *displs = NULL;
+
+  if (rank == MASTER_NODE) recvcounts = new int [size];
+
+  MPI_Gather(&sendcount,1,MPI_INT,recvcounts,1,MPI_INT,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE) {
+    int totalcount = 0;
+    for (int i=0; i<size; ++i) totalcount += recvcounts[i];
+    values.resize(totalcount);
+
+    displs = new int [size];
+    displs[0] = 0;
+    for (int i=1; i<size; ++i) displs[i] = displs[i-1]+recvcounts[i-1];
+  }
+  else {
+    values.resize(1,1.0);
+  }
+
+  MPI_Gatherv(&interfaceValues[0],sendcount,MPI_DOUBLE,&values[0],
+              recvcounts,displs,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (recvcounts) delete [] recvcounts;
+  if (displs) delete [] displs;
+#else
+  values = interfaceValues;
+#endif
+}
+
+void CDiscAdjFEASolver::SetInterfaceValues(CGeometry *geometry, CConfig *config, vector<passivedouble> &values) {
+
+  /*--- General comments: ---*/
+  /*--- This does the opposite of "GetInterfaceValues", see also the comments therein.
+      - On entry the master node needs to pass the values it wants to scatter, so the expected size of
+        "values" is that returned by the Get method. On exit "values" is {1.0} for other nodes.
+      - This method will set values for halo nodes (if the partitioning cut an interface), if there is a
+        change that values between domains are not compatible, synchronization should be performed. ---*/
+
+  unsigned short iVar;
+  unsigned long iPoint, iVertex, nVertex;
+  unsigned short iMarkerInt, nMarkerInt = config->GetMarker_n_ZoneInterface()/2,
+                 iMarker, nMarker = config->GetnMarker_All();
+
+  /*--- Loop through the FSI interface pairs ---*/
+  vector<passivedouble> interfaceValues;
+  vector<unsigned long> interfacePoints;
+
+  for (iMarkerInt = 1; iMarkerInt <= nMarkerInt; ++iMarkerInt) {
+    /*--- Find the marker index associated with the pair ---*/
+    for (iMarker = 0; iMarker < nMarker; ++iMarker)
+      if (config->GetMarker_All_ZoneInterface(iMarker) == iMarkerInt)
+        break;
+    /*--- The current mpi rank may not have this marker ---*/
+    if (iMarker == nMarker) continue;
+
+    nVertex = geometry->GetnVertex(iMarker);
+
+    for (iVertex = 0; iVertex < nVertex; ++iVertex) {
+      iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
+      interfacePoints.push_back(iPoint);
+    }
+  }
+  nVertex = interfacePoints.size();
+
+#ifdef HAVE_MPI
+  int recvcount = int(nVertex*nVar);
+  if (recvcount == 0) interfaceValues.resize(1);
+  else interfaceValues.resize(recvcount);
+
+  int *sendcounts = NULL, *displs = NULL;
+
+  if (rank == MASTER_NODE) sendcounts = new int [size];
+
+  MPI_Gather(&recvcount,1,MPI_INT,sendcounts,1,MPI_INT,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (rank == MASTER_NODE) {
+    displs = new int [size];
+    displs[0] = 0;
+    for (int i=1; i<size; ++i) displs[i] = displs[i-1]+sendcounts[i-1];
+  }
+  else {
+    values.resize(1,1.0);
+  }
+
+  MPI_Scatterv(&values[0],sendcounts,displs,MPI_DOUBLE,&interfaceValues[0],
+              recvcount,MPI_DOUBLE,MASTER_NODE,MPI_COMM_WORLD);
+
+  if (sendcounts) delete [] sendcounts;
+  if (displs) delete [] displs;
+#else
+  interfaceValues = values;
+#endif
+
+  for (iVertex=0; iVertex<nVertex; ++iVertex) {
+    iPoint = interfacePoints[iVertex];
+    for (iVar = 0; iVar < nVar; ++iVar)
+      node[iPoint]->SetGeometry_CrossTerm_Derivative(iVar,interfaceValues[iVertex*nVar+iVar]);
+  }
+}
+
