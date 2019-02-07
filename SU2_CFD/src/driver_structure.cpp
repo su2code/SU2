@@ -2430,6 +2430,12 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
               }
               break;
 
+            case AUSMPLUSUP2:
+              for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
+                numerics_container[val_iInst][iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwAUSMPLUSUP2_TNE2(nDim, nVar_TNE2, config);
+                numerics_container[val_iInst][iMGlevel][TNE2_SOL][CONV_BOUND_TERM] = new CUpwAUSMPLUSUP2_TNE2(nDim, nVar_TNE2, config);
+              }
+              break;
             //case HLLC:
             //  for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
             //    numerics_container[val_iInst][iMGlevel][TNE2_SOL][CONV_TERM] = new CUpwHLLC_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);

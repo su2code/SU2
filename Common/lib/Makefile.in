@@ -203,7 +203,8 @@ am__libSU2_a_SOURCES_DIST =  \
 	../src/fem_gauss_jacobi_quadrature.cpp \
 	../src/gauss_structure.cpp ../src/element_structure.cpp \
 	../src/element_linear.cpp ../src/interpolation_structure.cpp \
-	../src/adt_structure.cpp ../src/wall_model.cpp
+	../src/adt_structure.cpp ../src/wall_model.cpp \
+	../src/toolboxes/printing_toolbox.cpp
 am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = ../src/libSU2_a-fem_cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-config_structure.$(OBJEXT) \
@@ -232,7 +233,8 @@ am__objects_1 = ../src/libSU2_a-fem_cgns_elements.$(OBJEXT) \
 	../src/libSU2_a-element_linear.$(OBJEXT) \
 	../src/libSU2_a-interpolation_structure.$(OBJEXT) \
 	../src/libSU2_a-adt_structure.$(OBJEXT) \
-	../src/libSU2_a-wall_model.$(OBJEXT)
+	../src/libSU2_a-wall_model.$(OBJEXT) \
+	../src/toolboxes/libSU2_a-printing_toolbox.$(OBJEXT)
 @BUILD_NORMAL_TRUE@am_libSU2_a_OBJECTS = $(am__objects_1)
 libSU2_a_OBJECTS = $(am_libSU2_a_OBJECTS)
 libSU2_AD_a_AR = $(AR) $(ARFLAGS)
@@ -297,7 +299,8 @@ am__libSU2_AD_a_SOURCES_DIST =  \
 	../src/fem_gauss_jacobi_quadrature.cpp \
 	../src/gauss_structure.cpp ../src/element_structure.cpp \
 	../src/element_linear.cpp ../src/interpolation_structure.cpp \
-	../src/adt_structure.cpp ../src/wall_model.cpp
+	../src/adt_structure.cpp ../src/wall_model.cpp \
+	../src/toolboxes/printing_toolbox.cpp
 am__objects_2 = ../src/libSU2_AD_a-fem_cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-config_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-blas_structure.$(OBJEXT) \
@@ -325,7 +328,8 @@ am__objects_2 = ../src/libSU2_AD_a-fem_cgns_elements.$(OBJEXT) \
 	../src/libSU2_AD_a-element_linear.$(OBJEXT) \
 	../src/libSU2_AD_a-interpolation_structure.$(OBJEXT) \
 	../src/libSU2_AD_a-adt_structure.$(OBJEXT) \
-	../src/libSU2_AD_a-wall_model.$(OBJEXT)
+	../src/libSU2_AD_a-wall_model.$(OBJEXT) \
+	../src/toolboxes/libSU2_AD_a-printing_toolbox.$(OBJEXT)
 @BUILD_REVERSE_TRUE@am_libSU2_AD_a_OBJECTS = $(am__objects_2)
 libSU2_AD_a_OBJECTS = $(am_libSU2_AD_a_OBJECTS)
 libSU2_DIRECTDIFF_a_AR = $(AR) $(ARFLAGS)
@@ -391,7 +395,8 @@ am__libSU2_DIRECTDIFF_a_SOURCES_DIST =  \
 	../src/fem_gauss_jacobi_quadrature.cpp \
 	../src/gauss_structure.cpp ../src/element_structure.cpp \
 	../src/element_linear.cpp ../src/interpolation_structure.cpp \
-	../src/adt_structure.cpp ../src/wall_model.cpp
+	../src/adt_structure.cpp ../src/wall_model.cpp \
+	../src/toolboxes/printing_toolbox.cpp
 am__objects_3 =  \
 	../src/libSU2_DIRECTDIFF_a-fem_cgns_elements.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-config_structure.$(OBJEXT) \
@@ -420,7 +425,8 @@ am__objects_3 =  \
 	../src/libSU2_DIRECTDIFF_a-element_linear.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-interpolation_structure.$(OBJEXT) \
 	../src/libSU2_DIRECTDIFF_a-adt_structure.$(OBJEXT) \
-	../src/libSU2_DIRECTDIFF_a-wall_model.$(OBJEXT)
+	../src/libSU2_DIRECTDIFF_a-wall_model.$(OBJEXT) \
+	../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.$(OBJEXT)
 @BUILD_DIRECTDIFF_TRUE@am_libSU2_DIRECTDIFF_a_OBJECTS =  \
 @BUILD_DIRECTDIFF_TRUE@	$(am__objects_3)
 libSU2_DIRECTDIFF_a_OBJECTS = $(am_libSU2_DIRECTDIFF_a_OBJECTS)
@@ -621,6 +627,7 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -716,7 +723,8 @@ lib_sources = \
   ../src/element_linear.cpp \
   ../src/interpolation_structure.cpp \
   ../src/adt_structure.cpp \
-  ../src/wall_model.cpp
+  ../src/wall_model.cpp \
+  ../src/toolboxes/printing_toolbox.cpp 
 
 
 # always link to built dependencies from ./externals
@@ -832,6 +840,15 @@ clean-noinstLIBRARIES:
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_a-wall_model.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/toolboxes/$(am__dirstamp):
+	@$(MKDIR_P) ../src/toolboxes
+	@: > ../src/toolboxes/$(am__dirstamp)
+../src/toolboxes/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ../src/toolboxes/$(DEPDIR)
+	@: > ../src/toolboxes/$(DEPDIR)/$(am__dirstamp)
+../src/toolboxes/libSU2_a-printing_toolbox.$(OBJEXT):  \
+	../src/toolboxes/$(am__dirstamp) \
+	../src/toolboxes/$(DEPDIR)/$(am__dirstamp)
 
 libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2.a
@@ -893,6 +910,9 @@ libSU2.a: $(libSU2_a_OBJECTS) $(libSU2_a_DEPENDENCIES) $(EXTRA_libSU2_a_DEPENDEN
 	../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_AD_a-wall_model.$(OBJEXT): ../src/$(am__dirstamp) \
 	../src/$(DEPDIR)/$(am__dirstamp)
+../src/toolboxes/libSU2_AD_a-printing_toolbox.$(OBJEXT):  \
+	../src/toolboxes/$(am__dirstamp) \
+	../src/toolboxes/$(DEPDIR)/$(am__dirstamp)
 
 libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_AD_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_AD.a
@@ -954,6 +974,9 @@ libSU2_AD.a: $(libSU2_AD_a_OBJECTS) $(libSU2_AD_a_DEPENDENCIES) $(EXTRA_libSU2_A
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
 ../src/libSU2_DIRECTDIFF_a-wall_model.$(OBJEXT):  \
 	../src/$(am__dirstamp) ../src/$(DEPDIR)/$(am__dirstamp)
+../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.$(OBJEXT):  \
+	../src/toolboxes/$(am__dirstamp) \
+	../src/toolboxes/$(DEPDIR)/$(am__dirstamp)
 
 libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPENDENCIES) $(EXTRA_libSU2_DIRECTDIFF_a_DEPENDENCIES) 
 	$(AM_V_at)-rm -f libSU2_DIRECTDIFF.a
@@ -963,6 +986,7 @@ libSU2_DIRECTDIFF.a: $(libSU2_DIRECTDIFF_a_OBJECTS) $(libSU2_DIRECTDIFF_a_DEPEND
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../src/*.$(OBJEXT)
+	-rm -f ../src/toolboxes/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -1051,6 +1075,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-primal_grid_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-vector_structure.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@../src/$(DEPDIR)/libSU2_a-wall_model.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1460,6 +1487,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
 
+../src/toolboxes/libSU2_a-printing_toolbox.o: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_a-printing_toolbox.o -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_a-printing_toolbox.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+
+../src/toolboxes/libSU2_a-printing_toolbox.obj: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_a-printing_toolbox.obj -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_a-printing_toolbox.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
+
 ../src/libSU2_AD_a-fem_cgns_elements.o: ../src/fem_cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_AD_a-fem_cgns_elements.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_AD_a-fem_cgns_elements.Tpo -c -o ../src/libSU2_AD_a-fem_cgns_elements.o `test -f '../src/fem_cgns_elements.cpp' || echo '$(srcdir)/'`../src/fem_cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/$(DEPDIR)/libSU2_AD_a-fem_cgns_elements.Tpo ../src/$(DEPDIR)/libSU2_AD_a-fem_cgns_elements.Po
@@ -1851,6 +1892,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/wall_model.cpp' object='../src/libSU2_AD_a-wall_model.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_AD_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
+
+../src/toolboxes/libSU2_AD_a-printing_toolbox.o: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_AD_a-printing_toolbox.o -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_AD_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_AD_a-printing_toolbox.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_AD_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+
+../src/toolboxes/libSU2_AD_a-printing_toolbox.obj: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_AD_a-printing_toolbox.obj -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_AD_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_AD_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_AD_a-printing_toolbox.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_AD_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_AD_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
 
 ../src/libSU2_DIRECTDIFF_a-fem_cgns_elements.o: ../src/fem_cgns_elements.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/libSU2_DIRECTDIFF_a-fem_cgns_elements.o -MD -MP -MF ../src/$(DEPDIR)/libSU2_DIRECTDIFF_a-fem_cgns_elements.Tpo -c -o ../src/libSU2_DIRECTDIFF_a-fem_cgns_elements.o `test -f '../src/fem_cgns_elements.cpp' || echo '$(srcdir)/'`../src/fem_cgns_elements.cpp
@@ -2244,6 +2299,20 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/libSU2_DIRECTDIFF_a-wall_model.obj `if test -f '../src/wall_model.cpp'; then $(CYGPATH_W) '../src/wall_model.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/wall_model.cpp'; fi`
 
+../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.o: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.o -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.o `test -f '../src/toolboxes/printing_toolbox.cpp' || echo '$(srcdir)/'`../src/toolboxes/printing_toolbox.cpp
+
+../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.obj: ../src/toolboxes/printing_toolbox.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -MT ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.obj -MD -MP -MF ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Tpo -c -o ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Tpo ../src/toolboxes/$(DEPDIR)/libSU2_DIRECTDIFF_a-printing_toolbox.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='../src/toolboxes/printing_toolbox.cpp' object='../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libSU2_DIRECTDIFF_a_CXXFLAGS) $(CXXFLAGS) -c -o ../src/toolboxes/libSU2_DIRECTDIFF_a-printing_toolbox.obj `if test -f '../src/toolboxes/printing_toolbox.cpp'; then $(CYGPATH_W) '../src/toolboxes/printing_toolbox.cpp'; else $(CYGPATH_W) '$(srcdir)/../src/toolboxes/printing_toolbox.cpp'; fi`
+
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
 tags: tags-am
@@ -2358,6 +2427,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f ../src/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ../src/$(am__dirstamp)
+	-rm -f ../src/toolboxes/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ../src/toolboxes/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -2367,7 +2438,7 @@ clean: clean-am
 clean-am: clean-generic clean-noinstLIBRARIES mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/toolboxes/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -2413,7 +2484,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ../src/$(DEPDIR)
+	-rm -rf ../src/$(DEPDIR) ../src/toolboxes/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

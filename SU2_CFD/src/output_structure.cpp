@@ -15061,13 +15061,12 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
   nVar_Par += nVar_Consv_Par;
 
   // need to generalize
-  //for (iSpecies = 0; iSpecies < nSpecies; iSpecies++){
-  //    Variable_Names.push_back("Density");
-  //}
   if (config->GetKind_GasModel() == N2){
       Variable_Names.push_back("Density[N2]");
       Variable_Names.push_back("Density[N]");
   }
+
+
   Variable_Names.push_back("Momentum_x");
   Variable_Names.push_back("Momentum_y");
   if (geometry->GetnDim() == 3) Variable_Names.push_back("Momentum_z");
@@ -15083,6 +15082,9 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
       Variable_Names.push_back("Nu_Tilde");
     }
   }
+
+  /*--- Total Density ---*/
+  nVar_Par += 1; Variable_Names.push_back("Total Density");
 
   /*--- If requested, register the limiter and residuals for all of the
    equations in the current flow problem. ---*/
@@ -15423,6 +15425,7 @@ void COutput::LoadLocalData_TNE2(CConfig *config, CGeometry *geometry, CSolver *
 
         /*--- Load data for the pressure, temperature, Cp, and Mach variables. ---*/
 
+        Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetDensity(); iVar++;
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetPressure(); iVar++;
         Local_Data[jPoint][iVar] = solver[TNE2_SOL]->node[iPoint]->GetTemperature(); iVar++;
         Local_Data[jPoint][iVar] = sqrt(solver[TNE2_SOL]->node[iPoint]->GetVelocity2())/solver[TNE2_SOL]->node[iPoint]->GetSoundSpeed(); iVar++;

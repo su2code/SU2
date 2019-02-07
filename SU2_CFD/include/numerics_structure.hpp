@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file numerics_structure.hpp
  * \brief Headers of the main subroutines for the dumerical definition of the problem.
  *        The subroutines and functions are in the <i>numerics_structure.cpp</i>,
@@ -1871,7 +1871,6 @@ public:
   
 };
 
-
 /*!
  * \class CUpwGeneralRoe_Flow
  * \brief Class for solving an approximate Riemann solver of Roe for the flow equations for a general fluid model.
@@ -2501,6 +2500,52 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwAUSMPLUSUP2_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ -up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
+ * \ingroup ConvDiscr
+ * \author Walter Maier, A. Sachedeva
+ */
+class CUpwAUSMPLUSUP2_TNE2 : public CNumerics {
+private:
+  bool implicit, ionization;
+  su2double *FcL, *FcR, *FcLR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
+  su2double *rhos_i, *u_i;
+  su2double *rhos_j, *u_j;
+  su2double a_i, P_i, h_i, ProjVel_i;
+  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
+  su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
+  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUSUP2_TNE2(void);
+
+  /*!
+   * \brief Compute the AUSM+ -up flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
@@ -3305,8 +3350,6 @@ public:
                        CConfig *config);
 };
 
-
-
 /*!
  * \class CCentLax_Flow
  * \brief Class for computing the Lax-Friedrich centered scheme.
@@ -3832,7 +3875,6 @@ public:
                        CConfig *config);
 };
 
-
 /*!
  * \class CAvgGradCorrected_TNE2
  * \brief Class for computing viscous term using the average of gradients.
@@ -3893,7 +3935,6 @@ public:
                        su2double **val_Jacobian_j,
                        CConfig *config);
 };
-
 
 /*!
  * \class CSource_TNE2
@@ -4210,7 +4251,6 @@ public:
   void GetMeanRateOfStrainMatrix(su2double **S_ij);
 
 };
-
 
 /*!
  * \class CGeneralAvgGradCorrected_Flow
@@ -4570,7 +4610,6 @@ public:
   void ComputeResidual(su2double *val_residual_i, su2double *val_residual_j, su2double **val_Jacobian_ii, su2double **val_Jacobian_ij,
                        su2double **val_Jacobian_ji, su2double **val_Jacobian_jj, CConfig *config);
 };
-
 
 /*!
  * \class CAvgGrad_Heat
@@ -5085,7 +5124,6 @@ public:
   void Compute_Stress_Tensor(CElement *element_container, CConfig *config);
 
 };
-
 
 /*!
  * \class CSourceNothing
