@@ -151,7 +151,8 @@ private:
   bool Domain,                        /*!< \brief Indicates if a point must be computed or belong to another boundary */
   Boundary,                           /*!< \brief To see if a point belong to the boundary (including MPI). */
   PhysicalBoundary,                   /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
-  SolidBoundary;                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  SolidBoundary,                      /*!< \brief To see if a point belong to the physical boundary (without includin MPI). */
+  PeriodicBoundary;                      /*!< \brief To see if a point belongs to a periodic boundary (without including MPI). */
   long *Vertex;                       /*!< \brief Index of the vertex that correspond which the control volume (we need one for each marker in the same node). */
   su2double *Coord,                   /*!< \brief vector with the coordinates of the node. */
   *Coord_Old,                         /*!< \brief Old coordinates vector for geometry smoothing. */
@@ -465,6 +466,12 @@ public:
 	void SetSolidBoundary(bool val_boundary);
   
   /*!
+   * \brief Set if a point belongs to a periodic boundary.
+   * \param[in] val_boundary - <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
+   */
+  void SetPeriodicBoundary(bool val_boundary);
+  
+  /*!
 	 * \brief Provides information about if a point belong to the physical boundaries (without MPI).
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
@@ -475,6 +482,12 @@ public:
 	 * \return <code>TRUE</code> if the point belong to the boundary; otherwise <code>FALSE</code>.
 	 */
 	bool GetSolidBoundary(void);
+  
+  /*!
+   * \brief Provides information about if a point belongs to a periodic boundary (without MPI).
+   * \return <code>TRUE</code> if the point belongs to a periodic boundary; otherwise <code>FALSE</code>.
+   */
+  bool GetPeriodicBoundary(void);
   
 	/*! 
 	 * \brief Set a color to the point that comes from the grid partitioning.

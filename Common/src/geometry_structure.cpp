@@ -268,17 +268,18 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   unsigned short iMarker;
   unsigned long iPoint, iVertex, iPeriodic;
   
-  int iRank, iSend, iRecv, count, ii, jj;
-  int iMessage, offset, source, dest, tag;
+  int iRank, iSend, iRecv, ii, jj;
   
   /*--- Create some temporary structures for tracking sends/recvs. ---*/
   
   int *nPoint_Send_All = new int[size+1]; nPoint_Send_All[0] = 0;
   int *nPoint_Recv_All = new int[size+1]; nPoint_Recv_All[0] = 0;
-  int *nPoint_Flag = new int[size];
+  int *nPoint_Flag     = new int[size];
   
   for (iRank = 0; iRank < size; iRank++) {
-    nPoint_Send_All[iRank] = 0; nPoint_Recv_All[iRank] = 0; nPoint_Flag[iRank]= -1;
+    nPoint_Send_All[iRank] = 0;
+    nPoint_Recv_All[iRank] = 0;
+    nPoint_Flag[iRank]= -1;
   }
   nPoint_Send_All[size] = 0; nPoint_Recv_All[size] = 0;
   
@@ -310,6 +311,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
             nPoint_Flag[iRank]    = (int)iPoint;
             nPoint_Send_All[iRank+1] += 1;
           }
+          
         }
       }
     }
@@ -327,7 +329,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   /*--- Check how many messages we will be sending and receiving.
    Here we also put the counters into cumulative storage format to
    make the communications simpler. Note that we are allowing each
-   rank to communicate through the MPI wrappers to themselves. ---*/
+   rank to communicate to themselves in these counters, although
+   it will not be done through MPI. ---*/
   
   nPeriodicSend = 0; nPeriodicRecv = 0;
   
@@ -464,6 +467,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
               idSend[jj] = (unsigned long)iPeriodic;
               ii++;
             }
+            
           }
         }
       }
@@ -478,6 +482,8 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
     idRecv[iRecv] = 0;
   
 #ifdef HAVE_MPI
+  
+  int iMessage, offset, count, source, dest, tag;
 
   /*--- Launch the non-blocking recv's first. Note that we have stored
    the counts and sources, so we can launch these before we even load
@@ -547,9 +553,9 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
   
   SU2_MPI::Waitall(nPeriodicSend, req_PeriodicSend, MPI_STATUS_IGNORE);
   SU2_MPI::Waitall(nPeriodicRecv, req_PeriodicRecv, MPI_STATUS_IGNORE);
-
+  
 #else
-
+  
   /*--- Copy my own rank's data into the recv buffer directly in serial. ---*/
   
   int myStart, myFinal;
@@ -563,7 +569,7 @@ void CGeometry::PreprocessPeriodicComms(CGeometry *geometry,
       iRecv++;
     }
   }
-
+  
 #endif
   
   /*--- Store the local periodic point and marker index values in our
@@ -585,40 +591,45 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
   /*--- This routine is activated whenever we attempt to perform
    a periodic MPI communication with our neighbors but the
    memory buffer allocated is not large enough for the packet size.
-   Therefore, we deallocate the previously allocated space and
+   Therefore, we deallocate the previously allocated arrays and
    reallocate a large enough array. Note that after the first set
    communications, this routine will not need to be called again. ---*/
   
-  int iSend, iRecv;
+  int iSend, iRecv, nSend, nRecv;
   
   /*--- Store the larger packet size to the class data. ---*/
   
   countPerPeriodicPoint = val_countPerPeriodicPoint;
   
-  /*-- Deallocate and reallocate our su2double cummunication memory. ---*/
+  /*--- Store the total size of the send/recv arrays for clarity. ---*/
+  
+  nSend = countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend];
+  nRecv = countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv];
+  
+  /*-- Deallocate and reallocate our cummunication memory. ---*/
   
   if (bufD_PeriodicSend != NULL) delete [] bufD_PeriodicSend;
   
-  bufD_PeriodicSend = new su2double[countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend]];
-  for (iSend = 0; iSend < countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend]; iSend++)
+  bufD_PeriodicSend = new su2double[nSend];
+  for (iSend = 0; iSend < nSend; iSend++)
     bufD_PeriodicSend[iSend] = 0.0;
   
   if (bufD_PeriodicRecv != NULL) delete [] bufD_PeriodicRecv;
   
-  bufD_PeriodicRecv = new su2double[countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv]];
-  for (iRecv = 0; iRecv < countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+  bufD_PeriodicRecv = new su2double[nRecv];
+  for (iRecv = 0; iRecv < nRecv; iRecv++)
     bufD_PeriodicRecv[iRecv] = 0.0;
   
   if (bufS_PeriodicSend != NULL) delete [] bufS_PeriodicSend;
   
-  bufS_PeriodicSend = new unsigned short[countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend]];
-  for (iSend = 0; iSend < countPerPeriodicPoint*nPoint_PeriodicSend[nPeriodicSend]; iSend++)
+  bufS_PeriodicSend = new unsigned short[nSend];
+  for (iSend = 0; iSend < nSend; iSend++)
     bufS_PeriodicSend[iSend] = 0;
   
   if (bufS_PeriodicRecv != NULL) delete [] bufS_PeriodicRecv;
   
-  bufS_PeriodicRecv = new unsigned short[countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv]];
-  for (iRecv = 0; iRecv < countPerPeriodicPoint*nPoint_PeriodicRecv[nPeriodicRecv]; iRecv++)
+  bufS_PeriodicRecv = new unsigned short[nRecv];
+  for (iRecv = 0; iRecv < nRecv; iRecv++)
     bufS_PeriodicRecv[iRecv] = 0;
   
 }
@@ -626,8 +637,11 @@ void CGeometry::AllocatePeriodicComms(unsigned short val_countPerPeriodicPoint) 
 void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
                                   CConfig *config,
                                   unsigned short commType) {
+  
+  /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
+  
 #ifdef HAVE_MPI
-
+  
   /*--- Local variables ---*/
   
   int iMessage, iRecv, offset, nPointPeriodic, count, source, tag;
@@ -671,7 +685,7 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
                        &(req_PeriodicRecv[iMessage]));
         break;
       default:
-        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+        SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
                        CURRENT_FUNCTION);
         break;
     }
@@ -681,8 +695,9 @@ void CGeometry::PostPeriodicRecvs(CGeometry *geometry,
     iMessage++;
     
   }
+  
 #endif
-
+  
 }
 
 void CGeometry::PostPeriodicSends(CGeometry *geometry,
@@ -690,8 +705,10 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                                   unsigned short commType,
                                   int val_iSend) {
   
+  /*--- In parallel, communicate the data with non-blocking send/recv. ---*/
+  
 #ifdef HAVE_MPI
-
+  
   /*--- Local variables ---*/
   
   int iMessage, offset, nPointPeriodic, count, dest, tag;
@@ -707,7 +724,8 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
   /*--- Take advantage of cumulative storage format to get the number
    of points that we need to send. ---*/
   
-  nPointPeriodic = nPoint_PeriodicSend[val_iSend+1] - nPoint_PeriodicSend[val_iSend];
+  nPointPeriodic = (nPoint_PeriodicSend[val_iSend+1] -
+                    nPoint_PeriodicSend[val_iSend]);
   
   /*--- Total count can include multiple pieces of data per element. ---*/
   
@@ -732,7 +750,7 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
                      &(req_PeriodicSend[iMessage]));
       break;
     default:
-      SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+      SU2_MPI::Error("Unrecognized data type for periodic MPI comms.",
                      CURRENT_FUNCTION);
       break;
   }
@@ -761,7 +779,7 @@ void CGeometry::PostPeriodicSends(CGeometry *geometry,
     }
     iRecv++;
   }
-
+  
 #endif
   
 }
@@ -9441,13 +9459,17 @@ void CPhysicalGeometry::SetBoundaries(CConfig *config) {
         node[Point_Surface]->SetBoundary(nMarker);
         if (config->GetMarker_All_KindBC(iMarker) != SEND_RECEIVE &&
             config->GetMarker_All_KindBC(iMarker) != INTERFACE_BOUNDARY &&
-            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY)
+            config->GetMarker_All_KindBC(iMarker) != NEARFIELD_BOUNDARY &&
+            config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
           node[Point_Surface]->SetPhysicalBoundary(true);
         
         if (config->GetMarker_All_KindBC(iMarker) == EULER_WALL &&
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX &&
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[Point_Surface]->SetSolidBoundary(true);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+          node[Point_Surface]->SetPeriodicBoundary(true);
       }
     }
     
@@ -13944,6 +13966,7 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
     node[iPoint]->ResetBoundary();
     node[iPoint]->SetPhysicalBoundary(false);
     node[iPoint]->SetSolidBoundary(false);
+    node[iPoint]->SetPeriodicBoundary(false);
     node[iPoint]->SetDomain(true);
   }
   
@@ -14015,6 +14038,9 @@ void CPhysicalGeometry::SetRCM_Ordering(CConfig *config) {
             config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ||
             config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)
           node[InvResult[iPoint]]->SetSolidBoundary(true);
+        
+        if (config->GetMarker_All_KindBC(iMarker) == PERIODIC_BOUNDARY)
+          node[InvResult[iPoint]]->SetPeriodicBoundary(true);
       }
     }
   }

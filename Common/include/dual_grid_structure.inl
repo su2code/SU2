@@ -100,6 +100,10 @@ inline void CPoint::SetSolidBoundary(bool val_boundary) { SolidBoundary = val_bo
 
 inline bool CPoint::GetSolidBoundary(void) { return SolidBoundary; }
 
+inline void CPoint::SetPeriodicBoundary(bool val_boundary) { PeriodicBoundary = val_boundary; }
+
+inline bool CPoint::GetPeriodicBoundary(void) { return PeriodicBoundary; }
+
 inline void CPoint::AddVolume (su2double val_Volume) { Volume[0] += val_Volume; }
 
 inline void CPoint::SetVolume (su2double val_Volume) { Volume[0] = val_Volume; }
