@@ -1401,11 +1401,74 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
   }
 }
 
-void CFEMInterpolationSol::ApproxVandermonde_2D(
-                                                const unsigned short       nDim,
-                                                const unsigned short       nPoly,
-                                                const vector<su2double>    &coor,
-                                                vector<vector<su2double>>  &vmat)
+void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim,
+                                           const unsigned short             nPoly,
+                                           const vector<vector<su2double>>  &coor,
+                                           const vector<vector<su2double>>  &coorInterpol,
+                                           const vector<vector<su2double>>  &sol,
+                                           vector<vector<su2double>>        &solInterpol)
+{
+
+  unsigned short nPoint         = coor[0].size(),
+                 nPointInterpol = coorInterpol[0].size(),
+                 nDim           = coor.size(),
+                 nVar           = sol.size();
+  unsigned short iPoint, jPoint iDim, iVar, i;
+
+  // Determine mean coordinates of nodes and use as origin for LS system
+  vector<su2double> coorAvg(nDim, 0.0);
+  vector<vector<su2double>> coorOffset(nDim, vector<su2double>(nPoint)),
+                            coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol));
+  for(iDim = 0; iDim < nDim; iDim++){
+    for(iPoint = 0; iPoint < nPoint; iPoint++){
+      coorAvg[iDim] += coor[iDim][iPoint]/nPoint;
+    }
+  }
+  for(iDim = 0; iDim < nDim; iDim++){
+    for(iPoint = 0; iPoint < nPoint; iPoint++){
+      coorOffset[iDim][iPoint] = coor[iDim][iPoint] - coorAvg[iDim];
+    }
+    for(jPoint = 0; jPoint < nPointInterpol; jPoint++){
+      coorOffsetInterpol[iDim][jPoint] = coorInterpol[iDim][jPoint] - coorAvg[iDim];
+    }
+  }
+
+  // Compute approximate Vandermonde matrix
+  vector<vector<su2double>> vmat;
+  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffset, vmat);
+  else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
+
+  // Perform QR factorization
+  vector<vector<su2double>> Q, R;
+  Householder(vmat, Q, R);
+
+  // Compute interpolation coefficients for each variable
+  vector<vector<su2double>> coeffsInterpol;
+  BackSubstitute(Q, R, coorOffsetInterpol, sol, coeffsInterpol);
+
+  // Compute Vandermonde for interpolation coordinates
+  for(i = 0; i < vmat.size(); i++) vmat[i].clear();
+  vmat.clear();
+  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffsetInterpol, vmat);
+  else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
+
+  // Interpolate the solution
+  solInterpol.resize(nVar);
+  for(iVar = 0; iVar < nVar; iVar++){
+    solInterpol[iVar].resize(nPoint);
+    for(iPoint = 0; iPoint < nPoint; iPoint++){
+      solInterpol[iVar][iPoint] = 0.0;
+      for(i = 0; i < vmat[0].size(); i++){
+        solInterpol[iVar][iPoint] += vmat[iPoint][i]*coeffsInterpol[iVar][i];
+      }
+    }
+  }
+
+}
+
+void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short             nPoly,
+                                                const vector<vector<su2double>>  &coor,
+                                                vector<vector<su2double>>        &vmat)
 {
 
   unsigned short nPoint = coor[0].size();
@@ -1429,10 +1492,9 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(
 
 }
 
-void CFEMInterpolationSol::Householder(
-                                       const vector<vector<su2double>>  &mat,
-                                       vector<vector<su2double>>        &R,
-                                       vector<vector<su2double>>        &Q)
+void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
+                                       vector<vector<su2double>>        &Q,
+                                       vector<vector<su2double>>        &R)
 {
   unsigned short m = mat.size(),
                  n = mat[0].size(),
@@ -1535,16 +1597,63 @@ void CFEMInterpolationSol::Householder(
   }
 
   // Transpose Q
+  TransposeSquare(Q);
+
+}
+
+void CFEMInterpolationSol::TransposeSquare(vector<vector<su2double>>  &mat){
+  unsigned short m = mat.size(),
+                 i, j;
+
   for(i = 0; i < m; i++){
     for(j = 0; j < i; j++){
-      const su2double tmp = Q[i][j];
-      Q[i][j] = Q[j][i];
-      Q[j][i] = tmp;
+      const su2double tmp = mat[i][j];
+      mat[i][j] = mat[j][i];
+      mat[j][i] = tmp;
     }
   }
+}
 
+void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double>>        &Q,
+                                          vector<vector<su2double>>        &R,
+                                          const vector<vector<su2double>>  &coorInterpol,
+                                          const vector<vector<su2double>>  &sol,
+                                          vector<vector<su2double>>        &coeffsInterpol)
+{
+  unsigned short m    = R.size(),
+                 n    = R[0].size(),
+                 nVar = sol.size(),
+                 iVar;
+  short i, j;
+  vector<su2double> y(n);
 
+  // Transpose Q
+  TransposeSquare(Q);
 
+  // Obtain interpolation coefficients for each variable
+  coeffsInterpol.resize(nVar);
+  for(iVar = 0; iVar < nVar; iVar++){
+    coeffsInterpol[iVar].resize(n);
+
+    // y = Q1^T * b where Q1 is first n columns of Q
+    for(i = 0; i < n; i++){
+      y[i] = 0.0;
+      for(j = 0; j < m; j++){
+        y[i] += Q[i][j]*sol[iVar][j];
+      }
+    }
+
+    // x = R1^-1 * y where R1 is nxn upper triangular matrix
+    // Perform back substitution
+    for(i = n-1; i >=0; i--){
+      coeffsInterpol[iVar][i] = y[i];
+      for(j = i+1; j < n; j++){
+        coeffsInterpol[iVar][i] -= R[i][j]*coeffsInterpol[j];
+      }
+      coeffsInterpol[iVar][i] /= R[i][i];
+    }
+
+  }
 }
 
 void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
