@@ -2,7 +2,7 @@
  * \file SU2_DOT.cpp
  * \brief Main file of the Gradient Projection Code (SU2_DOT).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -47,8 +47,8 @@ int main(int argc, char *argv[]) {
   ofstream Gradient_file;
   bool fem_solver = false;
   bool periodic   = false;
-  bool multizone = false;
-  
+  bool multizone  = false;
+
   su2double** Gradient;
   unsigned short iDV, iDV_Value;
   int rank, size;
@@ -68,11 +68,11 @@ int main(int argc, char *argv[]) {
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
   
   CConfig **config_container            = NULL;
+  CConfig *driver_config                = NULL;
   CGeometry ***geometry_container       = NULL;
   CSurfaceMovement **surface_movement   = NULL;
   CVolumetricMovement **grid_movement   = NULL;
   COutput *output                       = NULL;
-  CConfig *driver_config                = NULL;  
   unsigned short *nInst                 = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
@@ -97,8 +97,8 @@ int main(int argc, char *argv[]) {
   geometry_container  = new CGeometry**[nZone];
   surface_movement    = new CSurfaceMovement*[nZone];
   grid_movement       = new CVolumetricMovement*[nZone];
-  
   nInst               = new unsigned short[nZone];
+  driver_config       = NULL;
   
   for (iZone = 0; iZone < nZone; iZone++) {
     config_container[iZone]       = NULL;
@@ -126,13 +126,13 @@ int main(int argc, char *argv[]) {
     /*--- Definition of the configuration option class for all zones. In this
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
-
+    
     if (multizone){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
       config_container[iZone] = new CConfig(zone_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
     }
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 

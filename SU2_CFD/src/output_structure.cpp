@@ -2,7 +2,7 @@
  * \file output_structure.cpp
  * \brief Main subroutines for output solver information
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -2923,8 +2923,8 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
             break;
             
 
-          default:
-            break;
+                  default:
+                    break;
           }
 
         }
@@ -6072,7 +6072,12 @@ void COutput::WriteRestart_Parallel_ASCII(CConfig *config, CGeometry *geometry, 
     restart_file <<"DCMX_DCL_VALUE= " << config->GetdCMx_dCL() << endl;
     restart_file <<"DCMY_DCL_VALUE= " << config->GetdCMy_dCL() << endl;
     restart_file <<"DCMZ_DCL_VALUE= " << config->GetdCMz_dCL() << endl;
-    if (adjoint) restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+
+    if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+          config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+          config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+      restart_file << "SENS_AOA=" << solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0 << endl;
+    }
   }
 
   /*--- All processors close the file. ---*/
@@ -6167,7 +6172,11 @@ void COutput::WriteRestart_Parallel_Binary(CConfig *config, CGeometry *geometry,
     0.0
   };
 
-  if (adjoint) Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  if (( config->GetKind_Solver() == DISC_ADJ_EULER ||
+        config->GetKind_Solver() == DISC_ADJ_NAVIER_STOKES ||
+        config->GetKind_Solver() == DISC_ADJ_RANS ) && adjoint) {
+    Restart_Metadata[4] = SU2_TYPE::GetValue(solver[ADJFLOW_SOL]->GetTotal_Sens_AoA() * PI_NUMBER / 180.0);
+  }
 
   /*--- Set a timer for the binary file writing. ---*/
   
