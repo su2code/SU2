@@ -18487,6 +18487,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
   bool sst = config->GetKind_Turb_Model() == SST;
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
+  bool p1_radiation = (config->GetKind_RadiationModel() == P1_MODEL);
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
   su2double Sens, dull_val, AoASens;
@@ -18513,6 +18514,7 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   if (sst && !frozen_visc) { skipVar += skipMult*2;}
   if (sa && !frozen_visc)  { skipVar += skipMult*1;}
   if (grid_movement)       { skipVar += nDim;}
+  if (p1_radiation)        { skipVar += 1;}
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
