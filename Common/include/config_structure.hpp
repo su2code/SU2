@@ -1103,7 +1103,7 @@ private:
   string Interpolated_Restart_FileName;   /*!< \brief File name of interpolated solution that is ouput */
   bool use_target_mesh;                   /*!< \brief Determines if the target mesh should be used (for geometry initilization) */
 
-  bool error_estmate;              /*!< \brief Determines if error estimation is taking place */
+  bool error_estimate;              /*!< \brief Determines if error estimation is taking place */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
