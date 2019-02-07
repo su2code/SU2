@@ -1515,6 +1515,7 @@ private:
 
   unsigned short nDim, turb_model;
   bool heat, weakly_coupled_heat;
+  unsigned short rad_model;
   
 public:
 
