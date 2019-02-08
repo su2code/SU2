@@ -71,12 +71,9 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 }
 
 CTurbSolver::~CTurbSolver(void) {
-
-  unsigned short iMarker, iVar;
-  unsigned long  iVertex;
   
   if (Inlet_TurbVars != NULL) {
-    for (iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
       if (Inlet_TurbVars[iMarker] != NULL) {
         for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
@@ -93,7 +90,6 @@ CTurbSolver::~CTurbSolver(void) {
   if (upperlimit != NULL) delete [] upperlimit;
   if (nVertex != NULL) delete [] nVertex;
   
-
 }
 
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {

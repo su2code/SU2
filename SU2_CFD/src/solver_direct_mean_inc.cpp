@@ -6288,7 +6288,6 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       if (!energy) Residual[nDim+1] = 0.0;
       
-      //cout << " iPoint: " << iPoint << "  " << Volume_nP1<< "  " << Residual[0]<< "  " << Residual[1]<< "  " << Residual[2]<< "  " << Residual[3]<<endl;
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
       
