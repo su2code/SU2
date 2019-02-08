@@ -440,7 +440,7 @@ void CMultizoneDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
       MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
       /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration ---*/
-      VectorXd C = H.householderQr().solve(-R);
+      VectorXd C = H.colPivHouseholderQr().solve(-R);
 
       /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1) ---*/
       H = Y.block(0,1,M,cols)-Y.leftCols(cols);
