@@ -486,7 +486,7 @@ void CIncFlowOutput::SetVolumeOutputFields(CConfig *config){
   // Radiation variables
   switch(rad_model){
   case P1_MODEL:
-    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "CONSERVATIVE");
+    AddVolumeOutput("P1-RAD", "Radiative_Energy(P1)", "SOLUTION");
     break;
   case NONE:
     break;
