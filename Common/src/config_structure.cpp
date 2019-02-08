@@ -7076,6 +7076,10 @@ CConfig::~CConfig(void) {
   if (ActDiskOutlet_Force != NULL)    delete[]  ActDiskOutlet_Force;
   if (ActDiskOutlet_Power != NULL)    delete[]  ActDiskOutlet_Power;
 
+  if (Outlet_MassFlow != NULL)    delete[]  Outlet_MassFlow;
+  if (Outlet_Density != NULL)    delete[]  Outlet_Density;
+  if (Outlet_Area != NULL)    delete[]  Outlet_Area;
+
   if (ActDisk_DeltaPress != NULL)    delete[]  ActDisk_DeltaPress;
   if (ActDisk_DeltaTemp != NULL)    delete[]  ActDisk_DeltaTemp;
   if (ActDisk_TotalPressRatio != NULL)    delete[]  ActDisk_TotalPressRatio;
