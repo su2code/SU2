@@ -117,6 +117,17 @@ def main():
     polar_naca0012.tol       = 0.00001
     test_list.append(polar_naca0012)
 
+    # HYPERSONIC FLOW PAST BLUNT BODY
+    bluntbody           = TestCase('bluntbody')
+    bluntbody.cfg_dir   = "euler/bluntbody"
+    bluntbody.cfg_file  = "blunt.cfg"
+    bluntbody.test_iter = 20
+    bluntbody.test_vals = [0.626808, 7.014695, -0.000000, 1.648024] #last 4 columns
+    bluntbody.su2_exec  = "SU2_CFD"
+    bluntbody.timeout   = 1600
+    bluntbody.tol       = 0.00001
+    test_list.append(bluntbody)
+
     ##########################
     ###  Compressible N-S  ###
     ##########################
@@ -931,6 +942,29 @@ def main():
     bars_SST_2D.timeout   = 1600
     bars_SST_2D.tol       = 0.00001
     test_list.append(bars_SST_2D)
+    
+    # Sliding mesh with incompressible flows (steady)
+    slinc_steady           = TestCase('slinc_steady')
+    slinc_steady.cfg_dir   = "sliding_interface/incompressible_steady"
+    slinc_steady.cfg_file  = "config.cfg"
+    slinc_steady.test_iter = 19
+    slinc_steady.test_vals = [-4.214657,1.265231,0.000000,0.000000] #last 4 columns
+    slinc_steady.su2_exec  = "SU2_CFD"
+    slinc_steady.timeout   = 100
+    slinc_steady.tol       = 0.00001
+    test_list.append(slinc_steady)
+    
+    # Sliding mesh with incompressible flows (unsteady)
+    # slinc_unsteady           = TestCase('slinc_unsteady')
+    # slinc_unsteady.cfg_dir   = "sliding_interface/incompressible_unsteady"
+    # slinc_unsteady.cfg_file  = "config.cfg"
+    # slinc_unsteady.test_iter = 19
+    # slinc_unsteady.test_vals = [-3.515218,1.930028,0.000000,0.000000] #last 4 columns
+    # slinc_unsteady.su2_exec  = "SU2_CFD"
+    # slinc_unsteady.timeout   = 100
+    # slinc_unsteady.tol       = 0.00001
+    # slinc_unsteady.unsteady  = True
+    # test_list.append(slinc_unsteady)
 
     ##########################
     ### FEA - FSI          ###
@@ -973,8 +1007,8 @@ def main():
     airfoilRBF           = TestCase('airfoil_fsi_rbf')
     airfoilRBF.cfg_dir   = "fea_fsi/Airfoil_RBF"
     airfoilRBF.cfg_file  = "config.cfg"
-    airfoilRBF.test_iter = 50
-    airfoilRBF.test_vals = [-8.000964, -2.600088, 0.276433, 0.000824] #last 4 columns
+    airfoilRBF.test_iter = 29
+    airfoilRBF.test_vals = [-13.474206, -3.771392, -11.646689, 1.4045e+06] #last 4 columns
     airfoilRBF.su2_exec  = "SU2_CFD"
     airfoilRBF.timeout   = 1600
     airfoilRBF.tol       = 0.00001
@@ -992,7 +1026,7 @@ def main():
     cht_incompressible.test_vals = [0.000000, 0.000000, -7.685301, -12947.783696] #last 4 columns
     cht_incompressible.su2_exec  = "SU2_CFD"
     cht_incompressible.timeout   = 1600
-    cht_incompressible.tol       = 0.00001
+    cht_incompressible.tol       = 0.0001
     test_list.append(cht_incompressible)
 
     ######################################

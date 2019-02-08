@@ -88,7 +88,7 @@ void CGaussJacobiQuadrature::GetQuadraturePoints(const passivedouble   alpha,   
                                                  vector<passivedouble> &GJPoints, vector<passivedouble> &GJWeights) {
 
   /*--- Determine the number of integration points. Check if the number makes sense. ---*/
-  unsigned int nIntPoints = GJPoints.size();
+  unsigned int nIntPoints = (unsigned int)GJPoints.size();
   if(nIntPoints < 1 || nIntPoints > 100)
     SU2_MPI::Error("Invalid number of Gauss Jacobi integration points", CURRENT_FUNCTION);
 
