@@ -707,7 +707,7 @@ void CDriver::Postprocessing() {
     }
     delete [] config_container;
   }
-  delete [] driver_config;
+  if (driver_config != NULL) delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   if (nInst != NULL) delete [] nInst;
@@ -3990,8 +3990,8 @@ void CDriver::Output(unsigned long ExtIter) {
     
     if (((ExtIter+1 >= nExtIter) || StopCalc) && (rank == MASTER_NODE)) {
       cout << endl << "----------------------------- Solver Exit -------------------------------";
-      if (ExtIter+1 >= nExtIter) cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
       if (StopCalc) cout << endl << "Convergence criteria satisfied." << endl;
+      else cout << endl << "Maximum number of external iterations reached (EXT_ITER)." << endl;
       cout << "-------------------------------------------------------------------------" << endl;
     }
 
