@@ -121,11 +121,12 @@ int main(int argc, char *argv[]) {
 
     if (multizone){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(zone_file_name, SU2_SOL, iZone, nZone, 0, true);
     }
     else{
-      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, VERB_HIGH);
+      config_container[iZone] = new CConfig(config_file_name, SU2_SOL, iZone, nZone, 0, true);
     }
+
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
 
   }
@@ -210,7 +211,7 @@ int main(int argc, char *argv[]) {
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetSendReceive(config_container[iZone]);
-
+      
       /*--- Add the Send/Receive boundaries ---*/
 
       geometry_container[iZone][iInst]->SetBoundaries(config_container[iZone]);
@@ -225,6 +226,10 @@ int main(int argc, char *argv[]) {
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
       geometry_container[iZone][iInst]->SetGlobal_to_Local_Point();
 
+      /*--- Create the point-to-point MPI communication structures for the fvm solver. ---*/
+      
+      if (!fem_solver) geometry_container[iZone][iInst]->PreprocessP2PComms(geometry_container[iZone][iInst], config_container[iZone]);
+      
       /* Test for a fem solver, because some more work must be done. */
 
       if (fem_solver) {

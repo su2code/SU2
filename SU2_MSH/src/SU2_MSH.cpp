@@ -103,7 +103,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_MSH, iZone, nZone, 0, true);
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
     
     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
@@ -174,6 +174,9 @@ int main(int argc, char *argv[]) {
 	cout << "Set control volume structure." << endl;
 	geometry_container[ZONE_0]->SetControlVolume(config_container[ZONE_0], ALLOCATE); geometry_container[ZONE_0]->SetBoundControlVolume(config_container[ZONE_0], ALLOCATE);
 
+  /*--- Create the point-to-point MPI communication structures. ---*/
+  
+  geometry_container[ZONE_0]->PreprocessP2PComms(geometry_container[ZONE_0], config_container[ZONE_0]);
 	
 	if ((config_container[ZONE_0]->GetKind_Adaptation() != NONE) && (config_container[ZONE_0]->GetKind_Adaptation() != PERIODIC)) {
 		

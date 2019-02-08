@@ -2460,7 +2460,6 @@ void CDiscAdjFluidIteration::RegisterInput(CSolver *****solver_container, CGeome
 void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst, unsigned short kind_recording){
 
 
-  unsigned short Kind_Solver = config_container[iZone]->GetKind_Solver();
   bool frozen_visc = config_container[iZone]->GetFrozen_Visc_Disc();
   bool heat = config_container[iZone]->GetWeakly_Coupled_Heat();
   if ((kind_recording == MESH_COORDS) || (kind_recording == NONE)  ||
@@ -2474,12 +2473,19 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
 
   /*--- Compute coupling between flow and turbulent equations ---*/
 
-  solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  //solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
 
+  solver_container[iZone][iInst][MESH_0][FLOW_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+  solver_container[iZone][iInst][MESH_0][FLOW_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+  
   if (turbulent && !frozen_visc){
     solver_container[iZone][iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    //solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION_EDDY);
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION_EDDY);
+
   }
 
   if (heat){
