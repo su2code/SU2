@@ -12070,7 +12070,10 @@ void CPhysicalGeometry::Read_SU2_Format_Parallel(CConfig *config, string val_mes
         text_line.erase (0,10); nPeriodic = atoi(text_line.c_str());
         if (rank == MASTER_NODE) {
           if (nPeriodic - 1 != 0)
-            cout << nPeriodic - 1 << " periodic transformations." << endl;
+            SU2_MPI::Error(string("Mesh file contains outdated periodic format!\n\n") +
+                           string("For SU2 v7.0.0 and later, preprocessing of periodic grids by SU2_MSH\n") +
+                           string("is no longer necessary. Please use the original mesh file (prior to SU2_MSH)\n") +
+                           string("with the same MARKER_PERIODIC definition in the configuration file.") , CURRENT_FUNCTION);
         }
         config->SetnPeriodicIndex(nPeriodic);
         
