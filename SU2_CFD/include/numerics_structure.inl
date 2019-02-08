@@ -577,14 +577,17 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 
 inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
-inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
 
-inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
-  TauWall_i = val_tauwall_i;
-  TauWall_j = val_tauwall_j;
+inline su2double CAvgGrad_Base::GetStressTensor(unsigned short iDim, unsigned short jDim) const {
+  return tau[iDim][jDim];
+}
+
+inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
+  return heat_flux_vector[iDim];
 }
 
 inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }
