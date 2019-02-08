@@ -1259,7 +1259,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
+		Local_Delta_Time = 1.0e-5*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
@@ -1398,10 +1398,8 @@ su2double *Normal = new su2double[nDim];
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 	  }
       
      }
@@ -1443,19 +1441,17 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        /*for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }
+        }*/
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 	  }
       
      }
@@ -1496,19 +1492,17 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        /*for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }
+        }*/
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 	  }
       
      }
@@ -1549,19 +1543,17 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        /*for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }
+        }*/
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 	  }
       
      }
@@ -1613,19 +1605,17 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        for (iDim = 0; iDim < nDim; iDim++) {
+        /*for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }
+        }*/
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
 		LinSysRes.SubtractBlock(iPoint, Residual);
 		
        if (config->GetKind_TimeIntScheme_Poisson() == EULER_IMPLICIT) {
+		   Jacobian_i[0][0] = 0.0;
 		Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-		Jacobian.SubtractBlock(iPoint, jPoint, Jacobian_j);
-		Jacobian.AddBlock(jPoint, iPoint, Jacobian_i);
-		Jacobian.AddBlock(jPoint, jPoint, Jacobian_j);
 	  }
       
      }

@@ -1110,6 +1110,7 @@ void CPBFluidIteration::Iterate(COutput *output,
                                     unsigned short val_iInst) {
   unsigned long IntIter, ExtIter;
   unsigned long MassIter, nMassIter, PressureIter, nPressureIter;
+  su2double     first_iter, last_iter;
   
   bool unsteady = (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (config_container[val_iZone]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
   bool frozen_visc = (config_container[val_iZone]->GetContinuous_Adjoint() && config_container[val_iZone]->GetFrozen_Visc_Cont()) ||
@@ -1126,17 +1127,21 @@ void CPBFluidIteration::Iterate(COutput *output,
   /* ---- Start velocity and pressure correction loop---*/
   
   /*--- Have to check net mass flux/convergence to stop the loop, this value is provisional ---*/
-  nMassIter = 25; nPressureIter = 50;
+  nMassIter = 10; nPressureIter = 10;
   
   
   /*--- Solve the Euler, Navier-Stokes or Reynolds-averaged Navier-Stokes (RANS) equations ---*/
   
   config_container[val_iZone]->SetGlobalParam(EULER, RUNTIME_FLOW_SYS, ExtIter);
   
-  for (MassIter = 0; MassIter < nMassIter; MassIter++) 
+  for (MassIter = 0; MassIter < nMassIter; MassIter++) {
       integration_container[val_iZone][val_iInst][FLOW_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                   config_container, RUNTIME_FLOW_SYS, MassIter, val_iZone,val_iInst);   
-                                                            
+   
+  if (MassIter == 0) first_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
+  if (MassIter == nMassIter-1) last_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
+  }
+  cout<<"Change in Res(flow): "<<last_iter/first_iter<<"\t"<<last_iter<<"\t"<<first_iter<<endl;             
 	
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
 	
@@ -1146,9 +1151,14 @@ void CPBFluidIteration::Iterate(COutput *output,
  /*--- Solve the poisson equation ---*/
 	config_container[val_iZone]->SetGlobalParam(POISSON_EQUATION, RUNTIME_POISSON_SYS, ExtIter);
 	
-    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) 
+    for (PressureIter = 0; PressureIter < nPressureIter; PressureIter++) {
 		integration_container[val_iZone][val_iInst][POISSON_SOL]->SingleGrid_Iteration(geometry_container, solver_container, numerics_container,
                                                                             config_container, RUNTIME_POISSON_SYS, PressureIter, val_iZone,val_iInst);
+      if (PressureIter == 0) first_iter = solver_container[val_iZone][val_iInst][MESH_0][POISSON_SOL]->GetRes_RMS(0); 
+      if (PressureIter == nPressureIter-1) last_iter = solver_container[val_iZone][val_iInst][MESH_0][POISSON_SOL]->GetRes_RMS(0); 
+    }
+    cout<<"Change in Res(poisson): "<<last_iter/first_iter<<"\t"<<last_iter<<"\t"<<first_iter<<endl;
+    
     /*--- Correct pressure and velocities ---*/
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     

@@ -4048,23 +4048,23 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
   su2double **vel_corr, vel_corr_i, vel_corr_j, vel_corr_avg;
   su2double Edge_Vec[3], alpha_vel,dist_ij_2;
   su2double *Normal, Area, Vel, Vel_Mag,rho,*Coeff;
-  su2double Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
+  su2double *Pressure_Correc, Current_Pressure, factor, *Flow_Dir;
   su2double alpha_p;//This should be config->getrelaxation (like)
   string Marker_Tag;
   su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
 	
+  /*--- Allocate corrections ---*/
+  vel_corr = new su2double* [nPoint];
+  Pressure_Correc = new su2double [nPoint];
+	
   
   /*--- Pressure Corrections ---*/
-	alpha_p = 0.1;
-	for (iPoint = 0; iPoint < nPoint; iPoint++) {
-		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
-		Pressure_Correc = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
-		Current_Pressure += alpha_p*Pressure_Correc;
-		node[iPoint]->SetPressure_val(Current_Pressure);
-	}
+	
+	for (iPoint = 0; iPoint < nPoint; iPoint++) 
+		Pressure_Correc[iPoint] = solver_container[POISSON_SOL]->node[iPoint]->GetSolution(0);
+	
 
   /*--- Velocity Corrections ---*/
-  vel_corr = new su2double* [nPoint];
   for (iPoint = 0; iPoint < nPoint; iPoint++) 
     vel_corr[iPoint] = new su2double [nVar];
     
@@ -4081,113 +4081,30 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
    }
 		
   /*--- Reassign strong boundary conditions ---*/
+  // For now I only have velocity inlet and fully developed outlet. 
+  // Will need to add other types of inlet/outlet conditions 
+  // where different treatment of pressure might be needed.
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
 	
 	  KindBC = config->GetMarker_All_KindBC(iMarker);
 	  Marker_Tag  = config->GetMarker_All_TagBound(iMarker);
     
-    switch (KindBC) {
-		
-		case OUTLET_FLOW:
-		 /*for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->node[iPoint]->GetDomain()) {
-			   Current_Pressure = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
-		       node[iPoint]->SetPressure_val(Current_Pressure);
-		   }
-         }*/
-         for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           /*--- Compute closest normal neighbor ---*/
-        
-			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-			Pressure_j = node[Point_Normal]->GetPressure();
-      
-        
-			/*--- Get coordinates of i & nearest normal and compute distance ---*/
-        
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			Coord_j = geometry->node[Point_Normal]->GetCoord();
-			delP = 0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
-				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
-			}
-     
-			Pressure_i = Pressure_j + delP;
-      
-			node[iPoint]->SetPressure_val(Pressure_i);
-         }
-         
-		break;
-		
-		case INLET_FLOW:
-		
-		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
-           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->node[iPoint]->GetDomain()) {
-		     /*--- For velocity inlet, no need to correct velocities. ---*/
-		     for (iDim = 0; iDim < nDim; iDim++) 
-                 vel_corr[iPoint][iDim] = 0.0;
-		   }
-		   /*--- Compute closest normal neighbor ---*/
-        
-			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-			Pressure_j = node[Point_Normal]->GetPressure();
-      
-        
-			/*--- Get coordinates of i & nearest normal and compute distance ---*/
-        
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			Coord_j = geometry->node[Point_Normal]->GetCoord();
-			delP = 0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
-				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
-			}
-     
-			Pressure_i = Pressure_j + delP;
-      
-			node[iPoint]->SetPressure_val(Pressure_i);
-         }
-		break;
-		
+    switch (KindBC) {		
+		case OUTLET_FLOW: case INLET_FLOW:
 		case ISOTHERMAL: case HEAT_FLUX:
-		/*--- Impose the value of the velocity as a strong boundary condition (Dirichlet)---*/
+		case SYMMETRY_PLANE:
 		 for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
            iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-           if (geometry->node[iPoint]->GetDomain()) {
-		   for (iDim = 0; iDim < nDim; iDim++) {
-                 vel_corr[iPoint][iDim] = 0.0;
-		      }
-	       }
-	       
-	       /*--- Compute closest normal neighbor ---*/
-        
-			Point_Normal = geometry->vertex[iMarker][iVertex]->GetNormal_Neighbor();
-			Pressure_j = node[Point_Normal]->GetPressure();
-      
-        
-			/*--- Get coordinates of i & nearest normal and compute distance ---*/
-        
-			Coord_i = geometry->node[iPoint]->GetCoord();
-			Coord_j = geometry->node[Point_Normal]->GetCoord();
-			delP = 0;
-			for (iDim = 0; iDim < nDim; iDim++) {
-				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
-				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
-			}
-     
-			Pressure_i = Pressure_j + delP;
-      
-			node[iPoint]->SetPressure_val(Pressure_i);
+           Pressure_Correc[iPoint] = 0.0;
 	      }
 		break;
-		
+
 		default: break;
 		
 	}
   }
+  
+  alpha_p = 0.1;
   for (iPoint = 0; iPoint < nPoint; iPoint++) {
 	  for (iVar = 0; iVar < nVar; iVar++) {
            Vel = node[iPoint]->GetVelocity(iVar);
@@ -4197,6 +4114,9 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
            node[iPoint]->SetSolution(iVar,Vel);
            factor = geometry->node[iPoint]->GetVolume()/node[iPoint]->Get_Mom_Coeff(iVar);
 		}
+		Current_Pressure = solver_container[FLOW_SOL]->node[iPoint]->GetPressure();
+		Current_Pressure += alpha_p*Pressure_Correc[iPoint];
+		node[iPoint]->SetPressure_val(Current_Pressure);
    }
    
    
@@ -4208,6 +4128,7 @@ void CPBIncEulerSolver:: Flow_Correction(CGeometry *geometry, CSolver **solver_c
 	  delete [] vel_corr[iPoint];
 	  
 	delete [] vel_corr;
+	delete [] Pressure_Correc;
 }
 
 void CPBIncEulerSolver::BC_Euler_Wall(CGeometry *geometry, CSolver **solver_container,
@@ -4457,12 +4378,9 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       
       /*--- Retrieve the specified back pressure for this outlet. ---*/
 
-      //P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
+      P_Outlet = config->GetOutlet_Pressure(Marker_Tag)/config->GetPressure_Ref();
 
-      /*--- The pressure is prescribed at the outlet. ---*/
-	  //node[iPoint]->SetPressure_val(P_Outlet);
-	  
-	  /*--- Compute closest normal neighbor ---*/
+      /*--- Compute closest normal neighbor ---*/
         
       Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
       Pressure_j = node[Point_Normal]->GetPressure();
@@ -4480,8 +4398,6 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
      
       Pressure_i = Pressure_j + delP;
       
-      node[iPoint]->SetPressure_val(Pressure_i);
-      
       for (iVar = 0; iVar < nVar; iVar++)   
          Residual[iVar] = 0.0;
       
@@ -4495,6 +4411,19 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
       for (iVar = 0; iVar < nVar; iVar++) {
 	     Residual[iVar] = Flux0*V_domain[iVar+1];
 	  }
+	  
+	  
+	  /*--- The pressure is prescribed at the outlet. ---*/
+	  //Trial 1 
+	  /*if (Face_Flux > 0) 
+	   	  node[iPoint]->SetPressure_val(Pressure_i);
+	  else
+	      node[iPoint]->SetPressure_val(P_Outlet);*/
+	      
+	  //Trial 2 
+	  if (Face_Flux > 0) 
+	   	 node[iPoint]->SetPressure_val(P_Outlet);
+	  
       /*--- Update residual value ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
@@ -4545,9 +4474,40 @@ void CPBIncEulerSolver::BC_Outlet(CGeometry *geometry, CSolver **solver_containe
 void CPBIncEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
                                 CConfig *config, unsigned short val_marker) {
   
-  /*--- Call the Euler wall residual method. ---*/
+  unsigned short iDim,iVar,jDim;
+  unsigned long iVertex, iPoint, Point_Normal;
+  su2double Area, yCoordRef, yCoord,proj_vel;
+  su2double *Coord_i, *Coord_j, dist_ij, delP, Pressure_j, Pressure_i;
   
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
+
+  su2double *Normal = new su2double[nDim];
+  su2double *val_normal = new su2double[nDim];
+  
+  
+  for (iVertex = 0; iVertex < geometry->GetnVertex(val_marker); iVertex++) {
+           iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+           /*--- Compute closest normal neighbor ---*/
+        
+			Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+			Pressure_j = node[Point_Normal]->GetPressure();
+      
+        
+			/*--- Get coordinates of i & nearest normal and compute distance ---*/
+        
+			Coord_i = geometry->node[iPoint]->GetCoord();
+			Coord_j = geometry->node[Point_Normal]->GetCoord();
+			delP = 0;
+			for (iDim = 0; iDim < nDim; iDim++) {
+				dist_ij = (Coord_j[iDim]-Coord_i[iDim]);
+				delP += node[Point_Normal]->GetGradient_Primitive(0,iDim)*dist_ij;
+			}
+     
+			Pressure_i = Pressure_j + delP;
+      
+			node[iPoint]->SetPressure_val(Pressure_i);
+         }
   
 }
 
@@ -5468,7 +5428,7 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
       Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
       if (Local_Delta_Time > config->GetMax_DeltaTime())
         Local_Delta_Time = config->GetMax_DeltaTime();
-        Local_Delta_Time = config->GetCFL(iMesh)*1.0e-4;
+        Local_Delta_Time = config->GetCFL(iMesh)*1.0e-5;
       node[iPoint]->SetDelta_Time(Local_Delta_Time);
     }
     else {
@@ -5534,7 +5494,9 @@ void CPBIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_containe
 }
 
 void CPBIncNSSolver::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics, CConfig *config, unsigned short val_marker){
-unsigned short iDim, iVar, jVar;// Wall_Function;
+  
+  
+  unsigned short iDim, iVar, jVar;// Wall_Function;
   unsigned long iVertex, iPoint, total_index, Point_Normal;
   
   su2double *GridVel, *Normal, Area, Wall_HeatFlux;
