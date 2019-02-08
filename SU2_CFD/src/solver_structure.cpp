@@ -1774,6 +1774,372 @@ void CSolver::CompletePeriodicComms(CGeometry *geometry,
   
 }
 
+void CSolver::InitiateComms(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iVar, iDim;
+  unsigned short COUNT_PER_POINT = 0;
+  unsigned short MPI_TYPE        = 0;
+  
+  unsigned long iPoint, offset, buf_offset;
+  
+  int iMessage, iSend, nSend;
+  
+  /*--- Set the size of the data packet and type depending on quantity. ---*/
+  
+  switch (commType) {
+    case SOLUTION:
+    case SOLUTION_OLD:
+    case UNDIVIDED_LAPLACIAN:
+    case SOLUTION_LIMITER:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case MAX_EIGENVALUE:
+    case SENSOR:
+      COUNT_PER_POINT  = 1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_GRADIENT:
+      COUNT_PER_POINT  = nVar*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case PRIMITIVE_GRADIENT:
+      COUNT_PER_POINT  = nPrimVarGrad*nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case PRIMITIVE_LIMITER:
+      COUNT_PER_POINT  = nPrimVarGrad;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_EDDY:
+      COUNT_PER_POINT  = nVar+1;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_FEA:
+      if (config->GetDynamic_Analysis() == DYNAMIC)
+        COUNT_PER_POINT  = nVar*3;
+      else
+        COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_FEA_OLD:
+      COUNT_PER_POINT  = nVar*3;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_DISPONLY:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_PRED:
+      COUNT_PER_POINT  = nVar;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case SOLUTION_PRED_OLD:
+      COUNT_PER_POINT  = nVar*3;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    case AUXVAR_GRADIENT:
+      COUNT_PER_POINT  = nDim;
+      MPI_TYPE         = COMM_TYPE_DOUBLE;
+      break;
+    default:
+      SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                     CURRENT_FUNCTION);
+      break;
+  }
+  
+  /*--- Check to make sure we have created a large enough buffer
+   for these comms during preprocessing. This is only for the su2double
+   buffer. It will be reallocated whenever we find a larger count
+   per point. After the first cycle of comms, this should be inactive. ---*/
+  
+  if (COUNT_PER_POINT > geometry->countPerPoint) {
+    geometry->AllocateP2PComms(COUNT_PER_POINT);
+  }
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDSend = geometry->bufD_P2PSend;
+  
+  /*--- Load the specified quantity from the solver into the generic
+   communication buffer in the geometry class. ---*/
+  
+  if (geometry->nP2PSend > 0) {
+    
+    /*--- Post all non-blocking recvs first before sends. ---*/
+    
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE);
+    
+    for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
+      
+      /*--- Compute our location in the send buffer. ---*/
+      
+      offset = geometry->nPoint_P2PSend[iMessage];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      nSend = (geometry->nPoint_P2PSend[iMessage+1] -
+               geometry->nPoint_P2PSend[iMessage]);
+      
+      for (iSend = 0; iSend < nSend; iSend++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PSend[offset + iSend];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iSend)*geometry->countPerPoint;
+        
+        switch (commType) {
+          case SOLUTION:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            break;
+          case SOLUTION_OLD:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_Old(iVar);
+            break;
+          case SOLUTION_EDDY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            bufDSend[buf_offset+nVar]   = node[iPoint]->GetmuT();
+            break;
+          case UNDIVIDED_LAPLACIAN:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetUndivided_Laplacian(iVar);
+            break;
+          case SOLUTION_LIMITER:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter(iVar);
+            break;
+          case MAX_EIGENVALUE:
+            bufDSend[buf_offset] = node[iPoint]->GetLambda();
+            break;
+          case SENSOR:
+            bufDSend[buf_offset] = node[iPoint]->GetSensor();
+            break;
+          case SOLUTION_GRADIENT:
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient(iVar, iDim);
+            break;
+          case PRIMITIVE_GRADIENT:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                bufDSend[buf_offset+iVar*nDim+iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+            break;
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetLimiter_Primitive(iVar);
+            break;
+          case AUXVAR_GRADIENT:
+            for (iDim = 0; iDim < nDim; iDim++)
+              bufDSend[buf_offset+iDim] = node[iPoint]->GetAuxVarGradient(iDim);
+            break;
+          case SOLUTION_FEA:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+              if (config->GetDynamic_Analysis() == DYNAMIC) {
+                bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel(iVar);
+                bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel(iVar);
+              }
+            }
+            break;
+          case SOLUTION_FEA_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar]        = node[iPoint]->GetSolution_time_n(iVar);
+              bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Vel_time_n(iVar);
+              bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Accel_time_n(iVar);
+            }
+            break;
+          case SOLUTION_DISPONLY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution(iVar);
+            break;
+          case SOLUTION_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              bufDSend[buf_offset+iVar] = node[iPoint]->GetSolution_Pred(iVar);
+            break;
+          case SOLUTION_PRED_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              bufDSend[buf_offset+iVar]        = node[iPoint]->GetSolution_Old(iVar);
+              bufDSend[buf_offset+nVar+iVar]   = node[iPoint]->GetSolution_Pred(iVar);
+              bufDSend[buf_offset+nVar*2+iVar] = node[iPoint]->GetSolution_Pred_Old(iVar);
+            }
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
+      }
+      
+      /*--- Launch the point-to-point MPI send for this message. ---*/
+      
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage);
+      
+    }
+  }
+  
+}
+void CSolver::CompleteComms(CGeometry *geometry,
+                            CConfig *config,
+                            unsigned short commType) {
+  
+  /*--- Local variables ---*/
+  
+  unsigned short iDim, iVar;
+  unsigned long iPoint, iRecv, nRecv, offset, buf_offset;
+  
+  int ind, source, iMessage, jRecv;
+  SU2_MPI::Status status;
+  
+  /*--- Set some local pointers to make access simpler. ---*/
+  
+  su2double *bufDRecv = geometry->bufD_P2PRecv;
+  
+  /*--- Store the data that was communicated into the appropriate
+   location within the local class data structures. ---*/
+  
+  if (geometry->nP2PRecv > 0) {
+    
+    for (iMessage = 0; iMessage < geometry->nP2PRecv; iMessage++) {
+      
+      /*--- For efficiency, recv the messages dynamically based on
+       the order they arrive. ---*/
+      
+      SU2_MPI::Waitany(geometry->nP2PRecv, geometry->req_P2PRecv,
+                       &ind, &status);
+      
+      /*--- Once we have recv'd a message, get the source rank. ---*/
+      
+      source = status.MPI_SOURCE;
+      
+      /*--- We know the offsets based on the source rank. ---*/
+      
+      jRecv = geometry->P2PRecv2Neighbor[source];
+      
+      /*--- Get the point offset for the start of this message. ---*/
+      
+      offset = geometry->nPoint_P2PRecv[jRecv];
+      
+      /*--- Get the number of packets to be received in this message. ---*/
+      
+      nRecv = (geometry->nPoint_P2PRecv[jRecv+1] -
+               geometry->nPoint_P2PRecv[jRecv]);
+      
+      for (iRecv = 0; iRecv < nRecv; iRecv++) {
+        
+        /*--- Get the local index for this communicated data. ---*/
+        
+        iPoint = geometry->Local_Point_P2PRecv[offset + iRecv];
+        
+        /*--- Compute the offset in the recv buffer for this point. ---*/
+        
+        buf_offset = (offset + iRecv)*geometry->countPerPoint;
+        
+        /*--- Store the data correctly depending on the quantity. ---*/
+        
+        switch (commType) {
+          case SOLUTION:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_OLD:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution_Old(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_EDDY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            node[iPoint]->SetmuT(bufDRecv[offset+nVar]);
+            break;
+          case UNDIVIDED_LAPLACIAN:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetUndivided_Laplacian(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_LIMITER:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetLimiter(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case MAX_EIGENVALUE:
+            node[iPoint]->SetLambda(bufDRecv[buf_offset]);
+            break;
+          case SENSOR:
+            node[iPoint]->SetSensor(bufDRecv[buf_offset]);
+            break;
+          case SOLUTION_GRADIENT:
+            for (iVar = 0; iVar < nVar; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                node[iPoint]->SetGradient(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case PRIMITIVE_GRADIENT:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              for (iDim = 0; iDim < nDim; iDim++)
+                node[iPoint]->SetGradient_Primitive(iVar, iDim, bufDRecv[buf_offset+iVar*nDim+iDim]);
+            break;
+          case PRIMITIVE_LIMITER:
+            for (iVar = 0; iVar < nPrimVarGrad; iVar++)
+              node[iPoint]->SetLimiter_Primitive(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case AUXVAR_GRADIENT:
+            for (iDim = 0; iDim < nDim; iDim++)
+              node[iPoint]->SetAuxVarGradient(iDim, bufDRecv[buf_offset+iDim]);
+            break;
+          case SOLUTION_FEA:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+              if (config->GetDynamic_Analysis() == DYNAMIC) {
+                node[iPoint]->SetSolution_Vel(iVar, bufDRecv[buf_offset+nVar+iVar]);
+                node[iPoint]->SetSolution_Accel(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+              }
+            }
+            break;
+          case SOLUTION_FEA_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution_time_n(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->SetSolution_Vel_time_n(iVar, bufDRecv[buf_offset+nVar+iVar]);
+              node[iPoint]->SetSolution_Accel_time_n(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+            }
+            break;
+          case SOLUTION_DISPONLY:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_PRED:
+            for (iVar = 0; iVar < nVar; iVar++)
+              node[iPoint]->SetSolution_Pred(iVar, bufDRecv[buf_offset+iVar]);
+            break;
+          case SOLUTION_PRED_OLD:
+            for (iVar = 0; iVar < nVar; iVar++) {
+              node[iPoint]->SetSolution_Old(iVar, bufDRecv[buf_offset+iVar]);
+              node[iPoint]->SetSolution_Pred(iVar, bufDRecv[buf_offset+nVar+iVar]);
+              node[iPoint]->SetSolution_Pred_Old(iVar, bufDRecv[buf_offset+nVar*2+iVar]);
+            }
+            break;
+          default:
+            SU2_MPI::Error("Unrecognized quantity for point-to-point MPI comms.",
+                           CURRENT_FUNCTION);
+            break;
+        }
+      }
+    }
+    
+    /*--- Verify that all non-blocking point-to-point sends have finished.
+     Note that this should be satisfied, as we have received all of the
+     data in the loop above at this point. ---*/
+    
+    SU2_MPI::Waitall(geometry->nP2PSend, geometry->req_P2PSend, MPI_STATUS_IGNORE);
+    
+  }
+  
+}
+
 void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   unsigned short iVar;
   
@@ -1805,9 +2171,19 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = GetRes_RMS(iVar);
   Local_nPointDomain = geometry->GetnPointDomain();
   
-  
-  SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
-  SU2_MPI::Allreduce(&Local_nPointDomain, &Global_nPointDomain, 1, MPI_UNSIGNED_LONG, MPI_SUM, MPI_COMM_WORLD);
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    SU2_MPI::Allreduce(sbuf_residual, rbuf_residual, nVar, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+    Global_nPointDomain = geometry->GetGlobal_nPointDomain();
+    
+  } else {
+    
+    /*--- Reduced MPI comms have been requested. Use a local residual only. ---*/
+    
+    for (iVar = 0; iVar < nVar; iVar++) rbuf_residual[iVar] = sbuf_residual[iVar];
+    Global_nPointDomain = geometry->GetnPointDomain();
+    
+  }
   
   
   for (iVar = 0; iVar < nVar; iVar++) {
@@ -1824,40 +2200,45 @@ void CSolver::SetResidual_RMS(CGeometry *geometry, CConfig *config) {
   delete [] rbuf_residual;
   
   /*--- Set the Maximum residual in all the processors ---*/
-  sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
-  sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
-  sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
   
-  rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
-  rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
-  rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    sbuf_residual[iVar] = GetRes_Max(iVar);
-    sbuf_point[iVar] = GetPoint_Max(iVar);
-    Coord = GetPoint_Max_Coord(iVar);
-    for (iDim = 0; iDim < nDim; iDim++)
-      sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
-  }
-  
-  SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-  SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
-
-  for (iVar = 0; iVar < nVar; iVar++) {
-    for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
-      AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+  if (config->GetComm_Level() == COMM_FULL) {
+    
+    sbuf_residual = new su2double [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_residual[iVar] = 0.0;
+    sbuf_point = new unsigned long [nVar]; for (iVar = 0; iVar < nVar; iVar++) sbuf_point[iVar] = 0;
+    sbuf_coord = new su2double[nVar*nDim]; for (iVar = 0; iVar < nVar*nDim; iVar++) sbuf_coord[iVar] = 0.0;
+    
+    rbuf_residual = new su2double [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_residual[iVar] = 0.0;
+    rbuf_point = new unsigned long [nProcessor*nVar]; for (iVar = 0; iVar < nProcessor*nVar; iVar++) rbuf_point[iVar] = 0;
+    rbuf_coord = new su2double[nProcessor*nVar*nDim]; for (iVar = 0; iVar < nProcessor*nVar*nDim; iVar++) rbuf_coord[iVar] = 0.0;
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      sbuf_residual[iVar] = GetRes_Max(iVar);
+      sbuf_point[iVar] = GetPoint_Max(iVar);
+      Coord = GetPoint_Max_Coord(iVar);
+      for (iDim = 0; iDim < nDim; iDim++)
+        sbuf_coord[iVar*nDim+iDim] = Coord[iDim];
     }
+    
+    SU2_MPI::Allgather(sbuf_residual, nVar, MPI_DOUBLE, rbuf_residual, nVar, MPI_DOUBLE, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_point, nVar, MPI_UNSIGNED_LONG, rbuf_point, nVar, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+    SU2_MPI::Allgather(sbuf_coord, nVar*nDim, MPI_DOUBLE, rbuf_coord, nVar*nDim, MPI_DOUBLE, MPI_COMM_WORLD);
+    
+    for (iVar = 0; iVar < nVar; iVar++) {
+      for (iProcessor = 0; iProcessor < nProcessor; iProcessor++) {
+        AddRes_Max(iVar, rbuf_residual[iProcessor*nVar+iVar], rbuf_point[iProcessor*nVar+iVar], &rbuf_coord[iProcessor*nVar*nDim+iVar*nDim]);
+      }
+    }
+    
+    delete [] sbuf_residual;
+    delete [] rbuf_residual;
+    
+    delete [] sbuf_point;
+    delete [] rbuf_point;
+    
+    delete [] sbuf_coord;
+    delete [] rbuf_coord;
+    
   }
-  
-  delete [] sbuf_residual;
-  delete [] rbuf_residual;
-  
-  delete [] sbuf_point;
-  delete [] rbuf_point;
-  
-  delete [] sbuf_coord;
-  delete [] rbuf_coord;
   
 #endif
   
@@ -2214,8 +2595,11 @@ void CSolver::SetAuxVar_Gradient_GG(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_AuxVar_Gradient(geometry, config);
+  //Set_MPI_AuxVar_Gradient(geometry, config);
   
+  InitiateComms(geometry, config, AUXVAR_GRADIENT);
+  CompleteComms(geometry, config, AUXVAR_GRADIENT);
+
 }
 
 void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
@@ -2339,7 +2723,10 @@ void CSolver::SetAuxVar_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_AuxVar_Gradient(geometry, config);
+  //Set_MPI_AuxVar_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, AUXVAR_GRADIENT);
+  CompleteComms(geometry, config, AUXVAR_GRADIENT);
   
 }
 
@@ -2417,7 +2804,10 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
   }
   
   /*--- Gradient MPI ---*/
-  Set_MPI_Solution_Gradient(geometry, config);
+  //Set_MPI_Solution_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_GRADIENT);
+  CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
 }
 
@@ -2616,7 +3006,10 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   
   /*--- Gradient MPI ---*/
   
-  Set_MPI_Solution_Gradient(geometry, config);
+  //Set_MPI_Solution_Gradient(geometry, config);
+  
+  InitiateComms(geometry, config, SOLUTION_GRADIENT);
+  CompleteComms(geometry, config, SOLUTION_GRADIENT);
   
 }
 
@@ -3024,15 +3417,17 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
     }
     
+    if (config->GetKind_SlopeLimit_Flow() == VENKATAKRISHNAN_WANG) {
 #ifdef HAVE_MPI
-    SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
-    SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMinSolution, GlobalMinSolution, nVar, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+      SU2_MPI::Allreduce(LocalMaxSolution, GlobalMaxSolution, nVar, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
 #else
-    for (iVar = 0; iVar < nVar; iVar++) {
-      GlobalMinSolution[iVar] = LocalMinSolution[iVar];
-      GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
-    }
+      for (iVar = 0; iVar < nVar; iVar++) {
+        GlobalMinSolution[iVar] = LocalMinSolution[iVar];
+        GlobalMaxSolution[iVar] = LocalMaxSolution[iVar];
+      }
 #endif
+    }
     
     for (iEdge = 0; iEdge < geometry->GetnEdge(); iEdge++) {
       
@@ -3261,8 +3656,11 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
   
   /*--- Limiter MPI ---*/
   
-  Set_MPI_Solution_Limiter(geometry, config);
+  //Set_MPI_Solution_Limiter(geometry, config);
   
+  InitiateComms(geometry, config, SOLUTION_LIMITER);
+  CompleteComms(geometry, config, SOLUTION_LIMITER);
+
 }
 
 void CSolver::SetPressureLaplacian(CGeometry *geometry, CConfig *config, su2double *PressureLaplacian) {
@@ -3834,7 +4232,10 @@ void CSolver::Restart_OldGeometry(CGeometry *geometry, CConfig *config) {
 
   /*--- It's necessary to communicate this information ---*/
 
-  geometry->Set_MPI_OldCoord(config);
+  //geometry->Set_MPI_OldCoord(config);
+  
+  geometry->InitiateComms(geometry, config, COORDINATES_OLD);
+  geometry->CompleteComms(geometry, config, COORDINATES_OLD);
   
   delete [] Coord;
 
@@ -5708,16 +6109,26 @@ void CBaselineSolver::LoadRestart(CGeometry **geometry, CSolver ***solver, CConf
 
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry[iInst], config);
+  //Set_MPI_Solution(geometry[iInst], config);
   
+  InitiateComms(geometry[iInst], config, SOLUTION);
+  CompleteComms(geometry[iInst], config, SOLUTION);
+
   /*--- Update the geometry for flows on dynamic meshes ---*/
   
   if (grid_movement && val_update_geo) {
     
     /*--- Communicate the new coordinates and grid velocities at the halos ---*/
     
-    geometry[iInst]->Set_MPI_Coord(config);
-    geometry[iInst]->Set_MPI_GridVel(config);
+    //geometry[iInst]->Set_MPI_Coord(config);
+    
+    geometry[iInst]->InitiateComms(geometry[iInst], config, COORDINATES);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, COORDINATES);
+    
+    //geometry[iInst]->Set_MPI_GridVel(config);
+    
+    geometry[iInst]->InitiateComms(geometry[iInst], config, GRID_VELOCITY);
+    geometry[iInst]->CompleteComms(geometry[iInst], config, GRID_VELOCITY);
 
   }
   

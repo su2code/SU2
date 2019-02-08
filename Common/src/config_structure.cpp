@@ -57,7 +57,7 @@ vector<double> GEMM_Profile_MaxTime;      /*!< \brief Maximum time spent for thi
 #include "../include/ad_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 
-CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, unsigned short verb_level) {
+CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_software, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_nDim, bool verb_high) {
   
   /*--- Store MPI rank and size ---*/ 
   
@@ -86,7 +86,7 @@ CConfig::CConfig(char case_filename[MAX_STRING_SIZE], unsigned short val_softwar
 
   /*--- Configuration file output ---*/
 
-  if ((rank == MASTER_NODE) && (verb_level == VERB_HIGH) && (val_iZone == 0))
+  if ((rank == MASTER_NODE) && verb_high && (val_iZone == 0))
     SetOutput(val_software, val_iZone);
 
 }
@@ -1698,7 +1698,9 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /*!\brief CONSOLE_OUTPUT_VERBOSITY
    *  \n DESCRIPTION: Verbosity level for console output  \ingroup Config*/
   addEnumOption("CONSOLE_OUTPUT_VERBOSITY", Console_Output_Verb, Verb_Map, VERB_HIGH);
-
+  /*!\brief COMM_LEVEL
+   *  \n DESCRIPTION: Level of MPI communications during runtime  \ingroup Config*/
+  addEnumOption("COMM_LEVEL", Comm_Level, Comm_Map, COMM_FULL);
 
   /*!\par CONFIG_CATEGORY: Dynamic mesh definition \ingroup Config*/
   /*--- Options related to dynamic meshes ---*/
@@ -4296,6 +4298,20 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Wrt_Projected_Sensitivity = true;
   }
 
+  /*--- Delay the output until exit for minimal communication mode. ---*/
+  
+  if (Comm_Level != COMM_FULL) {
+    Wrt_Sol_Freq          = nExtIter+1;
+    Wrt_Sol_Freq_DualTime = nExtIter+1;
+    
+    /*--- Write only the restart. ---*/
+    
+    Wrt_Slice   = false;
+    Wrt_Vol_Sol = false;
+    Wrt_Srf_Sol = false;
+    Wrt_Csv_Sol = false;
+  }
+  
   /*--- Check the conductivity model. Deactivate the turbulent component
    if we are not running RANS. ---*/
   

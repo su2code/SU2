@@ -115,7 +115,7 @@ int main(int argc, char *argv[]) {
      constructor, the input configuration file is parsed and all options are
      read and stored. ---*/
     
-    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, VERB_HIGH);
+    config_container[iZone] = new CConfig(config_file_name, SU2_DOT, iZone, nZone, 0, true);
 
     /*--- Set the MPI communicator ---*/
     config_container[iZone]->SetMPICommunicator(MPICommunicator);
@@ -260,6 +260,10 @@ int main(int argc, char *argv[]) {
   if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
   geometry_container[iZone][INST_0]->SetGlobal_to_Local_Point();
  
+  /*--- Create the point-to-point MPI communication structures. ---*/
+    
+  geometry_container[iZone][INST_0]->PreprocessP2PComms(geometry_container[iZone][INST_0], config_container[iZone]);
+    
   /*--- Load the surface sensitivities from file. This is done only
    once: if this is an unsteady problem, a time-average of the surface
    sensitivities at each node is taken within this routine. ---*/
