@@ -68,9 +68,9 @@ CTurbSolver::CTurbSolver(CGeometry* geometry, CConfig *config) : CSolver() {
 }
 
 CTurbSolver::~CTurbSolver(void) {
-
+  
   if (Inlet_TurbVars != NULL) {
-    for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
+    for (unsigned short iMarker = 0; iMarker < nMarker; iMarker++) {
       if (Inlet_TurbVars[iMarker] != NULL) {
         for (unsigned long iVertex = 0; iVertex < nVertex[iMarker]; iVertex++) {
           delete [] Inlet_TurbVars[iMarker][iVertex];
@@ -87,7 +87,6 @@ CTurbSolver::~CTurbSolver(void) {
   if (upperlimit != NULL) delete [] upperlimit;
   if (nVertex != NULL) delete [] nVertex;
   
-
 }
 
 void CTurbSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
@@ -686,6 +685,22 @@ void CTurbSolver::BC_Giles(CGeometry *geometry, CSolver **solver_container, CNum
   }
 }
 
+void CTurbSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                                  CNumerics *numerics, CConfig *config) {
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. For implicit calculations
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+  
+}
+
 void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_container, CConfig *config) {
   
   unsigned short iVar;
@@ -709,7 +724,8 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     
     /*--- Read the volume ---*/
     
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     
     /*--- Modify matrix diagonal to assure diagonal dominance ---*/
     
@@ -790,6 +806,10 @@ void CTurbSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver_
     }
   }
   
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
   
   /*--- MPI solution ---*/
   
@@ -970,7 +990,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
     /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-      if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- Get the index for node i plus the boundary face normal ---*/
@@ -1005,6 +1026,8 @@ void CTurbSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver_con
             Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         }
         LinSysRes.AddBlock(iPoint, Residual);
+        
+      }
       }
     }
     
@@ -1236,7 +1259,7 @@ CTurbSASolver::CTurbSASolver(void) : CTurbSolver() {
 CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned short iMesh, CFluidModel* FluidModel)
     : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
-  unsigned long iPoint;
+  unsigned long iPoint, iVertex;
   su2double Density_Inf, Viscosity_Inf, Factor_nu_Inf, Factor_nu_Engine, Factor_nu_ActDisk;
 
   bool multizone = config->GetMultizone_Problem();
@@ -1448,7 +1471,7 @@ CTurbSASolver::CTurbSASolver(CGeometry *geometry, CConfig *config, unsigned shor
         Inlet_TurbVars[iMarker][iVertex][0] = nu_tilde_Inf;
       }
   }
-
+      
 }
 
 CTurbSASolver::~CTurbSASolver(void) {
@@ -3572,7 +3595,7 @@ CTurbSSTSolver::CTurbSSTSolver(void) : CTurbSolver() {
 CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     : CTurbSolver(geometry, config) {
   unsigned short iVar, iDim, nLineLets;
-  unsigned long iPoint;
+  unsigned long iPoint, iVertex;
   ifstream restart_file;
   string text_line;
 
@@ -3772,7 +3795,7 @@ CTurbSSTSolver::CTurbSSTSolver(CGeometry *geometry, CConfig *config, unsigned sh
   }
 
   /*-- Allocation of inlets has to happen in derived classes (not CTurbSolver),
-   * due to arbitrary number of turbulence variables ---*/
+    due to arbitrary number of turbulence variables ---*/
 
       Inlet_TurbVars = new su2double**[nMarker];
       for (unsigned long iMarker = 0; iMarker < nMarker; iMarker++) {
@@ -3827,6 +3850,7 @@ void CTurbSSTSolver::Preprocessing(CGeometry *geometry, CSolver **solver_contain
   bool limiter_flow     = ((config->GetKind_SlopeLimit_Flow() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
   bool limiter_turb     = ((config->GetKind_SlopeLimit_Turb() != NO_LIMITER) && (ExtIter <= config->GetLimiterIter()) && !(disc_adjoint && config->GetFrozen_Limiter_Disc()));
 
+  
   for (iPoint = 0; iPoint < nPoint; iPoint ++) {
     
     /*--- Initialize the residual vector ---*/

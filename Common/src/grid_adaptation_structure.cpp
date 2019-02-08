@@ -3210,7 +3210,8 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
   }
 		
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Solution_Vertex = ConsVar_Sol[Point][0];
@@ -3220,7 +3221,8 @@ void CGridAdaptation::SetIndicator_Flow(CGeometry *geometry, CConfig *config, un
           Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
         }
       }
-		
+    }
+  
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
       DualArea = geometry->node[iPoint]->GetVolume();
@@ -3277,7 +3279,8 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
   }
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Solution_Vertex = AdjVar_Sol[Point][0];
@@ -3287,6 +3290,7 @@ void CGridAdaptation::SetIndicator_Adj(CGeometry *geometry, CConfig *config, uns
           Gradient[Point][iDim] = Gradient[Point][iDim] - Partial_Res;
         }
       }
+    }
   
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {
@@ -3347,7 +3351,8 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
   }
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++)
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         Point = geometry->vertex[iMarker][iVertex]->GetNode();
         Normal = geometry->vertex[iMarker][iVertex]->GetNormal();
@@ -3356,6 +3361,7 @@ void CGridAdaptation::SetIndicator_FlowAdj(CGeometry *geometry, CConfig *config)
           Gradient_Adj[Point][iDim] = Gradient_Adj[Point][iDim] - AdjVar_Sol[Point][0] * Normal[iDim];
         }
       }
+    }
   
   for (iPoint = 0; iPoint<geometry->GetnPoint(); iPoint++)
     for (iDim = 0; iDim < nDim; iDim++) {

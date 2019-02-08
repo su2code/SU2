@@ -660,7 +660,6 @@ void CSysMatrix::DeleteValsRowi(unsigned long i) {
   
 }
 
-
 su2double CSysMatrix::MatrixDeterminant(su2double **a, unsigned long n) {
   
   unsigned long i, j, j1, j2;
