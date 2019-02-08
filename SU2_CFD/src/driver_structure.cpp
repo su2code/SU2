@@ -6206,9 +6206,10 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
   unsigned long iOuterIter = 0;
   bool Convergence = false;
 
-  /*--- Method parameters, size of history matrix, residual norm, and tolerance ---*/
+  /*--- Method parameters, size of history matrix, initial relaxation, residual norm, and tolerance ---*/
   unsigned long M = 0, N = max<unsigned long>(1,config_container[ZONE_STRUCT]->GetnIterIQN_HistorySize());
-  su2double resNorm = 1.0, tol = pow(10.0,config_container[ZONE_STRUCT]->GetMinLogResidualFSI());
+  su2double alpha = config_container[ZONE_STRUCT]->GetAitkenStatRelax(), resNorm = 1.0,
+            tol = pow(10.0,config_container[ZONE_STRUCT]->GetMinLogResidualFSI());
 
   /*--- This vector is used to get and set interface values ---*/
   vector<passivedouble> interfaceValues;
@@ -6240,13 +6241,17 @@ void CDiscAdjFSIDriver::Run_InterfaceQuasiNewtonInvLeastSquares() {
     unsigned long cols = min<unsigned long>(iOuterIter-1,N-1);
     unsigned long targ = min<unsigned long>(cols+1,N-1); // for when N=1 and we recover BGS
 
-    if (cols != 0) {
+    if (cols == 0) {
+      /*--- No history yet, simple relaxed BGS update ---*/
+      R *= SU2_TYPE::GetValue(alpha);
+    }
+    else {
       /*--- Use history to "predict" the interface values ---*/
       /*--- Matrix H contains the residual (R) deltas, M(:,k) = R^k-R^(k-1) ---*/
       MatrixXd H = (Y-X).block(0,1,M,cols)-(Y-X).leftCols(cols);
 
       /*--- LS approximation, how to combine (C) past history to take the residual to 0 on this iteration ---*/
-      VectorXd C = H.householderQr().solve(-R);
+      VectorXd C = H.colPivHouseholderQr().solve(-R);
 
       /*--- H now contains the deltas of END of iteration values, M(:,k) = Y^k-Y^(k-1) ---*/
       H = Y.block(0,1,M,cols)-Y.leftCols(cols);
