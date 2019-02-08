@@ -62,7 +62,7 @@ void CIntegration::Space_Integration(CGeometry *geometry,
                                      CConfig *config, unsigned short iMesh,
                                      unsigned short iRKStep,
                                      unsigned short RunTime_EqSystem) {
-  unsigned short iMarker, KindBC, iPeriodic;
+  unsigned short iMarker, KindBC;
   
   unsigned short MainSolver = config->GetContainerPosition(RunTime_EqSystem);
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -214,8 +214,8 @@ void CIntegration::Space_Integration(CGeometry *geometry,
    adjacent periodic markers, the repeated points will have their residuals
    accumulated corectly during the communications. ---*/
   
-  for (iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config, iPeriodic);
+  if (config->GetnMarker_Periodic() > 0) {
+    solver_container[MainSolver]->BC_Periodic(geometry, solver_container, numerics[CONV_BOUND_TERM], config);
   }
   
 }

@@ -273,13 +273,7 @@ public:
    * \param[in] i - Index of the row.
    */
   void DeleteValsRowi(unsigned long i);
-  
-  /*!
-   * \brief Deletes the values of the row i, but keeps the entries on the diagonal (point implicit).
-   * \param[in] i - Index of the row.
-   */
-  void SetPointImplicit(unsigned long i);
-  
+
   /*!
    * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
    * \param[in] a - Matrix to compute the determinant.
