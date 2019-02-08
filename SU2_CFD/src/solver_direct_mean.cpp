@@ -510,13 +510,13 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar*2];
+        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
         for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
           DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
         }
       }
       else {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar*2];
+        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
         for (iVar = 0; iVar < nPrimVar ; iVar++) {
           DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
         }
@@ -15317,14 +15317,14 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
     DonorPrimVar[iMarker] = new su2double* [geometry->nVertex[iMarker]];
     for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
       if (rans) {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar*2];
-        for (iVar = 0; iVar < nPrimVar*2 ; iVar++) {
+        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar+2];
+        for (iVar = 0; iVar < nPrimVar + 2 ; iVar++) {
           DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
         }
       }
       else {
-        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar*2];
-        for (iVar = 0; iVar < nPrimVar*2 ; iVar++) {
+        DonorPrimVar[iMarker][iVertex] = new su2double [nPrimVar];
+        for (iVar = 0; iVar < nPrimVar ; iVar++) {
           DonorPrimVar[iMarker][iVertex][iVar] = 0.0;
         }
       }
