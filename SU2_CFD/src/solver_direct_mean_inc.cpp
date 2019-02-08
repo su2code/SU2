@@ -95,6 +95,7 @@ CIncEulerSolver::CIncEulerSolver(void) : CSolver() {
 
   SlidingState     = NULL;
   SlidingStateNodes = NULL;
+
 }
 
 CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh) : CSolver() {
@@ -104,6 +105,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   string filename = config->GetSolution_FlowFileName();
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
@@ -225,6 +227,8 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
+  MGLevel = iMesh;
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];
@@ -350,7 +354,7 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
       }
     }
   }
-  
+
   /*--- Force definition and coefficient arrays for all of the markers ---*/
   
   CPressure = new su2double* [nMarker];
@@ -580,6 +584,16 @@ CIncEulerSolver::CIncEulerSolver(CGeometry *geometry, CConfig *config, unsigned 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -666,9 +680,6 @@ CIncEulerSolver::~CIncEulerSolver(void) {
   if (MomentInviscid != NULL) delete [] MomentInviscid;
   if (ForceMomentum  != NULL) delete [] ForceMomentum;
   if (MomentMomentum != NULL) delete [] MomentMomentum;
-
-  if (iPoint_UndLapl != NULL) delete [] iPoint_UndLapl;
-  if (jPoint_UndLapl != NULL) delete [] jPoint_UndLapl;
 
   if (Primitive   != NULL) delete [] Primitive;
   if (Primitive_i != NULL) delete [] Primitive_i;
@@ -2369,6 +2380,63 @@ void CIncEulerSolver::SetInitialCondition(CGeometry **geometry, CSolver ***solve
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
                     (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
   
+  if ((ExtIter == 0) && config->GetTaylorGreen()) {
+
+    /* Write a message that the solution is initialized for the Taylor-Green vortex
+     test case. */
+    if(rank == MASTER_NODE) {
+      cout << endl;
+      cout << "Warning: Solution is initialized for the Taylor-Green vortex test case!!!" << endl;
+      cout << endl << flush;
+    }
+
+    /* The initial conditions are set for the Taylor-Green vortex case, which
+     is a DNS case that features vortex breakdown into turbulence. These
+     particular settings are for the typical Re = 1600 case (M = 0.08) with
+     an initial temperature of 300 K. Note that this condition works in both
+     2D and 3D. */
+
+    const su2double tgvLength    = 1.0;     // Taylor-Green length scale.
+    const su2double tgvVelocity  = 1.0;     // Taylor-Green velocity.
+    const su2double tgvDensity   = 1.0;     // Taylor-Green density.
+    const su2double tgvViscosity = 0.1;   // Taylor-Green pressure.
+
+    /* Useful coefficient in which Gamma is present. */
+    const su2double ovGm1    = 1.0/Gamma_Minus_One;
+
+    for (iMesh = 0; iMesh <= config->GetnMGLevels(); iMesh++) {
+      for (iPoint = 0; iPoint < geometry[iMesh]->GetnPoint(); iPoint++) {
+
+        /* Set the pointers to the coordinates and solution of this DOF. */
+        const su2double *coor = geometry[iMesh]->node[iPoint]->GetCoord();
+        su2double *solDOF     = solver_container[iMesh][FLOW_SOL]->node[iPoint]->GetSolution();
+
+        su2double coorZ = 0.0;
+        if (nDim == 3) coorZ = coor[2];
+
+        /* Compute the primitive variables. */
+        su2double rho = tgvDensity;
+        su2double u   =  tgvVelocity * (sin(coor[0]/tgvLength)*
+                                        cos(coor[1]/tgvLength)*
+                                        cos(coorZ  /tgvLength));
+        su2double v   = -tgvVelocity * (cos(coor[0]/tgvLength)*
+                                        sin(coor[1]/tgvLength)*
+                                        cos(coorZ  /tgvLength));
+        su2double factorA = 1.0;
+        su2double factorB = cos(2.0*coor[0]/tgvLength) + cos(2.0*coor[1]/tgvLength);
+        su2double p   = (tgvDensity/4.0)*factorA*factorB;
+
+        /* Compute the conservative variables. Note that both 2D and 3D
+         cases are treated correctly. */
+        solDOF[0]      = p;
+        solDOF[1]      = u;
+        solDOF[2]      = v;
+        solDOF[3]      = 0.0;
+        solDOF[nVar-1] = 0.0;
+      }
+    }
+  }
+  
   /*--- If restart solution, then interpolate the flow solution to
    all the multigrid levels, this is important with the dual time strategy ---*/
   
@@ -2642,6 +2710,8 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       
       /*--- Point identification, Normal vector and area ---*/
@@ -2676,6 +2746,7 @@ void CIncEulerSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_contain
         node[iPoint]->AddMax_Lambda_Inv(Lambda);
       }
       
+    }
     }
   }
   
@@ -3235,6 +3306,8 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       
       /*--- Point identification, Normal vector and area ---*/
@@ -3269,6 +3342,14 @@ void CIncEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
       }
       
     }
+    }
+  }
+  
+  /*--- Correct the eigenvalue values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_MAX_EIG);
   }
   
   /*--- MPI parallelization ---*/
@@ -3319,6 +3400,13 @@ void CIncEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *confi
     if (boundary_i && !boundary_j)
       if (geometry->node[jPoint]->GetDomain()) node[jPoint]->AddUnd_Lapl(Diff);
     
+  }
+  
+  /*--- Correct the Laplacian values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LAPLACIAN);
   }
   
   /*--- MPI parallelization ---*/
@@ -3389,6 +3477,13 @@ void CIncEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfi
         jPoint_UndLapl[jPoint] += (Pressure_i + Pressure_j);
       }
     
+  }
+  
+  /*--- Correct the sensor values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_SENSOR);
   }
   
   /*--- Set pressure switch for each point ---*/
@@ -4180,7 +4275,8 @@ void CIncEulerSolver::ExplicitRK_Iteration(CGeometry *geometry, CSolver **solver
   /*--- Update the solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
 
     Res_TruncError = node[iPoint]->GetResTruncError();
@@ -4225,7 +4321,8 @@ void CIncEulerSolver::ExplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
   /*--- Update the solution ---*/
   
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     Delta = node[iPoint]->GetDelta_Time() / Vol;
     
     local_Res_TruncError = node[iPoint]->GetResTruncError();
@@ -4280,7 +4377,8 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     
     /*--- Read the volume ---*/
     
-    Vol = geometry->node[iPoint]->GetVolume();
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
     
     /*--- Apply the preconditioner and add to the diagonal. ---*/
     
@@ -4343,6 +4441,11 @@ void CIncEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **sol
     }
   }
   
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_IMPLICIT);
+  }
+  
   /*--- MPI solution ---*/
   
   Set_MPI_Solution(geometry, config);
@@ -4357,7 +4460,7 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   unsigned long iPoint, jPoint, iEdge, iVertex;
   unsigned short iDim, iVar, iMarker;
   su2double *PrimVar_Vertex, *PrimVar_i, *PrimVar_j, PrimVar_Average,
-  Partial_Gradient, Partial_Res, *Normal;
+  Partial_Gradient, Partial_Res, *Normal, Vol;
   
   /*--- Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
   
@@ -4394,8 +4497,8 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
   
   /*--- Loop boundary edges ---*/
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
-    if (config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY &&
-        config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+       (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
       if (geometry->node[iPoint]->GetDomain()) {
@@ -4411,23 +4514,39 @@ void CIncEulerSolver::SetPrimitive_Gradient_GG(CGeometry *geometry, CConfig *con
           }
       }
     }
+    }
+  }
+  
+  /*--- Correct the gradient values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_GG);
   }
   
   /*--- Update gradient value ---*/
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Get the volume, which may include periodic components. ---*/
+    
+    Vol = (geometry->node[iPoint]->GetVolume() +
+           geometry->node[iPoint]->GetPeriodicVolume());
+    
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim) / (geometry->node[iPoint]->GetVolume());
+        Partial_Gradient = node[iPoint]->GetGradient_Primitive(iVar, iDim)/Vol;
         node[iPoint]->SetGradient_Primitive(iVar, iDim, Partial_Gradient);
       }
     }
   }
   
+  /*--- Communicate the gradient values via MPI. ---*/
+
+  Set_MPI_Primitive_Gradient(geometry, config);
+  
   delete [] PrimVar_Vertex;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
-  
-  Set_MPI_Primitive_Gradient(geometry, config);
   
 }
 
@@ -4435,11 +4554,10 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
   
   unsigned short iVar, iDim, jDim, iNeigh;
   unsigned long iPoint, jPoint;
-  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j, r11, r12, r13, r22, r23, r23_a,
-  r23_b, r33, weight, product, z11, z12, z13, z22, z23, z33, detR2;
+  su2double *PrimVar_i, *PrimVar_j, *Coord_i, *Coord_j;
+  su2double r11, r12, r13, r22, r23, r23_a, r23_b, r33, weight;
+  su2double z11, z12, z13, z22, z23, z33, detR2;
   bool singular;
-  
-  /*--- Incompressible flow, primitive variables nDim+4, (P, vx, vy, vz, T, rho, beta) ---*/
   
   /*--- Loop over points of the grid ---*/
   
@@ -4462,12 +4580,16 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       for (iDim = 0; iDim < nDim; iDim++)
         Cvector[iVar][iDim] = 0.0;
     
-    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
-    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
+    /*--- Clear Rmatrix, which could eventually be computed once
+     and stored for static meshes, as well as the prim gradient. ---*/
     
-    AD::StartPreacc();
-    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
-    AD::SetPreaccIn(Coord_i, nDim);
+    node[iPoint]->SetRmatrixZero();
+    
+    node[iPoint]->SetGradient_PrimitiveZero(nPrimVarGrad);
+    
+    //    AD::StartPreacc();
+    //    AD::SetPreaccIn(PrimVar_i, nPrimVarGrad);
+    //    AD::SetPreaccIn(Coord_i, nDim);
     
     for (iNeigh = 0; iNeigh < geometry->node[iPoint]->GetnPoint(); iNeigh++) {
       jPoint = geometry->node[iPoint]->GetPoint(iNeigh);
@@ -4475,9 +4597,9 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       
       PrimVar_j = node[jPoint]->GetPrimitive();
       
-      AD::SetPreaccIn(Coord_j, nDim);
-      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
-
+      //      AD::SetPreaccIn(Coord_j, nDim);
+      //      AD::SetPreaccIn(PrimVar_j, nPrimVarGrad);
+      
       weight = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
         weight += (Coord_j[iDim]-Coord_i[iDim])*(Coord_j[iDim]-Coord_i[iDim]);
@@ -4486,34 +4608,63 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
       
       if (weight != 0.0) {
         
-        r11 += (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight;
-        r12 += (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight;
-        r22 += (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight;
+        node[iPoint]->AddRmatrix(0, 0, (Coord_j[0]-Coord_i[0])*(Coord_j[0]-Coord_i[0])/weight);
+        node[iPoint]->AddRmatrix(0, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[1]-Coord_i[1])/weight);
+        node[iPoint]->AddRmatrix(1, 1, (Coord_j[1]-Coord_i[1])*(Coord_j[1]-Coord_i[1])/weight);
         
         if (nDim == 3) {
-          r13 += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_a += (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight;
-          r23_b += (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight;
-          r33 += (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight;
+          node[iPoint]->AddRmatrix(0, 2, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(1, 2, (Coord_j[1]-Coord_i[1])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(2, 1, (Coord_j[0]-Coord_i[0])*(Coord_j[2]-Coord_i[2])/weight);
+          node[iPoint]->AddRmatrix(2, 2, (Coord_j[2]-Coord_i[2])*(Coord_j[2]-Coord_i[2])/weight);
         }
         
         /*--- Entries of c:= transpose(A)*b ---*/
         
-        for (iVar = 0; iVar < nPrimVarGrad; iVar++)
-          for (iDim = 0; iDim < nDim; iDim++)
-            Cvector[iVar][iDim] += (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight;
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            node[iPoint]->AddGradient_Primitive(iVar,iDim, (Coord_j[iDim]-Coord_i[iDim])*(PrimVar_j[iVar]-PrimVar_i[iVar])/weight);
+          }
+        }
         
       }
-      
     }
+  }
+  
+  /*--- Correct the gradient values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_PRIM_LS);
+  }
+  
+  /*--- Second loop over points of the grid to compute final gradient ---*/
+  
+  for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+    
+    /*--- Set the value of the singular ---*/
+    
+    singular = false;
     
     /*--- Entries of upper triangular matrix R ---*/
+    
+    r11 = 0.0; r12 = 0.0;   r13 = 0.0;    r22 = 0.0;
+    r23 = 0.0; r23_a = 0.0; r23_b = 0.0;  r33 = 0.0;
+    
+    r11 = node[iPoint]->GetRmatrix(0,0);
+    r12 = node[iPoint]->GetRmatrix(0,1);
+    r22 = node[iPoint]->GetRmatrix(1,1);
     
     if (r11 >= 0.0) r11 = sqrt(r11); else r11 = 0.0;
     if (r11 != 0.0) r12 = r12/r11; else r12 = 0.0;
     if (r22-r12*r12 >= 0.0) r22 = sqrt(r22-r12*r12); else r22 = 0.0;
     
     if (nDim == 3) {
+      r13   = node[iPoint]->GetRmatrix(0,2);
+      r23_a = node[iPoint]->GetRmatrix(1,2);
+      r23_b = node[iPoint]->GetRmatrix(2,1);
+      r33   = node[iPoint]->GetRmatrix(2,2);
+      
       if (r11 != 0.0) r13 = r13/r11; else r13 = 0.0;
       if ((r22 != 0.0) && (r11*r22 != 0.0)) r23 = r23_a/r22 - r23_b*r12/(r11*r22); else r23 = 0.0;
       if (r33-r23*r23-r13*r13 >= 0.0) r33 = sqrt(r33-r23*r23-r13*r13); else r33 = 0.0;
@@ -4560,18 +4711,24 @@ void CIncEulerSolver::SetPrimitive_Gradient_LS(CGeometry *geometry, CConfig *con
     /*--- Computation of the gradient: S*c ---*/
     for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
       for (iDim = 0; iDim < nDim; iDim++) {
-        product = 0.0;
+        Cvector[iVar][iDim] = 0.0;
         for (jDim = 0; jDim < nDim; jDim++) {
-          product += Smatrix[iDim][jDim]*Cvector[iVar][jDim];
+          Cvector[iVar][iDim] += Smatrix[iDim][jDim]*node[iPoint]->GetGradient_Primitive(iVar, jDim);
         }
-        
-        node[iPoint]->SetGradient_Primitive(iVar, iDim, product);
       }
     }
     
-    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
-    AD::EndPreacc();
+    for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+      for (iDim = 0; iDim < nDim; iDim++) {
+        node[iPoint]->SetGradient_Primitive(iVar, iDim, Cvector[iVar][iDim]);
+      }
+    }
+    
+    //    AD::SetPreaccOut(node[iPoint]->GetGradient_Primitive(), nPrimVarGrad, nDim);
+    //    AD::EndPreacc();
   }
+  
+  /*--- Communicate the gradient values via MPI. ---*/
   
   Set_MPI_Primitive_Gradient(geometry, config);
   
@@ -4635,6 +4792,13 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
         node[jPoint]->SetSolution_Max(iVar, max(node[jPoint]->GetSolution_Max(iVar), -du));
       }
       
+    }
+    
+    /*--- Correct the limiter values across any periodic boundaries. ---*/
+
+    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+      InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_1);
+      CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_1);
     }
     
   }
@@ -4831,6 +4995,13 @@ void CIncEulerSolver::SetPrimitive_Limiter(CGeometry *geometry, CConfig *config)
     delete [] LocalMinPrimitive; delete [] GlobalMinPrimitive;
     delete [] LocalMaxPrimitive; delete [] GlobalMaxPrimitive;
 
+  }
+  
+  /*--- Correct the limiter values across any periodic boundaries. ---*/
+
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_2);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_PRIM_2);
   }
   
   /*--- Limiter MPI ---*/
@@ -6204,6 +6375,23 @@ void CIncEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_c
   delete [] Normal;
   delete [] PrimVar_i;
   delete [] PrimVar_j;
+  
+}
+
+void CIncEulerSolver::BC_Periodic(CGeometry *geometry, CSolver **solver_container,
+                               CNumerics *numerics, CConfig *config) {
+  
+  /*--- Complete residuals for periodic boundary conditions. We loop over
+   the periodic BCs in matching pairs so that, in the event that there are
+   adjacent periodic markers, the repeated points will have their residuals
+   accumulated corectly during the communications. For implicit calculations
+   the Jacobians and linear system are also correctly adjusted here. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_RESIDUAL);
+  }
+  
 }
 
 void CIncEulerSolver::BC_Custom(CGeometry *geometry, CSolver **solver_container, CNumerics *numerics, CConfig *config, unsigned short val_marker) { }
@@ -6224,7 +6412,9 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
   
   bool implicit         = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
   bool grid_movement    = config->GetGrid_Movement();
-
+  bool variable_density = (config->GetKind_DensityModel() == VARIABLE);
+  bool energy           = config->GetEnergy_Equation();
+  
   /*--- Store the physical time step ---*/
   
   TimeStep = config->GetDelta_UnstTimeND();
@@ -6295,22 +6485,88 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
                             +1.0*U_time_nM1[iVar])*Volume_nP1 / (2.0*TimeStep);
       }
       
+      if (!energy) Residual[nDim+1] = 0.0;
+      
       /*--- Store the residual and compute the Jacobian contribution due
        to the dual time source term. ---*/
       
       LinSysRes.AddBlock(iPoint, Residual);
+      
       if (implicit) {
-        for (iVar = 1; iVar < nVar; iVar++) {
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
-            Jacobian_i[iVar][iVar] = Volume_nP1 / TimeStep;
-          if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
-            Jacobian_i[iVar][iVar] = (Volume_nP1*3.0)/(2.0*TimeStep);
-        }
+        
+        unsigned short iDim, jDim;
+        
+        su2double  BetaInc2, Density, dRhodT, Temperature, oneOverCp, Cp;
+        su2double  Velocity[3] = {0.0,0.0,0.0};
+        
+        /*--- Access the primitive variables at this node. ---*/
+        
+        Density     = node[iPoint]->GetDensity();
+        BetaInc2    = node[iPoint]->GetBetaInc2();
+        Cp          = node[iPoint]->GetSpecificHeatCp();
+        oneOverCp   = 1.0/Cp;
+        Temperature = node[iPoint]->GetTemperature();
+        
         for (iDim = 0; iDim < nDim; iDim++)
-          Jacobian_i[iDim+1][iDim+1] = Density*Jacobian_i[iDim+1][iDim+1];
-        Jacobian_i[nDim+1][nDim+1] = Density*Cp*Jacobian_i[nDim+1][nDim+1];
+          Velocity[iDim] = node[iPoint]->GetVelocity(iDim);
+        
+        /*--- We need the derivative of the equation of state to build the
+         preconditioning matrix. For now, the only option is the ideal gas
+         law, but in the future, dRhodT should be in the fluid model. ---*/
+        
+        if (variable_density) {
+          dRhodT = -Density/Temperature;
+        } else {
+          dRhodT = 0.0;
+        }
+        
+        /*--- Calculating the inverse of the preconditioning matrix
+         that multiplies the time derivative during time integration. ---*/
+        
+          /*--- For implicit calculations, we multiply the preconditioner
+           by the cell volume over the time step and add to the Jac diagonal. ---*/
+          
+          Jacobian_i[0][0] = 1.0/BetaInc2;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][0] = Velocity[iDim]/BetaInc2;
+          
+          if (energy) Jacobian_i[nDim+1][0] = Cp*Temperature/BetaInc2;
+          else        Jacobian_i[nDim+1][0] = 0.0;
+          
+          for (jDim = 0; jDim < nDim; jDim++) {
+            Jacobian_i[0][jDim+1] = 0.0;
+            for (iDim = 0; iDim < nDim; iDim++) {
+              if (iDim == jDim) Jacobian_i[iDim+1][jDim+1] = Density;
+              else Jacobian_i[iDim+1][jDim+1] = 0.0;
+            }
+            Jacobian_i[nDim+1][jDim+1] = 0.0;
+          }
+          
+          Jacobian_i[0][nDim+1] = dRhodT;
+          for (iDim = 0; iDim < nDim; iDim++)
+            Jacobian_i[iDim+1][nDim+1] = Velocity[iDim]*dRhodT;
+          
+          if (energy) Jacobian_i[nDim+1][nDim+1] = Cp*(dRhodT*Temperature + Density);
+          else        Jacobian_i[nDim+1][nDim+1] = 1.0;
+          
+        for (iVar = 0; iVar < nVar; iVar++) {
+          for (jVar = 0; jVar < nVar; jVar++) {
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+              Jacobian_i[iVar][jVar] *= Volume_nP1 / TimeStep;
+            if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
+              Jacobian_i[iVar][jVar] *= (Volume_nP1*3.0)/(2.0*TimeStep);
+          }
+        }
 
+        if (!energy) {
+            for (iVar = 0; iVar < nVar; iVar++) {
+              Jacobian_i[iVar][nDim+1] = 0.0;
+              Jacobian_i[nDim+1][iVar] = 0.0;
+            }
+        }
+        
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+        
       }
     }
     
@@ -6390,6 +6646,8 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
     /*---  Loop over the boundary edges ---*/
     
     for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+      if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+          (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
       for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
         
         /*--- Initialize the Residual / Jacobian container to zero. ---*/
@@ -6431,6 +6689,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
           Residual[iVar] = U_time_n[iVar]*Residual_GCL;
         LinSysRes.AddBlock(iPoint, Residual);
         
+      }
       }
     }
     
@@ -7076,6 +7335,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   ifstream restart_file;
   unsigned short nZone = geometry->GetnZone();
   bool restart   = (config->GetRestart() || config->GetRestart_Flow());
+  bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
   int Unst_RestartIter;
   unsigned short iZone = config->GetiZone();
   bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
@@ -7155,6 +7415,8 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   nPoint       = geometry->GetnPoint();
   nPointDomain = geometry->GetnPointDomain();
  
+  MGLevel = iMesh;
+
   /*--- Store the number of vertices on each marker for deallocation later ---*/
 
   nVertex = new unsigned long[nMarker];
@@ -7613,6 +7875,16 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
+  /*--- Communicate and store volume and the number of neighbors for
+   any dual CVs that lie on on periodic markers. ---*/
+  
+  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_VOLUME);
+    InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+    CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_NEIGHBORS);
+  }
+  
   /*--- Perform the MPI communication of the solution ---*/
 
   Set_MPI_Solution(geometry, config);
@@ -7917,6 +8189,8 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
   /*--- Loop boundary edges ---*/
   
   for (iMarker = 0; iMarker < geometry->GetnMarker(); iMarker++) {
+    if ((config->GetMarker_All_KindBC(iMarker) != INTERNAL_BOUNDARY) &&
+        (config->GetMarker_All_KindBC(iMarker) != PERIODIC_BOUNDARY)) {
     for (iVertex = 0; iVertex < geometry->GetnVertex(iMarker); iVertex++) {
       
       /*--- Point identification, Normal vector and area ---*/
@@ -7964,6 +8238,7 @@ void CIncNSSolver::SetTime_Step(CGeometry *geometry, CSolver **solver_container,
       
       if (geometry->node[iPoint]->GetDomain()) node[iPoint]->AddMax_Lambda_Visc(Lambda);
       
+    }
     }
   }
   

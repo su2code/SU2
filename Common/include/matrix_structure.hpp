@@ -273,7 +273,7 @@ public:
    * \param[in] i - Index of the row.
    */
   void DeleteValsRowi(unsigned long i);
-  
+
   /*!
    * \brief Recursive definition of determinate using expansion by minors. Written by Paul Bourke
    * \param[in] a - Matrix to compute the determinant.

@@ -350,7 +350,7 @@ bool CConfig::GetPeriodic(string val_mesh_filename,
   /*--- For now, assume that if we have periodic BCs in the config, that
    the user's intent is for there to be periodic BCs in the mesh too. ---*/
 
-  if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
+  //if (config->GetnMarker_Periodic() > 0) isPeriodic = true;
 
   return isPeriodic;
   
@@ -740,6 +740,8 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
 
   /*!\brief WEAKLY_COUPLED_HEAT_EQUATION \n DESCRIPTION: Enable heat equation for incompressible flows. \ingroup Config*/
   addBoolOption("WEAKLY_COUPLED_HEAT_EQUATION", Weakly_Coupled_Heat, NO);
+
+  addBoolOption("TGV", TaylorGreen, false);
 
   /*\brief AXISYMMETRIC \n DESCRIPTION: Axisymmetric simulation \n DEFAULT: false \ingroup Config */
   addBoolOption("AXISYMMETRIC", Axisymmetric, false);
@@ -7186,7 +7188,7 @@ CConfig::~CConfig(void) {
   if (Periodic_Center      != NULL) delete[] Periodic_Center;
   if (Periodic_Rotation    != NULL) delete[] Periodic_Rotation;
   if (Periodic_Translate   != NULL) delete[] Periodic_Translate;
-  
+
   if (MG_CorrecSmooth != NULL) delete[] MG_CorrecSmooth;
   if (PlaneTag != NULL)        delete[] PlaneTag;
   if (CFL != NULL)             delete[] CFL;
