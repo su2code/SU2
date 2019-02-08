@@ -6315,7 +6315,8 @@ void COutput::SetConvHistory_Body(ofstream *ConvHist_file,
 
     delete [] residual_adjflow;
     delete [] residual_adjturbulent;
-
+    delete [] residual_adjheat;
+    
     delete [] Surface_CL;
     delete [] Surface_CD;
     delete [] Surface_CSF;
