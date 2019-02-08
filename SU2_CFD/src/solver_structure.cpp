@@ -2416,12 +2416,6 @@ void CSolver::SetSolution_Gradient_GG(CGeometry *geometry, CConfig *config) {
     
   }
   
-//  /*--- Correct the gradient values for any periodic boundaries. ---*/
-//
-//  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-//    BC_Periodic_GG(geometry, config, iPeriodic);
-//  }
-  
   /*--- Gradient MPI ---*/
   Set_MPI_Solution_Gradient(geometry, config);
   
@@ -2619,12 +2613,6 @@ void CSolver::SetSolution_Gradient_LS(CGeometry *geometry, CConfig *config) {
   for (iVar = 0; iVar < nVar; iVar++)
     delete [] Cvector[iVar];
   delete [] Cvector;
-  
-//  /*--- Correct the gradient values for any periodic boundaries. ---*/
-//
-//  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-//    BC_Periodic_LS(geometry, config, iPeriodic);
-//  }
   
   /*--- Gradient MPI ---*/
   
@@ -2919,18 +2907,12 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
       
     }
     
-    /*--- Correct the gradient values for any periodic boundaries. ---*/
+    /*--- Correct the limiter values across any periodic boundaries. ---*/
     
     for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
       InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_1);
       CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_1);
     }
-    
-//    /*--- Correct min/max values for periodic boundaries. ---*/
-//
-//    for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-//      BC_Periodic_Limiter1(geometry, config, iPeriodic);
-//    }
     
   }
   
@@ -3270,18 +3252,12 @@ void CSolver::SetSolution_Limiter(CGeometry *geometry, CConfig *config) {
     }
   }
 
-  /*--- Correct the gradient values for any periodic boundaries. ---*/
-  
+  /*--- Correct the limiter values across any periodic boundaries. ---*/
+
   for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
     InitiatePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_2);
     CompletePeriodicComms(geometry, config, iPeriodic, PERIODIC_LIM_SOL_2);
   }
-  
-//  /*--- Correct the limiter for periodic boundaries to make sure the minimum is chosen. ---*/
-//
-//  for (unsigned short iPeriodic = 1; iPeriodic <= config->GetnMarker_Periodic()/2; iPeriodic++) {
-//    BC_Periodic_Limiter2(geometry, config, iPeriodic);
-//  }
   
   /*--- Limiter MPI ---*/
   
