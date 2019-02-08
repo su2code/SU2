@@ -39,6 +39,12 @@
 #include "../include/fem_gauss_jacobi_quadrature.hpp"
 #include "../include/fem_geometry_structure.hpp"
 
+#ifdef PROFILE
+#ifdef HAVE_MKL
+#include "mkl.h"
+#endif
+#endif
+
 vector<string> Profile_Function_tp;       /*!< \brief Vector of string names for profiled functions. */
 vector<double> Profile_Time_tp;           /*!< \brief Vector of elapsed time for profiled functions. */
 vector<double> Profile_ID_tp;             /*!< \brief Vector of group ID number for profiled functions. */
