@@ -502,7 +502,8 @@ void CADTPointsOnlyClass::DetermineNNearestNodes(const su2double         *coor,
   /*---         to avoid a sqrt.                                           ---*/
   /*--------------------------------------------------------------------------*/
 
-  unsigned long kk = leaves[0].centralNodeID, minIndex;
+  unsigned long kk = leaves[0].centralNodeID;
+  vector<unsigned long> minIndex;
   const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
 
   pointID.resize(nNode);
