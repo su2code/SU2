@@ -612,7 +612,7 @@ void CADTPointsOnlyClass::DetermineNNearestNodes(const su2double         *coor,
                 stored minimum distance. If so this leaf must be stored for the
                 next round. In that case the distance squared to the central node is
                 determined, which is used to update the currently stored value. ---*/
-          if(posDist < dist) {
+          if(posDist < dist[nNode-1]) {
             frontLeavesNew.push_back(kk);
 
             const unsigned long jj = leaves[kk].centralNodeID;
