@@ -459,6 +459,15 @@ public:
   const vector<vector<su2double> > &GetSolDOFs(void) const {return mSolDOFs;}
 
   /*!
+   * \brief Function, which performs a quadratic interpolation of a linear solution.
+   */
+  void FV_QuadraticInterpolation(CConfig**                        config,
+                                 const vector<vector<su2double> > &coorInterpol,
+                                 const CFEMInterpolationGrid      *inputGrid,
+                                 const CFEMInterpolationSol       *inputSol,
+                                 const CFEMInterpolationGrid      *outputGrid);
+
+  /*!
    * \brief Function, which uses QR factorization to approximate a fit to the data.
    */
   void QR_LeastSquares(const unsigned short             nDim,

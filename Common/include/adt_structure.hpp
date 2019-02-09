@@ -311,6 +311,21 @@ public:
                             su2double       &dist,
                             unsigned long   &pointID,
                             int             &rankID);
+
+  /*!
+   * \brief Function, which determines the N nearest nodes in the ADT for the
+            given coordinate.
+   * \param[in]  coor    Coordinate for which the nearest nodes in the ADT must be determined.
+   * \param[in]  nNode   Number of nearest nodes in the ADT must be determined.
+   * \param[out] dist    Distances to the nearest nodes in the ADT.
+   * \param[out] pointID Local point IDs of the nearest nodes in the ADT.
+   * \param[out] rankID  Ranks on which the nearest nodes in the ADT is stored.
+   */
+  void DetermineNNearestNodes(const su2double         *coor,
+                              const unsigned short    nNode,
+                              vector<su2double>       &dist,
+                              vector<unsigned long>   &pointID,
+                              vector<int>             &rankID);
 private:
   /*!
    * \brief Default constructor of the class, disabled.

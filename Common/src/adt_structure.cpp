@@ -488,6 +488,204 @@ void CADTPointsOnlyClass::DetermineNearestNode(const su2double *coor,
 
 }
 
+void CADTPointsOnlyClass::DetermineNNearestNodes(const su2double         *coor,
+                                                 const unsigned short    nNode,
+                                                 vector<su2double>       &dist,
+                                                 vector<unsigned long>   &pointID,
+                                                 vector<int>             &rankID) {
+
+  AD_BEGIN_PASSIVE
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Initialize the nearest nodes to the central node of the    ---*/
+  /*---         root leaf. Note that the distance is the distance squared  ---*/
+  /*---         to avoid a sqrt.                                           ---*/
+  /*--------------------------------------------------------------------------*/
+
+  unsigned long kk = leaves[0].centralNodeID, minIndex;
+  const su2double *coorTarget = coorPoints.data() + nDimADT*kk;
+
+  pointID.resize(nNode);
+  rankID.resize(nNode);
+  minIndex.resize(nNode);
+  dist.resize(nNode);
+
+  for(unsigned short i = 0; i < nNode; ++i){
+    pointID[i]  = localPointIDs[kk];
+    rankID[i]   = ranksOfPoints[kk];
+    minIndex[i] = kk;
+    dist[i]     = 0.0;
+    for(unsigned short l=0; l<nDimADT; ++l) {
+      const su2double ds = coor[l] - coorTarget[l];
+      dist[i] += ds*ds;
+    }
+  }
+
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2: Traverse the tree and search for the nearest nodes.        ---*/
+  /*---         During the tree traversal the currently stored distance    ---*/
+  /*---         squared is modified, because the guaranteed minimum        ---*/
+  /*---         distance squared of the children could be smaller.         ---*/
+  /*--------------------------------------------------------------------------*/
+
+  /* Start at the root leaf of the ADT, i.e. initialize frontLeaves such that
+     it only contains the root leaf. Make sure to wipe out any data from a
+     previous search. */
+  frontLeaves.clear();
+  frontLeaves.push_back(0);
+
+  /* Infinite loop of the tree traversal. */
+  for(;;) {
+
+    /* Initialize the new front, i.e. the front for the next round, to empty. */
+    frontLeavesNew.clear();
+
+    /* Loop over the leaves of the current front. */
+    for(unsigned long i=0; i<frontLeaves.size(); ++i) {
+
+      /* Store the current leaf a bit easier in ll and loop over its children. */
+      const unsigned long ll = frontLeaves[i];
+      for(unsigned short mm=0; mm<2; ++mm) {
+
+        /* Determine whether this child contains a node or a leaf
+           of the next level of the ADT. */
+        kk = leaves[ll].children[mm];
+        if( leaves[ll].childrenAreTerminal[mm] ) {
+
+          /*--- Child contains a node. Compute the distance squared to this node
+                and store it if this distance squared is less than the currently
+                stored value. ---*/
+          coorTarget = coorPoints.data() + nDimADT*kk;
+          su2double distTarget = 0;
+          for(unsigned short l=0; l<nDimADT; ++l) {
+            const su2double ds = coor[l] - coorTarget[l];
+            distTarget += ds*ds;
+          }
+
+          if(distTarget < dist[nNode-1]) {
+            // Add to front of list.
+            if(distTarget < dist[0]){
+              dist.pop_back();
+              pointID.pop_back();
+              rankID.pop_back();
+              minIndex.pop_back();
+
+              dist.insert(dist.begin(), distTarget);
+              pointID.insert(pointID.begin(), localPointIDs[kk]);
+              rankID.insert(rankID.begin(), ranksOfPoints[kk]);
+              minIndex.insert(minIndex.begin(), kk);
+            }
+            else{
+              for(int iNode = nNode-1; iNode >= 1; i++){
+                // Insert to middle of list
+                if(distTarget > dist[iNode-1]){
+                  dist.pop_back();
+                  pointID.pop_back();
+                  rankID.pop_back();
+                  minIndex.pop_back();
+
+                  dist.insert(dist.begin()+iNode, distTarget);
+                  pointID.insert(pointID.begin()+iNode, localPointIDs[kk]);
+                  rankID.insert(rankID.begin()+iNode, ranksOfPoints[kk]);
+                  minIndex.insert(minIndex.begin()+iNode, kk);
+
+                }
+              }
+            }
+          }
+        }
+        else {
+
+          /*--- Child contains a leaf. Determine the possible minimum distance
+                squared to that leaf. ---*/
+          su2double posDist = 0.0;
+          for(unsigned short l=0; l<nDimADT; ++l) {
+            su2double ds = 0.0;
+            if(     coor[l] < leaves[kk].xMin[l]) ds = coor[l] - leaves[kk].xMin[l];
+            else if(coor[l] > leaves[kk].xMax[l]) ds = coor[l] - leaves[kk].xMax[l];
+
+            posDist += ds*ds;
+          }
+
+          /*--- Check if the possible minimum distance is less than the currently
+                stored minimum distance. If so this leaf must be stored for the
+                next round. In that case the distance squared to the central node is
+                determined, which is used to update the currently stored value. ---*/
+          if(posDist < dist) {
+            frontLeavesNew.push_back(kk);
+
+            const unsigned long jj = leaves[kk].centralNodeID;
+
+            coorTarget = coorPoints.data() + nDimADT*jj;
+            su2double distTarget = 0;
+            for(unsigned short l=0; l<nDimADT; ++l) {
+              const su2double ds = coor[l] - coorTarget[l];
+              distTarget += ds*ds;
+            }
+
+            if(distTarget < dist[nNode-1]) {
+              // Add to front of list.
+              if(distTarget < dist[0]){
+                dist.pop_back();
+                pointID.pop_back();
+                rankID.pop_back();
+                minIndex.pop_back();
+
+                dist.insert(dist.begin(), distTarget);
+                pointID.insert(pointID.begin(), localPointIDs[jj]);
+                rankID.insert(rankID.begin(), ranksOfPoints[jj]);
+                minIndex.insert(minIndex.begin(), jj);
+              }
+              else{
+                for(int iNode = nNode-1; iNode >= 1; i++){
+                  // Insert to middle of list
+                  if(distTarget > dist[iNode-1]){
+                    dist.pop_back();
+                    pointID.pop_back();
+                    rankID.pop_back();
+                    minIndex.pop_back();
+
+                    dist.insert(dist.begin()+iNode, distTarget);
+                    pointID.insert(pointID.begin()+iNode, localPointIDs[jj]);
+                    rankID.insert(rankID.begin()+iNode, ranksOfPoints[jj]);
+                    minIndex.insert(minIndex.begin()+iNode, jj);
+
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    /*--- End of the loop over the current front. Copy the data from
+          frontLeavesNew to frontLeaves for the next round. If the new front
+          is empty the entire tree has been traversed and a break can be made
+          from the infinite loop. ---*/
+    frontLeaves = frontLeavesNew;
+    if(frontLeaves.size() == 0) break;
+  }
+
+  AD_END_PASSIVE
+
+  /* Recompute the distance to get the correct dependency if we use AD */
+  for(unsigned short i = 0; i < nNode; i++){
+    coorTarget = coorPoints.data() + nDimADT*minIndex[i];
+    dist[i] = 0.0;
+    for(unsigned short l=0; l<nDimADT; ++l) {
+      const su2double ds = coor[l] - coorTarget[l];
+      dist[i] += ds*ds;
+    }
+
+
+    /* At the moment the distance squared to the nearest node is stored.
+       Take the sqrt to obtain the correct value. */
+    dist[i] = sqrt(dist[i]);
+  }
+
+}
+
 CADTElemClass::CADTElemClass(unsigned short         val_nDim,
                              vector<su2double>      &val_coor,
                              vector<unsigned long>  &val_connElem,

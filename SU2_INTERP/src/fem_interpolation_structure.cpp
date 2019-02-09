@@ -1401,6 +1401,88 @@ void CFEMInterpolationSol::SolInterpolate(CFEMStandardElement *standardElementSo
   }
 }
 
+void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                        config,
+                                                     const vector<vector<su2double> > &coorInterpol,
+                                                     const CFEMInterpolationGrid      *inputGrid,
+                                                     const CFEMInterpolationSol       *inputSol,
+                                                     const CFEMInterpolationGrid      *outputGrid)
+{
+  // Determine the total number of DOFs for which memory must be allocated.
+  const unsigned short nZones = inputGrid->GetnZones();
+  const unsigned short nDim   = inputGrid->GetnDim();
+  unsigned long nDOFsTot = 0;
+  for(unsigned short zone=0; zone<nZones; ++zone)
+    nDOFsTot += coorInterpol[zone].size();
+  nDOFsTot /= nDim;
+  
+  // Determine the number of variables to be interpolated and allocate the memory
+  // for the solution DOFs.
+  nVar = inputSol->GetnVar();
+  
+  mSolDOFs.resize(nDOFsTot);
+  for(unsigned long l=0; l<nDOFsTot; ++l)
+    mSolDOFs[l].resize(nVar);
+  
+  // Easier storage of the solution format of the input grid.
+  const SolutionFormatT solFormatInput = inputGrid->GetSolutionFormat();
+  
+  // Initialize the zone offset for the input and output solution to zero.
+  unsigned long zoneOffsetInputSol  = 0;
+  unsigned long zoneOffsetOutputSol = 0;
+  
+  // Loop over the number of zones.
+  for(unsigned short zone=0; zone<nZones; ++zone)
+  {
+    // Get the zone for the input and output grid as a constant pointer.
+    const CFEMInterpolationGridZone *inputGridZone  = inputGrid->GetGridZone(zone);
+    const CFEMInterpolationGridZone *outputGridZone = outputGrid->GetGridZone(zone);
+    
+    // Apply a correction to the coordinates when curved boundaries
+    // are present.
+    vector<su2double> coorInterpolZone;
+    ApplyCurvatureCorrection(config[zone], zone, nDim, inputGridZone, outputGridZone,
+                             coorInterpol[zone], coorInterpolZone);
+    
+    // Define the vectors of the standard elements and the vector to store the
+    // standard element for the volume elements.
+    vector<CFEMStandardElement> standardElementsGrid;
+    vector<CFEMStandardElement> standardElementsSol;
+    vector<unsigned short> indInStandardElements;
+    
+    // First carry out a volume interpolation. Keep track of the points that
+    // do not fall within the grid (typically due to a different discrete
+    // representation of the boundary of the domain).
+    vector<unsigned long> pointsForMinDistance;
+    VolumeInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
+                                inputGridZone, inputSol,
+                                zoneOffsetInputSol, zoneOffsetOutputSol,
+                                solFormatInput, pointsForMinDistance,
+                                standardElementsGrid, standardElementsSol,
+                                indInStandardElements);
+    
+    // Carry out a surface interpolation, via a minimum distance search,
+    // for the points that could not be interpolated via the regular volume
+    // interpolation. Print a warning about this.
+    if( pointsForMinDistance.size() )
+    {
+      cout << "Zone " << zone << ": " << pointsForMinDistance.size()
+      << " DOFs for which the containment search failed." << endl;
+      cout << "A minimum distance search to the boundary of the "
+      << "domain is used for these points. " << endl;
+      
+      SurfaceInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
+                                   inputGridZone, inputSol,
+                                   zoneOffsetInputSol, zoneOffsetOutputSol,
+                                   solFormatInput, pointsForMinDistance,
+                                   standardElementsSol, indInStandardElements);
+    }
+    
+    // Update the zone offset for the input and output solution.
+    zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
+    zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
+  }
+}
+
 void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim,
                                            const unsigned short             nPoly,
                                            const vector<vector<su2double>>  &coor,
@@ -2200,7 +2282,7 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
                                               const unsigned short nPolyGrid,
                                               const unsigned short nDOFsGrid,
                                               const unsigned long  *connGrid,
-                                              const su2double      curvature)
+                                              const su2double      *curvature)
 {
   // Copy the scalar integer data.
   mVTK_TYPE  = VTK_Type;
@@ -2457,10 +2539,10 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
       // Get the curvature of the surface node.
-      vector<su2double> curvature;
+      vector<su2double> curvature(nDOFsGrid);
       for(iNode = 0; iNode < nDOFsGrid; iNode++){
         iPoint           = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        curvature[iNode] = geometry->node[iPoint]->GetCurvature();
+        // curvature[iNode] = geometry->node[iPoint]->GetCurvature();
       }
 
       // Store the data for this element.
