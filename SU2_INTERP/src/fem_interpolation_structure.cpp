@@ -1493,9 +1493,8 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
 
   unsigned short nPoint         = coor[0].size(),
                  nPointInterpol = coorInterpol[0].size(),
-                 nDim           = coor.size(),
                  nVar           = sol.size();
-  unsigned short iPoint, jPoint iDim, iVar, i;
+  unsigned short iPoint, jPoint, iDim, iVar, i;
 
   // Determine mean coordinates of nodes and use as origin for LS system
   vector<su2double> coorAvg(nDim, 0.0);
@@ -1581,7 +1580,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
   unsigned short m = mat.size(),
                  n = mat[0].size(),
                  i, j, k, l;
-  su2double a;
+  su2double a, b;
   vector<su2double> x(m),
                     e(m);
   // Temporary arrays
@@ -1614,8 +1613,10 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
     if(mat[k][k] > 0) a = -a;
 
     // Fill unit vector e
-    for(i = 0; i < m; i++) e[i] = (i == k) ? 1 : 0;
-    e = x + a*e;
+    for(i = 0; i < m; i++){
+      b = (i == k) ? 1 : 0;
+      e[i] = x[i] + a*b;
+    }
 
     a = 0.0;  
     for(i = 0; i < m; i++) a += e[i]*e[i];
@@ -1639,7 +1640,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
     for(i = 0; i < m; i++){
       for(j = 0; j < n; j++){
         for(l = 0; l < m; l++){
-          z[i][j] += Qk[k][i][l] * z1[l][j]
+          z[i][j] += Qk[k][i][l] * z1[l][j];
         }
       }
     }
@@ -1648,7 +1649,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
   }
 
   // Compute Q^T
-  Q = qv[0];
+  Q = Qk[0];
   for(i = 0; i < m; i++) z1[i].resize(m);
   for(k = 1; k < n && k < m-1; k++){
     for(i = 0; i < m; i++)
@@ -1658,7 +1659,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
     for(i = 0; i < m; i++){
       for(j = 0; j < m; j++){
         for(l = 0; l < m; l++){
-          z1[i][j] += Qk[k][i][l] * Q[l][j]
+          z1[i][j] += Qk[k][i][l] * Q[l][j];
         }
       }
     }
@@ -1673,7 +1674,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
     R[i].resize(n);
     for(j = 0; j < n; j++){
       for(l = 0; l < m; l++){
-        R[i][j] += Q[i][l] * mat[l][j]
+        R[i][j] += Q[i][l] * mat[l][j];
       }
     }
   }
@@ -1730,7 +1731,7 @@ void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double>>        &Q,
     for(i = n-1; i >=0; i--){
       coeffsInterpol[iVar][i] = y[i];
       for(j = i+1; j < n; j++){
-        coeffsInterpol[iVar][i] -= R[i][j]*coeffsInterpol[j];
+        coeffsInterpol[iVar][i] -= R[i][j]*coeffsInterpol[iVar][j];
       }
       coeffsInterpol[iVar][i] /= R[i][i];
     }
