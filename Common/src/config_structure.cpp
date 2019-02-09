@@ -8931,7 +8931,8 @@ void CConfig::GEMM_Tock(double val_start_time, int M, int N, int K) {
   if(MI == GEMM_Profile_MNK.end()) {
 
     /* Entry is not present yet. Create it. */
-    GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+    const int ind = GEMM_Profile_MNK.size();
+    GEMM_Profile_MNK[MNK] = ind;
 
     GEMM_Profile_NCalls.push_back(1);
     GEMM_Profile_TotTime.push_back(val_elapsed_time);
@@ -9011,7 +9012,8 @@ void CConfig::GEMMProfilingCSV(void) {
         if(MI == GEMM_Profile_MNK.end()) {
 
           /* Entry is not present yet. Create it. */
-          GEMM_Profile_MNK[MNK] = GEMM_Profile_MNK.size();
+          const int ind = GEMM_Profile_MNK.size();
+          GEMM_Profile_MNK[MNK] = ind;
 
           GEMM_Profile_NCalls.push_back(recvBufNCalls[i]);
           GEMM_Profile_TotTime.push_back(recvBufTotTime[i]);

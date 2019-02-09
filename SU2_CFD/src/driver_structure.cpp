@@ -707,6 +707,7 @@ void CDriver::Postprocessing() {
     }
     delete [] config_container;
   }
+  if (driver_config != NULL) delete driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
 
   if (nInst != NULL) delete [] nInst;
