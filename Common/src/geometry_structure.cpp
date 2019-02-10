@@ -39,6 +39,7 @@
 #include "../include/adt_structure.hpp"
 #include "../include/toolboxes/printing_toolbox.hpp"
 #include "../include/element_structure.hpp"
+#include "../include/wall_model.hpp"
 #include <iomanip>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -13050,6 +13051,132 @@ void CPhysicalGeometry::ComputeWall_Distance(CConfig *config) {
     }
   }
   
+}
+
+void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
+ 
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1: Check whether wall model are used at all.                  ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  bool wallFunctions = false;
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if((config->GetWallFunction_Treatment(Marker_Tag) == EQUILIBRIUM_WALL_MODEL) ||
+           (config->GetWallFunction_Treatment(Marker_Tag) == LOGARITHMIC_WALL_MODEL))
+          wallFunctions = true;
+        break;
+      }
+      default:  /* Just to avoid a compiler warning. */
+        break;
+    }
+  }
+  
+  /* If no wall models are used, nothing needs to be done and a
+   return can be made. */
+  if( !wallFunctions ) return;
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 2. Build the local ADT of the volume elements. The halo       ---*/
+  /*---         elements are included such that also direct neighbors are  ---*/
+  /*---         guaranteed to be found as donor element. Note that the ADT ---*/
+  /*---         is built with the linear subelements. This is done to      ---*/
+  /*---         avoid relatively many expensive Newton solves for high     ---*/
+  /*---         order elements.                                            ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /* Define the vectors, which store the mapping from the subelement to the
+   parent element, subelement ID within the parent element, the element
+   type and the connectivity of the subelements. */
+  vector<unsigned long>  parentElement;
+  vector<unsigned short> subElementIDInParent;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned long>  elemConn;
+  
+  /*--- Loop over all elements ---*/
+  for (unsigned long iElem = 0; iElem < nElem; iElem++){
+    
+    unsigned short VTK_Type = elem[iElem]->GetVTK_Type();
+    unsigned short nNeighbor_Elements = elem[iElem]->GetnNeighbor_Elements();
+    //unsigned short nDOFs_Elements = elem[iElem]->GetNDOFsGrid();
+    unsigned short nDOFs_Elements = elem[iElem]->GetnNodes();
+    
+    for (unsigned short j=0; j < nNeighbor_Elements; ++j){
+      parentElement.push_back(iElem);
+      subElementIDInParent.push_back(j);
+      VTK_TypeElem.push_back(VTK_Type);
+    }
+
+    /*--- Loop over all the nodes of an element ---*/
+    for (unsigned short iNode = 0; iNode < nDOFs_Elements; iNode++) {
+      elemConn.push_back(elem[iElem]->GetNode(iNode));
+    }
+    
+  }
+  
+  /*--- Create the coordinates of all the volume points ---*/
+  vector<su2double> volCoor;
+  for(unsigned long i=0; i<nPoint; ++i) {
+      for(unsigned short k=0; k<nDim; ++k)
+        volCoor.push_back(node[i]->GetCoord(k));
+  }
+  
+  /* Build the local ADT. */
+  CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                               subElementIDInParent, parentElement, false);
+
+  /* Release the memory of the vectors used to build the ADT. To make sure
+   that all the memory is deleted, the swap function is used. */
+  vector<unsigned short>().swap(subElementIDInParent);
+  vector<unsigned short>().swap(VTK_TypeElem);
+  vector<unsigned long>().swap(parentElement);
+  vector<unsigned long>().swap(elemConn);
+  vector<su2double>().swap(volCoor);
+  
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 3. Search for donor elements at the exchange locations in     ---*/
+  /*---         the local elements.                                        ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  /* Loop over the markers and select the ones for which a wall function
+   treatment must be carried out. */
+  for(unsigned short iMarker=0; iMarker<nMarker; ++iMarker) {
+    
+    switch (config->GetMarker_All_KindBC(iMarker)) {
+      case ISOTHERMAL:
+      case HEAT_FLUX: {
+        const string Marker_Tag = config->GetMarker_All_TagBound(iMarker);
+        if(config->GetWallFunction_Treatment(Marker_Tag) != NO_WALL_FUNCTION) {
+          
+          /* An LES wall model is used for this boundary marker. Determine
+           which wall model and allocate the memory for the member variable. */
+          switch (config->GetWallFunction_Treatment(Marker_Tag) ) {
+            case EQUILIBRIUM_WALL_MODEL: {
+              if(rank == MASTER_NODE)
+                cout << "Marker " << Marker_Tag << " uses an Equilibrium Wall Model." << endl;
+              
+              //bound[iMarker].wallModel = new CWallModel1DEQ;
+              break;
+            }
+            case LOGARITHMIC_WALL_MODEL: {
+              if(rank == MASTER_NODE)
+                cout << "Marker " << Marker_Tag << " uses a Logarithmic law-of-the-wall Model." << endl;
+              
+              //bound[iMarker].wallModel = new CWallModelLogLaw;
+              break;
+            }
+            default: {
+              SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {

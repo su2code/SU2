@@ -593,6 +593,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.		 
 	 */
 	virtual void ComputeWall_Distance(CConfig *config);
+  
+  /*!
+   * \brief A virtual member.
+   * \param[in] config - Definition of the particular problem.
+   */
+  virtual void WallModelPreprocessing(CConfig *config);
 
 	/*! 
 	 * \brief A virtual member.
@@ -1880,6 +1886,12 @@ public:
 	 * \param[in] config - Definition of the particular problem.
 	 */
 	void ComputeWall_Distance(CConfig *config);
+  
+  /*!
+   * \brief Function that carries out the necessary tasks when wall models are used.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void WallModelPreprocessing(CConfig *config);
 
 	/*! 
 	 * \brief Compute surface area (positive z-direction) for force coefficient non-dimensionalization.
