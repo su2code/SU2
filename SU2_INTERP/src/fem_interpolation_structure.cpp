@@ -1422,6 +1422,12 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
   mSolDOFs.resize(nDOFsTot);
   for(unsigned long l=0; l<nDOFsTot; ++l)
     mSolDOFs[l].resize(nVar);
+
+  // Initialize vectors for coordinate, solution, and interpolated solution storage.
+  vector<vector<vector<su2double>>> solInterpol(nZones),
+                                    coor(nDOFsTot), 
+                                    sol(nDOFsTot);
+  const vector<vector<su2double>> &inputSolDOFs = inputSol->GetSolDOFs();
   
   // Easier storage of the solution format of the input grid.
   const SolutionFormatT solFormatInput = inputGrid->GetSolutionFormat();
@@ -1443,43 +1449,112 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     ApplyCurvatureCorrection(config[zone], zone, nDim, inputGridZone, outputGridZone,
                              coorInterpol[zone], coorInterpolZone);
     
-    // Define the vectors of the standard elements and the vector to store the
-    // standard element for the volume elements.
-    vector<CFEMStandardElement> standardElementsGrid;
-    vector<CFEMStandardElement> standardElementsSol;
-    vector<unsigned short> indInStandardElements;
-    
-    // First carry out a volume interpolation. Keep track of the points that
-    // do not fall within the grid (typically due to a different discrete
-    // representation of the boundary of the domain).
-    vector<unsigned long> pointsForMinDistance;
-    VolumeInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
-                                inputGridZone, inputSol,
-                                zoneOffsetInputSol, zoneOffsetOutputSol,
-                                solFormatInput, pointsForMinDistance,
-                                standardElementsGrid, standardElementsSol,
-                                indInStandardElements);
+    // Build an ADT tree for finding the N nearest nodes.
+    const vector<vector<su2double> > &inputGridCoor = inputGridZone->mCoor;
+    const unsigned long nDOFsZone = inputGridCoor.size()/nDim;
+    vector<su2double>     Coord(nDim*nDOFsZone);
+    vector<unsigned long> PointIDs(nDOFsZone);
+    unsigned long ii = 0;
+    for(unsigned long l = 0; l < nDOFsZone; ++l){
+      PointIDs[l] = l;
+      for(unsigned short iDim = 0; iDim < nDim; iDim++)
+        Coord[ii++] = inputGridCoor[iDim][l];
+    }
+
+    CADTPointsOnlyClass VolumeADT(nDim, nDOFsZone, Coord.data(),
+                                  PointIDs.data(), true);
+
+    // Number of nearest nodes required, hardcode for quadratic interpolation for now.
+    unsigned short nNearestNodes;
+    if(nDim == 2) nNearestNodes = 6;
+    else          nNearestNodes = 10;
+
+    for(unsigned long l = 0; l < nDOFsTot; ++l){
+      coor[l].resize(nDim);
+      sol[l].resize(nVar);
+
+      for(unsigned short iDim = 0; iDim < nDim; iDim++)
+        coor[l][iDim].resize(nNearestNodes);
+      for(unsigned short iVar = 0; iVar < nVar; iVar++)
+        sol[l][iVar].resize(nNearestNodes);
+
+    }
+
+    // Carry out the minimum distance search.
+    vector<su2double>             dist;
+    vector<vector<unsigned long>> pointID(nDOFsTot);
+    vector<vector<int>>           rankID(nDOFsTot);
+
+    for(unsigned long l = 0; l < nDOFsTot; ++l){
+      const su2double *coorCorrected = coorInterpolZone.data() + l*nDim;
+      VolumeADT.DetermineNNearestNodes(coorCorrected, nNearestNodes,
+                                       dist, pointID[l], rankID[l]);
+    }
+
+#ifdef HAVE_MPI
+
+    // Parallel mode. Communicate the nodes needed for the interpolation.
+    int rank, size;
+    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
+    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+    SU2_MPI::Error("FV quadratic interpolation currently only coded for sequential mode.", CURRENT_FUNCTION);
+
+#else
+
+    // Sequential mode. Store the nodes needed for the interpolation.
+    for(unsigned long l = 0; l < nDOFsTot; ++l){
+      for(unsigned short iNode = 0; iNode < nNearestNodes; iNode++){
+        const unsigned long ll = pointID[l][iNode];
+        for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
+        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar]
+      }
+    }
+
+#endif
+
+    // Carry out the volume interpolation.
+    solInterpol[zone].resize(nVar);
+    for(unsigned short iVar = 0; iVar < nVar; iVar++) solInterpol[zone][iVar].resize(nDOFsTot);
+
+    vector<vector<su2double>> coorCorrected(nDim, vector<su2double>(1));
+    for(unsigned long l = 0; l < nDOFsTot; ++l){
+      const unsigned short nPoly = 2; // Hardcode for quadratic for now.
+
+      // Carry out least squares using QR factorization.
+      vector<vector<su2double>> solInterpolTmp;
+
+      for(unsigned short iDim = 0; iDim < nDim; iDim++){
+        coorCorrected[iDim][0] = coorInterpolZone[l*nDim + iDim];
+      }
+      // const su2double *coorCorrected = coorInterpolZone.data() + l*nDim;
+      QR_LeastSquares(nDim, nPoly, coor[l], coorCorrected,
+                      sol[l], solInterpolTmp);
+
+      for(unsigned short iVar = 0; iVar < nVar; iVar++)
+        solInterpol[zone][iVar][l] = solInterpolTmp[iVar][0];
+      
+    }
     
     // Carry out a surface interpolation, via a minimum distance search,
     // for the points that could not be interpolated via the regular volume
     // interpolation. Print a warning about this.
-    if( pointsForMinDistance.size() )
-    {
-      cout << "Zone " << zone << ": " << pointsForMinDistance.size()
-      << " DOFs for which the containment search failed." << endl;
-      cout << "A minimum distance search to the boundary of the "
-      << "domain is used for these points. " << endl;
+    // if( pointsForMinDistance.size() )
+    // {
+    //   cout << "Zone " << zone << ": " << pointsForMinDistance.size()
+    //   << " DOFs for which the containment search failed." << endl;
+    //   cout << "A minimum distance search to the boundary of the "
+    //   << "domain is used for these points. " << endl;
       
-      SurfaceInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
-                                   inputGridZone, inputSol,
-                                   zoneOffsetInputSol, zoneOffsetOutputSol,
-                                   solFormatInput, pointsForMinDistance,
-                                   standardElementsSol, indInStandardElements);
-    }
+    //   SurfaceInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
+    //                                inputGridZone, inputSol,
+    //                                zoneOffsetInputSol, zoneOffsetOutputSol,
+    //                                solFormatInput, pointsForMinDistance,
+    //                                standardElementsSol, indInStandardElements);
+    // }
     
-    // Update the zone offset for the input and output solution.
-    zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
-    zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
+    // // Update the zone offset for the input and output solution.
+    // zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
+    // zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
   }
 }
 
