@@ -598,6 +598,12 @@ private:
   
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
 
+  CFEMInterpolationGrid* input_grid,            /*!< \brief Generalized input grid */
+                         output_grid;           /*!< \brief Generalized output grid */
+  CFEMInterpolationSol* input_solution,         /*!< \brief Generalized input solution */
+                        output_solution;        /*!< \brief Interpolated output solution */
+
+
 public:
 
   /*! 
@@ -649,6 +655,11 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void Solver_Restart(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
+
+  /*!
+   * \brief Interpolation of solution from input geometry and solution to output geometry and solution
+   */
+  void Interpolate(void);
 
   /*!
    * \brief Definition and allocation of all solution classes.

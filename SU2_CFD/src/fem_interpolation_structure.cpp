@@ -246,6 +246,11 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
 
   output = new COutput(input_config_container[ZONE_0]);
 
+  input_grid            = NULL;
+  output_grid           = NULL;
+  input_solution        = NULL;
+  output_solution       = NULL;
+
 }
 
 void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CGeometry ****geometry_container, bool val_periodic) {
@@ -795,6 +800,33 @@ void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeom
 
   /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
   
+}
+
+void CFEMInterpolationDriver::Interpolate() {
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
+
+  if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
+  input_grid = new CFEMInterpolationGrid(input_config_container,input_geometry_container,nZone,VertexCentered);
+  output_grid = new CFEMInterpolationGrid(output_config_container,output_geometry_container,nZone,VertexCentered);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+  
+  if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;
+  input_solution = new CFEMInterpolationSol(input_config_container,input_geometry_container,input_solver_container,nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+  if (rank == MASTER_NODE) cout << "Determining coordinates for the points to be interpolated....."<< flush;
+  vector<vector<su2double> > coorInterpolation;
+  output_grid->DetermineCoorInterpolation(output_config_container, coorInterpolation, VertexCentered);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+  output_solution = new CFEMInterpolationSol();
+  output_solution->InterpolateSolution(output_config_container, coorInterpolation, input_grid, input_solution, output_grid);
+  if (rank == MASTER_NODE) cout << "Copying solution to solver container....." << flush;
+  output_solution->CopySolToSU2Solution(output_config_container, output_geometry_container, output_solver_container, nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
 }
 
 void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry,
