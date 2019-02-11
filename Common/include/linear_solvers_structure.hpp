@@ -70,7 +70,22 @@ using namespace std;
 class CSysSolve {
   
 private:
-  
+
+  bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
+  bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
+  bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
+
+  CSysVector r;      /*!< \brief Residual in CG and BCGSTAB. */
+  CSysVector A_x;    /*!< \brief Result of matrix-vector product in CG and BCGSTAB. */
+  CSysVector p;      /*!< \brief Direction in CG and BCGSTAB. */
+  CSysVector z;      /*!< \brief Preconditioned residual/direction in CG/BCGSTAB. */
+
+  CSysVector r_0;    /*!< \brief The "arbitrary" vector in BCGSTAB. */
+  CSysVector v;      /*!< \brief BCGSTAB "v" vector (v = A * M^-1 * p). */
+
+  vector<CSysVector> W;  /*!< \brief Large matrix used by FGMRES, w^i+1 = A * z^i. */
+  vector<CSysVector> Z;  /*!< \brief Large matrix used by FGMRES, preconditioned W. */
+
   /*!
    * \brief sign transfer function
    * \param[in] x - value having sign prescribed
@@ -158,6 +173,11 @@ private:
   void WriteHistory(const int & iter, const su2double & res, const su2double & resinit);
   
 public:
+  
+  /*!
+   * \brief default constructor of the class.
+   */
+  CSysSolve(void);
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
