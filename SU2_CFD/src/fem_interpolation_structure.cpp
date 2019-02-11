@@ -112,7 +112,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
 
     input_config_container[iZone]->SetRestart(true);
     output_config_container[iZone]->SetRestart(false);
-    output_config_container[iZone]->SetMesh_FileName(output_config_container[iZone]->GetTarget_Mesh_FileName());    
+    output_config_container[iZone]->SetMesh_FileName(output_config_container[iZone]->GetTarget_Mesh_FileName());
 
   }
 
@@ -185,14 +185,15 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
     Geometrical_Preprocessing(output_config_container, output_geometry_container);
   }
 
-  for (iZone = 0; iZone < nZone; iZone++) {
 
-    /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
-     The solver classes are specific to a particular set of governing equations,
-     and they contain the subroutines with instructions for computing each spatial
-     term of the PDE, i.e. loops over the edges to compute convective and viscous
-     fluxes, loops over the nodes to compute source terms, and routines for
-     imposing various boundary condition type for the PDE. ---*/
+  /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
+    The solver classes are specific to a particular set of governing equations,
+    and they contain the subroutines with instructions for computing each spatial
+    term of the PDE, i.e. loops over the edges to compute convective and viscous
+    fluxes, loops over the nodes to compute source terms, and routines for
+    imposing various boundary condition type for the PDE. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
 
     if (rank == MASTER_NODE)
       cout << endl <<"---------------------- Input Solver Preprocessing -----------------------" << endl;
@@ -208,12 +209,42 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         input_solver_container[iZone][iInst][iMesh][iSol] = NULL;
       
-      // Solver_Preprocessing(solver_container[iZone], geometry_container[iZone],
-      //                      config_container[iZone], iInst);
+      Solver_Preprocessing(input_solver_container[iZone], input_geometry_container[iZone],
+                           input_config_container[iZone], iInst);
 
     } // End of loop over iInst
 
   }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Output Solver Preprocessing ----------------------" << endl;
+
+    output_solver_container[iZone] = new CSolver*** [nInst[iZone]];
+
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      output_solver_container[iZone][iInst] = NULL;
+      output_solver_container[iZone][iInst] = new CSolver** [MESH_0+1];
+      output_solver_container[iZone][iInst][MESH_0] = NULL;
+      output_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        output_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+      
+      Solver_Preprocessing(output_solver_container[iZone], output_geometry_container[iZone],
+       output_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+  }
+
+  /*--- Definition of the output class (one for all zones). The output class
+   manages the writing of all restart, volume solution, surface solution,
+   surface comma-separated value, and convergence history files (both in serial
+   and in parallel). ---*/
+
+  output = new COutput(input_config_container[ZONE_0]);
 
 }
 
