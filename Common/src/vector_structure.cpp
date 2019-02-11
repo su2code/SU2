@@ -223,16 +223,18 @@ CSysVector & CSysVector::operator=(const CSysVector & u) {
   
   /*--- check if self-assignment, otherwise perform deep copy ---*/
   if (this == &u) return *this;
-  
-  delete [] vec_val; // in case the size is different
+
+  /*--- determine if (re-)allocation is needed ---*/
+  if (nElm != u.nElm && vec_val != NULL) {delete [] vec_val; vec_val = NULL;}
+  if (vec_val == NULL) vec_val = new su2double[u.nElm];
+
+  /*--- copy ---*/
   nElm = u.nElm;
   nElmDomain = u.nElmDomain;
-  
   nBlk = u.nBlk;
 	nBlkDomain = u.nBlkDomain;
-  
   nVar = u.nVar;
-  vec_val = new su2double[nElm];
+
   for (unsigned long i = 0; i < nElm; i++)
     vec_val[i] = u.vec_val[i];
   

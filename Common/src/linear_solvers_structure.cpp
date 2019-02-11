@@ -38,6 +38,8 @@
 #include "../include/linear_solvers_structure.hpp"
 #include "../include/linear_solvers_structure_b.hpp"
 
+CSysSolve::CSysSolve() : cg_ready(false), bcg_ready(false), gmres_ready(false) {}
+
 void CSysSolve::ApplyGivens(const su2double & s, const su2double & c, su2double & h1, su2double & h2) {
   
   su2double temp = c*h1 + s*h2;
@@ -203,15 +205,19 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
     SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
-  
-  CSysVector r(b);
-  CSysVector A_p(b);
-  
+
+  /*--- Allocate if not allocated yet ---*/
+
+  if (!cg_ready) {
+    A_x = b;
+    z = b;
+    cg_ready = true;
+  }
+
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  
-  mat_vec(x, A_p);
-  
-  r -= A_p; // recall, r holds b initially
+
+  mat_vec(x, A_x);
+  r = b; r -= A_x;
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
@@ -220,9 +226,8 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   }
   
   su2double alpha, beta, r_dot_z;
-  CSysVector z(r);
   precond(r, z);
-  CSysVector p(z);
+  p = z;
   
   /*--- Set the norm to the initial initial residual value ---*/
   
@@ -242,18 +247,18 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
     
     /*--- Apply matrix to p to build Krylov subspace ---*/
     
-    mat_vec(p, A_p);
+    mat_vec(p, A_x);
     
     /*--- Calculate step-length alpha ---*/
     
     r_dot_z = dotProd(r, z);
-    alpha = dotProd(A_p, p);
+    alpha = dotProd(A_x, p);
     alpha = r_dot_z / alpha;
     
     /*--- Update solution and residual: ---*/
     
     x.Plus_AX(alpha, p);
-    r.Plus_AX(-alpha, A_p);
+    r.Plus_AX(-alpha, A_x);
     
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     
@@ -287,9 +292,8 @@ unsigned long CSysSolve::CG_LinSolver(const CSysVector & b, CSysVector & x, CMat
   
   if (monitoring) {
     
-    mat_vec(x, A_p);
-    r = b;
-    r -= A_p;
+    mat_vec(x, A_x);
+    r = b; r -= A_x;
     su2double true_res = r.norm();
     
     if (fabs(true_res - norm_r) > tol*10.0) {
@@ -329,13 +333,19 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
     SPRINTF(buf, "Illegal value for subspace size (too high), m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
-  
-  /*---  Define various arrays
-	 Note: elements in w and z are initialized to x to avoid creating
+
+  /*--- Allocate if not allocated yet
+   Note: elements in w and z are initialized to x to avoid creating
 	 a temporary CSysVector object for the copy constructor ---*/
-  
-  vector<CSysVector> w(m+1, x);
-  vector<CSysVector> z(m+1, x);
+
+  if (!gmres_ready) {
+    W.resize(m+1, x);
+    Z.resize(m+1, x);
+    gmres_ready = true;
+  }
+
+  /*---  Define various arrays ---*/
+
   vector<su2double> g(m+1, 0.0);
   vector<su2double> sn(m+1, 0.0);
   vector<su2double> cs(m+1, 0.0);
@@ -349,10 +359,10 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   /*---  Calculate the initial residual (actually the negative residual)
 	 and compute its norm ---*/
   
-  mat_vec(x, w[0]);
-  w[0] -= b;
+  mat_vec(x, W[0]);
+  W[0] -= b;
   
-  su2double beta = w[0].norm();
+  su2double beta = W[0].norm();
   
   if ( (beta < tol*norm0) || (beta < eps) ) {
     
@@ -365,7 +375,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   /*---  Normalize residual to get w_{0} (the negative sign is because w[0]
 	 holds the negative residual, as mentioned above) ---*/
   
-  w[0] /= -beta;
+  W[0] /= -beta;
   
   /*---  Initialize the RHS of the reduced system ---*/
   
@@ -393,15 +403,15 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
     
     /*---  Precondition the CSysVector w[i] and store result in z[i] ---*/
     
-    precond(w[i], z[i]);
+    precond(W[i], Z[i]);
     
     /*---  Add to Krylov subspace ---*/
     
-    mat_vec(z[i], w[i+1]);
+    mat_vec(Z[i], W[i+1]);
     
     /*---  Modified Gram-Schmidt orthogonalization ---*/
     
-    ModGramSchmidt(i, H, w);
+    ModGramSchmidt(i, H, W);
     
     /*---  Apply old Givens rotations to new column of the Hessenberg matrix
 		 then generate the new Givens rotation matrix and apply it to
@@ -426,7 +436,7 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   
   SolveReduced(i, H, g, y);
   for (int k = 0; k < i; k++) {
-    x.Plus_AX(y[k], z[k]);
+    x.Plus_AX(y[k], Z[k]);
   }
   
   if ((monitoring) && (rank == MASTER_NODE)) {
@@ -437,9 +447,9 @@ unsigned long CSysSolve::FGMRES_LinSolver(const CSysVector & b, CSysVector & x, 
   /*---  Recalculate final (neg.) residual (this should be optional) ---*/
   
   if (monitoring) {
-    mat_vec(x, w[0]);
-    w[0] -= b;
-    su2double res = w[0].norm();
+    mat_vec(x, W[0]);
+    W[0] -= b;
+    su2double res = W[0].norm();
     
     if (fabs(res - beta) > tol*10) {
       if (rank == MASTER_NODE) {
@@ -468,21 +478,21 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     SPRINTF(buf, "Illegal value for subspace size, m = %lu", m );
     SU2_MPI::Error(string(buf), CURRENT_FUNCTION);
   }
-  
-  CSysVector r(b);
-  CSysVector r_0(b);
-  CSysVector p(b);
-  CSysVector v(b);
-  CSysVector s(b);
-  CSysVector t(b);
-  CSysVector phat(b);
-  CSysVector shat(b);
-  CSysVector A_x(b);
-  
+
+  /*--- Allocate if not allocated yet ---*/
+
+  if (!bcg_ready) {
+    A_x = b;
+    p = b;
+    z = b;
+    v = b;
+    bcg_ready = true;
+  }
+
   /*--- Calculate the initial residual, compute norm, and check if system is already solved ---*/
-  
+
   mat_vec(x, A_x);
-  r -= A_x; r_0 = r; // recall, r holds b initially
+  r = b; r -= A_x;
   su2double norm_r = r.norm();
   su2double norm0 = b.norm();
   if ( (norm_r < tol*norm0) || (norm_r < eps) ) {
@@ -493,6 +503,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Initialization ---*/
   
   su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
+  p = 0.0; v = 0.0; r_0 = r;
   
   /*--- Set the norm to the initial initial residual value ---*/
   
@@ -530,31 +541,36 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
     
     /*--- Preconditioning step ---*/
     
-    precond(p, phat);
-    mat_vec(phat, v);
+    precond(p, z);
+    mat_vec(z, v);
     
     /*--- Calculate step-length alpha ---*/
     
     su2double r_0_v = dotProd(r_0, v);
     alpha = rho / r_0_v;
-    
-    /*--- s_{i} = r_{i-1} - alpha * v_{i} ---*/
-    
-    s.Equals_AX_Plus_BY(1.0, r, -alpha, v);
-    
+
+    /*--- Update solution and residual: ---*/
+
+    /*--- x_{i-1/2} = x_{i-1} + alpha * z ---*/
+    x.Plus_AX(alpha, z);
+    /*--- r_{i-1/2} = r_{i-1} - alpha * v_{i} ---*/
+    r.Plus_AX(-alpha, v);
+
     /*--- Preconditioning step ---*/
     
-    precond(s, shat);
-    mat_vec(shat, t);
+    precond(r, z);
+    mat_vec(z, A_x);
     
     /*--- Calculate step-length omega ---*/
     
-    omega = dotProd(t, s) / dotProd(t, t);
+    omega = dotProd(A_x, r) / dotProd(A_x, A_x);
     
     /*--- Update solution and residual: ---*/
     
-    x.Plus_AX(alpha, phat); x.Plus_AX(omega, shat);
-    r.Equals_AX_Plus_BY(1.0, s, -omega, t);
+    /*--- x_{i} = x_{i-1/2} + omega * z ---*/
+    x.Plus_AX(omega, z);
+    /*--- r_{i} = r_{i-1/2} - omega * A * z ---*/
+    r.Plus_AX(-omega, A_x);
     
     /*--- Check if solution has converged, else output the relative residual if necessary ---*/
     
