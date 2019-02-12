@@ -13100,31 +13100,42 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
   /*--- Loop over all elements ---*/
   for (unsigned long iElem = 0; iElem < nElem; iElem++){
     
-    unsigned short VTK_Type = elem[iElem]->GetVTK_Type();
-    unsigned short nNeighbor_Elements = elem[iElem]->GetnNeighbor_Elements();
-    //unsigned short nDOFs_Elements = elem[iElem]->GetNDOFsGrid();
-    unsigned short nDOFs_Elements = elem[iElem]->GetnNodes();
+    unsigned short VTK_Type[] = {elem[iElem]->GetVTK_Type(), 0};
+    unsigned short nSubElems[] = {1, 0};
+    unsigned short nDOFsPerSubElem[] = {elem[iElem]->GetnNodes(), 0};
     
-    for (unsigned short j=0; j < nNeighbor_Elements; ++j){
-      parentElement.push_back(iElem);
-      subElementIDInParent.push_back(j);
-      VTK_TypeElem.push_back(VTK_Type);
+//    /* Loop over the number of subelements and store the required data. */
+    unsigned short jj = 0;
+    for(unsigned short i=0; i<2; ++i) {
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
+        parentElement.push_back(iElem);
+        subElementIDInParent.push_back(jj);
+        VTK_TypeElem.push_back(VTK_Type[i]);
+      }
     }
+    
+//    for (unsigned short j=0; j < nNeighbor_Elements; ++j){
+//      parentElement.push_back(iElem);
+//      subElementIDInParent.push_back(j);
+//      VTK_TypeElem.push_back(VTK_Type);
+//    }
 
     /*--- Loop over all the nodes of an element ---*/
-    for (unsigned short iNode = 0; iNode < nDOFs_Elements; iNode++) {
+    for (unsigned short iNode = 0; iNode < elem[iElem]->GetnNodes(); iNode++) {
       elemConn.push_back(elem[iElem]->GetNode(iNode));
     }
-    
   }
   
   /*--- Create the coordinates of all the volume points ---*/
   vector<su2double> volCoor;
+  volCoor.reserve(nDim*nPoint);
+  
   for(unsigned long i=0; i<nPoint; ++i) {
       for(unsigned short k=0; k<nDim; ++k)
         volCoor.push_back(node[i]->GetCoord(k));
   }
-  
+
   /* Build the local ADT. */
   CADTElemClass localVolumeADT(nDim, volCoor, elemConn, VTK_TypeElem,
                                subElementIDInParent, parentElement, false);
@@ -13173,10 +13184,21 @@ void CPhysicalGeometry::WallModelPreprocessing(CConfig *config) {
               SU2_MPI::Error("Wall function not present yet", CURRENT_FUNCTION);
             }
           }
+          
+          /* Retrieve the integer and floating point information for this
+           boundary marker. The exchange location is the first element of
+           the floating point array. */
+          const unsigned short *intInfo    = config->GetWallFunction_IntInfo(Marker_Tag);
+          const su2double      *doubleInfo = config->GetWallFunction_DoubleInfo(Marker_Tag);
+          
+          /* Initialize the wall model. */
+          //boundaries[iMarker].wallModel->Initialize(intInfo, doubleInfo);
+
         }
       }
     }
   }
+  
 }
 
 void CPhysicalGeometry::SetPositive_ZArea(CConfig *config) {

@@ -2588,23 +2588,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     Output_FileFormat = TECPLOT;
   }
 #endif
-
-  /*--- Set the boolean Wall_Functions equal to true if there is a
-   definition for the wall founctions ---*/
-
-  Wall_Functions = false;
-  if (nMarker_WallFunctions > 0) {
-    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
-      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
-        Wall_Functions = true;
-      
-      if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == SCALABLE_WALL_FUNCTION)
-        || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL))
-
-        SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION or EQUILIBRIUM_WALL_MODEL.\n"), CURRENT_FUNCTION);
-
-    }
-  }
   
   /*--- Fixed CM mode requires a static movement of the grid ---*/
   
@@ -3806,6 +3789,33 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
     for(unsigned short i=0; i<nTimeIntegrationADER_DG; ++i) {
       TimeIntegrationADER_DG[i]    = GLPoints[i];
       WeightsIntegrationADER_DG[i] = GLWeights[i];
+    }
+  }
+  
+  /*--- Set the boolean Wall_Functions equal to true if there is a
+   definition for the wall founctions: Check the Wall functions with Finite Volume code.---*/
+  
+  bool Steady_RANS_FV = ((Unsteady_Simulation == STEADY) && (Kind_Solver == RANS));
+  bool ILES_FV = ((Unsteady_Simulation == DT_STEPPING_2ND) && (Kind_Solver == NAVIER_STOKES) && (Kind_Turb_Model == NONE));
+  Wall_Functions = false;
+  if (nMarker_WallFunctions > 0) {
+    for (iMarker = 0; iMarker < nMarker_WallFunctions; iMarker++) {
+      if (Kind_WallFunctions[iMarker] != NO_WALL_FUNCTION)
+        Wall_Functions = true;
+      
+      if (Steady_RANS_FV){
+        if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker] == NONEQUILIBRIUM_WALL_MODEL) ||
+          (Kind_WallFunctions[iMarker] == EQUILIBRIUM_WALL_MODEL)  || (Kind_WallFunctions[iMarker] == LOGARITHMIC_WALL_MODEL))
+          SU2_MPI::Error(string("For RANS problems, use NO_WALL_FUNCTION, STANDARD_WALL_FUNCTION.\n"), CURRENT_FUNCTION);
+      }
+      else if (ILES_FV || (Kind_Solver == FEM_LES)){
+       if ((Kind_WallFunctions[iMarker] == ADAPTIVE_WALL_FUNCTION) || (Kind_WallFunctions[iMarker]==NONEQUILIBRIUM_WALL_MODEL) ||
+                (Kind_WallFunctions[iMarker] == STANDARD_WALL_FUNCTION))
+          SU2_MPI::Error(string("For ILES problems, use EQUILIBRIUM_WALL_MODEL or LOGARITHMIC_WALL_MODEL.\n"), CURRENT_FUNCTION);
+      }
+      else{
+        SU2_MPI::Error(string("Please check the correct use of Wall Functions/Models.\n"), CURRENT_FUNCTION);
+      }
     }
   }
 

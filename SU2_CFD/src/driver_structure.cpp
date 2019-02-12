@@ -173,6 +173,10 @@ CDriver::CDriver(char* confFile,
 
         geometry_container[iZone][iInst][MESH_0]->ComputeWall_Distance(config_container[iZone]);
         
+      }
+      
+      if (config_container[iZone]->GetWall_Functions()){
+        
         /*--- Perform the preprocessing tasks when wall functions are used. ---*/
         
         if (rank == MASTER_NODE) cout << "Preprocessing for the wall models. If needed. " << endl;
