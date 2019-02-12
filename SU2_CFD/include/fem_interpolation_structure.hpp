@@ -186,7 +186,6 @@ public:
   unsigned short mNPolyGrid;             /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
   vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
-  vector<su2double> mCurvature;     /*!< \brief The surface curvature for the grid DOFs. */
   
   /*!
    * \brief Constructor of the class.
@@ -227,8 +226,7 @@ public:
   void StoreElemData(const unsigned short VTK_Type,
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
-                     const unsigned long  *connGrid,
-                     const su2double      *curvature);
+                     const unsigned long  *connGrid);
   
 private:
   /*!
@@ -598,10 +596,10 @@ private:
   
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
 
-  CFEMInterpolationGrid* input_grid,            /*!< \brief Generalized input grid */
-                         output_grid;           /*!< \brief Generalized output grid */
-  CFEMInterpolationSol* input_solution,         /*!< \brief Generalized input solution */
-                        output_solution;        /*!< \brief Interpolated output solution */
+  CFEMInterpolationGrid *input_grid,            /*!< \brief Generalized input grid */
+                        *output_grid;           /*!< \brief Generalized output grid */
+  CFEMInterpolationSol *input_solution,         /*!< \brief Generalized input solution */
+                       *output_solution;        /*!< \brief Interpolated output solution */
 
 
 public:
@@ -641,7 +639,7 @@ public:
   void Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container);
 
   /*!
-   * \brief Definition and allocation of all solution classes.
+   * \brief Deallocation of solution classes.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
@@ -662,12 +660,24 @@ public:
   void Interpolate(void);
 
   /*!
-   * \brief Definition and allocation of all solution classes.
+   * \brief Deallocation of solution classes.
    * \param[in] solver_container - Container vector with all the solutions.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry, CConfig *config, unsigned short val_iInst);
+  void Solver_Postprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output();
+
+  /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Deletion(CSolver ****solver_container, CConfig *config, unsigned short val_iInst);
 
   /*!
    * \brief Deallocation routine

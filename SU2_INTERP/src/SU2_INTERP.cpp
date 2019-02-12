@@ -41,7 +41,7 @@ using namespace std;
 
 int main(int argc, char *argv[]) {
 
-  unsigned short iZone, nZone = SINGLE_ZONE, iInst, io, max_io = 2, iMesh, iSol, SINGLE_MESH = 1;
+  unsigned short iZone, nZone = SINGLE_ZONE, iInst, io, max_io = 2, iMesh, iSol, SINGLE_MESH = 1, nDim;
   su2double StartTime = 0.0, StopTime = 0.0, UsedTime = 0.0;
   ofstream ConvHist_file;
   char config_file_name[MAX_STRING_SIZE];
@@ -50,10 +50,10 @@ int main(int argc, char *argv[]) {
   bool fem_solver = false;
   bool periodic = false;
   bool multizone = false;
-  CFEMInterpolationGrid* input_grid;
-  CFEMInterpolationGrid* output_grid;
-  CFEMInterpolationSol* input_solution;
-  CFEMInterpolationSol* output_solution;
+  // CFEMInterpolationGrid* input_grid;
+  // CFEMInterpolationGrid* output_grid;
+  // CFEMInterpolationSol* input_solution;
+  // CFEMInterpolationSol* output_solution;
 
   /*--- MPI initialization ---*/
 
@@ -69,226 +69,70 @@ int main(int argc, char *argv[]) {
 
   /*--- Pointer to different structures that will be used throughout the entire code ---*/
 
-  COutput *output                   = NULL;
-  CGeometry *****geometry_container = NULL;
-  CSolver ******solver_container    = NULL;
-  CConfig ***config_container       = NULL;
-  CConfig *driver_config            = NULL;
-  unsigned short *nInst             = NULL;
+  // COutput *output                   = NULL;
+  // CGeometry *****geometry_container = NULL;
+  // CSolver ******solver_container    = NULL;
+  // CConfig ***config_container       = NULL;
+  // CConfig *driver_config            = NULL;
+  // unsigned short *nInst             = NULL;
 
   /*--- Load in the number of zones and spatial dimensions in the mesh file (if no config
    file is specified, default.cfg is used) ---*/
 
-  if (argc == 2 || argc == 3) { strcpy(config_file_name,argv[1]); }
+  // if (argc == 2 || argc == 3) { strcpy(config_file_name,argv[1]); }
+  // else { strcpy(config_file_name, "default.cfg"); }
+
+  // CConfig *config = NULL;
+  // config = new CConfig(config_file_name, SU2_INTERP);
+
+  // nInst = new unsigned short[nZone];
+
+
+  // /*--- Definition of the containers for input and output ---*/
+  // config_container    = new CConfig**[max_io];
+  // solver_container    = new CSolver*****[max_io];
+  // geometry_container  = new CGeometry****[max_io];
+
+
+  // if (config->GetKind_Solver() == MULTIZONE) nZone  = config->GetnConfigFiles();
+  // else nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  // periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  
+  // for (io = 0; io < max_io; io++){
+  //   config_container[io]    = NULL;
+  //   geometry_container[io]  = NULL;
+  //   solver_container[io]    = NULL;
+  //   config_container[io]    = new CConfig*[nZone];
+  //   geometry_container[io]  = new CGeometry***[nZone];
+  //   solver_container[io]    = new CSolver****[nZone];   
+  //   for (iZone = 0; iZone < nZone; iZone++) {
+  //     solver_container[io][iZone]     = NULL;
+  //     config_container[io][iZone]     = NULL;
+  //     geometry_container[io][iZone]   = NULL;
+  //     nInst[iZone]                    = 1;
+  //   } // End of loop over iInst
+  // }
+
+    /*--- Load in the number of zones and spatial dimensions in the mesh file (If no config
+   file is specified, default.cfg is used) ---*/
+
+  if (argc == 2) { strcpy(config_file_name, argv[1]); }
   else { strcpy(config_file_name, "default.cfg"); }
 
+  /*--- Read the name and format of the input mesh file to get from the mesh
+   file the number of zones and dimensions from the numerical grid (required
+   for variables allocation). ---*/
+  
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_INTERP);
-
-  nInst = new unsigned short[nZone];
-
-
-  /*--- Definition of the containers for input and output ---*/
-  config_container    = new CConfig**[max_io];
-  solver_container    = new CSolver*****[max_io];
-  geometry_container  = new CGeometry****[max_io];
-
-
-  if (config->GetKind_Solver() == MULTIZONE) nZone  = config->GetnConfigFiles();
-  else nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  config = new CConfig(config_file_name, SU2_CFD);
+  if (config->GetKind_Solver() == MULTIZONE)
+    nZone  = config->GetnConfigFiles();
+  else
+    nZone  = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
+  nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
-  
-  for (io = 0; io < max_io; io++){
-    config_container[io]    = NULL;
-    geometry_container[io]  = NULL;
-    solver_container[io]    = NULL;
-    config_container[io]    = new CConfig*[nZone];
-    geometry_container[io]  = new CGeometry***[nZone];
-    solver_container[io]    = new CSolver****[nZone];   
-    for (iZone = 0; iZone < nZone; iZone++) {
-      solver_container[io][iZone]     = NULL;
-      config_container[io][iZone]     = NULL;
-      geometry_container[io][iZone]   = NULL;
-      nInst[iZone]                    = 1;
-    } // End of loop over iInst
-  }
-  
 
-  driver_config = NULL;
-
-  /*--- Initialize the configuration of the driver ---*/
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, 0, VERB_NONE);
-
-  /*--- Initialize a char to store the zone filename ---*/
-  char zone_file_name[MAX_STRING_SIZE];
-
-  /*--- Store a boolean for multizone problems ---*/
-  multizone = (driver_config->GetKind_Solver() == MULTIZONE);
-
-  /*--- Loop over all zones to initialize the various classes. In most
-   cases, nZone is equal to one. This represents the solution of a partial
-   differential equation on a single block, unstructured mesh. ---*/
-  for(io = 0; io < max_io; io++){
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-      /*--- Definition of the configuration option class for all zones. In this
-        constructor, the input configuration file is parsed and all options are
-        read and stored. ---*/
-
-      if (multizone){
-        strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-        if (io == 0) config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
-        else config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
-      }
-      else{
-        if (io == 0) config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
-        else config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
-      }
-      config_container[io][iZone]->SetMPICommunicator(MPICommunicator);
-      
-      /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
-      if (io == 1){
-        config_container[io][iZone]->SetRestart(false);
-        config_container[io][iZone]->SetMesh_FileName(config_container[io][iZone]->GetTarget_Mesh_FileName());
-      }
-      else {
-        config_container[io][iZone]->SetRestart(true);
-      }
-    }
-  }
-    /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
-
-  /*--- Set the multizone part of the problem. ---*/
-  if (driver_config->GetKind_Solver() == MULTIZONE){
-    for(io = 0; io < max_io; io++){
-      for (iZone = 0; iZone < nZone; iZone++) {
-        /*--- Set the interface markers for multizone ---*/
-        config_container[io][iZone]->SetMultizone(driver_config, config_container[io]);
-      }
-    }
-  }
-
-  /* --- Read geometry for input and target meshes ---*/
-  for (io = 0; io < max_io; io++){
-    /*--- Read the geometry for each zone ---*/
-    for (iZone = 0; iZone < nZone; iZone++) {
-
-    /*--- Determine whether or not the FEM solver is used, which decides the
-     type of geometry classes that are instantiated. ---*/
-      fem_solver = ((config_container[io][iZone]->GetKind_Solver() == FEM_EULER)          ||
-        (config_container[io][iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
-        (config_container[io][iZone]->GetKind_Solver() == FEM_RANS)           ||
-        (config_container[io][iZone]->GetKind_Solver() == FEM_LES)            ||
-        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
-        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
-        (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
-
-    /*--- Read the number of instances for each zone ---*/
-
-      nInst[iZone] = config_container[io][iZone]->GetnTimeInstances();
-
-      solver_container[io][iZone] = new CSolver***[nInst[iZone]];
-      geometry_container[io][iZone] = new CGeometry**[nInst[iZone]];
-      for(iInst = 0; iInst < nInst[iZone]; iInst++){
-        solver_container[io][iZone][iInst] = new CSolver** [SINGLE_MESH];
-        geometry_container[io][iZone][iInst] = new CGeometry* [SINGLE_MESH];
-        solver_container[io][iZone][iInst][MESH_0] = NULL;
-        solver_container[io][iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
-        for (iSol = 0; iSol < MAX_SOLS; iSol++)
-          solver_container[io][iZone][iInst][MESH_0][iSol] = NULL;
-      }
-
-      for (iInst = 0; iInst < nInst[iZone]; iInst++){
-
-        config_container[io][iZone]->SetiInst(iInst);
-
-      /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
-
-        CGeometry *geometry_aux = NULL;
-
-      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
-
-        geometry_aux = new CPhysicalGeometry(config_container[io][iZone], iZone, nZone);
-
-      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
-
-        if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[io][iZone]);
-        else              geometry_aux->SetColorGrid_Parallel(config_container[io][iZone]);
-
-      /*--- Allocate the memory of the current domain, and
-     divide the grid between the nodes ---*/
-
-        geometry_container[io][iZone][iInst][MESH_0] = NULL;
-
-      /*--- Until we finish the new periodic BC implementation, use the old
-       partitioning routines for cases with periodic BCs. The old routines 
-       will be entirely removed eventually in favor of the new methods. ---*/
-
-        if( fem_solver ) {
-          switch( config_container[io][iZone]->GetKind_FEM_Flow() ) {
-            case DG: {
-              geometry_container[io][iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[io][iZone]);
-              break;
-            }
-          }
-        }
-        else {
-          if (periodic) {
-            geometry_container[io][iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[io][iZone]);
-          } else {
-            geometry_container[io][iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[io][iZone], periodic);
-          }
-        }
-
-      /*--- Deallocate the memory of geometry_aux ---*/
-
-        delete geometry_aux;
-
-      /*--- Add the Send/Receive boundaries ---*/
-
-        geometry_container[io][iZone][iInst][MESH_0]->SetSendReceive(config_container[io][iZone]);
-
-      /*--- Add the Send/Receive boundaries ---*/
-
-        geometry_container[io][iZone][iInst][MESH_0]->SetBoundaries(config_container[io][iZone]);
-
-      /*--- Create the vertex structure (required for MPI) ---*/
-
-        if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
-        geometry_container[io][iZone][iInst][MESH_0]->SetVertex(config_container[io][iZone]);
-
-      /*--- Store the global to local mapping after preprocessing. ---*/
-
-        if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
-        geometry_container[io][iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
-
-      /* Test for a fem solver, because some more work must be done. */
-
-        if (fem_solver) {
-
-        /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
-         define all virtual functions in the base class CGeometry. ---*/
-          CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[io][iZone][iInst][MESH_0]);
-
-        /*--- Determine the standard elements for the volume elements. ---*/
-          if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
-          DGMesh->CreateStandardVolumeElements(config_container[io][iZone]);
-
-        /*--- Create the face information needed to compute the contour integral
-         for the elements in the Discontinuous Galerkin formulation. ---*/
-          if (rank == MASTER_NODE) cout << "Creating face information." << endl;
-          DGMesh->CreateFaces(config_container[io][iZone]);
-        }
-      }
-
-    }
-  }
-
-  /*--- Determine whether the simulation is a FSI simulation ---*/
-
-  bool fsi = config_container[0][ZONE_0]->GetFSI_Simulation();
-
-  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+  CFEMInterpolationDriver *InterpolationDriver = NULL;
 
 #ifdef HAVE_MPI
   StartTime = MPI_Wtime();
@@ -296,11 +140,199 @@ int main(int argc, char *argv[]) {
   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
 #endif
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
+  InterpolationDriver = new CFEMInterpolationDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
+  InterpolationDriver->Interpolate();
+
+  InterpolationDriver->Output();
+
+  InterpolationDriver->Postprocessing();
+
   
-	/*--- Definition of the output class (one for all the zones) ---*/
-	output = new COutput(config_container[1][ZONE_0]);
+
+  // driver_config = NULL;
+
+  // /*--- Initialize the configuration of the driver ---*/
+  // driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, 0, VERB_NONE);
+
+  // --- Initialize a char to store the zone filename ---
+  // char zone_file_name[MAX_STRING_SIZE];
+
+  // /*--- Store a boolean for multizone problems ---*/
+  // multizone = (driver_config->GetKind_Solver() == MULTIZONE);
+
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+  // for(io = 0; io < max_io; io++){
+  //   for (iZone = 0; iZone < nZone; iZone++) {
+
+  //     /*--- Definition of the configuration option class for all zones. In this
+  //       constructor, the input configuration file is parsed and all options are
+  //       read and stored. ---*/
+
+  //     if (multizone){
+  //       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+  //       if (io == 0) config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+  //       else config_container[io][iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
+  //     }
+  //     else{
+  //       if (io == 0) config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_HIGH);
+  //       else config_container[io][iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, 0, VERB_NONE);
+  //     }
+  //     config_container[io][iZone]->SetMPICommunicator(MPICommunicator);
+      
+  //     /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
+  //     if (io == 1){
+  //       config_container[io][iZone]->SetRestart(false);
+  //       config_container[io][iZone]->SetMesh_FileName(config_container[io][iZone]->GetTarget_Mesh_FileName());
+  //     }
+  //     else {
+  //       config_container[io][iZone]->SetRestart(true);
+  //     }
+  //   }
+  // }
+  //   /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
+
+  // /*--- Set the multizone part of the problem. ---*/
+  // if (driver_config->GetKind_Solver() == MULTIZONE){
+  //   for(io = 0; io < max_io; io++){
+  //     for (iZone = 0; iZone < nZone; iZone++) {
+  //       /*--- Set the interface markers for multizone ---*/
+  //       config_container[io][iZone]->SetMultizone(driver_config, config_container[io]);
+  //     }
+  //   }
+  // }
+
+  // /* --- Read geometry for input and target meshes ---*/
+  // for (io = 0; io < max_io; io++){
+  //   /*--- Read the geometry for each zone ---*/
+  //   for (iZone = 0; iZone < nZone; iZone++) {
+
+  //   /*--- Determine whether or not the FEM solver is used, which decides the
+  //    type of geometry classes that are instantiated. ---*/
+  //     fem_solver = ((config_container[io][iZone]->GetKind_Solver() == FEM_EULER)          ||
+  //       (config_container[io][iZone]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+  //       (config_container[io][iZone]->GetKind_Solver() == FEM_RANS)           ||
+  //       (config_container[io][iZone]->GetKind_Solver() == FEM_LES)            ||
+  //       (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+  //       (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+  //       (config_container[io][iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+  //   /*--- Read the number of instances for each zone ---*/
+
+  //     nInst[iZone] = config_container[io][iZone]->GetnTimeInstances();
+
+  //     solver_container[io][iZone] = new CSolver***[nInst[iZone]];
+  //     geometry_container[io][iZone] = new CGeometry**[nInst[iZone]];
+  //     for(iInst = 0; iInst < nInst[iZone]; iInst++){
+  //       solver_container[io][iZone][iInst] = new CSolver** [SINGLE_MESH];
+  //       geometry_container[io][iZone][iInst] = new CGeometry* [SINGLE_MESH];
+  //       solver_container[io][iZone][iInst][MESH_0] = NULL;
+  //       solver_container[io][iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+  //       for (iSol = 0; iSol < MAX_SOLS; iSol++)
+  //         solver_container[io][iZone][iInst][MESH_0][iSol] = NULL;
+  //     }
+
+  //     for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+  //       config_container[io][iZone]->SetiInst(iInst);
+
+  //     /*--- Definition of the geometry class to store the primal grid in the partitioning process. ---*/
+
+  //       CGeometry *geometry_aux = NULL;
+
+  //     /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+  //       geometry_aux = new CPhysicalGeometry(config_container[io][iZone], iZone, nZone);
+
+  //     /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+  //       if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[io][iZone]);
+  //       else              geometry_aux->SetColorGrid_Parallel(config_container[io][iZone]);
+
+  //     /*--- Allocate the memory of the current domain, and
+  //    divide the grid between the nodes ---*/
+
+  //       geometry_container[io][iZone][iInst][MESH_0] = NULL;
+
+  //     --- Until we finish the new periodic BC implementation, use the old
+  //      partitioning routines for cases with periodic BCs. The old routines 
+  //      will be entirely removed eventually in favor of the new methods. ---
+
+  //       if( fem_solver ) {
+  //         switch( config_container[io][iZone]->GetKind_FEM_Flow() ) {
+  //           case DG: {
+  //             geometry_container[io][iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[io][iZone]);
+  //             break;
+  //           }
+  //         }
+  //       }
+  //       else {
+  //         if (periodic) {
+  //           geometry_container[io][iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[io][iZone]);
+  //         } else {
+  //           geometry_container[io][iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[io][iZone], periodic);
+  //         }
+  //       }
+
+  //     /*--- Deallocate the memory of geometry_aux ---*/
+
+  //       delete geometry_aux;
+
+  //     /*--- Add the Send/Receive boundaries ---*/
+
+  //       geometry_container[io][iZone][iInst][MESH_0]->SetSendReceive(config_container[io][iZone]);
+
+  //     /*--- Add the Send/Receive boundaries ---*/
+
+  //       geometry_container[io][iZone][iInst][MESH_0]->SetBoundaries(config_container[io][iZone]);
+
+  //     /*--- Create the vertex structure (required for MPI) ---*/
+
+  //       if (rank == MASTER_NODE) cout << "Identify vertices." <<endl;
+  //       geometry_container[io][iZone][iInst][MESH_0]->SetVertex(config_container[io][iZone]);
+
+  //     /*--- Store the global to local mapping after preprocessing. ---*/
+
+  //       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+  //       geometry_container[io][iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
+
+  //     /* Test for a fem solver, because some more work must be done. */
+
+  //       if (fem_solver) {
+
+  //       /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+  //        define all virtual functions in the base class CGeometry. ---*/
+  //         CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[io][iZone][iInst][MESH_0]);
+
+  //       /*--- Determine the standard elements for the volume elements. ---*/
+  //         if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+  //         DGMesh->CreateStandardVolumeElements(config_container[io][iZone]);
+
+  //       /*--- Create the face information needed to compute the contour integral
+  //        for the elements in the Discontinuous Galerkin formulation. ---*/
+  //         if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+  //         DGMesh->CreateFaces(config_container[io][iZone]);
+  //       }
+  //     }
+
+  //   }
+  // }
+
+  /*--- Determine whether the simulation is a FSI simulation ---*/
+
+  // bool fsi = config_container[0][ZONE_0]->GetFSI_Simulation();
+
+  /*--- Set up a timer for performance benchmarking (preprocessing time is included) ---*/
+
+
+
+ //  if (rank == MASTER_NODE)
+ //    cout << endl <<"------------------------- Solution Postprocessing -----------------------" << endl;
+  
+	// /*--- Definition of the output class (one for all the zones) ---*/
+	// output = new COutput(config_container[1][ZONE_0]);
   
   /*---  Check whether this is an FSI, fluid unsteady, harmonic balance or structural dynamic simulation and call the
    solution merging routines accordingly.---*/
@@ -711,162 +743,162 @@ int main(int argc, char *argv[]) {
       // output->SetBaselineResult_Files(solver_container, geometry_container, config_container, 0, nZone);
 
 		// }
-  bool update_geo = true;
-  int val_iter = 0;
+  // bool update_geo = true;
+  // int val_iter = 0;
 
-  for (io = 0; io < max_io; io++){
-    for (iZone = 0; iZone < nZone; iZone++){
-      config_container[io][iZone]->SetiInst(INST_0);
-      solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL] = new CNSSolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-      if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL] = new CTurbSASolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->GetFluidModel() );
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-      }
-      else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      }
+  // for (io = 0; io < max_io; io++){
+  //   for (iZone = 0; iZone < nZone; iZone++){
+  //     config_container[io][iZone]->SetiInst(INST_0);
+  //     solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL] = new CNSSolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //     if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL] = new CTurbSASolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->GetFluidModel() );
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //     }
+  //     else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //     }
 
-      if (io == 0){
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone][INST_0], solver_container[io][iZone][INST_0], config_container[io][iZone], val_iter, update_geo);
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone][INST_0], solver_container[io][iZone][INST_0], config_container[io][iZone], val_iter, update_geo);
-      }
-      else{
-        //solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
-        //solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+  //     if (io == 0){
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone][INST_0], solver_container[io][iZone][INST_0], config_container[io][iZone], val_iter, update_geo);
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone][INST_0], solver_container[io][iZone][INST_0], config_container[io][iZone], val_iter, update_geo);
+  //     }
+  //     else{
+  //       //solver_container[io][iZone][MESH_0][FLOW_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
+  //       //solver_container[io][iZone][MESH_0][TURB_SOL]->LoadRestart(geometry_container[io][iZone], solver_container[io][iZone], config_container[io][iZone], val_iter, update_geo);
         
-      }
+  //     }
 
-    }
-  }
-
-  if (rank == MASTER_NODE)
-    cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
-
-  if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
-  input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone,VertexCentered);
-  output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone,VertexCentered);
-  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
-  
-  if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;
-  input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],solver_container[0],nZone);
-  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
-
-  if (rank == MASTER_NODE) cout << "Determining coordinates for the points to be interpolated....."<< flush;
-  vector<vector<su2double> > coorInterpolation;
-  output_grid->DetermineCoorInterpolation(config_container[1], coorInterpolation, VertexCentered);
-  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
-
-  output_solution = new CFEMInterpolationSol();
-  output_solution->InterpolateSolution(config_container[1], coorInterpolation, input_grid, input_solution, output_grid);
-  if (rank == MASTER_NODE) cout << "Copying solution to solver container....." << flush;
-  output_solution->CopySolToSU2Solution(config_container[1], geometry_container[1], solver_container[1], nZone);
-  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
-  
+  //   }
   // }
 
+  // if (rank == MASTER_NODE)
+  //   cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
-
-  for (io = 1; io < max_io; io++){
-    for (iZone = 0; iZone < nZone; iZone++){
-      if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      }
-      else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-        solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
-        solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
-      }
-
-    }
-  }
-
-  for (iZone = 0; iZone < nZone; iZone++){
-    if (rank == MASTER_NODE){
-      output->MergeCoordinates(config_container[1][iZone], geometry_container[1][iZone][INST_0][MESH_0]);
-      output->MergeSolution(config_container[1][iZone], geometry_container[1][iZone][INST_0][MESH_0], solver_container[1][iZone][INST_0][MESH_0], iZone);
-    }
-  }
-  output->SetResult_Files_Parallel(solver_container[1], geometry_container[1], config_container[1], val_iter, nZone);
+  // if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
+  // input_grid = new CFEMInterpolationGrid(config_container[0],geometry_container[0],nZone,VertexCentered);
+  // output_grid = new CFEMInterpolationGrid(config_container[1],geometry_container[1],nZone,VertexCentered);
+  // if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   
-  if (geometry_container != NULL){
-    for (io = 0; io < max_io; io++){
-      for (iZone = 0; iZone < nZone; iZone++){
-        for (iInst = 0; iInst < nInst[iZone]; iInst++){
-          if (geometry_container[io][iZone][iInst] != NULL){
-            if(geometry_container[io][iZone][iInst][MESH_0] != NULL){
-              delete geometry_container[io][iZone][iInst][MESH_0];
-            }
-            delete geometry_container[io][iZone][iInst];
-          }
-        }
-        if (geometry_container[io][iZone] != NULL){
-          delete geometry_container[io][iZone];
-        }
-      }
-      if (geometry_container[io] != NULL){
-        delete geometry_container[io];
-      }
-    }
-    delete [] geometry_container;
-  }
+  // if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;
+  // input_solution = new CFEMInterpolationSol(config_container[0],geometry_container[0],solver_container[0],nZone);
+  // if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
-  if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+  // if (rank == MASTER_NODE) cout << "Determining coordinates for the points to be interpolated....."<< flush;
+  // vector<vector<su2double> > coorInterpolation;
+  // output_grid->DetermineCoorInterpolation(config_container[1], coorInterpolation, VertexCentered);
+  // if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
-  if (solver_container != NULL){
-    for (io = 0; io < max_io; io++){
-      for (iZone = 0; iZone < nZone; iZone++){
-        for(iInst = 0; iInst < nInst[iZone]; iInst++){
-          for (iSol = 0; iSol < MAX_SOLS; iSol++){
-            if (solver_container[io][iZone][iInst][MESH_0][iSol] != NULL){
-              delete solver_container[io][iZone][iInst][MESH_0][iSol];
-            }
-          }
-          if(solver_container[io][iZone][iInst] != NULL){
-            if (solver_container[io][iZone][iInst][MESH_0] != NULL){
-                delete solver_container[io][iZone][iInst][MESH_0];
-            }
-            delete solver_container[io][iZone][iInst];
-          }
-        }
-        if (solver_container[io][iZone] != NULL){
-          delete solver_container[io][iZone];
-        }
-      }
-      if (solver_container[io] != NULL){
-        delete solver_container[io];
-      }
-    }
-    delete [] solver_container;
-  }
+  // output_solution = new CFEMInterpolationSol();
+  // output_solution->InterpolateSolution(config_container[1], coorInterpolation, input_grid, input_solution, output_grid);
+  // if (rank == MASTER_NODE) cout << "Copying solution to solver container....." << flush;
+  // output_solution->CopySolToSU2Solution(config_container[1], geometry_container[1], solver_container[1], nZone);
+  // if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   
-  if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
+  // // }
 
-  if (config_container != NULL){
-    for (io = 0; io < max_io; io++){
-      for (iZone = 0; iZone < nZone; iZone++){
-        if (config_container[io][iZone] != NULL){
-          delete config_container[io][iZone];
-        }
-      }
-      if (config_container[io] != NULL){
-        delete config_container[io];
-      }
-    }
-    delete [] config_container;
-  }
+
+  // if (rank == MASTER_NODE)
+  //   cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+
+  // for (io = 1; io < max_io; io++){
+  //   for (iZone = 0; iZone < nZone; iZone++){
+  //     if (config_container[io][iZone]->GetKind_Turb_Model() == SA){
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //     }
+  //     else if (config_container[io][iZone]->GetKind_Turb_Model() == SST){
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //       solver_container[io][iZone][INST_0][MESH_0][TURB_SOL]->Postprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0);
+  //       solver_container[io][iZone][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[io][iZone][INST_0][MESH_0], solver_container[io][iZone][INST_0][MESH_0], config_container[io][iZone], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+  //     }
+
+  //   }
+  // }
+
+  // for (iZone = 0; iZone < nZone; iZone++){
+  //   if (rank == MASTER_NODE){
+  //     output->MergeCoordinates(config_container[1][iZone], geometry_container[1][iZone][INST_0][MESH_0]);
+  //     output->MergeSolution(config_container[1][iZone], geometry_container[1][iZone][INST_0][MESH_0], solver_container[1][iZone][INST_0][MESH_0], iZone);
+  //   }
+  // }
+  // output->SetResult_Files_Parallel(solver_container[1], geometry_container[1], config_container[1], val_iter, nZone);
   
-  if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  // if (geometry_container != NULL){
+  //   for (io = 0; io < max_io; io++){
+  //     for (iZone = 0; iZone < nZone; iZone++){
+  //       for (iInst = 0; iInst < nInst[iZone]; iInst++){
+  //         if (geometry_container[io][iZone][iInst] != NULL){
+  //           if(geometry_container[io][iZone][iInst][MESH_0] != NULL){
+  //             delete geometry_container[io][iZone][iInst][MESH_0];
+  //           }
+  //           delete geometry_container[io][iZone][iInst];
+  //         }
+  //       }
+  //       if (geometry_container[io][iZone] != NULL){
+  //         delete geometry_container[io][iZone];
+  //       }
+  //     }
+  //     if (geometry_container[io] != NULL){
+  //       delete geometry_container[io];
+  //     }
+  //   }
+  //   delete [] geometry_container;
+  // }
+
+  // if (rank == MASTER_NODE) cout << "Deleted CGeometry container." << endl;
+
+  // if (solver_container != NULL){
+  //   for (io = 0; io < max_io; io++){
+  //     for (iZone = 0; iZone < nZone; iZone++){
+  //       for(iInst = 0; iInst < nInst[iZone]; iInst++){
+  //         for (iSol = 0; iSol < MAX_SOLS; iSol++){
+  //           if (solver_container[io][iZone][iInst][MESH_0][iSol] != NULL){
+  //             delete solver_container[io][iZone][iInst][MESH_0][iSol];
+  //           }
+  //         }
+  //         if(solver_container[io][iZone][iInst] != NULL){
+  //           if (solver_container[io][iZone][iInst][MESH_0] != NULL){
+  //               delete solver_container[io][iZone][iInst][MESH_0];
+  //           }
+  //           delete solver_container[io][iZone][iInst];
+  //         }
+  //       }
+  //       if (solver_container[io][iZone] != NULL){
+  //         delete solver_container[io][iZone];
+  //       }
+  //     }
+  //     if (solver_container[io] != NULL){
+  //       delete solver_container[io];
+  //     }
+  //   }
+  //   delete [] solver_container;
+  // }
   
-  if (output != NULL) delete output;
-  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+  // if (rank == MASTER_NODE) cout << "Deleted CSolver class." << endl;
+
+  // if (config_container != NULL){
+  //   for (io = 0; io < max_io; io++){
+  //     for (iZone = 0; iZone < nZone; iZone++){
+  //       if (config_container[io][iZone] != NULL){
+  //         delete config_container[io][iZone];
+  //       }
+  //     }
+  //     if (config_container[io] != NULL){
+  //       delete config_container[io];
+  //     }
+  //   }
+  //   delete [] config_container;
+  // }
+  
+  // if (rank == MASTER_NODE) cout << "Deleted CConfig container." << endl;
+  
+  // if (output != NULL) delete output;
+  // if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
   
   /*--- Synchronization point after a single solver iteration. Compute the
    wall clock time required. ---*/

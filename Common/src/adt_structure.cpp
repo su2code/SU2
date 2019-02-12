@@ -3425,5 +3425,11 @@ bool CADTElemClass::Dist2ToQuadrilateral(const unsigned long i0,
     dist2Quad += ds*ds;
   }
 
+  weightsInterpol[0] = 0.25*(1.0-r)*(1.0-s);
+  weightsInterpol[1] = 0.25*(1.0+r)*(1.0-s);
+  weightsInterpol[2] = 0.25*(1.0+r)*(1.0+s);
+  weightsInterpol[3] = 0.25*(1.0-r)*(1.0+s);
+
+  /*--- Return true to indicate that the projection is inside. ---*/
   return true;
 }

@@ -114,6 +114,9 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
     output_config_container[iZone]->SetRestart(false);
     output_config_container[iZone]->SetMesh_FileName(output_config_container[iZone]->GetTarget_Mesh_FileName());
 
+    input_config_container[iZone]->SetMGLevels(0);
+    output_config_container[iZone]->SetMGLevels(0);
+
   }
 
   /*--- Set the multizone part of the problem. ---*/
@@ -250,6 +253,91 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
   output_grid           = NULL;
   input_solution        = NULL;
   output_solution       = NULL;
+
+}
+
+void CFEMInterpolationDriver::Postprocessing() {
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"--------------------- Interpolation Postprocessing ----------------------" << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      Solver_Deletion(input_solver_container[iZone],
+                            input_config_container[iZone],
+                            iInst);
+      Solver_Deletion(output_solver_container[iZone],
+                            output_config_container[iZone],
+                            iInst);
+    }
+    delete [] input_solver_container[iZone];
+    delete [] output_solver_container[iZone];
+  }
+  delete [] input_solver_container;
+  delete [] output_solver_container;
+  if (rank == MASTER_NODE) cout << "Deleted CSolver containers." << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (input_geometry_container[iZone] != NULL) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (input_geometry_container[iZone][iInst][MESH_0] != NULL) delete input_geometry_container[iZone][iInst][MESH_0];
+        if (input_geometry_container[iZone][iInst] != NULL) delete [] input_geometry_container[iZone][iInst];
+      }
+      delete [] input_geometry_container[iZone];
+    }
+  }
+  delete [] input_geometry_container;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (output_geometry_container[iZone] != NULL) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (output_geometry_container[iZone][iInst][MESH_0] != NULL) delete output_geometry_container[iZone][iInst][MESH_0];
+        if (output_geometry_container[iZone][iInst] != NULL) delete [] output_geometry_container[iZone][iInst];
+      }
+      delete [] output_geometry_container[iZone];
+    }
+  }
+  delete [] output_geometry_container;
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry containers." << endl;
+
+  /*--- Deallocate config container ---*/
+  if (input_config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (input_config_container[iZone] != NULL) {
+        delete input_config_container[iZone];
+      }
+    }
+    delete [] input_config_container;
+  }
+
+  if (output_config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output_config_container[iZone] != NULL) {
+        delete output_config_container[iZone];
+      }
+    }
+    delete [] output_config_container;
+  }
+
+  if (driver_config != NULL) delete [] driver_config;
+  if (rank == MASTER_NODE) cout << "Deleted CConfig containers." << endl;
+
+  if (nInst != NULL) delete [] nInst;
+  if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
+
+  if (input_grid != NULL) delete [] input_grid;
+  if (output_grid != NULL) delete [] output_grid;
+  if (input_solution != NULL) delete [] input_solution;
+  if (output_solution != NULL) delete [] output_solution;
+  if (rank == MASTER_NODE) cout << "Deleted interpolation containers." << endl;
+
+  
+  /*--- Deallocate output container ---*/
+  if (output!= NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
+
 
 }
 
@@ -827,9 +915,200 @@ void CFEMInterpolationDriver::Interpolate() {
   output_solution->CopySolToSU2Solution(output_config_container, output_geometry_container, output_solver_container, nZone);
   if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      
+      Solver_Postprocessing(output_solver_container[iZone], output_geometry_container[iZone],
+                           output_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+  }
+
 }
 
-void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry **geometry,
+void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry ***geometry,
+                                                   CConfig *config, unsigned short val_iInst) {
+  
+  bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm,
+  fem, disc_adj_fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+  fem_dg_flow, fem_dg_shock_persson,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
+  /*--- Initialize some useful booleans ---*/
+
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Assign booleans ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case FEM_LES : fem_ns = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+  }
+  
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
+  }
+
+  /*--- Determine the kind of shock capturing method for FEM DG solver. ---*/
+
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case PERSSON: fem_dg_shock_persson = true; break;
+  }
+
+  /*--- Assign turbulence model booleans ---*/
+
+  if (turbulent || fem_turbulent){
+    switch (config->GetKind_Turb_Model()) {
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case SST:    menter_sst = true;           break;
+      case SA_E:   e_spalart_allmaras = true;   break;
+      case SA_COMP: comp_spalart_allmaras = true; break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+  }
+  
+  /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_0][EQUATION]. Note that euler, ns
+   and potential are incompatible, they use the same position in sol container ---*/
+
+    /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
+
+  if (euler) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+  if (ns) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+  if (turbulent) {
+    if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);      
+    }
+    else if (menter_sst) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+
+}
+
+void CFEMInterpolationDriver::Output() {
+
+  unsigned long ExtIter = input_config_container[ZONE_0]->GetExtIter_OffSet();
+
+  /*--- write the solution ---*/
+  
+
+    /*--- Time the output for performance benchmarking. ---*/
+// #ifndef HAVE_MPI
+//   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+// #else
+//   StopTime = MPI_Wtime();
+// #endif
+//   UsedTimeCompute += StopTime-StartTime;
+// #ifndef HAVE_MPI
+//   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+// #else
+//   StartTime = MPI_Wtime();
+// #endif
+
+    /*--- Add a statement about the type of solver exit. ---*/
+
+  if (rank == MASTER_NODE) 
+    cout << endl << "----------------------------- Solver Exit -------------------------------";
+    
+  
+
+  if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+
+  output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+    /*--- Store output time and restart the timer for the compute phase. ---*/
+// #ifndef HAVE_MPI
+//   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+// #else
+//   StopTime = MPI_Wtime();
+// #endif
+//   UsedTimeOutput += StopTime-StartTime;
+//   OutputCount++;
+//   BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
+// #ifndef HAVE_MPI
+//   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
+// #else
+//   StartTime = MPI_Wtime();
+// #endif
+  
+}
+
+void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
                                     CConfig *config, unsigned short val_iInst) {
   unsigned short iMGlevel;
   bool euler, ns, turbulent,
@@ -1740,7 +2019,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         << nDOFsInterpol << " DOFs interpolated." << endl << flush;
       
       // Set a pointer to the coordinates to be searched.
-      const su2double *coor = coorInterpol.data() + l*nDim;
+      const su2double *coor = coorCorrected.data() + l*nDim;
       
       // Carry out the containment search and check if it was successful.
       unsigned short subElem;
@@ -1767,37 +2046,8 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
       }
       else
       {
-        // Carry out the containment search on the corrected coordinate.
-        // Set a pointer to the coordinates to be searched.
-        const su2double *coor = coorCorrected.data() + l*nDim;
-      
-        // Carry out the containment search and check if it was successful.
-        unsigned short subElem;
-        unsigned long  parElem;
-        int            rank;
-        su2double      parCoor[3], weightsInterpol[8];
-        if( volumeADT.DetermineContainingElement(coor, subElem, parElem, rank,
-                                                 parCoor, weightsInterpol,
-                                                 frontLeaves, frontLeavesNew) )
-        {
-          // Subelement found that contains the exchange location. However,
-          // what is needed is the location in the high order parent element.
-          // Determine this.
-          HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
-                                     &standardElementsGrid[indInStandardElements[parElem]],
-                                     &volElems[parElem], coorGrid, parCoor);
-        
-          // Carry out the actual interpolation.
-          const unsigned short ind = indInStandardElements[parElem];
-          const unsigned long  ll  = l + zoneOffsetOutputSol;
-        
-          SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
-                         &volElems[parElem], solFormatInput, parCoor, mSolDOFs[ll]);
-        }
-        else{
-          // Containment search was not successful. Store the ID in localPointsFailed.
+        // Containment search was not successful. Store the ID in localPointsFailed.
           localPointsFailed.push_back(l);
-        }
       }
     }
     
@@ -2070,70 +2320,47 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     // Loop over the points for which a minimum distance search must be carried out.
     for(unsigned long l=0; l<pointsMinDistSearch.size(); ++l)
     {
-      // Write a message about the number of DOFs to be interpolated via
-      // surface interpolation.
+    // Write a message about the number of DOFs to be interpolated via
+    // surface interpolation.
       if( !(l%writeFreq) )
-        cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-        << pointsMinDistSearch.size()
-        << " DOFs interpolated via minimum distance search."
-        << endl << flush;
-      
-      // Set a pointer to the coordinates to be searched.
-      const su2double *coorInt = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
-      
-      // Carry out the minimum distance search for the original coordinate
+        std::cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
+      << pointsMinDistSearch.size()
+      << " DOFs interpolated via minimum distance search."
+      << std::endl << std::flush;
+
+    // Set a pointer to the coordinates to be searched.
+      const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
+
+    // Carry out the minimum distance search,
       unsigned short subElem;
       unsigned long  parElem;
       int            rank;
       su2double      dist;
       su2double      weightsInterpol[4];
-      su2double      distInterpol;
-      surfaceADT.DetermineNearestElement(coorInt, distInterpol, subElem, parElem, rank,
-                                         weightsInterpol, BBoxTargets,
-                                         frontLeaves, frontLeavesNew);
+      surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+       weightsInterpol, BBoxTargets,
+       frontLeaves, frontLeavesNew);
 
-      // Set a pointer to the coordinates to be searched.
-      const su2double *coorCor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
-      
-      // Carry out the minimum distance search for the corrected coordinate
-      su2double      distCorrected;
-      surfaceADT.DetermineNearestElement(coorCor, distCorrected, subElem, parElem, rank,
-                                         weightsInterpol, BBoxTargets,
-                                         frontLeaves, frontLeavesNew);
-
-      // Use the corrected wall coordinate if its wall distance is strictly less.
+    // Subelement found that minimizes the distance to the given coordinate.
+    // However, what is needed is the location in the high order parent element.
+    // Determine this.
       su2double parCoor[3], wallCoor[3];
-      if(distCorrected < distInterpol){
-        const su2double *coor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
-        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-                                           weightsInterpol, BBoxTargets,
-                                           frontLeaves, frontLeavesNew);
-        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
-      }
-      else{
-        const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
-        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-                                           weightsInterpol, BBoxTargets,
-                                           frontLeaves, frontLeavesNew);
-        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
-      }
-            
-      // Convert the parametric coordinates of the surface element to
-      // parametric weights of the corresponding volume element.
+      HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+       &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
+       &surfElems[parElem], coorGrid, parCoor, wallCoor);
+
+    // Convert the parametric coordinates of the surface element to
+    // parametric weights of the corresponding volume element.
       surfElems[parElem].ConvertParCoorToVolume(&volElems[adjElemID[parElem]],
-                                                faceIDInElement[parElem], parCoor);
-      
-      // Carry out the actual interpolation.
+        faceIDInElement[parElem], parCoor);
+
+    // Carry out the actual interpolation.
       const unsigned short ind = indInStandardElements[adjElemID[parElem]];
       const unsigned long  ll  = pointsMinDistSearch[l] + zoneOffsetOutputSol;
-      
+
       SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
-                     &volElems[adjElemID[parElem]], solFormatInput, parCoor,
-                     mSolDOFs[ll]);
+       &volElems[adjElemID[parElem]], solFormatInput, parCoor,
+       mSolDOFs[ll]);
     }
   
   // Write a message that the surface search is finished.
@@ -2856,8 +3083,7 @@ void CFEMInterpolationSurfElem::GetCornerPoints(unsigned short &nCornerPoints,
 void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
                                               const unsigned short nPolyGrid,
                                               const unsigned short nDOFsGrid,
-                                              const unsigned long  *connGrid,
-                                              const su2double      *curvature)
+                                              const unsigned long  *connGrid)
 {
   // Copy the scalar integer data.
   mVTK_TYPE  = VTK_Type;
@@ -2874,10 +3100,6 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   // Allocate the memory for the curvature.
   mConnGrid.resize(mNDOFsGrid);
 
-  // Copy the curvature data.
-  // for(unsigned short i=0; i<mNDOFsGrid; ++i)
-  //   mCurvature[i] = curvature[i];
-  
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original
   // SU2 format is maintained for linear elements, but for the FEM solver
@@ -3113,16 +3335,9 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       for(iNode = 0; iNode < nDOFsGrid; iNode++)
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
-      // Get the curvature of the surface node.
-      vector<su2double> curvature(nDOFsGrid);
-      for(iNode = 0; iNode < nDOFsGrid; iNode++){
-        iPoint           = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        //curvature[iNode] = geometry->node[iPoint]->GetCurvature();
-      }
-
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data(), curvature.data());
+                                      connSU2.data());
     }
   }
   
