@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
   CFEMInterpolationGrid* output_grid;
   CFEMInterpolationSol* input_solution;
   CFEMInterpolationSol* output_solution;
+  CFEMInterpolationSol* ecc_higher_order_solution;
 
   /*--- MPI initialization ---*/
 
@@ -773,6 +774,11 @@ int main(int argc, char *argv[]) {
   if(config->GetError_Estimate()){
     if (rank == MASTER_NODE)
     cout << endl <<"--------------------------- Error Estimation ----------------------------" << endl;
+    ecc_higher_order_solution = new CFEMInterpolationSol();
+    ecc_higher_order_solution->FV_QuadraticInterpolation(config_container[2], coorInterpolation, input_grid, input_solution, output_grid);
+    if (rank == MASTER_NODE) cout << "Copying higher order solution to solver container....." << flush;
+    ecc_higher_order_solution->CopySolToSU2Solution(config_container[2], geometry_container[2], solver_container[2], nZone);
+    if (rank == MASTER_NODE) cout << " Done." << endl << flush;
   }
 
 
