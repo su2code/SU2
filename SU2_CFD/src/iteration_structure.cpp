@@ -1763,7 +1763,10 @@ void CFEAIteration::Predictor(COutput *output,
 
   /*--- For parallel simulations we need to communicate the predicted solution before updating the fluid mesh ---*/
 
-  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  //solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
+  
+  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->InitiateComms(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], SOLUTION_PRED);
+  solver_container[val_iZone][val_iInst][MESH_0][FEA_SOL]->CompleteComms(geometry_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone], SOLUTION_PRED);
 
 }
 void CFEAIteration::Relaxation(COutput *output,
@@ -1793,8 +1796,10 @@ void CFEAIteration::Relaxation(COutput *output,
       solver_container[val_iZone][INST_0]);
 
   /*----------------- Communicate the predicted solution and the old one ------------------*/
-  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
+  //solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->Set_MPI_Solution_Pred_Old(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone]);
 
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->InitiateComms(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], SOLUTION_PRED_OLD);
+  solver_container[val_iZone][INST_0][MESH_0][FEA_SOL]->CompleteComms(geometry_container[val_iZone][INST_0][MESH_0], config_container[val_iZone], SOLUTION_PRED_OLD);
 
 }
 
@@ -2483,8 +2488,8 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
     solver_container[iZone][iInst][MESH_0][TURB_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
     //solver_container[iZone][iInst][MESH_0][TURB_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     
-    solver_container[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION_EDDY);
-    solver_container[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION_EDDY);
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver_container[iZone][iInst][MESH_0][TURB_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
 
   }
 
@@ -2492,7 +2497,10 @@ void CDiscAdjFluidIteration::SetDependencies(CSolver *****solver_container, CGeo
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_Heatflux_Areas(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Preprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
     solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0],solver_container[iZone][iInst][MESH_0], config_container[iZone], MESH_0);
-    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    //solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+    
+    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+    solver_container[iZone][iInst][MESH_0][HEAT_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
   }
 }
 
@@ -3518,7 +3526,11 @@ void CDiscAdjHeatIteration::SetDependencies(CSolver *****solver_container,
                                                                   config_container[iZone], MESH_0, NO_RK_ITER, RUNTIME_HEAT_SYS, true);
   solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Postprocessing(geometry_container[iZone][iInst][MESH_0], solver_container[iZone][iInst][MESH_0],
                                                                    config_container[iZone], MESH_0);
-  solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  //solver_container[iZone][iInst][MESH_0][HEAT_SOL]->Set_MPI_Solution(geometry_container[iZone][iInst][MESH_0], config_container[iZone]);
+  
+  solver_container[iZone][iInst][MESH_0][HEAT_SOL]->InitiateComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+  solver_container[iZone][iInst][MESH_0][HEAT_SOL]->CompleteComms(geometry_container[iZone][iInst][MESH_0], config_container[iZone], SOLUTION);
+  
 }
 
 void CDiscAdjHeatIteration::RegisterOutput(CSolver *****solver_container,
