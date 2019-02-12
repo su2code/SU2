@@ -9023,7 +9023,7 @@ su2double CFreeFormDefBox::GetDerivative5(su2double *uvw, unsigned short dim, un
 
 
 
-CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement() {
+CElasticityMovement::CElasticityMovement(CGeometry *geometry, CConfig *config) : CVolumetricMovement(), System(true) {
 
     /*--- Initialize the number of spatial dimensions, length of the state
      vector (same as spatial dimensions for grid deformation), and grid nodes. ---*/
@@ -9233,7 +9233,8 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
 
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
-    nIterMesh = System.Solve_Mesh(StiffMatrix, LinSysRes, LinSysSol, valResidual, geometry, config);
+    nIterMesh = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
+    valResidual = System.GetResidual();
 
     /*--- Update the grid coordinates and cell volumes using the solution
      of the linear system (usol contains the x, y, z displacements). ---*/

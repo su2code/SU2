@@ -46,3 +46,5 @@ inline su2double CSysSolve::Sign(const su2double & x, const su2double & y) const
     else return fabs(x);
   }
 }
+
+inline su2double CSysSolve::GetResidual(void) const { return Residual; }

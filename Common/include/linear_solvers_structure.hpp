@@ -71,6 +71,9 @@ class CSysSolve {
   
 private:
 
+  bool mesh_deform;  /*!< \brief Operate in mesh deformation mode, changes the source of solver options. */
+  su2double Residual;/*!< \brief Residual at the end of a call to Solve. */
+
   bool cg_ready;     /*!< \brief Indicate if memory used by CG is allocated. */
   bool bcg_ready;    /*!< \brief Indicate if memory used by BCGSTAB is allocated. */
   bool gmres_ready;  /*!< \brief Indicate if memory used by FGMRES is allocated. */
@@ -176,8 +179,9 @@ public:
   
   /*!
    * \brief default constructor of the class.
+   * \param[in] mesh_deform_mode - true, to let CSysSolve know it is in a mesh deformation context
    */
-  CSysSolve(void);
+  CSysSolve(const bool mesh_deform_mode = false);
   
   /*! \brief Conjugate Gradient method
    * \param[in] b - the right hand size vector
@@ -243,25 +247,10 @@ public:
   void SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   
   /*!
-   * \brief Solve the linear system using a Krylov subspace method (mesh deformation applications)
-   * \param[in] Jacobian - Jacobian Matrix for the linear system
-   * \param[in] LinSysRes - Linear system residual
-   * \param[in] LinSysSol - Linear system solution
-   * \param[in] geometry -  Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
+   * \brief Get the final residual.
+   * \return The residual at the end of Solve
    */
-  unsigned long Solve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, su2double & Residual, CGeometry *geometry, CConfig *config);
-  
-  /*!
-   * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
-   * \param[in] Jacobian - Jacobian Matrix for the linear system
-   * \param[in] LinSysRes - Linear system residual
-   * \param[in] LinSysSol - Linear system solution
-   * \param[in] geometry -  Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void SetExternalSolve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
-
+  su2double GetResidual(void) const;
 
 };
 
