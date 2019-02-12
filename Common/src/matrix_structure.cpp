@@ -1433,10 +1433,10 @@ void CSysMatrix::MatrixVectorProductTransposed(const CSysVector & vec, CSysVecto
   }
 
   /*--- MPI Parallelization ---*/
-  //SendReceive_SolutionTransposed(prod, geometry, config);
+  SendReceive_SolutionTransposed(prod, geometry, config);
 
-  InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
-  CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  //InitiateComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
+  //CompleteComms(prod, geometry, config, SOLUTION_MATRIXTRANS);
   
 }
 
