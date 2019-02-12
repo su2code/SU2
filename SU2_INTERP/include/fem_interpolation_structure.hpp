@@ -468,6 +468,16 @@ public:
                                  const CFEMInterpolationGrid      *outputGrid);
 
   /*!
+   * \brief Function, which gets the N nearest nodes in the input mesh to all nodes in the target mesh.
+   */
+  void GetNNearestNodes(CADTPointsOnlyClass            *VolumeADT,
+                        const unsigned short           nDim,
+                        const unsigned short           nNearestNodes,
+                        const vector<su2double>        &coorInterpol,
+                        vector<vector<unsigned long>>  &pointID,
+                        vector<vector<int>>            &rankID);
+
+  /*!
    * \brief Function, which uses QR factorization to approximate a fit to the data.
    */
   void QR_LeastSquares(const unsigned short             nDim,

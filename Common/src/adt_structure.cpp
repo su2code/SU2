@@ -577,7 +577,7 @@ void CADTPointsOnlyClass::DetermineNNearestNodes(const su2double         *coor,
               minIndex.insert(minIndex.begin(), kk);
             }
             else{
-              for(int iNode = nNode-1; iNode >= 1; i++){
+              for(int iNode = nNode-1; iNode >= 1; iNode--){
                 // Insert to middle of list
                 if(distTarget > dist[iNode-1]){
                   dist.pop_back();
@@ -638,7 +638,7 @@ void CADTPointsOnlyClass::DetermineNNearestNodes(const su2double         *coor,
                 minIndex.insert(minIndex.begin(), jj);
               }
               else{
-                for(int iNode = nNode-1; iNode >= 1; i++){
+                for(int iNode = nNode-1; iNode >= 1; iNode--){
                   // Insert to middle of list
                   if(distTarget > dist[iNode-1]){
                     dist.pop_back();

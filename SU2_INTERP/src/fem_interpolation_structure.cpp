@@ -1451,7 +1451,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     
     // Build an ADT tree for finding the N nearest nodes.
     const vector<vector<su2double> > &inputGridCoor = inputGridZone->mCoor;
-    const unsigned long nDOFsZone = inputGridCoor.size()/nDim;
+    const unsigned long nDOFsZone = inputGridCoor[0].size();
     vector<su2double>     Coord(nDim*nDOFsZone);
     vector<unsigned long> PointIDs(nDOFsZone);
     unsigned long ii = 0;
@@ -1461,8 +1461,10 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
         Coord[ii++] = inputGridCoor[iDim][l];
     }
 
-    CADTPointsOnlyClass VolumeADT(nDim, nDOFsZone, Coord.data(),
+    cout << "Building VolumeADT for nearest nodes....." << flush;
+    CADTPointsOnlyClass *VolumeADT = new CADTPointsOnlyClass(nDim, nDOFsZone, Coord.data(),
                                   PointIDs.data(), true);
+    cout << " Done." << endl << flush;
 
     // Number of nearest nodes required, hardcode for quadratic interpolation for now.
     unsigned short nNearestNodes;
@@ -1481,15 +1483,9 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     }
 
     // Carry out the minimum distance search.
-    vector<su2double>             dist;
-    vector<vector<unsigned long>> pointID(nDOFsTot);
-    vector<vector<int>>           rankID(nDOFsTot);
-
-    for(unsigned long l = 0; l < nDOFsTot; ++l){
-      const su2double *coorCorrected = coorInterpolZone.data() + l*nDim;
-      VolumeADT.DetermineNNearestNodes(coorCorrected, nNearestNodes,
-                                       dist, pointID[l], rankID[l]);
-    }
+    vector<vector<unsigned long>> pointID;
+    vector<vector<int>>           rankID;
+    GetNNearestNodes(VolumeADT, nDim, nNearestNodes, coorInterpolZone, pointID, rankID);
 
 #ifdef HAVE_MPI
 
@@ -1497,7 +1493,20 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     int rank, size;
     SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
     SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
-    SU2_MPI::Error("FV quadratic interpolation currently only coded for sequential mode.", CURRENT_FUNCTION);
+
+    if(size > 1){
+      SU2_MPI::Error("FV quadratic interpolation currently only coded for sequential mode.", CURRENT_FUNCTION);
+    }
+    else{
+      // Sequential mode. Store the nodes needed for the interpolation.
+      for(unsigned long l = 0; l < nDOFsTot; ++l){
+        for(unsigned short iNode = 0; iNode < nNearestNodes; iNode++){
+          const unsigned long ll = pointID[l][iNode];
+          for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
+          for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar];
+        }
+      }
+    }
 
 #else
 
@@ -1506,7 +1515,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
       for(unsigned short iNode = 0; iNode < nNearestNodes; iNode++){
         const unsigned long ll = pointID[l][iNode];
         for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
-        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar]
+        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar];
       }
     }
 
@@ -1530,8 +1539,10 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
       QR_LeastSquares(nDim, nPoly, coor[l], coorCorrected,
                       sol[l], solInterpolTmp);
 
-      for(unsigned short iVar = 0; iVar < nVar; iVar++)
+      for(unsigned short iVar = 0; iVar < nVar; iVar++){
         solInterpol[zone][iVar][l] = solInterpolTmp[iVar][0];
+        mSolDOFs[l][iVar] = solInterpolTmp[iVar][0];
+      }
       
     }
     
@@ -1556,6 +1567,28 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     // zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
     // zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
   }
+}
+
+void CFEMInterpolationSol::GetNNearestNodes(CADTPointsOnlyClass            *VolumeADT,
+                                            const unsigned short           nDim,
+                                            const unsigned short           nNearestNodes,
+                                            const vector<su2double>        &coorInterpol,
+                                            vector<vector<unsigned long>>  &pointID,
+                                            vector<vector<int>>            &rankID){
+
+  unsigned long nDOFsTot = coorInterpol.size()/nDim;
+
+  vector<su2double> dist;
+
+  pointID.resize(nDOFsTot);
+  rankID.resize(nDOFsTot);
+
+  for(unsigned long l = 0; l < nDOFsTot; ++l){
+    const su2double *coorCorr = coorInterpol.data() + l*nDim;
+    VolumeADT->DetermineNNearestNodes(coorCorr, nNearestNodes,
+                                      dist, pointID[l], rankID[l]);
+  }
+
 }
 
 void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim,
@@ -2375,9 +2408,9 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   // Allocate the memory for the curvature.
   mConnGrid.resize(mNDOFsGrid);
 
-  // Copy the curvature data.
-  for(unsigned short i=0; i<mNDOFsGrid; ++i)
-    mCurvature[i] = curvature[i];
+  // // Copy the curvature data.
+  // for(unsigned short i=0; i<mNDOFsGrid; ++i)
+  //   mCurvature[i] = curvature[i];
   
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original

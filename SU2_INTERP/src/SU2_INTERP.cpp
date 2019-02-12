@@ -808,6 +808,7 @@ int main(int argc, char *argv[]) {
     }
   }
   output->SetResult_Files_Parallel(solver_container[1], geometry_container[1], config_container[1], val_iter, nZone);
+  if(config->GetError_Estimate()) output->SetResult_Files_Parallel(solver_container[2], geometry_container[2], config_container[2], val_iter, nZone);
   
   if (geometry_container != NULL){
     for (io = 0; io < max_io; io++){
