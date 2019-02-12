@@ -503,7 +503,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Initialization ---*/
   
   su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-  p = 0.0; v = 0.0; r_0 = r;
+  p = su2double(0.0); v = su2double(0.0); r_0 = r;
   
   /*--- Set the norm to the initial initial residual value ---*/
   
@@ -725,6 +725,110 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
     /*--- Prepare the externally differentiated linear solver ---*/
 
     SetExternalSolve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+
+  }
+
+  return IterLinSol;
+  
+}
+
+unsigned long CSysSolve::Solve_Mesh(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, su2double & Residual, CGeometry *geometry, CConfig *config) {
+  
+  su2double SolverTol = config->GetDeform_Linear_Solver_Error(), Norm0;
+  unsigned long MaxIter = config->GetDeform_Linear_Solver_Iter();
+  unsigned long IterLinSol = 0;
+  bool Screen_Output= config->GetDeform_Output();
+  
+  CMatrixVectorProduct *mat_vec = NULL;
+
+  bool TapeActive = NO;
+
+  if (config->GetDiscrete_Adjoint()) {
+#ifdef CODI_REVERSE_TYPE
+
+   /*--- Check whether the tape is active, i.e. if it is recording and store the status ---*/
+
+    TapeActive = AD::globalTape.isActive();
+
+
+    /*--- Stop the recording for the linear solver ---*/
+
+    AD::StopRecording();
+#endif
+  }
+
+  /*--- Solve the linear system using a Krylov subspace method ---*/
+  
+  if (config->GetKind_Deform_Linear_Solver() == BCGSTAB ||
+      config->GetKind_Deform_Linear_Solver() == FGMRES ||
+      config->GetKind_Deform_Linear_Solver() == RESTARTED_FGMRES ||
+      config->GetKind_Deform_Linear_Solver() == CONJUGATE_GRADIENT) {
+    
+    mat_vec = new CSysMatrixVectorProduct(Jacobian, geometry, config);
+    CPreconditioner* precond = NULL;
+    
+    switch (config->GetKind_Deform_Linear_Solver_Prec()) {
+      case JACOBI:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+        break;
+      case ILU:
+        Jacobian.BuildILUPreconditioner();
+        precond = new CILUPreconditioner(Jacobian, geometry, config);
+        break;
+      case LU_SGS:
+        precond = new CLU_SGSPreconditioner(Jacobian, geometry, config);
+        break;
+      case LINELET:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CLineletPreconditioner(Jacobian, geometry, config);
+        break;
+      default:
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+        break;
+    }
+    
+    switch (config->GetKind_Deform_Linear_Solver()) {
+      case BCGSTAB:
+        IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, Screen_Output);
+        break;
+      case FGMRES:
+        IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, Screen_Output);
+        break;
+      case CONJUGATE_GRADIENT:
+        IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, Screen_Output);
+        break;
+      case RESTARTED_FGMRES:
+        IterLinSol = 0;
+        Norm0 = LinSysRes.norm();
+        while (IterLinSol < config->GetDeform_Linear_Solver_Iter()) {
+          /*--- Enforce a hard limit on total number of iterations ---*/
+          MaxIter = min(config->GetLinear_Solver_Restart_Frequency(), config->GetDeform_Linear_Solver_Iter()-IterLinSol);
+          IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, Screen_Output);
+          if ( Residual < SolverTol*Norm0 ) break;
+        }
+        break;
+    }
+    
+    /*--- Dealocate memory of the Krylov subspace method ---*/
+    
+    delete mat_vec;
+    delete precond;
+    
+  } else {
+    SU2_MPI::Error("Smoothing is not implemented for mesh deformation as it is not a good strategy.", CURRENT_FUNCTION);
+  }
+
+
+  if(TapeActive) {
+    /*--- Start recording if it was stopped for the linear solver ---*/
+
+    AD::StartRecording();
+
+    /*--- Prepare the externally differentiated linear solver ---*/
+
+    SetExternalSolve_Mesh(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   }
 

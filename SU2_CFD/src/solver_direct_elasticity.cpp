@@ -4233,8 +4233,7 @@ void CFEASolver::Solve_System(CGeometry *geometry, CSolver **solver_container, C
     
   }
   
-  CSysSolve femSystem;
-  IterLinSol = femSystem.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  IterLinSol = System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
   
   /*--- The the number of iterations of the linear solver ---*/
   

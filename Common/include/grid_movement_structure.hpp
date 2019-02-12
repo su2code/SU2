@@ -967,6 +967,7 @@ protected:
 
 	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
+	CSysSolve  System;
   CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
   CSysVector LinSysSol;
   CSysVector LinSysRes;
@@ -1329,6 +1330,7 @@ protected:
   su2double MinVolume;
   su2double MaxVolume;
 
+  CSysSolve  System;
   CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
   CSysVector LinSysSol;
   CSysVector LinSysRes;
@@ -1412,13 +1414,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void SetMoving_Boundary(CGeometry *geometry, CConfig *config, unsigned short val_marker);
-
-  /*!
-   * \brief Set the boundary displacements to the imposed external value.
-   * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] config - Definition of the particular problem.
-   */
-  void Solve_System(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Compute the min and max volume for the stiffness matrix for grid deformation.

@@ -1739,8 +1739,7 @@ void CHeatSolverFVM::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solv
 
   /*--- Solve or smooth the linear system ---*/
 
-  CSysSolve system;
-  system.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
+  System.Solve(Jacobian, LinSysRes, LinSysSol, geometry, config);
 
   for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
     for (iVar = 0; iVar < nVar; iVar++) {
