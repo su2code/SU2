@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
    for variables allocation)  ---*/
 
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_DEF);
+  config = new CConfig(config_file_name, SU2_MSH);
 
   nZone    = CConfig::GetnZone(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
