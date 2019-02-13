@@ -590,13 +590,12 @@ void CSysMatrix::CompleteComms(CSysVector & x,
       
       source = status.MPI_SOURCE;
       
-      /*--- We know the offsets based on the source rank. ---*/
-      
-      jRecv = geometry->P2PRecv2Neighbor[source];
-      
-      
       switch (commType) {
         case SOLUTION_MATRIX:
+          
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PRecv2Neighbor[source];
           
           /*--- Get the point offset for the start of this message. ---*/
           
@@ -627,6 +626,9 @@ void CSysMatrix::CompleteComms(CSysVector & x,
           
         case SOLUTION_MATRIXTRANS:
           
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PSend2Neighbor[source];
           
           /*--- Get the point offset for the start of this message. ---*/
           
