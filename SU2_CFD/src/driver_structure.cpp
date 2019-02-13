@@ -927,7 +927,7 @@ void CDriver::Input_Preprocessing(SU2_Comm MPICommunicator, bool val_periodic) {
 
 void CDriver::Geometrical_Preprocessing() {
 
-  unsigned short iMGlevel;
+  unsigned short iZone, iInst, iMGlevel;
   unsigned short requestedMGlevels = config_container[ZONE_0]->GetnMGLevels();
   unsigned long iPoint;
   bool fea = false;
@@ -1095,10 +1095,12 @@ void CDriver::Geometrical_Preprocessing() {
 
   /*--- Create the data structure for MPI point-to-point communications. ---*/
   
-  for (iZone = 0; iZone < nZone; iZone++)
-    for (iInst = 0; iInst < nInst[iZone]; iInst++)
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++) {
       for (iMGlevel = 0; iMGlevel <= config_container[iZone]->GetnMGLevels(); iMGlevel++)
         geometry_container[iZone][iInst][iMGlevel]->PreprocessP2PComms(geometry_container[iZone][iInst][iMGlevel], config_container[iZone]);
+    }
+  }
   
   /*--- Perform a few preprocessing routines and communications. ---*/
   
