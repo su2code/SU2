@@ -277,7 +277,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
     ecc_solver_container = new CSolver****[nZone];
 
     for (iZone = 0; iZone < nZone; iZone++) {
-      output_solver_container[iZone] = NULL;
+      ecc_solver_container[iZone] = NULL;
 
       if (rank == MASTER_NODE)
         cout << endl <<"---------------------- ECC Solver Preprocessing ----------------------" << endl;
@@ -1228,8 +1228,8 @@ void CFEMInterpolationDriver::Output() {
 
   output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
-  if(driver_config->GetError_Estimate())
-    output->SetResult_Files_Parallel(ecc_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+  // if(driver_config->GetError_Estimate())
+  //   output->SetResult_Files_Parallel(ecc_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
