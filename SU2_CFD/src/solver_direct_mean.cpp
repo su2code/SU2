@@ -17301,12 +17301,9 @@ void CNSSolver::SetRoe_Dissipation(CGeometry *geometry, CConfig *config){
   for (iPoint = 0; iPoint < nPoint; iPoint++){
     
     if (kind_roe_dissipation == FD || kind_roe_dissipation == FD_DUCROS){
-      if (config->GetKind_HybridRANSLES() == NO_HYBRIDRANSLES){
-        wall_distance = geometry->node[iPoint]->GetWall_Distance();
-      } else {
-        wall_distance = node[iPoint]->GetDES_LengthScale();
-      }
-      
+    
+      wall_distance = geometry->node[iPoint]->GetWall_Distance();
+    
       node[iPoint]->SetRoe_Dissipation_FD(wall_distance);
 
     } else if (kind_roe_dissipation == NTS || kind_roe_dissipation == NTS_DUCROS) {
