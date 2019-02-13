@@ -236,7 +236,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
       input_solver_container[iZone][iInst][MESH_0] = NULL;
       input_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        input_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+        input_solver_container[iZone][iInst][MESH_0][iSol] = NULL;
       
       Solver_Preprocessing(input_solver_container[iZone], input_geometry_container[iZone],
                            input_config_container[iZone], iInst);
@@ -259,7 +259,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
       output_solver_container[iZone][iInst][MESH_0] = NULL;
       output_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
-        output_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+        output_solver_container[iZone][iInst][MESH_0][iSol] = NULL;
       
       Solver_Preprocessing(output_solver_container[iZone], output_geometry_container[iZone],
        output_config_container[iZone], iInst);
