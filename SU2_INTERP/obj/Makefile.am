@@ -43,8 +43,6 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 bin_PROGRAMS = ../bin/SU2_INTERP
 
 ___bin_SU2_INTERP_SOURCES = \
-  ../include/fem_interpolation_structure.hpp \
-  ../src/fem_interpolation_structure.cpp \
   ../include/SU2_INTERP.hpp \
   ../src/SU2_INTERP.cpp
 
@@ -52,6 +50,7 @@ ___bin_SU2_INTERP_CXXFLAGS =
 ___bin_SU2_INTERP_LDADD = \
   ../../SU2_CFD/src/libSU2Core_a-data_manufactured_solutions.o \
   ../../SU2_CFD/src/libSU2Core_a-definition_structure.o \
+  ../../SU2_CFD/src/libSU2Core_a-fem_interpolation_structure.o \
   ../../SU2_CFD/src/libSU2Core_a-fluid_model.o \
   ../../SU2_CFD/src/libSU2Core_a-fluid_model_pig.o \
   ../../SU2_CFD/src/libSU2Core_a-fluid_model_pvdw.o \

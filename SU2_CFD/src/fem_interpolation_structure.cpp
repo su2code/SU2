@@ -37,6 +37,1264 @@
 
 #include "../include/fem_interpolation_structure.hpp"
 
+CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
+                                                 unsigned short val_nZone,
+                                                 unsigned short val_nDim, 
+                                                 bool val_periodic,
+                                                 SU2_Comm MPICommunicator):config_file_name(confFile), nZone(val_nZone), nDim(val_nDim), fsi(false), input_fem_solver(false), output_fem_solver(false) {
+
+  char zone_file_name[MAX_STRING_SIZE];
+
+  SU2_MPI::SetComm(MPICommunicator);
+
+  rank = SU2_MPI::GetRank();
+  size = SU2_MPI::GetSize();
+
+  input_geometry_container        = NULL;
+  output_geometry_container       = NULL;
+  input_solver_container          = NULL;
+  output_solver_container         = NULL;
+  input_config_container          = NULL;
+  output_config_container         = NULL;
+  output                          = NULL;
+  nInst                           = NULL;
+
+  /*--- Definition of the containers for all possible zones. ---*/
+
+  input_geometry_container        = new CGeometry***[nZone];
+  output_geometry_container       = new CGeometry***[nZone];
+  input_solver_container          = new CSolver****[nZone];
+  output_solver_container         = new CSolver****[nZone];
+  input_config_container          = new CConfig*[nZone];
+  output_config_container         = new CConfig*[nZone];
+  nInst                           = new unsigned short[nZone];
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    input_solver_container[iZone]               = NULL;
+    output_solver_container[iZone]              = NULL;
+    input_geometry_container[iZone]             = NULL;
+    output_geometry_container[iZone]            = NULL;
+    input_config_container[iZone]               = NULL;
+    output_config_container[iZone]              = NULL;
+    nInst[iZone]                                = 1;
+  }
+
+  /*--- Initialize the configuration of the driver ---*/
+
+  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, VERB_NONE);
+
+  /*--- Loop over all zones to initialize the various classes. In most
+   cases, nZone is equal to one. This represents the solution of a partial
+   differential equation on a single block, unstructured mesh. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Definition of the configuration option class for all zones. In this
+     constructor, the input configuration file is parsed and all options are
+     read and stored. ---*/
+
+    if (driver_config->GetKind_Solver() == MULTIZONE){
+      strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
+      input_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+      output_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+    }
+    else{
+      input_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
+      output_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+    }
+
+    /*--- Set the MPI communicator ---*/
+
+    input_config_container[iZone]->SetMPICommunicator(MPICommunicator);
+    output_config_container[iZone]->SetMPICommunicator(MPICommunicator);
+
+    /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
+
+    input_config_container[iZone]->SetRestart(true);
+    output_config_container[iZone]->SetRestart(false);
+    output_config_container[iZone]->SetMesh_FileName(output_config_container[iZone]->GetTarget_Mesh_FileName());
+
+    input_config_container[iZone]->SetMGLevels(0);
+    output_config_container[iZone]->SetMGLevels(0);
+
+  }
+
+  /*--- Set the multizone part of the problem. ---*/
+  if (driver_config->GetKind_Solver() == MULTIZONE){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      /*--- Set the interface markers for multizone ---*/
+      input_config_container[iZone]->SetMultizone(driver_config, input_config_container);
+      output_config_container[iZone]->SetMultizone(driver_config, output_config_container);
+    }
+  }
+
+  /*--- Preprocessing of the config and mesh files. In this routine, the config file is read
+   and it is determined whether a problem is single physics or multiphysics. . ---*/
+
+  Input_Preprocessing(input_config_container, input_geometry_container, val_periodic);
+  Input_Preprocessing(output_config_container, output_geometry_container, val_periodic);
+
+  /*--- Preprocessing of the geometry for all zones. In this routine, the edge-
+   based data structure is constructed, i.e. node and cell neighbors are
+   identified and linked, and face areas are computed ---*/
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"---------------------- Input Geometry Preprocessing ---------------------" << endl;
+
+  /*--- Determine whether or not the FEM solver is used, which decides the
+   type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+  input_fem_solver = ((input_config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                      (input_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+  if( input_fem_solver ) {
+    switch( input_config_container[ZONE_0]->GetKind_FEM_Flow() ) {
+      case DG: {
+        Geometrical_Preprocessing_DGFEM(input_config_container, input_geometry_container);
+        break;
+      }
+    }
+  }
+  else {
+    Geometrical_Preprocessing(input_config_container, input_geometry_container);
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Computation of positive surface area in the z-plane which is used for
+        the calculation of force coefficient (non-dimensionalization). ---*/
+
+      input_geometry_container[iZone][iInst][MESH_0]->SetPositive_ZArea(input_config_container[iZone]);
+
+    }
+
+  }
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"---------------------- Output Geometry Preprocessing --------------------" << endl;
+
+  /*--- Determine whether or not the FEM solver is used, which decides the
+   type of geometry classes that are instantiated. Only adapted for single-zone problems ---*/
+  output_fem_solver = ((output_config_container[ZONE_0]->GetKind_Solver() == FEM_EULER)          ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == FEM_NAVIER_STOKES)  ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == FEM_RANS)           ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == FEM_LES)            ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                       (output_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+  if( output_fem_solver ) {
+    switch( output_config_container[ZONE_0]->GetKind_FEM_Flow() ) {
+      case DG: {
+        Geometrical_Preprocessing_DGFEM(output_config_container, output_geometry_container);
+        break;
+      }
+    }
+  }
+  else {
+    Geometrical_Preprocessing(output_config_container, output_geometry_container);
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Computation of positive surface area in the z-plane which is used for
+        the calculation of force coefficient (non-dimensionalization). ---*/
+
+      output_geometry_container[iZone][iInst][MESH_0]->SetPositive_ZArea(output_config_container[iZone]);
+
+    }
+
+  }
+
+
+  /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
+    The solver classes are specific to a particular set of governing equations,
+    and they contain the subroutines with instructions for computing each spatial
+    term of the PDE, i.e. loops over the edges to compute convective and viscous
+    fluxes, loops over the nodes to compute source terms, and routines for
+    imposing various boundary condition type for the PDE. ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Input Solver Preprocessing -----------------------" << endl;
+
+    input_solver_container[iZone] = new CSolver*** [nInst[iZone]];
+
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      input_solver_container[iZone][iInst] = NULL;
+      input_solver_container[iZone][iInst] = new CSolver** [MESH_0+1];
+      input_solver_container[iZone][iInst][MESH_0] = NULL;
+      input_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        input_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+      
+      Solver_Preprocessing(input_solver_container[iZone], input_geometry_container[iZone],
+                           input_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    if (rank == MASTER_NODE)
+      cout << endl <<"---------------------- Output Solver Preprocessing ----------------------" << endl;
+
+    output_solver_container[iZone] = new CSolver*** [nInst[iZone]];
+
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      output_solver_container[iZone][iInst] = NULL;
+      output_solver_container[iZone][iInst] = new CSolver** [MESH_0+1];
+      output_solver_container[iZone][iInst][MESH_0] = NULL;
+      output_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        output_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+      
+      Solver_Preprocessing(output_solver_container[iZone], output_geometry_container[iZone],
+       output_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+  }
+
+  /*--- Definition of the output class (one for all zones). The output class
+   manages the writing of all restart, volume solution, surface solution,
+   surface comma-separated value, and convergence history files (both in serial
+   and in parallel). ---*/
+
+  output = new COutput(input_config_container[ZONE_0]);
+
+  input_grid            = NULL;
+  output_grid           = NULL;
+  input_solution        = NULL;
+  output_solution       = NULL;
+
+}
+
+void CFEMInterpolationDriver::Postprocessing() {
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"--------------------- Interpolation Postprocessing ----------------------" << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      Solver_Deletion(input_solver_container[iZone],
+                            input_config_container[iZone],
+                            iInst);
+      Solver_Deletion(output_solver_container[iZone],
+                            output_config_container[iZone],
+                            iInst);
+    }
+    delete [] input_solver_container[iZone];
+    delete [] output_solver_container[iZone];
+  }
+  delete [] input_solver_container;
+  delete [] output_solver_container;
+  if (rank == MASTER_NODE) cout << "Deleted CSolver containers." << endl;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (input_geometry_container[iZone] != NULL) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (input_geometry_container[iZone][iInst][MESH_0] != NULL) delete input_geometry_container[iZone][iInst][MESH_0];
+        if (input_geometry_container[iZone][iInst] != NULL) delete [] input_geometry_container[iZone][iInst];
+      }
+      delete [] input_geometry_container[iZone];
+    }
+  }
+  delete [] input_geometry_container;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (output_geometry_container[iZone] != NULL) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        if (output_geometry_container[iZone][iInst][MESH_0] != NULL) delete output_geometry_container[iZone][iInst][MESH_0];
+        if (output_geometry_container[iZone][iInst] != NULL) delete [] output_geometry_container[iZone][iInst];
+      }
+      delete [] output_geometry_container[iZone];
+    }
+  }
+  delete [] output_geometry_container;
+  if (rank == MASTER_NODE) cout << "Deleted CGeometry containers." << endl;
+
+  /*--- Deallocate config container ---*/
+  if (input_config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (input_config_container[iZone] != NULL) {
+        delete input_config_container[iZone];
+      }
+    }
+    delete [] input_config_container;
+  }
+
+  if (output_config_container!= NULL) {
+    for (iZone = 0; iZone < nZone; iZone++) {
+      if (output_config_container[iZone] != NULL) {
+        delete output_config_container[iZone];
+      }
+    }
+    delete [] output_config_container;
+  }
+
+  if (rank == MASTER_NODE) cout << "Deleted CConfig containers." << endl;
+
+  if (nInst != NULL) delete [] nInst;
+  if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
+
+
+
+  // if (input_grid != NULL) delete [] input_grid;
+  // if (output_grid != NULL) delete [] output_grid;
+  // if (input_solution != NULL) delete [] input_solution;
+  // if (output_solution != NULL) delete [] output_solution;
+  // if (rank == MASTER_NODE) cout << "Deleted interpolation containers." << endl;
+
+  
+  /*--- Deallocate output container ---*/
+  if (output!= NULL) delete output;
+  if (rank == MASTER_NODE) cout << "Deleted COutput class." << endl;
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl;
+
+
+}
+
+void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CGeometry ****geometry_container, bool val_periodic) {
+
+  bool fem_solver = false; 
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Determine whether or not the FEM solver is used, which decides the
+     type of geometry classes that are instantiated. ---*/
+    fem_solver = ((config_container[iZone]->GetKind_Solver() == FEM_EULER)         ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_NAVIER_STOKES) ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_RANS)          ||
+                  (config_container[iZone]->GetKind_Solver() == FEM_LES)           ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_EULER) ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_NS)    ||
+                  (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM_RANS));
+
+    /*--- Read the number of instances for each zone ---*/
+
+    nInst[iZone] = config_container[iZone]->GetnTimeInstances();
+
+    geometry_container[iZone] = new CGeometry** [nInst[iZone]];
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      config_container[iZone]->SetiInst(iInst);
+
+      /*--- Definition of the geometry class to store the primal grid in the
+     partitioning process. ---*/
+
+      CGeometry *geometry_aux = NULL;
+
+      /*--- All ranks process the grid and call ParMETIS for partitioning ---*/
+
+      geometry_aux = new CPhysicalGeometry(config_container[iZone], iZone, nZone);
+
+      /*--- Color the initial grid and set the send-receive domains (ParMETIS) ---*/
+
+      if ( fem_solver ) geometry_aux->SetColorFEMGrid_Parallel(config_container[iZone]);
+      else              geometry_aux->SetColorGrid_Parallel(config_container[iZone]);
+
+      /*--- Allocate the memory of the current domain, and divide the grid
+     between the ranks. ---*/
+
+      geometry_container[iZone][iInst]            = NULL;
+      geometry_container[iZone][iInst]            = new CGeometry *[MESH_0+1];
+      geometry_container[iZone][iInst][MESH_0]    = NULL;
+
+
+      if( fem_solver ) {
+        switch( config_container[iZone]->GetKind_FEM_Flow() ) {
+          case DG: {
+            geometry_container[iZone][iInst][MESH_0] = new CMeshFEM_DG(geometry_aux, config_container[iZone]);
+            break;
+          }
+
+          default: {
+            SU2_MPI::Error("Unknown FEM flow solver.", CURRENT_FUNCTION);
+            break;
+          }
+        }
+      }
+      else {
+
+        /*--- Until we finish the new periodic BC implementation, use the old
+         partitioning routines for cases with periodic BCs. The old routines 
+         will be entirely removed eventually in favor of the new methods. ---*/
+
+        if (val_periodic) {
+          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone]);
+        } else {
+          geometry_container[iZone][iInst][MESH_0] = new CPhysicalGeometry(geometry_aux, config_container[iZone], val_periodic);
+        }
+      }
+
+      /*--- Deallocate the memory of geometry_aux and solver_aux ---*/
+
+      delete geometry_aux;
+
+      /*--- Add the Send/Receive boundaries ---*/
+      geometry_container[iZone][iInst][MESH_0]->SetSendReceive(config_container[iZone]);
+
+      /*--- Add the Send/Receive boundaries ---*/
+      geometry_container[iZone][iInst][MESH_0]->SetBoundaries(config_container[iZone]);
+
+    }
+
+  }
+
+}
+
+void CFEMInterpolationDriver::Geometrical_Preprocessing(CConfig **config_container, CGeometry ****geometry_container) {
+
+  bool fea = false;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    fea = ((config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM));
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Compute elements surrounding points, points surrounding points ---*/
+
+            /*--- Compute elements surrounding points, points surrounding points ---*/
+
+      if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
+
+      /*--- Renumbering points using Reverse Cuthill McKee ordering ---*/
+
+      if (rank == MASTER_NODE) cout << "Renumbering points (Reverse Cuthill McKee Ordering)." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetRCM_Ordering(config_container[iZone]);
+
+      /*--- recompute elements surrounding points, points surrounding points ---*/
+
+      if (rank == MASTER_NODE) cout << "Recomputing point connectivity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
+
+      /*--- Compute elements surrounding elements ---*/
+
+      if (rank == MASTER_NODE) cout << "Setting element connectivity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetElement_Connectivity();
+
+      /*--- Check the orientation before computing geometrical quantities ---*/
+
+      geometry_container[iZone][iInst][MESH_0]->SetBoundVolume();
+      if (config_container[iZone]->GetReorientElements()) {
+        if (rank == MASTER_NODE) cout << "Checking the numerical grid orientation." << endl;
+        geometry_container[iZone][iInst][MESH_0]->Check_IntElem_Orientation(config_container[iZone]);
+        geometry_container[iZone][iInst][MESH_0]->Check_BoundElem_Orientation(config_container[iZone]);
+      }
+
+      /*--- Create the edge structure ---*/
+
+      if (rank == MASTER_NODE) cout << "Identifying edges and vertices." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetEdges();
+      geometry_container[iZone][iInst][MESH_0]->SetVertex(config_container[iZone]);
+
+      /*--- Compute cell center of gravity ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
+
+      /*--- Create the control volume structures ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+      geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+      /*--- Compute the max length. ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
+
+      /*--- Visualize a dual control volume if requested ---*/
+
+      if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
+          (config_container[iZone]->GetVisualize_CV() < (long)geometry_container[iZone][iInst][MESH_0]->GetnPointDomain()))
+        geometry_container[iZone][iInst][MESH_0]->VisualizeControlVolume(config_container[iZone], UPDATE);
+
+      /*--- Identify closest normal neighbor ---*/
+
+      if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+      geometry_container[iZone][iInst][MESH_0]->FindNormal_Neighbor(config_container[iZone]);
+
+      /*--- Store the global to local mapping. ---*/
+
+      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
+
+      /*--- Compute the surface curvature ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
+      geometry_container[iZone][iInst][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
+
+      /*--- Check for periodicity and disable MG if necessary. ---*/
+
+      if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->Check_Periodicity(config_container[iZone]);
+
+    }
+
+  }
+
+}
+
+void CFEMInterpolationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container) {
+
+  //*--- Loop over the number of zones of the fine grid. ---*/
+
+  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
+
+    /*--- Loop over the time instances of this zone. ---*/
+    for(unsigned short iInst = 0; iInst < nInst[iZone]; iInst++) {
+
+      /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
+       define all virtual functions in the base class CGeometry. ---*/
+      CMeshFEM_DG *DGMesh = dynamic_cast<CMeshFEM_DG *>(geometry_container[iZone][iInst][MESH_0]);
+
+      /*--- Determine the standard elements for the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Creating standard volume elements." << endl;
+      DGMesh->CreateStandardVolumeElements(config_container[iZone]);
+
+      /*--- Create the face information needed to compute the contour integral
+       for the elements in the Discontinuous Galerkin formulation. ---*/
+      if (rank == MASTER_NODE) cout << "Creating face information." << endl;
+      DGMesh->CreateFaces(config_container[iZone]);
+
+      /*--- Compute the metric terms of the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
+      DGMesh->MetricTermsVolumeElements(config_container[iZone]);
+
+      /*--- Compute the metric terms of the surface elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
+      DGMesh->MetricTermsSurfaceElements(config_container[iZone]);
+
+      /*--- Compute a length scale of the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
+      DGMesh->LengthScaleVolumeElements();
+
+      /*--- Compute the coordinates of the integration points. ---*/
+      if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
+      DGMesh->CoordinatesIntegrationPoints();
+
+      /*--- Compute the coordinates of the location of the solution DOFs. This is different
+            from the grid points when a different polynomial degree is used to represent the
+            geometry and solution. ---*/
+      if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
+      DGMesh->CoordinatesSolDOFs();
+
+      /*--- Initialize the static mesh movement, if necessary. ---*/
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
+                                      (Kind_Grid_Movement == MOVING_WALL    ||
+                                       Kind_Grid_Movement == ROTATING_FRAME ||
+                                       Kind_Grid_Movement == STEADY_TRANSLATION));
+
+      if(initStaticMovement){
+        if (rank == MASTER_NODE) cout << "Initialize Static Mesh Movement" << endl;
+        DGMesh->InitStaticMeshMovement(config_container[iZone], Kind_Grid_Movement, iZone);
+      }
+
+      /*--- Perform the preprocessing tasks when wall functions are used. ---*/
+      if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
+      DGMesh->WallFunctionPreprocessing(config_container[iZone]);
+
+      /*--- Store the global to local mapping. ---*/
+      if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
+    }
+
+    /*--- Loop to create the coarser grid levels. ---*/
+
+    for(unsigned short iMGlevel=1; iMGlevel<=config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+      SU2_MPI::Error("Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet.",
+                     CURRENT_FUNCTION);
+    }
+  }
+}
+
+void CFEMInterpolationDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry,
+                                                   CConfig *config, unsigned short val_iInst) {
+  
+  bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm,
+  fem, disc_adj_fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+  fem_dg_flow, fem_dg_shock_persson,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
+  /*--- Initialize some useful booleans ---*/
+
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Assign booleans ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case FEM_LES : fem_ns = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+  }
+  
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
+  }
+
+  /*--- Determine the kind of shock capturing method for FEM DG solver. ---*/
+
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case PERSSON: fem_dg_shock_persson = true; break;
+  }
+
+  /*--- Assign turbulence model booleans ---*/
+
+  if (turbulent || fem_turbulent){
+    switch (config->GetKind_Turb_Model()) {
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case SST:    menter_sst = true;           break;
+      case SA_E:   e_spalart_allmaras = true;   break;
+      case SA_COMP: comp_spalart_allmaras = true; break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+  }
+  
+  /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_0][EQUATION]. Note that euler, ns
+   and potential are incompatible, they use the same position in sol container ---*/
+
+
+    /*--- Allocate solution for a template problem ---*/
+
+  if (template_solver) {
+    solver_container[val_iInst][MESH_0][TEMPLATE_SOL] = new CTemplateSolver(geometry[val_iInst][MESH_0], config);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][TEMPLATE_SOL]->GetnVar();
+  }
+
+    /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
+
+  if (euler) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL] = new CEulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL] = new CIncEulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
+  }
+  if (ns) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL] = new CNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL] = new CIncNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+    }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][FLOW_SOL]->GetnVar();
+  }
+  if (turbulent) {
+    if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
+      solver_container[val_iInst][MESH_0][TURB_SOL] = new CTurbSASolver(geometry[val_iInst][MESH_0], config, MESH_0, solver_container[val_iInst][MESH_0][FLOW_SOL]->GetFluidModel() );
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+    }
+    else if (menter_sst) {
+      solver_container[val_iInst][MESH_0][TURB_SOL] = new CTurbSSTSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][TURB_SOL]->GetnVar();
+    if (transition) {
+      solver_container[val_iInst][MESH_0][TRANS_SOL] = new CTransLMSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      DOFsPerPoint += solver_container[val_iInst][MESH_0][TRANS_SOL]->GetnVar();
+    }
+  }
+  if (fem_euler) {
+    if( fem_dg_flow ) {
+      if( fem_dg_shock_persson ) {
+        solver_container[val_iInst][MESH_0][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      }
+      else {
+        solver_container[val_iInst][MESH_0][FLOW_SOL] = new CFEM_DG_EulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+      }
+    }
+  }
+  if (fem_ns) {
+    if( fem_dg_flow )
+      solver_container[val_iInst][MESH_0][FLOW_SOL] = new CFEM_DG_NSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+  }
+  if (fem_turbulent) {
+    SU2_MPI::Error("Finite element turbulence model not yet implemented.", CURRENT_FUNCTION);
+
+    if(fem_transition)
+      SU2_MPI::Error("Finite element transition model not yet implemented.", CURRENT_FUNCTION);
+  }
+  if (heat_fvm) {
+    solver_container[val_iInst][MESH_0][HEAT_SOL] = new CHeatSolverFVM(geometry[val_iInst][MESH_0], config, MESH_0);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][HEAT_SOL]->GetnVar();
+  }
+  if (fem) {
+    solver_container[val_iInst][MESH_0][FEA_SOL] = new CFEASolver(geometry[val_iInst][MESH_0], config);
+    if (MESH_0 == MESH_0) DOFsPerPoint += solver_container[val_iInst][MESH_0][FEA_SOL]->GetnVar();
+  }
+
+    /*--- Allocate solution for adjoint problem ---*/
+
+  if (adj_euler) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][ADJFLOW_SOL] = new CAdjEulerSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+    }
+    if (incompressible) {
+      SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
+    }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
+  }
+  if (adj_ns) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][ADJFLOW_SOL] = new CAdjNSSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+    }
+    if (incompressible) {
+      SU2_MPI::Error("Continuous adjoint for the incompressible solver is not currently available.", CURRENT_FUNCTION);
+    }
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
+  }
+  if (adj_turb) {
+    solver_container[val_iInst][MESH_0][ADJTURB_SOL] = new CAdjTurbSolver(geometry[val_iInst][MESH_0], config, MESH_0);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJTURB_SOL]->GetnVar();
+  }
+
+  if (disc_adj) {
+    solver_container[val_iInst][MESH_0][ADJFLOW_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][FLOW_SOL], RUNTIME_FLOW_SYS, MESH_0);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->GetnVar();
+    if (disc_adj_turb) {
+      solver_container[val_iInst][MESH_0][ADJTURB_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][TURB_SOL], RUNTIME_TURB_SYS, MESH_0);
+      DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJTURB_SOL]->GetnVar();
+    }
+    if (heat_fvm) {
+      solver_container[val_iInst][MESH_0][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][HEAT_SOL], RUNTIME_HEAT_SYS, MESH_0);
+      DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->GetnVar();
+    }
+  }
+
+  if (disc_adj_fem) {
+    solver_container[val_iInst][MESH_0][ADJFEA_SOL] = new CDiscAdjFEASolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][FEA_SOL], RUNTIME_FEA_SYS, MESH_0);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJFEA_SOL]->GetnVar();
+  }
+
+  if (disc_adj_heat) {
+    solver_container[val_iInst][MESH_0][ADJHEAT_SOL] = new CDiscAdjSolver(geometry[val_iInst][MESH_0], config, solver_container[val_iInst][MESH_0][HEAT_SOL], RUNTIME_HEAT_SYS, MESH_0);
+    DOFsPerPoint += solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->GetnVar();
+  }
+  
+
+
+  /*--- Check for restarts and use the LoadRestart() routines. ---*/
+
+  bool update_geo = true;
+  if (config->GetFSI_Simulation()) update_geo = false;
+
+  Solver_Restart(solver_container, geometry, config, update_geo, val_iInst);
+
+}
+
+void CFEMInterpolationDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry,
+                             CConfig *config, bool update_geo, unsigned short val_iInst) {
+
+  bool euler, ns, turbulent,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm, fem, fem_euler, fem_ns, fem_dg_flow,
+  template_solver, disc_adj, disc_adj_fem, disc_adj_turb, disc_adj_heat;
+  int val_iter = 0;
+
+  /*--- Initialize some useful booleans ---*/
+
+  euler            = false;  ns           = false;  turbulent   = false;
+  adj_euler        = false;  adj_ns       = false;  adj_turb    = false;
+  fem_euler        = false;  fem_ns       = false;  fem_dg_flow = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  disc_adj_turb    = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  template_solver  = false;
+
+  /*--- Check for restarts and use the LoadRestart() routines. ---*/
+
+  bool restart      = config->GetRestart();
+  bool restart_flow = config->GetRestart_Flow();
+  bool no_restart   = false;
+
+  /*--- Adjust iteration number for unsteady restarts. ---*/
+
+  bool dual_time = ((config->GetUnsteady_Simulation() == DT_STEPPING_1ST) ||
+                    (config->GetUnsteady_Simulation() == DT_STEPPING_2ND));
+  bool time_stepping = config->GetUnsteady_Simulation() == TIME_STEPPING;
+  bool adjoint = (config->GetDiscrete_Adjoint() || config->GetContinuous_Adjoint());
+  bool dynamic = (config->GetDynamic_Analysis() == DYNAMIC); // Dynamic simulation (FSI).
+
+  if (dual_time) {
+    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    else if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
+      val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-2;
+  }
+
+  if (time_stepping) {
+    if (adjoint) val_iter = SU2_TYPE::Int(config->GetUnst_AdjointIter())-1;
+    else val_iter = SU2_TYPE::Int(config->GetUnst_RestartIter())-1;
+  }
+
+  /*--- Assign booleans ---*/
+
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; break;
+    case FEM_LES : fem_ns = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+
+  }
+
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
+  }
+
+  /*--- Load restarts for any of the active solver containers. Note that
+   these restart routines fill the fine grid and interpolate to all MG levels. ---*/
+
+  if (restart || restart_flow) {
+    if (euler || ns) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (turbulent) {
+      solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (fem) {
+      if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+      solver_container[val_iInst][MESH_0][FEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (fem_euler || fem_ns) {
+      if (fem_dg_flow)
+        solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (heat_fvm) {
+      solver_container[val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+  }
+
+  if (restart) {
+    if (template_solver) {
+      no_restart = true;
+    }
+    if (heat_fvm) {
+      solver_container[val_iInst][MESH_0][HEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (adj_euler || adj_ns) {
+      solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (adj_turb) {
+      no_restart = true;
+    }
+    if (disc_adj) {
+      solver_container[val_iInst][MESH_0][ADJFLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      if (disc_adj_turb)
+        solver_container[val_iInst][MESH_0][ADJTURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+      if (disc_adj_heat)
+        solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (disc_adj_fem) {
+        if (dynamic) val_iter = SU2_TYPE::Int(config->GetDyn_RestartIter())-1;
+        solver_container[val_iInst][MESH_0][ADJFEA_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (disc_adj_heat) {
+      solver_container[val_iInst][MESH_0][ADJHEAT_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+  }
+
+  /*--- Exit if a restart was requested for a solver that is not available. ---*/
+
+  if (no_restart) {
+    SU2_MPI::Error(string("A restart capability has not been implemented yet for this solver.\n") +
+                   string("Please set RESTART_SOL= NO and try again."), CURRENT_FUNCTION);
+  }
+
+  /*--- Think about calls to pre / post-processing here, plus realizability checks. ---*/
+  
+}
+
+void CFEMInterpolationDriver::Interpolate() {
+
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Interpolation -----------------------------" << endl;
+
+  if (rank == MASTER_NODE) cout << "Copying geometry to interpolation grid structure....." << flush;
+  input_grid = new CFEMInterpolationGrid(input_config_container,input_geometry_container,nZone,VertexCentered);
+  output_grid = new CFEMInterpolationGrid(output_config_container,output_geometry_container,nZone,VertexCentered);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+  
+  if (rank == MASTER_NODE) cout << "Reading solution file....." << flush;
+  input_solution = new CFEMInterpolationSol(input_config_container,input_geometry_container,input_solver_container,nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+  if (rank == MASTER_NODE) cout << "Determining coordinates for the points to be interpolated....."<< flush;
+  vector<vector<su2double> > coorInterpolation;
+  output_grid->DetermineCoorInterpolation(output_config_container, coorInterpolation, VertexCentered);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+  output_solution = new CFEMInterpolationSol();
+  output_solution->InterpolateSolution(output_config_container, coorInterpolation, input_grid, input_solution, output_grid);
+  if (rank == MASTER_NODE) cout << "Copying solution to solver container....." << flush;
+  output_solution->CopySolToSU2Solution(output_config_container, output_geometry_container, output_solver_container, nZone);
+  if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      
+      Solver_Postprocessing(output_solver_container[iZone], output_geometry_container[iZone],
+                           output_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+  }
+
+}
+
+void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry ***geometry,
+                                                   CConfig *config, unsigned short val_iInst) {
+  
+  bool euler, ns, turbulent,
+  fem_euler, fem_ns, fem_turbulent, fem_transition,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm,
+  fem, disc_adj_fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_heat,
+  fem_dg_flow, fem_dg_shock_persson,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+  
+  /*--- Count the number of DOFs per solution point. ---*/
+  
+  DOFsPerPoint = 0;
+  
+  /*--- Initialize some useful booleans ---*/
+
+  euler            = false;  ns              = false;  turbulent     = false;
+  fem_euler        = false;  fem_ns          = false;  fem_turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb      = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj         = false;
+  fem              = false;  disc_adj_fem     = false;
+  heat_fvm         = false;  disc_adj_heat    = false;
+  transition       = false;  fem_transition   = false;
+  template_solver  = false;
+  fem_dg_flow      = false;  fem_dg_shock_persson = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+  
+  bool compressible   = (config->GetKind_Regime() == COMPRESSIBLE);
+  bool incompressible = (config->GetKind_Regime() == INCOMPRESSIBLE);
+
+  /*--- Assign booleans ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : fem_euler = true; break;
+    case FEM_NAVIER_STOKES: fem_ns = true; break;
+    case FEM_RANS : fem_ns = true; fem_turbulent = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case FEM_LES : fem_ns = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config->GetKind_Trans_Model() == LM) fem_transition = true; break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+  }
+  
+  /*--- Determine the kind of FEM solver used for the flow. ---*/
+
+  switch( config->GetKind_FEM_Flow() ) {
+    case DG: fem_dg_flow = true; break;
+  }
+
+  /*--- Determine the kind of shock capturing method for FEM DG solver. ---*/
+
+  switch( config->GetKind_FEM_DG_Shock() ) {
+    case PERSSON: fem_dg_shock_persson = true; break;
+  }
+
+  /*--- Assign turbulence model booleans ---*/
+
+  if (turbulent || fem_turbulent){
+    switch (config->GetKind_Turb_Model()) {
+      case SA:     spalart_allmaras = true;     break;
+      case SA_NEG: neg_spalart_allmaras = true; break;
+      case SST:    menter_sst = true;           break;
+      case SA_E:   e_spalart_allmaras = true;   break;
+      case SA_COMP: comp_spalart_allmaras = true; break;
+      case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+      default: SU2_MPI::Error("Specified turbulence model unavailable or none selected", CURRENT_FUNCTION); break;
+    }
+  }
+  
+  /*--- Definition of the Class for the solution: solver_container[DOMAIN][INSTANCE][MESH_0][EQUATION]. Note that euler, ns
+   and potential are incompatible, they use the same position in sol container ---*/
+
+    /*--- Allocate solution for direct problem, and run the preprocessing and postprocessing ---*/
+
+  if (euler) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+  if (ns) {
+    if (compressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+    if (incompressible) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+  if (turbulent) {
+    if (spalart_allmaras || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras || neg_spalart_allmaras) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);      
+    }
+    else if (menter_sst) {
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+      solver_container[val_iInst][MESH_0][TURB_SOL]->Postprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0);
+      solver_container[val_iInst][MESH_0][FLOW_SOL]->Preprocessing(geometry[val_iInst][MESH_0], solver_container[val_iInst][MESH_0], config, MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, false);
+    }
+  }
+
+}
+
+void CFEMInterpolationDriver::Output() {
+
+  unsigned long ExtIter = input_config_container[ZONE_0]->GetExtIter_OffSet();
+
+
+  if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
+
+    /*--- Execute the routine for writing restart, volume solution,
+     surface solution, and surface comma-separated value files. ---*/
+
+  output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+
+
+  if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
+
+  
+}
+
+void CFEMInterpolationDriver::Solver_Deletion(CSolver ****solver_container,
+                                    CConfig *config, unsigned short val_iInst) {
+  unsigned short iMGlevel;
+  bool euler, ns, turbulent,
+  adj_euler, adj_ns, adj_turb,
+  heat_fvm, fem,
+  spalart_allmaras, neg_spalart_allmaras, menter_sst, transition,
+  template_solver, disc_adj, disc_adj_turb, disc_adj_fem, disc_adj_heat,
+  e_spalart_allmaras, comp_spalart_allmaras, e_comp_spalart_allmaras;
+
+  /*--- Initialize some useful booleans ---*/
+  
+  euler            = false;  ns              = false;  turbulent = false;
+  adj_euler        = false;  adj_ns          = false;  adj_turb  = false;
+  spalart_allmaras = false;  menter_sst      = false;  disc_adj_turb = false;
+  neg_spalart_allmaras = false;
+  disc_adj        = false;
+  fem              = false;  disc_adj_fem    = false;
+  heat_fvm        = false;   disc_adj_heat   = false;
+  transition       = false;
+  template_solver  = false;
+  e_spalart_allmaras = false; comp_spalart_allmaras = false; e_comp_spalart_allmaras = false;
+
+  /*--- Assign booleans ---*/
+  
+  switch (config->GetKind_Solver()) {
+    case TEMPLATE_SOLVER: template_solver = true; break;
+    case EULER : euler = true; break;
+    case NAVIER_STOKES: ns = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case RANS : ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case FEM_EULER : euler = true; break;
+    case FEM_NAVIER_STOKES:
+    case FEM_LES: ns = true; break;
+    case FEM_RANS: ns = true; turbulent = true; if (config->GetKind_Trans_Model() == LM) transition = true; break;
+    case HEAT_EQUATION_FVM: heat_fvm = true; break;
+    case FEM_ELASTICITY: fem = true; break;
+    case ADJ_EULER : euler = true; adj_euler = true; break;
+    case ADJ_NAVIER_STOKES : ns = true; turbulent = (config->GetKind_Turb_Model() != NONE); adj_ns = true; break;
+    case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config->GetFrozen_Visc_Cont()); break;
+    case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); heat_fvm = config->GetWeakly_Coupled_Heat(); break;
+    case DISC_ADJ_FEM_EULER: euler = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_NS: ns = true; disc_adj = true; break;
+    case DISC_ADJ_FEM_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config->GetFrozen_Visc_Disc()); break;
+    case DISC_ADJ_FEM: fem = true; disc_adj_fem = true; break;
+    case DISC_ADJ_HEAT: heat_fvm = true; disc_adj_heat = true; break;
+  }
+  
+  /*--- Assign turbulence model booleans ---*/
+  
+  if (turbulent){
+    switch (config->GetKind_Turb_Model()) {
+    case SA:     spalart_allmaras = true;     break;
+    case SA_NEG: neg_spalart_allmaras = true; break;
+    case SST:    menter_sst = true;           break;
+    case SA_E: e_spalart_allmaras = true; break;
+    case SA_COMP: comp_spalart_allmaras = true; break;
+    case SA_E_COMP: e_comp_spalart_allmaras = true; break;
+    }
+  }
+  
+  /*--- Definition of the Class for the solution: solver_container[DOMAIN][MESH_LEVEL][EQUATION]. Note that euler, ns
+   and potential are incompatible, they use the same position in sol container ---*/
+  
+    
+    /*--- DeAllocate solution for a template problem ---*/
+    
+  if (template_solver) {
+    delete solver_container[val_iInst][MESH_0][TEMPLATE_SOL];
+  }
+
+    /*--- DeAllocate solution for adjoint problem ---*/
+
+  if (adj_euler || adj_ns || disc_adj) {
+    delete solver_container[val_iInst][MESH_0][ADJFLOW_SOL];
+    if (disc_adj_turb || adj_turb) {
+      delete solver_container[val_iInst][MESH_0][ADJTURB_SOL];
+    }
+    if (heat_fvm) {
+      delete solver_container[val_iInst][MESH_0][ADJHEAT_SOL];
+    }
+  }
+
+  if (disc_adj_heat) {
+    delete solver_container[val_iInst][MESH_0][ADJHEAT_SOL];
+  }
+
+    /*--- DeAllocate solution for direct problem ---*/
+
+  if (euler || ns) {
+    delete solver_container[val_iInst][MESH_0][FLOW_SOL];
+  }
+
+  if (turbulent) {
+    if (spalart_allmaras || neg_spalart_allmaras || menter_sst || e_spalart_allmaras || comp_spalart_allmaras || e_comp_spalart_allmaras) {
+      delete solver_container[val_iInst][MESH_0][TURB_SOL];
+    }
+    if (transition) {
+      delete solver_container[val_iInst][MESH_0][TRANS_SOL];
+    }
+  }
+  if (heat_fvm) {
+    delete solver_container[val_iInst][MESH_0][HEAT_SOL];
+  }
+  if (fem) {
+    delete solver_container[val_iInst][MESH_0][FEA_SOL];
+  }
+  if (disc_adj_fem) {
+    delete solver_container[val_iInst][MESH_0][ADJFEA_SOL];
+  }
+
+  delete [] solver_container[val_iInst][MESH_0];
+
+  delete [] solver_container[val_iInst];
+
+}
+
+
 CFEMInterpolationSol::CFEMInterpolationSol(void){}
 
 CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
@@ -239,6 +1497,7 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
   }
   
 }
+
 
 CFEMInterpolationSol::~CFEMInterpolationSol(void){}
 
@@ -828,7 +2087,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
         << nDOFsInterpol << " DOFs interpolated." << endl << flush;
       
       // Set a pointer to the coordinates to be searched.
-      const su2double *coor = coorInterpol.data() + l*nDim;
+      const su2double *coor = coorCorrected.data() + l*nDim;
       
       // Carry out the containment search and check if it was successful.
       unsigned short subElem;
@@ -855,37 +2114,8 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
       }
       else
       {
-        // Carry out the containment search on the corrected coordinate.
-        // Set a pointer to the coordinates to be searched.
-        const su2double *coor = coorCorrected.data() + l*nDim;
-      
-        // Carry out the containment search and check if it was successful.
-        unsigned short subElem;
-        unsigned long  parElem;
-        int            rank;
-        su2double      parCoor[3], weightsInterpol[8];
-        if( volumeADT.DetermineContainingElement(coor, subElem, parElem, rank,
-                                                 parCoor, weightsInterpol,
-                                                 frontLeaves, frontLeavesNew) )
-        {
-          // Subelement found that contains the exchange location. However,
-          // what is needed is the location in the high order parent element.
-          // Determine this.
-          HighOrderContainmentSearch(coor, parElem, subElem, weightsInterpol,
-                                     &standardElementsGrid[indInStandardElements[parElem]],
-                                     &volElems[parElem], coorGrid, parCoor);
-        
-          // Carry out the actual interpolation.
-          const unsigned short ind = indInStandardElements[parElem];
-          const unsigned long  ll  = l + zoneOffsetOutputSol;
-        
-          SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
-                         &volElems[parElem], solFormatInput, parCoor, mSolDOFs[ll]);
-        }
-        else{
-          // Containment search was not successful. Store the ID in localPointsFailed.
+        // Containment search was not successful. Store the ID in localPointsFailed.
           localPointsFailed.push_back(l);
-        }
       }
     }
     
@@ -1158,70 +2388,47 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     // Loop over the points for which a minimum distance search must be carried out.
     for(unsigned long l=0; l<pointsMinDistSearch.size(); ++l)
     {
-      // Write a message about the number of DOFs to be interpolated via
-      // surface interpolation.
+    // Write a message about the number of DOFs to be interpolated via
+    // surface interpolation.
       if( !(l%writeFreq) )
-        cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-        << pointsMinDistSearch.size()
-        << " DOFs interpolated via minimum distance search."
-        << endl << flush;
-      
-      // Set a pointer to the coordinates to be searched.
-      const su2double *coorInt = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
-      
-      // Carry out the minimum distance search for the original coordinate
+        std::cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
+      << pointsMinDistSearch.size()
+      << " DOFs interpolated via minimum distance search."
+      << std::endl << std::flush;
+
+    // Set a pointer to the coordinates to be searched.
+      const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
+
+    // Carry out the minimum distance search,
       unsigned short subElem;
       unsigned long  parElem;
       int            rank;
       su2double      dist;
       su2double      weightsInterpol[4];
-      su2double      distInterpol;
-      surfaceADT.DetermineNearestElement(coorInt, distInterpol, subElem, parElem, rank,
-                                         weightsInterpol, BBoxTargets,
-                                         frontLeaves, frontLeavesNew);
+      surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
+       weightsInterpol, BBoxTargets,
+       frontLeaves, frontLeavesNew);
 
-      // Set a pointer to the coordinates to be searched.
-      const su2double *coorCor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
-      
-      // Carry out the minimum distance search for the corrected coordinate
-      su2double      distCorrected;
-      surfaceADT.DetermineNearestElement(coorCor, distCorrected, subElem, parElem, rank,
-                                         weightsInterpol, BBoxTargets,
-                                         frontLeaves, frontLeavesNew);
-
-      // Use the corrected wall coordinate if its wall distance is strictly less.
+    // Subelement found that minimizes the distance to the given coordinate.
+    // However, what is needed is the location in the high order parent element.
+    // Determine this.
       su2double parCoor[3], wallCoor[3];
-      if(distCorrected < distInterpol){
-        const su2double *coor = coorCorrected.data() + pointsMinDistSearch[l]*nDim;
-        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-                                           weightsInterpol, BBoxTargets,
-                                           frontLeaves, frontLeavesNew);
-        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
-      }
-      else{
-        const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
-        surfaceADT.DetermineNearestElement(coor, dist, subElem, parElem, rank,
-                                           weightsInterpol, BBoxTargets,
-                                           frontLeaves, frontLeavesNew);
-        HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
-                                   &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
-                                   &surfElems[parElem], coorGrid, parCoor, wallCoor);
-      }
-            
-      // Convert the parametric coordinates of the surface element to
-      // parametric weights of the corresponding volume element.
+      HighOrderMinDistanceSearch(coor, parElem, subElem, weightsInterpol,
+       &standardBoundaryFacesGrid[indInStandardBoundaryFaces[parElem]],
+       &surfElems[parElem], coorGrid, parCoor, wallCoor);
+
+    // Convert the parametric coordinates of the surface element to
+    // parametric weights of the corresponding volume element.
       surfElems[parElem].ConvertParCoorToVolume(&volElems[adjElemID[parElem]],
-                                                faceIDInElement[parElem], parCoor);
-      
-      // Carry out the actual interpolation.
+        faceIDInElement[parElem], parCoor);
+
+    // Carry out the actual interpolation.
       const unsigned short ind = indInStandardElements[adjElemID[parElem]];
       const unsigned long  ll  = pointsMinDistSearch[l] + zoneOffsetOutputSol;
-      
+
       SolInterpolate(&standardElementsSol[ind], inputSol, zoneOffsetInputSol,
-                     &volElems[adjElemID[parElem]], solFormatInput, parCoor,
-                     mSolDOFs[ll]);
+       &volElems[adjElemID[parElem]], solFormatInput, parCoor,
+       mSolDOFs[ll]);
     }
   
   // Write a message that the surface search is finished.
@@ -2434,8 +3641,7 @@ void CFEMInterpolationSurfElem::GetCornerPoints(unsigned short &nCornerPoints,
 void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
                                               const unsigned short nPolyGrid,
                                               const unsigned short nDOFsGrid,
-                                              const unsigned long  *connGrid,
-                                              const su2double      *curvature)
+                                              const unsigned long  *connGrid)
 {
   // Copy the scalar integer data.
   mVTK_TYPE  = VTK_Type;
@@ -2452,10 +3658,6 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   // Allocate the memory for the curvature.
   mConnGrid.resize(mNDOFsGrid);
 
-  // // Copy the curvature data.
-  // for(unsigned short i=0; i<mNDOFsGrid; ++i)
-  //   mCurvature[i] = curvature[i];
-  
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original
   // SU2 format is maintained for linear elements, but for the FEM solver
@@ -2657,7 +3859,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
     mCoor[iDim].resize(nPoint);
     // Copy the coordinates.
     for(iPoint = 0; iPoint < nPoint; iPoint++){
-      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord()[iDim];
+      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord(iDim);
     }
   }
   
@@ -2691,16 +3893,9 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       for(iNode = 0; iNode < nDOFsGrid; iNode++)
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
-      // Get the curvature of the surface node.
-      vector<su2double> curvature(nDOFsGrid);
-      for(iNode = 0; iNode < nDOFsGrid; iNode++){
-        iPoint           = geometry->bound[iMarker][iElem]->GetNode(iNode);
-        // curvature[iNode] = geometry->node[iPoint]->GetCurvature();
-      }
-
       // Store the data for this element.
       mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data(), curvature.data());
+                                      connSU2.data());
     }
   }
   

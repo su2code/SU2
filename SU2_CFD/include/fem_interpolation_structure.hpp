@@ -42,6 +42,7 @@
 #include "../../Common/include/config_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/fem_geometry_structure.hpp"
+#include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
 
 using namespace std;
@@ -61,7 +62,8 @@ enum SolutionFormatT
  * \class CFEMInterpolationVolElem
  * \brief Class to store volume elements for interpolation of FEM solution.
  * \version 6.1.0 "Falcon"
- */class CFEMInterpolationVolElem {
+ */
+class CFEMInterpolationVolElem {
 public:
   unsigned long mElemID;                 /*!< \brief ID of this element. */
   unsigned short mVTK_TYPE;              /*!< \brief Element type using the VTK convention. */
@@ -184,7 +186,6 @@ public:
   unsigned short mNPolyGrid;             /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
   vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
-  vector<su2double> mCurvature;     /*!< \brief The surface curvature for the grid DOFs. */
   
   /*!
    * \brief Constructor of the class.
@@ -225,8 +226,7 @@ public:
   void StoreElemData(const unsigned short VTK_Type,
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
-                     const unsigned long  *connGrid,
-                     const su2double      *curvature);
+                     const unsigned long  *connGrid);
   
 private:
   /*!
@@ -617,4 +617,128 @@ private:
                                    vector<CFEMStandardElement>          &standardElementsGrid,
                                    vector<CFEMStandardElement>          &standardElementsSol,
                                    vector<unsigned short>               &indInStandardElements);
+};
+
+/*!
+ * \class CFEMInterpolationDriver
+ * \brief Class to drive interpolation of the FEM solution.
+ * \version 6.1.0 "Falcon"
+ */
+class CFEMInterpolationDriver {
+private:
+  int rank,                                     /*!< \brief MPI Rank. */
+      size;                                     /*!< \brief MPI Size. */
+
+  COutput *output;                              /*!< \brief Pointer to the COutput class. */
+  CGeometry ****input_geometry_container;       /*!< \brief Input geometry for which there is a solution */
+  CGeometry ****output_geometry_container;      /*!< \brief Output geometry that solution is going to be interpolated onto */
+  CSolver *****input_solver_container;          /*!< \brief Input solution that needs to be interpolated onto new mesh */
+  CSolver *****output_solver_container;         /*!< \brief Interpolated solution on new mesh */
+  CConfig **input_config_container;             /*!< \brief Definition of the input problem. */
+  CConfig **output_config_container;            /*!< \brief Definition of the output problem. */
+  CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
+  char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
+
+  bool fsi,                                     /*!< \brief FSI simulation flag.*/
+       input_fem_solver,                        /*!< \brief FEM fluid solver simulation flag for input simulation */
+       output_fem_solver;                       /*!< \brief FEM fluid solver simulation flag for output simulation */
+
+  unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
+                iZone,                          /*!< \brief Iterator on zones.*/
+                iSol,                           /*!< \brief Iterator on solutions.*/
+                nZone,                          /*!< \brief Total number of zones in the problem. */
+                nDim,                           /*!< \brief Number of dimensions.*/
+                iInst,                          /*!< \brief Iterator on instance levels.*/
+                *nInst;                         /*!< \brief Total number of instances in the problem (per zone). */
+  
+  unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
+
+  CFEMInterpolationGrid *input_grid,            /*!< \brief Generalized input grid */
+                        *output_grid;           /*!< \brief Generalized output grid */
+  CFEMInterpolationSol *input_solution,         /*!< \brief Generalized input solution */
+                       *output_solution;        /*!< \brief Interpolated output solution */
+
+
+public:
+
+  /*! 
+   * \brief Constructor of the class.
+   * \param[in] confFile - Configuration file name.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] val_nDim - Number of dimensions.   
+   * \param[in] val_periodic - Bool for periodic BCs.
+   * \param[in] MPICommunicator - MPI communicator for SU2.
+   */
+  CFEMInterpolationDriver(char* confFile,
+                          unsigned short val_nZone,
+                          unsigned short val_nDim,
+                          bool val_periodic,
+                          SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CFEMInterpolationDriver(void);
+
+  /*!
+   * \brief Read in the config and mesh files.
+   */
+  void Input_Preprocessing(CConfig **config_container, CGeometry ****geometry_container, bool val_periodic);
+
+  /*!
+   * \brief Construction of the edge-based data structure and the multigrid structure.
+   */
+  void Geometrical_Preprocessing(CConfig **config_container, CGeometry ****geometry_container);
+  
+  /*!
+   * \brief Do the geometrical preprocessing for the DG FEM solver.
+   */
+  void Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container);
+
+  /*!
+   * \brief Deallocation of solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Preprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+
+  /*!
+   * \brief Restart of the solvers from the restart files.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Restart(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, bool update_geo, unsigned short val_iInst);
+
+  /*!
+   * \brief Interpolation of solution from input geometry and solution to output geometry and solution
+   */
+  void Interpolate(void);
+
+  /*!
+   * \brief Deallocation of solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Postprocessing(CSolver ****solver_container, CGeometry ***geometry, CConfig *config, unsigned short val_iInst);
+
+  /*!
+   * \brief Output the solution in solution file.
+   */
+  void Output();
+
+  /*!
+   * \brief Definition and allocation of all solution classes.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void Solver_Deletion(CSolver ****solver_container, CConfig *config, unsigned short val_iInst);
+
+  /*!
+   * \brief Deallocation routine
+   */
+  void Postprocessing();
+
 };

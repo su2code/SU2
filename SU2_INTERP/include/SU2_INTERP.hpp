@@ -42,10 +42,11 @@
 
 #include <ctime>
 
+#include "../../SU2_CFD/include/fem_interpolation_structure.hpp"
 #include "../../SU2_CFD/include/solver_structure.hpp"
 #include "../../SU2_CFD/include/output_structure.hpp"
 #include "../../Common/include/geometry_structure.hpp"
 #include "../../Common/include/config_structure.hpp"
-#include "fem_interpolation_structure.hpp"
+
 
 using namespace std;
