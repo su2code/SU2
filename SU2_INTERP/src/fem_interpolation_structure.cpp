@@ -1424,8 +1424,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     mSolDOFs[l].resize(nVar);
 
   // Initialize vectors for coordinate, solution, and interpolated solution storage.
-  vector<vector<vector<su2double>>> solInterpol(nZones),
-                                    coor(nDOFsTot), 
+  vector<vector<vector<su2double>>> coor(nDOFsTot), 
                                     sol(nDOFsTot);
   const vector<vector<su2double>> &inputSolDOFs = inputSol->GetSolDOFs();
   
@@ -1522,9 +1521,6 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
 #endif
 
     // Carry out the volume interpolation.
-    solInterpol[zone].resize(nVar);
-    for(unsigned short iVar = 0; iVar < nVar; iVar++) solInterpol[zone][iVar].resize(nDOFsTot);
-
     vector<vector<su2double>> coorCorrected(nDim, vector<su2double>(1));
     for(unsigned long l = 0; l < nDOFsTot; ++l){
       const unsigned short nPoly = 2; // Hardcode for quadratic for now.
@@ -1540,7 +1536,6 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
                       sol[l], solInterpolTmp);
 
       for(unsigned short iVar = 0; iVar < nVar; iVar++){
-        solInterpol[zone][iVar][l] = solInterpolTmp[iVar][0];
         mSolDOFs[l][iVar] = solInterpolTmp[iVar][0];
       }
       
@@ -1587,6 +1582,9 @@ void CFEMInterpolationSol::GetNNearestNodes(CADTPointsOnlyClass            *Volu
     const su2double *coorCorr = coorInterpol.data() + l*nDim;
     VolumeADT->DetermineNNearestNodes(coorCorr, nNearestNodes,
                                       dist, pointID[l], rankID[l]);
+    // cout << "l = " << l << ", ";
+    // for(unsigned short i = 0; i < nNearestNodes; i++) cout << pointID[l][i] << "\t";
+    // cout << endl;
   }
 
 }
@@ -1630,6 +1628,24 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   // Perform QR factorization
   vector<vector<su2double>> Q, R;
   Householder(vmat, Q, R);
+  // cout << "vmat = " << flush;
+  // for(unsigned short i = 0; i < vmat.size(); i++){
+  //   for(unsigned short j = 0; j < vmat[0].size(); j++)
+  //     cout << vmat[i][j] << "\t";
+  //   cout << endl;
+  // }
+  // cout << endl << "Q = " << flush;
+  // for(unsigned short i = 0; i < Q.size(); i++){
+  //   for(unsigned short j = 0; j < Q[0].size(); j++)
+  //     cout << Q[i][j] << "\t";
+  //   cout << endl;
+  // }
+  // cout << endl << "R = " << flush;
+  // for(unsigned short i = 0; i < R.size(); i++){
+  //   for(unsigned short j = 0; j < R[0].size(); j++)
+  //     cout << R[i][j] << "\t";
+  //   cout << endl;
+  // }
 
   // Compute interpolation coefficients for each variable
   vector<vector<su2double>> coeffsInterpol;
@@ -1644,14 +1660,40 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   // Interpolate the solution
   solInterpol.resize(nVar);
   for(iVar = 0; iVar < nVar; iVar++){
-    solInterpol[iVar].resize(nPoint);
-    for(iPoint = 0; iPoint < nPoint; iPoint++){
+    solInterpol[iVar].resize(nPointInterpol);
+    for(iPoint = 0; iPoint < nPointInterpol; iPoint++){
       solInterpol[iVar][iPoint] = 0.0;
       for(i = 0; i < vmat[0].size(); i++){
         solInterpol[iVar][iPoint] += vmat[iPoint][i]*coeffsInterpol[iVar][i];
       }
     }
   }
+  // cout << endl << "sol = " << flush;
+  // for(iVar = 0; iVar < nVar; iVar++){
+  //   for(iPoint = 0; iPoint < nPoint; iPoint++)
+  //     cout << sol[iVar][iPoint] << "\t";
+  //   cout << endl;
+  // }
+
+  // cout << endl << "vmatInterpol = " << flush;
+  // for(unsigned short i = 0; i < vmat.size(); i++){
+  //   for(unsigned short j = 0; j < vmat[0].size(); j++)
+  //     cout << vmat[i][j] << "\t";
+  //   cout << endl;
+  // }
+
+  // cout << endl << "coeffsInterpol = " << flush;
+  // for(iVar = 0; iVar < nVar; iVar++){
+  //   for(iPoint = 0; iPoint < nPoint; iPoint++)
+  //     cout << coeffsInterpol[iVar][iPoint] << "\t";
+  //   cout << endl;
+  // }
+
+  // cout << endl << "solInterpol = " << flush;
+  // for(iVar = 0; iVar < nVar; iVar++){
+  //   cout << solInterpol[iVar][0] << "\t";
+  // }
+  // cout << endl;
 
 }
 
@@ -1759,6 +1801,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
   // Compute Q^T
   Q = Qk[0];
   for(i = 0; i < m; i++) z1[i].resize(m);
+
   for(k = 1; k < n && k < m-1; k++){
     for(i = 0; i < m; i++)
       for(j = 0; j < m; j++)
@@ -1836,7 +1879,8 @@ void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double>>        &Q,
 
     // x = R1^-1 * y where R1 is nxn upper triangular matrix
     // Perform back substitution
-    for(i = n-1; i >=0; i--){
+    coeffsInterpol[iVar][n-1] = y[n-1];
+    for(i = n-2; i >=0; i--){
       coeffsInterpol[iVar][i] = y[i];
       for(j = i+1; j < n; j++){
         coeffsInterpol[iVar][i] -= R[i][j]*coeffsInterpol[iVar][j];
