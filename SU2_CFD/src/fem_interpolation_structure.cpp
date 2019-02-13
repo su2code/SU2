@@ -329,9 +329,10 @@ void CFEMInterpolationDriver::Postprocessing() {
       Solver_Deletion(output_solver_container[iZone],
                             output_config_container[iZone],
                             iInst);
-      Solver_Deletion(ecc_solver_container[iZone],
-                            output_config_container[iZone],
-                            iInst);
+      if(ecc_solver_container[iZone][iInst] != NULL)
+        Solver_Deletion(ecc_solver_container[iZone],
+                              output_config_container[iZone],
+                              iInst);
     }
     delete [] input_solver_container[iZone];
     delete [] output_solver_container[iZone];
@@ -2692,9 +2693,9 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     mSolDOFs[l].resize(nVar);
 
   // Initialize vectors for coordinate, solution, and interpolated solution storage.
-  vector<vector<vector<su2double>>> coor(nDOFsTot), 
+  vector<vector<vector<su2double> > > coor(nDOFsTot), 
                                     sol(nDOFsTot);
-  const vector<vector<su2double>> &inputSolDOFs = inputSol->GetSolDOFs();
+  const vector<vector<su2double> > &inputSolDOFs = inputSol->GetSolDOFs();
   
   // Easier storage of the solution format of the input grid.
   const SolutionFormatT solFormatInput = inputGrid->GetSolutionFormat();
@@ -2750,8 +2751,8 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     }
 
     // Carry out the minimum distance search.
-    vector<vector<unsigned long>> pointID;
-    vector<vector<int>>           rankID;
+    vector<vector<unsigned long> > pointID;
+    vector<vector<int> >           rankID;
     GetNNearestNodes(VolumeADT, nDim, nNearestNodes, coorInterpolZone, pointID, rankID);
 
 #ifdef HAVE_MPI
@@ -2789,12 +2790,12 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
 #endif
 
     // Carry out the volume interpolation.
-    vector<vector<su2double>> coorCorrected(nDim, vector<su2double>(1));
+    vector<vector<su2double> > coorCorrected(nDim, vector<su2double>(1));
     for(unsigned long l = 0; l < nDOFsTot; ++l){
       const unsigned short nPoly = 2; // Hardcode for quadratic for now.
 
       // Carry out least squares using QR factorization.
-      vector<vector<su2double>> solInterpolTmp;
+      vector<vector<su2double> > solInterpolTmp;
 
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         coorCorrected[iDim][0] = coorInterpolZone[l*nDim + iDim];
@@ -2836,8 +2837,8 @@ void CFEMInterpolationSol::GetNNearestNodes(CADTPointsOnlyClass            *Volu
                                             const unsigned short           nDim,
                                             const unsigned short           nNearestNodes,
                                             const vector<su2double>        &coorInterpol,
-                                            vector<vector<unsigned long>>  &pointID,
-                                            vector<vector<int>>            &rankID){
+                                            vector<vector<unsigned long> >  &pointID,
+                                            vector<vector<int> >            &rankID){
 
   unsigned long nDOFsTot = coorInterpol.size()/nDim;
 
@@ -2859,10 +2860,10 @@ void CFEMInterpolationSol::GetNNearestNodes(CADTPointsOnlyClass            *Volu
 
 void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim,
                                            const unsigned short             nPoly,
-                                           const vector<vector<su2double>>  &coor,
-                                           const vector<vector<su2double>>  &coorInterpol,
-                                           const vector<vector<su2double>>  &sol,
-                                           vector<vector<su2double>>        &solInterpol)
+                                           const vector<vector<su2double> >  &coor,
+                                           const vector<vector<su2double> >  &coorInterpol,
+                                           const vector<vector<su2double> >  &sol,
+                                           vector<vector<su2double> >        &solInterpol)
 {
 
   unsigned short nPoint         = coor[0].size(),
@@ -2872,7 +2873,7 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
 
   // Determine mean coordinates of nodes and use as origin for LS system
   vector<su2double> coorAvg(nDim, 0.0);
-  vector<vector<su2double>> coorOffset(nDim, vector<su2double>(nPoint)),
+  vector<vector<su2double> > coorOffset(nDim, vector<su2double>(nPoint)),
                             coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol));
   for(iDim = 0; iDim < nDim; iDim++){
     for(iPoint = 0; iPoint < nPoint; iPoint++){
@@ -2889,12 +2890,12 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   }
 
   // Compute approximate Vandermonde matrix
-  vector<vector<su2double>> vmat;
+  vector<vector<su2double> > vmat;
   if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffset, vmat);
   else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
 
   // Perform QR factorization
-  vector<vector<su2double>> Q, R;
+  vector<vector<su2double> > Q, R;
   Householder(vmat, Q, R);
   // cout << "vmat = " << flush;
   // for(unsigned short i = 0; i < vmat.size(); i++){
@@ -2916,7 +2917,7 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   // }
 
   // Compute interpolation coefficients for each variable
-  vector<vector<su2double>> coeffsInterpol;
+  vector<vector<su2double> > coeffsInterpol;
   BackSubstitute(Q, R, coorOffsetInterpol, sol, coeffsInterpol);
 
   // Compute Vandermonde for interpolation coordinates
@@ -2966,8 +2967,8 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
 }
 
 void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short             nPoly,
-                                                const vector<vector<su2double>>  &coor,
-                                                vector<vector<su2double>>        &vmat)
+                                                const vector<vector<su2double> >  &coor,
+                                                vector<vector<su2double> >        &vmat)
 {
 
   unsigned short nPoint = coor[0].size();
@@ -2991,9 +2992,9 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short            
 
 }
 
-void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
-                                       vector<vector<su2double>>        &Q,
-                                       vector<vector<su2double>>        &R)
+void CFEMInterpolationSol::Householder(const vector<vector<su2double> >  &mat,
+                                       vector<vector<su2double> >        &Q,
+                                       vector<vector<su2double> >        &R)
 {
   unsigned short m = mat.size(),
                  n = mat[0].size(),
@@ -3002,11 +3003,11 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
   vector<su2double> x(m),
                     e(m);
   // Temporary arrays
-  vector<vector<su2double>> z = mat,
+  vector<vector<su2double> > z = mat,
                             z1(m, vector<su2double>(n));
 
   // Array of Q's
-  vector<vector<vector<su2double>>>  Qk(m, vector<vector<su2double>>(m, vector<su2double>(m)));
+  vector<vector<vector<su2double> > >  Qk(m, vector<vector<su2double> >(m, vector<su2double>(m)));
 
   for(k = 0; k < n && k < m-1; k++){
 
@@ -3103,7 +3104,7 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double>>  &mat,
 
 }
 
-void CFEMInterpolationSol::TransposeSquare(vector<vector<su2double>>  &mat){
+void CFEMInterpolationSol::TransposeSquare(vector<vector<su2double> >  &mat){
   unsigned short m = mat.size(),
                  i, j;
 
@@ -3116,11 +3117,11 @@ void CFEMInterpolationSol::TransposeSquare(vector<vector<su2double>>  &mat){
   }
 }
 
-void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double>>        &Q,
-                                          vector<vector<su2double>>        &R,
-                                          const vector<vector<su2double>>  &coorInterpol,
-                                          const vector<vector<su2double>>  &sol,
-                                          vector<vector<su2double>>        &coeffsInterpol)
+void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double> >        &Q,
+                                          vector<vector<su2double> >        &R,
+                                          const vector<vector<su2double> >  &coorInterpol,
+                                          const vector<vector<su2double> >  &sol,
+                                          vector<vector<su2double> >        &coeffsInterpol)
 {
   unsigned short m    = R.size(),
                  n    = R[0].size(),

@@ -474,46 +474,46 @@ public:
                         const unsigned short           nDim,
                         const unsigned short           nNearestNodes,
                         const vector<su2double>        &coorInterpol,
-                        vector<vector<unsigned long>>  &pointID,
-                        vector<vector<int>>            &rankID);
+                        vector<vector<unsigned long> >  &pointID,
+                        vector<vector<int> >            &rankID);
 
   /*!
    * \brief Function, which uses QR factorization to approximate a fit to the data.
    */
   void QR_LeastSquares(const unsigned short             nDim,
                        const unsigned short             nPoly,
-                       const vector<vector<su2double>>  &coor,
-                       const vector<vector<su2double>>  &coorInterpol,
-                       const vector<vector<su2double>>  &sol,
-                       vector<vector<su2double>>        &solInterpol);
+                       const vector<vector<su2double> >  &coor,
+                       const vector<vector<su2double> >  &coorInterpol,
+                       const vector<vector<su2double> >  &sol,
+                       vector<vector<su2double> >        &solInterpol);
 
   /*!
    * \brief Function, which creates an approximate Vandermonde matrix for an overdetermined system on a 2D mesh.
    */
   void ApproxVandermonde_2D(const unsigned short            nPoly,
-                            const vector<vector<su2double>> &coor,
-                            vector<vector<su2double>>       &vmat);
+                            const vector<vector<su2double> > &coor,
+                            vector<vector<su2double> >       &vmat);
 
   /*!
    * \brief Function, which performs a QR factorization using the Householder method.
    */
-  void Householder(const vector<vector<su2double>>  &mat,
-                   vector<vector<su2double>>        &Q,
-                   vector<vector<su2double>>        &R);
+  void Householder(const vector<vector<su2double> >  &mat,
+                   vector<vector<su2double> >        &Q,
+                   vector<vector<su2double> >        &R);
 
   /*!
    * \brief Function, which transposes a square matrix.
    */
-  void TransposeSquare(vector<vector<su2double>>  &mat);
+  void TransposeSquare(vector<vector<su2double> >  &mat);
 
   /*!
    * \brief Function, which performs back substitution to solve a linear system.
    */
-  void BackSubstitute(vector<vector<su2double>>        &Q,
-                      vector<vector<su2double>>        &R,
-                      const vector<vector<su2double>>  &coorInterpol,
-                      const vector<vector<su2double>>  &sol,
-                      vector<vector<su2double>>        &coeffsInterpol);
+  void BackSubstitute(vector<vector<su2double> >        &Q,
+                      vector<vector<su2double> >        &R,
+                      const vector<vector<su2double> >  &coorInterpol,
+                      const vector<vector<su2double> >  &sol,
+                      vector<vector<su2double> >        &coeffsInterpol);
 
   /*!
    * \brief Function, which copies data from the interpolation sol data structure to the SU2 solution structure.
