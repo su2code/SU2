@@ -163,6 +163,19 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
     Geometrical_Preprocessing(input_config_container, input_geometry_container);
   }
 
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Computation of positive surface area in the z-plane which is used for
+        the calculation of force coefficient (non-dimensionalization). ---*/
+
+      input_geometry_container[iZone][iInst][MESH_0]->SetPositive_ZArea(input_config_container[iZone]);
+
+    }
+
+  }
+
   if (rank == MASTER_NODE)
     cout << endl <<"---------------------- Output Geometry Preprocessing --------------------" << endl;
 
@@ -186,6 +199,19 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
   }
   else {
     Geometrical_Preprocessing(output_config_container, output_geometry_container);
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+
+      /*--- Computation of positive surface area in the z-plane which is used for
+        the calculation of force coefficient (non-dimensionalization). ---*/
+
+      output_geometry_container[iZone][iInst][MESH_0]->SetPositive_ZArea(output_config_container[iZone]);
+
+    }
+
   }
 
 
@@ -319,17 +345,18 @@ void CFEMInterpolationDriver::Postprocessing() {
     delete [] output_config_container;
   }
 
-  if (driver_config != NULL) delete [] driver_config;
   if (rank == MASTER_NODE) cout << "Deleted CConfig containers." << endl;
 
   if (nInst != NULL) delete [] nInst;
   if (rank == MASTER_NODE) cout << "Deleted nInst container." << endl;
 
-  if (input_grid != NULL) delete [] input_grid;
-  if (output_grid != NULL) delete [] output_grid;
-  if (input_solution != NULL) delete [] input_solution;
-  if (output_solution != NULL) delete [] output_solution;
-  if (rank == MASTER_NODE) cout << "Deleted interpolation containers." << endl;
+
+
+  // if (input_grid != NULL) delete [] input_grid;
+  // if (output_grid != NULL) delete [] output_grid;
+  // if (input_solution != NULL) delete [] input_solution;
+  // if (output_solution != NULL) delete [] output_solution;
+  // if (rank == MASTER_NODE) cout << "Deleted interpolation containers." << endl;
 
   
   /*--- Deallocate output container ---*/
@@ -433,11 +460,18 @@ void CFEMInterpolationDriver::Input_Preprocessing(CConfig **config_container, CG
 
 void CFEMInterpolationDriver::Geometrical_Preprocessing(CConfig **config_container, CGeometry ****geometry_container) {
 
+  bool fea = false;
+
   for (iZone = 0; iZone < nZone; iZone++) {
+
+    fea = ((config_container[iZone]->GetKind_Solver() == FEM_ELASTICITY) ||
+        (config_container[iZone]->GetKind_Solver() == DISC_ADJ_FEM));
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
 
       /*--- Compute elements surrounding points, points surrounding points ---*/
+
+            /*--- Compute elements surrounding points, points surrounding points ---*/
 
       if (rank == MASTER_NODE) cout << "Setting point connectivity." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetPoint_Connectivity();
@@ -472,10 +506,47 @@ void CFEMInterpolationDriver::Geometrical_Preprocessing(CConfig **config_contain
       geometry_container[iZone][iInst][MESH_0]->SetEdges();
       geometry_container[iZone][iInst][MESH_0]->SetVertex(config_container[iZone]);
 
+      /*--- Compute cell center of gravity ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Computing centers of gravity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetCoord_CG();
+
+      /*--- Create the control volume structures ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Setting the control volume structure." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetControlVolume(config_container[iZone], ALLOCATE);
+      geometry_container[iZone][iInst][MESH_0]->SetBoundControlVolume(config_container[iZone], ALLOCATE);
+
+      /*--- Compute the max length. ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Finding max control volume width." << endl;
+      geometry_container[iZone][iInst][MESH_0]->SetMaxLength(config_container[iZone]);
+
+      /*--- Visualize a dual control volume if requested ---*/
+
+      if ((config_container[iZone]->GetVisualize_CV() >= 0) &&
+          (config_container[iZone]->GetVisualize_CV() < (long)geometry_container[iZone][iInst][MESH_0]->GetnPointDomain()))
+        geometry_container[iZone][iInst][MESH_0]->VisualizeControlVolume(config_container[iZone], UPDATE);
+
+      /*--- Identify closest normal neighbor ---*/
+
+      if (rank == MASTER_NODE) cout << "Searching for the closest normal neighbors to the surfaces." << endl;
+      geometry_container[iZone][iInst][MESH_0]->FindNormal_Neighbor(config_container[iZone]);
+
       /*--- Store the global to local mapping. ---*/
 
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local point index." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
+
+      /*--- Compute the surface curvature ---*/
+
+      if ((rank == MASTER_NODE) && (!fea)) cout << "Compute the surface curvature." << endl;
+      geometry_container[iZone][iInst][MESH_0]->ComputeSurf_Curvature(config_container[iZone]);
+
+      /*--- Check for periodicity and disable MG if necessary. ---*/
+
+      if (rank == MASTER_NODE) cout << "Checking for periodicity." << endl;
+      geometry_container[iZone][iInst][MESH_0]->Check_Periodicity(config_container[iZone]);
 
     }
 
@@ -485,12 +556,12 @@ void CFEMInterpolationDriver::Geometrical_Preprocessing(CConfig **config_contain
 
 void CFEMInterpolationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_container, CGeometry ****geometry_container) {
 
-  /*--- Loop over the number of zones of the fine grid. ---*/
+  //*--- Loop over the number of zones of the fine grid. ---*/
 
-  for( iZone = 0; iZone < nZone; iZone++) {
+  for(unsigned short iZone = 0; iZone < nZone; iZone++) {
 
     /*--- Loop over the time instances of this zone. ---*/
-    for( iInst = 0; iInst < nInst[iZone]; iInst++) {
+    for(unsigned short iInst = 0; iInst < nInst[iZone]; iInst++) {
 
       /*--- Carry out a dynamic cast to CMeshFEM_DG, such that it is not needed to
        define all virtual functions in the base class CGeometry. ---*/
@@ -505,6 +576,18 @@ void CFEMInterpolationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_c
       if (rank == MASTER_NODE) cout << "Creating face information." << endl;
       DGMesh->CreateFaces(config_container[iZone]);
 
+      /*--- Compute the metric terms of the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing metric terms volume elements." << endl;
+      DGMesh->MetricTermsVolumeElements(config_container[iZone]);
+
+      /*--- Compute the metric terms of the surface elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing metric terms surface elements." << endl;
+      DGMesh->MetricTermsSurfaceElements(config_container[iZone]);
+
+      /*--- Compute a length scale of the volume elements. ---*/
+      if (rank == MASTER_NODE) cout << "Computing length scale volume elements." << endl;
+      DGMesh->LengthScaleVolumeElements();
+
       /*--- Compute the coordinates of the integration points. ---*/
       if (rank == MASTER_NODE) cout << "Computing coordinates of the integration points." << endl;
       DGMesh->CoordinatesIntegrationPoints();
@@ -515,9 +598,33 @@ void CFEMInterpolationDriver::Geometrical_Preprocessing_DGFEM(CConfig **config_c
       if (rank == MASTER_NODE) cout << "Computing coordinates of the solution DOFs." << endl;
       DGMesh->CoordinatesSolDOFs();
 
+      /*--- Initialize the static mesh movement, if necessary. ---*/
+      const unsigned short Kind_Grid_Movement = config_container[iZone]->GetKind_GridMovement(iZone);
+      const bool initStaticMovement = (config_container[iZone]->GetGrid_Movement() &&
+                                      (Kind_Grid_Movement == MOVING_WALL    ||
+                                       Kind_Grid_Movement == ROTATING_FRAME ||
+                                       Kind_Grid_Movement == STEADY_TRANSLATION));
+
+      if(initStaticMovement){
+        if (rank == MASTER_NODE) cout << "Initialize Static Mesh Movement" << endl;
+        DGMesh->InitStaticMeshMovement(config_container[iZone], Kind_Grid_Movement, iZone);
+      }
+
+      /*--- Perform the preprocessing tasks when wall functions are used. ---*/
+      if (rank == MASTER_NODE) cout << "Preprocessing for the wall functions. " << endl;
+      DGMesh->WallFunctionPreprocessing(config_container[iZone]);
+
       /*--- Store the global to local mapping. ---*/
       if (rank == MASTER_NODE) cout << "Storing a mapping from global to local DOF index." << endl;
       geometry_container[iZone][iInst][MESH_0]->SetGlobal_to_Local_Point();
+    }
+
+    /*--- Loop to create the coarser grid levels. ---*/
+
+    for(unsigned short iMGlevel=1; iMGlevel<=config_container[ZONE_0]->GetnMGLevels(); iMGlevel++) {
+
+      SU2_MPI::Error("Geometrical_Preprocessing_DGFEM: Coarse grid levels not implemented yet.",
+                     CURRENT_FUNCTION);
     }
   }
 }
@@ -915,9 +1022,6 @@ void CFEMInterpolationDriver::Interpolate() {
   output_solution->CopySolToSU2Solution(output_config_container, output_geometry_container, output_solver_container, nZone);
   if (rank == MASTER_NODE) cout << " Done." << endl << flush;
 
-  if (rank == MASTER_NODE)
-    cout << endl <<"------------------------- Solver Postprocessing -------------------------" << endl;
-
   for (iZone = 0; iZone < nZone; iZone++) {
 
     for (iInst = 0; iInst < nInst[iZone]; iInst++){
@@ -1058,28 +1162,6 @@ void CFEMInterpolationDriver::Output() {
 
   unsigned long ExtIter = input_config_container[ZONE_0]->GetExtIter_OffSet();
 
-  /*--- write the solution ---*/
-  
-
-    /*--- Time the output for performance benchmarking. ---*/
-// #ifndef HAVE_MPI
-//   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-// #else
-//   StopTime = MPI_Wtime();
-// #endif
-//   UsedTimeCompute += StopTime-StartTime;
-// #ifndef HAVE_MPI
-//   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-// #else
-//   StartTime = MPI_Wtime();
-// #endif
-
-    /*--- Add a statement about the type of solver exit. ---*/
-
-  if (rank == MASTER_NODE) 
-    cout << endl << "----------------------------- Solver Exit -------------------------------";
-    
-  
 
   if (rank == MASTER_NODE) cout << endl << "-------------------------- File Output Summary --------------------------";
 
@@ -1091,20 +1173,6 @@ void CFEMInterpolationDriver::Output() {
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
 
-    /*--- Store output time and restart the timer for the compute phase. ---*/
-// #ifndef HAVE_MPI
-//   StopTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-// #else
-//   StopTime = MPI_Wtime();
-// #endif
-//   UsedTimeOutput += StopTime-StartTime;
-//   OutputCount++;
-//   BandwidthSum = config_container[ZONE_0]->GetRestart_Bandwidth_Agg();
-// #ifndef HAVE_MPI
-//   StartTime = su2double(clock())/su2double(CLOCKS_PER_SEC);
-// #else
-//   StartTime = MPI_Wtime();
-// #endif
   
 }
 
@@ -3301,7 +3369,7 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
     mCoor[iDim].resize(nPoint);
     // Copy the coordinates.
     for(iPoint = 0; iPoint < nPoint; iPoint++){
-      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord()[iDim];
+      mCoor[iDim][iPoint] = geometry->node[iPoint]->GetCoord(iDim);
     }
   }
   
