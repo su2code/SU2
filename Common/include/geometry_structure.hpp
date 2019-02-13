@@ -441,8 +441,9 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config   - Definition of the particular problem.
    * \param[in] commType - Enumerated type for the quantity to be communicated.
+   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType);
+  void PostP2PRecvs(CGeometry *geometry, CConfig *config, unsigned short commType, bool val_reverse);
   
   /*!
    * \brief Routine to launch a single non-blocking send once the buffer is loaded for a point-to-point commucation. Note that this routine is called by any class that has loaded data into the generic communication buffers.
@@ -450,8 +451,9 @@ public:
    * \param[in] config       - Definition of the particular problem.
    * \param[in] commType     - Enumerated type for the quantity to be communicated.
    * \param[in] val_iMessage - Index of the message in the order they are stored.
+   * \param[in] val_reverse  - Boolean controlling forward or reverse communication between neighbors.
    */
-  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage);
+  void PostP2PSends(CGeometry *geometry, CConfig *config, unsigned short commType, int val_iMessage, bool val_reverse);
   
   /*!
    * \brief Routine to set up persistent data structures for periodic communications.

@@ -543,7 +543,8 @@ void CGeometry::AllocateP2PComms(unsigned short val_countPerPoint) {
 
 void CGeometry::PostP2PRecvs(CGeometry *geometry,
                              CConfig *config,
-                             unsigned short commType) {
+                             unsigned short commType,
+                             bool val_reverse) {
   
   /*--- Local variables ---*/
   
@@ -556,36 +557,65 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
   iMessage = 0;
   for (iRecv = 0; iRecv < nP2PRecv; iRecv++) {
     
-    /*--- Compute our location in the recv buffer. ---*/
+    /*--- In some instances related to the adjoint solver, we need
+     to reverse the direction of communications such that the normal
+     send nodes become the recv nodes and vice-versa. ---*/
     
-    offset = countPerPoint*nPoint_P2PRecv[iRecv];
-    
-    /*--- Take advantage of cumulative storage format to get the number
-     of elems that we need to recv. ---*/
-    
-    nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
-    
-    /*--- Total count can include multiple pieces of data per element. ---*/
-    
-    count = countPerPoint*nPointP2P;
-    
-    /*--- Get the rank from which we receive the message. ---*/
-    
-    source = Neighbors_P2PRecv[iRecv];
-    tag    = source + 1;
-    
+    if (val_reverse) {
+      
+      /*--- Compute our location in the buffer using the send data
+       structure since we are reversing the comms. ---*/
+      
+      offset = countPerPoint*nPoint_P2PSend[iRecv];
+      
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. Note again that we select the send
+       points here as the recv points. ---*/
+      
+      nPointP2P = nPoint_P2PSend[iRecv+1] - nPoint_P2PSend[iRecv];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      count = countPerPoint*nPointP2P;
+      
+      /*--- Get the rank from which we receive the message. Note again
+       that we use the send rank as the source instead of the recv rank. ---*/
+      
+      source = Neighbors_P2PSend[iRecv];
+      tag    = source + 1;
+      
+    } else {
+      
+      /*--- Compute our location in the recv buffer. ---*/
+      
+      offset = countPerPoint*nPoint_P2PRecv[iRecv];
+      
+      /*--- Take advantage of cumulative storage format to get the number
+       of elems that we need to recv. ---*/
+      
+      nPointP2P = nPoint_P2PRecv[iRecv+1] - nPoint_P2PRecv[iRecv];
+      
+      /*--- Total count can include multiple pieces of data per element. ---*/
+      
+      count = countPerPoint*nPointP2P;
+      
+      /*--- Get the rank from which we receive the message. ---*/
+      
+      source = Neighbors_P2PRecv[iRecv];
+      tag    = source + 1;
+      
+    }
+
     /*--- Post non-blocking recv for this proc. ---*/
     
     switch (commType) {
       case COMM_TYPE_DOUBLE:
-        SU2_MPI::Irecv(&(static_cast<su2double*>(bufD_P2PRecv)[offset]),
-                       count, MPI_DOUBLE, source, tag, MPI_COMM_WORLD,
-                       &(req_P2PRecv[iMessage]));
+        SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
+                       source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
         break;
       case COMM_TYPE_UNSIGNED_SHORT:
-        SU2_MPI::Irecv(&(static_cast<unsigned short*>(bufS_P2PRecv)[offset]),
-                       count, MPI_UNSIGNED_SHORT, source, tag, MPI_COMM_WORLD,
-                       &(req_P2PRecv[iMessage]));
+        SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
+                       source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
         break;
       default:
         SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -604,7 +634,8 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
 void CGeometry::PostP2PSends(CGeometry *geometry,
                              CConfig *config,
                              unsigned short commType,
-                             int val_iSend) {
+                             int val_iSend,
+                             bool val_reverse) {
   
   /*--- Local variables ---*/
   
@@ -614,36 +645,65 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
   
   iMessage = val_iSend;
   
-  /*--- Compute our location in the send buffer. ---*/
+  /*--- In some instances related to the adjoint solver, we need
+   to reverse the direction of communications such that the normal
+   send nodes become the recv nodes and vice-versa. ---*/
   
-  offset = countPerPoint*nPoint_P2PSend[val_iSend];
-  
-  /*--- Take advantage of cumulative storage format to get the number
-   of points that we need to send. ---*/
-  
-  nPointP2P = nPoint_P2PSend[val_iSend+1] - nPoint_P2PSend[val_iSend];
-  
-  /*--- Total count can include multiple pieces of data per element. ---*/
-  
-  count = countPerPoint*nPointP2P;
-  
-  /*--- Get the rank to which we send the message. ---*/
-  
-  dest = Neighbors_P2PSend[val_iSend];
-  tag  = rank + 1;
-  
+  if (val_reverse) {
+    
+    /*--- Compute our location in the buffer using the recv data
+     structure since we are reversing the comms. ---*/
+    
+    offset = countPerPoint*nPoint_P2PRecv[val_iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. Note again that we select the recv
+     points here as the send points. ---*/
+    
+    nPointP2P = nPoint_P2PRecv[val_iSend+1] - nPoint_P2PRecv[val_iSend];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+    
+    /*--- Get the rank to which we send the message. Note again
+     that we use the recv rank as the dest instead of the send rank. ---*/
+    
+    dest = Neighbors_P2PRecv[val_iSend];
+    tag  = rank + 1;
+    
+  } else {
+    
+    /*--- Compute our location in the send buffer. ---*/
+    
+    offset = countPerPoint*nPoint_P2PSend[val_iSend];
+    
+    /*--- Take advantage of cumulative storage format to get the number
+     of points that we need to send. ---*/
+    
+    nPointP2P = nPoint_P2PSend[val_iSend+1] - nPoint_P2PSend[val_iSend];
+    
+    /*--- Total count can include multiple pieces of data per element. ---*/
+    
+    count = countPerPoint*nPointP2P;
+    
+    /*--- Get the rank to which we send the message. ---*/
+    
+    dest = Neighbors_P2PSend[val_iSend];
+    tag  = rank + 1;
+    
+  }
+
   /*--- Post non-blocking send for this proc. ---*/
   
   switch (commType) {
     case COMM_TYPE_DOUBLE:
-      SU2_MPI::Isend(&(static_cast<su2double*>(bufD_P2PSend)[offset]),
-                     count, MPI_DOUBLE, dest, tag, MPI_COMM_WORLD,
-                     &(req_P2PSend[iMessage]));
+      SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
+                     dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
       break;
     case COMM_TYPE_UNSIGNED_SHORT:
-      SU2_MPI::Isend(&(static_cast<unsigned short*>(bufS_P2PSend)[offset]),
-                     count, MPI_UNSIGNED_SHORT, dest, tag, MPI_COMM_WORLD,
-                     &(req_P2PSend[iMessage]));
+      SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
+                     dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
       break;
     default:
       SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
@@ -722,7 +782,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
     
     /*--- Post all non-blocking recvs first before sends. ---*/
     
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE);
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
     
     for (iMessage = 0; iMessage < nP2PSend; iMessage++) {
       
@@ -782,7 +842,7 @@ void CGeometry::InitiateComms(CGeometry *geometry,
       
       /*--- Launch the point-to-point MPI send for this message. ---*/
       
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage);
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
       
     }
   }
