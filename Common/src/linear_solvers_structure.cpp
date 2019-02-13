@@ -759,6 +759,89 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
 }
 
+unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
+#ifdef CODI_REVERSE_TYPE
+
+  unsigned short KindSolver, KindPrecond;
+  unsigned long MaxIter, RestartIter, IterLinSol = 0;
+  su2double SolverTol, Norm0 = 0.0;
+  bool ScreenOutput;
+
+  /*--- Normal mode ---*/
+
+  if(!mesh_deform) {
+
+    KindSolver   = config->GetKind_DiscAdj_Linear_Solver();
+    KindPrecond  = config->GetKind_DiscAdj_Linear_Prec();
+    MaxIter      = config->GetLinear_Solver_Iter();
+    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
+    SolverTol    = config->GetLinear_Solver_Error();
+    ScreenOutput = false;
+  }
+
+  /*--- Mesh Deformation mode ---*/
+
+  else {
+
+    KindSolver   = config->GetKind_Deform_Linear_Solver();
+    KindPrecond  = config->GetKind_Deform_Linear_Solver_Prec();
+    MaxIter      = config->GetDeform_Linear_Solver_Iter();
+    RestartIter  = config->GetLinear_Solver_Restart_Frequency();
+    SolverTol    = config->GetDeform_Linear_Solver_Error();
+    ScreenOutput = config->GetDeform_Output();
+  }
+
+  /*--- Set up preconditioner and matrix-vector product ---*/
+
+  CPreconditioner* precond  = NULL;
+
+  switch(KindPrecond) {
+    case ILU:
+      precond = new CILUPreconditioner(Jacobian, geometry, config);
+      break;
+    case JACOBI:
+      precond = new CJacobiPreconditioner(Jacobian, geometry, config);
+      break;
+  }
+
+  CMatrixVectorProduct* mat_vec = new CSysMatrixVectorProductTransposed(Jacobian, geometry, config);
+
+  /*--- Solve the system ---*/
+
+  switch(KindSolver) {
+    case FGMRES:
+      IterLinSol = FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput);
+      break;
+    case BCGSTAB:
+      IterLinSol = BCGSTAB_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , MaxIter, &Residual, ScreenOutput);
+      break;
+    case CONJUGATE_GRADIENT:
+      IterLinSol = CG_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol, MaxIter, &Residual, ScreenOutput);
+      break;
+    case RESTARTED_FGMRES:
+      IterLinSol = 0;
+      Norm0 = LinSysRes.norm();
+      while (IterLinSol < MaxIter) {
+        /*--- Enforce a hard limit on total number of iterations ---*/
+        unsigned long IterLimit = min(RestartIter, MaxIter-IterLinSol);
+        IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput);
+        if ( Residual < SolverTol*Norm0 ) break;
+      }
+      break;
+    default:
+      SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
+  }
+
+  delete mat_vec;
+  delete precond;
+
+  return IterLinSol;
+#else
+  return 0;
+#endif
+}
+
 void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
 
 #ifdef CODI_REVERSE_TYPE
@@ -769,6 +852,11 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
                 nBlkDomain = LinSysRes.GetNBlkDomain();
 
   bool RequiresTranspose = !mesh_deform; // jacobian is symmetric
+  
+  unsigned short KindPrecond;
+  
+  if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+  else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
 
   /*--- Arrays to store the indices of the input/output of the linear solver.
      * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
@@ -813,11 +901,11 @@ void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   dataHandler->addData(&Jacobian);
   dataHandler->addData(geometry);
   dataHandler->addData(config);
-  dataHandler->addData(mesh_deform);
+  dataHandler->addData(this);
 
   /*--- Build preconditioner for the transposed Jacobian ---*/
 
-  switch(config->GetKind_DiscAdj_Linear_Prec()) {
+  switch(KindPrecond) {
     case ILU:
       Jacobian.BuildILUPreconditioner(RequiresTranspose);
       break;

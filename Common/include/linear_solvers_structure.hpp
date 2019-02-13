@@ -237,6 +237,16 @@ public:
   unsigned long Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
   
   /*!
+   * \brief Solve the adjoint linear system using a Krylov subspace method
+   * \param[in] Jacobian - Jacobian Matrix for the linear system
+   * \param[in] LinSysRes - Linear system residual
+   * \param[in] LinSysSol - Linear system solution
+   * \param[in] geometry -  Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  unsigned long Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config);
+  
+  /*!
    * \brief Prepare the linear solve during the reverse interpretation of the AD tape.
    * \param[in] Jacobian - Jacobian Matrix for the linear system
    * \param[in] LinSysRes - Linear system residual
