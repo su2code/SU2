@@ -49,7 +49,9 @@
 #include <fstream>
 #include <cmath>
 #include <time.h>
-#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <limits>
 
 #include "solver_structure.hpp"
 #include "integration_structure.hpp"
@@ -614,6 +616,16 @@ public:
    * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
    */
   void WriteTecplotASCII_Parallel(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned short val_iZone, unsigned short val_nZone, unsigned short val_iInst, unsigned short val_nInst, bool surf_sol);
+
+  /*!
+   * \brief Write a Tecplot binary solution file with parallel output.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   * \param[in] surf_sol - Flag controlling whether this is a volume or surface file.
+   */
+  void WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol);
   
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
