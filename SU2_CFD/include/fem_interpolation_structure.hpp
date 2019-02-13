@@ -634,6 +634,7 @@ private:
   CGeometry ****output_geometry_container;      /*!< \brief Output geometry that solution is going to be interpolated onto */
   CSolver *****input_solver_container;          /*!< \brief Input solution that needs to be interpolated onto new mesh */
   CSolver *****output_solver_container;         /*!< \brief Interpolated solution on new mesh */
+  CSolver *****ecc_solver_container;            /*!< \brief Interpolated solution for error estimate on new mesh */
   CConfig **input_config_container;             /*!< \brief Definition of the input problem. */
   CConfig **output_config_container;            /*!< \brief Definition of the output problem. */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
@@ -656,7 +657,8 @@ private:
   CFEMInterpolationGrid *input_grid,            /*!< \brief Generalized input grid */
                         *output_grid;           /*!< \brief Generalized output grid */
   CFEMInterpolationSol *input_solution,         /*!< \brief Generalized input solution */
-                       *output_solution;        /*!< \brief Interpolated output solution */
+                       *output_solution,        /*!< \brief Interpolated output solution */
+                       *ecc_solution;           /*!< \brief Interpolated output solution for error estimate */
 
 
 public:

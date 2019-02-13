@@ -54,6 +54,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
   output_geometry_container       = NULL;
   input_solver_container          = NULL;
   output_solver_container         = NULL;
+  ecc_solver_container            = NULL;
   input_config_container          = NULL;
   output_config_container         = NULL;
   output                          = NULL;
@@ -268,6 +269,38 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
 
   }
 
+  /*--- Instantiate another solver container for a higher order interpolation
+    if error estimate is desired. The interpolation will be performed on the
+    output geometry so we can reuse the other output containers. ---*/
+  if(driver_config->GetError_Estimate()){
+
+    ecc_solver_container = new CSolver****[nZone];
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      output_solver_container[iZone] = NULL;
+
+      if (rank == MASTER_NODE)
+        cout << endl <<"---------------------- ECC Solver Preprocessing ----------------------" << endl;
+
+      ecc_solver_container[iZone] = new CSolver*** [nInst[iZone]];
+
+
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        ecc_solver_container[iZone][iInst] = NULL;
+        ecc_solver_container[iZone][iInst] = new CSolver** [MESH_0+1];
+        ecc_solver_container[iZone][iInst][MESH_0] = NULL;
+        ecc_solver_container[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+        for (iSol = 0; iSol < MAX_SOLS; iSol++)
+          ecc_solver_container[iZone][iInst][iMesh][iSol] = NULL;
+        
+        Solver_Preprocessing(ecc_solver_container[iZone], output_geometry_container[iZone],
+         output_config_container[iZone], iInst);
+
+      } // End of loop over iInst
+
+    }
+  }
+
   /*--- Definition of the output class (one for all zones). The output class
    manages the writing of all restart, volume solution, surface solution,
    surface comma-separated value, and convergence history files (both in serial
@@ -279,6 +312,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
   output_grid           = NULL;
   input_solution        = NULL;
   output_solution       = NULL;
+  ecc_solution          = NULL;
 
 }
 
@@ -295,12 +329,17 @@ void CFEMInterpolationDriver::Postprocessing() {
       Solver_Deletion(output_solver_container[iZone],
                             output_config_container[iZone],
                             iInst);
+      Solver_Deletion(ecc_solver_container[iZone],
+                            output_config_container[iZone],
+                            iInst);
     }
     delete [] input_solver_container[iZone];
     delete [] output_solver_container[iZone];
+    if(ecc_solver_container[iZone] != NULL) delete [] ecc_solver_container[iZone];
   }
   delete [] input_solver_container;
   delete [] output_solver_container;
+  if(ecc_solver_container != NULL) delete [] ecc_solver_container;
   if (rank == MASTER_NODE) cout << "Deleted CSolver containers." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -1033,6 +1072,25 @@ void CFEMInterpolationDriver::Interpolate() {
 
   }
 
+  if(driver_config->GetError_Estimate()){
+    ecc_solution = new CFEMInterpolationSol();
+    ecc_solution->FV_QuadraticInterpolation(output_config_container, coorInterpolation, input_grid, input_solution, output_grid);
+    if (rank == MASTER_NODE) cout << "Copying higher order solution to solver container....." << flush;
+    ecc_solution->CopySolToSU2Solution(output_config_container, output_geometry_container, ecc_solver_container, nZone);
+    if (rank == MASTER_NODE) cout << " Done." << endl << flush;
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        
+        Solver_Postprocessing(ecc_solver_container[iZone], output_geometry_container[iZone],
+                             output_config_container[iZone], iInst);
+
+      } // End of loop over iInst
+
+    }
+  }
+
 }
 
 void CFEMInterpolationDriver::Solver_Postprocessing(CSolver ****solver_container, CGeometry ***geometry,
@@ -1169,6 +1227,9 @@ void CFEMInterpolationDriver::Output() {
      surface solution, and surface comma-separated value files. ---*/
 
   output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+
+  if(driver_config->GetError_Estimate())
+    output->SetResult_Files_Parallel(ecc_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
