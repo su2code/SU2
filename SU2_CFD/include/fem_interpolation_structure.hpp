@@ -644,8 +644,7 @@ private:
        input_fem_solver,                        /*!< \brief FEM fluid solver simulation flag for input simulation */
        output_fem_solver;                       /*!< \brief FEM fluid solver simulation flag for output simulation */
 
-  unsigned short iMesh,                         /*!< \brief Iterator on mesh levels.*/
-                iZone,                          /*!< \brief Iterator on zones.*/
+  unsigned short iZone,                          /*!< \brief Iterator on zones.*/
                 iSol,                           /*!< \brief Iterator on solutions.*/
                 nZone,                          /*!< \brief Total number of zones in the problem. */
                 nDim,                           /*!< \brief Number of dimensions.*/
