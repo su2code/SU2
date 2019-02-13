@@ -862,10 +862,10 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
-  //InitiateComms(geometry, config, SOLUTION);
-  //CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
 }
 
@@ -5172,10 +5172,10 @@ void CEulerSolver::SetMax_Eigenvalue(CGeometry *geometry, CConfig *config) {
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_MaxEigenvalue(geometry, config);
+  //Set_MPI_MaxEigenvalue(geometry, config);
   
-  //InitiateComms(geometry, config, MAX_EIGENVALUE);
-  //CompleteComms(geometry, config, MAX_EIGENVALUE);
+  InitiateComms(geometry, config, MAX_EIGENVALUE);
+  CompleteComms(geometry, config, MAX_EIGENVALUE);
   
 }
 
@@ -5231,10 +5231,10 @@ void CEulerSolver::SetUndivided_Laplacian(CGeometry *geometry, CConfig *config) 
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Undivided_Laplacian(geometry, config);
+  //Set_MPI_Undivided_Laplacian(geometry, config);
   
-  //InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
-  //CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  InitiateComms(geometry, config, UNDIVIDED_LAPLACIAN);
+  CompleteComms(geometry, config, UNDIVIDED_LAPLACIAN);
   
   delete [] Diff;
   
@@ -5292,10 +5292,10 @@ void CEulerSolver::SetCentered_Dissipation_Sensor(CGeometry *geometry, CConfig *
   
   /*--- MPI parallelization ---*/
   
-  Set_MPI_Sensor(geometry, config);
+  //Set_MPI_Sensor(geometry, config);
   
-  //InitiateComms(geometry, config, SENSOR);
-  //CompleteComms(geometry, config, SENSOR);
+  InitiateComms(geometry, config, SENSOR);
+  CompleteComms(geometry, config, SENSOR);
   
 }
 
@@ -6403,10 +6403,10 @@ void CEulerSolver::ImplicitEuler_Iteration(CGeometry *geometry, CSolver **solver
   
   /*--- MPI solution ---*/
   
-  Set_MPI_Solution(geometry, config);
+  //Set_MPI_Solution(geometry, config);
   
-  //InitiateComms(geometry, config, SOLUTION);
-  //CompleteComms(geometry, config, SOLUTION);
+  InitiateComms(geometry, config, SOLUTION);
+  CompleteComms(geometry, config, SOLUTION);
   
   /*--- Compute the root mean square residual ---*/
   

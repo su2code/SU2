@@ -308,7 +308,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
     
     /*--- Post all non-blocking recvs first before sends. ---*/
     
-    geometry->PostP2PRecvs(geometry, config, MPI_TYPE);
+    geometry->PostP2PRecvs(geometry, config, MPI_TYPE, false);
     
     for (iMessage = 0; iMessage < geometry->nP2PSend; iMessage++) {
       
@@ -417,7 +417,7 @@ void CSolver::InitiateComms(CGeometry *geometry,
       
       /*--- Launch the point-to-point MPI send for this message. ---*/
       
-      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage);
+      geometry->PostP2PSends(geometry, config, MPI_TYPE, iMessage, false);
       
     }
   }
