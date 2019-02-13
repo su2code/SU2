@@ -759,6 +759,88 @@ unsigned long CSysSolve::Solve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CS
   
 }
 
+void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
+
+#ifdef CODI_REVERSE_TYPE
+  
+  unsigned long size = LinSysRes.GetLocSize();
+  unsigned long i, nBlk = LinSysRes.GetNBlk(),
+                nVar = LinSysRes.GetNVar(),
+                nBlkDomain = LinSysRes.GetNBlkDomain();
+
+  bool RequiresTranspose = !mesh_deform; // jacobian is symmetric
+  
+  unsigned short KindPrecond;
+  
+  if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
+  else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
+
+  /*--- Arrays to store the indices of the input/output of the linear solver.
+     * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
+
+  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
+  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
+#if CODI_PRIMAL_INDEX_TAPE
+  su2double::Real *oldValues = new su2double::Real[size];
+#endif
+
+  for (i = 0; i < size; i++) {
+
+    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
+
+    if (!LinSysSol[i].isActive()) {
+#if CODI_PRIMAL_INDEX_TAPE
+      oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
+#else
+      AD::globalTape.registerInput(LinSysSol[i]);
+#endif
+    }
+
+    /*--- Store the indices ---*/
+
+    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
+    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
+  }
+
+  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
+
+  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
+
+  dataHandler->addData(LinSysRes_Indices);
+  dataHandler->addData(LinSysSol_Indices);
+#if CODI_PRIMAL_INDEX_TAPE
+  dataHandler->addData(oldValues);
+#endif
+  dataHandler->addData(size);
+  dataHandler->addData(nBlk);
+  dataHandler->addData(nVar);
+  dataHandler->addData(nBlkDomain);
+  dataHandler->addData(&Jacobian);
+  dataHandler->addData(geometry);
+  dataHandler->addData(config);
+  dataHandler->addData(this);
+
+  /*--- Build preconditioner for the transposed Jacobian ---*/
+
+  switch(KindPrecond) {
+    case ILU:
+      Jacobian.BuildILUPreconditioner(RequiresTranspose);
+      break;
+    case JACOBI:
+      Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
+      break;
+    default:
+      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
+      break;
+  }
+
+  /*--- Push the external function to the AD tape ---*/
+
+  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
+
+#endif
+}
+
 unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
 #ifdef CODI_REVERSE_TYPE
 
@@ -839,87 +921,5 @@ unsigned long CSysSolve::Solve_b(CSysMatrix & Jacobian, CSysVector & LinSysRes, 
   return IterLinSol;
 #else
   return 0;
-#endif
-}
-
-void CSysSolve::SetExternalSolve(CSysMatrix & Jacobian, CSysVector & LinSysRes, CSysVector & LinSysSol, CGeometry *geometry, CConfig *config) {
-
-#ifdef CODI_REVERSE_TYPE
-  
-  unsigned long size = LinSysRes.GetLocSize();
-  unsigned long i, nBlk = LinSysRes.GetNBlk(),
-                nVar = LinSysRes.GetNVar(),
-                nBlkDomain = LinSysRes.GetNBlkDomain();
-
-  bool RequiresTranspose = !mesh_deform; // jacobian is symmetric
-  
-  unsigned short KindPrecond;
-  
-  if (!mesh_deform) KindPrecond = config->GetKind_DiscAdj_Linear_Prec();
-  else              KindPrecond = config->GetKind_Deform_Linear_Solver_Prec();
-
-  /*--- Arrays to store the indices of the input/output of the linear solver.
-     * Note: They will be deleted in the CSysSolve_b::Delete_b routine. ---*/
-
-  su2double::GradientData *LinSysRes_Indices = new su2double::GradientData[size];
-  su2double::GradientData *LinSysSol_Indices = new su2double::GradientData[size];
-#if CODI_PRIMAL_INDEX_TAPE
-  su2double::Real *oldValues = new su2double::Real[size];
-#endif
-
-  for (i = 0; i < size; i++) {
-
-    /*--- Register the solution of the linear system (could already be registered when using multigrid) ---*/
-
-    if (!LinSysSol[i].isActive()) {
-#if CODI_PRIMAL_INDEX_TAPE
-      oldValues[i] = AD::globalTape.registerExtFunctionOutput(LinSysSol[i]);
-#else
-      AD::globalTape.registerInput(LinSysSol[i]);
-#endif
-    }
-
-    /*--- Store the indices ---*/
-
-    LinSysRes_Indices[i] = LinSysRes[i].getGradientData();
-    LinSysSol_Indices[i] = LinSysSol[i].getGradientData();
-  }
-
-  /*--- Push the data to the checkpoint handler for access in the reverse sweep ---*/
-
-  AD::CheckpointHandler* dataHandler = new AD::CheckpointHandler;
-
-  dataHandler->addData(LinSysRes_Indices);
-  dataHandler->addData(LinSysSol_Indices);
-#if CODI_PRIMAL_INDEX_TAPE
-  dataHandler->addData(oldValues);
-#endif
-  dataHandler->addData(size);
-  dataHandler->addData(nBlk);
-  dataHandler->addData(nVar);
-  dataHandler->addData(nBlkDomain);
-  dataHandler->addData(&Jacobian);
-  dataHandler->addData(geometry);
-  dataHandler->addData(config);
-  dataHandler->addData(this);
-
-  /*--- Build preconditioner for the transposed Jacobian ---*/
-
-  switch(KindPrecond) {
-    case ILU:
-      Jacobian.BuildILUPreconditioner(RequiresTranspose);
-      break;
-    case JACOBI:
-      Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
-      break;
-    default:
-      SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
-      break;
-  }
-
-  /*--- Push the external function to the AD tape ---*/
-
-  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
-
 #endif
 }
