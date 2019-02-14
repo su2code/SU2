@@ -9231,8 +9231,19 @@ void CElasticityMovement::SetVolume_Deformation_Elas(CGeometry *geometry, CConfi
 
     /*--- Solve the linear system. ---*/
 
+#ifdef CODI_REVERSE_TYPE
+    /*--- We need to guard the SendReceive_Solution otherwise the FSI adjoint breaks. ---*/
+    bool TapeActive = NO;
+    if (config->GetDiscrete_Adjoint()) {
+      TapeActive = AD::globalTape.isActive();
+      AD::StopRecording();
+    }
+#endif
     StiffMatrix.SendReceive_Solution(LinSysSol, geometry, config);
     StiffMatrix.SendReceive_Solution(LinSysRes, geometry, config);
+#ifdef CODI_REVERSE_TYPE
+    if (TapeActive) AD::StartRecording();
+#endif
     nIterMesh = System.Solve(StiffMatrix, LinSysRes, LinSysSol, geometry, config);
     valResidual = System.GetResidual();
 
