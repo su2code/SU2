@@ -48,6 +48,37 @@ CDiscAdjFEAOutput::CDiscAdjFEAOutput(CConfig *config, CGeometry *geometry, unsig
   
   nDim = geometry->GetnDim();
 
+  /*--- Set the default history fields if nothing is set in the config file ---*/
+
+  if (nRequestedHistoryFields == 0){
+    RequestedHistoryFields.push_back("ITER");
+    RequestedHistoryFields.push_back("RESIDUALS");
+    RequestedHistoryFields.push_back("SENSITIVITY");
+    nRequestedHistoryFields = RequestedHistoryFields.size();
+  }
+
+  if (nRequestedScreenFields == 0){
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");
+    RequestedScreenFields.push_back("RMS_ADJ_DENSITY");
+    RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
+    RequestedScreenFields.push_back("SENS_GEO");
+    RequestedScreenFields.push_back("SENS_AOA");
+    nRequestedScreenFields = RequestedScreenFields.size();
+  }
+
+  if (nRequestedVolumeFields == 0){
+    RequestedVolumeFields.push_back("COORDINATES");
+    RequestedVolumeFields.push_back("SOLUTION");
+    RequestedVolumeFields.push_back("SENSITIVITY");
+    nRequestedVolumeFields = RequestedVolumeFields.size();
+  }
+
+  stringstream ss;
+  ss << "Zone " << config->GetiZone() << " (Adj. Comp. Fluid)";
+  MultiZoneHeaderString = ss.str();
+
+
 }
 
 CDiscAdjFEAOutput::~CDiscAdjFEAOutput(void) {
@@ -68,8 +99,8 @@ inline bool CDiscAdjFEAOutput::WriteScreen_Output(CConfig *config, bool write_du
 void CDiscAdjFEAOutput::SetHistoryOutputFields(CConfig *config){
   
   // Iteration numbers
-  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "INT_ITER");
-  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "EXT_ITER");
+  AddHistoryOutput("INT_ITER",   "Int_Iter",  FORMAT_INTEGER, "ITER");
+  AddHistoryOutput("EXT_ITER",   "Ext_Iter",  FORMAT_INTEGER, "ITER");
   
   // Residuals
   AddHistoryOutput("ADJOINT_DISP_X", "Res[Ux_adj]", FORMAT_FIXED,   "RESIDUALS");
