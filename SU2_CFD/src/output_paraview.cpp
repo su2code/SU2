@@ -2666,7 +2666,6 @@ void COutput::WriteParaViewBinary_Parallel(CConfig *config,
       conn_buf[iNode2+3] = Conn_Pyra_Par[iNode+2]-1;
       conn_buf[iNode2+4] = Conn_Pyra_Par[iNode+3]-1;
       conn_buf[iNode2+5] = Conn_Pyra_Par[iNode+4]-1;
-      conn_buf[iNode2+6] = Conn_Pyra_Par[iNode+5]-1;
     }
     if (!BigEndian) SwapBytes((char *)conn_buf, sizeof(int),
                               nParallel_Pyra*(N_POINTS_PYRAMID+1));
