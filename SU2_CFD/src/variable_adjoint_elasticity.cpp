@@ -58,7 +58,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable() : CVariable(){
   Solution_Old_Vel      = NULL;
   Solution_Old_Accel    = NULL;
 
-  Solution_time_n   = NULL;
   Solution_Vel_time_n   = NULL;
   Solution_Accel_time_n = NULL;
 
@@ -91,7 +90,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, unsigned short
   Solution_Old_Vel      = NULL;
   Solution_Old_Accel    = NULL;
 
-  Solution_time_n   = NULL;
   Solution_Vel_time_n   = NULL;
   Solution_Accel_time_n = NULL;
 
@@ -149,7 +147,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   Solution_Old_Vel            = new su2double[nVar];
   Solution_Old_Accel          = new su2double[nVar];
 
-  Solution_time_n             = new su2double[nVar];
   Solution_Vel_time_n         = new su2double[nVar];
   Solution_Accel_time_n       = new su2double[nVar];
 
@@ -178,8 +175,6 @@ CDiscAdjFEAVariable::CDiscAdjFEAVariable(su2double* val_solution, su2double* val
   /*--- Initialize the rest to 0 ---*/
 
   for (iVar = 0; iVar < nVar; iVar++){
-    Solution_time_n[iVar]         = 0.0;
-
     Dynamic_Derivative[iVar]      = 0.0;
     Dynamic_Derivative_n[iVar]    = 0.0;
     Dynamic_Derivative_Vel[iVar]    = 0.0;
@@ -235,7 +230,6 @@ CDiscAdjFEAVariable::~CDiscAdjFEAVariable(){
   if (Solution_Vel          != NULL) delete [] Solution_Vel;
   if (Solution_Accel        != NULL) delete [] Solution_Accel;
 
-//  if (Solution_time_n       != NULL) delete [] Solution_time_n;
   if (Solution_Vel_time_n   != NULL) delete [] Solution_Vel_time_n;
   if (Solution_Accel_time_n != NULL) delete [] Solution_Accel_time_n;
 

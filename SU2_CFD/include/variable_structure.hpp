@@ -4988,13 +4988,6 @@ public:
       */
      su2double GetSolution_Vel_time_n(unsigned short val_var);
 
-       /*!
-      * \brief Get the solution at time n.
-      * \param[in] val_var - Index of the variable.
-      * \return Value of the solution for the index <i>val_var</i>.
-      */
-     su2double GetSolution_time_n(unsigned short val_var);
-
     /*!
      * \brief Set the value of the old solution.
      * \param[in] val_solution_old - Pointer to the residual vector.
