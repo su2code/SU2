@@ -357,12 +357,6 @@ public:
    * \return Pointer to the solution (at time n-1) vector.
    */
   su2double *GetSolution_time_n1(void);
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  virtual su2double *Get_femSolution_time_n(void);
 
   /*!
    * \brief Set the value of the old residual.
@@ -2754,13 +2748,6 @@ public:
    * \param[in] val_solution_old - Value of the old solution for the index <i>val_var</i>.
    */
   void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
-  
-  
-  /*!
-   * \brief Get the fem solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *Get_femSolution_time_n(void);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
