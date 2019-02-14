@@ -137,6 +137,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
   }
+  else if (config->GetDynamic_Analysis() == DYNAMIC) {
+    Solution_time_n = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = 0.0;
+  }
   
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
