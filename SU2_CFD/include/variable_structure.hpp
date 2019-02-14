@@ -2021,7 +2021,7 @@ public:
    * \param[in] val_var - Index of the variable.
    * \return Value of the solution for the index <i>val_var</i>.
    */
-  virtual su2double GetSolution_time_n(unsigned short val_var);
+  su2double GetSolution_time_n(unsigned short val_var);
   
   /*!
    * \brief Get the velocity (Structural Analysis).
@@ -2558,8 +2558,6 @@ protected:
   
   su2double VonMises_Stress;         /*!< \brief Von Mises stress. */
   
-  su2double *Solution_time_n;        /*!< \brief Displacement at the nodes at time n */
-  
   su2double *Solution_Vel,          /*!< \brief Velocity of the nodes. */
   *Solution_Vel_time_n;          /*!< \brief Velocity of the nodes at time n. */
   
@@ -2757,24 +2755,12 @@ public:
    */
   void SetSolution_Vel_time_n(unsigned short val_var, su2double val_solution_vel_time_n);
   
-  /*!
-   * \brief Get the solution at time n.
-   * \param[in] val_var - Index of the variable.
-   * \return Value of the solution for the index <i>val_var</i>.
-   */
-  su2double GetSolution_time_n(unsigned short val_var);
   
   /*!
    * \brief Get the fem solution at time n.
    * \return Pointer to the solution (at time n) vector.
    */
   su2double *Get_femSolution_time_n(void);
-  
-  /*!
-   * \brief Get the solution at time n.
-   * \return Pointer to the solution (at time n) vector.
-   */
-  su2double *GetSolution_time_n(void);
   
   /*!
    * \brief Get the velocity (Structural Analysis).

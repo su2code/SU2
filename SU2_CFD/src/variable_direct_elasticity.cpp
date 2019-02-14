@@ -98,19 +98,16 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
     Solution[iVar] = val_fea[iVar];
   }
   
-  Solution_time_n      =  NULL;
   Solution_Vel       =  NULL;
   Solution_Vel_time_n    =  NULL;
   Solution_Accel       =  NULL;
   Solution_Accel_time_n  =  NULL;
   if (dynamic_analysis) {
-    Solution_time_n      =  new su2double [nVar];
     Solution_Vel       =  new su2double [nVar];
     Solution_Vel_time_n    =  new su2double [nVar];
     Solution_Accel       =  new su2double [nVar];
     Solution_Accel_time_n  =  new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar]     = val_fea[iVar];
       Solution_Vel[iVar]       = val_fea[iVar+nVar];
       Solution_Vel_time_n[iVar]   = val_fea[iVar+nVar];
       Solution_Accel[iVar]     = val_fea[iVar+2*nVar];
@@ -189,8 +186,6 @@ CFEAVariable::~CFEAVariable(void) {
   
   if (FlowTraction_n       != NULL) delete [] FlowTraction_n;
   if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
-  
-  if (Solution_time_n     != NULL) delete [] Solution_time_n;
   
   if (Solution_Vel       != NULL) delete [] Solution_Vel;
   if (Solution_Vel_time_n   != NULL) delete [] Solution_Vel_time_n;
