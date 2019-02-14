@@ -585,7 +585,7 @@ inline void CVariable::Set_OldSolution_Accel(void) { }
 
 inline void CVariable::Set_OldSolution_Vel(void) { }
 
-inline su2double CVariable::GetSolution_time_n(unsigned short val_var) { return 0; }
+inline su2double CVariable::GetSolution_time_n(unsigned short val_var) { return Solution_time_n[val_var]; }
 
 inline su2double CVariable::GetSolution_Vel(unsigned short val_var) { return 0; }
 
@@ -1548,7 +1548,6 @@ inline su2double CDiscAdjFEAVariable::GetSolution_Accel(unsigned short val_var) 
 inline su2double CDiscAdjFEAVariable::GetSolution_Accel_time_n(unsigned short val_var) { return Solution_Accel_time_n[val_var]; }
 inline su2double CDiscAdjFEAVariable::GetSolution_Vel_time_n(unsigned short val_var) { return Solution_Vel_time_n[val_var]; }
 inline su2double CDiscAdjFEAVariable::GetSolution_Vel(unsigned short val_var) { return Solution_Vel[val_var]; }
-inline su2double CDiscAdjFEAVariable::GetSolution_time_n(unsigned short val_var) { return Solution_time_n[val_var]; }
 
 inline void CFEAVariable::SetAdjointSolution_Vel(su2double *adj_sol) {
     for (unsigned short iVar = 0; iVar < nVar; iVar++)
