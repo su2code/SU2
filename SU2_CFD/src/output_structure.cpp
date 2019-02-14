@@ -20928,7 +20928,7 @@ void COutput::LoadLocalData_FEM(CConfig *config, CGeometry *geometry, CSolver **
       /*--- New variables can be loaded to the Local_Data structure here,
        assuming they were registered above correctly. ---*/
 
-      if (Kind_Solver == FEM_NAVIER_STOKES){
+      if ((Kind_Solver == FEM_NAVIER_STOKES) || (Kind_Solver == FEM_LES)){
         Local_Data[jPoint][iVar] = DGFluidModel->GetLaminarViscosity(); iVar++;
       }
       if ((Kind_Solver == FEM_LES) && (config->GetKind_SGS_Model() != IMPLICIT_LES)){
