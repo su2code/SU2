@@ -1123,8 +1123,6 @@ inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_Tim
 
 inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_SpaceIteScheme_FEA; }
 
-inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_TransferMethod; }
-
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_FEM_Flow(void) { return Kind_ConvNumScheme_FEM_Flow; }
@@ -1684,6 +1682,10 @@ inline su2double CConfig::GetCollective_Pitch(void) { return Collective_Pitch; }
 
 inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
+inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
+
+inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
+
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
@@ -1717,6 +1719,10 @@ inline bool CConfig::GetWrt_PorosityFile(void) { return Wrt_PorosityFile; }
 inline void CConfig::SetWrt_PorosityFile(bool val_wrt_inletfile) { Wrt_PorosityFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
+
+inline bool CConfig::GetWrt_Projected_Sensitivity(void) { return Wrt_Projected_Sensitivity; }
+
+inline unsigned short CConfig::GetSensitivity_Format(void) { return Sensitivity_FileFormat; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
@@ -1849,8 +1855,6 @@ inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetPseudoStatic(void) { return PseudoStatic; }
-
-inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
 
 inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
 

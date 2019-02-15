@@ -305,8 +305,6 @@ inline void CGeometry::MatchActuator_Disk(CConfig *config) { }
 
 inline void CGeometry::MatchInterface(CConfig *config) { }
 
-inline void CGeometry::MatchZone(CConfig *config, CGeometry *geometry_donor, CConfig *config_donor, unsigned short val_iZone, unsigned short val_nZone) { }
-
 inline void CGeometry::SetBoundControlVolume(CConfig *config, unsigned short action) { }
 
 inline void CGeometry::SetBoundControlVolume(CConfig *config, CGeometry *geometry, unsigned short action) { }
@@ -481,6 +479,8 @@ inline vector<vector<unsigned long> > CPhysicalGeometry::GetPlanarPoints() { ret
 inline vector<vector<unsigned long> > CMultiGridGeometry::GetPlanarPoints() { return Plane_points; }
 
 inline void CGeometry::SetSensitivity(CConfig* config) {}
+
+inline void CGeometry::ReadUnorderedSensitivity(CConfig* config) {}
 
 inline su2double CGeometry::GetSensitivity(unsigned long iPoint, unsigned short iDim) { return 0.0;}
 
