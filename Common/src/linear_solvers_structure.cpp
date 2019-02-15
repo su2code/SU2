@@ -506,7 +506,7 @@ unsigned long CSysSolve::BCGSTAB_LinSolver(const CSysVector & b, CSysVector & x,
   /*--- Initialization ---*/
   
   su2double alpha = 1.0, beta = 1.0, omega = 1.0, rho = 1.0, rho_prime = 1.0;
-  p = b; v = b; r_0 = r;
+  p = su2double(0.0); v = su2double(0.0); r_0 = r;
   
   /*--- Set the norm to the initial initial residual value ---*/
   
