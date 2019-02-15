@@ -82,7 +82,6 @@ CDiscAdjFEASolver::CDiscAdjFEASolver(CGeometry *geometry, CConfig *config, CSolv
   adjoint = true;
 
   bool restart = config->GetRestart();
-  bool fsi = config->GetFSI_Simulation();
 
   restart = false;
 

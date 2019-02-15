@@ -59,6 +59,8 @@ inline bool COutput::WriteScreen_Output(CConfig *config, bool write_dualtime) { 
 inline void COutput::LoadHistoryData(CGeometry ****geometry, CSolver *****solver_container, CConfig **config,
       CIntegration ****integration, bool DualTime, su2double timeused, unsigned short val_iZone, unsigned short val_iInst) { }
 
+inline void COutput::LoadVolumeDataFEM(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iElem, unsigned long index, unsigned short dof){}
+
 inline void COutput::PrintScreenFixed(stringstream& stream, su2double val) {
   stream.precision(6); stream.setf(ios::fixed, ios::floatfield); stream.width(field_width);
   stream << std::right << val;
@@ -138,3 +140,5 @@ inline void COutput::LoadSurfaceData(CConfig *config, CGeometry *geometry, CSolv
 inline bool COutput::SetInit_Residuals(CConfig *config) {return false;}
 
 inline bool COutput::SetUpdate_Averages(CConfig *config, bool dualtime) {return false;}
+
+inline COutputLegacy* COutput::GetLegacyOutput() {return output_legacy;}

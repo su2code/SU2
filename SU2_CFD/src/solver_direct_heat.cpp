@@ -242,6 +242,9 @@ CHeatSolverFVM::CHeatSolverFVM(CGeometry *geometry, CConfig *config, unsigned sh
 
   /*--- MPI solution ---*/
   Set_MPI_Solution(geometry, config);
+
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "HEAT";
 }
 
 CHeatSolverFVM::~CHeatSolverFVM(void) { }

@@ -864,6 +864,8 @@ CEulerSolver::CEulerSolver(CGeometry *geometry, CConfig *config, unsigned short 
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CEulerSolver::~CEulerSolver(void) {
@@ -14822,8 +14824,6 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   unsigned short direct_diff = config->GetDirectDiff();
   bool rans = ((config->GetKind_Solver() == RANS )|| (config->GetKind_Solver() == DISC_ADJ_RANS));
-  bool fsi     = config->GetFSI_Simulation();
-  bool multizone = config->GetMultizone_Problem();
 
   /*--- Check for a restart file to evaluate if there is a change in the angle of attack
    before computing all the non-dimesional quantities. ---*/
@@ -15556,6 +15556,8 @@ CNSSolver::CNSSolver(CGeometry *geometry, CConfig *config, unsigned short iMesh)
 
   Set_MPI_Solution(geometry, config);
   
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "C.FLOW";
 }
 
 CNSSolver::~CNSSolver(void) {
@@ -16554,7 +16556,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
 
 void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     
-  unsigned long iVertex, iPoint;
+  unsigned long iVertex;
   unsigned short Boundary, Monitoring, iMarker, iMarker_Monitoring, iDim;
   su2double *Vel_FS = config->GetVelocity_FreeStream();
   su2double VelMag_FS = 0.0, SkinFrictionMag = 0.0, SkinFrictionDot = 0.0, *Normal, Area, Sref = config->GetRefArea();
@@ -16590,8 +16592,6 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
             
       for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
                 
-        iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
-          
         /*--- Perform dot product of skin friction with freestream velocity ---*/
 
         SkinFrictionMag = 0.0;

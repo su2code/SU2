@@ -55,8 +55,6 @@ CDiscAdjSolver::CDiscAdjSolver(CGeometry *geometry, CConfig *config, CSolver *di
 
   adjoint = true;
 
-  bool fsi = config->GetFSI_Simulation();
-
   nVar = direct_solver->GetnVar();
   nDim = geometry->GetnDim();
 

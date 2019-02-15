@@ -68,8 +68,8 @@ CDiscAdjFlowIncOutput::CDiscAdjFlowIncOutput(CConfig *config, CGeometry *geometr
   
   if (nRequestedVolumeFields == 0){
     RequestedVolumeFields.push_back("COORDINATES");
-    RequestedVolumeFields.push_back("CONSERVATIVE");    
-    RequestedVolumeFields.push_back("SENSITIVITIES");
+    RequestedVolumeFields.push_back("SOLUTION");    
+    RequestedVolumeFields.push_back("SENSITIVITY");
     nRequestedVolumeFields = RequestedVolumeFields.size();
   }
   
@@ -98,7 +98,7 @@ void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   AddHistoryOutput("INNER_ITER",   "Inner_Iter", FORMAT_INTEGER,  "ITER"); 
   /// END_GROUP
   
-  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the conservative variables. 
+  /// BEGIN_GROUP: RMS_RES, DESCRIPTION: The root-mean-square residuals of the SOLUTION variables. 
   /// DESCRIPTION: Root-mean square residual of the adjoint Pressure.
   AddHistoryOutput("RMS_ADJ_PRESSURE",    "rms[A_P]",  FORMAT_FIXED, "RMS_RES", TYPE_RESIDUAL); 
   /// DESCRIPTION: Root-mean square residual of the adjoint Velocity x-component.
@@ -124,7 +124,7 @@ void CDiscAdjFlowIncOutput::SetHistoryOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the conservative variables. 
+  /// BEGIN_GROUP: MAX_RES, DESCRIPTION: The maximum residuals of the SOLUTION variables. 
   /// DESCRIPTION: Maximum residual of the adjoint Pressure.
   AddHistoryOutput("MAX_ADJ_PRESSURE",    "max[A_Rho]",  FORMAT_FIXED, "MAX_RES", TYPE_RESIDUAL);
   /// DESCRIPTION: Maximum residual of the adjoint Velocity x-component
@@ -248,28 +248,31 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
     AddVolumeOutput("COORD-Z", "z", "COORDINATES");
   /// END_GROUP
   
-  /// BEGIN_GROUP: CONSERVATIVE, DESCRIPTION: The conservative variables of the adjoint solver.
+  /// BEGIN_GROUP: SOLUTION, DESCRIPTION: The SOLUTION variables of the adjoint solver.
   /// DESCRIPTION: Adjoint Pressure.
-  AddVolumeOutput("ADJ_PRESSURE",    "Adjoint_Pressure",    "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_PRESSURE",    "Adjoint_Pressure",    "SOLUTION"); 
   /// DESCRIPTION: Adjoint Velocity x-component.
-  AddVolumeOutput("ADJ_VELOCITY-X", "Adjoint_Velocity_x", "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_VELOCITY-X", "Adjoint_Velocity_x", "SOLUTION"); 
   /// DESCRIPTION: Adjoint Velocity y-component.
-  AddVolumeOutput("ADJ_VELOCITY-Y", "Adjoint_Velocity_y", "CONSERVATIVE"); 
+  AddVolumeOutput("ADJ_VELOCITY-Y", "Adjoint_Velocity_y", "SOLUTION"); 
   if (nDim == 3)
     /// DESCRIPTION: Adjoint Velocity z-component.
-    AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "CONSERVATIVE");
-  /// DESCRIPTION: Adjoint Temperature.
-  AddVolumeOutput("ADJ_TEMPERATURE", "Adjoint_Temperature", "CONSERVATIVE");
+    AddVolumeOutput("ADJ_VELOCITY-Z", "Adjoint_Velocity_z", "SOLUTION"); 
+ 
+  if (weakly_coupled_heat || heat){
+    AddVolumeOutput("ADJ_HEAT", "Adjoint_Heat", "SOLUTION");
+  }
+
   switch(turb_model){
   case SA: case SA_NEG: case SA_E: case SA_COMP: case SA_E_COMP:
     /// DESCRIPTION: Adjoint nu tilde.
-    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "CONSERVATIVE"); 
+    AddVolumeOutput("ADJ_NU_TILDE", "Adjoint_Nu_Tilde", "SOLUTION"); 
     break;  
   case SST:
     /// DESCRIPTION: Adjoint kinetic energy.
-    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "CONSERVATIVE"); 
+    AddVolumeOutput("ADJ_KINETIC_ENERGY", "Adjoint_TKE", "SOLUTION"); 
     /// DESCRIPTION: Adjoint dissipation.
-    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "CONSERVATIVE");  
+    AddVolumeOutput("ADJ_DISSIPATION", "Adjoint_Omega", "SOLUTION");  
     break;
   default: break;
   }
@@ -287,7 +290,7 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
   }
   /// END_GROUP
   
-  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the conservative variables. 
+  /// BEGIN_GROUP: RESIDUAL, DESCRIPTION: Residuals of the SOLUTION variables. 
   /// DESCRIPTION: Residual of the adjoint Pressure.
   AddVolumeOutput("RES_ADJ_PRESSURE",    "Residual_Adjoint_Pressure",    "RESIDUAL");  
   /// DESCRIPTION: Residual of the adjoint Velocity x-component.
@@ -331,11 +334,15 @@ void CDiscAdjFlowIncOutput::SetVolumeOutputFields(CConfig *config){
 void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry, CSolver **solver, unsigned long iPoint){
   
   CVariable* Node_AdjFlow = solver[ADJFLOW_SOL]->node[iPoint]; 
+  CVariable* Node_AdjHeat = NULL;
   CVariable* Node_AdjTurb = NULL;
   CPoint*    Node_Geo     = geometry->node[iPoint];
   
   if (config->GetKind_Turb_Model() != NONE){
     Node_AdjTurb = solver[ADJTURB_SOL]->node[iPoint]; 
+  }
+  if (weakly_coupled_heat){
+    Node_AdjHeat = solver[ADJHEAT_SOL]->node[iPoint];
   }
   
   SetVolumeOutputValue("COORD-X", iPoint,  Node_Geo->GetCoord(0));  
@@ -348,9 +355,14 @@ void CDiscAdjFlowIncOutput::LoadVolumeData(CConfig *config, CGeometry *geometry,
   SetVolumeOutputValue("ADJ_VELOCITY-Y", iPoint, Node_AdjFlow->GetSolution(2));
   if (nDim == 3){
     SetVolumeOutputValue("ADJ_VELOCITY-Z", iPoint, Node_AdjFlow->GetSolution(3));
-    SetVolumeOutputValue("ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(4));
-  } else {
-    SetVolumeOutputValue("ADJ_TEMPERATURE",     iPoint, Node_AdjFlow->GetSolution(3));
+  }
+
+  if (weakly_coupled_heat){
+    SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjHeat->GetSolution(0));
+  }
+  if (heat){
+    if (nDim == 3) SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjFlow->GetSolution(4));
+    else           SetVolumeOutputValue("ADJ_HEAT", iPoint, Node_AdjFlow->GetSolution(3));
   }
   // Turbulent 
   switch(turb_model){

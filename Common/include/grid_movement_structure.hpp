@@ -1149,8 +1149,9 @@ public:
   /*!
 	 * \brief Check for negative volumes (all elements) after performing grid deformation.
 	 * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] Screen_Output - determines if text is written to screen
 	 */
-  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume);
+  void ComputeDeforming_Element_Volume(CGeometry *geometry, su2double &MinVolume, su2double &MaxVolume, bool Screen_Output);
 
   /*!
 	 * \brief Compute the minimum distance to the nearest solid surface.

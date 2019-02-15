@@ -182,6 +182,9 @@ CTransLMSolver::CTransLMSolver(CGeometry *geometry, CConfig *config, unsigned sh
     restart_file.close();
   }
 
+  /*--- Add the solver name (max 8 characters) ---*/
+  SolverName = "TRANS";
+
 }
 
 CTransLMSolver::~CTransLMSolver(void) {

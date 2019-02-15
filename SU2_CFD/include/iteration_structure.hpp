@@ -372,7 +372,7 @@ public:
    * \brief Preprocessing to prepare for an iteration of the physics.
    * \param[in] ??? - Description here.
    */
-  void Preprocess(COutput *output,
+  virtual void Preprocess(COutput *output,
                   CIntegration ****integration_container,
                   CGeometry ****geometry_container,
                   CSolver *****solver_container,
@@ -396,7 +396,7 @@ public:
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-  void Iterate(COutput *output,
+  virtual void Iterate(COutput *output,
                CIntegration ****integration_container,
                CGeometry ****geometry_container,
                CSolver *****solver_container,
@@ -420,7 +420,7 @@ public:
    * \param[in] grid_movement - Volume grid movement classes of the problem.
    * \param[in] FFDBox - FFD FFDBoxes of the problem.
    */
-  void Solve(COutput *output,
+  virtual void Solve(COutput *output,
                CIntegration ****integration_container,
                CGeometry ****geometry_container,
                CSolver *****solver_container,
@@ -436,7 +436,7 @@ public:
    * \brief Updates the containers for the fluid system.
    * \param[in] ??? - Description here.
    */
-  void Update(COutput *output,
+  virtual void Update(COutput *output,
               CIntegration ****integration_container,
               CGeometry ****geometry_container,
               CSolver *****solver_container,
@@ -452,7 +452,7 @@ public:
    * \brief Monitors the convergence and other metrics for the fluid system.
    * \param[in] ??? - Description here.
    */
-  bool Monitor(COutput *output,
+ virtual bool Monitor(COutput *output,
       CIntegration ****integration_container,
       CGeometry ****geometry_container,
       CSolver *****solver_container,
@@ -470,7 +470,7 @@ public:
    * \param[in] geometry_container - Geometrical definition of the problem.
    * \param[in] config_container - Definition of the particular problem.
    */
-  void Postprocess(COutput *output,
+  virtual void Postprocess(COutput *output,
                    CIntegration ****integration_container,
                    CGeometry ****geometry_container,
                    CSolver *****solver_container,
@@ -568,7 +568,7 @@ public:
  * \author T. Economon, E. van der Weide
  * \version 6.1.0 "Falcon"
  */
-class CFEMFluidIteration : public CIteration {
+class CFEMFluidIteration : public CFluidIteration {
 public:
   
   /*!

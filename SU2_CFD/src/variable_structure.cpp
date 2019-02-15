@@ -152,6 +152,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){
 	  Solution_Adj_Old = new su2double [nVar];
+    Solution_BGS_k = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) {
+      Solution_BGS_k[iVar] = 0.0;
+    }
 	}
 
   if(config->GetMultizone_Problem() && config->GetAD_Mode()) {
