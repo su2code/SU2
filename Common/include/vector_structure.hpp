@@ -149,6 +149,11 @@ public:
   unsigned long GetLocSize() const;
   
   /*!
+   * \brief return the number of local elements in the CSysVector without ghost cells
+   */
+  unsigned long GetNElmDomain() const;
+  
+  /*!
    * \brief return the size of the CSysVector (over all processors)
    */
   unsigned long GetSize() const;
@@ -340,6 +345,12 @@ public:
    */
   friend ScalarType dotProd<ScalarType>(const CSysVector & u, const CSysVector & v);
   
+  /*!
+   * \brief Set our values (resizing if required) by copying from other, the derivative information is lost.
+   * \param[in] other - source CSysVector
+   */
+  template<class T>
+  void PassiveCopy(const CSysVector<T>& other);
 };
 
 /*!
