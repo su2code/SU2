@@ -284,14 +284,6 @@ CIncEulerVariable::CIncEulerVariable(su2double *val_solution, unsigned short val
 
   if (axisymmetric && viscous)
     Grad_AuxVar = new su2double[nDim];
-  
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-      Solution_BGS_k  = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_BGS_k[iVar] = val_solution[iVar];
-      }
-  }
 
 }
 
