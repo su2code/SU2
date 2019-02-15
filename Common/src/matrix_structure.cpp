@@ -442,78 +442,6 @@ ScalarType CSysMatrix<ScalarType>::GetBlock(unsigned long block_i, unsigned long
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block) {
-  
-  unsigned long iVar, jVar, index, step = 0;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, ScalarType *val_block) {
-  
-  unsigned long iVar, jVar, index, step = 0;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = val_block[iVar*nVar+jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = SU2_TYPE::GetValue(val_block[iVar*nVar+jVar]);
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block) {
-  
-  unsigned long iVar, jVar, index, step = 0;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block) {
-  
-  unsigned long iVar, jVar, index, step = 0;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_j) {
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nEqn; jVar++)
-//         matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= val_block[iVar][jVar];  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= SU2_TYPE::GetValue(val_block[iVar][jVar]);
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
 ScalarType *CSysMatrix<ScalarType>::GetBlock_ILUMatrix(unsigned long block_i, unsigned long block_j) {
   
   unsigned long step = 0, index;
@@ -1005,11 +933,12 @@ void CSysMatrix<ScalarType>::DiagonalProduct(CSysVector<ScalarType> & vec, unsig
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::SendReceive_Solution(CSysVector<ScalarType> & x, CGeometry *geometry, CConfig *config) {
+template<class OtherType>
+void CSysMatrix<ScalarType>::SendReceive_Solution(CSysVector<OtherType> & x, CGeometry *geometry, CConfig *config) {
   
   unsigned short iVar, iMarker, MarkerS, MarkerR;
   unsigned long iVertex, iPoint, nVertexS, nVertexR, nBufferS_Vector, nBufferR_Vector;
-  ScalarType *Buffer_Receive = NULL, *Buffer_Send = NULL;
+  OtherType *Buffer_Receive = NULL, *Buffer_Send = NULL;
   
 #ifdef HAVE_MPI
   int send_to, receive_from;
@@ -1035,8 +964,8 @@ void CSysMatrix<ScalarType>::SendReceive_Solution(CSysVector<ScalarType> & x, CG
       
       /*--- Allocate Receive and send buffers  ---*/
       
-      Buffer_Receive = new ScalarType [nBufferR_Vector];
-      Buffer_Send = new ScalarType[nBufferS_Vector];
+      Buffer_Receive = new OtherType [nBufferR_Vector];
+      Buffer_Send = new OtherType[nBufferS_Vector];
       
       /*--- Copy the solution that should be sended ---*/
       
@@ -1050,7 +979,7 @@ void CSysMatrix<ScalarType>::SendReceive_Solution(CSysVector<ScalarType> & x, CG
       
       /*--- Send/Receive information using Sendrecv ---*/
       
-      SelectMPIWrapper<ScalarType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+      SelectMPIWrapper<OtherType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                    Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
@@ -2348,6 +2277,7 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
 
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;
+template void  CSysMatrix<su2double>::SendReceive_Solution(CSysVector<su2double>&, CGeometry*, CConfig*);
 template class CSysMatrixVectorProduct<su2double>;
 template class CSysMatrixVectorProductTransposed<su2double>;
 template class CJacobiPreconditioner<su2double>;
@@ -2357,6 +2287,8 @@ template class CLineletPreconditioner<su2double>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysMatrix<passivedouble>;
+template void  CSysMatrix<passivedouble>::SendReceive_Solution(CSysVector<passivedouble>&, CGeometry*, CConfig*);
+template void  CSysMatrix<passivedouble>::SendReceive_Solution(CSysVector<su2double>&, CGeometry*, CConfig*);
 template class CSysMatrixVectorProduct<passivedouble>;
 template class CSysMatrixVectorProductTransposed<passivedouble>;
 template class CJacobiPreconditioner<passivedouble>;

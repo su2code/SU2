@@ -1330,8 +1330,13 @@ protected:
   su2double MinVolume;
   su2double MaxVolume;
 
+#ifndef CODI_FORWARD_TYPE
+  CSysSolve<passivedouble>  System;
+  CSysMatrix<passivedouble> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+#else
   CSysSolve<su2double>  System;
-  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysMatrix<su2double> StiffMatrix;
+#endif
   CSysVector<su2double> LinSysSol;
   CSysVector<su2double> LinSysRes;
 
