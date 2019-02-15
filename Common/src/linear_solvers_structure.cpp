@@ -669,6 +669,15 @@ void CSysSolve<passivedouble>::HandleTemporariesOut(CSysVector<su2double> & LinS
 template<class ScalarType>
 unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CSysVector<su2double> & LinSysRes,
                                            CSysVector<su2double> & LinSysSol, CGeometry *geometry, CConfig *config) {
+  /*---
+   A word about the templated types. It is assumed that the residual and solution vectors are always of su2doubles,
+   meaning that they are active in the discrete adjoint. The same assumption is made in SetExternalSolve.
+   When the Jacobian is passive (and therefore not compatible with the vectors) we go through the "HandleTemporaries"
+   mechanisms. Note that CG, BCGSTAB, and FGMRES, all expect the vector to be compatible with the Product and
+   Preconditioner (and therefore with the Matrix). Likewise for Solve_b (which is used by CSysSolve_b).
+   There are no provisions here for active Matrix and passive Vectors as that makes no sense since we only handle the
+   derivatives of the residual in CSysSolve_b.
+  ---*/
 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
