@@ -5968,8 +5968,6 @@ CDiscAdjFSIDriver::CDiscAdjFSIDriver(char* confFile,
   RecordingState = 0;
   CurrentRecording = 0;
 
-  filterCrossTerm = false;
-
   switch (config_container[ZONE_0]->GetKind_ObjFunc()){
   case DRAG_COEFFICIENT:
   case LIFT_COEFFICIENT:
@@ -6649,7 +6647,6 @@ void CDiscAdjFSIDriver::Structural_Iteration_Direct(unsigned short ZONE_FLOW, un
 
   solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Set_MPI_Solution(geometry_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW]);
 
-  if(!filterCrossTerm)
   solver_container[ZONE_FLOW][INST_0][MESH_0][FLOW_SOL]->Preprocessing(geometry_container[ZONE_FLOW][INST_0][MESH_0],solver_container[ZONE_FLOW][INST_0][MESH_0], config_container[ZONE_FLOW], MESH_0, NO_RK_ITER, RUNTIME_FLOW_SYS, true);
 
   if (turbulent && !frozen_visc) {
@@ -6777,20 +6774,20 @@ void CDiscAdjFSIDriver::SetRecording(unsigned short ZONE_FLOW,
 
   AD::Reset();
 
-//  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
-//
-//    /*--- Clear indices ---*/
-//
-//    PrepareRecording(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-//
-//    /*--- Clear indices of coupling variables ---*/
-//
-//    SetDependencies(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
-//
-//    /*--- Run one iteration while tape is passive - this clears all indices ---*/
-//    Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
-//
-//  }
+  if (CurrentRecording != kind_recording && (CurrentRecording != NONE) ){
+
+    /*--- Clear indices ---*/
+
+    PrepareRecording(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+    /*--- Clear indices of coupling variables ---*/
+
+    SetDependencies(ZONE_FLOW, ZONE_STRUCT, ALL_VARIABLES);
+
+    /*--- Run one iteration while tape is passive - this clears all indices ---*/
+    Iterate_Direct(ZONE_FLOW, ZONE_STRUCT, kind_recording);
+
+  }
 
   /*--- Prepare for recording ---*/
 

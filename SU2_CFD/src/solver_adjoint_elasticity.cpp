@@ -1023,11 +1023,6 @@ void CDiscAdjFEASolver::ExtractAdjoint_CrossTerm_Geometry(CGeometry *geometry, C
     for(iVar = 0; iVar < nVar; iVar++)
       Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
 
-    /*--- Relax and set the solution ---*/
-    
-    for(iVar = 0; iVar < nVar; iVar++)
-      Solution[iVar] = relax*Solution[iVar] + (1.0-relax)*node[iPoint]->GetGeometry_CrossTerm_Derivative(iVar);
-
     for (iVar = 0; iVar < nVar; iVar++) node[iPoint]->SetGeometry_CrossTerm_Derivative(iVar, Solution[iVar]);
 
   }
