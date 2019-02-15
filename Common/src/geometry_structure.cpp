@@ -532,8 +532,9 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
       source = Neighbors_P2PSend[iRecv];
       tag    = source + 1;
       
-      
-      /*--- Post non-blocking recv for this proc. ---*/
+      /*--- Post non-blocking recv for this proc. Note that we use the
+       send buffer here too. This is important to make sure the arrays
+       are the correct size. ---*/
       
       switch (commType) {
         case COMM_TYPE_DOUBLE:
@@ -570,26 +571,25 @@ void CGeometry::PostP2PRecvs(CGeometry *geometry,
       source = Neighbors_P2PRecv[iRecv];
       tag    = source + 1;
       
-
-    /*--- Post non-blocking recv for this proc. ---*/
-    
-    switch (commType) {
-      case COMM_TYPE_DOUBLE:
-        SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
-                       source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
-        break;
-      case COMM_TYPE_UNSIGNED_SHORT:
-        SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
-                       source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
-        break;
-      default:
-        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
-                       CURRENT_FUNCTION);
-        break;
+      /*--- Post non-blocking recv for this proc. ---*/
+      
+      switch (commType) {
+        case COMM_TYPE_DOUBLE:
+          SU2_MPI::Irecv(&(bufD_P2PRecv[offset]), count, MPI_DOUBLE,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        case COMM_TYPE_UNSIGNED_SHORT:
+          SU2_MPI::Irecv(&(bufS_P2PRecv[offset]), count, MPI_UNSIGNED_SHORT,
+                         source, tag, MPI_COMM_WORLD, &(req_P2PRecv[iMessage]));
+          break;
+        default:
+          SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                         CURRENT_FUNCTION);
+          break;
+      }
+      
     }
     
-    }
-
     /*--- Increment message counter. ---*/
     
     iMessage++;
@@ -639,7 +639,9 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     dest = Neighbors_P2PRecv[val_iSend];
     tag  = rank + 1;
     
-    /*--- Post non-blocking send for this proc. ---*/
+    /*--- Post non-blocking send for this proc. Note that we use the
+     send buffer here too. This is important to make sure the arrays
+     are the correct size. ---*/
     
     switch (commType) {
       case COMM_TYPE_DOUBLE:
@@ -676,25 +678,24 @@ void CGeometry::PostP2PSends(CGeometry *geometry,
     dest = Neighbors_P2PSend[val_iSend];
     tag  = rank + 1;
     
-
-  /*--- Post non-blocking send for this proc. ---*/
-  
-  switch (commType) {
-    case COMM_TYPE_DOUBLE:
-      SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
-                     dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
-      break;
-    case COMM_TYPE_UNSIGNED_SHORT:
-      SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
-                     dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
-      break;
-    default:
-      SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
-                     CURRENT_FUNCTION);
-      break;
+    /*--- Post non-blocking send for this proc. ---*/
+    
+    switch (commType) {
+      case COMM_TYPE_DOUBLE:
+        SU2_MPI::Isend(&(bufD_P2PSend[offset]), count, MPI_DOUBLE,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      case COMM_TYPE_UNSIGNED_SHORT:
+        SU2_MPI::Isend(&(bufS_P2PSend[offset]), count, MPI_UNSIGNED_SHORT,
+                       dest, tag, MPI_COMM_WORLD, &(req_P2PSend[iMessage]));
+        break;
+      default:
+        SU2_MPI::Error("Unrecognized data type for point-to-point MPI comms.",
+                       CURRENT_FUNCTION);
+        break;
+    }
+    
   }
-  }
-
   
 }
 
