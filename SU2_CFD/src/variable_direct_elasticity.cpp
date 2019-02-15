@@ -68,8 +68,6 @@ CFEAVariable::CFEAVariable(void) : CVariable() {
   
   Reference_Geometry    = NULL;   // Reference geometry for optimization purposes
   
-  Solution_BGS_k    = NULL;       // Old solution stored to check convergence in the BGS loop
-
 }
 
 CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned short val_nvar, CConfig *config) : CVariable(val_nDim, val_nvar, config) {
@@ -123,17 +121,14 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
   Solution_Pred_Old     =  NULL;
   Solution_Pred_Old   = NULL;
   FlowTraction_n = NULL;
-  Solution_BGS_k = NULL;
   if (fsi_analysis) {
     FlowTraction       =  new su2double [nVar];
     Solution_Pred       =  new su2double [nVar];
     Solution_Pred_Old     =  new su2double [nVar];
-    Solution_BGS_k       = new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
       FlowTraction[iVar] = 0.0;
       Solution_Pred[iVar] = val_fea[iVar];
       Solution_Pred_Old[iVar] = val_fea[iVar];
-      Solution_BGS_k[iVar] = 0.0;
     }
   }
   
