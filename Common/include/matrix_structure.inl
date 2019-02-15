@@ -98,7 +98,7 @@ inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned lon
 
 template<class ScalarType>
 template<class OtherType>
-void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+inline void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -116,7 +116,7 @@ void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block
 
 template<class ScalarType>
 template<class OtherType>
-void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+inline void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
   
   unsigned long iVar, jVar, index, step = 0;
   
@@ -134,7 +134,7 @@ void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long 
 
 template<class ScalarType>
 template<class OtherType>
-void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
+inline void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
   
   unsigned long step = 0, iVar, index;
   
@@ -151,7 +151,7 @@ void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType val_ma
 
 template<class ScalarType>
 template<class OtherType>
-void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
+inline void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
   
   unsigned long step = 0, iVar, jVar, index;
   
