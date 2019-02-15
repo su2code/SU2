@@ -967,10 +967,10 @@ protected:
 
 	unsigned long nIterMesh;	/*!< \brief Number of iterations in the mesh update. +*/
 
-	CSysSolve  System;
-  CSysMatrix StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
 public:
 
@@ -1330,10 +1330,10 @@ protected:
   su2double MinVolume;
   su2double MaxVolume;
 
-  CSysSolve  System;
-  CSysMatrix StiffMatrix;      /*!< \brief Matrix to store the point-to-point stiffness. */
-  CSysVector LinSysSol;
-  CSysVector LinSysRes;
+  CSysSolve<su2double>  System;
+  CSysMatrix<su2double> StiffMatrix; /*!< \brief Matrix to store the point-to-point stiffness. */
+  CSysVector<su2double> LinSysSol;
+  CSysVector<su2double> LinSysRes;
 
   su2double E;                  /*!< \brief Young's modulus of elasticity. */
   su2double Nu;                 /*!< \brief Poisson's ratio. */
