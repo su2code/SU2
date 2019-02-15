@@ -903,7 +903,7 @@ void CSysSolve<ScalarType>::SetExternalSolve(CSysMatrix<ScalarType> & Jacobian, 
 
   /*--- Push the external function to the AD tape ---*/
 
-  AD::globalTape.pushExternalFunction(&CSysSolve_b::Solve_b, dataHandler, &CSysSolve_b::Delete_b);
+  AD::globalTape.pushExternalFunction(&CSysSolve_b<ScalarType>::Solve_b, dataHandler, &CSysSolve_b<ScalarType>::Delete_b);
 
 #endif
 }
