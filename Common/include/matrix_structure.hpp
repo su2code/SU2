@@ -253,7 +253,8 @@ public:
    * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
-  void AddVal2Diag(unsigned long block_i, ScalarType val_matrix);
+  template<class OtherType>
+  void AddVal2Diag(unsigned long block_i, OtherType val_matrix);
   
   /*!
    * \brief Sets the specified value to the diagonal of the (i, i) subblock
@@ -261,7 +262,8 @@ public:
    * \param[in] block_i - Index of the block in the matrix-by-blocks structure.
    * \param[in] val_matrix - Value to add to the diagonal elements of A(i, i).
    */
-  void SetVal2Diag(unsigned long block_i, ScalarType val_matrix);
+  template<class OtherType>
+  void SetVal2Diag(unsigned long block_i, OtherType val_matrix);
   
   /*!
    * \brief Calculates the matrix-vector product
