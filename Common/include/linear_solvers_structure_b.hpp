@@ -40,6 +40,7 @@
 #include "config_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
+template<class ScalarType>
 class CSysSolve_b{
 
 public:

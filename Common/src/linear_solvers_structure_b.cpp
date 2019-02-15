@@ -41,7 +41,8 @@
 #include "../include/matrix_structure.hpp"
 
 #ifdef CODI_REVERSE_TYPE
-void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
+template<class ScalarType>
+void CSysSolve_b<ScalarType>::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   
   /*--- Extract data from the checkpoint handler ---*/
 
@@ -64,7 +65,7 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   data->getData(nVar);
   data->getData(nBlkDomain);
 
-  CSysMatrix* Jacobian = NULL;
+  CSysMatrix<ScalarType>* Jacobian = NULL;
   data->getData(Jacobian);
 
   CGeometry* geometry  = NULL;
@@ -73,13 +74,13 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   CConfig* config      = NULL;
   data->getData(config);
 
-  CSysSolve* solver;
+  CSysSolve<ScalarType>* solver;
   data->getData(solver);
 
   /*--- Initialize the right-hand side with the gradient of the solution of the primal linear system ---*/
 
-  CSysVector LinSysRes_b(nBlk, nBlkDomain, nVar, 0.0);
-  CSysVector LinSysSol_b(nBlk, nBlkDomain, nVar, 0.0);
+  CSysVector<ScalarType> LinSysRes_b(nBlk, nBlkDomain, nVar, 0.0);
+  CSysVector<ScalarType> LinSysSol_b(nBlk, nBlkDomain, nVar, 0.0);
 
   for (i = 0; i < size; i ++) {
     su2double::GradientData& index = LinSysSol_Indices[i];
@@ -107,7 +108,8 @@ void CSysSolve_b::Solve_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 #endif
 }
 
-void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
+template<class ScalarType>
+void CSysSolve_b<ScalarType>::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
 
   su2double::GradientData *LinSysRes_Indices = NULL;
   su2double::GradientData *LinSysSol_Indices = NULL;
@@ -134,7 +136,7 @@ void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   data->getData(nVar);
   data->getData(nBlkDomain);
 
-  CSysMatrix* Jacobian;
+  CSysMatrix<ScalarType>* Jacobian;
   data->getData(Jacobian);
 
   CGeometry* geometry;
@@ -143,7 +145,11 @@ void CSysSolve_b::Delete_b(AD::Tape* tape, AD::CheckpointHandler* data) {
   CConfig* config;
   data->getData(config);
 
-  CSysSolve* solver;
+  CSysSolve<ScalarType>* solver;
   data->getData(solver);
 }
+
+/*--- Explicit instantiations ---*/
+template class CSysSolve_b<su2double>;
+template class CSysSolve_b<passivedouble>;
 #endif
