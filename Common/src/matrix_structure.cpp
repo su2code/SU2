@@ -506,15 +506,17 @@ void CSysMatrix::InitiateComms(CSysVector & x,
           
         case SOLUTION_MATRIXTRANS:
           
-          /*--- Compute our location in the send buffer. For tbe tranpose
-           operations, we reverse the order of the comms, so note that we
-           use the recv data structure to find our offset. ---*/
+          /*--- We are going to communicate in reverse, so we use the
+           recv buffer for the send instead. Also, all of the offsets
+           and counts are derived from the recv data structures. ---*/
+          
+          bufDSend = geometry->bufD_P2PRecv;
+          
+          /*--- Compute our location in the send buffer. ---*/
           
           offset = geometry->nPoint_P2PRecv[iMessage];
           
-          /*--- Total count can include multiple pieces of data per point.
-           Note again that the comms are reversed so we use the recv counts
-           to find our amount of data to be sent. ---*/
+          /*--- Total count can include multiple pieces of data per point. ---*/
           
           nSend = (geometry->nPoint_P2PRecv[iMessage+1] -
                    geometry->nPoint_P2PRecv[iMessage]);
@@ -590,13 +592,12 @@ void CSysMatrix::CompleteComms(CSysVector & x,
       
       source = status.MPI_SOURCE;
       
-      /*--- We know the offsets based on the source rank. ---*/
-      
-      jRecv = geometry->P2PRecv2Neighbor[source];
-      
-      
       switch (commType) {
         case SOLUTION_MATRIX:
+          
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PRecv2Neighbor[source];
           
           /*--- Get the point offset for the start of this message. ---*/
           
@@ -627,6 +628,15 @@ void CSysMatrix::CompleteComms(CSysVector & x,
           
         case SOLUTION_MATRIXTRANS:
           
+          /*--- We are going to communicate in reverse, so we use the
+           send buffer for the recv instead. Also, all of the offsets
+           and counts are derived from the send data structures. ---*/
+          
+          bufDRecv = geometry->bufD_P2PSend;
+          
+          /*--- We know the offsets based on the source rank. ---*/
+          
+          jRecv = geometry->P2PSend2Neighbor[source];
           
           /*--- Get the point offset for the start of this message. ---*/
           
