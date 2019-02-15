@@ -109,6 +109,12 @@ private:
   bool useMKL;
 #endif
 
+  /*!
+   * \brief Handle type conversion for when we Set, Add, etc. blocks.
+   */
+  template<class OtherType>
+  ScalarType TypeCaster(const OtherType & val) const;
+
 public:
   
   /*!
@@ -179,7 +185,8 @@ public:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to set to A(i, j).
    */
-  void SetBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block);
+  template<class OtherType>
+  void SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
   
   /*!
    * \brief Set the value of a block in the sparse matrix.
@@ -187,7 +194,8 @@ public:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to set to A(i, j).
    */
-  void SetBlock(unsigned long block_i, unsigned long block_j, ScalarType *val_block);
+  template<class OtherType>
+  void SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block);
   
   /*!
    * \brief Adds the specified block to the sparse matrix.
@@ -195,7 +203,8 @@ public:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to add to A(i, j).
    */
-  void AddBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block);
+  template<class OtherType>
+  void AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
   
   /*!
    * \brief Subtracts the specified block to the sparse matrix.
@@ -203,7 +212,8 @@ public:
    * \param[in] block_j - Indexes of the block in the matrix-by-blocks structure.
    * \param[in] **val_block - Block to subtract to A(i, j).
    */
-  void SubtractBlock(unsigned long block_i, unsigned long block_j, ScalarType **val_block);
+  template<class OtherType>
+  void SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block);
   
   /*!
    * \brief Copies the block (i, j) of the matrix-by-blocks structure in the internal variable *block.
@@ -363,7 +373,8 @@ public:
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  void SendReceive_Solution(CSysVector<ScalarType> & x, CGeometry *geometry, CConfig *config);
+  template<class OtherType>
+  void SendReceive_Solution(CSysVector<OtherType> & x, CGeometry *geometry, CConfig *config);
   
   /*!
    * \brief Send receive the solution using MPI and the transposed structure of the matrix.

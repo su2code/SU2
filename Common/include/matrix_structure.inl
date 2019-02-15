@@ -34,7 +34,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with SU2. If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #pragma once
 
 template<class ScalarType>
@@ -43,6 +43,93 @@ inline void CSysMatrix<ScalarType>::SetValZero(void) {
 	  for (unsigned long index = 0; index < nnz*nVar*nEqn; index++)
 		matrix[index] = 0.0;
   }
+}
+
+template<class ScalarType>
+template<class OtherType>
+inline ScalarType CSysMatrix<ScalarType>::TypeCaster(const OtherType & val) const {
+  // return val; to enable AD in matrix
+  return SU2_TYPE::GetValue(val);
+}
+
+#ifdef CODI_REVERSE_TYPE
+template<>
+template<class OtherType>
+inline passivedouble CSysMatrix<passivedouble>::TypeCaster(const OtherType & val) const {
+  return SU2_TYPE::GetValue(val);
+}
+#endif
+
+template<class ScalarType>
+template<class OtherType>
+inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster(val_block[iVar][jVar]);
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+template<class OtherType>
+inline void CSysMatrix<ScalarType>::SetBlock(unsigned long block_i, unsigned long block_j, OtherType *val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] = TypeCaster(val_block[iVar*nVar+jVar]);
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::AddBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] += TypeCaster(val_block[iVar][jVar]);
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long block_j, OtherType **val_block) {
+  
+  unsigned long iVar, jVar, index, step = 0;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_j) {
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nEqn; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nEqn+iVar*nEqn+jVar] -= TypeCaster(val_block[iVar][jVar]);
+      break;
+    }
+  }
+  
 }
 
 template<class ScalarType>
