@@ -460,6 +460,7 @@ void CSysMatrix::InitiateComms(CSysVector & x,
   /*--- Set some local pointers to make access simpler. ---*/
   
   su2double *bufDSend = geometry->bufD_P2PSend;
+  if (reverse) bufDSend = geometry->bufD_P2PRecv;
   
   /*--- Load the specified quantity from the solver into the generic
    communication buffer in the geometry class. ---*/
@@ -625,6 +626,8 @@ void CSysMatrix::CompleteComms(CSysVector & x,
           break;
           
         case SOLUTION_MATRIXTRANS:
+          
+          bufDRecv = geometry->bufD_P2PSend;
           
           /*--- We know the offsets based on the source rank. ---*/
           
