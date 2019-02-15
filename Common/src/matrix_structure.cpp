@@ -553,46 +553,6 @@ void CSysMatrix<ScalarType>::MatrixMatrixProduct(ScalarType *matrix_a, ScalarTyp
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, ScalarType val_matrix) {
-  
-  unsigned long step = 0, iVar, index;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      for (iVar = 0; iVar < nVar; iVar++)
-//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += SU2_TYPE::GetValue(val_matrix);
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, ScalarType val_matrix) {
-  
-  unsigned long step = 0, iVar, jVar, index;
-  
-  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
-    step++;
-    if (col_ind[index] == block_i) {	// Only elements on the diagonal
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-        for (jVar = 0; jVar < nVar; jVar++)
-          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
-      
-      for (iVar = 0; iVar < nVar; iVar++)
-//        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = val_matrix;  // Allow AD in Matrix Structure (disabled temporarily to avoid conflicts)
-        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = SU2_TYPE::GetValue(val_matrix);
-      
-      break;
-    }
-  }
-  
-}
-
-template<class ScalarType>
 void CSysMatrix<ScalarType>::DeleteValsRowi(unsigned long i) {
   
   unsigned long block_i = i/nVar;

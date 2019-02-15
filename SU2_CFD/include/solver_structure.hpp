@@ -145,8 +145,13 @@ public:
   CSysVector<su2double> LinSysSol;    /*!< \brief vector to store iterative solution of implicit linear system. */
   CSysVector<su2double> LinSysRes;    /*!< \brief vector to store iterative residual of implicit linear system. */
   CSysVector<su2double> LinSysAux;    /*!< \brief vector to store iterative residual of implicit linear system. */
-  CSysMatrix<su2double> Jacobian;     /*!< \brief Complete sparse Jacobian structure for implicit computations. */
-  CSysSolve<su2double>  System;       /*!< \brief Linear solver/smoother. */
+#ifndef CODI_FORWARD_TYPE
+  CSysMatrix<passivedouble> Jacobian; /*!< \brief Complete sparse Jacobian structure for implicit computations. */
+  CSysSolve<passivedouble>  System;   /*!< \brief Linear solver/smoother. */
+#else
+  CSysMatrix<su2double> Jacobian;
+  CSysSolve<su2double>  System;
+#endif
   
   CSysMatrix<su2double> StiffMatrix; /*!< \brief Sparse structure for storing the stiffness matrix in Galerkin computations, and grid movement. */
   

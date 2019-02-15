@@ -133,6 +133,46 @@ void CSysMatrix<ScalarType>::SubtractBlock(unsigned long block_i, unsigned long 
 }
 
 template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::AddVal2Diag(unsigned long block_i, OtherType val_matrix) {
+  
+  unsigned long step = 0, iVar, index;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      for (iVar = 0; iVar < nVar; iVar++)
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] += TypeCaster(val_matrix);
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
+template<class OtherType>
+void CSysMatrix<ScalarType>::SetVal2Diag(unsigned long block_i, OtherType val_matrix) {
+  
+  unsigned long step = 0, iVar, jVar, index;
+  
+  for (index = row_ptr[block_i]; index < row_ptr[block_i+1]; index++) {
+    step++;
+    if (col_ind[index] == block_i) {	// Only elements on the diagonal
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        for (jVar = 0; jVar < nVar; jVar++)
+          matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+jVar] = 0.0;
+      
+      for (iVar = 0; iVar < nVar; iVar++)
+        matrix[(row_ptr[block_i]+step-1)*nVar*nVar+iVar*nVar+iVar] = TypeCaster(val_matrix);
+      
+      break;
+    }
+  }
+  
+}
+
+template<class ScalarType>
 inline CSysMatrixVectorProduct<ScalarType>::CSysMatrixVectorProduct(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
   sparse_matrix = &matrix_ref;
   geometry = geometry_ref;
