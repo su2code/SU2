@@ -769,11 +769,11 @@ public:
    */
   void SetCvve(su2double *val_Cvve_i, su2double *val_Cvve_j);
   
-/*!
-  * \brief Sets the values of the roe dissipation.
-  * \param[in] diss_i - Dissipation value at node i
-  * \param[in] diss_j - Dissipation value at node j
-  */
+  /*!
+   * \brief Sets the values of the roe dissipation.
+   * \param[in] diss_i - Dissipation value at node i
+   * \param[in] diss_j - Dissipation value at node j
+   */
   void SetDissipation(su2double diss_i, su2double diss_j);
   
   /*!
@@ -878,11 +878,11 @@ public:
      * \param[in] val_thermal_conductivity - Thermal Conductivity.
      * \param[in] val_thermal_conductivity_ve -Vib-Elec mode thermal Conductivity.
      */
-    void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
-                           su2double *val_eve, su2double *val_normal,
-                           su2double *val_diffusioncoeff, su2double val_viscosity,
-                           su2double val_therm_conductivity,
-                           su2double val_therm_conductivity_ve, CConfig *config);
+  void GetViscousProjFlux(su2double *val_primvar, su2double **val_gradprimvar,
+                          su2double *val_eve, su2double *val_normal,
+                          su2double *val_diffusioncoeff, su2double val_viscosity,
+                          su2double val_therm_conductivity,
+                          su2double val_therm_conductivity_ve, CConfig *config);
   /*!
    * \brief Compute the projection of the viscous fluxes into a direction (artificial compresibility method).
    * \param[in] val_primvar - Primitive variables.
@@ -1059,7 +1059,7 @@ public:
                           su2double **val_Proj_Jac_Tensor_i,
                           su2double **val_Proj_Jac_Tensor_j);
   
-  /*!
+    /*!
      * \brief TApproximation of Viscous NS Jacobians in Thermochemical NonEquil.
      * \param[in] val_Mean_PrimVar - Mean value of the primitive variables.
      * \param[in] val_gradprimvar - Mean value of the gradient of the primitive variables.
@@ -1067,7 +1067,7 @@ public:
      * \param[in] val_Mean_Cvve - Mean value of the vib-elec Cv.
      * \param[in] val_laminar_viscosity - Value of the laminar viscosity.
      * \param[in] val_thermal_conductivity - Value of the thermal conductivity.
-        * \param[in] val_thermal_conductivity_ve - Value of the thermal conductivity for vib-elec.
+     * \param[in] val_thermal_conductivity_ve - Value of the thermal conductivity for vib-elec.
      * \param[in] val_dist_ij - Distance between the points.
      * \param[in] val_normal - Normal vector, the norm of the vector is the area of the face.
      * \param[in] val_dS - Area of the face between two nodes.
@@ -2488,6 +2488,65 @@ public:
 
   /*!
    * \brief Compute the Roe's flux between two nodes i and j.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
+   * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
+};
+
+/*!
+ * \class CUpwAUSMPLUSUP2_Flow
+ * \brief Class for solving an approximate Riemann AUSM+ -up2, Two-Temperature Model. https://doi.org/10.1016/j.jcp.2013.02.046
+ * \ingroup ConvDiscr
+ * \author Walter Maier, A. Sachedeva
+ */
+class CUpwAUSMPLUSUP2_TNE2 : public CNumerics {
+private:
+  bool implicit, ionization;
+  su2double *FcL, *FcR, *FcLR;
+  su2double *dmLP, *dmRM, *dpLP, *dpRM;
+  su2double *daL, *daR;
+  su2double *rhos_i, *u_i;
+  su2double *rhos_j, *u_j;
+  su2double a_i, P_i, h_i, ProjVel_i;
+  su2double a_j, P_j, h_j, ProjVel_j;
+  su2double sq_vel, Proj_ModJac_Tensor_ij;
+  su2double mL, mR, mLP, mRM, mF, pLP, pRM, pFi, pF, Phi;
+  su2double CstarL, CstarR, ChatL, ChatR, aF, rhoF, MFsq, Mrefsq, Mp, fa;
+  su2double Kp, sigma, alpha, beta, param1, mfP, mfM;
+
+  /*--- Roe Only ---*/
+  su2double *Diff_U;
+  su2double *RoeU, *RoeV, *RoeEve;
+  su2double *ProjFlux_i, *ProjFlux_j;
+  su2double *Lambda, *Epsilon;
+  su2double **P_Tensor, **invP_Tensor;
+  su2double RoeSoundSpeed;
+  su2double ProjVelocity, ProjVelocity_i, ProjVelocity_j;
+  su2double R;
+  su2double *RoedPdU;
+  unsigned short nPrimVar, nPrimVarGrad;
+
+public:
+
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CUpwAUSMPLUSUP2_TNE2(unsigned short val_nDim, unsigned short val_nVar, unsigned short val_nPrimVar, unsigned short val_nPrimVarGrad,  CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CUpwAUSMPLUSUP2_TNE2(void);
+
+  /*!
+   * \brief Compute the AUSM+ -up flux between two nodes i and j.
    * \param[out] val_residual - Pointer to the total residual.
    * \param[out] val_Jacobian_i - Jacobian of the numerical method at node i (implicit computation).
    * \param[out] val_Jacobian_j - Jacobian of the numerical method at node j (implicit computation).
