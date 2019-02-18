@@ -784,7 +784,8 @@ void CIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
   su2double rotMatrix[3][3], *angles, theta, cosTheta, sinTheta,
   phi, cosPhi, sinPhi, psi, cosPsi, sinPsi,
   *Buffer_Receive_U = NULL, *Buffer_Send_U = NULL;
-  
+  su2double *Buffer_Receive_Lambda = NULL, *Buffer_Send_Lambda = NULL;
+
 #ifdef HAVE_MPI
   int send_to, receive_from;
   SU2_MPI::Status status;
@@ -810,10 +811,14 @@ void CIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       Buffer_Receive_U = new su2double [nBufferR_Vector];
       Buffer_Send_U    = new su2double[nBufferS_Vector];
       
+      Buffer_Receive_Lambda = new su2double [nBufferR_Vector];
+      Buffer_Send_Lambda = new su2double[nBufferS_Vector];
+      
       /*--- Copy the solution that should be sended ---*/
       
       for (iVertex = 0; iVertex < nVertexS; iVertex++) {
         iPoint = geometry->vertex[MarkerS][iVertex]->GetNode();
+        Buffer_Send_Lambda[iVertex] = node[iPoint]->GetPorosity();
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Send_U[iVar*nVertexS+iVertex] = node[iPoint]->GetSolution(iVar);
       }
@@ -824,11 +829,14 @@ void CIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
       SU2_MPI::Sendrecv(Buffer_Send_U, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
                         Buffer_Receive_U, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
       
+      SU2_MPI::Sendrecv(Buffer_Send_Lambda, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
+                        Buffer_Receive_Lambda, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
 #else
       
       /*--- Receive information without MPI ---*/
       
       for (iVertex = 0; iVertex < nVertexR; iVertex++) {
+        Buffer_Receive_Lambda[iVertex] = Buffer_Send_Lambda[iVertex];
         for (iVar = 0; iVar < nVar; iVar++)
           Buffer_Receive_U[iVar*nVertexR+iVertex] = Buffer_Send_U[iVar*nVertexR+iVertex];
       }
@@ -888,6 +896,8 @@ void CIncEulerSolver::Set_MPI_Solution(CGeometry *geometry, CConfig *config) {
         for (iVar = 0; iVar < nVar; iVar++)
           node[iPoint]->SetSolution(iVar, Solution[iVar]);
         
+        node[iPoint]->SetPorosity(Buffer_Receive_Lambda[iVertex]);
+
       }
       
       /*--- Deallocate receive buffer ---*/
@@ -5287,6 +5297,7 @@ void CIncEulerSolver::Evaluate_ObjFunc(CConfig *config) {
       Total_ComboObj+=Weight_ObjFunc*config->GetSurface_PressureDrop(0);
       break;
     case CUSTOM_OBJFUNC:
+      Total_Custom_ObjFunc = config->GetSurface_Temperature(0);
       Total_ComboObj+=Weight_ObjFunc*Total_Custom_ObjFunc;
       break;
     default:
@@ -7681,9 +7692,7 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
   if (config->GetKind_Gradient_Method() == WEIGHTED_LEAST_SQUARES) least_squares = true;
   else least_squares = false;
 
-  /*--- Perform the MPI communication of the solution ---*/
 
-  Set_MPI_Solution(geometry, config);
   
   /*--- Check for porosity for topology optimization, if the file is not
    found, then the porosity values are initialized to zero and a template
@@ -7703,6 +7712,10 @@ CIncNSSolver::CIncNSSolver(CGeometry *geometry, CConfig *config, unsigned short 
       config->SetWrt_PorosityFile(true);
     }
   }
+  
+  /*--- Perform the MPI communication of the solution ---*/
+  
+  Set_MPI_Solution(geometry, config);
 
 }
 
@@ -7903,6 +7916,29 @@ unsigned long CIncNSSolver::SetPrimitive_Variables(CSolver **solver_container, C
     /*--- Incompressible flow, primitive variables --- */
 
     physical = node[iPoint]->SetPrimVar(eddy_visc, turb_ke, FluidModel);
+    
+    
+    /*--- For CHT topology optimization problems, we use the porosity
+     distribution to set the thermal conductivity field. A porosity
+     value of 0 represents the fluid and a value of 1.0 represents
+     the solid. ---*/
+    
+    if (config->GetTopology_Optimization()) {
+      
+      su2double kappa_s = config->GetThermalConductivity_Solid();
+      su2double kappa_f = node[iPoint]->GetThermalConductivity();
+      
+      /*--- Get the current value of the porosity in this cell. ---*/
+      
+      su2double Porosity = node[iPoint]->GetPorosity();
+      
+      /*--- Recompute the conductivity based on the porosity. ---*/
+      
+      su2double kappa = (1.0 - Porosity)*kappa_f + Porosity*kappa_s;
+      
+      node[iPoint]->SetThermalConductivity(kappa);
+      
+    }
     
     /*--- Record any non-physical points. ---*/
 
@@ -9227,9 +9263,11 @@ void CIncNSSolver::Power_Dissipation(CGeometry *geometry,
   /*--- Power dissipation is hard-coded as the custom objective for now.
    Will create its own entry soon. ---*/
   
-  if (config->GetTopology_Optimization())
-    Total_Custom_ObjFunc = Power_Dissipation;
-
+  if (config->GetTopology_Optimization()) {
+    //Total_Custom_ObjFunc = Power_Dissipation;
+    Total_Custom_ObjFunc = config->GetSurface_Temperature(0);
+  }
+  
   /*--- Write a file with the objective for the optimizer to read, since
    this quantity is not yet in the history file. ---*/
   
@@ -9237,7 +9275,7 @@ void CIncNSSolver::Power_Dissipation(CGeometry *geometry,
     ofstream file("power.dat");
     file << setprecision(15);
     file << std::scientific;
-    file << Power_Dissipation << endl;
+    file << Total_Custom_ObjFunc << endl;
     file.close();
   }
   

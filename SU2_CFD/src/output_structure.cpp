@@ -13176,6 +13176,8 @@ void COutput::LoadLocalData_IncFlow(CConfig *config, CGeometry *geometry, CSolve
                            (config->GetViscous()));
   bool topology             = config->GetTopology_Optimization();
 
+  if (topology) wrt_kt = true;
+  
   int *Local_Halo = NULL;
 
   stringstream varname;
