@@ -1069,8 +1069,6 @@ inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_N
 
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
-inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
-
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
 
 inline su2double CConfig::GetDeform_Limit(void) { return Deform_Limit; }
