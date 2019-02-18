@@ -133,6 +133,7 @@ const unsigned int INST_0 = 0; /*!< \brief Definition of the first instance per 
 
 const su2double STANDARD_GRAVITY = 9.80665;           /*!< \brief Acceleration due to gravity at surface of earth. */
 
+const su2double AVOGAD_CONSTANT = 6.0221415E26; /*!< \brief Avogardro's constant, number of particles in one kmole. */
 const su2double UNIVERSAL_GAS_CONSTANT = 8.3144598;  /*!< \brief Universal gas constant in J/(mol*K) */
 const su2double BOLTZMANN_CONSTANT = 1.3806503E-23; /*! \brief Boltzmann's constant [J K^-1] */
 const su2double ELECTRON_CHARGE = 1.60217646E-19;	/*!< \brief Electronic charge constant. */

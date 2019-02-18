@@ -332,10 +332,9 @@ CNumerics::~CNumerics(void) {
   if (hs     != NULL) delete [] hs;
   if (Cvtr   != NULL) delete [] Cvtr;
   if (eve_i  != NULL) delete [] eve_i;
-  cout << eve_j[0] <<endl;
-  if (eve_j  != NULL) delete [] eve_j;
+  //if (eve_j  != NULL) delete [] eve_j;
   if (Cvve_i != NULL) delete [] Cvve_i;
-  if (Cvve_j != NULL) delete [] Cvve_j;
+  //if (Cvve_j != NULL) delete [] Cvve_j; These cause seg faults?
   if (Ys_i   != NULL) delete [] Ys_i;
   if (Ys_j   != NULL) delete [] Ys_j;
   if (In     != NULL) delete [] In;
@@ -682,6 +681,116 @@ void CNumerics::GetInviscidIncProjFlux(su2double *val_density,
   
 }
 
+void CNumerics::GetViscousProjFlux(su2double *val_primvar,
+                                   su2double **val_gradprimvar,
+                                   su2double *val_eve,
+                                   su2double *val_normal,
+                                   su2double *val_diffusioncoeff,
+                                   su2double val_viscosity,
+                                   su2double val_therm_conductivity,
+                                   su2double val_therm_conductivity_ve,
+                                   CConfig *config) {
+
+  // Requires a slightly non-standard primitive vector:
+  // Assumes -     V = [Y1, ... , Yn, T, Tve, ... ]
+  // and gradient GV = [GY1, ... , GYn, GT, GTve, ... ]
+  // rather than the standard V = [r1, ... , rn, T, Tve, ... ]
+
+  bool ionization;
+  unsigned short iSpecies, iVar, iDim, jDim, nHeavy, nEl;
+  su2double *Ds, *V, **GV, mu, ktr, kve, div_vel;
+  su2double Ru, RuSI;
+  su2double rho, T, Tve;
+
+  /*--- Initialize ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    Proj_Flux_Tensor[iVar] = 0.0;
+    for (iDim = 0; iDim < nDim; iDim++)
+      Flux_Tensor[iVar][iDim] = 0.0;
+  }
+
+  /*--- Read from CConfig ---*/
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+
+  /*--- Rename for convenience ---*/
+  Ds  = val_diffusioncoeff;
+  mu  = val_viscosity;
+  ktr = val_therm_conductivity;
+  kve = val_therm_conductivity_ve;
+  rho = val_primvar[RHO_INDEX];
+  T   = val_primvar[T_INDEX];
+  Tve = val_primvar[TVE_INDEX];
+  RuSI= UNIVERSAL_GAS_CONSTANT;
+  Ru  = 1000.0*RuSI;
+  V   = val_primvar;
+  GV  = val_gradprimvar;
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
+    hs[iSpecies]  = var->CalcHs(config, T, val_eve[iSpecies], iSpecies);
+
+  /*--- Calculate the velocity divergence ---*/
+  div_vel = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++)
+    div_vel += GV[VEL_INDEX+iDim][iDim];
+
+  /*--- Pre-compute mixture quantities ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    Vector[iDim] = 0.0;
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      Vector[iDim] += rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim];
+    }
+  }
+
+  /*--- Compute the viscous stress tensor ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    for (jDim = 0; jDim < nDim; jDim++)
+      tau[iDim][jDim] = 0.0;
+  for (iDim = 0 ; iDim < nDim; iDim++) {
+    for (jDim = 0 ; jDim < nDim; jDim++) {
+      tau[iDim][jDim] += mu * (val_gradprimvar[VEL_INDEX+jDim][iDim] +
+          val_gradprimvar[VEL_INDEX+iDim][jDim]);
+    }
+    tau[iDim][iDim] -= TWO3*mu*div_vel;
+  }
+
+  /*--- Populate entries in the viscous flux vector ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    /*--- Species diffusion velocity ---*/
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      Flux_Tensor[iSpecies][iDim] = rho*Ds[iSpecies]*GV[RHOS_INDEX+iSpecies][iDim]
+          - V[RHOS_INDEX+iSpecies]*Vector[iDim];
+    }
+    if (ionization) {
+      cout << "GetViscProjFlux -- NEED TO IMPLEMENT IONIZED FUNCTIONALITY!!!" << endl;
+      exit(1);
+    }
+    /*--- Shear stress related terms ---*/
+    Flux_Tensor[nSpecies+nDim][iDim] = 0.0;
+    for (jDim = 0; jDim < nDim; jDim++) {
+      Flux_Tensor[nSpecies+jDim][iDim]  = tau[iDim][jDim];
+      Flux_Tensor[nSpecies+nDim][iDim] += tau[iDim][jDim]*val_primvar[VEL_INDEX+jDim];
+    }
+
+    /*--- Diffusion terms ---*/
+    for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+      Flux_Tensor[nSpecies+nDim][iDim]   += Flux_Tensor[iSpecies][iDim] * hs[iSpecies];
+      Flux_Tensor[nSpecies+nDim+1][iDim] += Flux_Tensor[iSpecies][iDim] * val_eve[iSpecies];
+    }
+
+    /*--- Heat transfer terms ---*/
+    Flux_Tensor[nSpecies+nDim][iDim]   += ktr*GV[T_INDEX][iDim] +
+        kve*GV[TVE_INDEX][iDim];
+    Flux_Tensor[nSpecies+nDim+1][iDim] += kve*GV[TVE_INDEX][iDim];
+  }
+
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (iDim = 0; iDim < nDim; iDim++) {
+      Proj_Flux_Tensor[iVar] += Flux_Tensor[iVar][iDim]*val_normal[iDim];
+    }
+  }
+}
+
 void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_energy,
                                    su2double *val_normal, su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) {
@@ -758,13 +867,13 @@ void CNumerics::GetInviscidProjJac(su2double *val_velocity, su2double *val_entha
   AD_END_PASSIVE
 }
 
-void CNumerics::GetInviscidProjJac(su2double *val_U, su2double *val_V,
+void CNumerics::GetInviscidProjJac(su2double *val_U,    su2double *val_V,
                                    su2double *val_dPdU, su2double *val_normal,
                                    su2double val_scale,
                                    su2double **val_Proj_Jac_Tensor) {
 
-	unsigned short iDim, iVar, jVar, iSpecies, jSpecies;
-  su2double proj_vel, rho, u, v, w, rhoEve, H;
+  unsigned short iDim, jDim, iVar, jVar, iSpecies, jSpecies;
+  su2double proj_vel, rho, u[3], rhoEve, H;
   su2double *rhos;
 
   rhos = new su2double[nSpecies];
@@ -774,79 +883,58 @@ void CNumerics::GetInviscidProjJac(su2double *val_U, su2double *val_V,
     for (jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = 0.0;
 
-  if (nDim == 2) {
-    cout << "ERROR!!!  Inviscid Projected Jacobian only implemented for 3D flows!" << endl;
-    exit(1);
-  }
-
   /*--- Rename for convenience ---*/
   rho    = val_V[RHO_INDEX];
-  u      = val_V[VEL_INDEX];
-  v      = val_V[VEL_INDEX+1];
-  w      = val_V[VEL_INDEX+2];
   H      = val_V[H_INDEX];
+  //H = (val_U[nSpecies+nDim]+val_V[P_INDEX])/val_V[RHO_INDEX];
   rhoEve = val_U[nSpecies+nDim+1];
   for (iSpecies = 0; iSpecies < nSpecies; iSpecies++)
     rhos[iSpecies] = val_V[RHOS_INDEX+iSpecies];
+  for (iDim = 0; iDim < nDim; iDim++)
+    u[iDim] = val_V[VEL_INDEX+iDim];
 
   /*--- Calculate projected velocity ---*/
-	proj_vel = 0.0;
-	for (iDim = 0; iDim < nDim; iDim++) {
-		proj_vel += val_V[VEL_INDEX+iDim]*val_normal[iDim];
-	}
-
-  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
-    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
-      val_Proj_Jac_Tensor[iSpecies][jSpecies] = -(rhos[iSpecies]/rho) * proj_vel;
-    }
-    val_Proj_Jac_Tensor[iSpecies][iSpecies]  += proj_vel;
-    val_Proj_Jac_Tensor[iSpecies][nSpecies]   = (rhos[iSpecies]/rho) * val_normal[0];
-    val_Proj_Jac_Tensor[iSpecies][nSpecies+1] = (rhos[iSpecies]/rho) * val_normal[1];
-    val_Proj_Jac_Tensor[iSpecies][nSpecies+2] = (rhos[iSpecies]/rho) * val_normal[2];
-
-    val_Proj_Jac_Tensor[nSpecies][iSpecies]   = val_dPdU[iSpecies]*val_normal[0] - proj_vel*u;
-    val_Proj_Jac_Tensor[nSpecies+1][iSpecies] = val_dPdU[iSpecies]*val_normal[1] - proj_vel*v;
-    val_Proj_Jac_Tensor[nSpecies+2][iSpecies] = val_dPdU[iSpecies]*val_normal[2] - proj_vel*w;
-    val_Proj_Jac_Tensor[nSpecies+3][iSpecies] = (val_dPdU[iSpecies]-H) * proj_vel;
-    val_Proj_Jac_Tensor[nSpecies+4][iSpecies] = -proj_vel * rhoEve/rho;
+  proj_vel = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    proj_vel += u[iDim]*val_normal[iDim];
   }
 
-  // X-momentum:
-  val_Proj_Jac_Tensor[nSpecies][nSpecies]     = val_dPdU[nSpecies]   * val_normal[0] + u*val_normal[0] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+1]   = val_dPdU[nSpecies+1] * val_normal[0] + u*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+2]   = val_dPdU[nSpecies+2] * val_normal[0] + u*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+3]   = val_dPdU[nSpecies+3] * val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies][nSpecies+4]   = val_dPdU[nSpecies+4] * val_normal[0];
+  /*--- Species density rows ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+      val_Proj_Jac_Tensor[iSpecies][jSpecies] += -(rhos[iSpecies]/rho) * proj_vel;
+    }
+    val_Proj_Jac_Tensor[iSpecies][iSpecies]   += proj_vel;
+    for (iDim  = 0; iDim < nDim; iDim++) {
+      val_Proj_Jac_Tensor[iSpecies][nSpecies+iDim] += (rhos[iSpecies]/rho) * val_normal[iDim];
+      val_Proj_Jac_Tensor[nSpecies+iDim][iSpecies] += val_dPdU[iSpecies]*val_normal[iDim] - proj_vel*u[iDim];
+    }
+    val_Proj_Jac_Tensor[nSpecies+nDim][iSpecies]   += (val_dPdU[iSpecies]-H) * proj_vel;
+    val_Proj_Jac_Tensor[nSpecies+nDim+1][iSpecies] += -proj_vel * rhoEve/rho;
+  }
 
-  // Y-momentum:
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies]   = val_dPdU[nSpecies]   * val_normal[1] + v*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+1] = val_dPdU[nSpecies+1] * val_normal[1] + v*val_normal[1] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+2] = val_dPdU[nSpecies+2] * val_normal[1] + v*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+3] = val_dPdU[nSpecies+3] * val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+1][nSpecies+4] = val_dPdU[nSpecies+4] * val_normal[1];
+  /*--- Momentum rows ---*/
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (jDim = 0; jDim < nDim; jDim++) {
+      val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+jDim] += val_dPdU[nSpecies+jDim]*val_normal[iDim] + u[iDim]*val_normal[jDim];
+    }
+    val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+iDim]   += proj_vel;
+    val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+nDim]   += val_dPdU[nSpecies+nDim]*val_normal[iDim];
+    val_Proj_Jac_Tensor[nSpecies+iDim][nSpecies+nDim+1] += val_dPdU[nSpecies+nDim+1]*val_normal[iDim];
+  }
 
-  // Z-momentum:
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies]   = val_dPdU[nSpecies]   * val_normal[2] + w*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+1] = val_dPdU[nSpecies+1] * val_normal[2] + w*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+2] = val_dPdU[nSpecies+2] * val_normal[2] + w*val_normal[2] + proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+3] = val_dPdU[nSpecies+3] * val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+2][nSpecies+4] = val_dPdU[nSpecies+4] * val_normal[2];
+  /*--- Total energy row ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+iDim] += val_dPdU[nSpecies+iDim]*proj_vel + H*val_normal[iDim];
+  val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim]   += (1+val_dPdU[nSpecies+nDim])*proj_vel;
+  val_Proj_Jac_Tensor[nSpecies+nDim][nSpecies+nDim+1] +=  val_dPdU[nSpecies+nDim+1] *proj_vel;
 
-  // Total energy:
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies]   =    val_dPdU[nSpecies]   *proj_vel + H*val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+1] =    val_dPdU[nSpecies+1] *proj_vel + H*val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+2] =    val_dPdU[nSpecies+2] *proj_vel + H*val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+3] = (1+val_dPdU[nSpecies+3])*proj_vel;
-  val_Proj_Jac_Tensor[nSpecies+3][nSpecies+4] =    val_dPdU[nSpecies+4] *proj_vel;
+  /*--- Vib.-el. energy row ---*/
+  for (iDim = 0; iDim < nDim; iDim++)
+    val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+iDim] = rhoEve/rho*val_normal[iDim];
+  val_Proj_Jac_Tensor[nSpecies+nDim+1][nSpecies+nDim+1] = proj_vel;
 
-  // Vib.-el. energy
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies]   = rhoEve/rho * val_normal[0];
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+1] = rhoEve/rho * val_normal[1];
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+2] = rhoEve/rho * val_normal[2];
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+3] = 0.0;
-  val_Proj_Jac_Tensor[nSpecies+4][nSpecies+4] = proj_vel;
-
-	for (iVar = 0; iVar < nVar; iVar++)
+  for (iVar = 0; iVar < nVar; iVar++)
     for (jVar = 0; jVar < nVar; jVar++)
       val_Proj_Jac_Tensor[iVar][jVar] = val_scale * val_Proj_Jac_Tensor[iVar][jVar];
 
@@ -920,6 +1008,305 @@ void CNumerics::GetInviscidIncProjJac(su2double *val_density, su2double *val_vel
   }
   AD_END_PASSIVE
 }
+
+void CNumerics::GetViscousProjJacs(su2double *val_Mean_PrimVar,
+                                   su2double **val_Mean_GradPrimVar,
+                                   su2double *val_Mean_Eve,
+                                   su2double *val_Mean_Cvve,
+                                   su2double *val_diffusion_coeff,
+                                   su2double val_laminar_viscosity,
+                                   su2double val_thermal_conductivity,
+                                   su2double val_thermal_conductivity_ve,
+                                   su2double val_dist_ij, su2double *val_normal,
+                                   su2double val_dS, su2double *val_Fv,
+                                   su2double **val_Jac_i, su2double **val_Jac_j,
+                                   CConfig *config) {
+
+  bool ionization;
+  unsigned short iDim, iSpecies, jSpecies, iVar, jVar, kVar, nHeavy, nEl;
+  su2double rho, rho_i, rho_j, vel[3], T, Tve, *xi, *Ms;
+  su2double mu, ktr, kve, *Ds, dij, Ru, RuSI;
+  su2double theta, thetax, thetay, thetaz;
+  su2double etax, etay, etaz;
+  su2double pix, piy, piz;
+  su2double sumY, sumY_i, sumY_j;
+
+  /*--- Initialize arrays ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      dFdVi[iVar][jVar] = 0.0;
+      dFdVj[iVar][jVar] = 0.0;
+      dVdUi[iVar][jVar] = 0.0;
+      dVdUj[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Initialize the Jacobian matrices ---*/
+  for (iVar = 0; iVar < nVar; iVar++) {
+    for (jVar = 0; jVar < nVar; jVar++) {
+      val_Jac_i[iVar][jVar] = 0.0;
+      val_Jac_j[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Initialize storage vectors & matrices ---*/
+  for (iVar = 0; iVar < nSpecies; iVar++) {
+    sumdFdYjh[iVar]   = 0.0;
+    sumdFdYjeve[iVar] = 0.0;
+    for (jVar = 0; jVar < nSpecies; jVar++) {
+      dFdYi[iVar][jVar] = 0.0;
+      dFdYj[iVar][jVar] = 0.0;
+      dJdr_i[iVar][jVar] = 0.0;
+      dJdr_j[iVar][jVar] = 0.0;
+    }
+  }
+
+  /*--- Assign booleans from CConfig ---*/
+  ionization = config->GetIonization();
+  if (ionization) { nHeavy = nSpecies-1; nEl = 1; }
+  else            { nHeavy = nSpecies;   nEl = 0; }
+
+  /*--- Calculate preliminary geometrical quantities ---*/
+  dij = val_dist_ij;
+  theta = 0.0;
+  for (iDim = 0; iDim < nDim; iDim++) {
+    theta += val_normal[iDim]*val_normal[iDim];
+  }
+
+
+  /*--- Rename for convenience ---*/
+  rho = val_Mean_PrimVar[RHO_INDEX];
+  rho_i = V_i[RHO_INDEX];
+  rho_j = V_j[RHO_INDEX];
+  T   = val_Mean_PrimVar[T_INDEX];
+  Tve = val_Mean_PrimVar[TVE_INDEX];
+  Ds  = val_diffusion_coeff;
+  mu  = val_laminar_viscosity;
+  ktr = val_thermal_conductivity;
+  kve = val_thermal_conductivity_ve;
+  RuSI= UNIVERSAL_GAS_CONSTANT;
+  Ru  = 1000.0*RuSI;
+  Ms  = config->GetMolar_Mass();
+  xi  = config->GetRotationModes();
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    Ys[iSpecies]   = val_Mean_PrimVar[RHOS_INDEX+iSpecies];
+    Ys_i[iSpecies] = V_i[RHOS_INDEX+iSpecies]/V_i[RHO_INDEX];
+    Ys_j[iSpecies] = V_j[RHOS_INDEX+iSpecies]/V_j[RHO_INDEX];
+    hs[iSpecies]   = var->CalcHs(config, T, val_Mean_Eve[iSpecies], iSpecies);
+    Cvtr[iSpecies] = (3.0/2.0 + xi[iSpecies]/2.0)*Ru/Ms[iSpecies];
+  }
+  for (iDim = 0; iDim < nDim; iDim++)
+    vel[iDim] = val_Mean_PrimVar[VEL_INDEX+iDim];
+
+  /*--- Calculate useful diffusion parameters ---*/
+  // Summation term of the diffusion fluxes
+  sumY = 0.0;
+  sumY_i = 0.0;
+  sumY_j = 0.0;
+  for (iSpecies = 0; iSpecies < nHeavy; iSpecies++) {
+    sumY_i += Ds[iSpecies]*theta/dij*Ys_i[iSpecies];
+    sumY_j += Ds[iSpecies]*theta/dij*Ys_j[iSpecies];
+    sumY   += Ds[iSpecies]*theta/dij*(Ys_j[iSpecies]-Ys_i[iSpecies]);
+  }
+
+
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    for (jSpecies  = 0; jSpecies < nSpecies; jSpecies++) {
+
+      // first term
+      dJdr_j[iSpecies][jSpecies] +=  0.5*(Ds[iSpecies]*theta/dij *
+                                          (Ys_j[iSpecies]*rho_i/rho_j +
+                                           Ys_i[iSpecies]));
+      dJdr_i[iSpecies][jSpecies] += -0.5*(Ds[iSpecies]*theta/dij *
+                                          (Ys_j[iSpecies] +
+                                           Ys_i[iSpecies]*rho_j/rho_i));
+
+      // second term
+      dJdr_j[iSpecies][jSpecies] +=
+          0.25*(Ys_i[iSpecies] - rho_i/rho_j*Ys_j[iSpecies])*sumY
+          + 0.25*(Ys_i[iSpecies]+Ys_j[iSpecies])*(rho_i+rho_j)*Ds[jSpecies]*theta/(dij*rho_j)
+          - 0.25*(Ys_i[iSpecies]+Ys_j[iSpecies])*(rho_i+rho_j)*sumY_j/rho_j;
+
+      dJdr_i[iSpecies][jSpecies] +=
+          0.25*(-rho_j/rho_i*Ys_i[iSpecies]+Ys_j[iSpecies])*sumY
+          - 0.25*(Ys_i[iSpecies]+Ys_j[iSpecies])*(rho_i+rho_j)*Ds[jSpecies]*theta/(dij*rho_i)
+          + 0.25*(Ys_i[iSpecies]+Ys_j[iSpecies])*(rho_i+rho_j)*sumY_i/rho_i;
+    }
+
+    // first term
+    dJdr_j[iSpecies][iSpecies] += -0.5*Ds[iSpecies]*theta/dij*(1+rho_i/rho_j);
+    dJdr_i[iSpecies][iSpecies] +=  0.5*Ds[iSpecies]*theta/dij*(1+rho_j/rho_i);
+
+    // second term
+    dJdr_j[iSpecies][iSpecies] += 0.25*(1.0+rho_i/rho_j)*sumY;
+    dJdr_i[iSpecies][iSpecies] += 0.25*(1.0+rho_j/rho_i)*sumY;
+  }
+
+  /*--- Calculate transformation matrix ---*/
+  for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+    dVdUi[iSpecies][iSpecies] = 1.0;
+    dVdUj[iSpecies][iSpecies] = 1.0;
+  }
+  for (iDim = 0; iDim < nDim; iDim++) {
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dVdUi[nSpecies+iDim][iSpecies] = -V_i[VEL_INDEX+iDim]/V_i[RHO_INDEX];
+      dVdUj[nSpecies+iDim][iSpecies] = -V_j[VEL_INDEX+iDim]/V_j[RHO_INDEX];
+    }
+    dVdUi[nSpecies+iDim][nSpecies+iDim] = 1.0/V_i[RHO_INDEX];
+    dVdUj[nSpecies+iDim][nSpecies+iDim] = 1.0/V_j[RHO_INDEX];
+  }
+  for (iVar = 0; iVar < nVar; iVar++) {
+    dVdUi[nSpecies+nDim][iVar]   = dTdU_i[iVar];
+    dVdUj[nSpecies+nDim][iVar]   = dTdU_j[iVar];
+    dVdUi[nSpecies+nDim+1][iVar] = dTvedU_i[iVar];
+    dVdUj[nSpecies+nDim+1][iVar] = dTvedU_j[iVar];
+  }
+
+
+  if (nDim == 2) {
+
+    /*--- Geometry parameters ---*/
+    thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    thetay = theta + val_normal[1]*val_normal[1]/3.0;
+    etaz   = val_normal[0]*val_normal[1]/3.0;
+    pix    = mu/dij * (thetax*vel[0] + etaz*vel[1]  );
+    piy    = mu/dij * (etaz*vel[0]   + thetay*vel[1]);
+
+    /*--- Populate primitive Jacobian ---*/
+
+    // X-momentum
+    dFdVj[nSpecies][nSpecies]     = mu*thetax/dij*val_dS;
+    dFdVj[nSpecies][nSpecies+1]   = mu*etaz/dij*val_dS;
+
+    // Y-momentum
+    dFdVj[nSpecies+1][nSpecies]   = mu*etaz/dij*val_dS;
+    dFdVj[nSpecies+1][nSpecies+1] = mu*thetay/dij*val_dS;
+
+    // Energy
+    dFdVj[nSpecies+2][nSpecies]   = pix*val_dS;
+    dFdVj[nSpecies+2][nSpecies+1] = piy*val_dS;
+    dFdVj[nSpecies+2][nSpecies+2] = ktr*theta/dij*val_dS;
+    dFdVj[nSpecies+2][nSpecies+3] = kve*theta/dij*val_dS;
+
+    // Vib-el Energy
+    dFdVj[nSpecies+3][nSpecies+3] = kve*theta/dij*val_dS;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        dFdVi[iVar][jVar] = -dFdVj[iVar][jVar];
+
+    // Common terms
+    dFdVi[nSpecies+2][nSpecies]   += 0.5*val_Fv[nSpecies];
+    dFdVj[nSpecies+2][nSpecies]   += 0.5*val_Fv[nSpecies];
+    dFdVi[nSpecies+2][nSpecies+1] += 0.5*val_Fv[nSpecies+1];
+    dFdVj[nSpecies+2][nSpecies+1] += 0.5*val_Fv[nSpecies+1];
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dFdVi[nSpecies+2][nSpecies+2] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
+                                                             Cvtr[iSpecies]   );
+      dFdVj[nSpecies+2][nSpecies+2] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
+                                                             Cvtr[iSpecies]   );
+      dFdVi[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+2][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVi[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+    }
+
+    // Unique terms
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        dFdVj[iSpecies][jSpecies]   += -dJdr_j[iSpecies][jSpecies]*val_dS;
+        dFdVi[iSpecies][jSpecies]   += -dJdr_i[iSpecies][jSpecies]*val_dS;
+        dFdVj[nSpecies+2][iSpecies] += -dJdr_j[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
+        dFdVi[nSpecies+2][iSpecies] += -dJdr_i[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
+        dFdVj[nSpecies+3][iSpecies] += -dJdr_j[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+        dFdVi[nSpecies+3][iSpecies] += -dJdr_i[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+      }
+    }
+
+  } //nDim == 2
+  else {
+
+    /*--- Geometry parameters ---*/
+    thetax = theta + val_normal[0]*val_normal[0]/3.0;
+    thetay = theta + val_normal[1]*val_normal[1]/3.0;
+    thetaz = theta + val_normal[2]*val_normal[2]/3.0;
+    etax   = val_normal[1]*val_normal[2]/3.0;
+    etay   = val_normal[0]*val_normal[2]/3.0;
+    etaz   = val_normal[0]*val_normal[1]/3.0;
+    pix    = mu/dij * (thetax*vel[0] + etaz*vel[1]   + etay*vel[2]  );
+    piy    = mu/dij * (etaz*vel[0]   + thetay*vel[1] + etax*vel[2]  );
+    piz    = mu/dij * (etay*vel[0]   + etax*vel[1]   + thetaz*vel[2]);
+
+    /*--- Populate primitive Jacobian ---*/
+
+    // X-momentum
+    dFdVj[nSpecies][nSpecies]     = mu*thetax/dij*val_dS;
+    dFdVj[nSpecies][nSpecies+1]   = mu*etaz/dij*val_dS;
+    dFdVj[nSpecies][nSpecies+2]   = mu*etay/dij*val_dS;
+
+    // Y-momentum
+    dFdVj[nSpecies+1][nSpecies]   = mu*etaz/dij*val_dS;
+    dFdVj[nSpecies+1][nSpecies+1] = mu*thetay/dij*val_dS;
+    dFdVj[nSpecies+1][nSpecies+2] = mu*etax/dij*val_dS;
+
+    // Z-momentum
+    dFdVj[nSpecies+2][nSpecies]   = mu*etay/dij*val_dS;
+    dFdVj[nSpecies+2][nSpecies+1] = mu*etax/dij*val_dS;
+    dFdVj[nSpecies+2][nSpecies+2] = mu*thetaz/dij*val_dS;
+
+    // Energy
+    dFdVj[nSpecies+3][nSpecies]   = pix*val_dS;
+    dFdVj[nSpecies+3][nSpecies+1] = piy*val_dS;
+    dFdVj[nSpecies+3][nSpecies+2] = piz*val_dS;
+    dFdVj[nSpecies+3][nSpecies+3] = ktr*theta/dij*val_dS;
+    dFdVj[nSpecies+3][nSpecies+4] = kve*theta/dij*val_dS;
+
+    // Vib.-el energy
+    dFdVj[nSpecies+4][nSpecies+4] = kve*theta/dij*val_dS;
+
+    for (iVar = 0; iVar < nVar; iVar++)
+      for (jVar = 0; jVar < nVar; jVar++)
+        dFdVi[iVar][jVar] = -dFdVj[iVar][jVar];
+
+    // Common terms
+    for (iDim = 0; iDim < nDim; iDim++) {
+      dFdVi[nSpecies+3][nSpecies+iDim]   += 0.5*val_Fv[nSpecies+iDim];
+      dFdVj[nSpecies+3][nSpecies+iDim]   += 0.5*val_Fv[nSpecies+iDim];
+    }
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      dFdVi[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
+                                                             Cvtr[iSpecies]   );
+      dFdVj[nSpecies+3][nSpecies+3] += 0.5*val_Fv[iSpecies]*(Ru/Ms[iSpecies] +
+                                                             Cvtr[iSpecies]   );
+      dFdVi[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+3][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVi[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+      dFdVj[nSpecies+4][nSpecies+4] += 0.5*val_Fv[iSpecies]*val_Mean_Cvve[iSpecies];
+    }
+
+    // Unique terms
+    for (iSpecies = 0; iSpecies < nSpecies; iSpecies++) {
+      for (jSpecies = 0; jSpecies < nSpecies; jSpecies++) {
+        dFdVj[iSpecies][jSpecies]   += -dJdr_j[iSpecies][jSpecies]*val_dS;
+        dFdVi[iSpecies][jSpecies]   += -dJdr_i[iSpecies][jSpecies]*val_dS;
+        dFdVj[nSpecies+3][iSpecies] += -dJdr_j[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
+        dFdVi[nSpecies+3][iSpecies] += -dJdr_i[jSpecies][iSpecies]*hs[jSpecies]*val_dS;
+        dFdVj[nSpecies+4][iSpecies] += -dJdr_j[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+        dFdVi[nSpecies+4][iSpecies] += -dJdr_i[jSpecies][iSpecies]*val_Mean_Eve[jSpecies]*val_dS;
+      }
+    }
+
+  } // nDim == 3
+
+  /*--- dFv/dUij = dFv/dVij * dVij/dUij ---*/
+  for (iVar = 0; iVar < nVar; iVar++)
+    for (jVar = 0; jVar < nVar; jVar++)
+      for (kVar = 0; kVar < nVar; kVar++) {
+        val_Jac_i[iVar][jVar] += dFdVi[iVar][kVar]*dVdUi[kVar][jVar];
+        val_Jac_j[iVar][jVar] += dFdVj[iVar][kVar]*dVdUj[kVar][jVar];
+      }
+}
+
 
 void CNumerics::GetPreconditioner(su2double *val_density, su2double *val_velocity, su2double *val_betainc2, su2double *val_cp, su2double *val_temperature, su2double *val_drhodt, su2double **val_Precon) {
   unsigned short iDim, jDim;
@@ -2370,8 +2757,6 @@ void CNumerics::GetPrimitive2Conservative (su2double *val_Mean_PrimVar, su2doubl
 
   }
 }
-
-
 
 void CNumerics::CreateBasis(su2double *val_Normal) {
   unsigned short iDim;
