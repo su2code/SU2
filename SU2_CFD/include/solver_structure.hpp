@@ -5,7 +5,7 @@
  *        <i>solution_direct.cpp</i>, <i>solution_adjoint.cpp</i>, and
  *        <i>solution_linearized.cpp</i> files.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -21,7 +21,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -4441,7 +4441,7 @@ public:
  * \class CBaselineSolver_FEM
  * \brief Main class for defining a baseline solution from a restart file for the DG-FEM solver output.
  * \author T. Economon.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CBaselineSolver_FEM : public CSolver {
 protected:
@@ -13280,7 +13280,7 @@ public:
  * \brief Main class for defining the Euler Discontinuous Galerkin finite element flow solver.
  * \ingroup Euler_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_EulerSolver : public CSolver {
 protected:
@@ -14912,7 +14912,7 @@ protected:
  * \brief Main class for defining the Navier-Stokes Discontinuous Galerkin finite element flow solver.
  * \ingroup Navier_Stokes_Equations
  * \author E. van der Weide, T. Economon, J. Alonso
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CFEM_DG_NSSolver : public CFEM_DG_EulerSolver {
 private:
