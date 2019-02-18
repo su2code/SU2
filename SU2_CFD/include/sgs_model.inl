@@ -2,7 +2,7 @@
  * \file sgs_model.inl
  * \brief In-Line subroutines of the <i>sgs_model.hpp</i> file.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
