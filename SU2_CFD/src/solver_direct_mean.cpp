@@ -12481,12 +12481,230 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
-                                CConfig *config, unsigned short val_marker) {
+void CEulerSolver::BC_Sym_Plane(CGeometry *geometry,
+                                CSolver **solver_container,
+                                CNumerics *conv_numerics,
+                                CNumerics *visc_numerics,
+                                CConfig *config,
+                                unsigned short val_marker) {
   
-  /*--- Call the Euler residual ---*/
+  unsigned short iDim, iVar;
+  unsigned long iVertex, iPoint, Point_Normal;
   
-  BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
+  bool implicit      = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
+  
+  su2double *Normal = new su2double[nDim];
+  
+  su2double UnitNormal[nDim], NormalArea[nDim], Velocity_i[nDim], Tangential[nDim];
+  su2double ProjVelocity_i = 0.0;
+  
+  su2double ProjGradient[nDim+2];
+  su2double *V_reflected, *V_domain;
+  su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
+  su2double **Grad_Prim = new su2double*[nPrimVarGrad];
+  for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+    Grad_Reflected[iVar] = new su2double[nDim];
+    Grad_Prim[iVar] = new su2double[nDim];
+  }
+  
+  /*--- Loop over all the vertices on this boundary marker ---*/
+  
+  for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
+    
+    /*--- Allocate the value at the outlet ---*/
+    
+    V_reflected = GetCharacPrimVar(val_marker, iVertex); //TK no idea why this was done like that in inc solver
+    
+    iPoint = geometry->vertex[val_marker][iVertex]->GetNode();
+    
+    /*--- Check if the node belongs to the domain (i.e., not a halo node) ---*/
+    
+    if (geometry->node[iPoint]->GetDomain()) {
+      
+      /*--- Index of the closest interior node ---*/
+      
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor();
+      
+      /*--- Normal vector for this vertex (negate for outward convention) ---*/
+      
+      geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
+      for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
+      conv_numerics->SetNormal(Normal);
+      
+      if (config->GetGrid_Movement())
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
+                                  geometry->node[iPoint]->GetGridVel());
+
+      /*--- Compute unit Normal, to be used for projected velocity ---*/
+
+      su2double Area = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++)
+        Area += Normal[iDim]*Normal[iDim];
+      Area = sqrt (Area);
+      
+      for (iDim = 0; iDim < nDim; iDim++)
+        UnitNormal[iDim] = -Normal[iDim]/Area;
+      
+      /*--- Current solution at this boundary node ---*/
+      
+      V_domain = node[iPoint]->GetPrimitive();
+            
+      /*--- Force the velocity to be tangential to the surface. ---*/
+      
+      ProjVelocity_i = 0.0;
+      for (iDim = 0; iDim < nDim; iDim++) {
+        Velocity_i[iDim]  = node[iPoint]->GetVelocity(iDim);
+        ProjVelocity_i   += Velocity_i[iDim]*UnitNormal[iDim];
+      }
+      
+      for (iDim = 0; iDim < nDim; iDim++) {
+        V_reflected[iDim+1] = Velocity_i[iDim] - 2.0*ProjVelocity_i * UnitNormal[iDim];
+      }
+      
+      V_reflected[0]      = node[iPoint]->GetTemperature();
+      V_reflected[nDim+1] = node[iPoint]->GetPressure();
+      V_reflected[nDim+2] = node[iPoint]->GetDensity();
+      V_reflected[nDim+3] = node[iPoint]->GetEnthalpy();
+      //TK JST also uses nDim+4 speed of sound
+      V_reflected[nDim+8] = node[iPoint]->GetSpecificHeatCp();
+      
+      
+      /*--- Set various quantities in the solver class ---*/
+      
+      conv_numerics->SetPrimitive(V_domain, V_reflected);
+      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());//TK What are secondarys: thermo-physical properties (partial derivatives) 
+      
+      /*--- Compute the residual using an upwind scheme ---*/
+      
+      conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+      
+      /*--- Update residual value ---*/
+      
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+      /*--- Jacobian contribution for implicit integration ---*/
+      
+      if (implicit) { //TK removed jacobian entries
+        Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
+      }
+      
+      /*--- own approach for 2D: enhanced velocity gradient computation---*/     
+      if (config->GetViscous()) {
+
+        /*--- Set transport properties at the outlet. ---*/
+        
+        V_reflected[nDim+5] = node[iPoint]->GetLaminarViscosity();
+        V_reflected[nDim+6] = node[iPoint]->GetEddyViscosity();
+        
+        /*--- Set the normal vector and the coordinates ---*/
+        
+        visc_numerics->SetNormal(Normal);
+        visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord()); //TK
+        
+        /*--- Primitive variables, and gradient ---*/
+        
+        visc_numerics->SetPrimitive(V_domain, V_reflected);
+        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+        
+        /*--- Get gradients of primitives of boundary cell ---*/ //TK node[iPoint]->GetGradient_Primitive() gets whole matrix at once.. well it gets the pointer
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+          for (iDim = 0; iDim < nDim; iDim++) {
+            Grad_Prim[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
+          }
+        }
+        
+        /*--- Set gradients of scalars p,T ---*/
+        
+        /*--- Ensure that the normal gradients are also reflected for ... its not these vars any more [p, v_x, v_y, (v_z), T]. ---*/
+        for (iVar = 0; iVar < nPrimVarGrad; iVar++) { //only v and T are necessary
+          /*--- Compute projected part of the gradient in a dot product ---*/
+          ProjGradient[iVar] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++)
+            ProjGradient[iVar] += Grad_Prim[iVar][iDim]*UnitNormal[iDim];
+          /*--- Compute reflected state of the gradients
+                TK Gradients of velocity components are set here but overridden later ---*/
+          for (iDim = 0; iDim < nDim; iDim++)
+            Grad_Reflected[iVar][iDim] = Grad_Prim[iVar][iDim] - 2.0 * ProjGradient[iVar]*UnitNormal[iDim]; //TK ProjGradient could be scalar
+        }      
+        
+        /*--- Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
+
+        switch( nDim ) {
+          case 2: {
+            Tangential[0] = -UnitNormal[1];
+            Tangential[1] = UnitNormal[0];
+            break;
+          }
+          case 3: {
+            Tangential[0] = -UnitNormal[1]/sqrt(pow(UnitNormal[0],2) + pow(UnitNormal[1],2));
+            Tangential[1] = UnitNormal[0]/sqrt(pow(UnitNormal[0],2) + pow(UnitNormal[1],2));
+            Tangential[2] = 0.0;
+            break;
+          }
+        }
+        
+        /*--- Compute gradients of normal and tangential velocity ---*/
+
+        su2double GradNormVel[nDim];
+        su2double GradTangVel[nDim];
+        for (iVar = 0; iVar < nDim; iVar++) { // counts gradient components
+          GradNormVel[iVar] = 0.0;
+          GradTangVel[iVar] = 0.0;
+          for (iDim = 0; iDim < nDim; iDim++) { // counts sum with unit normaal
+            GradNormVel[iVar] += Grad_Prim[iDim+1][iVar] * UnitNormal[iDim];
+            GradTangVel[iVar] += Grad_Prim[iDim+1][iVar] * Tangential[iDim];
+          }
+        }
+
+        /*--- Refelect gradients in tangential and normal direction ---*/
+
+        su2double ReflGradNormVel[nDim];
+        su2double ReflGradTangVel[nDim];
+        su2double ProjNormVelGrad = 0.0;
+        su2double ProjTangVelGrad = 0.0;
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ProjNormVelGrad += GradNormVel[iDim]*Tangential[iDim];
+          ProjTangVelGrad += GradTangVel[iDim]*UnitNormal[iDim];
+        }
+        
+        for (iDim = 0; iDim < nDim; iDim++) {
+          ReflGradNormVel[iDim] = GradNormVel[iDim] - 2.0 * ProjNormVelGrad * Tangential[iDim];
+          ReflGradTangVel[iDim] = GradTangVel[iDim] - 2.0 * ProjTangVelGrad * UnitNormal[iDim];
+        }
+        
+        /*--- Compute Cartesian reflected gradients ---*/
+
+        for (iVar = 0; iVar < nDim; iVar++) { // loops over the velocity component gradients
+          for (iDim = 0; iDim < nDim; iDim++) { // loops over the entries of the above
+            Grad_Reflected[iVar+1][iDim] = ReflGradNormVel[iDim]*UnitNormal[iVar] + ReflGradTangVel[iDim]*Tangential[iVar];
+          }
+        }
+        
+        /*--- End own enhanced ---*/
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
+        
+        /*--- Turbulent kinetic energy ---*/
+        
+        if (config->GetKind_Turb_Model() == SST)
+          visc_numerics->SetTurbKineticEnergy(solver_container[TURB_SOL]->node[iPoint]->GetSolution(0),
+                                              solver_container[TURB_SOL]->node[iPoint]->GetSolution(0));
+        
+        /*--- Compute and update residual. Note that the shear stress tensor is computed in the 
+         * following routine based upon the velocity-component gradients. ---*/
+        
+        visc_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
+        
+        LinSysRes.SubtractBlock(iPoint, Residual);
+        
+        /*--- Jacobian contribution for implicit integration ---*/
+        if (implicit)
+          Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
+        
+      }
+    }  
+  }
   
 }
 
