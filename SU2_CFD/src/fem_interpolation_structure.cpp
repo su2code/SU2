@@ -329,18 +329,24 @@ void CFEMInterpolationDriver::Postprocessing() {
       Solver_Deletion(output_solver_container[iZone],
                             output_config_container[iZone],
                             iInst);
-      if(ecc_solver_container[iZone][iInst] != NULL)
-        Solver_Deletion(ecc_solver_container[iZone],
-                              output_config_container[iZone],
-                              iInst);
     }
     delete [] input_solver_container[iZone];
     delete [] output_solver_container[iZone];
-    if(ecc_solver_container[iZone] != NULL) delete [] ecc_solver_container[iZone];
   }
   delete [] input_solver_container;
   delete [] output_solver_container;
-  if(ecc_solver_container != NULL) delete [] ecc_solver_container;
+
+  if(driver_config->GetError_Estimate()){
+    for (iZone = 0; iZone < nZone; iZone++) {
+      for (iInst = 0; iInst < nInst[iZone]; iInst++){
+        Solver_Deletion(ecc_solver_container[iZone],
+                                output_config_container[iZone],
+                                iInst);
+      }
+      delete [] ecc_solver_container[iZone];
+    }
+    delete [] ecc_solver_container;
+  }
   if (rank == MASTER_NODE) cout << "Deleted CSolver containers." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -1229,8 +1235,8 @@ void CFEMInterpolationDriver::Output() {
 
   output->SetResult_Files_Parallel(output_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
-  // if(driver_config->GetError_Estimate())
-  //   output->SetResult_Files_Parallel(ecc_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
+  if(driver_config->GetError_Estimate())
+    output->SetResult_Files_Parallel(ecc_solver_container, output_geometry_container, output_config_container, ExtIter, nZone);
 
 
   if (rank == MASTER_NODE) cout << "-------------------------------------------------------------------------" << endl << endl;
@@ -1705,14 +1711,6 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
   
   // Determine the write frequency.
   const unsigned long nDOFs = coorOriginal.size()/nDim;
-  
-  unsigned long writeFreq = nDOFs/5;
-  if(writeFreq > 10000) writeFreq = 10000;
-  if(writeFreq <   100) writeFreq =   100;
-  
-  writeFreq = writeFreq/10;
-  if(writeFreq == 0) writeFreq = 1;
-  writeFreq *= 10;
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
@@ -1721,12 +1719,7 @@ void CFEMInterpolationSol::ApplyCurvatureCorrection(
     
     // Loop over the DOFs to be corrected.
     for(unsigned long l=0; l<nDOFs; ++l)
-    {
-      // Write a message about the number of DOFs to be interpolated.
-      if( !(l%writeFreq) )
-        cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-        << nDOFs << " DOFs corrected for surface curvature." << endl << flush;
-      
+    {      
       // Set a pointer to the coordinates to be searched.
       su2double *coor = coorCorrected.data() + l*nDim;
       
@@ -1979,6 +1972,124 @@ void CFEMInterpolationSol::BuildSurfaceADT(
                        subFaceIDInParent, parentFace);
 }
 
+void CFEMInterpolationSol::BuildVolumeADT(
+                                           CConfig*                        config,
+                                           const CFEMInterpolationGridZone *gridZone,
+                                           CADTElemClass                   &volumeADT,
+                                           vector<CFEMStandardElement>     &standardElementsGrid,
+                                           vector<CFEMStandardElement>     &standardElementsSol,
+                                           vector<unsigned short>          &indInStandardElements)
+{
+  /*--------------------------------------------------------------------------*/
+  /*--- Step 1. Build the local ADT of the volume elements. Note that the  ---*/
+  /*---         ADT is built with the linear subelements. This is done to  ---*/
+  /*---         avoid relatively many expensive Newton solves for high     ---*/
+  /*---         order elements.                                            ---*/
+  /*--------------------------------------------------------------------------*/
+  
+  // Easier storage of the volume elements and coordinates of the grid zone.
+  const vector<CFEMInterpolationVolElem> &volElems            = gridZone->mVolElems;
+  const vector<vector<su2double> > &coorGrid = gridZone->mCoor;
+  const unsigned short nDim = coorGrid.size();
+  
+  // Allocate the memory for the vector, which stores the index in the standard
+  // elements for the volume elements.
+  indInStandardElements.resize(volElems.size());
+  
+  // Define the vectors, which store the mapping from the subelement to the
+  // parent element, subelement ID within the parent element, the element
+  // type and the connectivity of the subelements.
+  vector<unsigned long>  parentElement;
+  vector<unsigned short> subElementIDInParent;
+  vector<unsigned short> VTK_TypeElem;
+  vector<unsigned long>  elemConn;
+  
+  // Loop over the volume elements to create the connectivity of the subelements.
+  for(unsigned long l=0; l<volElems.size(); ++l)
+  {
+    // Determine the index in the standard elements.
+    // If not present yet, create the standard elements.
+    unsigned long ind;
+    for(ind=0; ind<standardElementsSol.size(); ++ind)
+    {
+      if(standardElementsSol[ind].SameStandardElement(volElems[l].mVTK_TYPE,
+                                                      volElems[l].mNPolySol,
+                                                      false) &&
+         standardElementsGrid[ind].SameStandardElement(volElems[l].mVTK_TYPE,
+                                                       volElems[l].mNPolyGrid,
+                                                       false))
+        break;
+    }
+    
+    if(ind == standardElementsSol.size())
+    {
+      standardElementsSol.push_back(CFEMStandardElement(volElems[l].mVTK_TYPE,
+                                                            volElems[l].mNPolySol,
+                                                            false,
+                                                            config));
+      standardElementsGrid.push_back(CFEMStandardElement(volElems[l].mVTK_TYPE,
+                                                             volElems[l].mNPolyGrid,
+                                                             false,
+                                                             config,
+                                                             standardElementsSol[ind].GetOrderExact(),
+                                                             standardElementsSol[ind].GetRDOFs(),
+                                                             standardElementsSol[ind].GetSDOFs(),
+                                                             standardElementsSol[ind].GetTDOFs()));
+    }
+    
+    indInStandardElements[l] = ind;
+    
+    // Determine the necessary data from the corresponding standard element.
+    unsigned short VTK_Type[]  = {standardElementsGrid[ind].GetVTK_Type1(),
+      standardElementsGrid[ind].GetVTK_Type2()};
+    unsigned short nSubElems[] = {0, 0};
+    unsigned short nDOFsPerSubElem[] = {0, 0};
+    const unsigned short *connSubElems[] = {NULL, NULL};
+    
+    if(VTK_Type[0] != NONE) {
+      nSubElems[0]       = standardElementsGrid[ind].GetNSubElemsType1();
+      nDOFsPerSubElem[0] = standardElementsGrid[ind].GetNDOFsPerSubElem(VTK_Type[0]);
+      connSubElems[0]    = standardElementsGrid[ind].GetSubConnType1();
+    }
+    
+    if(VTK_Type[1] != NONE) {
+      nSubElems[1]       = standardElementsGrid[ind].GetNSubElemsType2();
+      nDOFsPerSubElem[1] = standardElementsGrid[ind].GetNDOFsPerSubElem(VTK_Type[1]);
+      connSubElems[1]    = standardElementsGrid[ind].GetSubConnType2();
+    }
+    
+    // Abbreviate the grid DOFs of this element a bit easier.
+    const unsigned long *DOFs = volElems[l].mConnGrid.data();
+    
+    // Loop over the number of subelements and store the required data.
+    unsigned short jj = 0;
+    for(unsigned short i=0; i<2; ++i) {
+      unsigned short kk = 0;
+      for(unsigned short j=0; j<nSubElems[i]; ++j, ++jj) {
+        parentElement.push_back(l);
+        subElementIDInParent.push_back(jj);
+        VTK_TypeElem.push_back(VTK_Type[i]);
+        
+        for(unsigned short k=0; k<nDOFsPerSubElem[i]; ++k, ++kk)
+          elemConn.push_back(DOFs[connSubElems[i][kk]]);
+      }
+    }
+  }
+  
+  // Copy the coordinates in a vector that can be used by the ADT.
+  vector<su2double> volCoor;
+  volCoor.reserve(nDim*coorGrid[0].size());
+  for(unsigned long l=0; l<coorGrid[0].size(); ++l)
+  {
+    for(unsigned short k=0; k<nDim; ++k)
+      volCoor.push_back(coorGrid[k][l]);
+  }
+  
+  // Build the local ADT.
+  volumeADT.CreateADT(nDim, volCoor, elemConn, VTK_TypeElem,
+                      subElementIDInParent, parentElement);
+}
+
 void CFEMInterpolationSol::VolumeInterpolationSolution(
                                            CConfig*                        config,
                                            const unsigned short            zoneID,
@@ -2124,14 +2235,6 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
   
   // Determine the write frequency.
   const unsigned long nDOFsInterpol = coorInterpol.size()/nDim;
-  
-  unsigned long writeFreq = nDOFsInterpol/5;
-  if(writeFreq > 10000) writeFreq = 10000;
-  if(writeFreq <   100) writeFreq =   100;
-  
-  writeFreq = writeFreq/10;
-  if(writeFreq == 0) writeFreq = 1;
-  writeFreq *= 10;
     
     // Define the local vector to store the failed searches for each thread.
     vector<long> localPointsFailed;
@@ -2142,12 +2245,7 @@ void CFEMInterpolationSol::VolumeInterpolationSolution(
     
     // Loop over the DOFs to be interpolated.
     for(unsigned long l=0; l<nDOFsInterpol; ++l)
-    {
-      // Write a message about the number of DOFs to be interpolated.
-      if( !(l%writeFreq) )
-        cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-        << nDOFsInterpol << " DOFs interpolated." << endl << flush;
-      
+    {      
       // Set a pointer to the coordinates to be searched.
       const su2double *coor = coorCorrected.data() + l*nDim;
       
@@ -2432,15 +2530,6 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
   /*--------------------------------------------------------------------------*/
   /*--- Step 2. Search for donor elements for the given coordinates.       ---*/
   /*--------------------------------------------------------------------------*/
-  
-  // Determine the write frequency.
-  unsigned long writeFreq = pointsMinDistSearch.size()/5;
-  if(writeFreq > 10000) writeFreq = 10000;
-  if(writeFreq <   100) writeFreq =   100;
-  
-  writeFreq = writeFreq/10;
-  if(writeFreq == 0) writeFreq = 1;
-  writeFreq *= 10;
     
     // Define the vectors used in the tree search. Pre-allocate some memory
     // for efficiency reasons.
@@ -2450,14 +2539,6 @@ void CFEMInterpolationSol::SurfaceInterpolationSolution(
     // Loop over the points for which a minimum distance search must be carried out.
     for(unsigned long l=0; l<pointsMinDistSearch.size(); ++l)
     {
-    // Write a message about the number of DOFs to be interpolated via
-    // surface interpolation.
-      if( !(l%writeFreq) )
-        std::cout << "Grid zone " << zoneID+1 << ": " << l << " out of "
-      << pointsMinDistSearch.size()
-      << " DOFs interpolated via minimum distance search."
-      << std::endl << std::flush;
-
     // Set a pointer to the coordinates to be searched.
       const su2double *coor = coorInterpol.data() + pointsMinDistSearch[l]*nDim;
 
@@ -2694,7 +2775,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
 
   // Initialize vectors for coordinate, solution, and interpolated solution storage.
   vector<vector<vector<su2double> > > coor(nDOFsTot), 
-                                    sol(nDOFsTot);
+                                      sol(nDOFsTot);
   const vector<vector<su2double> > &inputSolDOFs = inputSol->GetSolDOFs();
   
   // Easier storage of the solution format of the input grid.
@@ -2703,6 +2784,9 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
   // Initialize the zone offset for the input and output solution to zero.
   unsigned long zoneOffsetInputSol  = 0;
   unsigned long zoneOffsetOutputSol = 0;
+
+  // Vector for points that fail containment search.
+  vector<long> pointsSearchFailed;
   
   // Loop over the number of zones.
   for(unsigned short zone=0; zone<nZones; ++zone)
@@ -2729,9 +2813,19 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
         Coord[ii++] = inputGridCoor[iDim][l];
     }
 
-    cout << "Building VolumeADT for nearest nodes....." << flush;
-    CADTPointsOnlyClass *VolumeADT = new CADTPointsOnlyClass(nDim, nDOFsZone, Coord.data(),
-                                  PointIDs.data(), true);
+    // cout << "Building VolumeADT for nearest nodes....." << flush;
+    cout << "Building VolumeADT for higher order interpolation....." << flush;
+    // Define the variables needed for the call to BuildSurfaceADT.
+    vector<CFEMStandardElement> standardElementsGrid;
+    vector<CFEMStandardElement> standardElementsSol;
+    vector<unsigned short> inputGridIndInStandardElements;
+
+    // Build the surface ADT for the input grid.
+    CADTElemClass VolumeElemADT;
+    BuildVolumeADT(config[zone], inputGridZone, VolumeElemADT, standardElementsGrid,
+                  standardElementsSol, inputGridIndInStandardElements);
+    // CADTPointsOnlyClass *VolumeADT = new CADTPointsOnlyClass(nDim, nDOFsZone, Coord.data(),
+    //                               PointIDs.data(), true);
     cout << " Done." << endl << flush;
 
     // Number of nearest nodes required, hardcode for quadratic interpolation for now.
@@ -2739,55 +2833,192 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     if(nDim == 2) nNearestNodes = 6;
     else          nNearestNodes = 10;
 
-    for(unsigned long l = 0; l < nDOFsTot; ++l){
+    // Loop over the DOFs to be interpolated.
+    const vector<CFEMInterpolationVolElem> &volElems = inputGridZone->mVolElems;
+    vector<vector<unsigned long> > pointID(nDOFsTot);
+    vector<vector<int> >           rankID(nDOFsTot);
+    for(unsigned long l=0; l<nDOFsTot; ++l)
+    {
       coor[l].resize(nDim);
       sol[l].resize(nVar);
+      
+      // Set a pointer to the coordinates to be searched.
+      const su2double *coorInterpol = coorInterpolZone.data() + l*nDim;
 
-      for(unsigned short iDim = 0; iDim < nDim; iDim++)
-        coor[l][iDim].resize(nNearestNodes);
-      for(unsigned short iVar = 0; iVar < nVar; iVar++)
-        sol[l][iVar].resize(nNearestNodes);
+      // Define the vectors used in the tree search. Pre-allocate some memory
+      // for efficiency reasons.
+      vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
+      
+      // Carry out the containment search and check if it was successful.
+      unsigned short subElem;
+      unsigned long  parElem;
+      int            rank;
+      su2double      parCoor[3], weightsInterpol[8];
+      if( VolumeElemADT.DetermineContainingElement(coorInterpol, subElem, parElem, rank,
+                                                   parCoor, weightsInterpol,
+                                                   frontLeaves, frontLeavesNew) )
+      {
+        // Subelement found that contains the exchange location. Now get
+        // the neighbor elements and their nodes.
+        const unsigned short nNeighb1 = volElems[parElem].mNNeighb;
+        unsigned short nNeighb2;
+        unsigned long firstNeighbElem, donorElem;
+        vector <unsigned long> donorNodes;
 
-    }
+        donorElem = parElem;
+        for(unsigned short jDOF = 0; jDOF < volElems[donorElem].mNDOFsGrid; ++jDOF)
+          donorNodes.push_back(volElems[donorElem].mConnGrid[jDOF]);
 
-    // Carry out the minimum distance search.
-    vector<vector<unsigned long> > pointID;
-    vector<vector<int> >           rankID;
-    GetNNearestNodes(VolumeADT, nDim, nNearestNodes, coorInterpolZone, pointID, rankID);
+        for(unsigned short iNeighb = 0; iNeighb < nNeighb1; ++iNeighb){
+          donorElem = volElems[parElem].mNeighbElems[iNeighb];
+          for(unsigned short jDOF = 0; jDOF < volElems[donorElem].mNDOFsGrid; ++jDOF)
+            donorNodes.push_back(volElems[donorElem].mConnGrid[jDOF]);
+        }
 
-#ifdef HAVE_MPI
+        // Sort and remove duplicate nodes.
+        MergeSort(donorNodes, 0, donorNodes.size()-1);
+        for(unsigned short iNode = 1; iNode < donorNodes.size(); iNode++){
+          if(donorNodes[iNode-1] == donorNodes[iNode]){
+            donorNodes.erase(donorNodes.begin()+iNode);
+            iNode--;
+          }
+        }
 
-    // Parallel mode. Communicate the nodes needed for the interpolation.
-    int rank, size;
-    SU2_MPI::Comm_rank(MPI_COMM_WORLD, &rank);
-    SU2_MPI::Comm_size(MPI_COMM_WORLD, &size);
+        // Add neighbors of neighbors if required.
+        if(donorNodes.size() < nNearestNodes){
 
-    if(size > 1){
-      SU2_MPI::Error("FV quadratic interpolation currently only coded for sequential mode.", CURRENT_FUNCTION);
-    }
-    else{
-      // Sequential mode. Store the nodes needed for the interpolation.
-      for(unsigned long l = 0; l < nDOFsTot; ++l){
-        for(unsigned short iNode = 0; iNode < nNearestNodes; iNode++){
+          for(unsigned short iNeighb = 0; iNeighb < nNeighb1; ++iNeighb){
+            firstNeighbElem = volElems[parElem].mNeighbElems[iNeighb];
+            nNeighb2        = volElems[firstNeighbElem].mNNeighb;
+            for(unsigned short jNeighb = 0; jNeighb < nNeighb2; ++jNeighb){
+              donorElem = volElems[firstNeighbElem].mNeighbElems[jNeighb];
+              for(unsigned short jDOF = 0; jDOF < volElems[donorElem].mNDOFsGrid; ++jDOF)
+                donorNodes.push_back(volElems[donorElem].mConnGrid[jDOF]);
+            }
+          }
+
+          MergeSort(donorNodes, 0, donorNodes.size()-1);
+          for(unsigned short iNode = 1; iNode < donorNodes.size(); iNode++){
+            if(donorNodes[iNode-1] == donorNodes[iNode]){
+              donorNodes.erase(donorNodes.begin()+iNode);
+              iNode--;
+            }
+          }
+
+        }
+
+        pointID[l] = donorNodes;
+
+        // Copy data into structures to be used for interpolation.
+        for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim].resize(pointID[l].size());
+        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar].resize(pointID[l].size());
+
+        for(unsigned short iNode = 0; iNode < pointID[l].size(); iNode++){
           const unsigned long ll = pointID[l][iNode];
           for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
           for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar];
         }
+        // TODO: implement for parallel, get rankID for each node.
+        
+      }
+      else
+      {
+        // Containment search was not successful. Store the ID in localPointsFailed.
+        pointsSearchFailed.push_back(l);
       }
     }
 
-#else
+    
+    // Perform surface interpolation for points which could not be interpolatd via
+    // the regular volume interpolation.
+    if(pointsSearchFailed.size())
+    {
+      const vector<CFEMInterpolationSurfElem> &surfElems = inputGridZone->mSurfElems;
 
-    // Sequential mode. Store the nodes needed for the interpolation.
-    for(unsigned long l = 0; l < nDOFsTot; ++l){
-      for(unsigned short iNode = 0; iNode < nNearestNodes; iNode++){
-        const unsigned long ll = pointID[l][iNode];
-        for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
-        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar];
+      // Define the vectors to store the adjacent element and the face ID
+      // inside the element.
+      vector<unsigned long>  adjElemID;
+      vector<unsigned short> faceIDInElement;
+  
+      // Define the vectors of the standard boundary faces and the vector to store
+      // the standard boundary face for the surface elements.
+      vector<CFEMStandardBoundaryFace> standardBoundaryFacesGrid;
+      vector<CFEMStandardBoundaryFace> standardBoundaryFacesSol;
+      vector<unsigned short> indInStandardBoundaryFaces;
+  
+      // Build the surface ADT.
+      CADTElemClass surfaceADT;
+      BuildSurfaceADT(config[zone], inputGridZone, surfaceADT, standardBoundaryFacesGrid,
+                      standardBoundaryFacesSol, indInStandardBoundaryFaces,
+                      adjElemID, faceIDInElement);
+
+      for(unsigned long l=0; l<pointsSearchFailed.size(); ++l)
+      {
+        // Set a pointer to the coordinates to be searched.
+        const su2double *coorInt = coorInterpolZone.data() + pointsSearchFailed[l]*nDim;
+
+        // Define the vectors used in the tree search. Pre-allocate some memory
+        // for efficiency reasons.
+        vector<CBBoxTargetClass> BBoxTargets(200);
+        vector<unsigned long> frontLeaves(200), frontLeavesNew(200);
+      
+        // Carry out the minimum distance search for the original coordinate
+        unsigned short subElem;
+        unsigned long  parElem;
+        int            rank;
+        su2double      dist;
+        su2double      weightsInterpol[4];
+        su2double      distInterpol;
+        surfaceADT.DetermineNearestElement(coorInt, dist, subElem, parElem, rank,
+                                           weightsInterpol, BBoxTargets,
+                                           frontLeaves, frontLeavesNew);
+
+        // Subelement found that contains the exchange location. Now get
+        // the neighbor elements and their nodes.
+        const unsigned short nNeighb1 = surfElems[parElem].mNNeighb;
+        unsigned short nNeighb2, nNeighb3;
+        unsigned long firstNeighbElem, secondNeighbElem, donorElem;
+        vector <unsigned long> donorNodes;
+
+        // Add neighbors of neighbors of neighbors.
+        for(unsigned short iNeighb = 0; iNeighb < nNeighb1; ++iNeighb){
+          firstNeighbElem = surfElems[parElem].mNeighbElems[iNeighb];
+          nNeighb2        = surfElems[firstNeighbElem].mNNeighb;
+          for(unsigned short jNeighb = 0; jNeighb < nNeighb2; ++jNeighb){
+            secondNeighbElem = surfElems[firstNeighbElem].mNeighbElems[jNeighb];
+            nNeighb3         = surfElems[secondNeighbElem].mNNeighb;
+            for(unsigned short kNeighb = 0; kNeighb < nNeighb3; ++kNeighb){
+              donorElem = surfElems[secondNeighbElem].mNeighbElems[kNeighb];
+              for(unsigned short jDOF = 0; jDOF < surfElems[donorElem].mNDOFsGrid; ++jDOF)
+                donorNodes.push_back(volElems[donorElem].mConnGrid[jDOF]);
+            }
+          }
+        }
+
+        MergeSort(donorNodes, 0, donorNodes.size()-1);
+        for(unsigned short iNode = 1; iNode < donorNodes.size(); iNode++){
+          if(donorNodes[iNode-1] == donorNodes[iNode]){
+            donorNodes.erase(donorNodes.begin()+iNode);
+            iNode--;
+          }
+        }
+
+        pointID[l] = donorNodes;
+
+        // Copy data into structures to be used for interpolation.
+        for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim].resize(pointID[l].size());
+        for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar].resize(pointID[l].size());
+
+        for(unsigned short iNode = 0; iNode < pointID[l].size(); iNode++){
+          const unsigned long ll = pointID[l][iNode];
+          for(unsigned short iDim = 0; iDim < nDim; iDim++) coor[l][iDim][iNode] = inputGridCoor[iDim][ll];
+          for(unsigned short iVar = 0; iVar < nVar; iVar++) sol[l][iVar][iNode] = inputSolDOFs[ll][iVar];
+        }
+        // TODO: implement for parallel, get rankID for each node.
+
       }
+      
     }
-
-#endif
 
     // Carry out the volume interpolation.
     vector<vector<su2double> > coorCorrected(nDim, vector<su2double>(1));
@@ -2800,7 +3031,6 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
       for(unsigned short iDim = 0; iDim < nDim; iDim++){
         coorCorrected[iDim][0] = coorInterpolZone[l*nDim + iDim];
       }
-      // const su2double *coorCorrected = coorInterpolZone.data() + l*nDim;
       QR_LeastSquares(nDim, nPoly, coor[l], coorCorrected,
                       sol[l], solInterpolTmp);
 
@@ -2810,26 +3040,6 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
       
     }
     
-    // Carry out a surface interpolation, via a minimum distance search,
-    // for the points that could not be interpolated via the regular volume
-    // interpolation. Print a warning about this.
-    // if( pointsForMinDistance.size() )
-    // {
-    //   cout << "Zone " << zone << ": " << pointsForMinDistance.size()
-    //   << " DOFs for which the containment search failed." << endl;
-    //   cout << "A minimum distance search to the boundary of the "
-    //   << "domain is used for these points. " << endl;
-      
-    //   SurfaceInterpolationSolution(config[zone], zone, coorInterpol[zone], coorInterpolZone, 
-    //                                inputGridZone, inputSol,
-    //                                zoneOffsetInputSol, zoneOffsetOutputSol,
-    //                                solFormatInput, pointsForMinDistance,
-    //                                standardElementsSol, indInStandardElements);
-    // }
-    
-    // // Update the zone offset for the input and output solution.
-    // zoneOffsetInputSol  += inputGridZone->GetNSolDOFs(solFormatInput);
-    // zoneOffsetOutputSol += coorInterpol[zone].size()/nDim;
   }
 }
 
@@ -2851,9 +3061,6 @@ void CFEMInterpolationSol::GetNNearestNodes(CADTPointsOnlyClass            *Volu
     const su2double *coorCorr = coorInterpol.data() + l*nDim;
     VolumeADT->DetermineNNearestNodes(coorCorr, nNearestNodes,
                                       dist, pointID[l], rankID[l]);
-    // cout << "l = " << l << ", ";
-    // for(unsigned short i = 0; i < nNearestNodes; i++) cout << pointID[l][i] << "\t";
-    // cout << endl;
   }
 
 }
@@ -2872,58 +3079,52 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   unsigned short iPoint, jPoint, iDim, iVar, i;
 
   // Determine mean coordinates of nodes and use as origin for LS system
-  vector<su2double> coorAvg(nDim, 0.0);
+  su2double wMax = 0.0;
+  vector<su2double> weights(nPoint, 0.0), weightsInterpol(nPointInterpol, 0.0);
   vector<vector<su2double> > coorOffset(nDim, vector<su2double>(nPoint)),
-                            coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol));
+                             coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol)),
+                             wSol(nVar, vector<su2double>(nPoint));
+
+  // Compute coorInterpol-centered coordinates and squared distances.
   for(iDim = 0; iDim < nDim; iDim++){
     for(iPoint = 0; iPoint < nPoint; iPoint++){
-      coorAvg[iDim] += coor[iDim][iPoint]/nPoint;
-    }
-  }
-  for(iDim = 0; iDim < nDim; iDim++){
-    for(iPoint = 0; iPoint < nPoint; iPoint++){
-      coorOffset[iDim][iPoint] = coor[iDim][iPoint] - coorAvg[iDim];
+      coorOffset[iDim][iPoint] = (coor[iDim][iPoint] - coorInterpol[iDim][0]);
+      weights[iPoint] += coorOffset[iDim][iPoint]*coorOffset[iDim][iPoint];
+      wMax = max(wMax, weights[iPoint]);
     }
     for(jPoint = 0; jPoint < nPointInterpol; jPoint++){
-      coorOffsetInterpol[iDim][jPoint] = coorInterpol[iDim][jPoint] - coorAvg[iDim];
+      coorOffsetInterpol[iDim][jPoint] = (coorInterpol[iDim][jPoint] - coorInterpol[iDim][jPoint]);
+      weightsInterpol[jPoint] += coorOffsetInterpol[iDim][jPoint]*coorOffsetInterpol[iDim][jPoint];
+    }
+  }
+
+  // Compute weight function.
+  for(iPoint = 0; iPoint < nPoint; iPoint++)         weights[iPoint]         = exp(-weights[iPoint]*1.0);
+  for(jPoint = 0; jPoint < nPointInterpol; jPoint++) weightsInterpol[jPoint] = exp(-weightsInterpol[jPoint]*1.0);
+
+  for(iPoint = 0; iPoint < nPoint; iPoint++){
+    for(iVar = 0; iVar < nVar; iVar++){
+      wSol[iVar][iPoint] = weights[iPoint]*sol[iVar][iPoint];
     }
   }
 
   // Compute approximate Vandermonde matrix
-  vector<vector<su2double> > vmat;
-  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffset, vmat);
+  vector<vector<su2double> > vmat, vmatTranspose;
+  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffset, weights, vmat);
   else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
 
   // Perform QR factorization
   vector<vector<su2double> > Q, R;
   Householder(vmat, Q, R);
-  // cout << "vmat = " << flush;
-  // for(unsigned short i = 0; i < vmat.size(); i++){
-  //   for(unsigned short j = 0; j < vmat[0].size(); j++)
-  //     cout << vmat[i][j] << "\t";
-  //   cout << endl;
-  // }
-  // cout << endl << "Q = " << flush;
-  // for(unsigned short i = 0; i < Q.size(); i++){
-  //   for(unsigned short j = 0; j < Q[0].size(); j++)
-  //     cout << Q[i][j] << "\t";
-  //   cout << endl;
-  // }
-  // cout << endl << "R = " << flush;
-  // for(unsigned short i = 0; i < R.size(); i++){
-  //   for(unsigned short j = 0; j < R[0].size(); j++)
-  //     cout << R[i][j] << "\t";
-  //   cout << endl;
-  // }
 
   // Compute interpolation coefficients for each variable
   vector<vector<su2double> > coeffsInterpol;
-  BackSubstitute(Q, R, coorOffsetInterpol, sol, coeffsInterpol);
+  BackSubstitute(Q, R, coorOffsetInterpol, wSol, coeffsInterpol);
 
   // Compute Vandermonde for interpolation coordinates
   for(i = 0; i < vmat.size(); i++) vmat[i].clear();
   vmat.clear();
-  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffsetInterpol, vmat);
+  if(nDim == 2) ApproxVandermonde_2D(nPoly, coorOffsetInterpol, weightsInterpol, vmat);
   else          SU2_MPI::Error("Vandermonde for error estimation currently only implemented for 2D.", CURRENT_FUNCTION);
 
   // Interpolate the solution
@@ -2937,37 +3138,84 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
       }
     }
   }
-  // cout << endl << "sol = " << flush;
-  // for(iVar = 0; iVar < nVar; iVar++){
-  //   for(iPoint = 0; iPoint < nPoint; iPoint++)
-  //     cout << sol[iVar][iPoint] << "\t";
-  //   cout << endl;
-  // }
-
-  // cout << endl << "vmatInterpol = " << flush;
-  // for(unsigned short i = 0; i < vmat.size(); i++){
-  //   for(unsigned short j = 0; j < vmat[0].size(); j++)
-  //     cout << vmat[i][j] << "\t";
-  //   cout << endl;
-  // }
-
-  // cout << endl << "coeffsInterpol = " << flush;
-  // for(iVar = 0; iVar < nVar; iVar++){
-  //   for(iPoint = 0; iPoint < nPoint; iPoint++)
-  //     cout << coeffsInterpol[iVar][iPoint] << "\t";
-  //   cout << endl;
-  // }
-
-  // cout << endl << "solInterpol = " << flush;
-  // for(iVar = 0; iVar < nVar; iVar++){
-  //   cout << solInterpol[iVar][0] << "\t";
-  // }
-  // cout << endl;
 
 }
 
-void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short             nPoly,
+void CFEMInterpolationSol::MatVec(const vector<vector<su2double> >  &A,
+                                  const vector<su2double>           &x,
+                                  vector<su2double>                 &y){
+
+  unsigned short m  = A.size(),
+                 n  = A[0].size(),
+                 nx = x.size();
+
+  if(n != nx) SU2_MPI::Error("Matrix and vector dimensions do not agree.", CURRENT_FUNCTION);
+
+  for(unsigned short i = 0; i < m; ++i){
+    y.push_back(0.0);
+    for(unsigned short j = 0; j < n; ++j){
+      y[i] += A[i][j]*x[j];
+    }
+  }
+
+}
+
+void CFEMInterpolationSol::MatMat(const vector<vector<su2double> >  &A,
+                                  const vector<vector<su2double> >  &B,
+                                  vector<vector<su2double> >        &Y){
+  unsigned short ma = A.size(),
+                 na = A[0].size(),
+                 mb = B.size(),
+                 nb = B[0].size();
+
+  if(na != mb) SU2_MPI::Error("Matrix dimensions do not agree.", CURRENT_FUNCTION);
+
+  Y.resize(ma);
+
+  for(unsigned short i = 0; i < ma; ++i){
+    Y[i].resize(nb);
+    for(unsigned short j = 0; j < nb; ++j){
+      Y[i][j] = 0.0;
+      for(unsigned short k = 0; k < na; ++k)
+        Y[i][j] += A[i][k]*B[k][j];
+    }
+  }
+
+}
+
+void CFEMInterpolationSol::GetPermutation(const vector<vector<su2double> >  &A,
+                                          vector<vector<su2double> >        &P){
+
+  unsigned short m = A.size(),
+                 n = A[0].size();
+
+  // Compute norm of each column.
+  vector<su2double> norms(n, 0.0);
+  for(unsigned short i = 0; i < m; ++i){
+    for(unsigned short j = 0; j < n; ++j)
+      norms[j] += A[i][j]*A[i][j];
+  }
+
+  // Determine permutation matrix.
+  vector<unsigned short> ranks(n);
+  P.resize(n);
+  for(unsigned short i = 0; i < n; ++i){
+    P[i].resize(n);
+    ranks[i] = i;
+  }
+  MergeSort(norms, ranks, 0, n-1);
+
+  for(unsigned short i = 0; i < n; ++i)
+    P[i][ranks[i]] = 1.0;
+
+  // vector<vector<su2double> > B = A;
+  // MatMat();
+
+}
+
+void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short              nPoly,
                                                 const vector<vector<su2double> >  &coor,
+                                                const vector<su2double>           &weights,
                                                 vector<vector<su2double> >        &vmat)
 {
 
@@ -2984,7 +3232,10 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short            
     for(ix = m; 0 <= ix; ix--){
       iy = m-ix;
       for(i = 0; i < nPoint; i++){
-        vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
+        // if(ix == 0 && iy == 0) vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
+        // else                   vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy)*weights[i];
+        vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy) * weights[i];
+        // vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
       }
       j++;
     }
@@ -3056,13 +3307,15 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double> >  &mat,
       for(j = 0; j < n; j++)
         z[i][j] = 0.0;
 
-    for(i = 0; i < m; i++){
-      for(j = 0; j < n; j++){
-        for(l = 0; l < m; l++){
-          z[i][j] += Qk[k][i][l] * z1[l][j];
-        }
-      }
-    }
+    MatMat(Qk[k], z1, z);
+
+    // for(i = 0; i < m; i++){w
+    //   for(j = 0; j < n; j++){
+    //     for(l = 0; l < m; l++){
+    //       z[i][j] += Qk[k][i][l] * z1[l][j];
+    //     }
+    //   }
+    // }
 
 
   }
@@ -3072,35 +3325,56 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double> >  &mat,
   for(i = 0; i < m; i++) z1[i].resize(m);
 
   for(k = 1; k < n && k < m-1; k++){
+
     for(i = 0; i < m; i++)
       for(j = 0; j < m; j++)
         z1[i][j] = 0.0;
 
-    for(i = 0; i < m; i++){
-      for(j = 0; j < m; j++){
-        for(l = 0; l < m; l++){
-          z1[i][j] += Qk[k][i][l] * Q[l][j];
-        }
-      }
-    }
+  MatMat(Qk[k], Q, z1);
+
+    // for(i = 0; i < m; i++){
+    //   for(j = 0; j < m; j++){
+    //     for(l = 0; l < m; l++){
+    //       z1[i][j] += Qk[k][i][l] * Q[l][j];
+    //     }
+    //   }
+    // }
 
     Q = z1;
 
   }
 
   // Compute R
-  R.resize(m);
-  for(i = 0; i < m; i++){
-    R[i].resize(n);
-    for(j = 0; j < n; j++){
-      for(l = 0; l < m; l++){
-        R[i][j] += Q[i][l] * mat[l][j];
-      }
-    }
-  }
+  // R.resize(m);
+  // for(i = 0; i < m; i++){
+  //   R[i].resize(n);
+  //   // for(j = 0; j < n; j++){
+  //   //   for(l = 0; l < m; l++){
+  //   //     R[i][j] += Q[i][l] * mat[l][j];
+  //   //   }
+  //   // }
+  // }
+
+  MatMat(Q, mat, R);
 
   // Transpose Q
   TransposeSquare(Q);
+
+}
+
+void CFEMInterpolationSol::Transpose(vector<vector<su2double> >  &mat){
+  unsigned short m = mat.size(),
+                 n = mat[0].size(),
+                 i, j;
+
+  vector<vector<su2double> > matTmp(n, vector<su2double>(m));
+  for(i = 0; i < m; i++){
+    for(j = 0; j < n; j++){
+      matTmp[j][i] = mat[i][j];
+    }
+  }
+
+  mat = matTmp;
 
 }
 
@@ -3157,6 +3431,204 @@ void CFEMInterpolationSol::BackSubstitute(vector<vector<su2double> >        &Q,
       coeffsInterpol[iVar][i] /= R[i][i];
     }
 
+  }
+}
+
+void CFEMInterpolationSol::MergeSort(vector<unsigned long> &y, 
+                                     int l, 
+                                     int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(y, l, m);
+    MergeSort(y, m+1, r);
+    Merge(y, l, m, r);
+  }
+}
+
+void CFEMInterpolationSol::MergeSort(vector<unsigned long> &y, 
+                                     vector<unsigned long> &k, 
+                                     int l, 
+                                     int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(y, k, l, m);
+    MergeSort(y, k, m+1, r);
+    Merge(y, k, l, m, r);
+  }
+}
+
+void CFEMInterpolationSol::MergeSort(vector<su2double>      &y, 
+                                     vector<unsigned short> &k, 
+                                     int l, 
+                                     int r){
+  if(l < r){
+    int m = l + (r-l)/2;
+    MergeSort(y, k, l, m);
+    MergeSort(y, k, m+1, r);
+    Merge(y, k, l, m, r);
+  }
+}
+
+void CFEMInterpolationSol::Merge(vector<unsigned long> &x, 
+                                 int l, 
+                                 int m,
+                                 int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  unsigned long L[n1], R[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    j++;
+    k++;
+  }
+}
+
+void CFEMInterpolationSol::Merge(vector<unsigned long> &x, 
+                                 vector<unsigned long> &p, 
+                                 int l, 
+                                 int m,
+                                 int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  unsigned long L[n1], R[n2];
+  unsigned long Lp[n1], Rp[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+    Lp[i] = p[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+    Rp[j] = p[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      p[k] = Lp[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      p[k] = Rp[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    p[k] = Lp[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    p[k] = Rp[j];
+    j++;
+    k++;
+  }
+}
+
+void CFEMInterpolationSol::Merge(vector<su2double>      &x, 
+                                 vector<unsigned short> &p, 
+                                 int l, 
+                                 int m,
+                                 int r){
+  int i, j, k;
+  int n1 = m-l+1;
+  int n2 = r-m;
+
+  su2double      L[n1], R[n2];
+  unsigned short Lp[n1], Rp[n2];
+
+  /*--- Temporary arrays ---*/
+  for(i = 0; i < n1; i++){
+    L[i]  = x[l+i];
+    Lp[i] = p[l+i];
+  }
+  for(j = 0; j < n2; j++){
+    R[j]  = x[m+1+j];
+    Rp[j] = p[m+1+j];
+  }
+
+  i = 0;
+  j = 0;
+  k = l;
+
+  /*--- Begin sorting ---*/
+  while(i < n1 && j < n2){
+    if(L[i] <= R[j]){
+      x[k] = L[i];
+      p[k] = Lp[i];
+      i++;
+    }
+    else{
+      x[k] = R[j];
+      p[k] = Rp[j];
+      j++;
+    }
+    k++;
+  }
+
+  /*--- Fill rest of arrays ---*/
+  while(i < n1){
+    x[k] = L[i];
+    p[k] = Lp[i];
+    i++;
+    k++;
+  }
+
+  while(j < n2){
+    x[k] = R[j];
+    p[k] = Rp[j];
+    j++;
+    k++;
   }
 }
 
@@ -3703,12 +4175,15 @@ void CFEMInterpolationSurfElem::GetCornerPoints(unsigned short &nCornerPoints,
 void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
                                               const unsigned short nPolyGrid,
                                               const unsigned short nDOFsGrid,
-                                              const unsigned long  *connGrid)
+                                              const unsigned short nNeighb,
+                                              const unsigned long  *connGrid,
+                                              const unsigned long  *neighbElems)
 {
   // Copy the scalar integer data.
   mVTK_TYPE  = VTK_Type;
   mNPolyGrid = nPolyGrid;
   mNDOFsGrid = nDOFsGrid;
+  mNNeighb   = nNeighb;
   
   // Allocate the memory for the connectivity of the grid.
   mConnGrid.resize(mNDOFsGrid);
@@ -3717,8 +4192,12 @@ void CFEMInterpolationSurfElem::StoreElemData(const unsigned short VTK_Type,
   for(unsigned short i=0; i<mNDOFsGrid; ++i)
     mConnGrid[i] = connGrid[i];
 
-  // Allocate the memory for the curvature.
-  mConnGrid.resize(mNDOFsGrid);
+  // Allocate the memory for the neighbor elements.
+  mNeighbElems.resize(mNNeighb);
+  
+  // Copy the neighbor elements data.
+  for(unsigned short i=0; i<mNNeighb; ++i)
+    mNeighbElems[i] = neighbElems[i];
 
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original
@@ -3827,7 +4306,9 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
                                              const unsigned short nDOFsGrid,
                                              const unsigned short nDOFsSol,
                                              const unsigned long  offsetSolDOFsDG,
-                                             const unsigned long  *connGrid)
+                                             const unsigned short nNeighb,
+                                             const unsigned long  *connGrid,
+                                             const unsigned long  *neighbElems)
 {
   // Copy the scalar integer data.
   mElemID          = elemID;
@@ -3836,6 +4317,7 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   mNPolySol        = nPolySol;
   mNDOFsGrid       = nDOFsGrid;
   mNDOFsSol        = nDOFsSol;
+  mNNeighb         = nNeighb;
   mOffsetSolDOFsDG = offsetSolDOFsDG;
   
   // Allocate the memory for the connectivity of the grid.
@@ -3844,6 +4326,13 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
   // Copy the connectivity data.
   for(unsigned short i=0; i<mNDOFsGrid; ++i)
     mConnGrid[i] = connGrid[i];
+
+  // Allocate the memory for the neighbor elements.
+  mNeighbElems.resize(mNNeighb);
+  
+  // Copy the neighbor elements data.
+  for(unsigned short i=0; i<mNNeighb; ++i)
+    mNeighbElems[i] = neighbElems[i];
   
   // If a linear element is used, the node numbering for non-simplices
   // must be adapted. The reason is that compatability with the original
@@ -3872,7 +4361,7 @@ void CFEMInterpolationVolElem::StoreElemData(const unsigned long  elemID,
 void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
                                                       CGeometry* geometry)
 {
-  unsigned long iElem, nElem, iPoint, nPoint;
+  unsigned long iElem, jElem, nElem, iPoint, nPoint;
   unsigned short iNode, iDim, iMarker, nMarker;
   
   // Allocate the memory for volume elements.
@@ -3903,10 +4392,16 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
     vector<unsigned long> connSU2(nDOFsGrid);
     for(iNode = 0; iNode < nDOFsGrid; iNode++)
       connSU2[iNode] = geometry->elem[iElem]->GetNode(iNode);
+
+    // Allocate the memory for the neighbors and read it.
+    unsigned short nNeighb = geometry->elem[iElem]->GetnNeighbor_Elements();
+    vector<unsigned long> neighb(nNeighb);
+    for(jElem = 0; jElem < nNeighb; jElem++)
+      neighb[jElem] = geometry->elem[iElem]->GetNeighbor_Elements(jElem);
     
     // Store the data for this element.
     mVolElems[iElem].StoreElemData(iElem, VTKType, nPolyGrid, nPolySol, nDOFsGrid,
-                                   nDOFsSol, nSolDOFs, connSU2.data());
+                                   nDOFsSol, nSolDOFs, nNeighb, connSU2.data(), neighb.data());
     
     // Update nSolDOFs.
     nSolDOFs += nDOFsSol;
@@ -3955,9 +4450,15 @@ void CFEMInterpolationGridZone::CopySU2GeometryToGrid(CConfig*   config,
       for(iNode = 0; iNode < nDOFsGrid; iNode++)
         connSU2[iNode] = geometry->bound[iMarker][iElem]->GetNode(iNode);
 
+      // Allocate the memory for the neighbors and read it.
+      unsigned short nNeighb = geometry->elem[iElem]->GetnNeighbor_Elements();
+      vector<unsigned long> neighb(nNeighb);
+      for(jElem = 0; jElem < nNeighb; jElem++)
+        neighb[jElem] = geometry->elem[iElem]->GetNeighbor_Elements(jElem);
+
       // Store the data for this element.
-      mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid,
-                                      connSU2.data());
+      mSurfElems[nElem].StoreElemData(VTKType, nPolyGrid, nDOFsGrid, nNeighb,
+                                      connSU2.data(), neighb.data());
     }
   }
   

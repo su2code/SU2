@@ -323,9 +323,9 @@ public:
    */
   void DetermineNNearestNodes(const su2double         *coor,
                               const unsigned short    nNode,
-                              vector<su2double>       &dist,
-                              vector<unsigned long>   &pointID,
-                              vector<int>             &rankID);
+                              vector<su2double>       &distVec,
+                              vector<unsigned long>   &pointIDVec,
+                              vector<int>             &rankIDVec);
 private:
   /*!
    * \brief Default constructor of the class, disabled.

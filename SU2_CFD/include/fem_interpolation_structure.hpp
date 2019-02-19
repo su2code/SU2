@@ -71,8 +71,10 @@ public:
   unsigned short mNPolySol;              /*!< \brief Polynomial degree for the solution of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
   unsigned short mNDOFsSol;              /*!< \brief Number of DOFs for the solution of the element. */
+  unsigned short mNNeighb;               /*!< \brief Number of neighbor elemnts of the element. */
   unsigned long mOffsetSolDOFsDG;        /*!< \brief Offset for the solution DOFs, only for DG formulation. */
-  vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
+  vector<unsigned long> mConnGrid;       /*!< \brief The node numbers for the grid DOFs. */
+  vector<unsigned long> mNeighbElems;    /*!< \brief The element IDs of the neighbor elements. */
   /*!
    * \brief Constructor of the class.
    */
@@ -117,7 +119,9 @@ public:
                      const unsigned short nDOFsGrid,
                      const unsigned short nDOFsSol,
                      const unsigned long  offsetSolDOFsDG,
-                     const unsigned long  *connGrid);
+                     const unsigned short nNeighb,
+                     const unsigned long  *connGrid,
+                     const unsigned long  *neighbElems);
   
 private:
   /*!
@@ -185,7 +189,9 @@ public:
   unsigned short mVTK_TYPE;              /*!< \brief Element type using the VTK convention. */
   unsigned short mNPolyGrid;             /*!< \brief Polynomial degree for the geometry of the element. */
   unsigned short mNDOFsGrid;             /*!< \brief Number of DOFs for the geometry of the element. */
-  vector<unsigned long> mConnGrid;  /*!< \brief The node numbers for the grid DOFs. */
+  unsigned short mNNeighb;               /*!< \brief Number of neighbor elemnts of the element. */
+  vector<unsigned long> mConnGrid;       /*!< \brief The node numbers for the grid DOFs. */
+  vector<unsigned long> mNeighbElems;    /*!< \brief The element IDs of the neighbor elements. */
   
   /*!
    * \brief Constructor of the class.
@@ -226,7 +232,9 @@ public:
   void StoreElemData(const unsigned short VTK_Type,
                      const unsigned short nPolyGrid,
                      const unsigned short nDOFsGrid,
-                     const unsigned long  *connGrid);
+                     const unsigned short nNeighb,
+                     const unsigned long  *connGrid,
+                     const unsigned long  *neighbElems);
   
 private:
   /*!
@@ -488,10 +496,31 @@ public:
                        vector<vector<su2double> >        &solInterpol);
 
   /*!
+   * \brief Function, which performs a matrix-vector multiplication.
+   */
+  void MatVec(const vector<vector<su2double> >  &A,
+              const vector<su2double>           &x,
+              vector<su2double>                 &y);
+
+  /*!
+   * \brief Function, which performs a matrix-matrix multiplication.
+   */
+  void MatMat(const vector<vector<su2double> >  &A,
+              const vector<vector<su2double> >  &B,
+              vector<vector<su2double> >        &Y);
+
+  /*!
+   * \brief Function, which performs a matrix-matrix multiplication.
+   */
+  void GetPermutation(const vector<vector<su2double> >  &A,
+                      vector<vector<su2double> >        &P);
+
+  /*!
    * \brief Function, which creates an approximate Vandermonde matrix for an overdetermined system on a 2D mesh.
    */
-  void ApproxVandermonde_2D(const unsigned short            nPoly,
+  void ApproxVandermonde_2D(const unsigned short             nPoly,
                             const vector<vector<su2double> > &coor,
+                            const vector<su2double>          &weights,
                             vector<vector<su2double> >       &vmat);
 
   /*!
@@ -500,6 +529,11 @@ public:
   void Householder(const vector<vector<su2double> >  &mat,
                    vector<vector<su2double> >        &Q,
                    vector<vector<su2double> >        &R);
+
+  /*!
+   * \brief Function, which transposes a matrix.
+   */
+  void Transpose(vector<vector<su2double> >  &mat);
 
   /*!
    * \brief Function, which transposes a square matrix.
@@ -548,6 +582,16 @@ private:
                        vector<unsigned short>               &indInStandardBoundaryFaces,
                        vector<unsigned long>                &adjElemID,
                        vector<unsigned short>               &faceIDInElement);
+
+  /*!
+   * \brief Function, which builds the ADT of a volume grid.
+   */
+  void BuildVolumeADT(CConfig*                        config,
+                      const CFEMInterpolationGridZone *gridZone,
+                      CADTElemClass                   &volumeADT,
+                      vector<CFEMStandardElement>     &standardElementsGrid,
+                      vector<CFEMStandardElement>     &standardElementsSol,
+                      vector<unsigned short>          &indInStandardElements);
   
   /*!
    * \brief Function, which performs the containment search in a high order element.
@@ -617,6 +661,55 @@ private:
                                    vector<CFEMStandardElement>          &standardElementsGrid,
                                    vector<CFEMStandardElement>          &standardElementsSol,
                                    vector<unsigned short>               &indInStandardElements);
+  /*!
+   * \brief Function, which sorts a list of IDs.
+   */
+  void MergeSort(vector<unsigned long> &y, 
+                 int l, 
+                 int r);
+
+  /*!
+   * \brief Function, which sorts two lists of IDs.
+   */
+  void MergeSort(vector<unsigned long> &y, 
+                 vector<unsigned long> &k, 
+                 int l, 
+                 int r);
+
+  /*!
+   * \brief Function, which sorts a list of doubles.
+   */
+  void MergeSort(vector<su2double>      &y, 
+                 vector<unsigned short> &k, 
+                 int l, 
+                 int r);
+
+  /*!
+   * \brief Function, which merges a list of IDs.
+   */
+  void Merge(vector<unsigned long> &x,
+             int l, 
+             int m,
+             int r);
+
+  /*!
+   * \brief Function, which merges two lists of IDs.
+   */
+  void Merge(vector<unsigned long> &x,
+             vector<unsigned long> &p,
+             int l, 
+             int m,
+             int r);
+
+  /*!
+   * \brief Function, which merges a lists o doubles.
+   */
+  void Merge(vector<su2double>      &x,
+             vector<unsigned short> &p,
+             int l, 
+             int m,
+             int r);
+
 };
 
 /*!
