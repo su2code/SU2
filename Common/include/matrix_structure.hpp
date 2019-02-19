@@ -52,6 +52,37 @@
 #include "mkl.h"
 #endif
 
+#ifdef HAVE_PASTIX
+namespace PaStiX {
+extern "C" {
+#include <pastix.h>
+}
+}
+/*--- Small class to aggregate main PaStiX data ---*/
+class CPastixData {
+public:
+  PaStiX::pastix_data_t *state;        /*!< \brief Internal state of the solver. */
+  PaStiX::pastix_int_t nCols;          /*!< \brief Local number of columns. */
+  vector<PaStiX::pastix_int_t> loc2glb;/*!< \brief Global index of the columns held by this rank. */
+  vector<PaStiX::pastix_int_t> colptr; /*!< \brief Equiv. to our "row_ptr". */
+  vector<PaStiX::pastix_int_t> rowidx; /*!< \brief Equiv. to our "col_ind". */
+  vector<PaStiX::pastix_int_t> perm;   /*!< \brief Ordering computed by PaStiX. */
+  passivedouble* values;               /*!< \brief Equiv. to our "matrix". */
+  passivedouble* rhs;                  /*!< \brief RHS pointer which then becomes the solution. */
+  bool isfactorized;                   /*!< \brief Set to true after a call to "Build". */
+
+  PaStiX::pastix_int_t iparm[PaStiX::IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
+  passivedouble        dparm[PaStiX::DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
+
+  CPastixData(void) : isfactorized(false) {}
+  
+  void run() {
+    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, &colptr[0], &rowidx[0], values,
+                    &loc2glb[0], &perm[0], NULL, rhs, 1, iparm, dparm);
+  }
+};
+#endif
+
 using namespace std;
 
 const su2double eps = numeric_limits<passivedouble>::epsilon(); /*!< \brief machine epsilon */
@@ -107,6 +138,10 @@ private:
   void * MatrixVectorProductJitterBetaOne;            		/*!< \brief Jitter handle for MKL JIT based GEMV with BETA=1.0. */
   dgemm_jit_kernel_t MatrixVectorProductKernelBetaOne;        	/*!< \brief MKL JIT based GEMV kernel with BETA=1.0. */
   bool useMKL;
+#endif
+
+#ifdef HAVE_PASTIX
+  CPastixData pastix_data;
 #endif
 
   /*!
@@ -563,7 +598,29 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
-  
+
+  /*!
+   * \brief Factorize matrix using PaStiX.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
+   */
+  void BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, bool transposed = false);
+
+  /*!
+   * \brief Apply the PaStiX factorization to CSysVec.
+   * \param[in] vec - CSysVector to be multiplied by the preconditioner.
+   * \param[out] prod - Result of the product M*vec.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
+
+  /*!
+   * \brief Execute the clean task of PaStiX (called in dtor).
+   */
+  void PastixClean();
+
 };
 
 /*!
@@ -798,6 +855,40 @@ public:
   
   /*!
    * \brief operator that defines the preconditioner operation
+   * \param[in] u - CSysVector that is being preconditioned
+   * \param[out] v - CSysVector that is the result of the preconditioning
+   */
+  void operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const;
+};
+
+/*!
+ * \class CPastixPreconditioner
+ * \brief Specialization of preconditioner that uses PaStiX to factorize a CSysMatrix
+ */
+template<class ScalarType>
+class CPastixPreconditioner : public CPreconditioner<ScalarType> {
+private:
+  CSysMatrix<ScalarType>* sparse_matrix; /*!< \brief Pointer to the matrix. */
+  CGeometry* geometry; /*!< \brief Geometry associated with the problem. */
+  CConfig* config; /*!< \brief Configuration of the problem. */
+  
+public:
+  
+  /*!
+   * \brief Constructor of the class
+   * \param[in] matrix_ref - Matrix reference that will be used to define the preconditioner
+   * \param[in] geometry_ref - Associated geometry
+   * \param[in] config_ref - Problem configuration
+   */
+  CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref);
+  
+  /*!
+   * \brief Destructor of the class
+   */
+  ~CPastixPreconditioner() {}
+  
+  /*!
+   * \brief Operator that defines the preconditioner operation
    * \param[in] u - CSysVector that is being preconditioned
    * \param[out] v - CSysVector that is the result of the preconditioning
    */

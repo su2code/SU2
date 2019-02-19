@@ -273,3 +273,20 @@ inline void CLineletPreconditioner<ScalarType>::operator()(const CSysVector<Scal
   }
   sparse_matrix->ComputeLineletPreconditioner(u, v, geometry, config);
 }
+
+template<class ScalarType>
+inline CPastixPreconditioner<ScalarType>::CPastixPreconditioner(CSysMatrix<ScalarType> & matrix_ref, CGeometry *geometry_ref, CConfig *config_ref) {
+  sparse_matrix = &matrix_ref;
+  geometry = geometry_ref;
+  config = config_ref;
+}
+
+template<class ScalarType>
+inline void CPastixPreconditioner<ScalarType>::operator()(const CSysVector<ScalarType> & u, CSysVector<ScalarType> & v) const {
+  if (sparse_matrix == NULL) {
+    cerr << "CPastixPreconditioner::operator()(const CSysVector &, CSysVector &): " << endl;
+    cerr << "pointer to sparse matrix is NULL." << endl;
+    throw(-1);
+  }
+  sparse_matrix->ComputePastixPreconditioner(u, v, geometry, config);
+}
