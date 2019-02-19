@@ -2,7 +2,7 @@
  * \file task_definition.inl
  * \brief In-Line subroutines of the <i>task_definition.hpp</i> file.
  * \author E. van der Weide, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

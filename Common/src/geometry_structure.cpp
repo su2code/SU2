@@ -2,7 +2,7 @@
  * \file geometry_structure.cpp
  * \brief Main subroutines for creating the primal grid and multigrid structure.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -18491,6 +18491,13 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   bool sa = (config->GetKind_Turb_Model() == SA) || (config->GetKind_Turb_Model() == SA_NEG);
   bool grid_movement = config->GetGrid_Movement();
   bool frozen_visc = config->GetFrozen_Visc_Disc();
+  unsigned short Kind_Solver = config->GetKind_Solver();
+  bool flow = ((Kind_Solver == DISC_ADJ_EULER)          ||
+               (Kind_Solver == DISC_ADJ_RANS)           ||
+               (Kind_Solver == DISC_ADJ_NAVIER_STOKES)  ||
+               (Kind_Solver == ADJ_EULER)               ||
+               (Kind_Solver == ADJ_NAVIER_STOKES)       ||
+               (Kind_Solver == ADJ_RANS));
   su2double Sens, dull_val, AoASens;
   unsigned short nExtIter, iDim;
   unsigned long iPoint, index;
@@ -18510,11 +18517,19 @@ void CPhysicalGeometry::SetSensitivity(CConfig *config) {
   
   unsigned short skipVar = nDim, skipMult = 1;
 
-  if (incompressible)      { skipVar += skipMult*(nDim+2); }
-  if (compressible)        { skipVar += skipMult*(nDim+2); }
-  if (sst && !frozen_visc) { skipVar += skipMult*2;}
-  if (sa && !frozen_visc)  { skipVar += skipMult*1;}
-  if (grid_movement)       { skipVar += nDim;}
+  if (flow) {
+    if (incompressible)      { skipVar += skipMult*(nDim+2); }
+    if (compressible)        { skipVar += skipMult*(nDim+2); }
+    if (sst && !frozen_visc) { skipVar += skipMult*2;}
+    if (sa && !frozen_visc)  { skipVar += skipMult*1;}
+    if (grid_movement)       { skipVar += nDim;}
+  }
+  else if (Kind_Solver == DISC_ADJ_HEAT) {
+    skipVar += 1;
+  }
+  else {
+    cout << "WARNING: Reading in sensitivities not defined for specified solver!" << endl;
+  }
 
   /*--- Read all lines in the restart file ---*/
   long iPoint_Local; unsigned long iPoint_Global = 0; string text_line;
