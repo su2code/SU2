@@ -140,6 +140,7 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
   if ( MatrixVectorProductJitterBetaOne != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
 #endif
   
+  PastixClean();
 }
 
 template<class ScalarType>
@@ -939,8 +940,8 @@ void CSysMatrix<ScalarType>::SendReceive_Solution(CSysVector<OtherType> & x, CGe
       
       /*--- Send/Receive information using Sendrecv ---*/
       
-      SelectMPIWrapper<OtherType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      SelectMPIWrapper<OtherType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, SelectMPIType<OtherType>(), send_to,
+        0, Buffer_Receive, nBufferR_Vector, SelectMPIType<OtherType>(), receive_from, 0, MPI_COMM_WORLD, &status);
       
 #else
       
@@ -1028,8 +1029,8 @@ void CSysMatrix<ScalarType>::SendReceive_SolutionTransposed(CSysVector<ScalarTyp
 
       /*--- Send/Receive information using Sendrecv ---*/
 
-      SelectMPIWrapper<ScalarType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, MPI_DOUBLE, send_to, 0,
-                   Buffer_Receive, nBufferR_Vector, MPI_DOUBLE, receive_from, 0, MPI_COMM_WORLD, &status);
+      SelectMPIWrapper<ScalarType>::W::Sendrecv(Buffer_Send, nBufferS_Vector, SelectMPIType<ScalarType>(), send_to, 0,
+                   Buffer_Receive, nBufferR_Vector, SelectMPIType<ScalarType>(), receive_from, 0, MPI_COMM_WORLD, &status);
 
 #else
 
@@ -2234,6 +2235,150 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
   }
   
 }
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, bool transposed) {
+#ifdef HAVE_PASTIX
+  using namespace PaStiX;
+
+  PastixClean();
+
+  /*--- PREPARE DATA ---*/
+
+  /*--- Basic initialization ---*/
+  pastix_data.nCols = pastix_int_t(nPointDomain);
+  pastix_data.state = NULL;
+  pastix_data.rhs   = NULL;
+  pastix_data.perm.resize(nPointDomain);
+  pastix_data.isfactorized = true;
+
+  /*--- We need the sparsity structure in global coordinates, i.e. shifted and halo part "unpacked". ---*/
+
+  /*--- 1 - Determine where we are in the linear partitioning. ---*/
+
+  unsigned long offset = 0;
+
+  vector<unsigned long> domain_sizes(size);
+#ifdef HAVE_MPI
+  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, &domain_sizes[0], 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+#endif
+  for (int i=0; i<rank; ++i) offset += domain_sizes[i];
+
+  /*--- 2 - Build our local to global map (fortran numbering). ---*/
+
+  CSysVector<unsigned long> map(nPoint,nPointDomain,(unsigned short)(nVar),(unsigned long)(0));
+  pastix_data.loc2glb.resize(nPointDomain);
+
+  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
+    map[iPoint*nVar] = offset+iPoint;
+    pastix_data.loc2glb[iPoint] = pastix_int_t(offset+iPoint+1);
+  }
+  SendReceive_Solution<unsigned long>(map, geometry, config);
+
+  /*--- 3 - Copy, map the sparsity, and put it in fortran numbering (start at 1). ---*/
+
+  pastix_data.colptr.resize(nPointDomain+1);
+
+  for(unsigned long i = 0; i <= nPointDomain; ++i) {
+    pastix_data.colptr[i] = pastix_int_t(row_ptr[i])+1;
+  }
+
+  unsigned long nNonZero = row_ptr[nPointDomain];
+
+  pastix_data.rowidx.resize(nNonZero);
+
+  for(unsigned long i = 0; i < nNonZero; ++i) {
+    pastix_data.rowidx[i] = map[col_ind[i]*nVar]+1;
+  }
+
+  pastix_data.values = matrix; // no copy required for the values
+
+
+  /*--- COMPUTE FACTORIZATION ---*/
+
+  /*--- Initialize parameters ---*/
+  pastix_data.iparm[IPARM_MODIFY_PARAMETER]    = API_NO;
+  pastix_data.run();
+
+  /*--- Customize parameters ---*/
+  pastix_data.iparm[IPARM_THREAD_NBR]          = 1;
+  pastix_data.iparm[IPARM_SYM]                 = API_SYM_YES;
+  pastix_data.iparm[IPARM_DOF_NBR]             = int(nVar);
+  pastix_data.iparm[IPARM_FACTORIZATION]       = API_FACT_LDLT;
+  pastix_data.iparm[IPARM_MATRIX_VERIFICATION] = API_NO;
+  pastix_data.iparm[IPARM_VERBOSE]             = API_VERBOSE_NO;
+  pastix_data.iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
+  pastix_data.iparm[IPARM_FREE_CSCPASTIX]      = API_CSC_FREE;
+  pastix_data.iparm[IPARM_RHS_MAKING]          = API_RHS_B;
+  pastix_data.iparm[IPARM_THREAD_COMM_MODE]    = API_THREAD_MULTIPLE;
+  pastix_data.iparm[IPARM_TRANSPOSE_SOLVE]     = transposed? API_NO : API_YES; // reversed due to CSR to CSC copy
+
+  /*--- Compute ---*/
+  pastix_data.iparm[IPARM_START_TASK]          = API_TASK_ORDERING;
+  pastix_data.iparm[IPARM_END_TASK]            = API_TASK_NUMFACT;
+
+  pastix_data.run();
+
+#else
+  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX",CURRENT_FUNCTION);
+#endif
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod,
+                                                         CGeometry *geometry, CConfig *config) {
+#ifdef HAVE_PASTIX
+  using namespace PaStiX;
+
+  if (pastix_data.isfactorized) {
+    prod = vec;
+    pastix_data.rhs = &prod[0];
+
+    pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NOT;
+    pastix_data.iparm[IPARM_START_TASK] = API_TASK_SOLVE;
+    pastix_data.iparm[IPARM_END_TASK]   = API_TASK_SOLVE;
+
+    pastix_data.run();
+    pastix_data.rhs = NULL;
+
+    SendReceive_Solution(prod, geometry, config);
+  }
+  else {
+    SU2_MPI::Error("The factorization has not been computed yet.",CURRENT_FUNCTION);
+  }
+#else
+  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX",CURRENT_FUNCTION);
+#endif
+}
+
+template<class ScalarType>
+void CSysMatrix<ScalarType>::PastixClean() {
+#ifdef HAVE_PASTIX
+  using namespace PaStiX;
+
+  if (pastix_data.isfactorized) {
+    pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NO;
+    pastix_data.iparm[IPARM_START_TASK] = API_TASK_CLEAN;
+    pastix_data.iparm[IPARM_END_TASK]   = API_TASK_CLEAN;
+    pastix_data.run();
+    pastix_data.isfactorized = false;
+  }
+#endif
+}
+
+#ifdef CODI_REVERSE_TYPE
+template<>
+void CSysMatrix<su2double>::BuildPastixPreconditioner(CConfig *config, bool transposed) {
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>",CURRENT_FUNCTION);
+}
+template<>
+void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
+                                                        CGeometry *geometry, CConfig *config) {
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>",CURRENT_FUNCTION);
+}
+template<>
+void CSysMatrix<su2double>::PastixClean() {}
+#endif
 
 /*--- Explicit instantiations ---*/
 template class CSysMatrix<su2double>;

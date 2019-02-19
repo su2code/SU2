@@ -439,7 +439,7 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
   ScalarType prod = 0.0;
   
 #ifdef HAVE_MPI
-  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
+  SelectMPIWrapper<ScalarType>::W::Allreduce(&loc_prod, &prod, 1, SelectMPIType<ScalarType>(), MPI_SUM, MPI_COMM_WORLD);
 #else
   prod = loc_prod;
 #endif
@@ -451,6 +451,8 @@ ScalarType dotProd(const CSysVector<ScalarType> & u, const CSysVector<ScalarType
 template class CSysVector<su2double>;
 template CSysVector<su2double> operator*(const su2double&, const CSysVector<su2double>&);
 template su2double dotProd<su2double>(const CSysVector<su2double> & u, const CSysVector<su2double> & v);
+
+template class CSysVector<unsigned long>;
 
 #ifdef CODI_REVERSE_TYPE
 template class CSysVector<passivedouble>;

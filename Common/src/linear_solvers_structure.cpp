@@ -749,8 +749,10 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
         precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
       case LINELET:
-        Jacobian.BuildJacobiPreconditioner();
-        precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
+//        Jacobian.BuildJacobiPreconditioner();
+//        precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
+        Jacobian.BuildPastixPreconditioner(geometry, config, true);
+        precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
       default:
         Jacobian.BuildJacobiPreconditioner();
