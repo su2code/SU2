@@ -3989,13 +3989,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
             init_err = true;
           }
-//          if (init_err == true) {
-//  #ifndef NO_MPI
-//            MPI::Finalize();
-//  #else
-//            exit(0);
-//  #endif
-//          }
 
           /*--- Define parameters of the gas model ---*/
           nReactions  = 2;
@@ -4207,13 +4200,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
             cout << "CONFIG ERROR: Intial gas mass fractions do not sum to 1!" << endl;
             init_err = true;
           }
-//          if (init_err == true) {
-//  #ifndef NO_MPI
-//            MPI::Finalize();
-//  #else
-//            exit(0);
-//  #endif
-//          }
 
           /*--- Define parameters of the gas model ---*/
           nReactions  = 17;
