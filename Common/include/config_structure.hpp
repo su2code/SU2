@@ -939,6 +939,8 @@ private:
   Gust_Ampl,                  /*!< \brief Gust amplitude. */
   Gust_Begin_Time,            /*!< \brief Time at which to begin the gust. */
   Gust_Begin_Loc;             /*!< \brief Location at which the gust begins. */
+  su2double *PRef_Coord,      /*!< \brief Store the coordinate of reference cell for pressure */
+  PRef_Value;                 /*!< \brief Store the reference value for pressure */
   long Visualize_CV;          /*!< \brief Node number for the CV to be visualized */
   bool ExtraOutput;
   bool Wall_Functions;         /*!< \brief Use wall functions with the turbulence model */
@@ -1014,7 +1016,8 @@ private:
   *default_ffd_axis,          /*!< \brief Default FFD axis for the COption class. */
   *default_inc_crit,          /*!< \brief Default incremental criteria array for the COption class. */
   *default_extrarelfac,       /*!< \brief Default extra relaxation factor for Giles BC in the COption class. */
-  *default_sineload_coeff;    /*!< \brief Default values for a sine load. */
+  *default_sineload_coeff,    /*!< \brief Default values for a sine load. */
+  *default_prefcoord_location; /*!< \brief Default value of pressure reference cell (needed for pressure-based solver only) */
   unsigned short nSpanWiseSections; /*!< \brief number of span-wise sections */
   unsigned short nSpanMaxAllZones; /*!< \brief number of maximum span-wise sections for all zones */
   unsigned short *nSpan_iZones;  /*!< \brief number of span-wise sections for each zones */
@@ -2197,7 +2200,6 @@ public:
     * \brief Decide whether it's necessary to add the cross term for adjoint FSI.
     * \return <code>TRUE</code> if it's necessary to add the cross term, <code>FALSE</code> otherwise.
     */
-  
   bool Add_CrossTerm(void);
   
   /*!
@@ -2205,7 +2207,20 @@ public:
     */
   
   void Set_CrossTerm(bool needCrossTerm);
-
+  
+  /*!
+    * \brief Return the value of pressure reference.
+    * \return PRef_Value.
+    */
+  su2double GetPRef_Value(void);
+  
+  /*!
+    * \brief Return the coordinates of the reference cell.
+    * \return PRef_Coord.
+    */
+  
+  su2double* GetPRef_Coord(void);
+  
   /*!
    * \brief Get the name of the file with the element properties for structural problems.
    * \return Name of the file with the element properties of the structural problem.
@@ -2620,6 +2635,17 @@ public:
    * \return Value of the Froude number.
    */
   void SetTotal_UnstTimeND(su2double val_total_unsttimend);
+  
+  /*!
+    * \brief Set the value of pressure reference.
+    */
+  void SetPRef_Value(su2double val_PRef_Value);
+  
+  /*!
+    * \brief Set the coordinates of the reference cell.
+    */
+  
+  void SetPRef_Coord(su2double val_PRef_Coord, unsigned short iDim);  
   
   /*!
    * \brief Get the angle of attack of the body. This is the angle between a reference line on a lifting body

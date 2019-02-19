@@ -1259,7 +1259,7 @@ void CPoissonSolverFVM::SetTime_Step(CGeometry *geometry, CSolver **solver_conta
 		Max_Delta_Time = max(Max_Delta_Time, Local_Delta_Time);
 		if (Local_Delta_Time > config->GetMax_DeltaTime())
 			Local_Delta_Time = config->GetMax_DeltaTime();
-		Local_Delta_Time = 1.0e-5*config->GetCFL(iMesh);
+		Local_Delta_Time = 1.0e-6*config->GetCFL(iMesh);
 		node[iPoint]->SetDelta_Time(Local_Delta_Time);
 	}
 		else {
@@ -1464,7 +1464,7 @@ void CPoissonSolverFVM::BC_Inlet(CGeometry *geometry, CSolver **solver_container
 								
 su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
 su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
-unsigned long iVertex, iPoint, jPoint;
+unsigned long iVertex, iPoint, jPoint, total_index;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 
@@ -1506,7 +1506,9 @@ su2double *Normal = new su2double[nDim];
 	  }
       
      }
-   }
+     
+	}
+   
 }
 
 
@@ -1543,9 +1545,9 @@ su2double *Normal = new su2double[nDim];
      /*--- Mean gradient approximation. Projection of the mean gradient in the direction of the edge ---*/
       for (iVar = 0; iVar < nVar; iVar++) {
         Residual[iVar] = 0.0;
-        /*for (iDim = 0; iDim < nDim; iDim++) {
+        for (iDim = 0; iDim < nDim; iDim++) {
            Residual[iVar] += Sol_i_Grad[iVar][iDim]*Normal[iDim]*Mom_Coeff_i[iDim];
-        }*/
+        }
       }
 
 	/*--- Add and subtract residual, and update Jacobians ---*/
@@ -1576,7 +1578,7 @@ void CPoissonSolverFVM::BC_HeatFlux_Wall(CGeometry *geometry, CSolver **solver_c
                                  CNumerics *numerics, CConfig *config, unsigned short val_marker) {
 su2double Poisson_Coeff_i,**Sol_i_Grad,Poissonval_i;
 su2double Mom_Coeff_i[3],Proj_Mean_GradPoissonVar_Normal[3];
-unsigned long iVertex, iPoint, jPoint;
+unsigned long iVertex, iPoint, jPoint, total_index;
 unsigned short iDim, iVar;
 su2double *Normal = new su2double[nDim];
 
@@ -1590,7 +1592,6 @@ su2double *Normal = new su2double[nDim];
       /*--- Normal vector for this vertex (negative for outward convention) ---*/
             
       geometry->vertex[val_marker][iVertex]->GetNormal(Normal);
-      
       /*--- Primitive variables w/o reconstruction ---*/
 		Poissonval_i = node[iPoint]->GetSolution(0);
 		
@@ -1619,5 +1620,7 @@ su2double *Normal = new su2double[nDim];
 	  }
       
      }
+     
+     
    }
 }

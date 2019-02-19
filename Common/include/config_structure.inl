@@ -704,6 +704,14 @@ inline void CConfig::SetEnergy_Ref(su2double val_energy_ref) { Energy_Ref = val_
 
 inline void CConfig::SetThermalDiffusivity_Solid(su2double val_thermal_diffusivity) { Thermal_Diffusivity_Solid = val_thermal_diffusivity; }
 
+inline void CConfig::SetPRef_Value(su2double val_PRef_Value) {PRef_Value = val_PRef_Value; }
+
+inline void CConfig::SetPRef_Coord(su2double val_PRef_Coord, unsigned short iDim) {PRef_Coord[iDim] = val_PRef_Coord; }
+
+inline su2double CConfig::GetPRef_Value(void) {return PRef_Value;}
+
+inline su2double *CConfig::GetPRef_Coord(void) {return PRef_Coord;}
+
 inline su2double CConfig::GetAoA(void) { return AoA; }
 
 inline void CConfig::SetAoA(su2double val_AoA) { AoA = val_AoA; }

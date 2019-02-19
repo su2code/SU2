@@ -1141,7 +1141,6 @@ void CPBFluidIteration::Iterate(COutput *output,
   if (MassIter == 0) first_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
   if (MassIter == nMassIter-1) last_iter = solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->GetRes_RMS(0); 
   }
-  cout<<"Change in Res(flow): "<<last_iter/first_iter<<"\t"<<last_iter<<"\t"<<first_iter<<endl;             
 	
   /*--- Set source term for pressure correction equation based on current flow solution ---*/
 	
@@ -1157,8 +1156,7 @@ void CPBFluidIteration::Iterate(COutput *output,
       if (PressureIter == 0) first_iter = solver_container[val_iZone][val_iInst][MESH_0][POISSON_SOL]->GetRes_RMS(0); 
       if (PressureIter == nPressureIter-1) last_iter = solver_container[val_iZone][val_iInst][MESH_0][POISSON_SOL]->GetRes_RMS(0); 
     }
-    cout<<"Change in Res(poisson): "<<last_iter/first_iter<<"\t"<<last_iter<<"\t"<<first_iter<<endl;
-    
+   
     /*--- Correct pressure and velocities ---*/
     solver_container[val_iZone][val_iInst][MESH_0][FLOW_SOL]->Flow_Correction(geometry_container[val_iZone][val_iInst][MESH_0], solver_container[val_iZone][val_iInst][MESH_0], config_container[val_iZone]);
     

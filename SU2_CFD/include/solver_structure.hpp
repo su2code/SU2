@@ -8528,6 +8528,9 @@ protected:
   CFluidModel  *FluidModel;  /*!< \brief fluid model used in the solver */
   
   su2double ResMassFlux;
+  
+  unsigned long PRef_Point;    /*!< \brief Store the index of reference cell for pressure */
+  bool PRef_Check;             /*!< \brief To check if a reference pressure cell is necessary */
 
 public:
   

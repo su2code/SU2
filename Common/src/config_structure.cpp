@@ -568,6 +568,7 @@ void CConfig::SetPointersNull(void) {
   default_body_force         = NULL;
   default_sineload_coeff     = NULL;
   default_nacelle_location   = NULL;
+  default_prefcoord_location = NULL;
 
   Riemann_FlowDir       = NULL;
   Giles_FlowDir         = NULL;
@@ -670,6 +671,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   default_body_force         = new su2double[3];
   default_sineload_coeff     = new su2double[3];
   default_nacelle_location   = new su2double[5];
+  default_prefcoord_location = new su2double[3];
 
   // This config file is parsed by a number of programs to make it easy to write SU2
   // wrapper scripts (in python, go, etc.) so please do
@@ -927,6 +929,11 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleOption("REF_VISCOSITY", Viscosity_Ref, -1.0);
   /* DESCRIPTION: Type of mesh motion */
   addEnumOption("REF_DIMENSIONALIZATION", Ref_NonDim, NonDim_Map, DIMENSIONAL);
+  
+  default_prefcoord_location[0] = 0.5; default_prefcoord_location[1] = 0.5; default_prefcoord_location[2] = 0.5;
+  addDoubleArrayOption("PRESSURE_REF_COORD", 3, PRef_Coord, default_prefcoord_location);
+  
+  addDoubleOption("PRESSURE_REF", PRef_Value, 0.0);
 
   /*!\par CONFIG_CATEGORY: Boundary Markers \ingroup Config*/
   /*--- Options related to various boundary markers ---*/
@@ -7110,6 +7117,7 @@ CConfig::~CConfig(void) {
   if (default_body_force    != NULL) delete [] default_body_force;
   if (default_sineload_coeff!= NULL) delete [] default_sineload_coeff;
   if (default_nacelle_location    != NULL) delete [] default_nacelle_location;
+  if (default_prefcoord_location  != NULL) delete [] default_prefcoord_location;
 
   if (FFDTag != NULL) delete [] FFDTag;
   if (nDV_Value != NULL) delete [] nDV_Value;
