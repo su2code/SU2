@@ -2,7 +2,7 @@
  * \file solution_direct_mean.cpp
  * \brief Main subrotuines for solving direct problems (Euler, Navier-Stokes, etc.).
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -3922,7 +3922,8 @@ void CEulerSolver::SetNondimensionalization(CConfig *config, unsigned short iMes
         break;
         
       }
-      
+    } else {
+      ModelTable << "-" << "-";
     }
 
     if      (config->GetSystemMeasurements() == SI) Unit << "N.m/kg.K";
@@ -5457,6 +5458,7 @@ void CEulerSolver::Pressure_Forces(CGeometry *geometry, CConfig *config) {
     
     if ((Boundary == EULER_WALL) || (Boundary == HEAT_FLUX) ||
         (Boundary == ISOTHERMAL) || (Boundary == NEARFIELD_BOUNDARY) ||
+        (Boundary == CHT_WALL_INTERFACE) ||
         (Boundary == INLET_FLOW) || (Boundary == OUTLET_FLOW) ||
         (Boundary == ACTDISK_INLET) || (Boundary == ACTDISK_OUTLET)||
         (Boundary == ENGINE_INFLOW) || (Boundary == ENGINE_EXHAUST)) {
@@ -16207,7 +16209,7 @@ void CNSSolver::Friction_Forces(CGeometry *geometry, CConfig *config) {
       }
     }
     
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
       
       /*--- Forces initialization at each Marker ---*/
       
@@ -16634,7 +16636,7 @@ void CNSSolver::Buffet_Monitoring(CGeometry *geometry, CConfig *config) {
     Boundary   = config->GetMarker_All_KindBC(iMarker);
     Monitoring = config->GetMarker_All_Monitoring(iMarker);
         
-    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL)) {
+    if ((Boundary == HEAT_FLUX) || (Boundary == ISOTHERMAL) || (Boundary == HEAT_FLUX) || (Boundary == CHT_WALL_INTERFACE)) {
             
       /*--- Loop over the vertices to compute the buffet sensor ---*/
             
