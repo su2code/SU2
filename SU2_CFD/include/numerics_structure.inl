@@ -2,7 +2,7 @@
  * \file numerics_structure.inl
  * \brief In-Line subroutines of the <i>numerics_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -577,14 +577,17 @@ inline void CNumerics::ComputeResidual(su2double **val_Jacobian_i, su2double *va
 
 inline void CNumerics::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) { }
 
-inline void CAvgGrad_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
+inline void CAvgGrad_Base::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
   TauWall_i = val_tauwall_i;
   TauWall_j = val_tauwall_j;
 }
 
-inline void CAvgGradCorrected_Flow::SetTauWall(su2double val_tauwall_i, su2double val_tauwall_j) {
-  TauWall_i = val_tauwall_i;
-  TauWall_j = val_tauwall_j;
+inline su2double CAvgGrad_Base::GetStressTensor(unsigned short iDim, unsigned short jDim) const {
+  return tau[iDim][jDim];
+}
+
+inline su2double CAvgGrad_Base::GetHeatFluxVector(unsigned short iDim) const {
+  return heat_flux_vector[iDim];
 }
 
 inline void CNumerics::SetUsing_UQ(bool val_using_uq) { using_uq = val_using_uq; }

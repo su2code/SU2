@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.inl
  * \brief In-Line subroutines of the <i>fem_geometry_structure.hpp</i> file.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).

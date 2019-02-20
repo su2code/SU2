@@ -2,7 +2,7 @@
  * \file mpi_structure.hpp
  * \brief In-Line subroutines of the <i>mpi_structure.hpp</i> file.
  * \author T. Albring
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -98,7 +98,7 @@ inline void CBaseMPIWrapper::Error(std::string ErrorMsg, std::string FunctionNam
     std::cout <<  "------------------------------ Error Exit -------------------------------" << std::endl;
     std::cout << std::endl << std::endl;    
   }
-  Abort(currentComm, 0);
+  Abort(currentComm, EXIT_FAILURE);
 }
 
 

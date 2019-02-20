@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
  * \author T. Economon, H. Kline, R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -1197,7 +1197,7 @@ public:
  * \class CDiscAdjFSIDriver
  * \brief Overload: Class for driving a discrete adjoint FSI iteration.
  * \author R. Sanchez.
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CDiscAdjFSIDriver : public CDriver {
 
@@ -1325,26 +1325,6 @@ public:
   void Iterate_Block(unsigned short ZONE_FLOW,
                        unsigned short ZONE_STRUCT,
                        unsigned short kind_recording);
-
-  /*!
-   * \brief Iterate a block for adjoint FSI with flow Objective Function
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block_FlowOF(unsigned short ZONE_FLOW,
-                               unsigned short ZONE_STRUCT,
-                               unsigned short kind_recording);
-
-  /*!
-   * \brief Iterate a block for adjoint FSI with structural Objective Function
-   * \param[in] ZONE_FLOW - zone of the fluid solver.
-   * \param[in] ZONE_STRUCT - zone of the structural solver.
-   * \param[in] kind_recording - kind of recording (flow, structure, mesh, cross terms)
-   */
-  void Iterate_Block_StructuralOF(unsigned short ZONE_FLOW,
-                                      unsigned short ZONE_STRUCT,
-                                      unsigned short kind_recording);
 
   /*!
    * \brief Initialize the adjoint - set the objective funcition and the output of the adjoint iteration
@@ -1489,7 +1469,7 @@ public:
  * \class CMultiphysicsZonalDriver
  * \brief Class for driving zone-specific iterations.
  * \author O. Burghardt
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CMultiphysicsZonalDriver : public CDriver {
 protected:
