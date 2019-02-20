@@ -73,6 +73,10 @@ if BUILD_INTERP
 SUBDIRS +=SU2_INTERP/obj
 endif
 
+if BUILD_ECC
+SUBDIRS +=SU2_ECC/obj
+endif
+
 if BUILD_GEO
 SUBDIRS +=SU2_GEO/obj
 endif
