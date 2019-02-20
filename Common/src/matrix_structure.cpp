@@ -2237,88 +2237,175 @@ void CSysMatrix<ScalarType>::ComputeResidual(const CSysVector<ScalarType> & sol,
 }
 
 template<class ScalarType>
+void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *config) {
+#ifdef HAVE_PASTIX
+  using namespace PaStiX;
+
+  if (pastix_data.isinitialized) return; // only need to do this once
+
+  unsigned long iPoint, offset = 0, nNonZero = row_ptr[nPointDomain];
+
+  /*--- Allocate ---*/
+
+  pastix_data.nCols = pastix_int_t(nPointDomain);
+  pastix_data.colptr.resize(nPointDomain+1);
+  pastix_data.rowidx.clear();
+  pastix_data.rowidx.reserve(nNonZero);
+  pastix_data.values.resize(nNonZero*nVar*nVar);
+  pastix_data.loc2glb.resize(nPointDomain);
+  pastix_data.perm.resize(nPointDomain);
+  pastix_data.rhs.resize(nPointDomain*nVar);
+
+  /*--- Set default parameter values ---*/
+
+  pastix_data.iparm[IPARM_MODIFY_PARAMETER] = API_NO;
+  pastix_data.run();
+
+  /*--- Customize important parameters ---*/
+
+  pastix_data.iparm[IPARM_DOF_NBR]             = pastix_int_t(nVar);
+  pastix_data.iparm[IPARM_MATRIX_VERIFICATION] = API_NO;
+  pastix_data.iparm[IPARM_FREE_CSCPASTIX]      = API_CSC_FREE;
+  pastix_data.iparm[IPARM_CSCD_CORRECT]        = API_NO;
+  pastix_data.iparm[IPARM_RHSD_CHECK]          = API_NO;
+  pastix_data.iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
+
+  /*--- Prepare sparsity structure ---*/
+
+  /*--- We need the it in global coordinates, i.e. shifted according to the position
+   of the current rank in the linear partitioning space, and "unpacked" halo part.
+   The latter forces us to re-sort the column indices of rows with halo points, which
+   in turn requires blocks to be swapped accordingly. Moreover we need "pointer" and
+   indices in Fortran-style numbering (start at 1), effectively the matrix is copied.
+   Here we prepare the pointer and index part, and map the required swaps. ---*/
+
+   /*--- 1 - Determine position in the linear partitioning ---*/
+
+#ifdef HAVE_MPI
+  vector<unsigned long> domain_sizes(size);
+  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, &domain_sizes[0], 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
+  for (int i=0; i<rank; ++i) offset += domain_sizes[i];
+#endif
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint)
+    pastix_data.loc2glb[iPoint] = pastix_int_t(offset+iPoint+1);
+
+  /*--- 2 - Build a local to global map and communicate global indices of halo points.
+   This is to renumber the column indices from local to global and unpack halos. ---*/
+
+  vector<pastix_int_t> map(nPoint);
+  {
+    CSysVector<unsigned long> auxmap(nPoint,nPointDomain,(unsigned short)(nVar),(unsigned long)(0));
+
+    for (iPoint = 0; iPoint < nPointDomain; ++iPoint) auxmap[iPoint*nVar] = offset+iPoint;
+
+    SendReceive_Solution<unsigned long>(auxmap, geometry, config);
+    
+    for (iPoint = 0; iPoint < nPoint; ++iPoint) map[iPoint] = pastix_int_t(auxmap[iPoint*nVar]);
+  }
+
+  /*--- 3 - Copy, map the sparsity, and put it in Fortran numbering ---*/
+
+  for (iPoint = 0; iPoint < nPointDomain; ++iPoint)
+  {
+    pastix_data.colptr[iPoint] = pastix_int_t(row_ptr[iPoint]+1);
+
+    unsigned long begin = row_ptr[iPoint], end = row_ptr[iPoint+1], j;
+
+    /*--- If last point of row is halo ---*/
+    bool sort_required = (col_ind[end-1] >= nPointDomain);
+
+    if (sort_required)
+    {
+      unsigned long nnz_row = end-begin;
+
+      pastix_data.sort_rows.push_back(iPoint);
+      pastix_data.sort_order.push_back(vector<unsigned long>(nnz_row));
+
+      /*--- Sort mapped indices ("first") and keep track of source ("second")
+            for when we later need to swap blocks for these rows. ---*/
+
+      vector<pair<pastix_int_t,unsigned long> > aux(nnz_row);
+
+      for (j = begin; j < end; ++j)
+      {
+        aux[j-begin].first = pastix_int_t(map[col_ind[j]]+1);
+        aux[j-begin].second = j;
+      }
+      sort(aux.begin(), aux.end());
+
+      for (j = 0; j < nnz_row; ++j)
+      {
+        pastix_data.rowidx.push_back(aux[j].first);
+        pastix_data.sort_order.back()[j] = aux[j].second;
+      }
+    }
+    else
+    {
+      /*--- These are all internal, no need to go through map. ---*/
+      for (j = begin; j < end; ++j)
+        pastix_data.rowidx.push_back(pastix_int_t(offset+col_ind[j]+1));
+    }
+  }
+  pastix_data.colptr[nPointDomain] = pastix_int_t(nNonZero+1);
+
+  if (pastix_data.rowidx.size() != nNonZero)
+    SU2_MPI::Error("Error during preparation of PaStiX data", CURRENT_FUNCTION);
+
+  pastix_data.isinitialized = true;
+#endif
+}
+
+template<class ScalarType>
 void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, bool transposed) {
 #ifdef HAVE_PASTIX
   using namespace PaStiX;
 
+  if (pastix_data.isfactorized) return;
+
   PastixClean();
+  PastixInitialize(geometry, config);
 
-  /*--- PREPARE DATA ---*/
+  unsigned long i, j, k, iRow, begin, target, source, szBlk = nVar*nVar, nNonZero = pastix_data.values.size();
 
-  /*--- Basic initialization ---*/
-  pastix_data.nCols = pastix_int_t(nPointDomain);
-  pastix_data.state = NULL;
-  pastix_data.rhs   = NULL;
-  pastix_data.perm.resize(nPointDomain);
-  pastix_data.isfactorized = true;
+  /*--- Copy matrix values and swap blocks as required ---*/
 
-  /*--- We need the sparsity structure in global coordinates, i.e. shifted and halo part "unpacked". ---*/
+  for (i = 0; i < nNonZero; ++i) pastix_data.values[i] = matrix[i];
 
-  /*--- 1 - Determine where we are in the linear partitioning. ---*/
+  for (i = 0; i < pastix_data.sort_rows.size(); ++i)
+  {
+    iRow = pastix_data.sort_rows[i];
+    begin = row_ptr[iRow];
 
-  unsigned long offset = 0;
+    for (j = 0; j < pastix_data.sort_order[i].size(); ++j)
+    {
+      target = (begin+j)*szBlk;
+      source = pastix_data.sort_order[i][j]*szBlk;
 
-  vector<unsigned long> domain_sizes(size);
-#ifdef HAVE_MPI
-  MPI_Allgather(&nPointDomain, 1, MPI_UNSIGNED_LONG, &domain_sizes[0], 1, MPI_UNSIGNED_LONG, MPI_COMM_WORLD);
-#endif
-  for (int i=0; i<rank; ++i) offset += domain_sizes[i];
-
-  /*--- 2 - Build our local to global map (fortran numbering). ---*/
-
-  CSysVector<unsigned long> map(nPoint,nPointDomain,(unsigned short)(nVar),(unsigned long)(0));
-  pastix_data.loc2glb.resize(nPointDomain);
-
-  for (unsigned long iPoint = 0; iPoint < nPointDomain; ++iPoint) {
-    map[iPoint*nVar] = offset+iPoint;
-    pastix_data.loc2glb[iPoint] = pastix_int_t(offset+iPoint+1);
+      for (k = 0; k < szBlk; ++k) pastix_data.values[target+k] = matrix[source+k];
+    }
   }
-  SendReceive_Solution<unsigned long>(map, geometry, config);
-
-  /*--- 3 - Copy, map the sparsity, and put it in fortran numbering (start at 1). ---*/
-
-  pastix_data.colptr.resize(nPointDomain+1);
-
-  for(unsigned long i = 0; i <= nPointDomain; ++i) {
-    pastix_data.colptr[i] = pastix_int_t(row_ptr[i])+1;
-  }
-
-  unsigned long nNonZero = row_ptr[nPointDomain];
-
-  pastix_data.rowidx.resize(nNonZero);
-
-  for(unsigned long i = 0; i < nNonZero; ++i) {
-    pastix_data.rowidx[i] = map[col_ind[i]*nVar]+1;
-  }
-
-  pastix_data.values = matrix; // no copy required for the values
-
-
-  /*--- COMPUTE FACTORIZATION ---*/
-
-  /*--- Initialize parameters ---*/
-  pastix_data.iparm[IPARM_MODIFY_PARAMETER]    = API_NO;
-  pastix_data.run();
 
   /*--- Customize parameters ---*/
-  pastix_data.iparm[IPARM_THREAD_NBR]          = 1;
-  pastix_data.iparm[IPARM_SYM]                 = API_SYM_YES;
-  pastix_data.iparm[IPARM_DOF_NBR]             = int(nVar);
-  pastix_data.iparm[IPARM_FACTORIZATION]       = API_FACT_LDLT;
-  pastix_data.iparm[IPARM_MATRIX_VERIFICATION] = API_NO;
-  pastix_data.iparm[IPARM_VERBOSE]             = API_VERBOSE_NO;
-  pastix_data.iparm[IPARM_ORDERING]            = API_ORDER_PTSCOTCH;
-  pastix_data.iparm[IPARM_FREE_CSCPASTIX]      = API_CSC_FREE;
-  pastix_data.iparm[IPARM_RHS_MAKING]          = API_RHS_B;
-  pastix_data.iparm[IPARM_THREAD_COMM_MODE]    = API_THREAD_MULTIPLE;
-  pastix_data.iparm[IPARM_TRANSPOSE_SOLVE]     = transposed? API_NO : API_YES; // reversed due to CSR to CSC copy
 
-  /*--- Compute ---*/
-  pastix_data.iparm[IPARM_START_TASK]          = API_TASK_ORDERING;
-  pastix_data.iparm[IPARM_END_TASK]            = API_TASK_NUMFACT;
+  pastix_data.iparm[IPARM_SYM]             = API_SYM_YES;
+  pastix_data.iparm[IPARM_FACTORIZATION]   = API_FACT_LDLT;
+  pastix_data.iparm[IPARM_VERBOSE]         = API_VERBOSE_NO;
+  pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+
+  /*--- Compute factorization ---*/
+  pastix_data.iparm[IPARM_START_TASK]      = API_TASK_ORDERING;
+  pastix_data.iparm[IPARM_END_TASK]        = API_TASK_NUMFACT;
+
+  if (rank == MASTER_NODE)
+    cout << endl;
 
   pastix_data.run();
 
+  if (rank == MASTER_NODE)
+    cout << " +--------------------------------------------------------------------+" << endl << endl;
+
+  pastix_data.isfactorized = true;
 #else
   SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX",CURRENT_FUNCTION);
 #endif
@@ -2330,17 +2417,16 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
 #ifdef HAVE_PASTIX
   using namespace PaStiX;
 
-  if (pastix_data.isfactorized) {
-    prod = vec;
-    pastix_data.rhs = &prod[0];
+  if (pastix_data.isfactorized)
+  {
+    for (unsigned long i = 0; i < nPointDomain*nVar; ++i) pastix_data.rhs[i] = vec[i];
 
     pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NOT;
     pastix_data.iparm[IPARM_START_TASK] = API_TASK_SOLVE;
     pastix_data.iparm[IPARM_END_TASK]   = API_TASK_SOLVE;
-
     pastix_data.run();
-    pastix_data.rhs = NULL;
 
+    for (unsigned long i = 0; i < nPointDomain*nVar; ++i) prod[i] = pastix_data.rhs[i];
     SendReceive_Solution(prod, geometry, config);
   }
   else {
@@ -2356,13 +2442,13 @@ void CSysMatrix<ScalarType>::PastixClean() {
 #ifdef HAVE_PASTIX
   using namespace PaStiX;
 
-  if (pastix_data.isfactorized) {
-    pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NO;
-    pastix_data.iparm[IPARM_START_TASK] = API_TASK_CLEAN;
-    pastix_data.iparm[IPARM_END_TASK]   = API_TASK_CLEAN;
-    pastix_data.run();
-    pastix_data.isfactorized = false;
-  }
+  if (!pastix_data.isfactorized) return;
+
+  pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NO;
+  pastix_data.iparm[IPARM_START_TASK] = API_TASK_CLEAN;
+  pastix_data.iparm[IPARM_END_TASK]   = API_TASK_CLEAN;
+  pastix_data.run();
+  pastix_data.isfactorized = false;
 #endif
 }
 

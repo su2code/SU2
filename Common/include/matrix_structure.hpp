@@ -61,24 +61,38 @@ extern "C" {
 /*--- Small class to aggregate main PaStiX data ---*/
 class CPastixData {
 public:
-  PaStiX::pastix_data_t *state;        /*!< \brief Internal state of the solver. */
-  PaStiX::pastix_int_t nCols;          /*!< \brief Local number of columns. */
-  vector<PaStiX::pastix_int_t> loc2glb;/*!< \brief Global index of the columns held by this rank. */
-  vector<PaStiX::pastix_int_t> colptr; /*!< \brief Equiv. to our "row_ptr". */
-  vector<PaStiX::pastix_int_t> rowidx; /*!< \brief Equiv. to our "col_ind". */
-  vector<PaStiX::pastix_int_t> perm;   /*!< \brief Ordering computed by PaStiX. */
-  passivedouble* values;               /*!< \brief Equiv. to our "matrix". */
-  passivedouble* rhs;                  /*!< \brief RHS pointer which then becomes the solution. */
-  bool isfactorized;                   /*!< \brief Set to true after a call to "Build". */
+  PaStiX::pastix_data_t       *state;   /*!< \brief Internal state of the solver. */
+  PaStiX::pastix_int_t         nCols;   /*!< \brief Local number of columns. */
+  vector<PaStiX::pastix_int_t> colptr;  /*!< \brief Equiv. to our "row_ptr". */
+  vector<PaStiX::pastix_int_t> rowidx;  /*!< \brief Equiv. to our "col_ind". */
+  vector<passivedouble>        values;  /*!< \brief Equiv. to our "matrix". */
+  vector<PaStiX::pastix_int_t> loc2glb; /*!< \brief Global index of the columns held by this rank. */
+  vector<PaStiX::pastix_int_t> perm;    /*!< \brief Ordering computed by PaStiX. */
+  vector<passivedouble>        rhs;     /*!< \brief RHS vector which then becomes the solution. */
 
   PaStiX::pastix_int_t iparm[PaStiX::IPARM_SIZE]; /*!< \brief Integer parameters for PaStiX. */
   passivedouble        dparm[PaStiX::DPARM_SIZE]; /*!< \brief Floating point parameters for PaStiX. */
 
-  CPastixData(void) : isfactorized(false) {}
-  
+  bool isinitialized;  /*!< \brief Signals that the sparsity pattern has been set. */
+  bool isfactorized;   /*!< \brief Signals that a factorization has been computed. */
+
+  vector<unsigned long>          sort_rows;  /*!< \brief List of rows with halo points. */
+  vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
+
+  CPastixData(void) : state(NULL), isinitialized(false), isfactorized(false)
+  {
+    /*--- Just to have valid pointers ---*/
+    colptr.resize(1);
+    rowidx.resize(1);
+    values.resize(1);
+    loc2glb.resize(1);
+    perm.resize(1);
+    rhs.resize(1);
+  }
+
   void run() {
-    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, &colptr[0], &rowidx[0], values,
-                    &loc2glb[0], &perm[0], NULL, rhs, 1, iparm, dparm);
+    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, &colptr[0], &rowidx[0], &values[0],
+                    &loc2glb[0], &perm[0], NULL, &rhs[0], 1, iparm, dparm);
   }
 };
 #endif
@@ -598,6 +612,11 @@ public:
    * \param[out] res - Result of the product A*vec.
    */
   void ComputeResidual(const CSysVector<ScalarType> & sol, const CSysVector<ScalarType> & f, CSysVector<ScalarType> & res);
+
+  /*!
+   * \brief Initialize the matrix format that PaStiX requires.
+   */
+  void PastixInitialize(CGeometry *geometry, CConfig *config);
 
   /*!
    * \brief Factorize matrix using PaStiX.
