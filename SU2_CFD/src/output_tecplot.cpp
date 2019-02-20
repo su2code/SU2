@@ -2750,7 +2750,7 @@ void COutput::SetTecplotBinary_SurfaceMesh(CConfig *config, CGeometry *geometry,
     
     FileFormat = PLT;
 
-    file << buffer << ".mesh.plt";
+    file << buffer << ".mesh.szplt";
     FileType = GRID;
     
     if (dims == 2) variables = "x y";
@@ -3079,7 +3079,7 @@ void COutput::SetTecplotBinary_SurfaceSolution(CConfig *config, CGeometry *geome
     if (((int)iExtIter >= 1000) && ((int)iExtIter < 10000))  file << "_0" << iExtIter;
     if ((int)iExtIter >= 10000)              file << iExtIter;
   }
-  file << ".sol.plt";
+  file << ".sol.szplt";
   FileFormat = PLT;
   FileType = SOLUTION;
   variables = AssembleVariableNames(geometry, config, nVar_Consv, &NVar);
