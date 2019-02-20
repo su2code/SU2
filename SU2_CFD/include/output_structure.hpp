@@ -942,9 +942,10 @@ public:
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing.
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
-   * \param[in] val_nZone - iZone index.
+   * \param[in] val_iZone - iZone index.
+   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
+  void SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort);
 
   /*!
    * \brief Sort the connectivities (volume and surface) into data structures used for output file writing (DG-FEM solver).
@@ -959,8 +960,9 @@ public:
    * \param[in] config - Definition of the particular problem.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] Elem_Type - VTK index of the element type being merged.
+   * \param[in] val_sort - boolean controlling whether the elements are sorted or simply loaded by their owning rank.
    */
-  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type);
+  void SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type, bool val_sort);
 
   /*!
    * \brief Sort the connectivity for a single volume element type into a linear partitioning across all processors (DG-FEM solver).

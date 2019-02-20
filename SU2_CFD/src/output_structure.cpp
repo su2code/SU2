@@ -12473,8 +12473,10 @@ void COutput::SetResult_Files_Parallel(CSolver *****solver_container,
 
       if (fem_solver)
         SortConnectivity_FEM(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
+      else if (FileFormat == TECPLOT_BINARY)
+        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, false);
       else
-        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone);
+        SortConnectivity(config[iZone], geometry[iZone][iInst][MESH_0], iZone, true);
 
       /*--- Sort the surface data and renumber if for writing. ---*/
       if (Wrt_Srf){
@@ -14507,7 +14509,7 @@ void COutput::LoadLocalData_Base(CConfig *config, CGeometry *geometry, CSolver *
   
 }
 
-void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
+void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, bool val_sort) {
 
   /*--- Flags identifying the types of files to be written. ---*/
   
@@ -14525,12 +14527,12 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
     if ((rank == MASTER_NODE) && (size != SINGLE_NODE))
       cout <<"Sorting volumetric grid connectivity." << endl;
     
-    SortVolumetricConnectivity(config, geometry, TRIANGLE     );
-    SortVolumetricConnectivity(config, geometry, QUADRILATERAL);
-    SortVolumetricConnectivity(config, geometry, TETRAHEDRON  );
-    SortVolumetricConnectivity(config, geometry, HEXAHEDRON   );
-    SortVolumetricConnectivity(config, geometry, PRISM        );
-    SortVolumetricConnectivity(config, geometry, PYRAMID      );
+    SortVolumetricConnectivity(config, geometry, TRIANGLE,      val_sort);
+    SortVolumetricConnectivity(config, geometry, QUADRILATERAL, val_sort);
+    SortVolumetricConnectivity(config, geometry, TETRAHEDRON,   val_sort);
+    SortVolumetricConnectivity(config, geometry, HEXAHEDRON,    val_sort);
+    SortVolumetricConnectivity(config, geometry, PRISM,         val_sort);
+    SortVolumetricConnectivity(config, geometry, PYRAMID,       val_sort);
     
   }
   
@@ -14561,7 +14563,10 @@ void COutput::SortConnectivity(CConfig *config, CGeometry *geometry, unsigned sh
   
 }
 
-void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, unsigned short Elem_Type) {
+void COutput::SortVolumetricConnectivity(CConfig *config,
+                                         CGeometry *geometry,
+                                         unsigned short Elem_Type,
+                                         bool val_sort) {
   
   unsigned long iProcessor;
   unsigned short NODES_PER_ELEMENT = 0;
@@ -14828,15 +14833,23 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           if (newID < Global_Index) Global_Index = newID;
         }
         
-        /*--- Search for the processor that owns this point ---*/
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
+
         
         /*--- If we have not visited this element yet, increment our
          number of elements that must be sent to a particular proc. ---*/
@@ -14921,17 +14934,24 @@ void COutput::SortVolumetricConnectivity(CConfig *config, CGeometry *geometry, u
           unsigned long newID = geometry->node[jPoint]->GetGlobalIndex();
           if (newID < Global_Index) Global_Index = newID;
         }
+       
+        /*--- Search for the processor that owns this point. If we are
+         sorting the elements, we use the linear partitioning to find
+         the rank, otherwise, we simply have the current rank load its
+         own elements into the connectivity data structure. ---*/
         
-        /*--- Search for the processor that owns this point ---*/
-        
-        iProcessor = Global_Index/npoint_procs[0];
-        if (iProcessor >= (unsigned long)size)
-          iProcessor = (unsigned long)size-1;
-        if (Global_Index >= nPoint_Linear[iProcessor])
-          while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
-        else
-          while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
-        
+        if (val_sort) {
+          iProcessor = Global_Index/npoint_procs[0];
+          if (iProcessor >= (unsigned long)size)
+            iProcessor = (unsigned long)size-1;
+          if (Global_Index >= nPoint_Linear[iProcessor])
+            while(Global_Index >= nPoint_Linear[iProcessor+1]) iProcessor++;
+          else
+            while(Global_Index <  nPoint_Linear[iProcessor])   iProcessor--;
+        } else {
+          iProcessor = rank;
+        }
+
         /*--- Load connectivity into the buffer for sending ---*/
         
         if (nElem_Flag[iProcessor] != ii) {
