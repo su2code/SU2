@@ -3,7 +3,7 @@
  * \brief Headers of the main subroutines for generating the file outputs.
  *        The subroutines and functions are in the <i>output_structure.cpp</i> file.
  * \author F. Palacios, T. Economon, M. Colonno
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -659,6 +659,15 @@ public:
    */
   void WriteCoordinates_Binary(CConfig *config, CGeometry *geometry, unsigned short val_iZone);
 
+  /*!
+   * \brief Write a file with the adjoint sensitivities projected onto each surface node.
+   * \param[in] config - Definition of the particular problem.
+   * \param[in] geometry - Geometrical definition of the problem.
+   * \param[in] val_iZone - Current zone.
+   * \param[in] val_nZone - Total number of zones.
+   */
+  void WriteProjectedSensitivity(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone);
+  
   /*!
    * \brief Write the nodal coordinates and connectivity to a Tecplot binary mesh file.
    * \param[in] config - Definition of the particular problem.

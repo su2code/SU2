@@ -2,7 +2,7 @@
  * \file config_structure.inl
  * \brief In-Line subroutines of the <i>config_structure.hpp</i> file.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -1069,8 +1069,6 @@ inline unsigned long CConfig::GetGridDef_Nonlinear_Iter(void) { return GridDef_N
 
 inline bool CConfig::GetDeform_Output(void) { return Deform_Output; }
 
-inline su2double CConfig::GetDeform_Tol_Factor(void) { return Deform_Tol_Factor; }
-
 inline su2double CConfig::GetDeform_Coeff(void) { return Deform_Coeff; }
 
 inline su2double CConfig::GetDeform_Limit(void) { return Deform_Limit; }
@@ -1122,8 +1120,6 @@ inline unsigned short CConfig::GetKind_TimeStep_Heat(void) { return Kind_TimeSte
 inline unsigned short CConfig::GetKind_TimeIntScheme_FEA(void) { return Kind_TimeIntScheme_FEA; }
 
 inline unsigned short CConfig::GetKind_SpaceIteScheme_FEA(void) { return Kind_SpaceIteScheme_FEA; }
-
-inline unsigned short CConfig::GetKind_TransferMethod(void) { return Kind_TransferMethod; }
 
 inline unsigned short CConfig::GetKind_ConvNumScheme_Flow(void) { return Kind_ConvNumScheme_Flow; }
 
@@ -1682,6 +1678,10 @@ inline su2double CConfig::GetCollective_Pitch(void) { return Collective_Pitch; }
 
 inline string CConfig::GetDV_Filename(void) { return DV_Filename; }
 
+inline string CConfig::GetDV_Sens_Filename(void) { return DV_Sens_Filename; }
+
+inline string CConfig::GetDV_Unordered_Sens_Filename(void) { return DV_Unordered_Sens_Filename; }
+
 inline bool CConfig::GetLow_MemoryOutput(void) { return Low_MemoryOutput; }
 
 inline bool CConfig::GetWrt_Output(void) { return Wrt_Output; }
@@ -1711,6 +1711,10 @@ inline bool CConfig::GetWrt_InletFile(void) { return Wrt_InletFile; }
 inline void CConfig::SetWrt_InletFile(bool val_wrt_inletfile) { Wrt_InletFile = val_wrt_inletfile; }
 
 inline bool CConfig::GetWrt_Slice(void) { return Wrt_Slice; }
+
+inline bool CConfig::GetWrt_Projected_Sensitivity(void) { return Wrt_Projected_Sensitivity; }
+
+inline unsigned short CConfig::GetSensitivity_Format(void) { return Sensitivity_FileFormat; }
 
 inline bool CConfig::GetPlot_Section_Forces(void) { return Plot_Section_Forces; }
 
@@ -1843,8 +1847,6 @@ inline su2double CConfig::GetAitkenDynMinInit(void) { return AitkenDynMinInit; }
 inline bool CConfig::GetDeadLoad(void) { return DeadLoad; }
 
 inline bool CConfig::GetPseudoStatic(void) { return PseudoStatic; }
-
-inline bool CConfig::GetMatchingMesh(void) { return MatchingMesh; }
 
 inline bool CConfig::GetSteadyRestart(void) { return SteadyRestart; }
 

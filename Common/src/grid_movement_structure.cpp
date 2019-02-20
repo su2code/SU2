@@ -2,7 +2,7 @@
  * \file grid_movement_structure.cpp
  * \brief Subroutines for doing the grid movement using different strategies
  * \author F. Palacios, T. Economon, S. Padron
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -134,7 +134,7 @@ void CVolumetricMovement::UpdateMultiGrid(CGeometry **geometry, CConfig *config)
 void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *config, bool UpdateGeo, bool Derivative) {
   
   unsigned long IterLinSol = 0, Smoothing_Iter, iNonlinear_Iter, MaxIter = 0, RestartIter = 50, Tot_Iter = 0, Nonlinear_Iter = 0;
-  su2double MinVolume, MaxVolume, NumError, Tol_Factor, Residual = 0.0, Residual_Init = 0.0;
+  su2double MinVolume, MaxVolume, NumError, Residual = 0.0, Residual_Init = 0.0;
   bool Screen_Output;
 
 
@@ -142,7 +142,7 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
   
   Smoothing_Iter = config->GetGridDef_Linear_Iter();
   Screen_Output  = config->GetDeform_Output();
-  Tol_Factor     = config->GetDeform_Tol_Factor();
+  NumError       = config->GetDeform_Linear_Solver_Error();
   Nonlinear_Iter = config->GetGridDef_Nonlinear_Iter();
   
   /*--- Disable the screen output if we're running SU2_CFD ---*/
@@ -170,10 +170,6 @@ void CVolumetricMovement::SetVolume_Deformation(CGeometry *geometry, CConfig *co
      elasticity equations (transfers element stiffnesses to point-to-point). ---*/
     
     MinVolume = SetFEAMethodContributions_Elem(geometry, config);
-    
-    /*--- Compute the tolerance of the linear solver using MinLength ---*/
-    
-    NumError = MinVolume * Tol_Factor;
     
     /*--- Set the boundary and volume displacements (as prescribed by the 
      design variable perturbations controlling the surface shape) 
@@ -442,7 +438,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for(iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ||
+        (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       nVertex_SolidWall += geometry->GetnVertex(iMarker);
     }
   }
@@ -460,7 +457,8 @@ void CVolumetricMovement::ComputeSolid_Wall_Distance(CGeometry *geometry, CConfi
   for (iMarker=0; iMarker<config->GetnMarker_All(); ++iMarker) {
     if ( (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ||
          config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX)  ||
-       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL) ) {
+       (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL)  ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
       for (iVertex=0; iVertex<geometry->GetnVertex(iMarker); ++iVertex) {
         iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
         PointIDs[jj++] = iPoint;
@@ -1807,7 +1805,8 @@ void CVolumetricMovement::UpdateGridCoord_Derivatives(CGeometry *geometry, CConf
     for (iMarker = 0; iMarker < config->GetnMarker_All(); iMarker++) {
       if((config->GetMarker_All_KindBC(iMarker) == HEAT_FLUX ) ||
          (config->GetMarker_All_KindBC(iMarker) == EULER_WALL ) ||
-         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL )) {
+         (config->GetMarker_All_KindBC(iMarker) == ISOTHERMAL ) ||
+         (config->GetMarker_All_KindBC(iMarker) == CHT_WALL_INTERFACE)) {
         for (iVertex = 0; iVertex < geometry->nVertex[iMarker]; iVertex++) {
           iPoint = geometry->vertex[iMarker][iVertex]->GetNode();
           if (geometry->node[iPoint]->GetDomain()) {

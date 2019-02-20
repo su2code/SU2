@@ -3,7 +3,7 @@
  * \brief Main subroutines for for carrying out geometrical searches using an
  *        alternating digital tree (ADT).
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -19,7 +19,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -811,7 +811,7 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   unsigned long kk = leaves[0].centralNodeID;
   const su2double *coorBBMin = BBoxCoor.data() + nDimADT*kk;
   const su2double *coorBBMax = coorBBMin + nDim;
-  unsigned long jj;
+  unsigned long jj = 0;
 
   dist = 0.0;
   for(unsigned short k=0; k<nDim; ++k) {
@@ -868,10 +868,11 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
             posDist2 += ds*ds;
           }
 
-          /* Check if the possible minimum distance is less than the currently
-             stored distance. If so, this bounding box is a candidate for the
-             actual minimum distance and must be stored in BBoxTargets. */
-          if(posDist2 < dist) {
+          /* Check if the possible minimum distance is less than or equal to
+             the currently stored distance. If so, this bounding box is a
+             candidate for the actual minimum distance and must be stored
+             in BBoxTargets. */
+          if(posDist2 <= dist) {
 
             /*--- Compute the guaranteed minimum distance for this bounding box. ---*/
             su2double guarDist2 = 0.0;
@@ -905,9 +906,9 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
             posDist2 += ds*ds;
           }
 
-          /* Check if the possible minimum distance is less than the currently
+          /* Check if the possible minimum distance is less than or equal to the currently
              stored distance. If so this leaf must be stored for the next round. */
-          if(posDist2 < dist) {
+          if(posDist2 <= dist) {
             frontLeavesNew.push_back(kk);
 
             /*--- Determine the guaranteed minimum distance squared to the central
@@ -953,20 +954,22 @@ void CADTElemClass::DetermineNearestElement(const su2double *coor,
   /* Loop over the candidate bounding boxes. */
   for(unsigned long i=0; i<BBoxTargets.size(); ++i) {
 
-    /* Break the loop if the possible minimum distance is larger than or equal
-       to the currently stored value. In that case it does not make sense to
+    /* Break the loop if the possible minimum distance is larger than
+       the currently stored value. In that case it does not make sense to
        check the remainder of the bounding boxes, as they are sorted in
-       increasing order (based on the possible minimum distance. */
-    if(BBoxTargets[i].possibleMinDist2 >= dist) break;
+       increasing order (based on the possible minimum distance.
+       Make sure that at least one bounding box is checked. */
+    if(BBoxTargets[i].possibleMinDist2 > dist) break;
 
     /*--- Compute the distance squared to the element that corresponds to the
-          current bounding box. If this distance is less than the current
-          value, overwrite the return information of this function. ---*/
+          current bounding box. If this distance is less than or equal to
+          the current value, overwrite the return information of this function.
+          The equal is necessary to avoid problems for extreme situations. ---*/
     const unsigned long ii = BBoxTargets[i].boundingBoxID;
 
     su2double dist2Elem;
     Dist2ToElement(ii, coor, dist2Elem);
-    if(dist2Elem < dist) {
+    if(dist2Elem <= dist) {
       jj       = ii;
       dist     = dist2Elem;
       markerID = localMarkers[ii];
@@ -1238,7 +1241,7 @@ bool CADTElemClass::CoorInQuadrilateral(const unsigned long elemID,
 
     /* Compute the negative of the Jacobian matrix. */
     const su2double a00 = V1x + parCoor[1]*V3x, a01 = V2x + parCoor[0]*V3x;
-    const su2double a10 = V1y + parCoor[1]*V3y, a11 = V2y + parCoor[1]*V3y;
+    const su2double a10 = V1y + parCoor[1]*V3y, a11 = V2y + parCoor[0]*V3y;
 
     /* Compute the update of the parametric coordinates. */
     detInv = 1.0/(a00*a11 - a01*a10);

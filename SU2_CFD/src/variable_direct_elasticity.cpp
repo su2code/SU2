@@ -2,7 +2,7 @@
  * \file variable_direct_elasticity.cpp
  * \brief Definition of the variables for FEM elastic structural problems.
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -98,19 +98,16 @@ CFEAVariable::CFEAVariable(su2double *val_fea, unsigned short val_nDim, unsigned
     Solution[iVar] = val_fea[iVar];
   }
   
-  Solution_time_n      =  NULL;
   Solution_Vel       =  NULL;
   Solution_Vel_time_n    =  NULL;
   Solution_Accel       =  NULL;
   Solution_Accel_time_n  =  NULL;
   if (dynamic_analysis) {
-    Solution_time_n      =  new su2double [nVar];
     Solution_Vel       =  new su2double [nVar];
     Solution_Vel_time_n    =  new su2double [nVar];
     Solution_Accel       =  new su2double [nVar];
     Solution_Accel_time_n  =  new su2double [nVar];
     for (iVar = 0; iVar < nVar; iVar++) {
-      Solution_time_n[iVar]     = val_fea[iVar];
       Solution_Vel[iVar]       = val_fea[iVar+nVar];
       Solution_Vel_time_n[iVar]   = val_fea[iVar+nVar];
       Solution_Accel[iVar]     = val_fea[iVar+2*nVar];
@@ -189,8 +186,6 @@ CFEAVariable::~CFEAVariable(void) {
   
   if (FlowTraction_n       != NULL) delete [] FlowTraction_n;
   if (Residual_Ext_Surf_n    != NULL) delete [] Residual_Ext_Surf_n;
-  
-  if (Solution_time_n     != NULL) delete [] Solution_time_n;
   
   if (Solution_Vel       != NULL) delete [] Solution_Vel;
   if (Solution_Vel_time_n   != NULL) delete [] Solution_Vel_time_n;
