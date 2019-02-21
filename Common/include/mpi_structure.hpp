@@ -184,8 +184,8 @@ public:
                        void *recvbuf, int recvcount, Datatype recvtype,
                        Comm comm);
 
-  static void Alltoallv(const void *sendbuf, const int *sendcounts, const int *sdispls, Datatype sendtype,
-                        void *recvbuf, const int *recvcounts, const int *recvdispls, Datatype recvtype,
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
                         Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
@@ -291,8 +291,8 @@ public:
                        void *recvbuf, int recvcount, Datatype recvtype,
                        Comm comm);
 
-  static void Alltoallv(void const *sendbuf, int const *sendcounts, int const *sdispls, Datatype sendtype,
-                        void *recvbuf, int const *recvcounts, int const *rdispls, Datatype recvtype,
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *rdispls, Datatype recvtype,
                         Comm comm);
 
   static void Sendrecv(void *sendbuf, int sendcnt, Datatype sendtype,
@@ -421,8 +421,8 @@ public:
                            void *recvbuf, int recvcount, Datatype recvtype,
                            Comm comm);
 
-  static void Alltoallv(void const *sendbuf, int const *sendcounts, int const *sdispls, Datatype sendtype,
-                        void *recvbuf, int const *recvcounts, int const *rdispls, Datatype recvtype,
+  static void Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                        void *recvbuf, int *recvcounts, int *rdispls, Datatype recvtype,
                         Comm comm);
 
   static void Reduce_scatter(void *sendbuf, void *recvbuf, int *recvcounts,
