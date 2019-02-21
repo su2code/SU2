@@ -3,7 +3,7 @@
 ## \file profiling.py
 #  \brief Python script for postprocessing the SU2 custom profiling (profiling.csv)
 #  \author T. Economon
-#  \version 6.1.0 "Falcon"
+#  \version 6.2.0 "Falcon"
 #
 # SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
 #                      Dr. Thomas D. Economon (economon@stanford.edu).
