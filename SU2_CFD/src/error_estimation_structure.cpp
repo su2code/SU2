@@ -1905,6 +1905,18 @@ void CErrorEstimationDriver::ComputeECC() {
     iteration_container[iZone][INST_0]->Iterate(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
+  /*--- Update the solution ---*/
+  for (iZone = 0; iZone < nZone; iZone++)
+    iteration_container[iZone][INST_0]->Update(output, integration_container, fine_geometry_container,
+                                      fine_solver_container, numerics_container, fine_config_container,
+                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
+
+  if (fine_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM){
+      iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, fine_geometry_container,
+                                      fine_solver_container, numerics_container, fine_config_container,
+                                      surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+  }
+
 }
 
 void CErrorEstimationDriver::Output() {

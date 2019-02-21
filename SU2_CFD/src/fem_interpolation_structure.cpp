@@ -2813,9 +2813,8 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
         Coord[ii++] = inputGridCoor[iDim][l];
     }
 
-    // cout << "Building VolumeADT for nearest nodes....." << flush;
     cout << "Building VolumeADT for higher order interpolation....." << flush;
-    // Define the variables needed for the call to BuildSurfaceADT.
+    // Define the variables needed for the call to BuildVolumeADT.
     vector<CFEMStandardElement> standardElementsGrid;
     vector<CFEMStandardElement> standardElementsSol;
     vector<unsigned short> inputGridIndInStandardElements;
@@ -2824,8 +2823,6 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     CADTElemClass VolumeElemADT;
     BuildVolumeADT(config[zone], inputGridZone, VolumeElemADT, standardElementsGrid,
                   standardElementsSol, inputGridIndInStandardElements);
-    // CADTPointsOnlyClass *VolumeADT = new CADTPointsOnlyClass(nDim, nDOFsZone, Coord.data(),
-    //                               PointIDs.data(), true);
     cout << " Done." << endl << flush;
 
     // Number of nearest nodes required, hardcode for quadratic interpolation for now.
@@ -2935,6 +2932,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
     {
       const vector<CFEMInterpolationSurfElem> &surfElems = inputGridZone->mSurfElems;
 
+      cout << "Building SurfaceADT for higher order interpolation....." << flush;
       // Define the vectors to store the adjacent element and the face ID
       // inside the element.
       vector<unsigned long>  adjElemID;
@@ -2951,6 +2949,7 @@ void CFEMInterpolationSol::FV_QuadraticInterpolation(CConfig**                  
       BuildSurfaceADT(config[zone], inputGridZone, surfaceADT, standardBoundaryFacesGrid,
                       standardBoundaryFacesSol, indInStandardBoundaryFaces,
                       adjElemID, faceIDInElement);
+      cout << " Done." << endl << flush;
 
       for(unsigned long l=0; l<pointsSearchFailed.size(); ++l)
       {
@@ -3099,8 +3098,8 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   }
 
   // Compute weight function.
-  for(iPoint = 0; iPoint < nPoint; iPoint++)         weights[iPoint]         = exp(-weights[iPoint]*1.0);
-  for(jPoint = 0; jPoint < nPointInterpol; jPoint++) weightsInterpol[jPoint] = exp(-weightsInterpol[jPoint]*1.0);
+  for(iPoint = 0; iPoint < nPoint; iPoint++)         weights[iPoint]         = exp(-weights[iPoint]);
+  for(jPoint = 0; jPoint < nPointInterpol; jPoint++) weightsInterpol[jPoint] = exp(-weightsInterpol[jPoint]);
 
   for(iPoint = 0; iPoint < nPoint; iPoint++){
     for(iVar = 0; iVar < nVar; iVar++){
@@ -3183,36 +3182,6 @@ void CFEMInterpolationSol::MatMat(const vector<vector<su2double> >  &A,
 
 }
 
-void CFEMInterpolationSol::GetPermutation(const vector<vector<su2double> >  &A,
-                                          vector<vector<su2double> >        &P){
-
-  unsigned short m = A.size(),
-                 n = A[0].size();
-
-  // Compute norm of each column.
-  vector<su2double> norms(n, 0.0);
-  for(unsigned short i = 0; i < m; ++i){
-    for(unsigned short j = 0; j < n; ++j)
-      norms[j] += A[i][j]*A[i][j];
-  }
-
-  // Determine permutation matrix.
-  vector<unsigned short> ranks(n);
-  P.resize(n);
-  for(unsigned short i = 0; i < n; ++i){
-    P[i].resize(n);
-    ranks[i] = i;
-  }
-  MergeSort(norms, ranks, 0, n-1);
-
-  for(unsigned short i = 0; i < n; ++i)
-    P[i][ranks[i]] = 1.0;
-
-  // vector<vector<su2double> > B = A;
-  // MatMat();
-
-}
-
 void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short              nPoly,
                                                 const vector<vector<su2double> >  &coor,
                                                 const vector<su2double>           &weights,
@@ -3232,10 +3201,7 @@ void CFEMInterpolationSol::ApproxVandermonde_2D(const unsigned short            
     for(ix = m; 0 <= ix; ix--){
       iy = m-ix;
       for(i = 0; i < nPoint; i++){
-        // if(ix == 0 && iy == 0) vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
-        // else                   vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy)*weights[i];
         vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy) * weights[i];
-        // vmat[i][j] = pow(coor[0][i], ix) * pow(coor[1][i], iy);
       }
       j++;
     }
@@ -3309,15 +3275,6 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double> >  &mat,
 
     MatMat(Qk[k], z1, z);
 
-    // for(i = 0; i < m; i++){w
-    //   for(j = 0; j < n; j++){
-    //     for(l = 0; l < m; l++){
-    //       z[i][j] += Qk[k][i][l] * z1[l][j];
-    //     }
-    //   }
-    // }
-
-
   }
 
   // Compute Q^T
@@ -3330,31 +3287,13 @@ void CFEMInterpolationSol::Householder(const vector<vector<su2double> >  &mat,
       for(j = 0; j < m; j++)
         z1[i][j] = 0.0;
 
-  MatMat(Qk[k], Q, z1);
-
-    // for(i = 0; i < m; i++){
-    //   for(j = 0; j < m; j++){
-    //     for(l = 0; l < m; l++){
-    //       z1[i][j] += Qk[k][i][l] * Q[l][j];
-    //     }
-    //   }
-    // }
+    MatMat(Qk[k], Q, z1);
 
     Q = z1;
 
   }
 
   // Compute R
-  // R.resize(m);
-  // for(i = 0; i < m; i++){
-  //   R[i].resize(n);
-  //   // for(j = 0; j < n; j++){
-  //   //   for(l = 0; l < m; l++){
-  //   //     R[i][j] += Q[i][l] * mat[l][j];
-  //   //   }
-  //   // }
-  // }
-
   MatMat(Q, mat, R);
 
   // Transpose Q
