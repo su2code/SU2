@@ -1082,14 +1082,15 @@ private:
   vector<unsigned long> m_node_range;
 };
 
-unsigned long GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_local_node, vector<unsigned long> const &halo_node_list)
+int64_t GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_local_node, vector<unsigned long> const &halo_node_list)
 {
   vector<unsigned long>::const_iterator it = lower_bound(halo_node_list.begin(), halo_node_list.end(), global_node_number);
   assert(it != halo_node_list.end());
   assert(*it == global_node_number);
-  size_t offset = distance(halo_node_list.begin(), it);
+  /* When C++11 is universally available, replace the following mouthful with "auto" */
+  iterator_traits<vector<unsigned long>::const_iterator>::difference_type offset = distance(halo_node_list.begin(), it);
   assert(offset >= 0);
-  return last_local_node + offset + 1;
+  return (int64_t)(last_local_node + offset + 1);
 }
 
 } /* namespace */
@@ -1187,28 +1188,28 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   
     /* Gather a list of nodes we refer to but are not outputting. */
 
-    for (int i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
-      if (Conn_Tria_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Tria_Par[i])
+    for (unsigned long i = 0; i < nParallel_Tria * N_POINTS_TRIANGLE; ++i)
+      if ((unsigned long)Conn_Tria_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Tria_Par[i])
         halo_nodes.insert(Conn_Tria_Par[i]);
   
-    for (int i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
-      if (Conn_Quad_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Quad_Par[i])
+    for (unsigned long i = 0; i < nParallel_Quad * N_POINTS_QUADRILATERAL; ++i)
+      if ((unsigned long)Conn_Quad_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Quad_Par[i])
         halo_nodes.insert(Conn_Quad_Par[i]);
  
-    for (int i = 0; i < nParallel_Tetr * N_POINTS_TETRAHEDRON; ++i)
-      if (Conn_Tetr_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Tetr_Par[i])
+    for (unsigned long i = 0; i < nParallel_Tetr * N_POINTS_TETRAHEDRON; ++i)
+      if ((unsigned long)Conn_Tetr_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Tetr_Par[i])
         halo_nodes.insert(Conn_Tetr_Par[i]);
 
-    for (int i = 0; i < nParallel_Hexa * N_POINTS_HEXAHEDRON; ++i)
-      if (Conn_Hexa_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Hexa_Par[i])
+    for (unsigned long i = 0; i < nParallel_Hexa * N_POINTS_HEXAHEDRON; ++i)
+      if ((unsigned long)Conn_Hexa_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Hexa_Par[i])
         halo_nodes.insert(Conn_Hexa_Par[i]);
       
-    for (int i = 0; i < nParallel_Pris * N_POINTS_PRISM; ++i)
-      if (Conn_Pris_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Pris_Par[i])
+    for (unsigned long i = 0; i < nParallel_Pris * N_POINTS_PRISM; ++i)
+      if ((unsigned long)Conn_Pris_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Pris_Par[i])
         halo_nodes.insert(Conn_Pris_Par[i]);
     
-    for (int i = 0; i < nParallel_Pyra * N_POINTS_PYRAMID; ++i)
-      if (Conn_Pyra_Par[i] <= beg_node[rank] || end_node[rank] < Conn_Pyra_Par[i])
+    for (unsigned long i = 0; i < nParallel_Pyra * N_POINTS_PYRAMID; ++i)
+      if ((unsigned long)Conn_Pyra_Par[i] <= beg_node[rank] || end_node[rank] < (unsigned long)Conn_Pyra_Par[i])
         halo_nodes.insert(Conn_Pyra_Par[i]);
 
     /* Sorted list of halo nodes for this MPI rank. */
@@ -1389,8 +1390,8 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
      *  Ghost (halo) nodes identified above are numbered sequentially just beyond the end of the actual, local nodes.
      *  Note that beg_node and end_node refer to zero-based node numbering, but Conn_* contain one-based node numbers.
      */
-#define MAKE_LOCAL(n) beg_node[rank] < n && n <= end_node[rank] \
-  ? n - beg_node[rank] \
+#define MAKE_LOCAL(n) beg_node[rank] < (unsigned long)n && (unsigned long)n <= end_node[rank] \
+  ? (int64_t)((unsigned long)n - beg_node[rank]) \
   : GetHaloNodeNumber(n, end_node[rank] - beg_node[rank], sorted_halo_nodes)
 
     for (iElem = 0; err == 0 && iElem < nParallel_Tetr; iElem++) {
