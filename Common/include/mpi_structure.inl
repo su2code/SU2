@@ -461,8 +461,8 @@ inline void CMediMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   AMPI_Alltoall(sendbuf, sendcount, convertDatatype(sendtype), recvbuf, recvcount, convertDatatype(recvtype), convertComm(comm));
 }
 
-inline void CMediMPIWrapper::Alltoallv(const void *sendbuf, const int *sendcounts, const int *sdispls, Datatype sendtype,
-                                   void *recvbuf, const int *recvcounts, const int *recvdispls, Datatype recvtype,
+inline void CMediMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
                                    Comm comm) {
   AMPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, recvdispls, recvtype, comm);
 }
