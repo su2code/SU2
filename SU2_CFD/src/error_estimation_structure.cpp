@@ -57,6 +57,12 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   coarse_config_container       = NULL;
   fine_config_container         = NULL;
   output                        = NULL;
+  iteration_container           = NULL;
+  integration_container         = NULL;
+  numerics_container            = NULL;
+  surface_movement              = NULL;
+  grid_movement                 = NULL;
+  FFDBox                        = NULL;
   nInst                         = NULL;
 
   /*--- Definition of the containers for all possible zones. ---*/
@@ -67,6 +73,9 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   fine_solver_container         = new CSolver****[nZone];
   coarse_config_container       = new CConfig*[nZone];
   fine_config_container         = new CConfig*[nZone];
+  iteration_container           = new CIteration**[nZone];
+  integration_container         = new CIntegration***[nZone];
+  numerics_container            = new CNumerics*****[nZone];
   nInst                         = new unsigned short[nZone];
 
   for (iZone = 0; iZone < nZone; iZone++) {
@@ -76,6 +85,8 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
     fine_geometry_container[iZone]            = NULL;
     coarse_config_container[iZone]            = NULL;
     fine_config_container[iZone]              = NULL;
+    integration_container[iZone]              = NULL;
+    numerics_container[iZone]                 = NULL;
     nInst[iZone]                              = 1;
   }
 
@@ -616,7 +627,8 @@ void CErrorEstimationDriver::Iteration_Preprocessing() {
       else{
         if (rank == MASTER_NODE)
           cout << ": Euler/Navier-Stokes/RANS fluid iteration." << endl;
-        iteration_container[iZone][iInst] = new CFluidIteration(fine_config_container[iZone]);
+        // iteration_container[iZone][iInst] = new CFluidIteration(fine_config_container[iZone]);
+        iteration_container[iZone][iInst] = new CDiscAdjFluidIteration(fine_config_container[iZone]);
       }
       break;
 
