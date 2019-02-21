@@ -250,8 +250,8 @@ inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   MPI_Alltoall(sendbuf, sendcount, sendtype, recvbuf, recvcount, recvtype, comm);
 }
 
-inline void CBaseMPIWrapper::Alltoallv(const void *sendbuf, const int *sendcounts, const int *sdispls, Datatype sendtype,
-                                   void *recvbuf, const int *recvcounts, const int *recvdispls, Datatype recvtype,
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
                                    Comm comm) {
   MPI_Alltoallv(sendbuf, sendcounts, sdispls, sendtype, recvbuf, recvcounts, recvdispls, recvtype, comm);
 }
@@ -609,8 +609,8 @@ inline void CBaseMPIWrapper::Alltoall(void *sendbuf, int sendcount, Datatype sen
   CopyData(sendbuf, recvbuf, recvcount, sendtype);
 }
 
-inline void CBaseMPIWrapper::Alltoallv(const void *sendbuf, const int *sendcounts, const int *sdispls, Datatype sendtype,
-                                   void *recvbuf, const int *recvcounts, const int *recvdispls, Datatype recvtype,
+inline void CBaseMPIWrapper::Alltoallv(void *sendbuf, int *sendcounts, int *sdispls, Datatype sendtype,
+                                   void *recvbuf, int *recvcounts, int *recvdispls, Datatype recvtype,
                                    Comm comm) {
   CopyData(sendbuf, recvbuf, recvcounts[0], recvtype);
 }
