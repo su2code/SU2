@@ -86,29 +86,35 @@ CUpwPB_Flow::~CUpwPB_Flow(void) {
 void CUpwPB_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config) {
 	
 	
-   su2double MeanDensity,Flux0,Flux1;
+   su2double MeanDensity, Flux0, Flux1, MeanPressure;
    
    
   /*--- Primitive variables at point i and j ---*/
   Pressure_i =    V_i[0];       Pressure_j = V_j[0];
   DensityInc_i =  V_i[nDim+1];  DensityInc_j = V_j[nDim+1];
-	
+  MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
+  MeanPressure = 0.5*(Pressure_i + Pressure_j);
+  
+  
   Face_Flux = 0.0;
   for (iDim = 0; iDim < nDim; iDim++) {
     Velocity_i[iDim] = V_i[iDim+1];
     Velocity_j[iDim] = V_j[iDim+1];
     MeanVelocity[iDim] =  0.5*(Velocity_i[iDim] + Velocity_j[iDim]);
-    MeanDensity = 0.5*(DensityInc_i + DensityInc_j);
     Face_Flux += MeanDensity*MeanVelocity[iDim]*Normal[iDim];
   }
   
   Flux0 = 0.5*(Face_Flux + fabs(Face_Flux)) ;
   Flux1 = 0.5*(Face_Flux - fabs(Face_Flux)) ;
     
-    for (iVar = 0; iVar < nVar; iVar++) {
-		val_residual[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
-	}
+  for (iVar = 0; iVar < nVar; iVar++) {
+	  val_residual[iVar] = Flux0*V_i[iVar+1] + Flux1*V_j[iVar+1];
+  }
     
+  for (iDim = 0; iDim < nDim; iDim++) {
+	val_residual[iDim] += MeanPressure*Normal[iDim];
+  }
+	
   if (implicit) {
 	  
 	  for (iVar = 0; iVar < nVar; iVar++)
