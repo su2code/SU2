@@ -46,14 +46,15 @@ CDiscAdjFlowOutput::CDiscAdjFlowOutput(CConfig *config, CGeometry *geometry, uns
   /*--- Set the default history fields if nothing is set in the config file ---*/
   
   if (nRequestedHistoryFields == 0){
-    RequestedHistoryFields.push_back("EXT_ITER");
+    RequestedHistoryFields.push_back("ITER");
     RequestedHistoryFields.push_back("RMS_RES");
     RequestedHistoryFields.push_back("SENSITIVITIES");
     nRequestedHistoryFields = RequestedHistoryFields.size();
   }
-  
+
   if (nRequestedScreenFields == 0){
-    RequestedScreenFields.push_back("EXT_ITER");
+    if (multizone) RequestedScreenFields.push_back("OUTER_ITER");
+    RequestedScreenFields.push_back("INNER_ITER");
     RequestedScreenFields.push_back("RMS_ADJ_DENSITY");
     RequestedScreenFields.push_back("RMS_ADJ_MOMENTUM-X");
     RequestedScreenFields.push_back("SENS_GEO");

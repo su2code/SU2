@@ -387,14 +387,6 @@ CEulerVariable::CEulerVariable(su2double *val_solution, unsigned short val_nDim,
     for (iDim = 0; iDim < nDim; iDim++)
       Gradient_Secondary[iVar][iDim] = 0.0;
   }
-  
-  Solution_BGS_k = NULL;
-  if (fsi || multizone){
-      Solution_BGS_k  = new su2double [nVar];
-      for (iVar = 0; iVar < nVar; iVar++) {
-        Solution_BGS_k[iVar] = val_solution[iVar];
-      }
-  }
 
 }
 
