@@ -12,11 +12,11 @@ compiler:
 notifications:
     email:
         recipients:
-            - su2code-dev@lists.stanford.edu
+            - tobias.kattmann@de.bosch.com
   
 branches:
     only:
-        - develop
+        - bugfix_BC-sym-plane
 
 python:
     - 2.7
