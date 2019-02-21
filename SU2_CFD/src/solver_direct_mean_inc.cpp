@@ -6067,9 +6067,8 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
   string Marker_Tag  = config->GetMarker_All_TagBound(val_marker);
   
   su2double UnitNormal[nDim], Velocity_i[nDim], Tangential[nDim];
-  su2double ProjVelocity_i = 0.0;
+  su2double ProjVelocity_i = 0.0, ProjGradient = 0.0;
   
-  su2double ProjGradient[nDim+2]; //TK here nDim+2 but Grad_Reflected is nPrimVarGrad big
   su2double *V_reflected, *V_domain;
   su2double *Normal = new su2double[nDim];
   su2double **Grad_Reflected = new su2double*[nPrimVarGrad];
@@ -6083,7 +6082,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
   
   for (iVertex = 0; iVertex < geometry->nVertex[val_marker]; iVertex++) {
     
-    /*--- Allocate the value at the outlet ---*/
+    /*--- Allocate the reflected state at the symmetry boundary ---*/
     
     V_reflected = GetCharacPrimVar(val_marker, iVertex);
     
@@ -6095,7 +6094,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
       
       /*--- Index of the closest interior node ---*/
       
-      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); //Could be used for SetCoord for viscous jacobian (dist_ij)
+      Point_Normal = geometry->vertex[val_marker][iVertex]->GetNormal_Neighbor(); // TK Could be used for SetCoord for viscous jacobian (dist_ij)
       
       /*--- Normal vector for this vertex (negate for outward convention) ---*/
       
@@ -6103,11 +6102,13 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
       for (iDim = 0; iDim < nDim; iDim++) Normal[iDim] = -Normal[iDim];
       conv_numerics->SetNormal(Normal);
       
+      /*--- Grid movement ---*/
+
       if (config->GetGrid_Movement())
         conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
                                   geometry->node[iPoint]->GetGridVel());
 
-      /*--- Compute unit Normal, to be used for projected velocity ---*/
+      /*--- Compute unit normal, to be used for projected velocity and velocity component gradients ---*/
 
       su2double Area = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) 
@@ -6124,7 +6125,15 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
       /*--- Set the reflected state based on the boundary node. Scalars are copied and 
             the velocity is mirrored along the symmetry boundary, i.e. the velocity in 
             normal direction is substracted twice. ---*/
-      
+
+      /*--- p, vx, vy, vz, T, rho, betainc2, lam visco, eddy visco, thermal cond, specific heat cp, ?, ? ---*/
+
+      for(iVar = 0; iVar < nPrimVar; iVar++)
+        V_reflected[iVar] = node[iPoint]->GetPrimitive(iVar);
+
+      /*--- Compute velocity in normal direction (ProjVelcity_i) und substract twice from
+            velocity in normal direction. ---*/
+
       ProjVelocity_i = 0.0;
       for (iDim = 0; iDim < nDim; iDim++) {
         Velocity_i[iDim]  = node[iPoint]->GetVelocity(iDim);
@@ -6135,14 +6144,11 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
         V_reflected[iDim+1] = Velocity_i[iDim] - 2.0 * ProjVelocity_i*UnitNormal[iDim];
       }
 
-      V_reflected[0]      = node[iPoint]->GetPressure();
-      V_reflected[nDim+1] = node[iPoint]->GetTemperature();      
-      V_reflected[nDim+2] = node[iPoint]->GetDensity();
-      V_reflected[nDim+3] = node[iPoint]->GetBetaInc2();
-      V_reflected[nDim+7] = node[iPoint]->GetSpecificHeatCp();
+      /*--- Set Primitive and Secondary for numerics class ---*/
 
       conv_numerics->SetPrimitive(V_domain, V_reflected);
-      
+      conv_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
+
       /*--- Compute the residual using an upwind scheme ---*/
       
       conv_numerics->ComputeResidual(Residual, Jacobian_i, Jacobian_j, config);
@@ -6157,43 +6163,52 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
         Jacobian.AddBlock(iPoint, iPoint, Jacobian_i);
       }
   
-      /*---  ---*/     
+      /*--- The viscous fluxes of the Navier-Stokes equations depend on the Primitive
+            variables and thier gradients. The viscous numerics container is filled 
+            just as the convective numerics container, but the primitive gradients of
+            the reflected state have be determined such that symmetry at the boundary is 
+            enforced. ---*/
+
       if (config->GetViscous()) {
 
         /*--- Set the normal vector and the coordinates ---*/
 
         visc_numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
         visc_numerics->SetNormal(Normal);
-
-        /*--- Set transport properties at the outlet. ---*/
-
-        V_reflected[nDim+4] = node[iPoint]->GetLaminarViscosity();
-        V_reflected[nDim+5] = node[iPoint]->GetEddyViscosity();
-        V_reflected[nDim+6] = node[iPoint]->GetThermalConductivity();    
         
-        /*--- Primitive variables ---*/
+        /*--- Set the primitive and Secondary variables ---*/
         
         visc_numerics->SetPrimitive(V_domain, V_reflected);
+        visc_numerics->SetSecondary(node[iPoint]->GetSecondary(), node[iPoint]->GetSecondary());
         
         /*--- For viscous Fluxes also the gradients of the primitives need to be determined.
-              1. The gradients of scalars are mirrored along the sym plane
-              2. The gradients of the velocity components need more attention ---*/
+              1. The gradients of scalars are mirrored along the sym plane just as velocity for the primitives
+              2. The gradients of the velocity components need more attention, i.e. the gradient of the
+                 normal velocity in tangential direction is mirrored and the gradient of the tangential velocity in 
+                 normal direction is mirrored. ---*/
 
         /*--- Get gradients of primitives of boundary cell ---*/
+        
         for (iVar = 0; iVar < nPrimVarGrad; iVar++)
           for (iDim = 0; iDim < nDim; iDim++)
             Grad_Prim[iVar][iDim] = node[iPoint]->GetGradient_Primitive(iVar, iDim);
         
-        /*--- Ensure that the gradients are also reflected for [p, v_x, v_y, (v_z), T]. ---*/
+        /*--- Reflect the gradients for all scalars including the velocity components.
+              The gradients of the velocity components are overriden later with the 
+              correct values. ---*/
+
         for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
+
           /*--- Compute projected part of the gradient in a dot product ---*/
-          ProjGradient[iVar] = 0.0;
+
+          ProjGradient = 0.0;
           for (iDim = 0; iDim < nDim; iDim++)
-            ProjGradient[iVar] += Grad_Prim[iVar][iDim]*UnitNormal[iDim];
-          /*--- Compute reflected state of the gradients.
-                TK Gradients of velocity components are set here but overridden later ---*/
+            ProjGradient += Grad_Prim[iVar][iDim]*UnitNormal[iDim];
+
+          /*--- Compute reflected state of the gradients. Gradients of velocity components are set here but overridden later ---*/
+
           for (iDim = 0; iDim < nDim; iDim++)
-            Grad_Reflected[iVar][iDim] = Grad_Prim[iVar][iDim] - 2.0 * ProjGradient[iVar]*UnitNormal[iDim]; //TK ProjGradient could be scalar
+            Grad_Reflected[iVar][iDim] = Grad_Prim[iVar][iDim] - 2.0 * ProjGradient*UnitNormal[iDim];
         }
         
         /*--- Compute unit tangential, the direction is arbitrary as long as t*n=0 ---*/
@@ -6205,9 +6220,16 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
             break;
           }
           case 3: {
-            Tangential[0] = -UnitNormal[1]/sqrt(pow(UnitNormal[0],2) + pow(UnitNormal[1],2));
-            Tangential[1] = UnitNormal[0]/sqrt(pow(UnitNormal[0],2) + pow(UnitNormal[1],2));
-            Tangential[2] = 0.0;
+            /*--- Find the largest entry index of the UnitNormal, and create Tangential vector based on that ---*/
+
+            unsigned short Largest, Arbitrary, Zero;
+            if     (abs(UnitNormal[0]) >= abs(UnitNormal[1]) && abs(UnitNormal[0]) >= abs(UnitNormal[2])){Largest=0;Arbitrary=1;Zero=2;}
+            else if(abs(UnitNormal[1]) >= abs(UnitNormal[0]) && abs(UnitNormal[1]) >= abs(UnitNormal[2])){Largest=1;Arbitrary=0;Zero=2;}
+            else                                                                                         {Largest=2;Arbitrary=1;Zero=0;}
+
+            Tangential[Largest] = -UnitNormal[Arbitrary]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Arbitrary] =  UnitNormal[Largest]/sqrt(pow(UnitNormal[Largest],2) + pow(UnitNormal[Arbitrary],2));
+            Tangential[Zero] =  0.0;
             break;
           }
         }
@@ -6252,8 +6274,7 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
 
         /*--- Gradient and limiters ---*/
 
-        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(),
-                                          Grad_Reflected);
+        visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
         
         /*--- Turbulent kinetic energy ---*/
         
@@ -6272,15 +6293,13 @@ void CIncEulerSolver::BC_Sym_Plane(CGeometry *geometry,
 
         if (implicit)
           Jacobian.SubtractBlock(iPoint, iPoint, Jacobian_i);
-        
-      } // Viscous
-      
+      }      
     }
   }
   
   /*--- Free locally allocated memory ---*/
 
-  delete [] Normal;  
+  delete [] Normal;
   for (iVar = 0; iVar < nPrimVarGrad; iVar++) {
     delete [] Grad_Prim[iVar];
     delete [] Grad_Reflected[iVar];
