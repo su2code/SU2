@@ -1899,6 +1899,9 @@ void CErrorEstimationDriver::ComputeECC() {
   unsigned long IntIter = 0, nIntIter = 1;
   bool unsteady;
 
+  if (rank == MASTER_NODE)
+    cout << endl <<"----------------------------- Compute ECC -----------------------------" << endl;
+
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
    and other intermediate procedures may be required. ---*/
@@ -1907,10 +1910,14 @@ void CErrorEstimationDriver::ComputeECC() {
 
   /*--- Zone preprocessing ---*/
 
+  if (rank == MASTER_NODE) cout << "Zone preprocessing." << endl;
+
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone][INST_0]->Preprocess(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  /*--- For each zone runs one single iteration ---*/
+  /*--- For each zone run one single iteration ---*/
+
+  if (rank == MASTER_NODE) cout << "Running single solver iteration." << endl;
 
   for (iZone = 0; iZone < nZone; iZone++) {
     fine_config_container[iZone]->SetIntIter(IntIter);
@@ -1918,6 +1925,9 @@ void CErrorEstimationDriver::ComputeECC() {
   }
 
   /*--- Update the solution ---*/
+
+  if (rank == MASTER_NODE) cout << "Updating solution." << endl;
+
   for (iZone = 0; iZone < nZone; iZone++)
     iteration_container[iZone][INST_0]->Update(output, integration_container, fine_geometry_container,
                                       fine_solver_container, numerics_container, fine_config_container,
