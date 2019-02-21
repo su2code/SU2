@@ -418,7 +418,7 @@ void CConfig::SetPointersNull(void) {
 
   Inlet_Ttotal    = NULL;    Inlet_Ptotal      = NULL;
   Inlet_FlowDir   = NULL;    Inlet_Temperature = NULL;    Inlet_Pressure = NULL;
-  Inlet_Velocity  = NULL;
+  Inlet_Velocity  = NULL;    Inlet_MassFrac    = NULL;
   Outlet_Pressure = NULL;
   
   /*--- Engine Boundary Condition settings ---*/
@@ -450,7 +450,7 @@ void CConfig::SetPointersNull(void) {
   FlowLoad_Value            = NULL;     Periodic_RotCenter          = NULL;     Periodic_RotAngles    = NULL;
   Periodic_Translation      = NULL;     Periodic_Center             = NULL;     Periodic_Rotation     = NULL;
   Periodic_Translate        = NULL;
-
+  Inlet_MassFrac            = NULL;
   ElasticityMod             = NULL;     PoissonRatio                = NULL;     MaterialDensity       = NULL;
 
   Load_Dir = NULL;	          Load_Dir_Value = NULL;          Load_Dir_Multiplier = NULL;
@@ -8038,6 +8038,12 @@ CConfig::~CConfig(void) {
     delete [] Inlet_Velocity;
   }
   
+  if (Inlet_MassFrac != NULL) {
+    for (iMarker = 0; iMarker < nMarker_Supersonic_Inlet; iMarker++)
+      delete [] Inlet_MassFrac[iMarker];
+    delete [] Inlet_MassFrac;
+  }
+
   if (Riemann_FlowDir != NULL) {
     for (iMarker = 0; iMarker < nMarker_Riemann; iMarker++)
       delete [] Riemann_FlowDir[iMarker];
@@ -8889,6 +8895,13 @@ su2double* CConfig::GetInlet_Velocity(string val_marker) {
   for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
     if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
   return Inlet_Velocity[iMarker_Supersonic_Inlet];
+}
+
+su2double* CConfig::GetInlet_MassFrac(string val_marker) {
+  unsigned short iMarker_Supersonic_Inlet;
+  for (iMarker_Supersonic_Inlet = 0; iMarker_Supersonic_Inlet < nMarker_Supersonic_Inlet; iMarker_Supersonic_Inlet++)
+    if (Marker_Supersonic_Inlet[iMarker_Supersonic_Inlet] == val_marker) break;
+  return Inlet_MassFrac[iMarker_Supersonic_Inlet];
 }
 
 su2double CConfig::GetOutlet_Pressure(string val_marker) {

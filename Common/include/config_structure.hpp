@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file config_structure.hpp
  * \brief All the information about the definition of the physical problem.
  *        The subroutines and functions are in the <i>config_structure.cpp</i> file.
@@ -300,6 +300,7 @@ private:
   su2double *Inlet_Temperature;    /*!< \brief Specified temperatures for a supersonic inlet boundaries. */
   su2double *Inlet_Pressure;    /*!< \brief Specified static pressures for supersonic inlet boundaries. */
   su2double **Inlet_Velocity;  /*!< \brief Specified flow velocity vectors for supersonic inlet boundaries. */
+  su2double **Inlet_MassFrac;  /*!< \brief Specified Mass fraction vectors for supersonic inlet bounfaries (TNE2). */
   su2double *EngineInflow_Target;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Mach;    /*!< \brief Specified fan face mach for nacelle boundaries. */
   su2double *Inflow_Pressure;    /*!< \brief Specified fan face mach for nacelle boundaries. */
@@ -6871,6 +6872,13 @@ public:
    */
   su2double* GetInlet_Velocity(string val_index);
   
+  /*!
+   * \brief Get the mass fraction vector at a supersonic inlet boundary.
+   * \param[in] val_index - Index corresponding to the inlet boundary.
+   * \return The inlet mass fraction vector - TNE2 only.
+   */
+  su2double* GetInlet_MassFrac(string val_index);
+
   /*!
    * \brief Get the fixed value at the Dirichlet boundary.
    * \param[in] val_index - Index corresponding to the Dirichlet boundary.
