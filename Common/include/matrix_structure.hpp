@@ -58,9 +58,9 @@ extern "C" {
 #include <pastix.h>
 }
 }
-/*--- Small class to aggregate main PaStiX data ---*/
-class CPastixData {
-public:
+/*--- Small struct to aggregate main PaStiX data and simplify calls ---*/
+struct CPastixData
+{
   PaStiX::pastix_data_t       *state;   /*!< \brief Internal state of the solver. */
   PaStiX::pastix_int_t         nCols;   /*!< \brief Local number of columns. */
   vector<PaStiX::pastix_int_t> colptr;  /*!< \brief Equiv. to our "row_ptr". */
@@ -75,11 +75,13 @@ public:
 
   bool isinitialized;  /*!< \brief Signals that the sparsity pattern has been set. */
   bool isfactorized;   /*!< \brief Signals that a factorization has been computed. */
+  unsigned long iter;  /*!< \brief Number of times a factorization has been requested. */
+  unsigned short verb; /*!< \brief Verbosity level. */
 
   vector<unsigned long>          sort_rows;  /*!< \brief List of rows with halo points. */
   vector<vector<unsigned long> > sort_order; /*!< \brief How each of those rows needs to be sorted. */
 
-  CPastixData(void) : state(NULL), isinitialized(false), isfactorized(false)
+  CPastixData(void) : state(NULL), isinitialized(false), isfactorized(false), iter(0), verb(0)
   {
     /*--- Just to have valid pointers ---*/
     colptr.resize(1);
@@ -90,9 +92,21 @@ public:
     rhs.resize(1);
   }
 
+  ~CPastixData(void) { clean(); }
+
+  void clean() {
+    if(isfactorized) {
+      iparm[PaStiX::IPARM_VERBOSE] = (verb > 0) ? PaStiX::API_VERBOSE_NO : PaStiX::API_VERBOSE_NOT;
+      iparm[PaStiX::IPARM_START_TASK] = PaStiX::API_TASK_CLEAN;
+      iparm[PaStiX::IPARM_END_TASK]   = PaStiX::API_TASK_CLEAN;
+      run();
+      isfactorized = false;
+    }
+  }
+
   void run() {
-    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, &colptr[0], &rowidx[0], &values[0],
-                    &loc2glb[0], &perm[0], NULL, &rhs[0], 1, iparm, dparm);
+    PaStiX::dpastix(&state, MPI_COMM_WORLD, nCols, colptr.data(), rowidx.data(), values.data(),
+                    loc2glb.data(), perm.data(), NULL, rhs.data(), 1, iparm, dparm);
   }
 };
 #endif
@@ -622,9 +636,10 @@ public:
    * \brief Factorize matrix using PaStiX.
    * \param[in] geometry - Geometrical definition of the problem.
    * \param[in] config - Definition of the particular problem.
+   * \param[in] kind_fact - Type of factorization.
    * \param[in] transposed - Flag to use the transposed matrix during application of the preconditioner.
    */
-  void BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, bool transposed = false);
+  void BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, unsigned short kind_fact, bool transposed = false);
 
   /*!
    * \brief Apply the PaStiX factorization to CSysVec.
@@ -634,11 +649,6 @@ public:
    * \param[in] config - Definition of the particular problem.
    */
   void ComputePastixPreconditioner(const CSysVector<ScalarType> & vec, CSysVector<ScalarType> & prod, CGeometry *geometry, CConfig *config);
-
-  /*!
-   * \brief Execute the clean task of PaStiX (called in dtor).
-   */
-  void PastixClean();
 
 };
 

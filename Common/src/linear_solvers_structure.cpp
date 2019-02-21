@@ -730,8 +730,9 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
 
   HandleTemporariesIn(LinSysRes, LinSysSol);
 
-  if (KindSolver == BCGSTAB || KindSolver == CONJUGATE_GRADIENT ||
-      KindSolver == FGMRES  || KindSolver == RESTARTED_FGMRES ) {
+  if (KindSolver == BCGSTAB   || KindSolver == CONJUGATE_GRADIENT ||
+      KindSolver == FGMRES    || KindSolver == RESTARTED_FGMRES ||
+      KindSolver == PASTIX_LU || KindSolver == PASTIX_LDLT ) {
     
     mat_vec = new CSysMatrixVectorProduct<ScalarType>(Jacobian, geometry, config);
     CPreconditioner<ScalarType>* precond = NULL;
@@ -749,9 +750,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
         precond = new CLU_SGSPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
       case LINELET:
-//        Jacobian.BuildJacobiPreconditioner();
-//        precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
-        Jacobian.BuildPastixPreconditioner(geometry, config, true);
+        Jacobian.BuildJacobiPreconditioner();
+        precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
+        break;
+      case PASTIX_ILU:
+        Jacobian.BuildPastixPreconditioner(geometry, config, PASTIX_ILU);
         precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
       default:
@@ -779,6 +782,11 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
           IterLinSol += FGMRES_LinSolver(*LinSysRes_ptr, *LinSysSol_ptr, *mat_vec, *precond, SolverTol, IterLimit, &Residual, ScreenOutput);
           if ( Residual < SolverTol*Norm0 ) break;
         }
+        break;
+      case PASTIX_LDLT : case PASTIX_LU:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver);
+        Jacobian.ComputePastixPreconditioner(*LinSysRes_ptr, *LinSysSol_ptr, geometry, config);
+        IterLinSol = 1;
         break;
     }
     
@@ -907,6 +915,9 @@ void CSysSolve<ScalarType>::SetExternalSolve(CSysMatrix<ScalarType> & Jacobian, 
     case JACOBI:
       Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
       break;
+    case PASTIX_ILU:
+      Jacobian.BuildPastixPreconditioner(geometry, config, PASTIX_ILU, RequiresTranspose);
+      break;
     default:
       SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
       break;
@@ -927,7 +938,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
   unsigned short KindSolver, KindPrecond;
   unsigned long MaxIter, RestartIter, IterLinSol = 0;
   ScalarType SolverTol, Norm0 = 0.0;
-  bool ScreenOutput;
+  bool ScreenOutput, RequiresTranspose = !mesh_deform; // jacobian is symmetric
 
   /*--- Normal mode ---*/
 
@@ -964,6 +975,9 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     case JACOBI:
       precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
+    case PASTIX_ILU:
+      precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
+      break;
   }
 
   CMatrixVectorProduct<ScalarType>* mat_vec = new CSysMatrixVectorProductTransposed<ScalarType>(Jacobian, geometry, config);
@@ -989,6 +1003,11 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
         IterLinSol += FGMRES_LinSolver(LinSysRes, LinSysSol, *mat_vec, *precond, SolverTol , IterLimit, &Residual, ScreenOutput);
         if ( Residual < SolverTol*Norm0 ) break;
       }
+      break;
+    case PASTIX_LDLT : case PASTIX_LU:
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindSolver, RequiresTranspose);
+      Jacobian.ComputePastixPreconditioner(LinSysRes, LinSysSol, geometry, config);
+      IterLinSol = 1;
       break;
     default:
       SU2_MPI::Error("The specified linear solver is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);

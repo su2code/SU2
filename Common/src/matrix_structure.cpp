@@ -139,8 +139,7 @@ CSysMatrix<ScalarType>::~CSysMatrix(void) {
   if ( MatrixVectorProductJitterBetaZero != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaZero );
   if ( MatrixVectorProductJitterBetaOne != NULL ) 	mkl_jit_destroy( MatrixVectorProductJitterBetaOne );
 #endif
-  
-  PastixClean();
+
 }
 
 template<class ScalarType>
@@ -2291,7 +2290,7 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
     pastix_data.loc2glb[iPoint] = pastix_int_t(offset+iPoint+1);
 
   /*--- 2 - Build a local to global map and communicate global indices of halo points.
-   This is to renumber the column indices from local to global and unpack halos. ---*/
+   This is to renumber the column indices from local to global when unpacking halos. ---*/
 
   vector<pastix_int_t> map(nPoint);
   {
@@ -2357,20 +2356,63 @@ void CSysMatrix<ScalarType>::PastixInitialize(CGeometry *geometry, CConfig *conf
 }
 
 template<class ScalarType>
-void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config, bool transposed) {
+void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
+                                                       unsigned short kind_fact, bool transposed) {
 #ifdef HAVE_PASTIX
   using namespace PaStiX;
 
-  if (pastix_data.isfactorized) return;
+  pastix_data.verb = config->GetPastixVerbLvl();
 
-  PastixClean();
   PastixInitialize(geometry, config);
 
-  unsigned long i, j, k, iRow, begin, target, source, szBlk = nVar*nVar, nNonZero = pastix_data.values.size();
+  /*--- Set some options that affect "compute" and could (one day) change during run ---*/
+
+  switch (pastix_data.verb) {
+  case 1:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_NO;
+    break;
+  case 2:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_YES;
+    break;
+  default:
+    pastix_data.iparm[IPARM_VERBOSE] = API_VERBOSE_NOT;
+    break;
+  }
+
+  if (kind_fact == PASTIX_LDLT)
+    pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = API_NO; // symmetric so no need for slower transp. solve
+  else
+    pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+
+  /*--- Is factorizing needed on this iteration? ---*/
+
+  if ((kind_fact == PASTIX_ILU) != (pastix_data.iparm[IPARM_INCOMPLETE] == API_YES))
+    pastix_data.iter = 0; // direct and adjoint settings are different, force factorization
+
+  bool factorize;
+  if (config->GetPastixFactFreq() == 0)
+    factorize = (pastix_data.iter == 0); // only on first call
+  else
+    factorize = (pastix_data.iter % config->GetPastixFactFreq() == 0);
+
+  pastix_data.iter++;
+
+  if (!factorize) return; // No
+
+  /*--- Yes, clean old solver data (safer this way) ---*/
+
+  if (rank == MASTER_NODE && pastix_data.verb > 0) {
+    cout << endl;
+    if (pastix_data.isfactorized)
+      cout << " +--------------------------------------------------------------------+" << endl;
+  }
+  pastix_data.clean();
+
+  unsigned long i, j, iRow, begin, target, source, szBlk = nVar*nVar, nNonZero = pastix_data.values.size();
 
   /*--- Copy matrix values and swap blocks as required ---*/
 
-  for (i = 0; i < nNonZero; ++i) pastix_data.values[i] = matrix[i];
+  memcpy(pastix_data.values.data(), matrix, nNonZero*sizeof(passivedouble));
 
   for (i = 0; i < pastix_data.sort_rows.size(); ++i)
   {
@@ -2382,27 +2424,38 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
       target = (begin+j)*szBlk;
       source = pastix_data.sort_order[i][j]*szBlk;
 
-      for (k = 0; k < szBlk; ++k) pastix_data.values[target+k] = matrix[source+k];
+      memcpy(pastix_data.values.data()+target, matrix+source, szBlk*sizeof(passivedouble));
     }
   }
 
-  /*--- Customize parameters ---*/
+  /*--- Set factorization options ---*/
 
-  pastix_data.iparm[IPARM_SYM]             = API_SYM_YES;
-  pastix_data.iparm[IPARM_FACTORIZATION]   = API_FACT_LDLT;
-  pastix_data.iparm[IPARM_VERBOSE]         = API_VERBOSE_NO;
-  pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
+  pastix_data.iparm[IPARM_INCOMPLETE]      = API_NO;
+
+  switch (kind_fact) {
+  case PASTIX_LDLT:
+    pastix_data.iparm[IPARM_SYM]           = API_SYM_YES;
+    pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LDLT;
+    break;
+  case PASTIX_ILU:
+    pastix_data.iparm[IPARM_INCOMPLETE]    = API_YES;
+    pastix_data.iparm[IPARM_LEVEL_OF_FILL] = pastix_int_t(config->GetLinear_Solver_ILU_n());
+  case PASTIX_LU:
+    pastix_data.iparm[IPARM_SYM]           = API_SYM_NO;
+    pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LU;
+    break;
+  default:
+    SU2_MPI::Error("Unknown type of PaStiX factorization.", CURRENT_FUNCTION);
+    break;
+  }
 
   /*--- Compute factorization ---*/
-  pastix_data.iparm[IPARM_START_TASK]      = API_TASK_ORDERING;
-  pastix_data.iparm[IPARM_END_TASK]        = API_TASK_NUMFACT;
 
-  if (rank == MASTER_NODE)
-    cout << endl;
-
+  pastix_data.iparm[IPARM_START_TASK] = API_TASK_ORDERING;
+  pastix_data.iparm[IPARM_END_TASK]   = API_TASK_NUMFACT;
   pastix_data.run();
 
-  if (rank == MASTER_NODE)
+  if (rank == MASTER_NODE && pastix_data.verb > 0)
     cout << " +--------------------------------------------------------------------+" << endl << endl;
 
   pastix_data.isfactorized = true;
@@ -2430,40 +2483,24 @@ void CSysMatrix<ScalarType>::ComputePastixPreconditioner(const CSysVector<Scalar
     SendReceive_Solution(prod, geometry, config);
   }
   else {
-    SU2_MPI::Error("The factorization has not been computed yet.",CURRENT_FUNCTION);
+    SU2_MPI::Error("The factorization has not been computed yet.", CURRENT_FUNCTION);
   }
 #else
-  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX",CURRENT_FUNCTION);
-#endif
-}
-
-template<class ScalarType>
-void CSysMatrix<ScalarType>::PastixClean() {
-#ifdef HAVE_PASTIX
-  using namespace PaStiX;
-
-  if (!pastix_data.isfactorized) return;
-
-  pastix_data.iparm[IPARM_VERBOSE]    = API_VERBOSE_NO;
-  pastix_data.iparm[IPARM_START_TASK] = API_TASK_CLEAN;
-  pastix_data.iparm[IPARM_END_TASK]   = API_TASK_CLEAN;
-  pastix_data.run();
-  pastix_data.isfactorized = false;
+  SU2_MPI::Error("SU2 was not compiled with -DHAVE_PASTIX", CURRENT_FUNCTION);
 #endif
 }
 
 #ifdef CODI_REVERSE_TYPE
 template<>
-void CSysMatrix<su2double>::BuildPastixPreconditioner(CConfig *config, bool transposed) {
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>",CURRENT_FUNCTION);
+void CSysMatrix<su2double>::BuildPastixPreconditioner(CGeometry *geometry, CConfig *config,
+                                                      unsigned short kind_fact, bool transposed) {
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
 }
 template<>
 void CSysMatrix<su2double>::ComputePastixPreconditioner(const CSysVector<su2double> & vec, CSysVector<su2double> & prod,
                                                         CGeometry *geometry, CConfig *config) {
-  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>",CURRENT_FUNCTION);
+  SU2_MPI::Error("The PaStiX preconditioner is only available in CSysMatrix<passivedouble>", CURRENT_FUNCTION);
 }
-template<>
-void CSysMatrix<su2double>::PastixClean() {}
 #endif
 
 /*--- Explicit instantiations ---*/

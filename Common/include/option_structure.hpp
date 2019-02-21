@@ -1727,7 +1727,9 @@ enum ENUM_LINEAR_SOLVER {
   SMOOTHER_LUSGS = 8,  /*!< \brief LU_SGS smoother. */
   SMOOTHER_JACOBI = 9,  /*!< \brief Jacobi smoother. */
   SMOOTHER_ILU = 10,  /*!< \brief ILU smoother. */
-  SMOOTHER_LINELET = 11  /*!< \brief Linelet smoother. */
+  SMOOTHER_LINELET = 11,  /*!< \brief Linelet smoother. */
+  PASTIX_LDLT = 12,  /*!< \brief PaStiX LDLT (complete) factorization. */
+  PASTIX_LU = 13,  /*!< \brief PaStiX LU (complete) factorization. */
 };
 static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<string, ENUM_LINEAR_SOLVER>
 ("STEEPEST_DESCENT", STEEPEST_DESCENT)
@@ -1740,7 +1742,9 @@ static const map<string, ENUM_LINEAR_SOLVER> Linear_Solver_Map = CCreateMap<stri
 ("SMOOTHER_LUSGS", SMOOTHER_LUSGS)
 ("SMOOTHER_JACOBI", SMOOTHER_JACOBI)
 ("SMOOTHER_LINELET", SMOOTHER_LINELET)
-("SMOOTHER_ILU", SMOOTHER_ILU);
+("SMOOTHER_ILU", SMOOTHER_ILU)
+("PASTIX_LDLT", PASTIX_LDLT)
+("PASTIX_LU", PASTIX_LU);
 
 /*!
  * \brief types surface continuity at the intersection with the FFD
@@ -1792,13 +1796,15 @@ enum ENUM_LINEAR_SOLVER_PREC {
   JACOBI = 1,		/*!< \brief Jacobi preconditioner. */
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
   LINELET = 3,  /*!< \brief Line implicit preconditioner. */
-  ILU = 4       /*!< \brief ILU(0) preconditioner. */
+  ILU = 4,      /*!< \brief ILU(k) preconditioner. */
+  PASTIX_ILU= 5 /*!< \brief PaStiX ILU(k) preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
-("ILU", ILU);
+("ILU", ILU)
+("PASTIX_ILU", PASTIX_ILU);
 
 /*!
  * \brief types of analytic definitions for various geometries
