@@ -2,7 +2,7 @@
  * \file fem_geometry_structure.cpp
  * \brief Functions for creating the primal grid for the FEM solver.
  * \author E. van der Weide
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -5679,7 +5679,7 @@ void CMeshFEM_DG::MetricTermsVolumeElements(CConfig *config) {
             const su2double JacInv = 1.0/metric[0];
             const su2double drdx   = JacInv*metric[1], drdy = JacInv*metric[2], drdz = JacInv*metric[3];
             const su2double dsdx   = JacInv*metric[4], dsdy = JacInv*metric[5], dsdz = JacInv*metric[6];
-            const su2double dtdx   = JacInv*metric[7], dtdy = JacInv*metric[5], dtdz = JacInv*metric[9];
+            const su2double dtdx   = JacInv*metric[7], dtdy = JacInv*metric[8], dtdz = JacInv*metric[9];
 
             const su2double ddrdx_dr = rDerMetric[0], ddrdy_dr = rDerMetric[1], ddrdz_dr = rDerMetric[2];
             const su2double ddsdx_dr = rDerMetric[3], ddsdy_dr = rDerMetric[4], ddsdz_dr = rDerMetric[5];

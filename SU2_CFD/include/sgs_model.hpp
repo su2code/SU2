@@ -2,7 +2,7 @@
  * \file sgs_model.hpp
  * \brief Headers of the LES subgrid scale models of the SU2 solvers.
  * \author E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * SU2 Lead Developers: Dr. Francisco Palacios (Francisco.D.Palacios@boeing.com).
  *                      Dr. Thomas D. Economon (economon@stanford.edu).
@@ -44,7 +44,7 @@ using namespace std;
  * \class CSGSModel
  * \brief Base class for defining the LES subgrid scale model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CSGSModel {
 
@@ -230,7 +230,7 @@ public:
  * \class CSmagorinskyModel
  * \brief Derived class for defining the Smagorinsky SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CSmagorinskyModel : public CSGSModel {
 
@@ -419,7 +419,7 @@ public:
  * \class CWALEModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CWALEModel : public CSGSModel {
 
@@ -607,7 +607,7 @@ public:
  * \class CVremanModel
  * \brief Derived class for defining the WALE SGS model.
  * \author: E. van der Weide, T. Economon, P. Urbanczyk, E. Molina
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  */
 class CVremanModel : public CSGSModel {
   
