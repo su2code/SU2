@@ -13506,6 +13506,7 @@ public:
   void SetNondimensionalization(CConfig        *config,
                                 unsigned short iMesh,
                                 const bool     writeOutput);
+  using CSolver::SetNondimensionalization;
 
   /*!
    * \brief Get a pointer to the vector of the solution degrees of freedom.
@@ -13838,6 +13839,7 @@ public:
                              su2double                *resFaces,
                              CNumerics                *conv_numerics,
                              su2double                *workArray);
+  using CSolver::BC_Euler_Wall;
 
   /*!
    * \brief Impose the far-field boundary condition. It is a virtual
@@ -13859,6 +13861,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Far_Field;
 
   /*!
    * \brief Impose the symmetry boundary condition. It is a virtual
@@ -13880,6 +13883,7 @@ public:
                             su2double                *resFaces,
                             CNumerics                *conv_numerics,
                             su2double                *workArray);
+  using CSolver::BC_Sym_Plane;
 
   /*!
    * \brief Impose the supersonic outlet boundary condition. It is a virtual
@@ -13901,6 +13905,7 @@ public:
                                     su2double                *resFaces,
                                     CNumerics                *conv_numerics,
                                     su2double                *workArray);
+  using CSolver::BC_Supersonic_Outlet;
 
   /*!
    * \brief Impose the subsonic inlet boundary condition. It is a virtual
@@ -13924,6 +13929,7 @@ public:
                         CNumerics                *conv_numerics,
                         unsigned short           val_marker,
                         su2double                *workArray);
+  using CSolver::BC_Inlet;
 
   /*!
    * \brief Impose the outlet boundary condition.It is a virtual
@@ -13947,6 +13953,7 @@ public:
                          CNumerics                *conv_numerics,
                          unsigned short           val_marker,
                          su2double                *workArray);
+  using CSolver::BC_Outlet;
 
   /*!
    * \brief Impose a constant heat-flux condition at the wall. It is a virtual
@@ -13970,6 +13977,7 @@ public:
                                 CNumerics                *conv_numerics,
                                 unsigned short           val_marker,
                                 su2double                *workArray);
+  using CSolver::BC_HeatFlux_Wall;
 
   /*!
    * \brief Impose an isothermal condition at the wall. It is a virtual
@@ -13993,6 +14001,7 @@ public:
                                   CNumerics                *conv_numerics,
                                   unsigned short           val_marker,
                                   su2double                *workArray);
+  using CSolver::BC_Isothermal_Wall;
 
   /*!
    * \brief Impose the boundary condition using characteristic reconstruction. It is
@@ -14016,6 +14025,7 @@ public:
                           CNumerics                *conv_numerics,
                           unsigned short           val_marker,
                           su2double                *workArray);
+  using CSolver::BC_Riemann;
 
   /*!
    * \brief Impose the user customized boundary condition. It is a virtual
@@ -14037,6 +14047,7 @@ public:
                          su2double                *resFaces,
                          CNumerics                *conv_numerics,
                          su2double                *workArray);
+  using CSolver::BC_Custom;
 
 #ifdef RINGLEB
   /*!
