@@ -12483,11 +12483,11 @@ void CEulerSolver::BC_Engine_Exhaust(CGeometry *geometry, CSolver **solver_conta
   
 }
 
-void CEulerSolver::BC_Sym_Plane(CGeometry *geometry,
-                                CSolver **solver_container,
-                                CNumerics *conv_numerics,
-                                CNumerics *visc_numerics,
-                                CConfig *config,
+void CEulerSolver::BC_Sym_Plane(CGeometry      *geometry,
+                                CSolver        **solver_container,
+                                CNumerics      *conv_numerics,
+                                CNumerics      *visc_numerics,
+                                CConfig        *config,
                                 unsigned short val_marker) {
   
   unsigned short iDim, iVar;
@@ -12536,8 +12536,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry,
       /*--- Grid movement ---*/
 
       if (config->GetGrid_Movement())
-        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(),
-                                  geometry->node[iPoint]->GetGridVel());
+        conv_numerics->SetGridVel(geometry->node[iPoint]->GetGridVel(), geometry->node[iPoint]->GetGridVel());
 
       /*--- Compute unit normal, to be used for projected velocity and velocity component gradients ---*/
 
@@ -12647,7 +12646,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry,
         switch( nDim ) {
           case 2: {
             Tangential[0] = -UnitNormal[1];
-            Tangential[1] = UnitNormal[0];
+            Tangential[1] =  UnitNormal[0];
             break;
           }
           case 3: {
@@ -12697,11 +12696,9 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry,
         
         /*--- Compute Cartesian reflected gradients ---*/
 
-        for (iVar = 0; iVar < nDim; iVar++) { // loops over the velocity component gradients
-          for (iDim = 0; iDim < nDim; iDim++) { // loops over the entries of the above
+        for (iVar = 0; iVar < nDim; iVar++) // loops over the velocity component gradients
+          for (iDim = 0; iDim < nDim; iDim++) // loops over the entries of the above
             Grad_Reflected[iVar+1][iDim] = ReflGradNormVel[iDim]*UnitNormal[iVar] + ReflGradTangVel[iDim]*Tangential[iVar];
-          }
-        }
         
         /*--- End own enhanced ---*/
         visc_numerics->SetPrimVarGradient(node[iPoint]->GetGradient_Primitive(), Grad_Reflected);
