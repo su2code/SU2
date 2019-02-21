@@ -1098,6 +1098,8 @@ int64_t GetHaloNodeNumber(unsigned long global_node_number, unsigned long last_l
 #endif /* HAVE_MPI */
 
 void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, unsigned short val_iZone, unsigned short val_nZone, bool surf_sol) {
+
+#ifdef HAVE_TECIO
   
   /*--- Open Tecplot binary file. ---*/
   
@@ -1693,6 +1695,8 @@ void COutput::WriteTecplotBinary_Parallel(CConfig *config, CGeometry *geometry, 
   err = tecFileWriterClose(&file_handle);
   if (err) cout << rank << ": Error finishing Tecplot file output." << endl;
   
+#endif /* HAVE_TECIO */
+
 }
 
 void COutput::SetTecplotBinary_DomainMesh(CConfig *config, CGeometry *geometry, unsigned short val_iZone) {
