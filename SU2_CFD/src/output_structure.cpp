@@ -15715,15 +15715,15 @@ void COutput::SortSurfaceConnectivity(CConfig *config, CGeometry *geometry, unsi
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nElem_Total;
-      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_Elem;
+      Conn_BoundLine_Par = Conn_Elem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nElem_Total;
-      if (nParallel_BoundTria > 0) Conn_BoundTria_Par = Conn_Elem;
+      Conn_BoundTria_Par = Conn_Elem;
       break;
     case QUADRILATERAL:
       nParallel_BoundQuad = nElem_Total;
-      if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_Elem;
+      Conn_BoundQuad_Par = Conn_Elem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
@@ -18242,20 +18242,17 @@ void COutput::DeallocateConnectivity_Parallel(CConfig *config, CGeometry *geomet
   /*--- Deallocate memory for connectivity data on each processor. ---*/
   
   if (surf_sol) {
-    if (nParallel_Line > 0      && Conn_BoundLine_Par      != NULL)
-      delete [] Conn_BoundLine_Par;
-    if (nParallel_BoundTria > 0 && Conn_BoundTria_Par != NULL)
-      delete [] Conn_BoundTria_Par;
-    if (nParallel_BoundQuad > 0 && Conn_BoundQuad_Par != NULL)
-      delete [] Conn_BoundQuad_Par;
+    if (Conn_BoundLine_Par != NULL) delete [] Conn_BoundLine_Par;
+    if (Conn_BoundTria_Par != NULL) delete [] Conn_BoundTria_Par;
+    if (Conn_BoundQuad_Par != NULL) delete [] Conn_BoundQuad_Par;
   }
   else {
-    if (nParallel_Tria > 0 && Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
-    if (nParallel_Quad > 0 && Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
-    if (nParallel_Tetr > 0 && Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
-    if (nParallel_Hexa > 0 && Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
-    if (nParallel_Pris > 0 && Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
-    if (nParallel_Pyra > 0 && Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
+    if (Conn_Tria_Par != NULL) delete [] Conn_Tria_Par;
+    if (Conn_Quad_Par != NULL) delete [] Conn_Quad_Par;
+    if (Conn_Tetr_Par != NULL) delete [] Conn_Tetr_Par;
+    if (Conn_Hexa_Par != NULL) delete [] Conn_Hexa_Par;
+    if (Conn_Pris_Par != NULL) delete [] Conn_Pris_Par;
+    if (Conn_Pyra_Par != NULL) delete [] Conn_Pyra_Par;
   }
   
 }
@@ -21205,8 +21202,10 @@ void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometr
      if(Elem_Type == VTK_Type2) nSubElem_Local += standardElementsSol[ind].GetNSubElemsType2();
   }
 
-  /* Allocate the memory to store the connectivity. */
-  int *Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
+  /* Allocate the memory to store the connectivity if the size is
+     larger than zero. */
+  int *Conn_SubElem = NULL;
+  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Loop again over the local volume elements and store the global
         connectivities of the sub-elements. Note one is added to the
@@ -21254,27 +21253,27 @@ void COutput::SortVolumetricConnectivity_FEM(CConfig *config, CGeometry *geometr
   switch (Elem_Type) {
     case TRIANGLE:
       nParallel_Tria = nSubElem_Local;
-      if (nParallel_Tria > 0) Conn_Tria_Par = Conn_SubElem;
+      Conn_Tria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
       nParallel_Quad = nSubElem_Local;
-      if (nParallel_Quad > 0) Conn_Quad_Par = Conn_SubElem;
+      Conn_Quad_Par = Conn_SubElem;
       break;
     case TETRAHEDRON:
       nParallel_Tetr = nSubElem_Local;
-      if (nParallel_Tetr > 0) Conn_Tetr_Par = Conn_SubElem;
+      Conn_Tetr_Par = Conn_SubElem;
       break;
     case HEXAHEDRON:
       nParallel_Hexa = nSubElem_Local;
-      if (nParallel_Hexa > 0) Conn_Hexa_Par = Conn_SubElem;
+      Conn_Hexa_Par = Conn_SubElem;
       break;
     case PRISM:
       nParallel_Pris = nSubElem_Local;
-      if (nParallel_Pris > 0) Conn_Pris_Par = Conn_SubElem;
+      Conn_Pris_Par = Conn_SubElem;
       break;
     case PYRAMID:
       nParallel_Pyra = nSubElem_Local;
-      if (nParallel_Pyra > 0) Conn_Pyra_Par = Conn_SubElem;
+      Conn_Pyra_Par = Conn_SubElem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
@@ -21338,8 +21337,10 @@ void COutput::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, 
     }
   }
 
-  /* Allocate the memory to store the connectivity. */
-  int *Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
+  /* Allocate the memory to store the connectivity if the size is
+     larger than zero. */
+  int *Conn_SubElem = NULL;
+  if(nSubElem_Local > 0) Conn_SubElem = new int[nSubElem_Local*NODES_PER_ELEMENT];
 
   /*--- Repeat the loop over the surface elements of the boundary markers
         that must be plotted, but now store the connectivity. ---*/
@@ -21377,15 +21378,15 @@ void COutput::SortSurfaceConnectivity_FEM(CConfig *config, CGeometry *geometry, 
   switch (Elem_Type) {
     case LINE:
       nParallel_Line = nSubElem_Local;
-      if (nParallel_Line > 0) Conn_BoundLine_Par = Conn_SubElem;
+      Conn_BoundLine_Par = Conn_SubElem;
       break;
     case TRIANGLE:
       nParallel_BoundTria = nSubElem_Local;
-      if (nParallel_BoundTria > 0) Conn_BoundTria_Par = Conn_SubElem;
+      Conn_BoundTria_Par = Conn_SubElem;
       break;
     case QUADRILATERAL:
       nParallel_BoundQuad = nSubElem_Local;
-      if (nParallel_BoundQuad > 0) Conn_BoundQuad_Par = Conn_SubElem;
+      Conn_BoundQuad_Par = Conn_SubElem;
       break;
     default:
       SU2_MPI::Error("Unrecognized element type", CURRENT_FUNCTION);
