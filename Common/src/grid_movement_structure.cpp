@@ -9416,6 +9416,10 @@ void CElasticityMovement::SetClamped_Boundary(CGeometry *geometry, CConfig *conf
         }
       }
     }
+    else {
+      /*--- Delete the column (iPoint is halo so Send/Recv does the rest) ---*/
+      for (iPoint = 0; iPoint < nPoint; iPoint++) StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
+    }
   }
 
 }
@@ -9440,7 +9444,7 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
 
     iNode = geometry->vertex[val_marker][iVertex]->GetNode();
 
-    /*--- Get the displ;acement on the vertex ---*/
+    /*--- Get the displacement on the vertex ---*/
 
     for (iDim = 0; iDim < nDim; iDim++)
        VarCoord = geometry->vertex[val_marker][iVertex]->GetVarCoord();
@@ -9480,42 +9484,42 @@ void CElasticityMovement::SetMoving_Boundary(CGeometry *geometry, CConfig *confi
           }
         }
       }
+    }
 
-      /*--- Delete the columns for a particular node ---*/
+    /*--- Always delete the iNode column, even for halos ---*/
+    for (iPoint = 0; iPoint < nPoint; iPoint++){
 
-      for (iPoint = 0; iPoint < nPoint; iPoint++){
+      /*--- Check if the term K(iPoint, iNode) is 0 ---*/
+      valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
 
-        /*--- Check if the term K(iPoint, iNode) is 0 ---*/
-        valJacobian_ij_00 = StiffMatrix.GetBlock(iPoint,iNode,0,0);
+      /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
+      if (valJacobian_ij_00 != 0.0 ){
 
-        /*--- If the node iNode has a crossed dependency with the point iPoint ---*/
-        if (valJacobian_ij_00 != 0.0 ){
-
-          /*--- Retrieve the Jacobian term ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            for (jDim = 0; jDim < nDim; jDim++){
-              auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
-            }
+        /*--- Retrieve the Jacobian term ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          for (jDim = 0; jDim < nDim; jDim++){
+            auxJacobian_ij[iDim][jDim] = StiffMatrix.GetBlock(iPoint,iNode,iDim,jDim);
           }
+        }
 
-          /*--- Multiply by the imposed displacement ---*/
-          for (iDim = 0; iDim < nDim; iDim++){
-            Residual[iDim] = 0.0;
-            for (jDim = 0; jDim < nDim; jDim++){
-              Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
-            }
+        /*--- Multiply by the imposed displacement ---*/
+        for (iDim = 0; iDim < nDim; iDim++){
+          Residual[iDim] = 0.0;
+          for (jDim = 0; jDim < nDim; jDim++){
+            Residual[iDim] += auxJacobian_ij[iDim][jDim] * VarCoord[jDim];
           }
+        }
 
-          /*--- For the whole column, except the diagonal term ---*/
-          if (iNode != iPoint) {
-            /*--- The term is substracted from the residual (right hand side) ---*/
-            LinSysRes.SubtractBlock(iPoint, Residual);
-            /*--- The Jacobian term is now set to 0 ---*/
-            StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
-          }
+        /*--- For the whole column, except the diagonal term ---*/
+        if (iNode != iPoint) {
+          /*--- The term is substracted from the residual (right hand side) ---*/
+          LinSysRes.SubtractBlock(iPoint, Residual);
+          /*--- The Jacobian term is now set to 0 ---*/
+          StiffMatrix.SetBlock(iPoint,iNode,matrixZeros);
         }
       }
     }
+
   }
 
 }
