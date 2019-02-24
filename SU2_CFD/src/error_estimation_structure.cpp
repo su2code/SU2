@@ -58,6 +58,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   fine_config_container         = NULL;
   output                        = NULL;
   iteration_container           = NULL;
+  direct_iteration              = NULL;
   integration_container         = NULL;
   numerics_container            = NULL;
   surface_movement              = NULL;
@@ -74,6 +75,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   coarse_config_container       = new CConfig*[nZone];
   fine_config_container         = new CConfig*[nZone];
   iteration_container           = new CIteration**[nZone];
+  direct_iteration              = new CIteration*[nZone];
   integration_container         = new CIntegration***[nZone];
   numerics_container            = new CNumerics*****[nZone];
   nInst                         = new unsigned short[nZone];
@@ -121,8 +123,8 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
     /* --- For the output config, disable restart reading and change grid file to target mesh ---*/
 
-    coarse_config_container[iZone]->SetRestart(true);
-    fine_config_container[iZone]->SetRestart(false);
+    coarse_config_container[iZone]->SetRestart(false);
+    fine_config_container[iZone]->SetRestart(true);
     fine_config_container[iZone]->SetMesh_FileName(fine_config_container[iZone]->GetTarget_Mesh_FileName());
 
     coarse_config_container[iZone]->SetMGLevels(0);
@@ -242,6 +244,16 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
     }
 
     Iteration_Preprocessing();
+
+    RecordingState = NONE;
+    ExtIter        = 0;
+
+    if(fine_config_container[iZone]->GetBoolTurbomachinery()){
+      direct_iteration[iZone] = new CTurboIteration(fine_config_container[iZone]);
+    }
+    else{
+      direct_iteration[iZone] = new CFluidIteration(fine_config_container[iZone]);
+    }
 
     /*--- Definition of the solver class: solver_container[#ZONES][#INSTANCES][#MG_GRIDS][#EQ_SYSTEMS].
     The solver classes are specific to a particular set of governing equations,
@@ -1900,7 +1912,258 @@ void CErrorEstimationDriver::ComputeECC() {
   bool unsteady;
 
   if (rank == MASTER_NODE)
-    cout << endl <<"----------------------------- Compute ECC -----------------------------" << endl;
+    cout << endl <<"------------------------------ Compute ECC ------------------------------" << endl;
+
+  if (rank == MASTER_NODE) cout << "Running single solver iteration." << endl;
+
+  Run();
+
+}
+
+void CErrorEstimationDriver::Run() {
+  
+  unsigned short iZone = 0, checkConvergence;
+  unsigned long IntIter, nIntIter;
+
+  bool unsteady;
+
+  unsteady = (fine_config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_1ST) || (fine_config_container[MESH_0]->GetUnsteady_Simulation() == DT_STEPPING_2ND);
+
+  /*--- Begin Unsteady pseudo-time stepping internal loop, if not unsteady it does only one step --*/
+
+  if (unsteady)
+    nIntIter = fine_config_container[MESH_0]->GetUnst_nIntIter();
+  else
+    nIntIter = 1;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+
+    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, fine_geometry_container,
+                                                     fine_solver_container, numerics_container, fine_config_container,
+                                                     surface_movement, grid_movement, FFDBox, iZone, INST_0);
+  }
+
+
+  /*--- For the adjoint iteration we need the derivatives of the iteration function with
+   *    respect to the conservative flow variables. Since these derivatives do not change in the steady state case
+   *    we only have to record if the current recording is different from cons. variables. ---*/
+
+  if (RecordingState != FLOW_CONS_VARS || unsteady){
+
+    /*--- SetRecording stores the computational graph on one iteration of the direct problem. Calling it with NONE
+     *    as argument ensures that all information from a previous recording is removed. ---*/
+
+    SetRecording(NONE);
+
+    /*--- Store the computational graph of one direct iteration with the conservative variables as input. ---*/
+
+    SetRecording(FLOW_CONS_VARS);
+
+  }
+
+  for (IntIter = 0; IntIter < nIntIter; IntIter++) {
+
+
+    /*--- Initialize the adjoint of the output variables of the iteration with the adjoint solution
+   *    of the previous iteration. The values are passed to the AD tool. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+
+      fine_config_container[iZone]->SetIntIter(IntIter);
+
+      iteration_container[iZone][INST_0]->InitializeAdjoint(fine_solver_container, fine_geometry_container, fine_config_container, iZone, INST_0);
+
+    }
+
+    /*--- Initialize the adjoint of the objective function with 1.0. ---*/
+
+    SetAdj_ObjFunction();
+
+    /*--- Interpret the stored information by calling the corresponding routine of the AD tool. ---*/
+
+    AD::ComputeAdjoint();
+
+    /*--- Extract the computed adjoint values of the input variables and store them for the next iteration. ---*/
+
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone][INST_0]->Iterate(output, integration_container, fine_geometry_container,
+                                          fine_solver_container, numerics_container, fine_config_container,
+                                          surface_movement, grid_movement, FFDBox, iZone, INST_0);
+    }
+
+    /*--- Clear the stored adjoint information to be ready for a new evaluation. ---*/
+
+    AD::ClearAdjoints();
+
+  }
+
+}
+
+void CErrorEstimationDriver::SetRecording(unsigned short kind_recording){
+  unsigned short iZone, iMesh;
+
+  AD::Reset();
+
+  /*--- Prepare for recording by resetting the flow solution to the initial converged solution---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    for (iMesh = 0; iMesh <= fine_config_container[iZone]->GetnMGLevels(); iMesh++){
+      fine_solver_container[iZone][INST_0][iMesh][ADJFLOW_SOL]->SetRecording(fine_geometry_container[iZone][INST_0][iMesh], fine_config_container[iZone]);
+    }
+    if (fine_config_container[iZone]->GetKind_Solver() == DISC_ADJ_RANS && !fine_config_container[iZone]->GetFrozen_Visc_Disc()) {
+      fine_solver_container[iZone][INST_0][MESH_0][ADJTURB_SOL]->SetRecording(fine_geometry_container[iZone][INST_0][MESH_0], fine_config_container[iZone]);
+    }
+  }
+
+
+  /*---Enable recording and register input of the flow iteration (conservative variables or node coordinates) --- */
+
+  if (kind_recording != NONE){
+
+    AD::StartRecording();
+
+    if (rank == MASTER_NODE && ((ExtIter == 0)) && kind_recording == FLOW_CONS_VARS) {
+      cout << endl << "-------------------------------------------------------------------------" << endl;
+      cout << "Direct iteration to store computational graph." << endl;
+      cout << "Compute residuals to check the convergence of the direct problem." << endl;
+      cout << "-------------------------------------------------------------------------" << endl << endl;
+    }
+    for (iZone = 0; iZone < nZone; iZone++) {
+      iteration_container[iZone][INST_0]->RegisterInput(fine_solver_container, fine_geometry_container, fine_config_container, iZone, INST_0, kind_recording);
+    }
+
+  }
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone][INST_0]->SetDependencies(fine_solver_container, fine_geometry_container, fine_config_container, iZone, INST_0, kind_recording);
+  }
+
+  /*--- Do one iteration of the direct flow solver ---*/
+
+  DirectRun();
+
+  /*--- Read the target pressure ---*/
+
+  if (fine_config_container[ZONE_0]->GetInvDesign_Cp() == YES)
+    output->SetCp_InverseDesign(fine_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        fine_geometry_container[ZONE_0][INST_0][MESH_0], fine_config_container[ZONE_0], ExtIter);
+
+  /*--- Read the target heat flux ---*/
+
+  if (fine_config_container[ZONE_0]->GetInvDesign_HeatFlux() == YES)
+    output->SetHeatFlux_InverseDesign(fine_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL],
+        fine_geometry_container[ZONE_0][INST_0][MESH_0], fine_config_container[ZONE_0], ExtIter);
+
+  /*--- Print residuals in the first iteration ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    if (rank == MASTER_NODE && ((ExtIter == 0) || (fine_config_container[iZone]->GetUnsteady_Simulation() != STEADY)) && (kind_recording == FLOW_CONS_VARS)) {
+      cout << " Zone " << iZone << ": log10[Conservative 0]: "<< log10(fine_solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetRes_RMS(0)) << endl;
+      if ( fine_config_container[iZone]->GetKind_Turb_Model() != NONE && !fine_config_container[iZone]->GetFrozen_Visc_Disc()) {
+        cout <<"       log10[RMS k]: " << log10(fine_solver_container[iZone][INST_0][MESH_0][TURB_SOL]->GetRes_RMS(0)) << endl;
+      }
+    }
+  }
+
+  RecordingState = kind_recording;
+
+  for (iZone = 0; iZone < nZone; iZone++) {
+    iteration_container[iZone][INST_0]->RegisterOutput(fine_solver_container, fine_geometry_container, fine_config_container, output, iZone, INST_0);
+  }
+
+  /*--- Extract the objective function and store it --- */
+
+  SetObjFunction();
+
+  AD::StopRecording();
+
+}
+
+void CErrorEstimationDriver::SetAdj_ObjFunction(){
+
+  bool time_stepping = fine_config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
+  unsigned long IterAvg_Obj = fine_config_container[ZONE_0]->GetIter_Avg_Objective();
+  unsigned long ExtIter = fine_config_container[ZONE_0]->GetExtIter();
+  su2double seeding = 1.0;
+
+  if (time_stepping){
+    if (ExtIter < IterAvg_Obj){
+      seeding = 1.0/((su2double)IterAvg_Obj);
+    }
+    else{
+      seeding = 0.0;
+    }
+  }
+
+  if (rank == MASTER_NODE){
+    SU2_TYPE::SetDerivative(ObjFunc, SU2_TYPE::GetValue(seeding));
+  } else {
+    SU2_TYPE::SetDerivative(ObjFunc, 0.0);
+  }
+
+}
+
+void CErrorEstimationDriver::SetObjFunction(){
+
+  bool compressible = (fine_config_container[ZONE_0]->GetKind_Regime() == COMPRESSIBLE);
+  bool heat         = (fine_config_container[ZONE_0]->GetWeakly_Coupled_Heat());
+
+  ObjFunc = 0.0;
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    fine_solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->SetTotal_ComboObj(0.0);
+  }
+
+  /*--- Specific scalar objective functions ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    switch (fine_config_container[iZone]->GetKind_Solver()) {
+      case EULER:                    case NAVIER_STOKES:                   case RANS:
+      case DISC_ADJ_EULER:           case DISC_ADJ_NAVIER_STOKES:          case DISC_ADJ_RANS:
+      case DISC_ADJ_FEM_EULER:       case DISC_ADJ_FEM_NS:                 case DISC_ADJ_FEM_RANS:
+        
+        if (fine_config_container[ZONE_0]->GetnMarker_Analyze() != 0)
+          output->SpecialOutput_AnalyzeSurface(fine_solver_container[iZone][INST_0][MESH_0][FLOW_SOL], fine_geometry_container[iZone][INST_0][MESH_0], fine_config_container[iZone], false);
+        
+        if ((fine_config_container[ZONE_0]->GetnMarker_Analyze() != 0) && compressible)
+          output->SpecialOutput_Distortion(fine_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], fine_geometry_container[ZONE_0][INST_0][MESH_0], fine_config_container[ZONE_0], false);
+        
+        if (fine_config_container[ZONE_0]->GetnMarker_NearFieldBound() != 0)
+          output->SpecialOutput_SonicBoom(fine_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], fine_geometry_container[ZONE_0][INST_0][MESH_0], fine_config_container[ZONE_0], false);
+          
+        if (fine_config_container[ZONE_0]->GetPlot_Section_Forces())
+          output->SpecialOutput_SpanLoad(fine_solver_container[ZONE_0][INST_0][MESH_0][FLOW_SOL], fine_geometry_container[ZONE_0][INST_0][MESH_0], fine_config_container[ZONE_0], false);
+        
+        break;
+    }
+  }
+
+  /*--- Surface based obj. function ---*/
+
+  for (iZone = 0; iZone < nZone; iZone++){
+    fine_solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->Evaluate_ObjFunc(fine_config_container[iZone]);
+    ObjFunc += fine_solver_container[iZone][INST_0][MESH_0][FLOW_SOL]->GetTotal_ComboObj();
+    if (heat){
+      if (fine_config_container[iZone]->GetKind_ObjFunc() == TOTAL_HEATFLUX) {
+        ObjFunc += fine_solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_HeatFlux();
+      }
+      else if (fine_config_container[iZone]->GetKind_ObjFunc() == TOTAL_AVG_TEMPERATURE) {
+        ObjFunc += fine_solver_container[iZone][INST_0][MESH_0][HEAT_SOL]->GetTotal_AvgTemperature();
+      }
+    }
+  }
+
+  if (rank == MASTER_NODE){
+    AD::RegisterOutput(ObjFunc);
+  }
+  
+}
+
+void CErrorEstimationDriver::DirectRun(){
+
+
+  unsigned short iZone, jZone;
+  bool unsteady = fine_config_container[ZONE_0]->GetUnsteady_Simulation() != STEADY;
 
   /*--- Run a single iteration of a multi-zone problem by looping over all
    zones and executing the iterations. Note that data transers between zones
@@ -1910,33 +2173,14 @@ void CErrorEstimationDriver::ComputeECC() {
 
   /*--- Zone preprocessing ---*/
 
-  if (rank == MASTER_NODE) cout << "Zone preprocessing." << endl;
-
   for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone][INST_0]->Preprocess(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
+    direct_iteration[iZone]->Preprocess(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
 
-  /*--- For each zone run one single iteration ---*/
-
-  if (rank == MASTER_NODE) cout << "Running single solver iteration." << endl;
+  /*--- For each zone runs one single iteration ---*/
 
   for (iZone = 0; iZone < nZone; iZone++) {
-    fine_config_container[iZone]->SetIntIter(IntIter);
-    iteration_container[iZone][INST_0]->Iterate(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
-  }
-
-  /*--- Update the solution ---*/
-
-  if (rank == MASTER_NODE) cout << "Updating solution." << endl;
-
-  for (iZone = 0; iZone < nZone; iZone++)
-    iteration_container[iZone][INST_0]->Update(output, integration_container, fine_geometry_container,
-                                      fine_solver_container, numerics_container, fine_config_container,
-                                      surface_movement, grid_movement, FFDBox, iZone, INST_0);
-
-  if (fine_config_container[ZONE_0]->GetKind_Solver() == DISC_ADJ_FEM){
-      iteration_container[ZONE_0][INST_0]->Postprocess(output, integration_container, fine_geometry_container,
-                                      fine_solver_container, numerics_container, fine_config_container,
-                                      surface_movement, grid_movement, FFDBox, ZONE_0, INST_0);
+    fine_config_container[iZone]->SetIntIter(1);
+    direct_iteration[iZone]->Iterate(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
 }

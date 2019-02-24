@@ -89,6 +89,12 @@ private:
   
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
 
+  unsigned long ExtIter;                        /*!< \brief External iteration.*/
+
+  unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration;                /*!< \brief A pointer to the direct iteration.*/
+
 public:
 
   /*! 
@@ -167,6 +173,31 @@ public:
    * \brief Compute the error in the computable correction on the coarse geometry.
    */
   void ComputeECC(void);
+
+  /*!
+   * \brief Run an iteration of the adjoint solver.
+   */
+  void Run(void);
+
+  /*!
+   * \brief Specify the kind of recording for the adjoint solver.
+   */
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Set the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction(void);
+
+  /*!
+   * \brief Set the objective function.
+   */
+  void SetObjFunction(void);
+
+  /*!
+   * \brief Run an iteration of the flow solver.
+   */
+  void DirectRun(void);
 
   /*!
    * \brief Output the solution in solution file.

@@ -6,7 +6,7 @@
 # \version 6.1.0 "Falcon"
 #
 # The current SU2 release has been coordinated by the
-# SU2 International Developers Society <www.su2devsociety.org>
+# SU2 International Developers Society <www.su2devsociety.$(OBJEXT)rg>
 # with selected contributions from the open-source community.
 #
 # The main research teams contributing to the current release are:
@@ -33,92 +33,104 @@
 # Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public
-# License along with SU2. If not, see <http://www.gnu.org/licenses/>.
+# License along with SU2. If not, see <http://www.gnu.$(OBJEXT)rg/licenses/>.
 #
 ################################################################################
 
 AUTOMAKE_OPTIONS = subdir-objects
 ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 
-bin_PROGRAMS = ../bin/SU2_ECC
+bin_PROGRAMS = 
 
 ___bin_SU2_ECC_SOURCES = \
   ../include/SU2_ECC.hpp \
   ../src/SU2_ECC.cpp
-
 ___bin_SU2_ECC_CXXFLAGS =
-___bin_SU2_ECC_LDADD = \
-  ../../SU2_CFD/src/libSU2Core_a-data_manufactured_solutions.o \
-  ../../SU2_CFD/src/libSU2Core_a-definition_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-fem_interpolation_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-error_estimation_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-fluid_model.o \
-  ../../SU2_CFD/src/libSU2Core_a-fluid_model_pig.o \
-  ../../SU2_CFD/src/libSU2Core_a-fluid_model_pvdw.o \
-  ../../SU2_CFD/src/libSU2Core_a-fluid_model_ppr.o \
-  ../../SU2_CFD/src/libSU2Core_a-fluid_model_inc.o \
-  ../../SU2_CFD/src/libSU2Core_a-integration_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-integration_time.o \
-  ../../SU2_CFD/src/libSU2Core_a-driver_direct_multizone.o \
-  ../../SU2_CFD/src/libSU2Core_a-driver_direct_singlezone.o \
-  ../../SU2_CFD/src/libSU2Core_a-driver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-iteration_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_adjoint_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_adjoint_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_heat.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_mean_inc.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_transition.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_elasticity_nonlinear.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_elasticity_linear.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_direct_elasticity.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-numerics_template.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_cgns.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_physics.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_tecplot.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_fieldview.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_su2.o \
-  ../../SU2_CFD/src/libSU2Core_a-output_paraview.o \
-  ../../SU2_CFD/src/libSU2Core_a-python_wrapper_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_adjoint_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_adjoint_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_adjoint_discrete.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_adjoint_elasticity.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_heat.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_mean_fem.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_mean_inc.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_transition.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_direct_elasticity.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-solver_template.o \
-  ../../SU2_CFD/src/libSU2Core_a-transfer_physics.o \
-  ../../SU2_CFD/src/libSU2Core_a-transfer_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-transport_model.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_adjoint_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_adjoint_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_adjoint_discrete.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_adjoint_elasticity.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_heat.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_mean.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_mean_inc.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_transition.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_turbulent.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_direct_elasticity.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_structure.o \
-  ../../SU2_CFD/src/libSU2Core_a-variable_template.o \
-  ../../Common/lib/libSU2.a
+___bin_SU2_ECC_LDADD = 
+
+if BUILD_REVERSE
+
+bin_PROGRAMS += ../bin/SU2_ECC
+
+___bin_SU2_ECC_LDADD += \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-data_manufactured_solutions.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-definition_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fem_interpolation_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-error_estimation_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model_pig.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model_pvdw.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model_ppr.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-fluid_model_inc.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-integration_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-integration_time.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-driver_direct_multizone.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-driver_direct_singlezone.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-driver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-iteration_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_adjoint_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_adjoint_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_heat.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_mean_inc.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_transition.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_elasticity_nonlinear.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_elasticity_linear.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_direct_elasticity.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-numerics_template.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_cgns.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_physics.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_tecplot.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_fieldview.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_su2.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-output_paraview.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-python_wrapper_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_adjoint_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_adjoint_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_adjoint_discrete.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_adjoint_elasticity.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_heat.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_mean_fem.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_mean_inc.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_transition.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_direct_elasticity.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-solver_template.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-transfer_physics.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-transfer_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-transport_model.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_adjoint_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_adjoint_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_adjoint_discrete.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_adjoint_elasticity.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_heat.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_mean.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_mean_inc.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_transition.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_turbulent.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_direct_elasticity.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_structure.$(OBJEXT) \
+  ../../SU2_CFD/src/bin_SU2_CFD_AD-variable_template.$(OBJEXT) \
+  ../../Common/lib/libSU2_AD.a
 
 # always link to built dependencies from ./externals
 ___bin_SU2_ECC_CXXFLAGS += @su2_externals_INCLUDES@
 ___bin_SU2_ECC_LDADD += @su2_externals_LIBS@
 ___bin_SU2_ECC_LDADD += @su2_externals_LIBPTHREAD@
 
+# add reverse flags
+___bin_SU2_ECC_CXXFLAGS += @REVERSE_CXX@
+___bin_SU2_ECC_LDADD += @REVERSE_LIBS@ 
+
 # if BUILD_MUTATIONPP
 ___bin_SU2_ECC_CXXFLAGS += @MUTATIONPP_CXX@
 ___bin_SU2_ECC_LDADD += @MUTATIONPP_LD@
 # endif
+
+endif
+

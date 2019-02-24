@@ -125,8 +125,8 @@ AC_ARG_ENABLE(INTERP,
         AS_HELP_STRING([--disable-INTERP], [build the SU2_INTERP executable (default = yes)]),
         [build_INTERP=$enableval], [build_INTERP="yes"])
 AC_ARG_ENABLE(ECC,
-    AS_HELP_STRING([--disable-ECC], [build the SU2_ECC executable (default = yes)]),
-    [build_ECC=$enableval], [build_ECC="yes"])
+    AS_HELP_STRING([--disable-ECC], [build the SU2_ECC executable (default = no)]),
+    [build_ECC=$enableval], [build_ECC="no"])
 AC_ARG_ENABLE(GEO,
    	AS_HELP_STRING([--disable-GEO], [build the SU2_GEO executable (default = yes)]),
 	[build_GEO=$enableval], [build_GEO="yes"])
@@ -308,7 +308,6 @@ then
   build_DEF=no
   build_SOL=no
   build_INTERP=no
-  build_ECC=no
   build_GEO=no
   build_PY=no
   build_PY_WRAPPER=no
@@ -317,6 +316,7 @@ fi
 if test $build_REVERSE == "yes"
 then
   build_DOT=yes
+  build_ECC=yes
 fi
 ###########################
 
