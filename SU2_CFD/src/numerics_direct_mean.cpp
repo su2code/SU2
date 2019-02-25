@@ -3276,8 +3276,8 @@ void CUpwRoe_Flow::ComputeResidual(su2double *val_residual, su2double **val_Jaco
       val_residual[iVar] = 0.0;
       if (implicit){
         for (jVar = 0; jVar < nVar; jVar++) {
-          val_Jacobian_i[iVar][iVar] = 0.0;
-          val_Jacobian_j[iVar][iVar] = 0.0;
+          val_Jacobian_i[iVar][jVar] = 0.0;
+          val_Jacobian_j[iVar][jVar] = 0.0;
         }
       }
     }
