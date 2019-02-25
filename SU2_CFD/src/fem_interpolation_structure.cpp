@@ -1429,9 +1429,9 @@ CFEMInterpolationSol::CFEMInterpolationSol(CConfig**      config,
       case ADJ_EULER : euler = true; adj_euler = true; break;
       case ADJ_NAVIER_STOKES : ns = true; turbulent = (config[iZone]->GetKind_Turb_Model() != NONE); adj_ns = true; break;
       case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config[iZone]->GetFrozen_Visc_Cont()); break;
-      case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-      case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
-      case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_EULER: adj_euler = true; break;
+      case DISC_ADJ_NAVIER_STOKES: adj_ns = true; break;
+      case DISC_ADJ_RANS: adj_ns = true; adj_turb = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
       case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
       case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
@@ -3627,9 +3627,9 @@ void CFEMInterpolationSol::CopySolToSU2Solution(CConfig**      config,
       case ADJ_EULER : euler = true; adj_euler = true; break;
       case ADJ_NAVIER_STOKES : ns = true; turbulent = (config[iZone]->GetKind_Turb_Model() != NONE); adj_ns = true; break;
       case ADJ_RANS : ns = true; turbulent = true; adj_ns = true; adj_turb = (!config[iZone]->GetFrozen_Visc_Cont()); break;
-      case DISC_ADJ_EULER: euler = true; disc_adj = true; break;
-      case DISC_ADJ_NAVIER_STOKES: ns = true; disc_adj = true; heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
-      case DISC_ADJ_RANS: ns = true; turbulent = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
+      case DISC_ADJ_EULER: adj_euler = true; break;
+      case DISC_ADJ_NAVIER_STOKES: adj_ns = true; break;
+      case DISC_ADJ_RANS: adj_ns = true; adj_turb = true; disc_adj = true; disc_adj_turb = (!config[iZone]->GetFrozen_Visc_Disc()); heat_fvm = config[iZone]->GetWeakly_Coupled_Heat(); break;
       case DISC_ADJ_FEM_EULER: fem_euler = true; disc_adj = true; break;
       case DISC_ADJ_FEM_NS: fem_ns = true; disc_adj = true; break;
       case DISC_ADJ_FEM_RANS: fem_ns = true; fem_turbulent = true; disc_adj = true; if(config[iZone]->GetKind_Trans_Model() == LM) fem_transition = true; break;
