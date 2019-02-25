@@ -11719,7 +11719,7 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
   unsigned long iVertex, iPoint, Point_Normal;
   su2double P_Total, T_Total, Velocity[3], Velocity2, H_Total, Temperature, Riemann,
   Pressure, Density, Energy, *Flow_Dir, Mach2, SoundSpeed2, SoundSpeed_Total2, Vel_Mag,
-  alpha, aa, bb, cc, dd, Area, UnitNormal[3];
+  alpha, aa, bb, cc, dd, Area, UnitNormal[3], jetsegment;
   su2double *V_inlet, *V_domain;
 	su2double Coord[3];
   
@@ -11786,9 +11786,9 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
          written by Edwin van der Weide, last modified 04-20-2009. ---*/
       
       // It changes the inlet kind so the velocity profile can be used in addition to an inlet for the wind tunnel.
-      if (Marker_Tag == "jet_top" || Marker_Tag == "jet_bottom" || Marker_Tag == "jet_starboard" || Marker_Tag == "jet_port") {
-        Kind_Inlet = VEL_PROFILE;
-      }
+      /*--if (Marker_Tag == "jet_top" || Marker_Tag == "jet_bottom" || Marker_Tag == "jet_starboard" || Marker_Tag == "jet_port") {
+         Kind_Inlet = VEL_PROFILE;
+      }--*/
       
 
       switch (Kind_Inlet) {
@@ -11998,18 +11998,50 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 						su2double y_max, y_min, z_max, z_min, y, z, A;
 						
 						// Read in the density & Initialize the velocity
-						Density  = config->GetInlet_Ttotal(Marker_Tag);
-						A = config->GetInlet_Ptotal(Marker_Tag); // AMplitude that can be controlled from the config file
+						//Density  = config->GetInlet_Ttotal(Marker_Tag);
+            Density  = 1.224978; //Hardcoded density value for air at 288.15 K
+						A = config->GetInlet_Ptotal(Marker_Tag); // Amplitude that can be controlled from the config file
 						Vel_Mag = 0;
           
-						//Based on the marker name determine which velocity polynomial to use - 3D
+            // Use the data input in the density field to determine the thickness of the jet. The jets start closer to the surface and grow from there
+            // 1000 is all 1 segments
+            // 2000 is all 2 segments
+            // 3000 is all 3 segments
+            // 4000 is all 4 segments
+            jetsegment = config->GetInlet_Ttotal(Marker_Tag);
           
-						if (Marker_Tag == "jet_top") {
+						// Based on the marker name these conditionals are used to determine the thickness of the jet
+						if (Marker_Tag == "jet_top_1" || Marker_Tag == "jet_top_2" || Marker_Tag == "jet_top_3" || Marker_Tag == "jet_top_4") {
+              if (jetsegment < 1500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 3.6097696;
+                z_min = 3.6084606;
+                
+              } else if (jetsegment > 1500 && jetsegment < 2500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 3.611117;
+                z_min = 3.6084606;
+                
+              } else if (jetsegment > 2500 && jetsegment < 3500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 3.6124528;
+                z_min = 3.6084606;
+                
+              } else {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 3.6140591;
+                z_min = 3.6084606;
+              }
+              
               // Full scale
-              y_max = 0.97917194;
-              y_min = -0.97917206;
-              z_max = 3.6205;
-              z_min = 3.6084606;
+              //y_max = 0.97917194;
+              //y_min = -0.97917206;
+              //z_max = 3.6205;
+              //z_min = 3.6084606;
               
               // 1/8th scale
               //y_max = 0.12194458;
@@ -12027,12 +12059,37 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440,-0.2913746290723793 ,-0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
-						else if (Marker_Tag == "jet_bottom") {
+						else if (Marker_Tag == "jet_bottom_1" || Marker_Tag == "jet_bottom_2" || Marker_Tag == "jet_bottom_3" || Marker_Tag == "jet_bottom_4") {
+              if (jetsegment < 1500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 0.012039528;
+                z_min = 0.010730609;
+                
+              } else if (jetsegment > 1500 && jetsegment < 2500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 0.012039528;
+                z_min = 0.009383123;
+                
+              } else if (jetsegment > 2500 && jetsegment < 3500) {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 0.012039528;
+                z_min = 0.0080473728;
+                
+              } else {
+                y_max = 0.97917194;
+                y_min = -0.97917206;
+                z_max = 0.012039528;
+                z_min = 0.0064411126;
+              }
+              
               // Full scale
-              y_max = 0.97917194;
-              y_min = -0.97917206;
-              z_max = 0.012039528;
-              z_min = 0.00000000;
+              //y_max = 0.97917194;
+              //y_min = -0.97917206;
+              //z_max = 0.012039528;
+              //z_min = 0.00000000;
               
               // 1/8th scale
               //y_max = 0.12194458;
@@ -12050,12 +12107,36 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, -0.0082692314282440,-0.2913746290723793 , 0.0082599222660065 , 0.9999361038208008, z);
 							Vel_Mag *= polydisc(A , y_max, y_min, Coord[1]);
 						}
-						else if (Marker_Tag == "jet_starboard") {
+						else if (Marker_Tag == "jet_starboard_1" || Marker_Tag == "jet_starboard_2" || Marker_Tag == "jet_starboard_3" || Marker_Tag == "jet_starboard_4") {
+              if (jetsegment < 1500) {
+                y_max = 1.2892694;
+                y_min = 1.2879605;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else if (jetsegment > 1500 && jetsegment < 2500) {
+                y_max = 1.2906169;
+                y_min = 1.2879605;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else if (jetsegment > 2500 && jetsegment < 3500) {
+                y_max = 1.2919527;
+                y_min = 1.2879605;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else {
+                y_max = 1.2935589;
+                y_min = 1.2879605;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+              }
               // Full scale
-              y_max = 1.3;
-              y_min = 1.2879605;
-              z_max = 3.2996721;
-              z_min = 0.32082811;
+              //y_max = 1.3;
+              //y_min = 1.2879605;
+              //z_max = 3.2996721;
+              //z_min = 0.32082811;
               
               // 1/8th scale
               //y_max = 0.16190000;
@@ -12073,12 +12154,36 @@ void CEulerSolver::BC_Inlet(CGeometry *geometry, CSolver **solver_container,
 							Vel_Mag = poly2D( -0.7085458261471165, 0.0082692314282440, -0.2913746290723793 , -0.0082599222660065 , 0.9999361038208008, y);
 							Vel_Mag *= polydisc(A , z_max, z_min, Coord[2]);
 						}
-						else if (Marker_Tag == "jet_port") {
+						else if (Marker_Tag == "jet_port_1" || Marker_Tag == "jet_port_2" || Marker_Tag == "jet_port_3" || Marker_Tag == "jet_port_4") {
+              if (jetsegment < 1500) {
+                y_max = -1.2879606;
+                y_min = -1.2892696;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else if (jetsegment > 1500 && jetsegment < 2500) {
+                y_max = -1.2879606;
+                y_min = -1.290617;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else if (jetsegment > 2500 && jetsegment < 3500) {
+                y_max = -1.2879606;
+                y_min = -1.2919528;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+                
+              } else {
+                y_max = -1.2879606;
+                y_min = -1.2935591;
+                z_max = 3.2996721;
+                z_min = 0.32082811;
+              }
               // Full scale
-              y_max = -1.2879606;
-              y_min = -1.3;
-              z_max = 3.2996721;
-              z_min = 0.32082811;
+              //y_max = -1.2879606;
+              //y_min = -1.3;
+              //z_max = 3.2996721;
+              //z_min = 0.32082811;
               
               // 1/8th scale
               //y_max = -0.16040064;
