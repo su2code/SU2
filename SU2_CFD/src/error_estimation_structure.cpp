@@ -108,12 +108,12 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
 
     if (driver_config->GetKind_Solver() == MULTIZONE){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      coarse_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-      fine_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+      coarse_config_container[iZone] = new CConfig(zone_file_name, SU2_ECC, iZone, nZone, nDim, VERB_HIGH);
+      fine_config_container[iZone] = new CConfig(zone_file_name, SU2_ECC, iZone, nZone, nDim, VERB_NONE);
     }
     else{
-      coarse_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-      fine_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+      coarse_config_container[iZone] = new CConfig(config_file_name, SU2_ECC, iZone, nZone, nDim, VERB_HIGH);
+      fine_config_container[iZone] = new CConfig(config_file_name, SU2_ECC, iZone, nZone, nDim, VERB_NONE);
     }
 
     /*--- Set the MPI communicator ---*/
