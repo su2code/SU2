@@ -69,7 +69,7 @@ int main(int argc, char *argv[]) {
    for variables allocation). ---*/
   
   CConfig *config = NULL;
-  config = new CConfig(config_file_name, SU2_CFD);
+  config = new CConfig(config_file_name, SU2_INTERP);
   if (config->GetKind_Solver() == MULTIZONE)
     nZone  = config->GetnConfigFiles();
   else

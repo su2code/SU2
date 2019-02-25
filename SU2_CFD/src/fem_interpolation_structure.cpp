@@ -82,7 +82,7 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
 
   /*--- Initialize the configuration of the driver ---*/
 
-  driver_config = new CConfig(config_file_name, SU2_CFD, ZONE_0, nZone, nDim, VERB_NONE);
+  driver_config = new CConfig(config_file_name, SU2_INTERP, ZONE_0, nZone, nDim, VERB_NONE);
 
   /*--- Loop over all zones to initialize the various classes. In most
    cases, nZone is equal to one. This represents the solution of a partial
@@ -96,12 +96,12 @@ CFEMInterpolationDriver::CFEMInterpolationDriver(char* confFile,
 
     if (driver_config->GetKind_Solver() == MULTIZONE){
       strcpy(zone_file_name, driver_config->GetConfigFilename(iZone).c_str());
-      input_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-      output_config_container[iZone] = new CConfig(zone_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+      input_config_container[iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, nDim, VERB_HIGH);
+      output_config_container[iZone] = new CConfig(zone_file_name, SU2_INTERP, iZone, nZone, nDim, VERB_NONE);
     }
     else{
-      input_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_HIGH);
-      output_config_container[iZone] = new CConfig(config_file_name, SU2_CFD, iZone, nZone, nDim, VERB_NONE);
+      input_config_container[iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, nDim, VERB_HIGH);
+      output_config_container[iZone] = new CConfig(config_file_name, SU2_INTERP, iZone, nZone, nDim, VERB_NONE);
     }
 
     /*--- Set the MPI communicator ---*/
