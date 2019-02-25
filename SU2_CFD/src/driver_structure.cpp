@@ -353,7 +353,6 @@ CDriver::CDriver(char* confFile,
     }
 
     if (rank == MASTER_NODE) cout << "Numerics Preprocessing." << endl;
-
   }
 
   /*--- Definition of the interface and transfer conditions between different zones.
@@ -1297,7 +1296,7 @@ void CDriver::Solver_Preprocessing(CSolver ****solver_container, CGeometry ***ge
         solver_container[val_iInst][iMGlevel][TNE2_SOL] = new CTNE2EulerSolver(geometry[val_iInst][iMGlevel], config, iMGlevel);
         solver_container[val_iInst][iMGlevel][TNE2_SOL]->Preprocessing(geometry[val_iInst][iMGlevel], solver_container[val_iInst][iMGlevel], config, iMGlevel, NO_RK_ITER, RUNTIME_TNE2_SYS, false);
       }
-      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][FLOW_SOL]->GetnVar();
+      if (iMGlevel == MESH_0) DOFsPerPoint += solver_container[val_iInst][iMGlevel][TNE2_SOL]->GetnVar();
     }
     if (ns) {
       if (compressible) {
@@ -1636,6 +1635,9 @@ void CDriver::Solver_Restart(CSolver ****solver_container, CGeometry ***geometry
   if (restart || restart_flow) {
     if (euler || ns) {
       solver_container[val_iInst][MESH_0][FLOW_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
+    }
+    if (tne2_euler || tne2_ns) {
+      solver_container[val_iInst][MESH_0][TNE2_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
     }
     if (turbulent) {
       solver_container[val_iInst][MESH_0][TURB_SOL]->LoadRestart(geometry[val_iInst], solver_container[val_iInst], config, val_iter, update_geo);
@@ -2478,20 +2480,20 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
     if (compressible) {
 
-        /*--- Compressible flow Ideal gas ---*/
-        numerics_container[val_iInst][MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-        for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+      /*--- Compressible flow Ideal gas ---*/
+      numerics_container[val_iInst][MESH_0][TNE2_SOL][VISC_TERM] = new CAvgGradCorrected_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+      for (iMGlevel = 1; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics_container[val_iInst][iMGlevel][TNE2_SOL][VISC_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
 
-        /*--- Definition of the boundary condition method ---*/
-        for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
-          numerics_container[val_iInst][iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
+      /*--- Definition of the boundary condition method ---*/
+      for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++)
+        numerics_container[val_iInst][iMGlevel][TNE2_SOL][VISC_BOUND_TERM] = new CAvgGrad_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
     }
 
     /*--- Definition of the source term integration scheme for each equation and mesh level ---*/
     for (iMGlevel = 0; iMGlevel <= config->GetnMGLevels(); iMGlevel++) {
       numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_FIRST_TERM] = new CSource_TNE2(nDim, nVar_TNE2, nPrimVar_TNE2, nPrimVarGrad_TNE2, config);
-      numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_Flow, config);
+      numerics_container[val_iInst][iMGlevel][TNE2_SOL][SOURCE_SECOND_TERM] = new CSourceNothing(nDim, nVar_TNE2, config);
     }
   }
 
@@ -2610,6 +2612,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
   
   /*--- Solver definition for the transition model problem ---*/
+
   if (transition) {
     
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
@@ -2644,6 +2647,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
   
   /*--- Solver definition of the finite volume heat solver  ---*/
+
   if (heat_fvm) {
 
     /*--- Definition of the viscous scheme for each equation and mesh level ---*/
@@ -2809,6 +2813,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
 
   /*--- Solver definition for the turbulent adjoint problem ---*/
+
   if (adj_turb) {
     /*--- Definition of the convective scheme for each equation and mesh level ---*/
     switch (config->GetKind_ConvNumScheme_AdjTurb()) {
@@ -2869,6 +2874,7 @@ void CDriver::Numerics_Preprocessing(CNumerics *****numerics_container,
   }
 
   /*--- Solver definition for the FEM problem ---*/
+
   if (fem) {
 
   /*--- Initialize the container for FEA_TERM. This will be the only one for most of the cases ---*/
@@ -3179,7 +3185,6 @@ void CDriver::Numerics_Postprocessing(CNumerics *****numerics_container,
     }
 
   }
-
 
   /*--- DG-FEM solver definition for Euler, Navier-Stokes problems ---*/
 

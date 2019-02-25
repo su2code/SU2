@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file variable_direct_tne2.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
@@ -477,13 +477,14 @@ CTNE2EulerVariable::~CTNE2EulerVariable(void) {
   //if (Secondary          != NULL) delete [] Secondary;
   if (Limiter_Primitive  != NULL) delete [] Limiter_Primitive;
   //if (Limiter            != NULL) delete [] Limiter;
-  //if (Limiter_Secondary) != NULL) delete [] Limiter_Secondary;
+  //if (Limiter_Secondary  != NULL) delete [] Limiter_Secondary;
 
   if (Gradient_Primitive != NULL) {
     for (iVar = 0; iVar < nPrimVarGrad; iVar++)
       if (Gradient_Primitive[iVar] != NULL) delete [] Gradient_Primitive[iVar];
     delete [] Gradient_Primitive;
   }
+
   //if (Gradient_Secondary != NULL) {
   //  for (iVar = 0; iVar < nSecondaryVarGrad; iVar++)
   //    if (Gradient_Secondary[iVar] != NULL) delete [] Gradient_Secondary[iVar];

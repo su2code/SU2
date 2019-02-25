@@ -152,7 +152,7 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   CPressure     = NULL; CPressureTarget = NULL; YPlus = NULL;
   HeatFlux      = NULL; HeatFluxTarget  = NULL;
   ForceInviscid = NULL; MomentInviscid  = NULL;
-  ForceMomentum = NULL;  MomentMomentum = NULL;
+  ForceMomentum = NULL; MomentMomentum = NULL;
 
   /*--- Surface based array initialization ---*/
   Surface_CL_Inv  = NULL; Surface_CD_Inv  = NULL; Surface_CSF_Inv = NULL; Surface_CEff_Inv = NULL;
@@ -199,8 +199,10 @@ CTNE2EulerSolver::CTNE2EulerSolver(CGeometry *geometry, CConfig *config, unsigne
   nVar         = nSpecies + nDim + 2;
   nPrimVar     = nSpecies + nDim + 8;
   nPrimVarGrad = nSpecies + nDim + 8;
-  //nSecondaryVar     = ????;
-  //nSecondaryVarGrad = ????; These may be used for AD support?
+
+  // THIS ARE WTRONG
+  nSecondaryVar     = nPrimVarGrad;
+  nSecondaryVarGrad = nPrimVarGrad; //These may be used for AD support?
 
   /*--- Initialize nVarGrad for deallocation ---*/
   nVarGrad     = nPrimVarGrad;
@@ -695,6 +697,16 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 
   if (lowerlimit != NULL)  		delete [] lowerlimit;
   if (upperlimit != NULL) 		delete [] upperlimit;
+  if (Surface_CL_Mnt != NULL)   delete [] Surface_CL_Mnt;
+  if (Surface_CD_Mnt != NULL)   delete [] Surface_CD_Mnt;
+  if (Surface_CSF_Mnt != NULL)  delete [] Surface_CSF_Mnt;
+  if (Surface_CEff_Mnt != NULL) delete [] Surface_CEff_Mnt;
+  if (Surface_CFx_Mnt != NULL)  delete [] Surface_CFx_Mnt;
+  if (Surface_CFy_Mnt != NULL)  delete [] Surface_CFy_Mnt;
+  if (Surface_CFz_Mnt != NULL)  delete [] Surface_CFz_Mnt;
+  if (Surface_CMx_Mnt != NULL)  delete [] Surface_CMx_Mnt;
+  if (Surface_CMy_Mnt != NULL)  delete [] Surface_CMy_Mnt;
+  if (Surface_CMz_Mnt != NULL)  delete [] Surface_CMz_Mnt;
 
   if (Surface_CL != NULL)       delete [] Surface_CL;
   if (Surface_CD != NULL)       delete [] Surface_CD;
@@ -729,7 +741,7 @@ CTNE2EulerSolver::~CTNE2EulerSolver(void) {
 
   if (CPressure != NULL) {
     for (iMarker = 0; iMarker < nMarker; iMarker++)
-      delete CPressure[iMarker];
+      delete [] CPressure[iMarker];
     delete [] CPressure;
   }
 
