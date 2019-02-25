@@ -2653,20 +2653,14 @@ void CFEASolver::BC_DispDir(CGeometry *geometry, CSolver **solver_container, CNu
 
       /*--- Delete the full row for node iNode ---*/
       for (jPoint = 0; jPoint < nPoint; jPoint++){
-
-        /*--- Check whether the block is non-zero ---*/
-        valJacobian_ij_00 = Jacobian.GetBlock(iNode, jPoint,0,0);
-
-        if (valJacobian_ij_00 != 0.0 ){
-          if (iNode != jPoint) {
-            Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
-          }
-          else{
-            Jacobian.SetBlock(iNode,jPoint,mId_Aux);
-          }
+        if (iNode != jPoint) {
+          Jacobian.SetBlock(iNode,jPoint,mZeros_Aux);
+        }
+        else{
+          Jacobian.SetBlock(iNode,jPoint,mId_Aux);
         }
       }
-      
+
     }
 
     /*--- Always delete the iNode column, even for halos ---*/

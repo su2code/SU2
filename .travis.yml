@@ -82,7 +82,7 @@ install:
 
 before_script:
     # Get the test cases
-    - git clone -b develop https://github.com/su2code/TestCases.git ./TestData
+    - git clone -b fix_fea_disp_bc https://github.com/pcarruscag/TestCases.git ./TestData
     - cp -R ./TestData/* ./TestCases/
 
     # Get the tutorial cases
