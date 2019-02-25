@@ -3079,9 +3079,9 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
 
   // Determine mean coordinates of nodes and use as origin for LS system
   su2double wMax = 0.0;
-  vector<su2double> weights(nPoint, 0.0), weightsInterpol(nPointInterpol, 0.0);
+  vector<su2double> weights(nPoint, 0.0), weightsInterpol(nPointInterpol, 1.0);
   vector<vector<su2double> > coorOffset(nDim, vector<su2double>(nPoint)),
-                             coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol)),
+                             coorOffsetInterpol(nDim, vector<su2double>(nPointInterpol, 0.0)),
                              wSol(nVar, vector<su2double>(nPoint));
 
   // Compute coorInterpol-centered coordinates and squared distances.
@@ -3091,15 +3091,10 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
       weights[iPoint] += coorOffset[iDim][iPoint]*coorOffset[iDim][iPoint];
       wMax = max(wMax, weights[iPoint]);
     }
-    for(jPoint = 0; jPoint < nPointInterpol; jPoint++){
-      coorOffsetInterpol[iDim][jPoint] = (coorInterpol[iDim][jPoint] - coorInterpol[iDim][jPoint]);
-      weightsInterpol[jPoint] += coorOffsetInterpol[iDim][jPoint]*coorOffsetInterpol[iDim][jPoint];
-    }
   }
 
   // Compute weight function.
-  for(iPoint = 0; iPoint < nPoint; iPoint++)         weights[iPoint]         = exp(-weights[iPoint]);
-  for(jPoint = 0; jPoint < nPointInterpol; jPoint++) weightsInterpol[jPoint] = exp(-weightsInterpol[jPoint]);
+  for(iPoint = 0; iPoint < nPoint; iPoint++) weights[iPoint] = exp(-sqrt(weights[iPoint]));
 
   for(iPoint = 0; iPoint < nPoint; iPoint++){
     for(iVar = 0; iVar < nVar; iVar++){
@@ -3130,12 +3125,10 @@ void CFEMInterpolationSol::QR_LeastSquares(const unsigned short             nDim
   solInterpol.resize(nVar);
   for(iVar = 0; iVar < nVar; iVar++){
     solInterpol[iVar].resize(nPointInterpol);
-    for(iPoint = 0; iPoint < nPointInterpol; iPoint++){
-      solInterpol[iVar][iPoint] = 0.0;
-      for(i = 0; i < vmat[0].size(); i++){
-        solInterpol[iVar][iPoint] += vmat[iPoint][i]*coeffsInterpol[iVar][i];
-      }
-    }
+    for(iPoint = 0; iPoint < nPointInterpol; iPoint++)
+      // The interpolation is centered at the target node, so only need the 
+      // first element of Vandermonde and interpolation coefficients.
+      solInterpol[iVar][iPoint] += vmat[iPoint][0]*coeffsInterpol[iVar][0];
   }
 
 }
