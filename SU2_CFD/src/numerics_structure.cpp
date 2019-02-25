@@ -331,9 +331,9 @@ CNumerics::~CNumerics(void) {
 
   if (hs     != NULL) delete [] hs;
   if (Cvtr   != NULL) delete [] Cvtr;
-  if (eve_i  != NULL) delete [] eve_i;
+  //if (eve_i  != NULL) delete [] eve_i;
   //if (eve_j  != NULL) delete [] eve_j;
-  if (Cvve_i != NULL) delete [] Cvve_i;
+  //if (Cvve_i != NULL) delete [] Cvve_i;
   //if (Cvve_j != NULL) delete [] Cvve_j; These cause seg faults?
   if (Ys_i   != NULL) delete [] Ys_i;
   if (Ys_j   != NULL) delete [] Ys_j;
@@ -393,12 +393,12 @@ CNumerics::~CNumerics(void) {
   if (Ys != NULL) delete [] Ys;
   if (dFdYi != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete dFdYi[iSpecies];
+      delete [] dFdYi[iSpecies];
     delete [] dFdYi;
   }
   if (dFdYj != NULL) {
     for (unsigned short iSpecies = 0; iSpecies < nSpecies; iSpecies++)
-      delete dFdYj[iSpecies];
+      delete [] dFdYj[iSpecies];
     delete [] dFdYj;
   }
   if (sumdFdYih != NULL) delete [] sumdFdYih;

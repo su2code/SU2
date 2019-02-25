@@ -2709,7 +2709,6 @@ void CConfig::SetPostprocessing(unsigned short val_software, unsigned short val_
   if ((!MUSCL_TNE2) || (Kind_ConvNumScheme_TNE2 == SPACE_CENTERED)) Kind_SlopeLimit_TNE2 = NO_LIMITER;
   if ((!MUSCL_AdjFlow) || (Kind_ConvNumScheme_AdjFlow == SPACE_CENTERED)) Kind_SlopeLimit_AdjFlow = NO_LIMITER;
   if ((!MUSCL_AdjTurb) || (Kind_ConvNumScheme_AdjTurb == SPACE_CENTERED)) Kind_SlopeLimit_AdjTurb = NO_LIMITER;
-  if ((!MUSCL_AdjTNE2) || (Kind_ConvNumScheme_AdjTNE2 == SPACE_CENTERED)) Kind_SlopeLimit_AdjTNE2= NO_LIMITER;
 
   /*--- Set the default for thrust in ActDisk ---*/
   
