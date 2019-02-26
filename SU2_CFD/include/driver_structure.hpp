@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file driver_structure.hpp
  * \brief Headers of the main subroutines for driving single or multi-zone problems.
  *        The subroutines and functions are in the <i>driver_structure.cpp</i> file.
@@ -746,7 +746,6 @@ public:
   void BoundaryConditionsUpdate();
 };
 
-
 /*!
  * \class CFluidDriver
  * \brief Class for driving an iteration of the physics within multiple zones.
@@ -850,7 +849,6 @@ public:
 
 };
 
-
 /*!
  * \class CTurbomachineryDriver
  * \brief Class for driving an iteration for turbomachinery flow analysis.
@@ -899,13 +897,10 @@ public:
    */
   bool Monitor(unsigned long ExtIter);
 
-
-
 };
 
-
 /*!
- * \class CDiscAdjMultiZoneDriver
+ * \class CDiscAdjFluidDriver
  * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
  * \author T. Albring
  */
@@ -936,6 +931,68 @@ public:
    * \brief Destructor of the class.
    */
   ~CDiscAdjFluidDriver(void);
+
+  /*!
+   * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
+   */
+
+  void Run();
+
+  /*!
+   * \brief Record one iteration of a flow iteration in within multiple zones.
+   * \param[in] kind_recording - Type of recording (either FLOW_CONS_VARS, MESH_COORDS, COMBINED or NONE)
+   */
+
+  void SetRecording(unsigned short kind_recording);
+
+  /*!
+   * \brief Run one iteration of the solver. It is virtual because it depends on the kind of physics.
+   */
+  virtual void DirectRun();
+
+  /*!
+   * \brief Set the objective function. It is virtual because it depends on the kind of physics.
+   */
+  virtual void SetObjFunction();
+
+  /*!
+   * \brief Initialize the adjoint value of the objective function.
+   */
+  void SetAdj_ObjFunction();
+};
+
+/*!
+ * \class CDiscAdjTNE2Driver
+ * \brief Class for driving an iteration of the discrete adjoint within multiple zones.
+ * \author W. Maier
+ */
+class CDiscAdjTNE2Driver : public CFluidDriver {
+
+protected:
+  unsigned short RecordingState; /*!< \brief The kind of recording the tape currently holds.*/
+  su2double ObjFunc;             /*!< \brief The value of the objective function.*/
+  CIteration** direct_iteration; /*!< \brief A pointer to the direct iteration.*/
+
+public:
+
+  /*!
+    * \brief Constructor of the class.
+    * \param[in] confFile - Configuration file name.
+    * \param[in] val_nZone - Total number of zones.
+    * \param[in] val_nDim - Number of dimensions.
+    * \param[in] val_periodic - Bool for periodic BCs.
+    * \param[in] MPICommunicator - MPI communicator for SU2.
+    */
+  CDiscAdjTNE2Driver(char* confFile,
+                   unsigned short val_nZone,
+                   unsigned short val_nDim,
+                   bool val_periodic,
+                   SU2_Comm MPICommunicator);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjTNE2Driver(void);
 
   /*!
    * \brief Run a single iteration of the discrete adjoint solver within multiple zones.
@@ -1083,7 +1140,6 @@ public:
    */
   void ResetConvergence();
 };
-
 
 /*!
  * \class CFSIDriver
@@ -1685,4 +1741,3 @@ public:
   bool Transfer_Data(unsigned short donorZone, unsigned short targetZone);
 
 };
-
