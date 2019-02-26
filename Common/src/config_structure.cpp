@@ -2384,6 +2384,27 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   /* DESCRIPTION: Interpolated output file restart flow */
   addStringOption("INTERPOLATED_RESTART_FILENAME", Interpolated_Restart_FileName, string("interpolated_restart_flow.dat"));
 
+  /* DESCRIPTION: Interpolated input file restart flow */
+  addStringOption("INTERPOLATED_SOLUTION_FILENAME", Interpolated_Solution_FileName, string("interpolated_solution_flow.dat"));
+
+  /* DESCRIPTION: Higher order interpolated output file restart flow */
+  addStringOption("ECC_RESTART_FILENAME", ECC_Restart_FileName, string("ecc_restart_flow.dat"));
+
+  /* DESCRIPTION: Higher order interpolated input file restart flow */
+  addStringOption("ECC_SOLUTION_FILENAME", ECC_Solution_FileName, string("ecc_solution_flow.dat"));
+
+  /* DESCRIPTION: Interpolated output file restart adjoint */
+  addStringOption("INTERPOLATED_RESTART_ADJ_FILENAME", Interpolated_Restart_Adj_FileName, string("interpolated_restart_adj.dat"));
+
+  /* DESCRIPTION: Interpolated input file restart adjoint */
+  addStringOption("INTERPOLATED_SOLUTION_ADJ_FILENAME", Interpolated_Solution_Adj_FileName, string("interpolated_solution_adj.dat"));
+
+  /* DESCRIPTION: Higher order interpolated output file restart adjoint */
+  addStringOption("ECC_RESTART_ADJ_FILENAME", ECC_Restart_Adj_FileName, string("ecc_restart_adj.dat"));
+
+  /* DESCRIPTION: Higher order interpolated input file restart adjoint */
+  addStringOption("ECC_SOLUTION_ADJ_FILENAME", ECC_Solution_Adj_FileName, string("ecc_solution_adj.dat"));
+
   /* DESCRIPTION: Target mesh for solution interpolation */
   addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
 

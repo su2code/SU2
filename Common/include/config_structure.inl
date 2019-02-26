@@ -2093,6 +2093,20 @@ inline string CConfig::GetTarget_Mesh_FileName(void) { return Target_Mesh_FileNa
 
 inline string CConfig::GetInterpolated_Restart_FileName(void) { return Interpolated_Restart_FileName; }
 
+inline string CConfig::GetInterpolated_Solution_FileName(void) { return Interpolated_Solution_FileName; }
+
+inline string CConfig::GetInterpolated_Restart_Adj_FileName(void) { return Interpolated_Restart_Adj_FileName; }
+
+inline string CConfig::GetInterpolated_Solution_Adj_FileName(void) { return Interpolated_Solution_Adj_FileName; }
+
+inline string CConfig::GetECC_Restart_FileName(void) { return ECC_Restart_FileName; }
+
+inline string CConfig::GetECC_Solution_FileName(void) { return ECC_Solution_FileName; }
+
+inline string CConfig::GetECC_Restart_Adj_FileName(void) { return ECC_Restart_Adj_FileName; }
+
+inline string CConfig::GetECC_Solution_Adj_FileName(void) { return ECC_Solution_Adj_FileName; }
+
 inline bool CConfig::GetUsing_Target_Mesh(void) { return use_target_mesh; }
 
 inline void CConfig::SetUsing_Target_Mesh(bool val_using_target_mesh) { use_target_mesh = val_using_target_mesh; }

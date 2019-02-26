@@ -1100,12 +1100,19 @@ private:
   su2double uq_urlx;            /*!< \brief Under-relaxation factor */
   bool uq_permute;              /*!< \brief Permutation of eigenvectors */
 
-  bool interpolate_solution;              /*!< \brief Determines if solution interpolation is taking place */
-  string Target_Mesh_FileName;            /*!< \brief File name of target mesh for interpolation */
-  string Interpolated_Restart_FileName;   /*!< \brief File name of interpolated solution that is ouput */
-  bool use_target_mesh;                   /*!< \brief Determines if the target mesh should be used (for geometry initilization) */
+  bool interpolate_solution;                  /*!< \brief Determines if solution interpolation is taking place */
+  string Target_Mesh_FileName;                /*!< \brief File name of target mesh for interpolation */
+  string Interpolated_Restart_FileName,       /*!< \brief File name of interpolated solution that is output */
+         Interpolated_Solution_FileName,      /*!< \brief File name of interpolated solution that is input */
+         Interpolated_Restart_Adj_FileName,   /*!< \brief File name of interpolated adjoint solution that is output */
+         Interpolated_Solution_Adj_FileName;  /*!< \brief File name of interpolated adjoint solution that is input */
+  bool use_target_mesh;                       /*!< \brief Determines if the target mesh should be used (for geometry initilization) */
 
-  bool error_estimate;              /*!< \brief Determines if error estimation is taking place */
+  bool error_estimate;               /*!< \brief Determines if error estimation is taking place */
+  string ECC_Restart_FileName,       /*!< \brief File name of higher order interpolated solution that is output */
+         ECC_Solution_FileName,      /*!< \brief File name of higher order interpolated solution that is input */
+         ECC_Restart_Adj_FileName,   /*!< \brief File name of higher order interpolated adjoint solution that is output */
+         ECC_Solution_Adj_FileName;  /*!< \brief File name of higher order interpolated adjoint solution that is input */
   
   /*--- all_options is a map containing all of the options. This is used during config file parsing
    to track the options which have not been set (so the default values can be used). Without this map
@@ -9209,6 +9216,48 @@ public:
    * \return File name of the interpolated solution output
    */
   string GetInterpolated_Restart_FileName(void);
+
+  /*!
+   * \brief Get name of the interpolated solution file name
+   * \return File name of the interpolated solution input
+   */
+  string GetInterpolated_Solution_FileName(void);
+
+  /*!
+   * \brief Get name of the interpolated solution file name
+   * \return File name of the interpolated adjoint solution output
+   */
+  string GetInterpolated_Restart_Adj_FileName(void);
+
+  /*!
+   * \brief Get name of the interpolated solution file name
+   * \return File name of the interpolated adjoint solution input
+   */
+  string GetInterpolated_Solution_Adj_FileName(void);
+
+  /*!
+   * \brief Get name of the higher order interpolated solution file name
+   * \return File name of the higher order interpolated solution output
+   */
+  string GetECC_Restart_FileName(void);
+
+  /*!
+   * \brief Get name of the higher order interpolated solution file name
+   * \return File name of the higher order interpolated solution input
+   */
+  string GetECC_Solution_FileName(void);
+
+  /*!
+   * \brief Get name of the higher order interpolated solution file name
+   * \return File name of the higher order interpolated adjoint solution output
+   */
+  string GetECC_Restart_Adj_FileName(void);
+
+  /*!
+   * \brief Get name of the higher order interpolated solution file name
+   * \return File name of the higher order interpolated adjoint solution input
+   */
+  string GetECC_Solution_Adj_FileName(void);
 
   /*!
    * \brief Get if the target mesh file name should be returned
