@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file iteration_structure.hpp
  * \brief Headers of the iteration classes used by SU2_CFD.
  *        Each CIteration class represents an available physics package.
@@ -348,7 +348,6 @@ public:
 
 };
 
-
 /*!
  * \class CFluidIteration
  * \brief Class for driving an iteration of the fluid system.
@@ -503,8 +502,6 @@ public:
   void InitializeVortexDistribution(unsigned long &nVortex, vector<su2double>& x0, vector<su2double>& y0, vector<su2double>& vort_strength, vector<su2double>& r_core);
   
 };
-
-
 
 /*!
  * \class CTurboIteration
@@ -1334,6 +1331,236 @@ public:
 
 
 
+};
+
+/*!
+ * \class CDiscAdjTNE2Iteration
+ * \brief Class for driving an iteration of the discrete adjoint fluid system.
+ * \author W. Maier
+ */
+class CDiscAdjTNE2Iteration : public CIteration {
+
+private:
+
+  CFluidIteration* meanflow_iteration; /*!< \brief Pointer to the mean flow iteration class. */
+  unsigned short CurrentRecording; /*!< \brief Stores the current status of the recording. */
+  bool turbulent;       /*!< \brief Stores the turbulent flag. */
+
+public:
+
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CDiscAdjTNE2Iteration(CConfig *config);
+
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CDiscAdjTNE2Iteration(void);
+
+  /*!
+   * \brief Preprocessing to prepare for an iteration of the physics.
+   * \param[in] Output, Intergration, Geometry, Solver Numerics
+   * \param[in] Config, Surface Movement, Grid Movement Structures
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_iInst - Index of the Inst.
+   */
+  void Preprocess(COutput *output,
+                  CIntegration ****integration_container,
+                  CGeometry ****geometry_container,
+                  CSolver *****solver_container,
+                  CNumerics ******numerics_container,
+                  CConfig **config_container,
+                  CSurfaceMovement **surface_movement,
+                  CVolumetricMovement ***grid_movement,
+                  CFreeFormDefBox*** FFDBox,
+                  unsigned short val_iZone,
+                  unsigned short val_iInst);
+
+  /*!
+   * \brief Perform a single iteration of the adjoint fluid system.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   */
+  void Iterate(COutput *output,
+               CIntegration ****integration_container,
+               CGeometry ****geometry_container,
+               CSolver *****solver_container,
+               CNumerics ******numerics_container,
+               CConfig **config_container,
+               CSurfaceMovement **surface_movement,
+               CVolumetricMovement ***grid_movement,
+               CFreeFormDefBox*** FFDBox,
+               unsigned short val_iZone,
+               unsigned short val_iInst);
+
+
+  /*!
+   * \brief Updates the containers for the discrete adjoint fluid system.
+   * \param[in] ??? - Description here.
+   */
+  void Update(COutput *output,
+              CIntegration ****integration_container,
+              CGeometry ****geometry_container,
+              CSolver *****solver_container,
+              CNumerics ******numerics_container,
+              CConfig **config_container,
+              CSurfaceMovement **surface_movement,
+              CVolumetricMovement ***grid_movement,
+              CFreeFormDefBox*** FFDBox,
+              unsigned short val_iZone,
+              unsigned short val_iInst);
+
+  /*!
+   * \brief Monitors the convergence and other metrics for the discrete adjoint fluid system.
+   * \param[in] ??? - Description here.
+   */
+  bool Monitor(COutput *output,
+      CIntegration ****integration_container,
+      CGeometry ****geometry_container,
+      CSolver *****solver_container,
+      CNumerics ******numerics_container,
+      CConfig **config_container,
+      CSurfaceMovement **surface_movement,
+      CVolumetricMovement ***grid_movement,
+      CFreeFormDefBox*** FFDBox,
+      unsigned short val_iZone,
+      unsigned short val_iInst);
+
+  /*!
+   * \brief Postprocess ???.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   */
+  void Postprocess(COutput *output,
+                   CIntegration ****integration_container,
+                   CGeometry ****geometry_container,
+                   CSolver *****solver_container,
+                   CNumerics ******numerics_container,
+                   CConfig **config_container,
+                   CSurfaceMovement **surface_movement,
+                   CVolumetricMovement ***grid_movement,
+                   CFreeFormDefBox*** FFDBox,
+                   unsigned short val_iZone,
+                   unsigned short val_iInst);
+
+  /*!
+   * \brief Registers all input variables of the fluid iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void InitializeAdjoint(CSolver *****solver_container,
+                         CGeometry ****geometry_container,
+                         CConfig** config_container,
+                         unsigned short iZone,
+                         unsigned short iInst);
+
+  /*!
+   * \brief Registers all output variables of the fluid iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - Kind of recording, either FLOW_CONS_VARS or MESH_COORDS
+   */
+  void RegisterInput(CSolver *****solver_container,
+                     CGeometry ****geometry_container,
+                     CConfig** config_container,
+                     unsigned short iZone,
+                     unsigned short iInst,
+                     unsigned short kind_recording);
+
+  /*!
+   * \brief Initializes the adjoints of the output variables of the fluid iteration.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void RegisterOutput(CSolver *****solver_container,
+                      CGeometry ****geometry_container,
+                      CConfig** config_container,
+                      COutput* output,
+                      unsigned short iZone,
+                      unsigned short iInst);
+
+  /*!
+   * \brief Initializes the adjoints of the output variables of the meanflow iteration - without the contribution of the objective function
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   */
+  void InitializeAdjoint_CrossTerm(CSolver *****solver_container, CGeometry ****geometry_container, CConfig **config_container, unsigned short iZone, unsigned short iInst);
+
+  /*!
+   * \brief Record a single iteration of the direct mean flow system.
+   * \param[in] output - Pointer to the COutput class.
+   * \param[in] integration_container - Container vector with all the integration methods.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] numerics_container - Description of the numerical method (the way in which the equations are solved).
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] surface_movement - Surface movement classes of the problem.
+   * \param[in] grid_movement - Volume grid movement classes of the problem.
+   * \param[in] FFDBox - FFD FFDBoxes of the problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+  void SetRecording(COutput *output,
+                      CIntegration ****integration_container,
+                      CGeometry ****geometry_container,
+                      CSolver *****solver_container,
+                      CNumerics ******numerics_container,
+                      CConfig **config_container,
+                      CSurfaceMovement **surface_movement,
+                      CVolumetricMovement ***grid_movement,
+                      CFreeFormDefBox*** FFDBox,
+                      unsigned short val_iZone,
+                      unsigned short val_iInst,
+                      unsigned short kind_recording);
+
+  /*!
+   * \brief Compute necessary variables that depend on the conservative variables or the mesh node positions
+   * (e.g. turbulent variables, normals, volumes).
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] iZone - Index of the zone.
+   * \param[in] kind_recording - The kind of recording (geometry or flow).
+   */
+  void SetDependencies(CSolver *****solver_container,
+                       CGeometry ****geometry_container,
+                       CConfig **config_container,
+                       unsigned short iZone,
+                       unsigned short iInst,
+                       unsigned short kind_recording);
+
+  /*!
+   * \brief load unsteady solution for unsteady problems
+   * \param[in] geometry_container - Geometrical definition of the problem.
+   * \param[in] solver_container - Container vector with all the solutions.
+   * \param[in] config_container - Definition of the particular problem.
+   * \param[in] val_iZone - Index of the zone.
+   * \param[in] val_DirectIter - Direct iteration to load.
+   */
+  void LoadUnsteady_Solution(CGeometry ****geometry_container,
+                      CSolver *****solver_container,
+                      CConfig **config_container,
+                      unsigned short val_iZone,
+                      unsigned short val_iInst,
+                      int val_DirectIter);
 };
 
 /*!

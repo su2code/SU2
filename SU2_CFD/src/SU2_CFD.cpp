@@ -1,4 +1,4 @@
-/*!
+﻿/*!
  * \file SU2_CFD.cpp
  * \brief Main file of the SU2 Computational Fluid Dynamics code
  * \author F. Palacios, T. Economon
@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
   
   unsigned short nZone, nDim;
   char config_file_name[MAX_STRING_SIZE];
-  bool fsi, turbo, zone_specific, periodic = false;
+  bool fsi, turbo, zone_specific, tne2, periodic = false;
   
   /*--- MPI initialization, and buffer setting ---*/
   
@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
   nDim     = CConfig::GetnDim(config->GetMesh_FileName(), config->GetMesh_FileFormat());
   fsi      = config->GetFSI_Simulation();
   turbo    = config->GetBoolTurbomachinery();
+  tne2     = ((config->GetKind_Solver() == TNE2_EULER) || (config->GetKind_Solver()==TNE2_NAVIER_STOKES));
   periodic = CConfig::GetPeriodic(config->GetMesh_FileName(), config->GetMesh_FileFormat(), config);
   zone_specific = config->GetBoolZoneSpecific();
 
@@ -168,10 +169,14 @@ int main(int argc, char *argv[]) {
 
         driver = new CDiscAdjTurbomachineryDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
 
+      } else if (tne2) {
+
+        driver = new CDiscAdjTNE2Driver(config_file_name, nZone, nDim, periodic, MPICommunicator);
+
       } else {
 
         driver = new CDiscAdjFluidDriver(config_file_name, nZone, nDim, periodic, MPICommunicator);
-        
+
       }
 
     } else if (turbo) {
