@@ -3043,12 +3043,12 @@ void CIncEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_cont
       /*--- Load the primitive variables ---*/
       
       numerics->SetPrimitive(node[iPoint]->GetPrimitive(), NULL);
-      
+
       /*--- Set incompressible density ---*/
 
       numerics->SetDensity(node[iPoint]->GetDensity(),
                             node[iPoint]->GetDensity());
-
+      
       /*--- Load the volume of the dual mesh cell ---*/
       
       numerics->SetVolume(geometry->node[iPoint]->GetVolume());
@@ -6509,7 +6509,7 @@ void CIncEulerSolver::SetResidual_DualTime(CGeometry *geometry, CSolver **solver
       
       LinSysRes.AddBlock(iPoint, Residual);
       if (implicit) {
-        for (iVar = 1; iVar < nVar; iVar++) {
+        for (iVar = 0; iVar < nVar; iVar++) {
           if (config->GetUnsteady_Simulation() == DT_STEPPING_1ST)
             Jacobian_i[iVar][iVar] = Volume_nP1/TimeStep;
           if (config->GetUnsteady_Simulation() == DT_STEPPING_2ND)
