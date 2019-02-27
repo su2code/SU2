@@ -2,7 +2,7 @@
  * \file variable_structure.cpp
  * \brief Definition of the solution fields.
  * \author F. Palacios, T. Economon
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -136,6 +136,10 @@ CVariable::CVariable(unsigned short val_nDim, unsigned short val_nvar, CConfig *
   if (config->GetUnsteady_Simulation() != NO) {
     Solution_time_n = new su2double [nVar];
     Solution_time_n1 = new su2double [nVar];
+  }
+  else if (config->GetDynamic_Analysis() == DYNAMIC) {
+    Solution_time_n = new su2double [nVar];
+    for (iVar = 0; iVar < nVar; iVar++) Solution_time_n[iVar] = 0.0;
   }
   
 	if (config->GetFSI_Simulation() && config->GetDiscrete_Adjoint()){

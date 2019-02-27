@@ -2,7 +2,7 @@
  * \file transfer_structure.cpp
  * \brief Main subroutines for MPI transfer of information between zones
  * \author R. Sanchez
- * \version 6.1.0 "Falcon"
+ * \version 6.2.0 "Falcon"
  *
  * The current SU2 release has been coordinated by the
  * SU2 International Developers Society <www.su2devsociety.org>
@@ -18,7 +18,7 @@
  *  - Prof. Edwin van der Weide's group at the University of Twente.
  *  - Lab. of New Concepts in Aeronautics at Tech. Institute of Aeronautics.
  *
- * Copyright 2012-2018, Francisco D. Palacios, Thomas D. Economon,
+ * Copyright 2012-2019, Francisco D. Palacios, Thomas D. Economon,
  *                      Tim Albring, and the SU2 contributors.
  *
  * SU2 is free software; you can redistribute it and/or
@@ -359,7 +359,7 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
     SU2_MPI::Bcast(Buffer_Bcast_Indices, nBuffer_BcastIndices, MPI_LONG, MASTER_NODE, MPI_COMM_WORLD);
 #endif
 
-    long indexPoint_iVertex, Point_Target_Check=0;
+    long indexPoint_iVertex;
     unsigned short iDonorPoint, nDonorPoints;
     su2double donorCoeff;
 
@@ -377,7 +377,6 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
         if (target_geometry->node[Point_Target]->GetDomain()) {
           TotalVertexDonor++;
           nDonorPoints = target_geometry->vertex[Marker_Target][iVertex]->GetnDonorPoints();
-          Point_Target_Check = -1;
           
           InitializeTarget_Variable(target_solution, Marker_Target, iVertex, nDonorPoints);
           
@@ -394,8 +393,6 @@ void CTransfer::Broadcast_InterfaceData(CSolver *donor_solution, CSolver *target
            
             indexPoint_iVertex = std::distance(Buffer_Bcast_Indices, std::find(Buffer_Bcast_Indices, Buffer_Bcast_Indices + nBuffer_BcastIndices, Donor_Global_Index));
            
-            Point_Target_Check = Buffer_Bcast_Indices[indexPoint_iVertex];
-
             /*--- Recover the Target_Variable from the buffer of variables ---*/
             RecoverTarget_Variable(indexPoint_iVertex, Buffer_Bcast_Variables, donorCoeff);
 
