@@ -5231,8 +5231,7 @@ public:
   
 };
 
-/*! 
-
+/*!
  * \class CSourceIncRotatingFrame_Flow 
  * \brief Class for a rotating frame source term. 
  * \ingroup SourceDiscr 
@@ -5263,7 +5262,6 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, CConfig *config); 
 
 };
-
 
 /*!
  * \class CSourceBoussinesq
