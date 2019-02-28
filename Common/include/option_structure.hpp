@@ -1797,14 +1797,18 @@ enum ENUM_LINEAR_SOLVER_PREC {
   LU_SGS = 2,		/*!< \brief LU SGS preconditioner. */
   LINELET = 3,  /*!< \brief Line implicit preconditioner. */
   ILU = 4,      /*!< \brief ILU(k) preconditioner. */
-  PASTIX_ILU= 5 /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_ILU= 5,  /*!< \brief PaStiX ILU(k) preconditioner. */
+  PASTIX_LU_P= 6,  /*!< \brief PaStiX LU as preconditioner. */
+  PASTIX_LDLT_P= 7, /*!< \brief PaStiX LDLT as preconditioner. */
 };
 static const map<string, ENUM_LINEAR_SOLVER_PREC> Linear_Solver_Prec_Map = CCreateMap<string, ENUM_LINEAR_SOLVER_PREC>
 ("JACOBI", JACOBI)
 ("LU_SGS", LU_SGS)
 ("LINELET", LINELET)
 ("ILU", ILU)
-("PASTIX_ILU", PASTIX_ILU);
+("PASTIX_ILU", PASTIX_ILU)
+("PASTIX_LU", PASTIX_LU_P)
+("PASTIX_LDLT", PASTIX_LDLT_P);
 
 /*!
  * \brief types of analytic definitions for various geometries
