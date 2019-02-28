@@ -2379,7 +2379,7 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
     break;
   }
 
-  if (kind_fact == PASTIX_LDLT)
+  if (kind_fact == PASTIX_LDLT || kind_fact == PASTIX_LDLT_P)
     pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = API_NO; // symmetric so no need for slower transp. solve
   else
     pastix_data.iparm[IPARM_TRANSPOSE_SOLVE] = pastix_int_t(!transposed); // negated due to CSR to CSC copy
@@ -2433,14 +2433,14 @@ void CSysMatrix<ScalarType>::BuildPastixPreconditioner(CGeometry *geometry, CCon
   pastix_data.iparm[IPARM_INCOMPLETE]      = API_NO;
 
   switch (kind_fact) {
-  case PASTIX_LDLT:
+  case PASTIX_LDLT: case PASTIX_LDLT_P:
     pastix_data.iparm[IPARM_SYM]           = API_SYM_YES;
     pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LDLT;
     break;
   case PASTIX_ILU:
     pastix_data.iparm[IPARM_INCOMPLETE]    = API_YES;
     pastix_data.iparm[IPARM_LEVEL_OF_FILL] = pastix_int_t(config->GetLinear_Solver_ILU_n());
-  case PASTIX_LU:
+  case PASTIX_LU: case PASTIX_LU_P:
     pastix_data.iparm[IPARM_SYM]           = API_SYM_NO;
     pastix_data.iparm[IPARM_FACTORIZATION] = API_FACT_LU;
     break;

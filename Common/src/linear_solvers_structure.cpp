@@ -753,8 +753,8 @@ unsigned long CSysSolve<ScalarType>::Solve(CSysMatrix<ScalarType> & Jacobian, CS
         Jacobian.BuildJacobiPreconditioner();
         precond = new CLineletPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
-      case PASTIX_ILU:
-        Jacobian.BuildPastixPreconditioner(geometry, config, PASTIX_ILU);
+      case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+        Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond);
         precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
         break;
       default:
@@ -915,8 +915,8 @@ void CSysSolve<ScalarType>::SetExternalSolve(CSysMatrix<ScalarType> & Jacobian, 
     case JACOBI:
       Jacobian.BuildJacobiPreconditioner(RequiresTranspose);
       break;
-    case PASTIX_ILU:
-      Jacobian.BuildPastixPreconditioner(geometry, config, PASTIX_ILU, RequiresTranspose);
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
+      Jacobian.BuildPastixPreconditioner(geometry, config, KindPrecond, RequiresTranspose);
       break;
     default:
       SU2_MPI::Error("The specified preconditioner is not yet implemented for the discrete adjoint method.", CURRENT_FUNCTION);
@@ -975,7 +975,7 @@ unsigned long CSysSolve<ScalarType>::Solve_b(CSysMatrix<ScalarType> & Jacobian, 
     case JACOBI:
       precond = new CJacobiPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
-    case PASTIX_ILU:
+    case PASTIX_ILU: case PASTIX_LU_P: case PASTIX_LDLT_P:
       precond = new CPastixPreconditioner<ScalarType>(Jacobian, geometry, config);
       break;
   }
