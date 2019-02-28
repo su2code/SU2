@@ -5351,6 +5351,11 @@ public:
    * \return Name of the file with the solution of the flow problem.
    */
   string GetSolution_FlowFileName(void);
+
+  /*!
+   * \brief Set the name of the file with the solution of the flow problem.
+   */
+  void SetSolution_FlowFileName(string val_filename);
   
   /*!
    * \brief Get the name of the file with the solution of the adjoint flow problem
@@ -5359,6 +5364,12 @@ public:
    *         drag objective function.
    */
   string GetSolution_AdjFileName(void);
+
+  /*!
+   * \brief Set the name of the file with the solution of the adjoint flow problem
+   *      with drag objective function.
+   */
+  void SetSolution_AdjFileName(string val_filename);
   
   /*!
    * \brief Get the name of the file with the solution of the structural problem.
@@ -5491,12 +5502,22 @@ public:
    * \return Name of the restart file for the flow variables.
    */
   string GetRestart_FlowFileName(void);
+
+  /*!
+   * \brief Set the name of the restart file for the flow variables.
+   */
+  void SetRestart_FlowFileName(string val_filename);
   
   /*!
    * \brief Get the name of the restart file for the adjoint variables (drag objective function).
    * \return Name of the restart file for the adjoint variables (drag objective function).
    */
   string GetRestart_AdjFileName(void);
+
+  /*!
+   * \brief Set the name of the restart file for the adjoint variables (drag objective function).
+   */
+  void SetRestart_AdjFileName(string val_filename);
   
   /*!
    * \brief Get the name of the restart file for the structural variables.

@@ -1484,7 +1484,11 @@ inline string CConfig::GetBreakdown_FileName(void) { return Breakdown_FileName; 
 
 inline string CConfig::GetSolution_FlowFileName(void) { return Solution_FlowFileName; }
 
+inline void CConfig::SetSolution_FlowFileName(string val_filename) { Solution_FlowFileName = val_filename; }
+
 inline string CConfig::GetSolution_AdjFileName(void) { return Solution_AdjFileName; }
+
+inline void CConfig::SetSolution_AdjFileName(string val_filename) { Solution_AdjFileName = val_filename; }
 
 inline string CConfig::GetSolution_FEMFileName(void) { return Solution_FEMFileName; }
 
@@ -1506,9 +1510,13 @@ inline string CConfig::GetHeat_FileName(void) { return Heat_FileName; }
 
 inline string CConfig::GetRestart_FlowFileName(void) { return Restart_FlowFileName; }
 
+inline void CConfig::SetRestart_FlowFileName(string val_filename) { Restart_FlowFileName = val_filename; }
+
 inline string CConfig::GetRestart_HeatFileName(void) { return Restart_HeatFileName; }
 
 inline string CConfig::GetRestart_AdjFileName(void) { return Restart_AdjFileName; }
+
+inline void CConfig::SetRestart_AdjFileName(string val_filename) { Restart_AdjFileName = val_filename; }
 
 inline string CConfig::GetRestart_FEMFileName(void) { return Restart_FEMFileName; }
 

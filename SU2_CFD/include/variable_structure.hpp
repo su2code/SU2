@@ -79,6 +79,7 @@ protected:
   su2double *Undivided_Laplacian;  /*!< \brief Undivided laplacian of the solution. */
   su2double *Res_TruncError,  /*!< \brief Truncation error for multigrid cycle. */
   *Residual_Old,    /*!< \brief Auxiliar structure for residual smoothing. */
+  *Residual,        /*!< \brief nVar vector for storing residual. */
   *Residual_Sum;    /*!< \brief Auxiliar structure for residual smoothing. */
   static unsigned short nDim;    /*!< \brief Number of dimension of the problem. */
   unsigned short nVar;    /*!< \brief Number of variables of the problem,
@@ -369,6 +370,12 @@ public:
    * \param[in] val_residual_old - Pointer to the residual vector.
    */
   void SetResidual_Old(su2double *val_residual_old);
+
+  /*!
+   * \brief Set the value of the residual.
+   * \param[in] val_residual - Pointer to the residual vector.
+   */
+  void SetResidual(su2double *val_residual);
   
   /*!
    * \brief Add a value to the summed residual vector.
@@ -397,6 +404,12 @@ public:
    * \return Pointer to the old residual.
    */
   su2double *GetResidual_Old(void);
+
+  /*!
+   * \brief Get the value of the residual.
+   * \return Pointer to the residual.
+   */
+  su2double *GetResidual(void);
   
   /*!
    * \brief Get the value of the summed residual.

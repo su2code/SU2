@@ -2409,7 +2409,7 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addStringOption("TARGET_MESH_FILENAME", Target_Mesh_FileName, string("target_mesh.su2"));
 
   /* DESCRIPTION: Compute an error estimate */
-  addBoolOption("ERROR_ESTIMATE", error_estimate, true);
+  addBoolOption("ERROR_ESTIMATE", error_estimate, false);
 
   /* END_CONFIG_OPTIONS */
 

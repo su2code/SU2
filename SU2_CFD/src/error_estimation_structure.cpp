@@ -54,6 +54,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   fine_geometry_container       = NULL;
   coarse_solver_container       = NULL;
   fine_solver_container         = NULL;
+  fine_solver_container2        = NULL;
   coarse_config_container       = NULL;
   fine_config_container         = NULL;
   output                        = NULL;
@@ -72,6 +73,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   fine_geometry_container       = new CGeometry***[nZone];
   coarse_solver_container       = new CSolver****[nZone];
   fine_solver_container         = new CSolver****[nZone];
+  fine_solver_container2        = new CSolver****[nZone];
   coarse_config_container       = new CConfig*[nZone];
   fine_config_container         = new CConfig*[nZone];
   iteration_container           = new CIteration**[nZone];
@@ -83,6 +85,7 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
   for (iZone = 0; iZone < nZone; iZone++) {
     coarse_solver_container[iZone]            = NULL;
     fine_solver_container[iZone]              = NULL;
+    fine_solver_container2[iZone]             = NULL;
     coarse_geometry_container[iZone]          = NULL;
     fine_geometry_container[iZone]            = NULL;
     coarse_config_container[iZone]            = NULL;
@@ -299,7 +302,27 @@ CErrorEstimationDriver::CErrorEstimationDriver(char* confFile,
       for (iSol = 0; iSol < MAX_SOLS; iSol++)
         fine_solver_container[iZone][iInst][MESH_0][iSol] = NULL;
       
+      fine_config_container[iZone]->SetSolution_FlowFileName(fine_config_container[iZone]->GetInterpolated_Solution_FileName());
+      fine_config_container[iZone]->SetSolution_AdjFileName(fine_config_container[iZone]->GetInterpolated_Solution_Adj_FileName());
       Solver_Preprocessing(fine_solver_container[iZone], fine_geometry_container[iZone],
+                           fine_config_container[iZone], iInst);
+
+    } // End of loop over iInst
+
+    fine_solver_container2[iZone] = new CSolver*** [nInst[iZone]];
+
+
+    for (iInst = 0; iInst < nInst[iZone]; iInst++){
+      fine_solver_container2[iZone][iInst] = NULL;
+      fine_solver_container2[iZone][iInst] = new CSolver** [MESH_0+1];
+      fine_solver_container2[iZone][iInst][MESH_0] = NULL;
+      fine_solver_container2[iZone][iInst][MESH_0] = new CSolver* [MAX_SOLS];
+      for (iSol = 0; iSol < MAX_SOLS; iSol++)
+        fine_solver_container2[iZone][iInst][MESH_0][iSol] = NULL;
+      
+      fine_config_container[iZone]->SetSolution_FlowFileName(fine_config_container[iZone]->GetECC_Solution_FileName());
+      fine_config_container[iZone]->SetSolution_AdjFileName(fine_config_container[iZone]->GetECC_Solution_Adj_FileName());
+      Solver_Preprocessing(fine_solver_container2[iZone], fine_geometry_container[iZone],
                            fine_config_container[iZone], iInst);
 
     } // End of loop over iInst
@@ -1914,9 +1937,18 @@ void CErrorEstimationDriver::ComputeECC() {
   if (rank == MASTER_NODE)
     cout << endl <<"------------------------------ Compute ECC ------------------------------" << endl;
 
-  if (rank == MASTER_NODE) cout << "Running single solver iteration." << endl;
+  if (rank == MASTER_NODE) cout << "Running single solver iteration for interpolated solution." << endl;
 
   Run();
+
+  if (rank == MASTER_NODE) cout << endl << "Computing adaptation parameter." << endl;
+
+  ComputeAdaptationParameter(coarse_solver_container[ZONE_0][INST_0][MESH_0],
+                             fine_solver_container[ZONE_0][INST_0][MESH_0],
+                             fine_solver_container2[ZONE_0][INST_0][MESH_0],
+                             coarse_geometry_container[ZONE_0][INST_0][MESH_0],
+                             fine_geometry_container[ZONE_0][INST_0][MESH_0],
+                             fine_config_container[ZONE_0]);
 
 }
 
@@ -2183,6 +2215,73 @@ void CErrorEstimationDriver::DirectRun(){
     direct_iteration[iZone]->Iterate(output, integration_container, fine_geometry_container, fine_solver_container, numerics_container, fine_config_container, surface_movement, grid_movement, FFDBox, iZone, INST_0);
   }
 
+}
+
+void CErrorEstimationDriver::ComputeAdaptationParameter(CSolver**  coarse_solver,
+                                                        CSolver**  fine_solver,
+                                                        CSolver**  fine_solver2,
+                                                        CGeometry* coarse_geometry,
+                                                        CGeometry* fine_geometry,
+                                                        CConfig*   config){
+
+  bool turbulent; 
+  unsigned long nPointCoarse = coarse_geometry->GetnPointDomain(),
+                nPointFine   = fine_geometry->GetnPointDomain();
+  unsigned short nVarFlow, nVarTurb = 0, nVar;
+
+  turbulent = (config->GetKind_Solver() == RANS || config->GetKind_Solver() == DISC_ADJ_RANS);
+  nVarFlow  = fine_solver[FLOW_SOL]->GetnVar();
+  if(turbulent) nVarTurb = fine_solver[TURB_SOL]->GetnVar();
+  nVar      = nVarFlow + nVarTurb;
+
+  su2double *Sol, *Sol2,
+            *SolAdj, *SolAdj2,
+            *ResFlow, *ResTurb,
+            *ResAdjFlow = new su2double[nVarFlow],
+            *ResAdjTurb = new su2double[nVarTurb];
+
+  /*--- Allocate memory for the adaptation parameter ---*/
+  epsilon_coarse.resize(nPointCoarse);
+  epsilon_fine.resize(nPointFine);
+
+  /*--- Perform the inner product on the fine mesh ---*/
+  for(unsigned long iPoint = 0; iPoint < nPointFine; ++iPoint){
+
+    /*--- Extract residuals ---*/
+    ResFlow = fine_solver[FLOW_SOL]->LinSysRes.GetBlock(iPoint);
+    for(unsigned short iVar = 0; iVar < nVarFlow; ++iVar)
+      ResAdjFlow[iVar] = fine_solver[ADJFLOW_SOL]->node[iPoint]->GetSolution(iVar) - fine_solver[ADJFLOW_SOL]->node[iPoint]->GetSolution_Old(iVar);
+
+    /*--- Extract solutions ---*/
+    Sol     = fine_solver[ADJFLOW_SOL]->node[iPoint]->GetSolution_Direct();
+    Sol2    = fine_solver2[FLOW_SOL]->node[iPoint]->GetSolution();
+    SolAdj  = fine_solver[ADJFLOW_SOL]->node[iPoint]->GetSolution_Old();
+    SolAdj2 = fine_solver2[ADJFLOW_SOL]->node[iPoint]->GetSolution();
+
+    epsilon_fine[iPoint] = 0.0;
+    for(unsigned short iVar = 0; iVar < nVarFlow; ++iVar)
+      epsilon_fine[iPoint] += abs(ResAdjFlow[iVar]*(Sol2[iVar]-Sol[iVar])) + abs((SolAdj2[iVar]-SolAdj[iVar])*ResFlow[iVar]);
+
+    /*--- Add turbulent contributions ---*/
+    if(turbulent){
+
+      /*--- Extract residuals ---*/
+      ResTurb = fine_solver[TURB_SOL]->LinSysRes.GetBlock(iPoint);
+      for(unsigned short iVar = 0; iVar < nVarTurb; ++iVar)
+        ResAdjTurb[iVar] = fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution(iVar) - fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution_Old(iVar);
+
+      /*--- Extract solutions ---*/
+      Sol     = fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution_Direct();
+      Sol2    = fine_solver2[TURB_SOL]->node[iPoint]->GetSolution();
+      SolAdj  = fine_solver[ADJTURB_SOL]->node[iPoint]->GetSolution_Old();
+      SolAdj2 = fine_solver2[ADJTURB_SOL]->node[iPoint]->GetSolution();
+
+      for(unsigned short iVar = 0; iVar < nVarTurb; ++iVar)
+        epsilon_fine[iPoint] += abs(ResAdjTurb[iVar]*(Sol2[iVar]-Sol[iVar])) + abs((SolAdj2[iVar]-SolAdj[iVar])*ResTurb[iVar]);
+
+    }
+    
+  }
 }
 
 void CErrorEstimationDriver::Output() {

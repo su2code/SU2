@@ -65,6 +65,7 @@ private:
   CGeometry ****fine_geometry_container;        /*!< \brief Output geometry that solution is going to be interpolated onto */
   CSolver *****coarse_solver_container;         /*!< \brief Input solution that needs to be interpolated onto new mesh */
   CSolver *****fine_solver_container;           /*!< \brief Interpolated solution on new mesh */
+  CSolver *****fine_solver_container2;          /*!< \brief Higher order interpolated solution on new mesh */
   CConfig **coarse_config_container;            /*!< \brief Definition of the coarse problem. */
   CConfig **fine_config_container;              /*!< \brief Definition of the output problem. */
   CIteration ***iteration_container;            /*!< \brief Container vector with all the iteration methods. */
@@ -72,7 +73,7 @@ private:
   CNumerics ******numerics_container;           /*!< \brief Description of the numerical method (the way in which the equations are solved). */
   CConfig *driver_config;                       /*!< \brief Definition of the driver configuration. */
   CSurfaceMovement **surface_movement;          /*!< \brief Surface movement classes of the problem. */
-  CVolumetricMovement ***grid_movement;          /*!< \brief Volume grid movement classes of the problem. */
+  CVolumetricMovement ***grid_movement;         /*!< \brief Volume grid movement classes of the problem. */
   CFreeFormDefBox*** FFDBox;                    /*!< \brief FFD FFDBoxes of the problem. */
   char* config_file_name;                       /*!< \brief Configuration file name of the problem.*/
 
@@ -81,11 +82,11 @@ private:
        fine_fem_solver;                         /*!< \brief FEM fluid solver simulation flag for output simulation */
 
   unsigned short iZone,                         /*!< \brief Iterator on zones.*/
-                iSol,                           /*!< \brief Iterator on solutions.*/
-                nZone,                          /*!< \brief Total number of zones in the problem. */
-                nDim,                           /*!< \brief Number of dimensions.*/
-                iInst,                          /*!< \brief Iterator on instance levels.*/
-                *nInst;                         /*!< \brief Total number of instances in the problem (per zone). */
+                 iSol,                          /*!< \brief Iterator on solutions.*/
+                 nZone,                         /*!< \brief Total number of zones in the problem. */
+                 nDim,                          /*!< \brief Number of dimensions.*/
+                 iInst,                         /*!< \brief Iterator on instance levels.*/
+                 *nInst;                        /*!< \brief Total number of instances in the problem (per zone). */
   
   unsigned long DOFsPerPoint;                   /*!< \brief Number of unknowns at each vertex, i.e., number of equations solved. */
 
@@ -94,6 +95,9 @@ private:
   unsigned short RecordingState;                /*!< \brief The kind of recording the tape currently holds.*/
   su2double ObjFunc;                            /*!< \brief The value of the objective function.*/
   CIteration** direct_iteration;                /*!< \brief A pointer to the direct iteration.*/
+
+  vector<su2double> epsilon_coarse,             /*!< \brief A vector to store the adaptation parameter at each coarse mesh node. */
+                    epsilon_fine;               /*!< \brief A vector to store the adaptation parameter at each fine mesh node. */
 
 public:
 
@@ -198,6 +202,16 @@ public:
    * \brief Run an iteration of the flow solver.
    */
   void DirectRun(void);
+
+  /*!
+   * \brief Perform inner product of of residuals and interpolation error to compute the adaptation parameter.
+   */
+  void ComputeAdaptationParameter(CSolver**  coarse_solver,
+                                  CSolver**  fine_solver,
+                                  CSolver**  fine_solver2,
+                                  CGeometry* coarse_geometry,
+                                  CGeometry* fine_geometry,
+                                  CConfig*   config);
 
   /*!
    * \brief Output the solution in solution file.
