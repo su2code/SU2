@@ -9086,8 +9086,8 @@ public:
   void SetHistFile(ofstream *HistFile);
     
   /*!
-    * \brief Ujjwal: Retrieve boolean variable indicating use of VG Source term model
-    */
+   * \brief Ujjwal: Retrieve boolean variable indicating use of VG Source term model
+   */
   bool GetIncludeVGSource(void);
   
   /*!

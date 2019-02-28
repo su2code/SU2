@@ -5955,3 +5955,62 @@ void CSourceWindGust::ComputeResidual(su2double *val_residual, su2double **val_J
   }
   
 }
+
+// Ujjwal:
+CSourceVG::CSourceVG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config) : CNumerics(val_nDim, val_nVar, config) { }
+
+CSourceVG::~CSourceVG(void) { }
+
+void CSourceVG::ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config) {
+  
+  unsigned short iVar, jVar;
+  bool implicit = (config->GetKind_TimeIntScheme_Flow() == EULER_IMPLICIT);
+  su2double rho, u, v, w;
+  su2double CalibrationConstant = config->GetVGSourceCalibrationConstant();
+  su2double constants = CalibrationConstant * 0.08 / 0.0064;
+  
+  /*--- Primitive variables at point i ---*/
+  u = U_i[1]/U_i[0];
+  v = U_i[2]/U_i[0];
+  w = U_i[3]/U_i[0];
+  rho = U_i[0];
+  
+  if (nDim == 3) {
+    val_residual[0] = 0.0;
+    val_residual[1] = 0.0;
+    val_residual[2] = 0.0;
+    val_residual[3] = 0.0;
+    val_residual[4] = 0.0;
+  } else {
+    SU2_MPI::Error("You should only use VG Source Term in 3D.", CURRENT_FUNCTION);
+  }
+  
+  /*--- Zero the continuity contribution ---*/
+  
+  val_residual[0] = 0.0;
+  
+  if (implicit) {
+    for (iVar = 0; iVar < nDim+1; iVar++)
+      for(jVar = 0; jVar < nDim+1; jVar++)
+        Jacobian_i[iVar][jVar] = 0.0;
+  }
+  
+  /*--- Momentum contribution ---*/
+  if (abs(Coord_i[0] - 1) <= 0.2 && abs(Coord_i[1]) <= 0.05 && Coord_i[2] <= 0.2) {
+    val_residual[1] = -constants * Volume * rho * v * v * u / sqrt(u*u + v*v + w*w);
+    val_residual[2] = constants * Volume * rho * v * u * u / sqrt(u*u + v*v + w*w);
+    
+    /*--- Energy contribution ---*/
+    
+    val_residual[nDim+1] = 0.0;
+    // val_residual[nDim+1] += constants * Volume * rho * v * v * u * u / sqrt(u*u + v*v + w*w);
+    // val_residual[nDim+1] += -constants * Volume * rho * v * u * u * v / sqrt(u*u + v*v + w*w);
+  }
+  if (implicit) {
+    Jacobian_i[1][1] = -constants * Volume * U_i[2] * U_i[2];
+    Jacobian_i[1][2] = -constants * Volume * 2 * U_i[1] * U_i[2];
+    Jacobian_i[2][2] = constants * Volume * U_i[1] * U_i[1];
+    Jacobian_i[2][1] = constants * Volume * 2 * U_i[1] * U_i[2];
+  }
+}
+// Ujjwal out

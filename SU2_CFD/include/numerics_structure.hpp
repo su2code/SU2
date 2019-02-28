@@ -5697,4 +5697,35 @@ public:
   void ComputeResidual(su2double *val_residual, su2double **val_Jacobian_i, su2double **val_Jacobian_j, CConfig *config);
 };
 
+/*!
+ * \class CSourceVG
+ * \brief Class for source term for Vortex Generator Model.
+ * \ingroup SourceDiscr
+ * \author Ujjwal
+ */
+class CSourceVG : public CNumerics {
+public:
+  
+  /*!
+   * \brief Constructor of the class.
+   * \param[in] val_nDim - Number of dimensions of the problem.
+   * \param[in] val_nVar - Number of variables of the problem.
+   * \param[in] config - Definition of the particular problem.
+   */
+  CSourceVG(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  
+  /*!
+   * \brief Destructor of the class.
+   */
+  ~CSourceVG(void);
+  
+  /*!
+   * \brief Residual of the rotational frame source term.
+   * \param[out] val_residual - Pointer to the total residual.
+   * \param[in] config - Definition of the particular problem.
+   */
+  void ComputeResidual(su2double *val_residual, su2double **Jacobian_i, CConfig *config);
+  
+}; // Ujjwal out
+
 #include "numerics_structure.inl"

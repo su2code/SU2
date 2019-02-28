@@ -4907,6 +4907,7 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
   bool harmonic_balance = (config->GetUnsteady_Simulation() == HARMONIC_BALANCE);
   bool windgust         = config->GetWind_Gust();
   bool body_force       = config->GetBody_Force();
+  bool VGSource         = config->GetIncludeVGSource(); // Ujjwal 
 
   /*--- Initialize the source residual to zero ---*/
 
@@ -5061,6 +5062,29 @@ void CEulerSolver::Source_Residual(CGeometry *geometry, CSolver **solver_contain
       
     }
   }
+  
+  // Ujjwal
+  if (VGSource) {
+    
+    for (iPoint = 0; iPoint < nPointDomain; iPoint++) {
+      
+      /*--- Set solution  ---*/
+      numerics->SetConservative(node[iPoint]->GetSolution(), node[iPoint]->GetSolution());
+      
+      /*--- Set control volume ---*/
+      numerics->SetVolume(geometry->node[iPoint]->GetVolume());
+      
+      numerics->SetCoord(geometry->node[iPoint]->GetCoord(), geometry->node[iPoint]->GetCoord());
+      
+      /*--- Compute Source term Residual ---*/
+      numerics->ComputeResidual(Residual, Jacobian_i, config);
+      
+      /*--- Add Residual ---*/
+      LinSysRes.AddBlock(iPoint, Residual);
+      
+    }
+  }
+  // Ujjwal out
   
 }
 
