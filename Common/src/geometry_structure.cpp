@@ -5830,8 +5830,8 @@ void CPhysicalGeometry::DistributeColoring(CConfig *config,
   jPoint = geometry->GetnPoint();
   for (MI = Point_Map.begin(); MI != Point_Map.end(); MI++) {
     iPoint = MI->first;
-    if ((Point_Map[iPoint] <  geometry->starting_node[rank]) ||
-        (Point_Map[iPoint] >= geometry->ending_node[rank])){
+    if ((Point_Map[iPoint] <  geometry->beg_node[rank]) ||
+        (Point_Map[iPoint] >= geometry->end_node[rank])){
       Global2Local[Point_Map[iPoint]] = jPoint;
       jPoint++;
     }
