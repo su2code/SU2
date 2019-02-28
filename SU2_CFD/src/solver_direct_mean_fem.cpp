@@ -14572,7 +14572,7 @@ void CFEM_DG_NSSolver::BC_Sym_Plane(CConfig                  *config,
             GradCartNormMomL[0] = ULGradCart[1][0]*normals[0] + ULGradCart[2][0]*normals[1];
             GradCartNormMomL[1] = ULGradCart[1][1]*normals[0] + ULGradCart[2][1]*normals[1];
 
-            const su2double GradNormNormMomL = ULGradNorm[1]*normals[0] + ULGradNorm[2]*normals[1];
+            const su2double GradNormNormMomL = ULGradNorm[1]*normals[0] + ULGradNorm[2]*normals[1]; // why not GradCartNormMomL here instead of ULGradNorm...same but makes more sense
 
             /* Abbreviate twice the normal vector. */
             const su2double tnx = 2.0*normals[0], tny = 2.0*normals[1];

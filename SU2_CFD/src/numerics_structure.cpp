@@ -278,8 +278,10 @@ CNumerics::~CNumerics(void) {
 
 }
 
-void CNumerics::GetInviscidFlux(su2double val_density, su2double *val_velocity,
-    su2double val_pressure, su2double val_enthalpy) {
+void CNumerics::GetInviscidFlux(su2double val_density,
+                                su2double *val_velocity,
+                                su2double val_pressure,
+                                su2double val_enthalpy) {
   if (nDim == 3) {
     Flux_Tensor[0][0] = val_density*val_velocity[0];
     Flux_Tensor[1][0] = Flux_Tensor[0][0]*val_velocity[0]+val_pressure;
@@ -1806,11 +1808,13 @@ void CNumerics::GetViscousFlux(su2double *val_primvar, su2double **val_gradprimv
 
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
-                  su2double **val_gradprimvar, su2double val_turb_ke,
-                  su2double *val_normal,
-                  su2double val_laminar_viscosity,
-                  su2double val_eddy_viscosity,
-                  su2double val_tau_wall, bool val_qcr) {
+                                   su2double **val_gradprimvar,
+                                   su2double val_turb_ke,
+                                   su2double *val_normal,
+                                   su2double val_laminar_viscosity,
+                                   su2double val_eddy_viscosity,
+                                   su2double val_tau_wall,
+                                   bool val_qcr) {
 
   unsigned short iVar, iDim, jDim;
   su2double total_viscosity, heat_flux_factor, div_vel, Cp, Density;
@@ -1956,7 +1960,8 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 }
 
 void CNumerics::GetViscousProjFlux(su2double *val_primvar,
-                                   su2double **val_gradprimvar, su2double val_turb_ke,
+                                   su2double **val_gradprimvar,
+                                   su2double val_turb_ke,
                                    su2double *val_normal,
                                    su2double val_laminar_viscosity,
                                    su2double val_eddy_viscosity,
@@ -2026,12 +2031,12 @@ void CNumerics::GetViscousProjFlux(su2double *val_primvar,
 }
 
 void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
-                                          su2double **val_gradprimvar,
-                                          su2double *val_normal,
-                                          su2double val_laminar_viscosity,
-                                          su2double val_eddy_viscosity,
-                                          su2double val_turb_ke,
-                                          su2double val_thermal_conductivity) {
+                                      su2double **val_gradprimvar,
+                                      su2double *val_normal,
+                                      su2double val_laminar_viscosity,
+                                      su2double val_eddy_viscosity,
+                                      su2double val_turb_ke,
+                                      su2double val_thermal_conductivity) {
 
   unsigned short iVar, iDim, jDim;
   su2double total_viscosity, div_vel, Density;
@@ -2053,7 +2058,7 @@ void CNumerics::GetViscousIncProjFlux(su2double *val_primvar,
                          -TWO3*total_viscosity*div_vel*delta[iDim][jDim]
                          -TWO3*Density*val_turb_ke*delta[iDim][jDim]);
 
-  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/
+  /*--- Gradient of primitive variables -> [Pressure vel_x vel_y vel_z Temperature] ---*/ // TK ?? 
 
   if (nDim == 2) {
     Flux_Tensor[0][0] = 0.0;

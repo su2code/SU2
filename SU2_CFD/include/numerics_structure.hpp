@@ -5272,8 +5272,9 @@ public:
  * \author T. Economon
  * \version 6.1.0 "Falcon"
  */
-class CSourceIncPeriodicBodyForce : public CNumerics {
+class CSourceIncStreamwise_Periodic : public CNumerics {
   bool implicit; /*!< \brief Implicit calculation. */
+  su2double norm2_translation; /*!< \brief Square of distance between the 2 periodic surfaces. */
   
 public:
 
@@ -5282,12 +5283,12 @@ public:
    * \param[in] val_nVar - Number of variables of the problem.
    * \param[in] config - Definition of the particular problem.
    */
-  CSourceIncPeriodicBodyForce(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
+  CSourceIncStreamwise_Periodic(unsigned short val_nDim, unsigned short val_nVar, CConfig *config);
 
   /*!
    * \brief Destructor of the class.
    */
-  ~CSourceIncPeriodicBodyForce(void);
+  ~CSourceIncStreamwise_Periodic(void);
 
   /*!
    * \brief Source term integration for a body force.

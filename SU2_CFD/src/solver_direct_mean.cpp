@@ -12692,7 +12692,7 @@ void CEulerSolver::BC_Sym_Plane(CGeometry *geometry, CSolver **solver_container,
   /*--- Call the Euler residual ---*/
   
   BC_Euler_Wall(geometry, solver_container, conv_numerics, config, val_marker);
-  
+
 }
 
 void CEulerSolver::BC_Fluid_Interface(CGeometry *geometry, CSolver **solver_container, CNumerics *conv_numerics, CNumerics *visc_numerics,
@@ -21261,7 +21261,7 @@ void CNSSolver::BC_Isothermal_Wall(CGeometry *geometry, CSolver **solver_contain
       for (iDim = 0; iDim < nDim; iDim++)
         UnitNormal[iDim] = -Normal[iDim]/Area;
       
-      /*--- Calculate useful quantities ---*/
+      /*--- Calculate useful quantities ---*/ //TK How could this be useful?? square of 2-norm should always be one!
       
       theta2 = 0.0;
       for (iDim = 0; iDim < nDim; iDim++)
