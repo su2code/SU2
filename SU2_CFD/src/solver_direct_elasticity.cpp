@@ -1449,7 +1449,7 @@ void CFEASolver::Preprocessing(CGeometry *geometry, CSolver **solver_container, 
    * so we ask "geometry" to compute them.
    * This only needs to be done for the undeformed (initial) shape.
    */
-  if (topology_mode && (restart || initial_calc || initial_calc_restart || disc_adj_fem)) {
+  if (topology_mode && ((first_iter && initial_calc_restart) || disc_adj_fem)) {
     geometry->SetElemVolume(config);
     FilterElementDensities(geometry,config);
   }
