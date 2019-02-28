@@ -2065,6 +2065,13 @@ void CConfig::SetConfig_Options(unsigned short val_iZone, unsigned short val_nZo
   addDoubleListOption("TOPOL_OPTIM_KERNEL_PARAM", top_optim_nKernelParams, top_optim_kernel_params);
   addEnumOption("TOPOL_OPTIM_PROJECTION_TYPE", top_optim_proj_type, Projection_Function_Map, NO_PROJECTION);
   addDoubleOption("TOPOL_OPTIM_PROJECTION_PARAM", top_optim_proj_param, 0.0);
+  
+  /* DESCRIPTION: VG Source Model */
+  /* DESCRIPTION: Ujjwal: VG Source Term Model Boolean */
+  addBoolOption("INCLUDE_VG_SOURCE", IncludeVGSource, false);
+  
+  /* DESCRIPTION: Ujjwal: VG Source Term Model Calibration Constant */
+  addDoubleOption("CALIBRATION_CONSTANT", VGSourceCalibrationConstant, 0.0);
 
   /* CONFIG_CATEGORY: FSI solver */
   /*--- Options related to the FSI solver ---*/

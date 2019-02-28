@@ -2014,6 +2014,11 @@ inline ofstream* CConfig::GetHistFile(void) { return ConvHistFile; }
 
 inline void CConfig::SetHistFile(ofstream *HistFile) { ConvHistFile = HistFile; }
 
+// Ujjwal:
+inline bool CConfig::GetIncludeVGSource(void) { return IncludeVGSource; }
+inline su2double CConfig::GetVGSourceCalibrationConstant(void) { return VGSourceCalibrationConstant; }
+// Ujjwal out
+
 inline bool CConfig::GetTopology_Optimization(void) const { return topology_optimization; }
 
 inline string CConfig::GetTopology_Optim_FileName(void) const { return top_optim_output_file; }
