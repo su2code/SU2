@@ -15605,7 +15605,7 @@ void CFEM_DG_NSSolver::ViscousBoundaryFacesBCTreatment(
   if( wallModel ) {
     WallTreatmentViscousFluxes(config, nFaceSimul, NPad, nInt, Wall_HeatFlux,
                                HeatFlux_Prescribed, Wall_Temperature,
-                               Temperature_Prescribed, surfElem,
+                               Temperature_Prescribed, surfElem, solIntL,
                                gradSolInt, viscFluxes, viscosityInt,
                                kOverCvInt, wallModel);
   }
@@ -15712,6 +15712,7 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                   const su2double          Wall_Temperature,
                                   const bool               Temperature_Prescribed,
                                   const CSurfaceElementFEM *surfElem,
+                                  const su2double          *solIntL,
                                         su2double          *workArray,
                                         su2double          *viscFluxes,
                                         su2double          *viscosityInt,
@@ -15798,6 +15799,13 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
                                               FluidModel, tauWall, qWall, ViscosityWall,
                                               kOverCvWall);
 
+        /* Compute the wall velocity in tangential direction. */
+        const su2double *solWallInt = solIntL + NPad*ii + llNVar;
+        su2double velWallTan = 0.0;
+        for(unsigned short k=0; k<nDim; ++k)
+          velWallTan += solWallInt[k+1]*dirTan[k];
+        velWallTan /= solWallInt[0];
+
         /* Determine the position where the viscous fluxes, viscosity and
            thermal conductivity must be stored. */
         su2double *normalFlux = viscFluxes + NPad*ii + llNVar;
@@ -15806,17 +15814,12 @@ void CFEM_DG_NSSolver::WallTreatmentViscousFluxes(
         viscosityInt[ind] = ViscosityWall;
         kOverCvInt[ind]   = kOverCvWall;
 
-        /* Compute the prescribed velocity in tangential direction. */
-        su2double velTanPrescribed = 0.0;
-        for(unsigned short k=0; k<nDim; ++k)
-          velTanPrescribed += gridVel[k]*dirTan[k];
-
         /* Compute the viscous normal flux. Note that the unscaled normals
            must be used, hence the multiplication with normals[nDim]. */
         normalFlux[0] = 0.0;
         for(unsigned short k=0; k<nDim; ++k)
           normalFlux[k+1] = -normals[nDim]*tauWall*dirTan[k];
-        normalFlux[nVar-1] = normals[nDim]*(qWall - tauWall*velTanPrescribed);
+        normalFlux[nVar-1] = normals[nDim]*(qWall - tauWall*velWallTan);
       }
     }
   }
